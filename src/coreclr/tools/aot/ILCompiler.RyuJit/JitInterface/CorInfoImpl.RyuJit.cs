@@ -467,11 +467,13 @@ namespace Internal.JitInterface
             switch (ftnNum)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
-                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT: // TODO: (async): THROWEXACT
                     id = ReadyToRunHelper.Throw;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_USER_BREAKPOINT:
                     id = ReadyToRunHelper.DebugBreak;
@@ -1048,6 +1050,9 @@ namespace Internal.JitInterface
                     case (int)MappingTypes.NO_MAPPING:
                         continue;
                 }
+                // Ignore these; see WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp.
+                if (nativeToILInfo->source == SourceTypes.CALL_INSTRUCTION)
+                    continue;
 
                 debugLocInfos.Add(new DebugLocInfo((int)nativeToILInfo->nativeOffset, ilOffset));
             }

@@ -274,7 +274,7 @@ public:
     };
 
 private:
-    Compiler* m_pComp;
+    Compiler* m_compiler;
 
     // For allocations.  (Other things?)
     CompAllocator m_alloc;
@@ -615,7 +615,7 @@ private:
         toVisit.Push(vn);
 
         SmallValueNumSet visited;
-        visited.Add(m_pComp, vn);
+        visited.Add(m_compiler, vn);
         while (toVisit.Height() > 0)
         {
             ValueNum vnToVisit = toVisit.Pop();
@@ -628,7 +628,7 @@ private:
                 for (unsigned ssaArgNum = 0; ssaArgNum < phiDef.NumArgs; ssaArgNum++)
                 {
                     ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
-                    if (visited.Add(m_pComp, childVN))
+                    if (visited.Add(m_compiler, childVN))
                     {
                         toVisit.Push(childVN);
                     }
@@ -1110,44 +1110,16 @@ public:
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
-            vnStore->vnDump(vnStore->m_pComp, cmpOp);
+            vnStore->vnDump(vnStore->m_compiler, cmpOp);
             printf(" ");
             printf(vnStore->VNFuncName((VNFunc)cmpOper));
             printf(" ");
-            vnStore->vnDump(vnStore->m_pComp, vnBound);
+            vnStore->vnDump(vnStore->m_compiler, vnBound);
             if (arrOper != GT_NONE)
             {
                 printf(vnStore->VNFuncName((VNFunc)arrOper));
-                vnStore->vnDump(vnStore->m_pComp, arrOp);
+                vnStore->vnDump(vnStore->m_compiler, arrOp);
             }
-        }
-#endif
-    };
-
-    struct ConstantBoundInfo
-    {
-        // 100 > vnOp
-        int      constVal;
-        unsigned cmpOper;
-        ValueNum cmpOpVN;
-        bool     isUnsigned;
-
-        ConstantBoundInfo()
-            : constVal(0)
-            , cmpOper(GT_NONE)
-            , cmpOpVN(NoVN)
-            , isUnsigned(false)
-        {
-        }
-
-#ifdef DEBUG
-        void dump(ValueNumStore* vnStore)
-        {
-            vnStore->vnDump(vnStore->m_pComp, cmpOpVN);
-            printf(" ");
-            printf(vnStore->VNFuncName((VNFunc)cmpOper));
-            printf(" ");
-            printf("%d", constVal);
         }
 #endif
     };
@@ -1172,9 +1144,6 @@ public:
 
     // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
     bool IsVNConstantBoundUnsigned(ValueNum vn);
-
-    // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
-    void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
 
     // If "vn" is of the form "(uint)var < (uint)len" (or equivalent) return true.
     bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);

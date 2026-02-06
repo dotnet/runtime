@@ -383,7 +383,7 @@ namespace System.Runtime.InteropServices
             // If the memory is empty, just return an empty array as the enumerable.
             if (length is 0 || obj is null)
             {
-                return Array.Empty<T>();
+                return [];
             }
 
             // If the object is a string, we can optimize. If it isn't a slice, just return the string as the

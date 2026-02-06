@@ -97,7 +97,7 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, TARGET,            _target)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
-DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
 DEFINE_FIELD(APPCONTEXT, FIRST_CHANCE_EXCEPTION,        FirstChanceException)
@@ -199,9 +199,6 @@ DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
 DEFINE_FIELD(HANDLE_REF,            HANDLE,                 _handle)
 
-DEFINE_CLASS(CRITICAL_FINALIZER_OBJECT, ConstrainedExecution, CriticalFinalizerObject)
-DEFINE_METHOD(CRITICAL_FINALIZER_OBJECT, FINALIZE,          Finalize,                   IM_RetVoid)
-
 DEFINE_CLASS_U(Reflection,             RuntimeConstructorInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(CONSTRUCTOR,           Reflection,             RuntimeConstructorInfo)
@@ -214,25 +211,9 @@ DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,              
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
-DEFINE_CLASS_U(Globalization,          CultureInfo,        CultureInfoBaseObject)
-DEFINE_FIELD_U(_compareInfo,       CultureInfoBaseObject,  _compareInfo)
-DEFINE_FIELD_U(_textInfo,          CultureInfoBaseObject,  _textInfo)
-DEFINE_FIELD_U(_numInfo,           CultureInfoBaseObject,  _numInfo)
-DEFINE_FIELD_U(_dateTimeInfo,      CultureInfoBaseObject,  _dateTimeInfo)
-DEFINE_FIELD_U(_calendar,          CultureInfoBaseObject,  _calendar)
-DEFINE_FIELD_U(_consoleFallbackCulture, CultureInfoBaseObject, _consoleFallbackCulture)
-DEFINE_FIELD_U(_name,             CultureInfoBaseObject,  _name)
-DEFINE_FIELD_U(_nonSortName,      CultureInfoBaseObject,  _nonSortName)
-DEFINE_FIELD_U(_sortName,         CultureInfoBaseObject,  _sortName)
-DEFINE_FIELD_U(_parent,           CultureInfoBaseObject,  _parent)
-DEFINE_FIELD_U(_isReadOnly,        CultureInfoBaseObject,  _isReadOnly)
-DEFINE_FIELD_U(_isInherited,      CultureInfoBaseObject,  _isInherited)
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
-DEFINE_FIELD(CULTURE_INFO,          CURRENT_CULTURE,        s_userDefaultCulture)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
-DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
-DEFINE_FIELD(CULTURE_INFO,          UI_CULTURE,             s_currentThreadUICulture)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_UI_CULTURE,   CurrentUICulture,   CultureInfo)
 
@@ -340,8 +321,6 @@ DEFINE_METHOD(VALUETASK_1, GET_RESULT, get_Result, NoSig)
 DEFINE_METHOD(VALUETASK_1, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
-DEFINE_METHOD(VALUETASK, FROM_EXCEPTION, FromException, SM_Exception_RetValueTask)
-DEFINE_METHOD(VALUETASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
 DEFINE_METHOD(VALUETASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
@@ -351,8 +330,6 @@ DEFINE_METHOD(VALUETASK, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
 
 DEFINE_CLASS(TASK, Tasks, Task)
-DEFINE_METHOD(TASK, FROM_EXCEPTION, FromException, SM_Exception_RetTask)
-DEFINE_METHOD(TASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetTaskOfT)
 DEFINE_METHOD(TASK, FROM_RESULT_T, FromResult, GM_T_RetTaskOfT)
 DEFINE_METHOD(TASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetTask)
 DEFINE_METHOD(TASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
@@ -610,7 +587,6 @@ DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_OPENED,            CtorColl
 DEFINE_METHOD(MULTICAST_DELEGATE,   CTOR_COLLECTIBLE_VIRTUAL_DISPATCH,  CtorCollectibleVirtualDispatch,        IM_Obj_IntPtr_IntPtr_IntPtr_RetVoid)
 
 DEFINE_CLASS(NULL,                  System,                 DBNull)
-DEFINE_FIELD(NULL,                  VALUE,          Value)
 
 DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
@@ -889,10 +865,13 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
+DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
+DEFINE_CLASS(SWIFT_SELF_T,                   Swift,                  SwiftSelf`1)
+DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
+DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndirectResult)
+
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
-
-DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(rgiOffset,                  StackFrameHelper,   rgiOffset)
@@ -1000,12 +979,8 @@ DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePoo
 DEFINE_METHOD(AUTORELEASEPOOL,      DRAINAUTORELEASEPOOL,   DrainAutoreleasePool,   SM_RetVoid)
 #endif // FEATURE_OBJCMARSHAL
 
-DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
-
-
 DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
-DEFINE_PROPERTY(TYPE,               IS_IMPORT,              IsImport,                   Bool)
 
 DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
 
@@ -1027,16 +1002,16 @@ DEFINE_FIELD_U(_id,                         AssemblyLoadContextBaseObject, _id)
 DEFINE_FIELD_U(_state,                      AssemblyLoadContextBaseObject, _state)
 DEFINE_FIELD_U(_isCollectible,              AssemblyLoadContextBaseObject, _isCollectible)
 DEFINE_CLASS(ASSEMBLYLOADCONTEXT,  Loader,                AssemblyLoadContext)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,          Resolve,                      SM_IntPtr_AssemblyName_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVE,                       Resolve,                       SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmanagedDll,           SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_Str_AssemblyBase_IntPtr_RetIntPtr)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingEvent,             SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid)
 DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,              AssemblyLoad)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,           OnAssemblyLoad,             SM_Assembly_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,        OnResourceResolve,          SM_Assembly_Str_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,            OnTypeResolve,              SM_Assembly_Str_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolve,          SM_Assembly_Str_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,           OnAssemblyLoad,             SM_PtrAssembly_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,        OnResourceResolve,          SM_PtrAssembly_PtrByte_PtrAssembly_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,            OnTypeResolve,              SM_PtrAssembly_PtrByte_PtrAssembly_PtrException_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolve,          SM_PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoad,          SM_RefGuid_RefGuid_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_RefGuid_RetVoid)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_RetVoid)
@@ -1187,6 +1162,9 @@ DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE,  ConvertCon
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManaged,               SM_ICustomMarshaler_RefObj_PtrIntPtr_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)
@@ -1250,13 +1228,6 @@ DEFINE_METHOD(LOADERALLOCATOR,          CTOR,                   .ctor,          
 DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocatorScoutObject)
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
 DEFINE_CLASS(LOADERALLOCATORSCOUT,      Reflection,             LoaderAllocatorScout)
-
-DEFINE_CLASS(CONTRACTEXCEPTION,     CodeContracts,  ContractException)
-
-DEFINE_CLASS_U(CodeContracts,       ContractException,          ContractExceptionObject)
-DEFINE_FIELD_U(_kind,               ContractExceptionObject,    _Kind)
-DEFINE_FIELD_U(_userMessage,        ContractExceptionObject,    _UserMessage)
-DEFINE_FIELD_U(_condition,          ContractExceptionObject,    _Condition)
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
 

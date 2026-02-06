@@ -1,95 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, CharPtrPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
+import type { CharPtrPtr, VoidPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
-
-const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function registerPdbBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
-    // WASM-TODO: https://github.com/dotnet/runtime/issues/122921
-}
-
-export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
-    const sp = _ems_.stackSave();
-    try {
-        const sizeOfPtr = 4;
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
-        if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
-            throw new Error("posix_memalign failed");
-        }
-
-        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.HEAPU8.set(bytes, ptr >>> 0);
-        loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
-        if (!asset.virtualPath.startsWith("/")) {
-            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
-        }
-    } finally {
-        _ems_.stackRestore(sp);
-    }
-}
-
-export function loadIcuData(bytes: Uint8Array) {
-    const sp = _ems_.stackSave();
-    try {
-        const sizeOfPtr = 4;
-        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
-        if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
-            throw new Error("posix_memalign failed for ICU data");
-        }
-
-        const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
-        _ems_.HEAPU8.set(bytes, ptr >>> 0);
-
-        const result = _ems_._wasm_load_icu_data(ptr as unknown as VoidPtr);
-        if (!result) {
-            throw new Error("Failed to initialize ICU data");
-        }
-    } finally {
-        _ems_.stackRestore(sp);
-    }
-}
-
-export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
-    const virtualName: string = typeof (asset.virtualPath) === "string"
-        ? asset.virtualPath
-        : asset.name;
-    const lastSlash = virtualName.lastIndexOf("/");
-    let parentDirectory = (lastSlash > 0)
-        ? virtualName.substring(0, lastSlash)
-        : null;
-    let fileName = (lastSlash > 0)
-        ? virtualName.substring(lastSlash + 1)
-        : virtualName;
-    if (fileName.startsWith("/"))
-        fileName = fileName.substring(1);
-    if (parentDirectory) {
-        if (!parentDirectory.startsWith("/"))
-            parentDirectory = "/" + parentDirectory;
-
-        if (parentDirectory.startsWith("/managed")) {
-            throw new Error("Cannot create files under /managed virtual directory as it is reserved for NodeFS mounting");
-        }
-
-        _ems_.dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
-
-        _ems_.FS.createPath(
-            "/", parentDirectory, true, true // fixme: should canWrite be false?
-        );
-    } else {
-        parentDirectory = "/";
-    }
-
-    _ems_.dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
-
-    _ems_.FS.createDataFile(
-        parentDirectory, fileName,
-        bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-    );
-}
-
+import { browserVirtualAppBase } from "./per-module";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
@@ -108,14 +22,15 @@ export function initializeCoreCLR(): number {
             runtimeConfigProperties.set(key, "" + value);
         }
     }
-    const assemblyPaths = loaderConfig.resources!.assembly.map(a => "/" + a.virtualPath);
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(a => "/" + a.virtualPath);
+
+    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath);
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath);
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
     runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
-    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, "/");
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserVirtualAppBase);
     runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
     runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
 
@@ -141,24 +56,6 @@ export function initializeCoreCLR(): number {
         _ems_._free(buf as any);
     }
     return res;
-}
-
-// bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
-    const path = _ems_.UTF8ToString(pathPtr);
-    const assembly = loadedAssemblies.get(path);
-    if (assembly) {
-        _ems_.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
-        // int64_t target
-        _ems_.HEAPU32[outSize as any >>> 2] = assembly.length;
-        _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
-        return true;
-    }
-    _ems_.dotnetLogger.debug(`Assembly not found: '${path}'`);
-    _ems_.HEAPU32[outDataStartPtr as any >>> 2] = 0;
-    _ems_.HEAPU32[outSize as any >>> 2] = 0;
-    _ems_.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
-    return false;
 }
 
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
@@ -200,12 +97,12 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
             _ems_.stackRestore(sp);
         }
     } catch (error: any) {
-        // if the error is an ExitStatus, use its status code
-        if (error && typeof error.status === "number") {
-            return error.status;
+        // do not propagate ExitStatus exception
+        if (!error || typeof error.status !== "number") {
+            _ems_.dotnetApi.exit(1, error);
+            throw error;
         }
-        _ems_.dotnetApi.exit(1, error);
-        throw error;
+        return error.status;
     }
 }
 
@@ -215,10 +112,11 @@ export async function runMainAndExit(mainAssemblyName?: string, args?: string[])
         _ems_.dotnetApi.exit(0, null);
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (error.status === undefined) {
+        if (!error || typeof error.status !== "number") {
             _ems_.dotnetApi.exit(1, error);
             throw error;
         }
+        return error.status;
     }
     return res;
 }

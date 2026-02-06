@@ -5,7 +5,8 @@ import type { check, error, info, warn, debug, fastCheck } from "../../../../cor
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
 
-import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, registerPdbBytes } from "../../../../corehost/browserhost/host/host";
+import type { initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
+import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes } from "../../../../corehost/browserhost/host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
@@ -94,6 +95,7 @@ export type BrowserHostExports = {
     loadIcuData: typeof loadIcuData
     initializeCoreCLR: typeof initializeCoreCLR
     registerPdbBytes: typeof registerPdbBytes
+    instantiateWasm: typeof instantiateWasm
 }
 
 export type BrowserHostExportsTable = [
@@ -102,6 +104,7 @@ export type BrowserHostExportsTable = [
     typeof loadIcuData,
     typeof initializeCoreCLR,
     typeof registerPdbBytes,
+    typeof instantiateWasm,
 ]
 
 export type InteropJavaScriptExports = {
