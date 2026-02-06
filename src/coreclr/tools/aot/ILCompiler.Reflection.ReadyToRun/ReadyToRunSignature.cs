@@ -2043,6 +2043,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("STACK_PROBE");
                     break;
 
+                case ReadyToRunHelper.AllocContinuation:
+                    builder.Append("ALLOC_CONTINUATION");
+                    break;
+                case ReadyToRunHelper.AllocContinuationMethod:
+                    builder.Append("ALLOC_CONTINUATION_METHOD");
+                    break;
+                case ReadyToRunHelper.AllocContinuationClass:
+                    builder.Append("ALLOC_CONTINUATION_CLASS");
+                    break;
+
                 default:
                     throw new BadImageFormatException(helperType.ToString());
             }
