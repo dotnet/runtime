@@ -199,7 +199,10 @@ static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer
 {
     int res = WideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
     if (res == 0)
+    {
+        if (buffer != NULL) buffer[0] = '\0';
         return "";
+    }
     return buffer;
 }
 
