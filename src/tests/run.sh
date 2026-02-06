@@ -203,8 +203,8 @@ do
     esac
 done
 
-# Set default for RunWithNode when using wasm architecture
-if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNode" ]; then
+# Set default for RunWithNodeJS when using wasm architecture
+if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNodeJS" ]; then
     export RunWithNodeJS=1
 fi
 
