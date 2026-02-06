@@ -44,15 +44,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the tracked steps show the generator didn't re-run
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
-            {
-                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
-                    step =>
-                    {
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
-                    });
-            }
+            Assert.True(trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform));
+            Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                });
         }
 
         [Fact]
@@ -91,15 +89,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the generator didn't re-run
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
-            {
-                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
-                    step =>
-                    {
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
-                    });
-            }
+            Assert.True(trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform));
+            Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                });
         }
 
         [Fact]
@@ -139,22 +135,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the original method wasn't regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
-            {
-                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
-                    step =>
-                    {
-                        // First method should be unchanged
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
-                    },
-                    step =>
-                    {
-                        // Second method is new
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
-                    });
-            }
+            Assert.True(trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform));
+            Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
+                step =>
+                {
+                    // First method should be unchanged
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                },
+                step =>
+                {
+                    // Second method is new
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.New, output.Reason));
+                });
         }
 
         [Fact]
@@ -197,15 +191,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the method was regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
-            {
-                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
-                    step =>
-                    {
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
-                    });
-            }
+            Assert.True(trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform));
+            Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                });
         }
 
         [Fact]
@@ -252,15 +244,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             // Verify the logger message wasn't regenerated
             var trackedSteps = runResult.TrackedSteps;
-            if (trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform))
-            {
-                Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
-                    step =>
-                    {
-                        Assert.Collection(step.Outputs,
-                            output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
-                    });
-            }
+            Assert.True(trackedSteps.ContainsKey(LoggerMessageGenerator.StepNames.LoggerMessageTransform));
+            Assert.Collection(trackedSteps[LoggerMessageGenerator.StepNames.LoggerMessageTransform],
+                step =>
+                {
+                    Assert.Collection(step.Outputs,
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                });
         }
     }
 }
