@@ -4,6 +4,8 @@
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
+    <BuildRuntimeDependsOnTargets>GetPgoDataPackagePath</BuildRuntimeDependsOnTargets>
+    <BuildRuntimeDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildRuntimeDependsOnTargets);GenerateEmccExports</BuildRuntimeDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,11 +13,11 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
   
   <Target Name="BuildRuntime"
-          DependsOnTargets="GetPgoDataPackagePath;GenerateEmccExports"
+          DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
       <_CMakeArgs Include="$(CMakeArgs)" />
@@ -114,7 +116,9 @@
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
     <Message Text="Executing $(_CoreClrBuildCommand)" Importance="High" />
     <Exec Command="$(_CoreClrBuildCommand)"
-          IgnoreStandardErrorWarningFormat="true" />
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="EMSDK_PATH=$(EMSDK_PATH)"
+          />
   </Target>
 
   <Target Name="CreateNativeAotBreadcrumbs"
