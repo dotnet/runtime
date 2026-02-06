@@ -65,7 +65,7 @@ LIR::Range& WasmRegAlloc::CurrentRange()
 }
 
 //------------------------------------------------------------------------
-// IdentifyCandidates: Identify locals eligile for register allocation.
+// IdentifyCandidates: Identify locals eligible for register allocation.
 //
 // Also allocate them to virtual registers.
 //
