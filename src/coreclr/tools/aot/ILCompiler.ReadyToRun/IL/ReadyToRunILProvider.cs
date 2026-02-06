@@ -129,6 +129,9 @@ namespace Internal.IL
         // This method is order dependent, and must be called during the single threaded portion of compilation
         public void CreateCrossModuleInlineableTokensForILBody(MethodDesc method)
         {
+            // This method accepts only method definitions, but accepts non-primary method definitions.
+            // That is, it must not be generic, but it may represent an AsyncVariant
+            Debug.Assert(method.IsTypicalMethodDefinition);
             Debug.Assert(_manifestMutableModule != null);
             var wrappedMethodIL = new ManifestModuleWrappedMethodIL();
 
@@ -146,7 +149,7 @@ namespace Internal.IL
             {
                 if (!wrappedMethodIL.Initialize(_manifestMutableModule,
                     AsyncThunkILEmitter.EmitAsyncMethodThunk(method, method.GetTargetOfAsyncVariant()),
-                    (EcmaMethod)method.GetTargetOfAsyncVariant(),
+                    method,
                     false))
                 {
                     // If we could not initialize the wrapped method IL, we should store a null.
@@ -160,7 +163,7 @@ namespace Internal.IL
                 if (!wrappedMethodIL.Initialize(
                     _manifestMutableModule,
                     ars.EmitIL(),
-                    (EcmaMethod)ars.TargetMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition(),
+                    ars,
                     false))
                 {
                     // If we could not initialize the wrapped method IL, we should store a null.
@@ -304,7 +307,7 @@ namespace Internal.IL
         {
             int _maxStack;
             bool _isInitLocals;
-            EcmaMethod _owningMethod;
+            MethodDesc _owningMethod;
             ILExceptionRegion[] _exceptionRegions;
             byte[] _ilBytes;
             LocalVariableDefinition[] _locals;
@@ -319,8 +322,9 @@ namespace Internal.IL
                 return Initialize(mutableModule, wrappedMethod, wrappedMethod.OwningMethod, true);
             }
 
-            public bool Initialize(MutableModule mutableModule, MethodIL wrappedMethod, EcmaMethod owningMethod, bool validateStandaloneMetadata)
+            public bool Initialize(MutableModule mutableModule, MethodIL wrappedMethod, MethodDesc owningMethod, bool validateStandaloneMetadata)
             {
+                Debug.Assert(owningMethod.IsTypicalMethodDefinition);
                 HashSet<MethodDesc> methodsWhichCannotHaveAsyncVariants = null;
                 _methodsWithAsyncVariants = null;
 
@@ -331,7 +335,7 @@ namespace Internal.IL
                 try
                 {
                     Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = owningMethod.Module;
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)owningMethod.GetPrimaryMethodDesc()).Module;
                     var owningMethodHandle = mutableModule.TryGetEntityHandle(owningMethod);
                     if (!owningMethodHandle.HasValue)
                         return false;
@@ -360,7 +364,7 @@ namespace Internal.IL
                     ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
 #if DEBUG
                     if (validateStandaloneMetadata)
-                        Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute(_owningMethod) != null);
+                        Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute((EcmaMethod)_owningMethod.GetPrimaryMethodDesc()) != null);
 #endif // DEBUG
                 }
                 finally
