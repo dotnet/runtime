@@ -645,7 +645,7 @@ namespace System.Reflection.Emit
             int stackChange = 0;
 
             // Push the return value if there is one.
-            if (methodInfo.ReturnType != voidType)
+            if (methodInfo.ReturnType.UnderlyingSystemType != voidType)
             {
                 stackChange++;
             }
