@@ -395,6 +395,77 @@ if (-not $vmrCommit -or -not $vmrBranch) {
     }
 }
 
+# For backflow: compare against VMR (dotnet/dotnet) branch HEAD
+# For forward flow: compare against product repo branch HEAD
+$freshnessRepo = if ($isForwardFlow) { $sourceRepo } else { "dotnet/dotnet" }
+$freshnessRepoLabel = if ($isForwardFlow) { $sourceRepo } else { "VMR" }
+
+# Pre-load PR commits for use in validation and later analysis
+$prCommits = $pr.commits
+
+# --- Step 2b: Cross-reference PR body snapshot against actual branch commits ---
+$branchVmrCommit = $null
+if ($prCommits) {
+    # Look through PR branch commits (newest first) for "Backflow from" or "Forward flow from" messages
+    # containing the actual VMR/source SHA that was used to create the branch content
+    $reversedCommits = @($prCommits)
+    [Array]::Reverse($reversedCommits)
+    foreach ($c in $reversedCommits) {
+        $msg = $c.messageHeadline
+        # Backflow commits: "Backflow from https://github.com/dotnet/dotnet / <sha> build <id>"
+        if ($msg -match '(?:Backflow|Forward flow) from .+ / ([a-f0-9]+)') {
+            $branchVmrCommit = $Matches[1]
+            break
+        }
+    }
+}
+
+if ($branchVmrCommit -or $vmrCommit) {
+    Write-Section "Snapshot Validation"
+    if ($branchVmrCommit -and $vmrCommit) {
+        $bodyShort = Get-ShortSha $vmrCommit
+        $branchShort = $branchVmrCommit  # already short from commit message
+        if ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit)) {
+            Write-Host "  ✅ PR body snapshot ($bodyShort) matches branch commit ($branchShort)" -ForegroundColor Green
+        }
+        else {
+            Write-Host "  ⚠️  MISMATCH: PR body claims $(Get-ShortSha $vmrCommit) but branch commit references $branchVmrCommit" -ForegroundColor Red
+            Write-Host "  The PR body may be stale — using branch commit ($branchVmrCommit) for freshness check" -ForegroundColor Yellow
+            # Resolve the short SHA from the branch commit to a full SHA for accurate comparison
+            $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
+            if ($resolvedCommit) {
+                $vmrCommit = $resolvedCommit.sha
+            }
+            else {
+                Write-Host "  ⚠️  Could not resolve branch commit SHA $branchVmrCommit — falling back to PR body" -ForegroundColor Yellow
+            }
+        }
+    }
+    elseif ($branchVmrCommit -and -not $vmrCommit) {
+        Write-Host "  ⚠️  PR body has no commit reference, but branch commit references $branchVmrCommit" -ForegroundColor Yellow
+        Write-Host "  Using branch commit for freshness check" -ForegroundColor Yellow
+        $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
+        if ($resolvedCommit) {
+            $vmrCommit = $resolvedCommit.sha
+        }
+    }
+    elseif ($vmrCommit -and -not $branchVmrCommit) {
+        $commitCount = if ($prCommits) { $prCommits.Count } else { 0 }
+        if ($commitCount -eq 1) {
+            $firstMsg = $prCommits[0].messageHeadline
+            if ($firstMsg -match "^Initial commit for subscription") {
+                Write-Host "  ℹ️  PR has only an initial subscription commit — PR body snapshot ($(Get-ShortSha $vmrCommit)) not yet verifiable from branch" -ForegroundColor DarkGray
+            }
+            else {
+                Write-Host "  ⚠️  No VMR SHA found in branch commit messages — trusting PR body ($(Get-ShortSha $vmrCommit))" -ForegroundColor Yellow
+            }
+        }
+        else {
+            Write-Host "  ⚠️  No VMR SHA found in $commitCount branch commit messages — trusting PR body ($(Get-ShortSha $vmrCommit))" -ForegroundColor Yellow
+        }
+    }
+}
+
 # --- Step 3: Check source freshness ---
 $freshnessLabel = if ($isForwardFlow) { "Source Freshness" } else { "VMR Freshness" }
 Write-Section $freshnessLabel
@@ -404,11 +475,6 @@ $aheadBy = 0
 $behindBy = 0
 $compareStatus = $null
 
-# For backflow: compare against VMR (dotnet/dotnet) branch HEAD
-# For forward flow: compare against product repo branch HEAD
-$freshnessRepo = if ($isForwardFlow) { $sourceRepo } else { "dotnet/dotnet" }
-$freshnessRepoLabel = if ($isForwardFlow) { $sourceRepo } else { "VMR" }
-
 if ($vmrCommit -and $vmrBranch) {
     # Get current branch HEAD (URL-encode branch name for path segments with /)
     $encodedBranch = [uri]::EscapeDataString($vmrBranch)
@@ -416,7 +482,12 @@ if ($vmrCommit -and $vmrBranch) {
     if ($branchHead) {
         $sourceHeadSha = $branchHead.sha
         $sourceHeadDate = $branchHead.commit.committer.date
-        Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) (from PR body)"
+        $snapshotSource = if ($branchVmrCommit -and -not ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit))) {
+            "from branch commit"
+        } else {
+            "from PR body"
+        }
+        Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) ($snapshotSource)"
         Write-Status "$freshnessRepoLabel HEAD" "$(Get-ShortSha $sourceHeadSha) ($sourceHeadDate)"
 
         if ($vmrCommit -eq $sourceHeadSha) {
@@ -539,8 +610,8 @@ else {
     Write-Warning "Cannot check freshness without source commit and branch info"
 }
 
-# --- Step 4: Check staleness warnings (using comments from gh pr view) ---
-Write-Section "Staleness Check"
+# --- Step 4: Check staleness and conflict warnings (using comments from gh pr view) ---
+Write-Section "Staleness & Conflict Check"
 
 $stalenessWarnings = @()
 $lastStalenessComment = $null
@@ -557,33 +628,84 @@ if ($pr.comments) {
     }
 }
 
-if ($stalenessWarnings.Count -gt 0) {
-    Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
-    Write-Status "Latest warning" $lastStalenessComment.createdAt
-    $oppositeFlow = if ($isForwardFlow) { "backflow from VMR merged into $sourceRepo" } else { "forward flow merged into VMR" }
-    Write-Host "  Opposite codeflow ($oppositeFlow) while this PR was open." -ForegroundColor Yellow
-    Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
+$conflictWarnings = @()
+$lastConflictComment = $null
 
-    # Extract darc commands from the warning
-    if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-f0-9-]+)(?:\s+--force)?') {
-        Write-Host ""
-        Write-Host "  Suggested commands from Maestro:" -ForegroundColor White
-        if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+)\s*\n') {
-            Write-Host "    Normal trigger: $($Matches[1])"
-        }
-        if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+ --force)') {
-            Write-Host "    Force trigger:  $($Matches[1])"
+if ($pr.comments) {
+    foreach ($comment in $pr.comments) {
+        $commentAuthor = $comment.author.login
+        if ($commentAuthor -eq "dotnet-maestro[bot]" -or $commentAuthor -eq "dotnet-maestro") {
+            if ($comment.body -match "Conflict detected") {
+                $conflictWarnings += $comment
+                $lastConflictComment = $comment
+            }
         }
     }
 }
+
+if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
+    if ($conflictWarnings.Count -gt 0) {
+        Write-Host "  🔴 Conflict detected ($($conflictWarnings.Count) conflict warning(s))" -ForegroundColor Red
+        Write-Status "Latest conflict" $lastConflictComment.createdAt
+
+        # Extract conflicting files
+        $conflictFiles = @()
+        $fileMatches = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\n')
+        foreach ($fm in $fileMatches) {
+            $conflictFiles += $fm.Groups[1].Value
+        }
+        if ($conflictFiles.Count -gt 0) {
+            Write-Host "  Conflicting files:" -ForegroundColor Yellow
+            foreach ($f in $conflictFiles) {
+                Write-Host "    - $f" -ForegroundColor Yellow
+            }
+        }
+
+        # Extract VMR commit from the conflict comment
+        if ($lastConflictComment.body -match 'sources from \[`([a-f0-9]+)`\]') {
+            Write-Host "  Conflicting VMR commit: $($Matches[1])" -ForegroundColor DarkGray
+        }
+
+        # Extract resolve command
+        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-f0-9-]+)') {
+            Write-Host ""
+            Write-Host "  Resolve command:" -ForegroundColor White
+            Write-Host "    $($Matches[1])" -ForegroundColor DarkGray
+        }
+    }
+
+    if ($stalenessWarnings.Count -gt 0) {
+        if ($conflictWarnings.Count -gt 0) { Write-Host "" }
+        Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
+        Write-Status "Latest warning" $lastStalenessComment.createdAt
+        $oppositeFlow = if ($isForwardFlow) { "backflow from VMR merged into $sourceRepo" } else { "forward flow merged into VMR" }
+        Write-Host "  Opposite codeflow ($oppositeFlow) while this PR was open." -ForegroundColor Yellow
+        Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
+
+        # Extract darc commands from the warning
+        if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-f0-9-]+)(?:\s+--force)?') {
+            Write-Host ""
+            Write-Host "  Suggested commands from Maestro:" -ForegroundColor White
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+)\s*\n') {
+                Write-Host "    Normal trigger: $($Matches[1])"
+            }
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+ --force)') {
+                Write-Host "    Force trigger:  $($Matches[1])"
+            }
+        }
+    }
+
+    if ($conflictWarnings.Count -eq 0 -and $stalenessWarnings.Count -eq 0) {
+        Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
+    }
+}
 else {
-    Write-Host "  ✅ No staleness warnings found" -ForegroundColor Green
+    Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
 }
 
 # --- Step 5: Analyze PR branch commits (using commits from gh pr view) ---
 Write-Section "PR Branch Analysis"
 
-$prCommits = $pr.commits
 if ($prCommits) {
     $maestroCommits = @()
     $manualCommits = @()
@@ -765,6 +887,16 @@ Write-Section "Recommendations"
 $issues = @()
 
 # Summarize issues
+if ($conflictWarnings.Count -gt 0) {
+    $conflictFileList = @()
+    if ($lastConflictComment) {
+        $fileMatches2 = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\n')
+        foreach ($fm in $fileMatches2) { $conflictFileList += $fm.Groups[1].Value }
+    }
+    $fileHint = if ($conflictFileList.Count -gt 0) { " in $($conflictFileList -join ', ')" } else { "" }
+    $issues += "Conflict detected$fileHint — manual resolution required"
+}
+
 if ($stalenessWarnings.Count -gt 0) {
     $issues += "Staleness warning active — codeflow is blocked"
 }
@@ -797,7 +929,14 @@ else {
     Write-Host ""
     Write-Host "  Options:" -ForegroundColor White
 
-    if ($stalenessWarnings.Count -gt 0 -and $manualCommits.Count -gt 0) {
+    if ($conflictWarnings.Count -gt 0) {
+        Write-Host "    1. Resolve conflicts — follow the darc vmr resolve-conflict instructions above" -ForegroundColor White
+        if ($subscriptionId) {
+            Write-Host "       darc vmr resolve-conflict --subscription $subscriptionId" -ForegroundColor DarkGray
+        }
+        Write-Host "    2. Close & reopen — abandon this PR and let Maestro create a fresh one" -ForegroundColor White
+    }
+    elseif ($stalenessWarnings.Count -gt 0 -and $manualCommits.Count -gt 0) {
         Write-Host "    1. Merge as-is — keep manual commits, get remaining changes in next codeflow PR" -ForegroundColor White
         Write-Host "    2. Force trigger — updates codeflow but may revert manual commits" -ForegroundColor White
         if ($subscriptionId) {
