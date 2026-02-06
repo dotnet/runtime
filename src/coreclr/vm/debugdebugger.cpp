@@ -296,6 +296,7 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 
     OBJECTREF pException = (OBJECTREF)exception.Get();
     _ASSERTE(pException != NULL);
+
     // populate exception with information from the continuation object
     EECodeInfo codeInfo((PCODE)diagnosticIP);
     _ASSERTE(codeInfo.IsValid());
@@ -1082,7 +1083,7 @@ bool CheckNativeToILCacheCore(void* ip, bool fAdjustOffset, uint32_t* pILOffset)
     // Check the cache for the IP
     int hashCode = MixPointerIntoHash(ip);
     StackWalkNativeToILCacheEntry* cacheTable = VolatileLoad(&s_stackWalkCache);
-    
+
     if (cacheTable == NULL)
     {
         // Cache is not initialized
@@ -1155,7 +1156,7 @@ void InsertIntoNativeToILCache(void* ip, bool fAdjustOffset, uint32_t dwILOffset
     }
 
     // Insert the IP and IL offset into the cache
-    
+
     LONG versionStart = VolatileLoadWithoutBarrier(&s_stackWalkNativeToILCacheVersion);
     if ((versionStart & 1) == 1)
     {
@@ -1287,7 +1288,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
             // We are looking for an IL offset, and all IL offsets are are about portions of the method that are after the native offset we were passed initially.
             // Treat this like a PROLOG and set the IL offset to 0
             pWalkData->dwFinalILOffset = 0;
-            return 1; 
+            return 1;
         }
         pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
     }
@@ -1300,7 +1301,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
             if (pWalkData->skipPrologCase)
             {
                 if (pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::NO_MAPPING &&
-                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::PROLOG && 
+                    pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::PROLOG &&
                     pWalkData->prevILOffsetFound != (DWORD)ICorDebugInfo::EPILOG)
                 {
                     // We found a valid IL offset after the prolog, so set the final IL offset to the one we found
@@ -1390,19 +1391,19 @@ void ValidateILOffset(MethodDesc *pFunc, uint8_t* ip)
 
     DWORD dwILOffsetDebugInterface = 0;
     DWORD dwILOffsetWalk = 0;
-    
+
     bool bResGetILOffsetFromNative = g_pDebugInterface->GetILOffsetFromNative(
         pFunc,
         (LPCBYTE)ip,
         dwNativeOffset,
         &dwILOffsetDebugInterface);
-        
+
     WalkILOffsetsData data(dwNativeOffset);
     TADDR startAddress = codeInfo.GetStartAddress();
     DebugInfoRequest request;
     request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
     bool bWalkILOffsets;
-    
+
     if (pFunc->IsDynamicMethod())
     {
         bWalkILOffsets = false;
@@ -1648,7 +1649,7 @@ int32_t ILToNativeMapArrays::CompareILOffsets(uint32_t ilOffsetA, uint32_t ilOff
 {
     if (ilOffsetA == ilOffsetB)
     {
-        return 0; 
+        return 0;
     }
 
     if (ilOffsetA == (uint32_t)ICorDebugInfo::PROLOG)
@@ -1740,7 +1741,7 @@ int32_t ILToNativeMapArrays::Partition(uint32_t* rguiNativeOffset, uint32_t *rgu
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Choose the pivot as the middle element and 
+    // Choose the pivot as the middle element and
     // pull the pivot the the end of the array.
     Swap(rguiNativeOffset, rguiILOffset, low + (high - low) / 2, high);
 
@@ -1802,7 +1803,7 @@ void ILToNativeMapArrays::AddEntry(ICorDebugInfo::OffsetMapping *pOffsetMapping)
         if (callInstrSequence < 2)
         {
             // Check to see if we should prefer to drop this mapping in favor of a future mapping.
-            if ((m_rguiILOffset.GetCount() > 0) && 
+            if ((m_rguiILOffset.GetCount() > 0) &&
                 (m_rguiILOffset[m_rguiILOffset.GetCount() - 1] == pOffsetMapping->ilOffset))
             {
                 callInstrSequence = 0;
