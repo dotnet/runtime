@@ -695,11 +695,13 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     }
 #endif // !TARGET_WASM
 
+#ifndef TARGET_WASM
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
+#endif // !TARGET_WASM
 
     return ERROR_SUCCESS;
 }
