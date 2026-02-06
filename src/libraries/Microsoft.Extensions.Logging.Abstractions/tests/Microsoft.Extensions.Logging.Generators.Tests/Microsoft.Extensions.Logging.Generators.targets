@@ -8,7 +8,10 @@
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI>
     <!-- SQLitePCLRaw currently has non-portable RIDs (alpine). Update to newer version once it released.
          https://github.com/ericsink/SQLitePCL.raw/issues/543 -->
-    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+    <!-- SYSLIB1002, SYSLIB1013, SYSLIB1018: WithDiagnostics test files intentionally trigger these for testing.
+         Pragma suppression doesn't work with incremental generators due to trimmed locations (known Roslyn limitation).
+         Suppress at project level instead. -->
+    <NoWarn>$(NoWarn);NETSDK1206;SYSLIB1002;SYSLIB1013;SYSLIB1018</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

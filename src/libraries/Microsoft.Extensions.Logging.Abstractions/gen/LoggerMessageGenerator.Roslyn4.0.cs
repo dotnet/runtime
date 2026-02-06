@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             exceptionSymbol,
                             enumerableSymbol,
                             stringSymbol,
-                            null, // Don't report diagnostics immediately; collect them instead
+                            null, // Don't report diagnostics in transform; they're collected and reported in Execute
                             cancellationToken);
 
                         IReadOnlyList<LoggerClass> logClasses = parser.GetLogClasses(new[] { classDeclaration }, semanticModel);
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
             foreach (var item in items)
             {
-                // Report diagnostics
+                // Report diagnostics (note: pragma suppression doesn't work with trimmed locations - known Roslyn limitation)
                 if (item.Diagnostics is not null)
                 {
                     foreach (var diagnostic in item.Diagnostics)

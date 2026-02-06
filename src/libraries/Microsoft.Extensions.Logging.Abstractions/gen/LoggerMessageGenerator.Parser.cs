@@ -716,11 +716,11 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
-                // Collect for incremental caching
-                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
-
-                // Also report immediately if callback is provided (for Roslyn 3.11 compatibility)
+                // Report immediately if callback is provided (preserves pragma suppression with original locations)
                 _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
+
+                // Also collect for scenarios that need the diagnostics list (currently unused in Roslyn 4.0+ incremental generator)
+                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
             }
 
             private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
