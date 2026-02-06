@@ -679,6 +679,19 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
+        private partial bool TryGetGenericTypeDefinition(TypeProxy type, out TypeProxy? genericTypeDefinition)
+        {
+            TypeDesc typeDefinition = type.Type.GetTypeDefinition();
+            if (type.Type != typeDefinition)
+            {
+                genericTypeDefinition = new TypeProxy(typeDefinition);
+                return true;
+            }
+
+            genericTypeDefinition = null;
+            return false;
+        }
+
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
             if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)

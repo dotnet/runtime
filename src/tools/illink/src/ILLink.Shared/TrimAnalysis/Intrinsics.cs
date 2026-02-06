@@ -269,6 +269,12 @@ namespace ILLink.Shared.TrimAnalysis
                     && !calledMethod.HasMetadataParameters()
                     => IntrinsicId.Type_get_BaseType,
 
+                // System.Type.GetGenericTypeDefinition()
+                "GetGenericTypeDefinition" when calledMethod.IsDeclaredOnType("System.Type")
+                    && calledMethod.HasImplicitThis()
+                    && !calledMethod.HasMetadataParameters()
+                    => IntrinsicId.Type_GetGenericTypeDefinition,
+
                 // System.Type.GetProperty(string)
                 // System.Type.GetProperty(string, BindingFlags)
                 // System.Type.GetProperty(string, Type)
