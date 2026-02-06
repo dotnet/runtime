@@ -1118,6 +1118,7 @@ public:
     bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);
 
     // If "vn" is of the form "len + cns" return true.
+    // NOTE: it accepts "cns + len" and "len - cns" as well ("len - cns" is treated as "len + (-cns)").
     bool IsVNCheckedBoundAddConst(ValueNum vn, ValueNum* checkedBndVN, int* addCns);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.

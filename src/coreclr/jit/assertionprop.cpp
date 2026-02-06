@@ -902,6 +902,10 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                    curAssertion.GetOp2().GetCheckedBoundConstant());
             break;
 
+        case O2K_NEVER_NEGATIVE:
+            printf("(Never_Negative " FMT_VN ")", curAssertion.GetOp2().GetVN());
+            break;
+
         default:
             unreached();
             break;
@@ -1544,7 +1548,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex)
         optMapComplementary(optAddAssertion(reversed), assertionIndex);
     }
     else if (candidateAssertion.KindIs(OAK_LT, OAK_LT_UN, OAK_LE, OAK_LE_UN) &&
-             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+             candidateAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS, O2K_NEVER_NEGATIVE))
     {
         // Assertions such as "X > checkedBndVN" aren't very useful.
         return;
@@ -1641,7 +1645,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the checked bound to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1650,7 +1654,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1663,7 +1667,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the (CheckedBnd + CNS) part to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1672,7 +1676,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> (CheckedBnd + CNS)"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &checkedBndCns))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1686,7 +1690,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
 
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(idxVN, lenVN);
         AssertionIndex index = optAddAssertion(dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -1982,7 +1986,10 @@ void Compiler::optAssertionGen(GenTree* tree)
                 }
                 else
                 {
-                    assertionInfo = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
+                    // GT_BOUNDS_CHECK node provides the following contract:
+                    // * idxVN < lenVN
+                    // * lenVN is non-negative
+                    assertionInfo = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(idxVN, lenVN));
                 }
             }
             break;
@@ -3586,7 +3593,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         //  array[idx] = 42;
         //  array.Length is known to be non-negative and non-zero here
         //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetCheckedBound() == treeVN))
+        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetVN() == treeVN))
         {
             *isKnownNonNegative = true;
             *isKnownNonZero     = true;
@@ -4972,8 +4979,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         }
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion.GetOp2().GetCheckedBound() ==
-            vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
+        if (curAssertion.GetOp2().GetVN() == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]

@@ -7709,8 +7709,12 @@ public:
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
+
+        O2K_NEVER_NEGATIVE,        // Something that is known to be never negative, e.g., array or span length
         O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
                                    // and op2.iconVal holds the "cns".
+                                   // "Checked bound" alone doesn't mean anything (nor it implies that it's never
+                                   // negative)
         O2K_ZEROOBJ,
         O2K_SUBRANGE
     };
@@ -7826,7 +7830,7 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_NEVER_NEGATIVE));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -7972,10 +7976,7 @@ public:
         bool IsBoundsCheckNoThrow() const
         {
             // O1K_VN (idx) u< O2K_VN (len)
-            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) &&
-                   (GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
-                    // We really only want to cover "idx < len" form here, which is represented as "idx < (len + 0)".
-                    GetOp2().GetCheckedBoundConstant() == 0);
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && (GetOp2().KindIs(O2K_NEVER_NEGATIVE));
         }
 
         // Convert VNFunc to optAssertionKind
@@ -8147,6 +8148,9 @@ public:
 
                 case O2K_ZEROOBJ:
                     return true;
+
+                case O2K_NEVER_NEGATIVE:
+                    return GetOp2().GetVN() == that.GetOp2().GetVN();
 
                 case O2K_CHECKED_BOUND_ADD_CNS:
                     return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
@@ -8336,8 +8340,9 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
+        // Effectively, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
@@ -8346,7 +8351,7 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_kind    = O2K_NEVER_NEGATIVE;
             dsc.m_op2.m_vn      = lenVN;
 
             dsc.m_op2.m_icon.m_iconVal = 0;
@@ -8354,10 +8359,13 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(
+            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
+
+            // if cns is 0 and checkedBndVN is never negative, we can convert this into CreateNoThrowArrBnd
 
             AssertionDsc dsc           = {};
             dsc.m_assertionKind        = FromVNFunc(relop);

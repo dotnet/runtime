@@ -939,7 +939,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
             limit   = Limit(Limit::keConstant, static_cast<int>(curAssertion.GetOp2().GetIntConstant()));
 
-            // Make sure we don't deal with negative constants for unsigned comparisons
+            // Make sure we don't deal with non-positive constants for unsigned comparisons
             assert((curAssertion.GetOp2().GetIntConstant() > 0) || !isUnsigned);
         }
         // Current assertion is of the form "i == cns" or "i != cns"
@@ -997,7 +997,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         {
             // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
-            ValueNum lenVN   = curAssertion.GetOp2().GetCheckedBound();
+            ValueNum lenVN   = curAssertion.GetOp2().GetVN();
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)
