@@ -100,7 +100,7 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     return
 }
 
-$prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits 2>&1
+$prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Could not fetch PR #$PRNumber from $Repository. Ensure you are authenticated (gh auth login)."
     return
@@ -195,9 +195,16 @@ if ($repoChanges.Count -gt 0) {
 if (-not $vmrCommit -or -not $vmrBranch) {
     Write-Warning "Could not parse VMR metadata from PR body. This may not be a codeflow PR."
     if (-not $vmrBranch) {
-        # Try to infer from the PR target branch
-        $vmrBranch = $pr.baseRefName
-        Write-Status "Inferred VMR Branch" "$vmrBranch (from PR target)"
+        # For backflow: infer from PR target (which is the product repo branch = VMR branch name)
+        # For forward flow: infer from PR head branch pattern or source repo context
+        if ($isForwardFlow) {
+            $vmrBranch = $pr.headRefName -replace '^darc-', '' -replace '-[a-f0-9-]+$', ''
+            if (-not $vmrBranch) { $vmrBranch = $pr.baseRefName }
+        }
+        else {
+            $vmrBranch = $pr.baseRefName
+        }
+        Write-Status "Inferred Branch" "$vmrBranch (from PR metadata)"
     }
 }
 
@@ -341,7 +348,6 @@ else {
 # --- Step 5: Analyze PR branch commits (using commits from gh pr view) ---
 Write-Section "PR Branch Analysis"
 
-$manualCommits = @()
 $prCommits = $pr.commits
 if ($prCommits) {
     $maestroCommits = @()
@@ -350,12 +356,14 @@ if ($prCommits) {
 
     foreach ($c in $prCommits) {
         $msg = $c.messageHeadline
-        $author = if ($c.authors -and $c.authors.Count -gt 0) { $c.authors[0].name } else { "unknown" }
+        $authorLogin = if ($c.authors -and $c.authors.Count -gt 0) { $c.authors[0].login } else { $null }
+        $authorName = if ($c.authors -and $c.authors.Count -gt 0) { $c.authors[0].name } else { "unknown" }
+        $author = if ($authorLogin) { $authorLogin } else { $authorName }
 
         if ($msg -match "^Merge branch") {
             $mergeCommits += $c
         }
-        elseif ($author -eq "dotnet-maestro[bot]" -or $msg -eq "Update dependencies") {
+        elseif ($author -in @("dotnet-maestro[bot]", "dotnet-maestro") -or $msg -eq "Update dependencies") {
             $maestroCommits += $c
         }
         else {
@@ -454,11 +462,17 @@ if ($TraceFix) {
                     }
 
                     # Now check if the PR's VMR snapshot includes this
-                    if ($vmrCommit) {
+                    # For backflow: $vmrCommit is a VMR SHA, use it directly
+                    # For forward flow: $vmrCommit is a source repo SHA, use PR head commit in dotnet/dotnet instead
+                    $snapshotRef = $vmrCommit
+                    if ($isForwardFlow -and $pr.commits -and $pr.commits.Count -gt 0) {
+                        $snapshotRef = $pr.commits[-1].oid
+                    }
+                    if ($snapshotRef) {
                         Write-Host ""
-                        Write-Host "  Checking if fix is in the PR's VMR snapshot..." -ForegroundColor White
+                        Write-Host "  Checking if fix is in the PR's snapshot..." -ForegroundColor White
 
-                        $snapshotManifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$vmrCommit"
+                        $snapshotManifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$snapshotRef"
                         $snapshotJson = Invoke-GitHubApi $snapshotManifestUrl -Raw
                         if ($snapshotJson) {
                             $snapshotData = $snapshotJson | ConvertFrom-Json
