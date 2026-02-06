@@ -1645,7 +1645,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the checked bound to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1654,7 +1654,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1667,7 +1667,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the (CheckedBnd + CNS) part to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1676,7 +1676,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> (CheckedBnd + CNS)"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &checkedBndCns))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;

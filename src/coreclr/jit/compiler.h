@@ -8354,12 +8354,10 @@ public:
 
         // Create "i <relop> (bnd + cns)" assertion
         static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+            VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
-
-            // if cns is 0 and checkedBndVN is never negative, we can convert this into CreateNoThrowArrBnd
 
             AssertionDsc dsc           = {};
             dsc.m_assertionKind        = FromVNFunc(relop);
