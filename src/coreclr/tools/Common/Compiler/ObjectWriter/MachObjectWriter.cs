@@ -456,10 +456,16 @@ namespace ILCompiler.ObjectWriter
 
             switch (relocType)
             {
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                     // Addend is handled through ARM64_RELOC_ADDEND
+                    fixed (byte* pData = data)
+                    {
+                        addend += Relocation.ReadValue(relocType, pData);
+                        Relocation.WriteValue(relocType, pData, 0);
+                    }
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
