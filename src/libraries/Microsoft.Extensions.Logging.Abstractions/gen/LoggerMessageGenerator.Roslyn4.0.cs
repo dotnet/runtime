@@ -91,15 +91,20 @@ namespace Microsoft.Extensions.Logging.Generators
 
             bool hasStringCreate = false;
             var allLogClasses = new Dictionary<string, LoggerClass>(); // Use dictionary to deduplicate by class key
+            var reportedDiagnostics = new HashSet<DiagnosticInfo>(); // Track reported diagnostics to avoid duplicates
 
             foreach (var item in items)
             {
                 // Report diagnostics (note: pragma suppression doesn't work with trimmed locations - known Roslyn limitation)
+                // Use HashSet to deduplicate - each attributed method triggers parsing of entire class, producing duplicate diagnostics
                 if (item.Diagnostics is not null)
                 {
                     foreach (var diagnostic in item.Diagnostics)
                     {
-                        context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                        if (reportedDiagnostics.Add(diagnostic))
+                        {
+                            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                        }
                     }
                 }
 
