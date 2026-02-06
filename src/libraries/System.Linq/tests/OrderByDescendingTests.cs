@@ -214,7 +214,7 @@ namespace System.Linq.Tests
         [InlineData(1_000_000)]
         public void SortsRandomizedEnumerableCorrectly(int items)
         {
-            if (PlatformDetection.IsBrowser && PlatformDetection.IsCoreClr && items > 1024)
+            if (PlatformDetection.IsBrowser && PlatformDetection.IsCoreCLR && items > 1024)
             {
                 // TODO-WASM too slow https://github.com/dotnet/runtime/issues/123011
                 return;
