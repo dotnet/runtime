@@ -31,20 +31,30 @@ namespace System
             return this.GetType().ToString();
         }
 
-        private const int UseFastHelper = -1;
         private const int GetNumFields = -1;
 
         // An override of this method will be injected by the compiler into all valuetypes that cannot be compared
-        // using a simple memory comparison.
+        // using a simple memory comparison until the last byte as reported by sizeof.
         // This API is a bit awkward because we want to avoid burning more than one vtable slot on this.
+        // The method returns the offset and type handle of the index-th field on this type.
         // When index == GetNumFields, this method is expected to return the number of fields of this
-        // valuetype. Otherwise, it returns the offset and type handle of the index-th field on this type.
+        // valuetype or a negative value. If the value is negative, the struct can be memcompared until
+        // the byte specified by the negated return value.
         internal virtual unsafe int __GetFieldHelper(int index, out MethodTable* mt)
         {
             // Value types that don't override this method will use the fast path that looks at bytes, not fields.
             Debug.Assert(index == GetNumFields);
             mt = default;
-            return UseFastHelper;
+            return -(int)this.GetMethodTable()->ValueTypeSize;
+        }
+
+        private unsafe int GetValueTypeSize(int numFields)
+        {
+            Debug.Assert(numFields < 0);
+            int valueTypeSize = -numFields;
+            Debug.Assert(valueTypeSize <= (int)this.GetMethodTable()->ValueTypeSize);
+
+            return valueTypeSize;
         }
 
         public override unsafe bool Equals([NotNullWhen(true)] object? obj)
@@ -57,14 +67,13 @@ namespace System
             ref byte thisRawData = ref this.GetRawData();
             ref byte thatRawData = ref obj.GetRawData();
 
-            if (numFields == UseFastHelper)
+            if (numFields < 0)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
                 Debug.Assert(!this.GetMethodTable()->ContainsGCPointers);
 
                 // Compare the memory
-                int valueTypeSize = (int)this.GetMethodTable()->ValueTypeSize;
-                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
+                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, GetValueTypeSize(numFields));
             }
             else
             {
@@ -100,10 +109,14 @@ namespace System
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
-            if (numFields == UseFastHelper)
-                hashCode.AddBytes(GetSpanForField(this.GetMethodTable(), ref this.GetRawData()));
+            if (numFields < 0)
+            {
+                hashCode.AddBytes(new ReadOnlySpan<byte>(ref this.GetRawData(), GetValueTypeSize(numFields)));
+            }
             else
+            {
                 RegularGetValueTypeHashCode(ref hashCode, ref this.GetRawData(), numFields);
+            }
 
             return hashCode.ToHashCode();
         }

@@ -392,6 +392,7 @@ class ThePreStubManager : public StubManager
 // frame-pushing, StubLinker created stubs
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 typedef VPTR(class PrecodeStubManager) PTR_PrecodeStubManager;
 
 class PrecodeStubManager : public StubManager
@@ -434,6 +435,7 @@ class PrecodeStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("MethodDescPrestub"); }
 #endif
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Note that this stub was written by a debugger guy, and thus when he refers to 'multicast'
 // stub, he really means multi or single cast stub.  This was done b/c the same stub
@@ -502,56 +504,9 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
-// Stub manager for thunks.
-
-typedef VPTR(class ThunkHeapStubManager) PTR_ThunkHeapStubManager;
-
-class ThunkHeapStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(ThunkHeapStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(ThunkHeapStubManager, g_pManager);
-
-    static void Init();
-
-#ifndef DACCESS_COMPILE
-    ThunkHeapStubManager() : StubManager(), m_rangeList() { LIMITED_METHOD_CONTRACT; }
-    ~ThunkHeapStubManager() {WRAPPER_NO_CONTRACT;}
-#endif
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "ThunkHeapStubManager"; }
-#endif
-
-  protected:
-    LockedRangeList m_rangeList;
-  public:
-    // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList()
-    {
-        SUPPORTS_DAC;
-        TADDR addr = PTR_HOST_MEMBER_TADDR(ThunkHeapStubManager, this, m_rangeList);
-        return PTR_RangeList(addr);
-    }
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-  private:
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("ThunkHeapStub"); }
-#endif
-};
-
+#ifdef FEATURE_JIT
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
 //
 typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
 
@@ -587,6 +542,7 @@ class JumpStubStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
 #endif
 };
+#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -787,6 +743,58 @@ public:
 };
 #endif // TARGET_X86 && UNIX_X86_ABI
 
+// -----------------------------------------------------------
+// This is used to recognize async thunks
+typedef VPTR(class AsyncThunkStubManager) PTR_AsyncThunkStubManager;
+class AsyncThunkStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(AsyncThunkStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    AsyncThunkStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~AsyncThunkStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "AsyncThunkStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL TraceManager(Thread *thread,
+                              TraceDestination *trace,
+                              T_CONTEXT *pContext,
+                              BYTE **pRetAddr);
+#endif
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("AsyncThunkStub"); }
+#endif
+};
+
 //
 // Helpers for common value locations in stubs to make stub managers more portable
 //
@@ -809,24 +817,29 @@ public:
 #endif
     }
 
-    static PTR_Object GetThisPtr(T_CONTEXT * pContext)
+    static TADDR GetFirstArg(T_CONTEXT * pContext)
     {
 #if defined(TARGET_X86)
-        return dac_cast<PTR_Object>(pContext->Ecx);
+        return (TADDR)pContext->Ecx;
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
-        return dac_cast<PTR_Object>(pContext->Rdi);
+        return (TADDR)pContext->Rdi;
 #else
-        return dac_cast<PTR_Object>(pContext->Rcx);
+        return (TADDR)pContext->Rcx;
 #endif
 #elif defined(TARGET_ARM)
-        return dac_cast<PTR_Object>((TADDR)pContext->R0);
+        return (TADDR)pContext->R0;
 #elif defined(TARGET_ARM64)
-        return dac_cast<PTR_Object>(pContext->X0);
+        return (TADDR)pContext->X0;
 #else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetThisPtr");
-        return NULL;
+        PORTABILITY_ASSERT("StubManagerHelpers::GetFirstArg");
+        return (TADDR)0;
 #endif
+    }
+
+    static PTR_Object GetThisPtr(T_CONTEXT * pContext)
+    {
+        return dac_cast<PTR_Object>(GetFirstArg(pContext));
     }
 
     static PCODE GetTailCallTarget(T_CONTEXT * pContext)
@@ -861,6 +874,21 @@ public:
 #endif
     }
 
+#if !defined(TARGET_X86)
+    static TADDR GetIndirectionCellArg(T_CONTEXT *pContext)
+    {
+#if defined(TARGET_AMD64)
+        return pContext->R11;
+#elif defined(TARGET_ARM)
+        return pContext->R4;
+#elif defined(TARGET_ARM64)
+        return pContext->X11;
+#else
+        PORTABILITY_ASSERT("StubManagerHelpers::GetIndirectionCellArg");
+        return (TADDR)NULL;
+#endif
+    }
+#endif // !defined(TARGET_X86)
 };
 
 #endif // !__stubmgr_h__

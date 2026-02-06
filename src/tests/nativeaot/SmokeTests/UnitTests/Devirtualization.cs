@@ -13,6 +13,7 @@ class Devirtualization
     {
         TestDevirtualizationIntoAbstract.Run();
         RegressionBug73076.Run();
+        RegressionBug117249.Run();
         RegressionGenericHierarchy.Run();
         DevirtualizationCornerCaseTests.Run();
         DevirtualizeIntoUnallocatedGenericType.Run();
@@ -85,6 +86,77 @@ class Devirtualization
             var made = factory.Make<object>();
             if (made.GetId() != "Derived")
                 throw new Exception();
+        }
+    }
+
+    class RegressionBug117249
+    {
+        enum IntEnum1;
+
+        enum IntEnum2;
+
+        enum IntEnum3;
+
+        static bool s_executed;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetIntInstance() => new int[] { 1, 2, 3, 4 };
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void SetStatic() => s_executed = true;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IntEnum3> GetIntEnums3()
+        {
+            yield return (IntEnum3)100;
+            Environment.GetEnvironmentVariable("ABC");
+            yield return (IntEnum3)200;
+            Environment.GetEnvironmentVariable("ABC");
+            yield return (IntEnum3)300;
+            Environment.GetEnvironmentVariable("ABC");
+            yield return (IntEnum3)400;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine("One");
+
+            {
+                int sum = 0;
+                foreach (var v in (IEnumerable<IntEnum1>)GetIntInstance())
+                    sum += (int)v;
+
+                if (sum != 10)
+                    throw new Exception();
+            }
+
+            Console.WriteLine("Two");
+
+            {
+                if (GetIntInstance() is IntEnum2[])
+                    SetStatic();
+
+                if (!s_executed)
+                    throw new Exception();
+            }
+
+            Console.WriteLine("Three");
+
+            {
+                int sum = 0;
+                foreach (var v in (IEnumerable<IntEnum3>)GetIntInstance())
+                    sum += (int)v;
+
+                if (sum != 10)
+                    throw new Exception();
+
+                sum = 0;
+                foreach (var v in GetIntEnums3())
+                    sum += (int)v;
+
+                if (sum != 1000)
+                    throw new Exception();
+            }
         }
     }
 

@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Specifies the parameter to inject the key that was used for registration or resolution.
     /// </summary>
+    /// <seealso cref="FromKeyedServicesAttribute"/>
     [AttributeUsage(AttributeTargets.Parameter)]
     public class ServiceKeyAttribute : Attribute
     {

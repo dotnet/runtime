@@ -67,14 +67,14 @@ namespace System.Numerics.Tests
 
         // The handedness-swapped matrix of matrix M is B^-1 * M * B where B is the change of handedness matrix.
         // Since only the Z coordinate is flipped when changing handedness,
-        // 
+        //
         // B = [ 1  0  0  0
         //       0  1  0  0
         //       0  0 -1  0
         //       0  0  0  1 ]
         //
         // and B is its own inverse. So the handedness swap can be simplified to
-        // 
+        //
         // B^-1 * M * B = [  m11  m12  -m13  m14
         //                   m21  m22  -m23  m24
         //                  -m31 -m32   m33 -m34
@@ -3167,6 +3167,232 @@ namespace System.Numerics.Tests
             var m = Matrix4x4.CreatePerspectiveOffCenter(0.0f, 0.0f, 1.0f, 1.0f, nearPlaneDistance, float.PositiveInfinity);
             Assert.Equal(-1.0f, m.M33);
             Assert.Equal(-nearPlaneDistance, m.M43);
+        }
+
+        [Fact]
+        public void Matrix4x4CreateBroadcastScalarTest()
+        {
+            Matrix4x4 a = Matrix4x4.Create(float.Pi);
+
+            Assert.Equal(Vector4.Pi, a.X);
+            Assert.Equal(Vector4.Pi, a.Y);
+            Assert.Equal(Vector4.Pi, a.Z);
+            Assert.Equal(Vector4.Pi, a.W);
+        }
+
+        [Fact]
+        public void Matrix4x4CreateBroadcastVectorTest()
+        {
+            Matrix4x4 a = Matrix4x4.Create(Vector4.Create(float.Pi, float.E, float.PositiveInfinity, float.NegativeInfinity));
+
+            Assert.Equal(Vector4.Create(float.Pi, float.E, float.PositiveInfinity, float.NegativeInfinity), a.X);
+            Assert.Equal(Vector4.Create(float.Pi, float.E, float.PositiveInfinity, float.NegativeInfinity), a.Y);
+            Assert.Equal(Vector4.Create(float.Pi, float.E, float.PositiveInfinity, float.NegativeInfinity), a.Z);
+            Assert.Equal(Vector4.Create(float.Pi, float.E, float.PositiveInfinity, float.NegativeInfinity), a.W);
+        }
+
+        [Fact]
+        public void Matrix4x4CreateVectorsTest()
+        {
+            Matrix4x4 a = Matrix4x4.Create(
+                Vector4.Create(11.0f, 12.0f, 13.0f, 14.0f),
+                Vector4.Create(21.0f, 22.0f, 23.0f, 24.0f),
+                Vector4.Create(31.0f, 32.0f, 33.0f, 34.0f),
+                Vector4.Create(41.0f, 42.0f, 43.0f, 44.0f)
+            );
+
+            Assert.Equal(Vector4.Create(11.0f, 12.0f, 13.0f, 14.0f), a.X);
+            Assert.Equal(Vector4.Create(21.0f, 22.0f, 23.0f, 24.0f), a.Y);
+            Assert.Equal(Vector4.Create(31.0f, 32.0f, 33.0f, 34.0f), a.Z);
+            Assert.Equal(Vector4.Create(41.0f, 42.0f, 43.0f, 44.0f), a.W);
+        }
+
+        [Fact]
+        public void Matrix4x4GetElementTest()
+        {
+            Matrix4x4 a = GenerateTestMatrix();
+
+            Assert.Equal(a.M11, a.X.X);
+            Assert.Equal(a.M11, a[0, 0]);
+            Assert.Equal(a.M11, a.GetElement(0, 0));
+
+            Assert.Equal(a.M12, a.X.Y);
+            Assert.Equal(a.M12, a[0, 1]);
+            Assert.Equal(a.M12, a.GetElement(0, 1));
+
+            Assert.Equal(a.M13, a.X.Z);
+            Assert.Equal(a.M13, a[0, 2]);
+            Assert.Equal(a.M13, a.GetElement(0, 2));
+
+            Assert.Equal(a.M14, a.X.W);
+            Assert.Equal(a.M14, a[0, 3]);
+            Assert.Equal(a.M14, a.GetElement(0, 3));
+
+            Assert.Equal(a.M21, a.Y.X);
+            Assert.Equal(a.M21, a[1, 0]);
+            Assert.Equal(a.M21, a.GetElement(1, 0));
+
+            Assert.Equal(a.M22, a.Y.Y);
+            Assert.Equal(a.M22, a[1, 1]);
+            Assert.Equal(a.M22, a.GetElement(1, 1));
+
+            Assert.Equal(a.M23, a.Y.Z);
+            Assert.Equal(a.M23, a[1, 2]);
+            Assert.Equal(a.M23, a.GetElement(1, 2));
+
+            Assert.Equal(a.M24, a.Y.W);
+            Assert.Equal(a.M24, a[1, 3]);
+            Assert.Equal(a.M24, a.GetElement(1, 3));
+
+            Assert.Equal(a.M31, a.Z.X);
+            Assert.Equal(a.M31, a[2, 0]);
+            Assert.Equal(a.M31, a.GetElement(2, 0));
+
+            Assert.Equal(a.M32, a.Z.Y);
+            Assert.Equal(a.M32, a[2, 1]);
+            Assert.Equal(a.M32, a.GetElement(2, 1));
+
+            Assert.Equal(a.M33, a.Z.Z);
+            Assert.Equal(a.M33, a[2, 2]);
+            Assert.Equal(a.M33, a.GetElement(2, 2));
+
+            Assert.Equal(a.M34, a.Z.W);
+            Assert.Equal(a.M34, a[2, 3]);
+            Assert.Equal(a.M34, a.GetElement(2, 3));
+
+            Assert.Equal(a.M41, a.W.X);
+            Assert.Equal(a.M41, a[3, 0]);
+            Assert.Equal(a.M41, a.GetElement(3, 0));
+
+            Assert.Equal(a.M42, a.W.Y);
+            Assert.Equal(a.M42, a[3, 1]);
+            Assert.Equal(a.M42, a.GetElement(3, 1));
+
+            Assert.Equal(a.M43, a.W.Z);
+            Assert.Equal(a.M43, a[3, 2]);
+            Assert.Equal(a.M43, a.GetElement(3, 2));
+
+            Assert.Equal(a.M44, a.W.W);
+            Assert.Equal(a.M44, a[3, 3]);
+            Assert.Equal(a.M44, a.GetElement(3, 3));
+        }
+
+        [Fact]
+        public void Matrix4x4GetRowTest()
+        {
+            Matrix4x4 a = GenerateTestMatrix();
+
+            Vector4 vx = new Vector4(a.M11, a.M12, a.M13, a.M14);
+            Assert.Equal(vx, a.X);
+            Assert.Equal(vx, a[0]);
+            Assert.Equal(vx, a.GetRow(0));
+
+            Vector4 vy = new Vector4(a.M21, a.M22, a.M23, a.M24);
+            Assert.Equal(vy, a.Y);
+            Assert.Equal(vy, a[1]);
+            Assert.Equal(vy, a.GetRow(1));
+
+            Vector4 vz = new Vector4(a.M31, a.M32, a.M33, a.M34);
+            Assert.Equal(vz, a.Z);
+            Assert.Equal(vz, a[2]);
+            Assert.Equal(vz, a.GetRow(2));
+
+            Vector4 vw = new Vector4(a.M41, a.M42, a.M43, a.M44);
+            Assert.Equal(vw, a.W);
+            Assert.Equal(vw, a[3]);
+            Assert.Equal(vw, a.GetRow(3));
+        }
+
+        [Fact]
+        public void Matrix4x4WithElementTest()
+        {
+            Matrix4x4 a = Matrix4x4.Identity;
+
+            a[0, 0] = 11.0f;
+            Assert.Equal(11.5f, a.WithElement(0, 0, 11.5f).M11);
+            Assert.Equal(11.0f, a.M11);
+
+            a[0, 1] = 12.0f;
+            Assert.Equal(12.5f, a.WithElement(0, 1, 12.5f).M12);
+            Assert.Equal(12.0f, a.M12);
+
+            a[0, 2] = 13.0f;
+            Assert.Equal(13.5f, a.WithElement(0, 2, 13.5f).M13);
+            Assert.Equal(13.0f, a.M13);
+
+            a[0, 3] = 14.0f;
+            Assert.Equal(14.5f, a.WithElement(0, 3, 14.5f).M14);
+            Assert.Equal(14.0f, a.M14);
+
+            a[1, 0] = 21.0f;
+            Assert.Equal(21.5f, a.WithElement(1, 0, 21.5f).M21);
+            Assert.Equal(21.0f, a.M21);
+
+            a[1, 1] = 22.0f;
+            Assert.Equal(22.5f, a.WithElement(1, 1, 22.5f).M22);
+            Assert.Equal(22.0f, a.M22);
+
+            a[1, 2] = 23.0f;
+            Assert.Equal(23.5f, a.WithElement(1, 2, 23.5f).M23);
+            Assert.Equal(23.0f, a.M23);
+
+            a[1, 3] = 24.0f;
+            Assert.Equal(24.5f, a.WithElement(1, 3, 24.5f).M24);
+            Assert.Equal(24.0f, a.M24);
+
+            a[2, 0] = 31.0f;
+            Assert.Equal(31.5f, a.WithElement(2, 0, 31.5f).M31);
+            Assert.Equal(31.0f, a.M31);
+
+            a[2, 1] = 32.0f;
+            Assert.Equal(32.5f, a.WithElement(2, 1, 32.5f).M32);
+            Assert.Equal(32.0f, a.M32);
+
+            a[2, 2] = 33.0f;
+            Assert.Equal(33.5f, a.WithElement(2, 2, 33.5f).M33);
+            Assert.Equal(33.0f, a.M33);
+
+            a[2, 3] = 34.0f;
+            Assert.Equal(34.5f, a.WithElement(2, 3, 34.5f).M34);
+            Assert.Equal(34.0f, a.M34);
+
+            a[3, 0] = 41.0f;
+            Assert.Equal(41.5f, a.WithElement(3, 0, 41.5f).M41);
+            Assert.Equal(41.0f, a.M41);
+
+            a[3, 1] = 42.0f;
+            Assert.Equal(42.5f, a.WithElement(3, 1, 42.5f).M42);
+            Assert.Equal(42.0f, a.M42);
+
+            a[3, 2] = 43.0f;
+            Assert.Equal(43.5f, a.WithElement(3, 2, 43.5f).M43);
+            Assert.Equal(43.0f, a.M43);
+
+            a[3, 3] = 44.0f;
+            Assert.Equal(44.5f, a.WithElement(3, 3, 44.5f).M44);
+            Assert.Equal(44.0f, a.M44);
+        }
+
+        [Fact]
+        public void Matrix4x4WithRowTest()
+        {
+            Matrix4x4 a = Matrix4x4.Identity;
+
+            a[0] = Vector4.Create(11.0f, 12.0f, 13.0f, 14.0f);
+            Assert.Equal(Vector4.Create(11.5f, 12.5f, 13.5f, 14.5f), a.WithRow(0, Vector4.Create(11.5f, 12.5f, 13.5f, 14.5f)).X);
+            Assert.Equal(Vector4.Create(11.0f, 12.0f, 13.0f, 14.0f), a.X);
+
+            a[1] = Vector4.Create(21.0f, 22.0f, 23.0f, 24.0f);
+            Assert.Equal(Vector4.Create(21.5f, 22.5f, 23.5f, 24.5f), a.WithRow(1, Vector4.Create(21.5f, 22.5f, 23.5f, 24.5f)).Y);
+            Assert.Equal(Vector4.Create(21.0f, 22.0f, 23.0f, 24.0f), a.Y);
+
+            a[2] = Vector4.Create(31.0f, 32.0f, 33.0f, 34.0f);
+            Assert.Equal(Vector4.Create(31.5f, 32.5f, 33.5f, 34.5f), a.WithRow(2, Vector4.Create(31.5f, 32.5f, 33.5f, 34.5f)).Z);
+            Assert.Equal(Vector4.Create(31.0f, 32.0f, 33.0f, 34.0f), a.Z);
+
+            a[3] = Vector4.Create(41.0f, 42.0f, 43.0f, 44.0f);
+            Assert.Equal(Vector4.Create(41.5f, 42.5f, 43.5f, 44.5f), a.WithRow(3, Vector4.Create(41.5f, 42.5f, 43.5f, 44.5f)).W);
+            Assert.Equal(Vector4.Create(41.0f, 42.0f, 43.0f, 44.0f), a.W);
         }
     }
 }

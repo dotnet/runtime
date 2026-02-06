@@ -18,7 +18,7 @@ namespace System.Text.Json
         /// Thrown when the specified value is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// Thrown when validation is enabled if this would result in invalid JSON being written or
         /// if the previously written segment (if any) was not written with this same overload.
         /// </exception>
         /// <remarks>
@@ -186,7 +186,7 @@ namespace System.Text.Json
         /// Thrown when the specified value is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// Thrown when validation is enabled if this would result in invalid JSON being written or
         /// if the previously written segment (if any) was not written with this same overload.
         /// </exception>
         /// <remarks>
@@ -353,7 +353,7 @@ namespace System.Text.Json
         /// Thrown when the specified value is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// Thrown when validation is enabled if this would result in invalid JSON being written or
         /// if the previously written segment (if any) was not written with this same overload.
         /// </exception>
         public void WriteBase64StringSegment(ReadOnlySpan<byte> value, bool isFinalSegment)

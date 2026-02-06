@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    public sealed unsafe partial class HttpListenerContext
+    public sealed partial class HttpListenerContext
     {
         internal HttpListener? _listener;
         private HttpListenerResponse? _response;

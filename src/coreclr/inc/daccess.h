@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: daccess.h
-//
-
 //
 // Support for external access of runtime data structures.  These
 // macros and templates hide the details of pointer and data handling
@@ -290,9 +289,9 @@
 //
 //     SystemDomain::m_appDomainIndexList;
 //
-//     extern DWORD gThreadTLSIndex;
+//     extern DWORD g_TlsIndex;
 //
-//     DWORD gThreadTLSIndex = TLS_OUT_OF_INDEXES;
+//     DWORD g_TlsIndex = TLS_OUT_OF_INDEXES;
 //
 // Modified Code:
 //
@@ -312,9 +311,9 @@
 //
 //     SVAL_IMPL(ArrayListStatic, SystemDomain, m_appDomainIndexList);
 //
-//     GVAL_DECL(DWORD, gThreadTLSIndex);
+//     GVAL_DECL(DWORD, g_TlsIndex);
 //
-//     GVAL_IMPL_INIT(DWORD, gThreadTLSIndex, TLS_OUT_OF_INDEXES);
+//     GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 //
 // When declaring the variable, the first argument declares the
 // variable's type and the second argument declares the variable's
@@ -554,7 +553,6 @@
 //
 //*****************************************************************************
 
-
 #ifndef __daccess_h__
 #define __daccess_h__
 
@@ -699,7 +697,6 @@ PWSTR   DacInstantiateStringW(TADDR addr, ULONG32 maxChars, bool throwEx);
 TADDR   DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx);
 TADDR   DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx);
-PWSTR   DacGetVtNameW(TADDR targetVtable);
 
 // Report a region of memory to the debugger
 bool    DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
@@ -709,15 +706,15 @@ bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
 HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 
-// This is meant to mimic the RethrowTerminalExceptions/
-// SwallowAllExceptions/RethrowTransientExceptions macros to allow minidump
+// This is meant to mimic the RethrowTerminalExceptions()/
+// RethrowTransientExceptions() macros to allow minidump
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
 extern void DacLogMessage(LPCSTR format, ...);
 
-// This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
-#define RethrowCancelExceptions                                         \
+// This is usable in EX_TRY exactly how RethrowTerminalExceptions() et cetera
+#define RethrowCancelExceptions()                                       \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
@@ -823,17 +820,10 @@ interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionMo
 
 int DacGetIlMethodSize(TADDR methAddr);
 struct COR_ILMETHOD* DacGetIlMethod(TADDR methAddr);
-#ifdef FEATURE_EH_FUNCLETS
 struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
 
 // virtually unwind a CONTEXT out-of-process
 BOOL DacUnwindStackFrame(T_CONTEXT * pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
-#endif // FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_UNIX)
-// call back through data target to unwind out-of-process
-HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_POINTERS contextPointers);
-#endif // TARGET_UNIX
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 class SString;
@@ -2205,9 +2195,6 @@ public: name(int dummy) : base(dummy) {}
 
 // helper macro to make the vtables unique for DAC
 #define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() { return unique; }
-#define VPTR_UNIQUE_ComMethodFrame                      (100000)
-#define VPTR_UNIQUE_RedirectedThreadFrame               (VPTR_UNIQUE_ComMethodFrame + 1)
-#define VPTR_UNIQUE_HijackFrame                         (VPTR_UNIQUE_RedirectedThreadFrame + 1)
 
 #define PTR_TO_TADDR(ptr) ((TADDR)(ptr))
 #define GFN_TADDR(name) ((TADDR)(name))
@@ -2450,7 +2437,7 @@ typedef DPTR(IMAGE_TLS_DIRECTORY)   PTR_IMAGE_TLS_DIRECTORY;
 #endif
 
 #ifndef NATIVEAOT
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 typedef DPTR(struct _UNWIND_INFO)      PTR_UNWIND_INFO;
 #endif
 

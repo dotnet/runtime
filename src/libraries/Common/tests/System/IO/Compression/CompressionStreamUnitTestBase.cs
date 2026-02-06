@@ -42,6 +42,29 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void EmptyData_RoundTrips()
+        {
+            using (var compressed = new MemoryStream())
+            {
+                using (var compressor = CreateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write no data
+                }
+
+                Assert.NotEqual(0, compressed.Length);
+
+                compressed.Position = 0;
+
+                using MemoryStream decompressed = new MemoryStream();
+                using (var decompressor = CreateStream(compressed, CompressionMode.Decompress))
+                {
+                    decompressor.CopyTo(decompressed);
+                    Assert.Equal(0, decompressed.Length);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
@@ -107,7 +130,7 @@ namespace System.IO.Compression
         {
             byte[] buffer = null;
             string testFilePath = CompressedTestFile(UncompressedTestFile());
-            using (var origStream = await LocalMemoryStream.readAppFileAsync(testFilePath))
+            using (var origStream = await LocalMemoryStream.ReadAppFileAsync(testFilePath))
             {
                 buffer = origStream.ToArray();
             }
@@ -164,8 +187,8 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFiles))]
         public async Task Read(string testFile)
         {
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-            var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(testFile));
+            var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
+            var compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(testFile));
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
 
@@ -199,7 +222,7 @@ namespace System.IO.Compression
         [Fact]
         public async Task Read_EndOfStreamPosition()
         {
-            var compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            var compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             int compressedEndPosition = (int)compressedStream.Length;
             var rand = new Random(1024);
             int _bufferSize = BufferSize * 2 - 568;
@@ -211,15 +234,18 @@ namespace System.IO.Compression
             compressedStream.Position = 0;
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
 
-            while (decompressor.Read(bytes, 0, _bufferSize) > 0);
-            Assert.Equal(((compressedEndPosition / BufferSize) + 1) * BufferSize, compressedStream.Position);
+            while (decompressor.Read(bytes, 0, _bufferSize) > 0) ;
+
+            // With automatic stream rewinding, the position should be at the exact end of compressed data
+            // (not rounded up to the next buffer boundary as it was before)
+            Assert.Equal(compressedEndPosition, compressedStream.Position);
         }
 
         [Fact]
         public async Task Read_BaseStreamSlowly()
         {
             string testFile = UncompressedTestFile();
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
             var compressedStream = new BadWrappedStream(BadWrappedStream.Mode.ReadSlowly, File.ReadAllBytes(CompressedTestFile(testFile)));
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
             var decompressorOutput = new MemoryStream();
@@ -354,7 +380,7 @@ namespace System.IO.Compression
             //Create the Stream
             int _bufferSize = 1024;
             var bytes = new byte[_bufferSize];
-            Stream compressedStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            Stream compressedStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             Stream decompressor = CreateStream(compressedStream, CompressionMode.Decompress, leaveOpen: false);
 
             //Read some data and Close the stream
@@ -377,6 +403,9 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Decompress, false));
             Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Compress, true));
             Assert.Throws<ArgumentNullException>("compressionOptions", () => CreateStream(new MemoryStream(), null, true));
+
+            Assert.Throws<ArgumentOutOfRangeException>("compressionLevel", () => CreateStream(new MemoryStream(), (CompressionLevel)4));
+            Assert.Throws<ArgumentOutOfRangeException>("compressionLevel", () => CreateStream(new MemoryStream(), (CompressionLevel)(-1)));
 
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)42));
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)43, true));
@@ -426,7 +455,7 @@ namespace System.IO.Compression
         [InlineData(CompressionMode.Decompress)]
         public async Task BaseStream_Modify(CompressionMode mode)
         {
-            using (var baseStream = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile())))
+            using (var baseStream = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile())))
             using (var compressor = CreateStream(baseStream, mode))
             {
                 int size = 1024;
@@ -441,13 +470,13 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
-        public void BaseStream_NullAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
+        public void BaseStream_ThrowsAfterDisposeWithFalseLeaveOpen(CompressionMode mode)
         {
             var ms = new MemoryStream();
             using var compressor = CreateStream(ms, mode);
             compressor.Dispose();
 
-            Assert.Null(BaseStream(compressor));
+            Assert.Throws<ObjectDisposedException>(() => BaseStream(compressor));
 
             compressor.Dispose(); // Should be a no-op
         }
@@ -457,7 +486,7 @@ namespace System.IO.Compression
         [InlineData(CompressionMode.Decompress)]
         public async Task BaseStream_ValidAfterDisposeWithTrueLeaveOpen(CompressionMode mode)
         {
-            var ms = await LocalMemoryStream.readAppFileAsync(CompressedTestFile(UncompressedTestFile()));
+            var ms = await LocalMemoryStream.ReadAppFileAsync(CompressedTestFile(UncompressedTestFile()));
             using var decompressor = CreateStream(ms, mode, leaveOpen: true);
             var baseStream = BaseStream(decompressor);
             Assert.Same(ms, baseStream);
@@ -475,7 +504,7 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFilesZLib))]
         public async Task CompressionLevel_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
             {
@@ -501,7 +530,7 @@ namespace System.IO.Compression
         [MemberData(nameof(UncompressedTestFilesZLib))]
         public async Task ZLibCompressionOptions_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
 
             async Task<long> GetLengthAsync(int compressionLevel)
             {
@@ -512,7 +541,7 @@ namespace System.IO.Compression
                 await compressor.FlushAsync();
                 return mms.Length;
             }
-            
+
             long fastestLength = await GetLengthAsync(1);
             long optimalLength = await GetLengthAsync(5);
             long smallestLength = await GetLengthAsync(9);
@@ -525,7 +554,7 @@ namespace System.IO.Compression
         [MemberData(nameof(ZLibOptionsRoundTripTestData))]
         public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.ReadAppFileAsync(testFile);
             var compressedStream = await CompressTestFile(uncompressedStream, options);
             using var decompressor = CreateStream(compressedStream, mode: CompressionMode.Decompress);
             using var decompressorOutput = new MemoryStream();
@@ -561,6 +590,228 @@ namespace System.IO.Compression
             return compressorOutput;
         }
 
+        [Fact]
+        public void AutomaticStreamRewinds_WhenDecompressionFinishes()
+        {
+            TestAutomaticStreamRewind(useAsync: false).GetAwaiter().GetResult();
+        }
+
+        [Fact]
+        public async Task AutomaticStreamRewinds_WhenDecompressionFinishes_Async()
+        {
+            await TestAutomaticStreamRewind(useAsync: true);
+        }
+
+        private async Task TestAutomaticStreamRewind(bool useAsync)
+        {
+            // Create test data: some header bytes + compressed data + some footer bytes
+            byte[] originalData = Encoding.UTF8.GetBytes("Hello, world! This is a test string for compression.");
+            byte[] headerBytes = Encoding.UTF8.GetBytes("HEADER");
+            byte[] footerBytes = Encoding.UTF8.GetBytes("FOOTER");
+
+            // Create compressed data
+            byte[] compressedData;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = CreateStream(ms, CompressionMode.Compress))
+                {
+                    if (useAsync)
+                    {
+                        await compressor.WriteAsync(originalData);
+                    }
+                    else
+                    {
+                        compressor.Write(originalData);
+                    }
+                }
+                compressedData = ms.ToArray();
+            }
+
+            // Create a stream with: [header][compressed data][footer]
+            byte[] combinedData = new byte[headerBytes.Length + compressedData.Length + footerBytes.Length];
+            Array.Copy(headerBytes, 0, combinedData, 0, headerBytes.Length);
+            Array.Copy(compressedData, 0, combinedData, headerBytes.Length, compressedData.Length);
+            Array.Copy(footerBytes, 0, combinedData, headerBytes.Length + compressedData.Length, footerBytes.Length);
+
+            using (var stream = new MemoryStream(combinedData))
+            {
+                // Read the header
+                byte[] headerBuffer = new byte[headerBytes.Length];
+                if (useAsync)
+                {
+                    await stream.ReadAsync(headerBuffer, 0, headerBytes.Length);
+                }
+                else
+                {
+                    stream.Read(headerBuffer, 0, headerBytes.Length);
+                }
+                Assert.Equal(headerBytes, headerBuffer);
+
+                // Decompress the data
+                byte[] decompressedData;
+                if (useAsync)
+                {
+                    await using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            await decompressor.CopyToAsync(outputStream);
+                            decompressedData = outputStream.ToArray();
+                        }
+                    }
+                }
+                else
+                {
+                    using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            decompressor.CopyTo(outputStream);
+                            decompressedData = outputStream.ToArray();
+                        }
+                    }
+                }
+
+                // Verify decompressed data is correct
+                Assert.Equal(originalData, decompressedData);
+
+                // Read the footer - if automatic rewinding worked, this should read the footer correctly
+                byte[] footerBuffer = new byte[footerBytes.Length];
+                int bytesRead;
+                if (useAsync)
+                {
+                    bytesRead = await stream.ReadAsync(footerBuffer, 0, footerBytes.Length);
+                }
+                else
+                {
+                    bytesRead = stream.Read(footerBuffer, 0, footerBytes.Length);
+                }
+
+                Assert.Equal(footerBytes.Length, bytesRead);
+                Assert.Equal(footerBytes, footerBuffer);
+
+                // Verify we're at the end of the stream
+                Assert.Equal(combinedData.Length, stream.Position);
+            }
+        }
+
+        [Fact]
+        public void StreamRewinds_OnlyOnce_AfterMultipleReads()
+        {
+            TestStreamRewindsOnlyOnce(useAsync: false).GetAwaiter().GetResult();
+        }
+
+        [Fact]
+        public async Task StreamRewinds_OnlyOnce_AfterMultipleReadsAsync()
+        {
+            await TestStreamRewindsOnlyOnce(useAsync: true);
+        }
+
+        private async Task TestStreamRewindsOnlyOnce(bool useAsync)
+        {
+            // Create test data: compressed data + footer
+            byte[] originalData = Encoding.UTF8.GetBytes("Test data for verifying single rewind behavior.");
+            byte[] footerBytes = Encoding.UTF8.GetBytes("FOOTER");
+
+            // Create compressed data
+            byte[] compressedData;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = CreateStream(ms, CompressionMode.Compress))
+                {
+                    if (useAsync)
+                    {
+                        await compressor.WriteAsync(originalData);
+                    }
+                    else
+                    {
+                        compressor.Write(originalData);
+                    }
+                }
+                compressedData = ms.ToArray();
+            }
+
+            // Create a stream with: [compressed data][footer]
+            byte[] combinedData = new byte[compressedData.Length + footerBytes.Length];
+            Array.Copy(compressedData, 0, combinedData, 0, compressedData.Length);
+            Array.Copy(footerBytes, 0, combinedData, compressedData.Length, footerBytes.Length);
+
+            using (var stream = new MemoryStream(combinedData))
+            {
+                // Decompress the data
+                if (useAsync)
+                {
+                    await using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            await decompressor.CopyToAsync(outputStream);
+                        }
+
+                        // After CopyToAsync completes, stream should be rewound to end of compressed data
+                        long positionAfterFirstRewind = stream.Position;
+                        Assert.Equal(compressedData.Length, positionAfterFirstRewind);
+
+                        // Call ReadAsync multiple times - should return 0 each time and NOT rewind further
+                        byte[] buffer = new byte[100];
+                        int bytesRead1 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead1);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position unchanged
+
+                        int bytesRead2 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead2);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+
+                        int bytesRead3 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead3);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+                    }
+                }
+                else
+                {
+                    using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            decompressor.CopyTo(outputStream);
+                        }
+
+                        // After CopyTo completes, stream should be rewound to end of compressed data
+                        long positionAfterFirstRewind = stream.Position;
+                        Assert.Equal(compressedData.Length, positionAfterFirstRewind);
+
+                        // Call Read multiple times - should return 0 each time and NOT rewind further
+                        byte[] buffer = new byte[100];
+                        int bytesRead1 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead1);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position unchanged
+
+                        int bytesRead2 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead2);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+
+                        int bytesRead3 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead3);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+                    }
+                }
+
+                // Verify we can still read the footer from the correct position
+                byte[] footerBuffer = new byte[footerBytes.Length];
+                int footerBytesRead;
+                if (useAsync)
+                {
+                    footerBytesRead = await stream.ReadAsync(footerBuffer, 0, footerBytes.Length);
+                }
+                else
+                {
+                    footerBytesRead = stream.Read(footerBuffer, 0, footerBytes.Length);
+                }
+                Assert.Equal(footerBytes.Length, footerBytesRead);
+                Assert.Equal(footerBytes, footerBuffer);
+            }
+        }
+
     }
 
     public enum TestScenario
@@ -589,7 +840,7 @@ namespace System.IO.Compression
         public BadWrappedStream(Mode mode) { _mode = mode; }
         public BadWrappedStream(Mode mode, byte[] buffer) : base(buffer) { _mode = mode; }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
             switch (_mode)
             {
@@ -598,10 +849,24 @@ namespace System.IO.Compression
                 case Mode.ReturnTooLargeCounts:
                     return buffer.Length + 1;
                 case Mode.ReadSlowly:
-                    return base.Read(buffer, offset, 1);
+                    int b = base.ReadByte();
+                    if (b == -1)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)b;
+                        return 1;
+                    }
                 default:
                     return 0;
             }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return Read(buffer.AsSpan(offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

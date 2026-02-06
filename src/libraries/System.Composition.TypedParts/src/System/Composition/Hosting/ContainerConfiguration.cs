@@ -49,10 +49,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithProvider(ExportDescriptorProvider exportDescriptorProvider)
         {
-            if (exportDescriptorProvider is null)
-            {
-                throw new ArgumentNullException(nameof(exportDescriptorProvider));
-            }
+            ArgumentNullException.ThrowIfNull(exportDescriptorProvider);
 
             _addedSources.Add(exportDescriptorProvider);
             return this;
@@ -67,10 +64,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithDefaultConventions(AttributedModelProvider conventions)
         {
-            if (conventions is null)
-            {
-                throw new ArgumentNullException(nameof(conventions));
-            }
+            ArgumentNullException.ThrowIfNull(conventions);
 
             if (_defaultAttributeContext != null)
                 throw new InvalidOperationException(SR.ContainerConfiguration_DefaultConventionSet);
@@ -157,10 +151,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithParts(IEnumerable<Type> partTypes, AttributedModelProvider conventions)
         {
-            if (partTypes is null)
-            {
-                throw new ArgumentNullException(nameof(partTypes));
-            }
+            ArgumentNullException.ThrowIfNull(partTypes);
 
             _types.Add(Tuple.Create(partTypes, conventions));
             return this;
@@ -209,10 +200,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithAssemblies(IEnumerable<Assembly> assemblies, AttributedModelProvider conventions)
         {
-            if (assemblies is null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
-            }
+            ArgumentNullException.ThrowIfNull(assemblies);
 
             return WithParts(assemblies.SelectMany(a => a.DefinedTypes.Select(dt => dt.AsType())), conventions);
         }
@@ -225,10 +213,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithExport<TExport>(TExport exportedInstance)
         {
-            if (exportedInstance is null)
-            {
-                throw new ArgumentNullException(nameof(exportedInstance));
-            }
+            ArgumentNullException.ThrowIfNull(exportedInstance);
 
             return WithExport(exportedInstance, null, null);
         }
@@ -243,10 +228,7 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithExport<TExport>(TExport exportedInstance, string contractName = null, IDictionary<string, object> metadata = null)
         {
-            if (exportedInstance is null)
-            {
-                throw new ArgumentNullException(nameof(exportedInstance));
-            }
+            ArgumentNullException.ThrowIfNull(exportedInstance);
 
             return WithExport(typeof(TExport), exportedInstance, contractName, metadata);
         }
@@ -259,14 +241,8 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithExport(Type contractType, object exportedInstance)
         {
-            if (contractType is null)
-            {
-                throw new ArgumentNullException(nameof(contractType));
-            }
-            if (exportedInstance is null)
-            {
-                throw new ArgumentNullException(nameof(exportedInstance));
-            }
+            ArgumentNullException.ThrowIfNull(contractType);
+            ArgumentNullException.ThrowIfNull(exportedInstance);
 
             return WithExport(contractType, exportedInstance, null, null);
         }
@@ -281,14 +257,8 @@ namespace System.Composition.Hosting
         /// <returns>A configuration object allowing configuration to continue.</returns>
         public ContainerConfiguration WithExport(Type contractType, object exportedInstance, string contractName = null, IDictionary<string, object> metadata = null)
         {
-            if (contractType is null)
-            {
-                throw new ArgumentNullException(nameof(contractType));
-            }
-            if (exportedInstance is null)
-            {
-                throw new ArgumentNullException(nameof(exportedInstance));
-            }
+            ArgumentNullException.ThrowIfNull(contractType);
+            ArgumentNullException.ThrowIfNull(exportedInstance);
 
             return WithProvider(new InstanceExportDescriptorProvider(exportedInstance, contractType, contractName, metadata));
         }

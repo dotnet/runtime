@@ -496,12 +496,15 @@ namespace R2RDump
             return 0;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         public static int Main(string[] args) =>
-            new CliConfiguration(new R2RDumpRootCommand().UseVersion())
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+            new R2RDumpRootCommand().UseVersion()
+            .Parse(args,
+                new ParserConfiguration()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                })
+            .Invoke();
     }
 }

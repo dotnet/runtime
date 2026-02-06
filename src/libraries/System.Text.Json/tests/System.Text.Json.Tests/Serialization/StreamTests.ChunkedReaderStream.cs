@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
                     int bytesToCopy = Math.Min(count, currentChunk.Length - currentChunkOffset);
                     Buffer.BlockCopy(currentChunk, currentChunkOffset, buffer, offset, bytesToCopy);
 
-                    if (bytesToCopy < count)
+                    if (bytesToCopy < count || currentChunk.Length - currentChunkOffset == bytesToCopy)
                     {
                         MoveToNextChunk();
                     }

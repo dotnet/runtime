@@ -3,8 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
-#if SYSTEM_PRIVATE_CORELIB
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 
@@ -288,7 +287,7 @@ namespace System.Text.Unicode
         internal static bool AllCharsInVectorAreAscii<TVector>(TVector vec)
             where TVector : struct, ISimdVector<TVector, ushort>
         {
-            return (vec & TVector.Create(unchecked((ushort)~0x007F))).Equals(TVector.Zero);
+            return (vec & TVector.Create(unchecked((ushort)~0x007F))) == TVector.Zero;
         }
 #endif
     }

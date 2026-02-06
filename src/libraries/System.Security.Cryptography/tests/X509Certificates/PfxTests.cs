@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using Test.Cryptography;
-using Microsoft.DotNet.RemoteExecutor;
-using Xunit;
+using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.SLHDsa.Tests;
+using System.Security.Cryptography.Tests;
+using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -23,6 +23,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // We don't know for sure this is a correct Windows version when this support was added but
         // we know for a fact lower versions don't support it.
         public static bool Pkcs12PBES2Supported => !PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1703OrGreater;
+        public static bool MLKemIsNotSupported => !MLKem.IsSupported;
+
+        private static readonly Oid s_keyProviderNameOid =
+            new Oid("1.3.6.1.4.1.311.17.1", "szOID_PKCS_12_KEY_PROVIDER_NAME_ATTR");
 
         public static IEnumerable<object[]> BrainpoolCurvesPfx
         {
@@ -263,8 +267,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DsaPrivateKeyProperty()
         {
             using (var cert = new X509Certificate2(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword, Cert.EphemeralIfPossible))
@@ -361,8 +364,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void ReadDSAPrivateKey()
         {
             byte[] data = { 1, 2, 3, 4, 5 };
@@ -382,6 +384,442 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // And verify that the public key isn't accidentally a private key.
                 Assert.ThrowsAny<CryptographicException>(() => pubKey.SignData(data, HashAlgorithmName.SHA1));
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeySeedPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyExpandedKeyPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem512PrivateKeyBothPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem512, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem768PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeySeedPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem768PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyExpandedKeyPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem768PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem768PrivateKeyBothPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem768, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem768PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem1024PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeySeedPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem1024PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyExpandedKeyPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                Assert.Throws<CryptographicException>(() => kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsPqcMLKemX509Supported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem1024PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLKemTestData.IetfMlKem1024PrivateKeyBothPfx;
+            string pfxPassword = MLKemTestData.EncryptedPrivateKeyPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags | X509KeyStorageFlags.Exportable))
+            using (MLKem kem = cert.GetMLKemPrivateKey())
+            {
+                Assert.NotNull(kem);
+                Assert.Equal(MLKemAlgorithm.MLKem1024, kem.Algorithm);
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                AssertExtensions.SequenceEqual(
+                    MLKemTestData.IetfMlKem1024PrivateKeyDecapsulationKey,
+                    kem.ExportDecapsulationKey());
+            }
+        }
+
+        [ConditionalTheory(nameof(MLKemIsNotSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLKem512PrivateKey_NotSupported(X509KeyStorageFlags keyStorageFlags)
+        {
+            const string PfxPassword = "PLACEHOLDER";
+            // [SuppressMessage("Microsoft.Security", "CSCAN-GENERAL0060", Justification="False positive, this is a certificate for unit testing.")]
+            byte[] pfxBytes = Convert.FromBase64String(@"
+                MIIPbgIBAzCCDzQGCSqGSIb3DQEHAaCCDyUEgg8hMIIPHTCCDk8GCSqGSIb3DQEHBqCCDkAwgg48
+                AgEAMIIONQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQIuOL/cp44/ycCAgfQgIIOCBb45pj6
+                GZvu+xvAdBLNywjAGc9qIpToR79uA07thLEZIhYvldyE13JgtT1qwL++wQHbYgGHmwKqHjjIbFLw
+                yhaeoZRkwcALEw1o0t5eVM/k+GN5/uTgzMtaiSgQN+LZ/GqGAu9uJqfP1L75Js+rddY65Bf0hrIQ
+                KEZckjIoFJj4gRX590YMyR+mVcxzMJ/IQ9Na9UunliKjGkdJeXUm+4eTyYV4vGI9Uzfb08dn+Vlx
+                lyASLG0h6yZTjc9pl9HWQ3gjqwpGUJlRzwpSe5PjV5K1ZCk+QyWgwePwQErKu7/Y5QySIqTZcpAF
+                gvFgjaUhWJES+/1KfH8EpQAlj+I+O2T00NhF0eS4nBF5Yk3w7UD8dII6Ubh9qM7t2YBhAmIh2c90
+                ioqmouOexrnQzIlc3nEKnGzsH0XOK2fna/fqsVHTDl7+2YO9VWG7zzOZCcpNnoJzCD7yAz5RmwMD
+                xoP7Lfzg8wZxMMo88deTR+ZJOMBS7nqElmXoQofQmRGPRQBg5IloFXml5Jyny13uYXu20eQb2Qi/
+                ygxyPTPZWQr3dFzns8c7Ef9fIjfbxio0qjVHCH77eswR7J12Ys7ypc5gmfgIl3KGEEA5ht/fSkSv
+                cUsUWOTldBYpT5rcJ3GYR2Tsvoq2l315ZlDuUTmYZIJLGVWNpNxs199UI6mzopMLY1rmF69jl53v
+                XLufEDfl3jRaSSGyhuTpmUnJODdEPJyeLpWOOrIFbGAN8SF9kjwmKHgjTFM+vFzLtvt8NQ/W1i0Y
+                G8DUU3KFVHNJ4qsp8tFo3X9+PPPxWOb0epUpXLm3HgQlmrzy18z1P2mJSDVCoo/4OBNZZlJ3cAru
+                6/umR7cbvzGU2m/01m/QPeKIP9QHELPGO0ynGProHQDhQMXJ8l7XSEQzq6ccS6EeAA5R44b4olCk
+                FRGln5+RPtA0/EuP1gq5dh70jHowwVBKMykXPZuCpuhqCt0/dynQhX9ar/c9Au9v9KiSM4/NDdkm
+                SZcEjbUqJw5Y95Btr+YpxgOgeZPypRny8ptZM2pNww5VmnFFNCT+hmPsTBTSokPE0BMwjgoVEimP
+                VETsSimUT721ZL8RxBFYWF3RPA7sUzZ/WADF+BWv0u9uhkTFQREoMfPy14gsnpBVHT1n8ANuUKGI
+                W3JDjoG2h0wb8LjtKbRHdC/xwhlM8SMZyk7gVimZxPKnrWaQq00WhyfMyChtwulm5vM3ByZK2cqV
+                YBz//A3/O5INoLiM+9ZFE/UCzXxr3iA2oX5goobGDvui8C+VqCCkgchAhNBNVZvt24eaMGes33hb
+                ZhrPyuyR0OtEQFuGIICmH6Py8UdXukNrZvO/jA1RZtEcsU8Hz5WWVpJG5nv4+4+IAYIIlmsUaZPG
+                HqVOv/0S6ByTENieVxjdGZSdQnvddvjYJ6cntWokmsGK311v8ml7634CQgzviIGPOSkOmHlW2UTR
+                QoroGBLAuGffem//K+ahnnvst086X+otHCauvcJyTD/O2hxOh1omlBUKs1Da25G9soquwwD3cnnH
+                yfQMUZ7ZohbDeDRiyuAHTxs/42N+Wcg2xzoaefHb/LouGEzl2lPgncl7cRiZSi/mq2MNp6S4g2bd
+                /o3ITbvhLECte2EESTF20IjaGf85eeXW0oBc9fsmitIF7N5nLCikBYBwTynEyQVc4qEUU8w2hgGz
+                0QJdF6+V0n2qpwaX6FxSe37cE4snhigD1OJ0aogO8THeCSXCE3G23/fZTAwVf5X5SSezAK6z/mn0
+                vkUyeRUcCXorcoI7KO3hy5rZ7QJjqYKsHQTh6MI2r7gMhmyAa0/nb7KV6Bo1zOMfm4SWMMqrwCze
+                18TQVF6S2eRiD8CVJjE1saqgLDSXnQqtbybl57mp4t/4nkicyIsnSuv+cMLfRqMx0FaH/bW+UxqO
+                Aa9QlIM1VyCFMH/RlTwa8WxKwFzS9lEBQCwfwnx6az8AKc1+EmK4JhBh2UFsvLhmgDUxr+3MOccD
+                803aP37fBSOGi+E4zqdTQTmLJNRylwqNi3Hcnliz/RS6lcDLms4alsYL8+8ZsOIQynOkQTIJi6kc
+                x+MpCM4wlLmQLr6fUctcgAml61eYDAWYDgkQkioKsbLOSSWXHpeFGoXAQT4LCh5WY6IGWjTbUMRt
+                jR6fyHvIEIvV7E2gSMo2qdDYsK6Rp8Y4/319E1IF1tcCSLnvuiZUHtqoMy4wUDhbnGBD7CeM9etQ
+                rDNcqEXmOHX7exKxsd2+QqtH7fovGqA678EDAP9LTePYpEZy3BGTEFATIib4KXmTfJ+tAYpFCMU3
+                /b8B6kiVlutc2BUZFnK8bfQB6FcjFEyq5L0cv+GUJzj+kWNkc2Y+VtpjIg/bFZQMovyoMIJbEWXV
+                srEH83EJ85mX3NikeCfKYtDN4bQ3VY01YMPS7H1Npl9zpnRPyBXwzomeaxGMPgNSoqfbzNjNN+ZM
+                Q22Q0LkVzjLjCft00lAl54VvyXY+GGCKLeVCGsB6sLC/UpNnNuJtSGAHNRefFsDTlJGIaeBCKII9
+                w25a/JTIWnpmP/Hm88yJLDCCUI9srHM70TptllViRDDI1vHfhlDHJaQJoccLJnfTiqDqTVho+0fO
+                +U/oN2udwaVnKA732w1UnNaOuS2nok3+1QZ9fAmqXoVJyx6u8UnQyugY93TlqTQx5Hbgtqy4QX6a
+                yxa5bnpXgvZR93QCYfXUcRDuJub6lH3wsPEAME7UlAE+BkCFKJ4KxbaU1ZVtSeUmFi4t8Q0iKIYi
+                K+HhENH0mVqBHV11ovI/KcWNR1OPY13NGLXOyp9k2J0GCt5M/Tocm5pyeqQK769nrEmD9w89C4jI
+                SCT6aoMHlsM0lua3VmDeS1FsD+QeiwSa2shjEiW0809IwI/5J4LdXjjs6saVxgIZMtEGOdD5XtGZ
+                m26wEaQ1toYKgW88YTaWJLWbiGGF1hYmDiR9OPrTMvNiDjRPgs6wANJP29t25KuEAqeYxyUHItM+
+                omlki7yrB1OgZSy2+SNT8CmLO0XAey9wVUaynK7jqtyMjwW4T33AhjdLERDXaqd+2tqUILOiDspw
+                85RTZfPTjVBQrvRZ0dSCE7YqbWutUQFiB7WFGDk5C1XguytQRmdB+50qoFZ+UFYz7+RDteupZNFe
+                oA/3dZXXCm7XovcS0EZDuZB9svQOcOIyz1FsuPF06hViBYKFORPbWMV18h/sb9ocjWmKf8e8VoHD
+                MKySvGg0nrCa/eDYDAivfj9bOT/XBfJLPfV4Awj6h5WjcH9Y50Y0z/9u1/ZX8lIzpgOykNmntzpX
+                mnGmPiC9SzhkUfGm21hwQuIZLk+bJ6PL+jjnM7jRyRpttlyBQLNoSzV1l0TUlggOkX+OaNW5oyoG
+                FyWnh2/6Je+aU9fB7qPyeZNnDp3kPtVoy3yq3Fr6Ja8xcXu1FbrosuQE59iMeoMd7NVZhLqjDjW+
+                +4LYzcJrAFb8t8RlC1R8Rhgxs3l+uQLwUB7Jms/vGxTBvKVpjCWx4YZktBY/dFBsQRk3ZrsuhMLK
+                Oxrav6wyZM+QSMdBZmIaEE9R3z+1QUt/89amR2JrVKbl/GqgtD7/lQh1RrzFcRiByCtVhPW+rrfx
+                LHHCTPMrz3SzYX6N8HvT1NXCQXHbtA4Ia4jnY2M57C3iuh51Q8VWMizRACaqRQaO6gFjUEXRIu3G
+                S7DO83P1jgsfu/4Dmsfz7TJ5nOqsOcKzaZiqqP30OCa2P3RJ61Fzd2gFMatT1xbdGDyK+B00xbiD
+                AScB36JaKjOCFbh4ogwGLQy/lKljgUAaCp/bGbryINeJLTDUqoTXJCIP0j6sXZhWF2Bnv9Et2FE9
+                I/zb0gznyM5YJU5wRXiRe5zQvWUlJLa71P7oQm0ryLvLrL4pRXjSpoD0d3xqX8RxRVgXWntmoI2A
+                X5xKn5i5to5i/86J5fgAmTN44Vf9MBpuoGL3cYUzx2i6BO2Zz4qvZwK06roLo1HN4EM8paRSXc71
+                Ln35pKxEO286r9gHO2f3UMF5kCYC8EW8D9OUvGedZb/7B9aVhN9bc1jHENwu/ANxvd+2rr2r4LOs
+                JCiI64ILY8Uxh8szDCoIAU777f54B0+8m/CiZsLLpgqW91XvDh3XYGuSZ/HUUFCzXqbBE/hH4DBk
+                obJg0GmU9u7WOZuE5WuTxlUUnpiaawfGdWfVSG5VIv4VhI2X3H88P4GA4FoBH5fbarMd65NVTHdV
+                d2RYxORqGfWpY8QAtIT9+pH+S1aL/uDLo2mRECh4fSicu+YdRRjfcrBWwosr72JRNNLBPeLJ9U1W
+                DlOFZGaZmI2/hXjIgJeGXMqVN0PmUFrxQibJtb7QApzVEbpLGsW6IJG7ECuPtTxJ5nJkNH0itBiL
+                X/QW3MOyYG/0R7TzP2WZpn4vHSYIhS/imficz0qc9f25FhKI74aYF/ITbVJJADdjCssLFgYL2V6A
+                VpQMT/4taNc4UQEurY0s82hLdca0Sv6Sj7WumVQJJzGTB1udxGc432uii6rmydut/1Feqkj3FMWI
+                EzIIIaT5udGFCUybMJOPChj3sn2oIjSmW88mJltkROMX9+K0oYyXZnFRzQESz2Ng1tAxJP2od6XN
+                QIAKDyx71bg2e2EdTpd6liTYq8x2O+7sqfHPyXXAkIbZuYf94NcArPnflcr2GfQRnoiJGcfv6Grd
+                hU4LB+J3A7PvIpdcTQip3SaomwwN1XzlTp9uqWi4YOriEsCFf4X+s77lI9qZUBCcXZ0xIx6GpnPf
+                DYow3xoSXP/dwZd+tzTjWzB0cLGhf0CC5Hl+4brZ3mRhy2FDGqlvNEiD213LsPJ76rdis0wwgccG
+                CSqGSIb3DQEHAaCBuQSBtjCBszCBsAYLKoZIhvcNAQwKAQKgejB4MBwGCiqGSIb3DQEMAQMwDgQI
+                Kf2rZ5CMXzECAgfQBFieWmsNihgo16StxXMs21eEnLenWStP2ZBGweIz8nOrqDnmX9TDaN8Scaf9
+                zVqXffa8Oj54MVG/ciqCAoK59kg4pfryovpiXXFbuMLAZlcXaUPRDjNyeb4tMSUwIwYJKoZIhvcN
+                AQkVMRYEFAoeq6T+1m3SxQcSi9MLIHgD+izRMDEwITAJBgUrDgMCGgUABBSkzDq8UAiqd5YK7p1i
+                YwIgZfxAsAQIG3eE/Gomu/ECAgfQ");
+
+            Assert.Throws<CryptographicException>(
+               () => X509CertificateLoader.LoadPkcs12(pfxBytes, PfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
+            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
+            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
+            // didn't actually load.
+            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
+            {
+                using (X509Certificate2 cert = new(pfxBytes, PfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, PfxPassword));
+                }
+
+                pfxBytes = RepackWithCsp(pfxBytes, PfxPassword);
+            }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, PfxPassword, keyStorageFlags));
+        }
+
+        public static IEnumerable<object[]> ReadMLDsa_Pfx_Ietf_Data =>
+            from storageFlagWrapped in StorageFlags
+            from storageFlag in storageFlagWrapped
+            from ietfVectorWrapped in MLDsaTestsData.IetfMLDsaAlgorithms
+            from ietfVector in ietfVectorWrapped
+            select new object[] { storageFlag, ietfVector };
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
+        public static void ReadMLDsa512PrivateKey_Seed_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
+        {
+            byte[] pfxBytes = info.Pfx_Seed;
+            string pfxPassword = info.EncryptionPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
+            {
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
+            }
+        }
+
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.SupportsExportingPrivateKeyPkcs8))]
+        [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
+        public static void ReadMLDsa512PrivateKey_ExpandedKey_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
+        {
+            byte[] pfxBytes = info.Pfx_Expanded;
+            string pfxPassword = info.EncryptionPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
+            {
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
+            }
+        }
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(ReadMLDsa_Pfx_Ietf_Data))]
+        public static void ReadMLDsa512PrivateKey_Both_Pfx(X509KeyStorageFlags keyStorageFlags, MLDsaKeyInfo info)
+        {
+            byte[] pfxBytes = info.Pfx_Both;
+            string pfxPassword = info.EncryptionPassword;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (MLDsa pubKey = cert.GetMLDsaPublicKey())
+            using (MLDsa privKey = cert.GetMLDsaPrivateKey())
+            {
+                Assert.Equal("CN=LAMPS WG, O=IETF", cert.Subject);
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(info.PublicKey, pubKey.ExportMLDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
+            }
+        }
+
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.MLDsaIsNotSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadMLDsa_Pfx_Ietf_NotSupported(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = MLDsaTestsData.IetfMLDsa_Pfx_Pbes1;
+            string pfxPassword = "PLACEHOLDER";
+
+            Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
+            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
+            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
+            // didn't actually load.
+            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
+            {
+                using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
+                }
+
+                pfxBytes = RepackWithCsp(pfxBytes, pfxPassword);
+            }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
+        }
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadSlhDsa_Pfx_Ietf(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx;
+            string pfxPassword = "PLACEHOLDER";
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags))
+            using (SlhDsa pubKey = cert.GetSlhDsaPublicKey())
+            using (SlhDsa privKey = cert.GetSlhDsaPrivateKey())
+            {
+                Assert.Equal("O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR", cert.Subject);
+
+                Assert.NotNull(pubKey);
+                Assert.NotNull(privKey);
+
+                AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, pubKey.ExportSlhDsaPublicKey());
+
+                byte[] data = [42];
+                byte[] sig = privKey.SignData(data);
+
+                AssertExtensions.TrueExpression(pubKey.VerifyData(data, sig));
+            }
+        }
+
+        [ConditionalTheory(typeof(SlhDsaTestHelpers), nameof(SlhDsaTestHelpers.SlhDsaIsNotSupported))]
+        [MemberData(nameof(StorageFlags))]
+        public static void ReadSlhDsa_Pfx_Ietf_NotSupported(X509KeyStorageFlags keyStorageFlags)
+        {
+            byte[] pfxBytes = SlhDsaTestData.IetfSlhDsaSha2_128sCertificatePfx_Pbes1;
+            string pfxPassword = "PLACEHOLDER";
+
+            Assert.Throws<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12(pfxBytes, pfxPassword, keyStorageFlags));
+
+            // This particular PFX does not specify a provider for the private key, therefore
+            // Windows when using non-ephemeral delays throwing no private key and instead acts as it the
+            // keyset does not exist. Exporting it again to PFX forces Windows to reconcile the fact the key
+            // didn't actually load.
+            if (PlatformDetection.IsWindows && keyStorageFlags != X509KeyStorageFlags.EphemeralKeySet)
+            {
+                using (X509Certificate2 cert = new(pfxBytes, pfxPassword, keyStorageFlags))
+                {
+                    Assert.Throws<CryptographicException>(
+                        () => cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2Aes256Sha256, pfxPassword));
+                }
+
+                pfxBytes = RepackWithCsp(pfxBytes, pfxPassword);
+            }
+
+            Assert.Throws<CryptographicException>(
+                () => new X509Certificate2(pfxBytes, pfxPassword, keyStorageFlags));
         }
 
 #if !NO_EPHEMERALKEYSET_AVAILABLE
@@ -514,6 +952,123 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        // preserveProvider: false, non-ephemeral
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet)]
+        [InlineData(1, false, X509KeyStorageFlags.DefaultKeySet)]
+        [InlineData(1, false, X509KeyStorageFlags.MachineKeySet)]
+        // preserveProvider: true, non-ephemeral
+        [InlineData(2, true, X509KeyStorageFlags.UserKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.DefaultKeySet)]
+        [InlineData(2, true, X509KeyStorageFlags.MachineKeySet)]
+        // preserveProvider: false, ephemeral
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, false, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        // preserveProvider: true, ephemeral
+        [InlineData(0, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        [InlineData(0, true, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet)]
+        public static void Windows_MachineKey_HasExpectedProvider(int expectedState, bool preserveProvider, X509KeyStorageFlags storageFlags)
+        {
+            const string StrongProv = "Microsoft Strong Cryptographic Provider";
+
+            byte[] pfx = MakePfx();
+            string cngKsp = CngProvider.MicrosoftSoftwareKeyStorageProvider.Provider;
+
+            if (expectedState == 0)
+            {
+                Assert.Equal(cngKsp, GetProvider(pfx, preserveProvider, storageFlags));
+            }
+            else if (expectedState == 1)
+            {
+                HashSet<string> machineKeyAllowedProviders = new() { cngKsp };
+
+                if (!AdminHelpers.IsProcessElevated())
+                {
+                    machineKeyAllowedProviders.Add("Microsoft Enhanced RSA and AES Cryptographic Provider");
+                }
+
+                Assert.Contains(GetProvider(pfx, preserveProvider, storageFlags), machineKeyAllowedProviders);
+            }
+            else if (expectedState == 2)
+            {
+                Assert.Equal(StrongProv, GetProvider(pfx, preserveProvider, storageFlags));
+            }
+
+            static byte[] MakePfx()
+            {
+                // Weak PBE is fine, the key is public and the password is well-known.
+                PbeParameters pbeParams = new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 10);
+                Pkcs9LocalKeyId localKeyId = new Pkcs9LocalKeyId([1]);
+
+                using (RSA rsa = RSA.Create())
+                {
+                    rsa.ImportFromPem(TestData.RsaPkcs1Key);
+                    DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                    CertificateRequest req = new CertificateRequest(
+                        $"CN=Self-Signed Test {now:yyyy-MM-dd HHmmss}",
+                        rsa,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pkcs1);
+
+                    using (X509Certificate2 cert = req.CreateSelfSigned(now, now.AddMinutes(5)))
+                    {
+                        Pkcs12Builder builder = new Pkcs12Builder();
+                        Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+
+                        Pkcs12CertBag certBag = certContents.AddCertificate(cert);
+                        certBag.Attributes.Add(localKeyId);
+                        builder.AddSafeContentsEncrypted(certContents, "", pbeParams);
+
+                        Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+                        Pkcs12ShroudedKeyBag keyBag = keyContents.AddShroudedKey(rsa, "", pbeParams);
+                        keyBag.Attributes.Add(localKeyId);
+
+                        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                        writer.WriteCharacterString(UniversalTagNumber.BMPString, StrongProv);
+
+                        keyBag.Attributes.Add(new AsnEncodedData(s_keyProviderNameOid, writer.Encode()));
+
+                        builder.AddSafeContentsUnencrypted(keyContents);
+                        builder.SealWithMac("", HashAlgorithmName.SHA1, 10);
+                        return builder.Encode();
+                    }
+                }
+            }
+
+            static string GetProvider(byte[] pfxBytes, bool preserveProvider, X509KeyStorageFlags keyStorageFlags)
+            {
+                X509Certificate2 cert;
+
+                if (preserveProvider)
+                {
+                    cert = new X509Certificate2(pfxBytes, "", keyStorageFlags);
+                }
+                else
+                {
+                    cert = X509CertificateLoader.LoadPkcs12(pfxBytes, "", keyStorageFlags);
+                }
+
+                using (cert)
+                using (RSA rsa = cert.GetRSAPrivateKey())
+                {
+                    if (rsa is RSACng rsaCng)
+                    {
+                        return rsaCng.Key.Provider.Provider;
+                    }
+
+                    return null;
+                }
+            }
+        }
+
         internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
         {
             if (allowedIterations == UnlimitedIterations)
@@ -574,6 +1129,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2 newC = new X509Certificate2(c.Handle);
             c.Dispose();
             return newC;
+        }
+
+        private static byte[] RepackWithCsp(byte[] pfxBytes, string pfxPassword)
+        {
+            // This method assumes a very specific format for the incoming data.
+            // An encrypted data segment containing the certificate,
+            // and an unencrypted segment consisting of one shrouded key,
+            // and that key already has attributes (LocalKeyId),
+            // and does not already have a provider name attribute.
+
+            Pkcs12Info pkcs12 = Pkcs12Info.Decode(pfxBytes, out _, skipCopy: true);
+
+            if (!pkcs12.VerifyMac(pfxPassword))
+            {
+                throw new InvalidOperationException();
+            }
+
+            Pkcs12Builder builder = new Pkcs12Builder();
+
+            foreach (Pkcs12SafeContents safeContents in pkcs12.AuthenticatedSafe)
+            {
+                if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
+                {
+                    builder.AddSafeContentsUnencrypted(safeContents);
+                }
+                else
+                {
+                    Pkcs12SafeContents newContents = new Pkcs12SafeContents();
+                    AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+                    writer.WriteCharacterString(UniversalTagNumber.BMPString, CngProvider.MicrosoftSoftwareKeyStorageProvider.Provider);
+
+                    foreach (Pkcs12SafeBag bag in safeContents.GetBags())
+                    {
+                        bag.Attributes.Add(new AsnEncodedData(s_keyProviderNameOid, writer.Encode()));
+
+                        newContents.AddSafeBag(bag);
+                    }
+
+                    builder.AddSafeContentsUnencrypted(newContents);
+                }
+            }
+
+            builder.SealWithMac(pfxPassword, HashAlgorithmName.SHA256, 25);
+            return builder.Encode();
         }
 
         internal delegate ulong GetIterationCountDelegate(ReadOnlySpan<byte> pkcs12, out int bytesConsumed);

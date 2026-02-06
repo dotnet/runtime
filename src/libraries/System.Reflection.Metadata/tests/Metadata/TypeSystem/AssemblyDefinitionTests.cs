@@ -18,6 +18,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 var assemblyDef = reader.GetAssemblyDefinition();
                 var assemblyRef = reader.GetAssemblyReference(assemblyRefHandle);
+
                 var assemblyName = assemblyDef.GetAssemblyName();
 
                 // Validate against input assembly
@@ -35,6 +36,21 @@ namespace System.Reflection.Metadata.Tests
 
                 // Validate against AssemblyReference
                 ValidateDefinitionAssemblyNameAgainst(assemblyName, reader, assemblyRef);
+
+                var assemblyNameInfo = assemblyDef.GetAssemblyNameInfo();
+
+                // Validate against input assembly
+                Assert.Equal(assembly.Version, assemblyNameInfo.Version);
+                Assert.Equal(assembly.Name, assemblyNameInfo.Name);
+                Assert.Equal(assembly.Culture, assemblyNameInfo.CultureName);
+                Assert.True(assemblyNameInfo.PublicKeyOrToken.IsDefault);
+                Assert.Equal(AssemblyNameFlags.None, assemblyNameInfo.Flags);
+
+                // Validate against AssemblyDefinition
+                ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyDef);
+
+                // Validate against AssemblyReference
+                ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyRef);
             }
         }
 
@@ -49,6 +65,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 var assemblyDef = reader.GetAssemblyDefinition();
                 var assemblyRef = reader.GetAssemblyReference(assemblyRefHandle);
+
                 var assemblyName = assemblyDef.GetAssemblyName();
 
                 // Validate against input assembly
@@ -66,6 +83,21 @@ namespace System.Reflection.Metadata.Tests
 
                 // Validate against AssemblyReference
                 ValidateDefinitionAssemblyNameAgainst(assemblyName, reader, assemblyRef);
+
+                var assemblyNameInfo = assemblyDef.GetAssemblyNameInfo();
+
+                // Validate against input assembly
+                Assert.Equal(assembly.Version, assemblyNameInfo.Version);
+                Assert.Equal(assembly.Name, assemblyNameInfo.Name);
+                Assert.Null(assemblyNameInfo.CultureName);
+                Assert.Equal(assembly.Flags, assemblyNameInfo.Flags);
+                Assert.NotEmpty(assemblyNameInfo.PublicKeyOrToken);
+
+                // Validate against AssemblyDefinition
+                ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyDef);
+
+                // Validate against AssemblyReference
+                ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyRef);
             }
         }
 
@@ -88,6 +120,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     var assemblyDef = reader.GetAssemblyDefinition();
                     var assemblyRef = reader.GetAssemblyReference(assemblyRefHandle);
+
                     var assemblyName = assemblyDef.GetAssemblyName();
 
                     // Validate against input assembly
@@ -105,6 +138,21 @@ namespace System.Reflection.Metadata.Tests
 
                     // Validate against AssemblyReference
                     ValidateDefinitionAssemblyNameAgainst(assemblyName, reader, assemblyRef);
+
+                    var assemblyNameInfo = assemblyDef.GetAssemblyNameInfo();
+
+                    // Validate against input assembly
+                    Assert.Equal(item.Version, assemblyNameInfo.Version);
+                    Assert.Equal(item.Name, assemblyNameInfo.Name);
+                    Assert.Null(assemblyNameInfo.CultureName);
+                    Assert.True(assemblyNameInfo.PublicKeyOrToken.IsDefault);
+                    Assert.Equal(AssemblyNameFlags.None, assemblyNameInfo.Flags);
+
+                    // Validate against AssemblyDefinition
+                    ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyDef);
+
+                    // Validate against AssemblyReference
+                    ValidateDefinitionAssemblyNameAgainst(assemblyNameInfo, reader, assemblyRef);
                 }
             }
         }
@@ -117,9 +165,20 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal((AssemblyContentType)(((int)assemblyDef.Flags & (int)AssemblyFlags.ContentTypeMask) >> 9), assemblyName.ContentType);
         }
 
+        private void ValidateDefinitionAssemblyNameAgainst(AssemblyNameInfo assemblyNameInfo, MetadataReader reader, AssemblyDefinition assemblyDef)
+        {
+            Assert.Equal(reader.GetString(assemblyDef.Name), assemblyNameInfo.Name);
+            Assert.Equal(assemblyDef.Version, assemblyNameInfo.Version);
+        }
+
         private void ValidateDefinitionAssemblyNameAgainst(AssemblyName assemblyName, MetadataReader reader, AssemblyReference assemblyRef)
         {
             Assert.NotEqual(reader.GetString(assemblyRef.Name), assemblyName.Name);
+        }
+
+        private void ValidateDefinitionAssemblyNameAgainst(AssemblyNameInfo assemblyNameInfo, MetadataReader reader, AssemblyReference assemblyRef)
+        {
+            Assert.NotEqual(reader.GetString(assemblyRef.Name), assemblyNameInfo.Name);
         }
     }
 }

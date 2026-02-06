@@ -10,7 +10,7 @@ namespace System.Diagnostics
         private long _startTimeStamp;
         private bool _isRunning;
 
-        public static readonly long Frequency = QueryPerformanceFrequency();
+        public static readonly long Frequency = GetFrequency();
         public static readonly bool IsHighResolution = true;
 
         // performance-counter frequency, in counts per ticks.
@@ -92,8 +92,6 @@ namespace System.Diagnostics
                 return timeElapsed;
             }
         }
-
-        public static long GetTimestamp() => QueryPerformanceCounter();
 
         /// <summary>Gets the elapsed time since the <paramref name="startingTimestamp"/> value retrieved using <see cref="GetTimestamp"/>.</summary>
         /// <param name="startingTimestamp">The timestamp marking the beginning of the time period.</param>

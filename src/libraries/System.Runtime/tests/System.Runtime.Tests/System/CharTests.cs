@@ -17,7 +17,7 @@ namespace System.Tests
         [InlineData('h', 'a', 1)]
         [InlineData('h', 'z', -1)]
         [InlineData('h', null, 1)]
-        public void CompareTo_Other_ReturnsExpected(char c, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(char c, object? value, int expected)
         {
             if (value is char charValue)
             {
@@ -147,21 +147,71 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("highSurrogate", () => char.ConvertToUtf32('\u0000', '\u0000')); // Non-surrogate, non-surrogate
         }
 
-        [Theory]
-        [InlineData('a', 'a', true)]
-        [InlineData('a', 'A', false)]
-        [InlineData('a', 'b', false)]
-        [InlineData('a', (int)'a', false)]
-        [InlineData('a', "a", false)]
-        [InlineData('a', null, false)]
-        public static void EqualsTest(char c, object obj, bool expected)
+        public static IEnumerable<object[]> EqualsTest_TestData()
         {
-            if (obj is char)
+            yield return new object[] { 'a', 'a', StringComparison.Ordinal, null, true };
+            yield return new object[] { 'a', 'A', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', 'b', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', (int)'a', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', "a", StringComparison.Ordinal, null, false };
+            yield return new object[] { 'a', null, StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'F', 'f', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.OrdinalIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.CurrentCultureIgnoreCase, null, true };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ü', 'Ü', StringComparison.InvariantCultureIgnoreCase, null, true };
+            yield return new object[] { 'ı', 'I', StringComparison.Ordinal, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, null, false };
+            yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, null, false };
+
+            // Android has different results with "tr-TR" culture
+            // See https://github.com/dotnet/runtime/issues/106560
+            if (PlatformDetection.IsNotAndroid)
             {
-                Assert.Equal(expected, c.Equals((char)obj));
-                Assert.Equal(expected, c.GetHashCode().Equals(obj.GetHashCode()));
+                yield return new object[] { 'ı', 'I', StringComparison.Ordinal, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.OrdinalIgnoreCase, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.CurrentCultureIgnoreCase, "tr-TR", true };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCulture, "tr-TR", false };
+                yield return new object[] { 'ı', 'I', StringComparison.InvariantCultureIgnoreCase, "tr-TR", false };
             }
-            Assert.Equal(expected, c.Equals(obj));
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualsTest_TestData))]
+        public static void EqualsTest(char c, object? other, StringComparison comparisonType, string? cultureName, bool expected)
+        {
+            using (new ThreadCultureChange(cultureName))
+            {
+                if (other is char otherChar)
+                {
+                    if (comparisonType is StringComparison.Ordinal)
+                    {
+                        Assert.Equal(expected, c.Equals(otherChar));
+                        Assert.Equal(expected, c.ToString().Equals(otherChar.ToString()));
+
+                        Assert.Equal(expected, c.GetHashCode().Equals(other.GetHashCode()));
+                    }
+
+                    Assert.Equal(expected, c.Equals(otherChar, comparisonType));
+                    Assert.Equal(expected, c.ToString().Equals(otherChar.ToString(), comparisonType));
+                }
+
+                if (comparisonType is StringComparison.Ordinal)
+                {
+                    Assert.Equal(expected, c.Equals(other));
+                }
+            }
         }
 
         [Theory]
@@ -1019,13 +1069,55 @@ namespace System.Tests
         [InlineData("\\u0135", typeof(FormatException))]
         [InlineData("\u01356", typeof(FormatException))]
         [InlineData("\ud801\udc01", typeof(FormatException))] // Surrogate pair
-        public static void Parse_Invalid(string s, Type exceptionType)
+        public static void Parse_Invalid(string? s, Type exceptionType)
         {
             char c;
             Assert.False(char.TryParse(s, out c));
             Assert.Equal(default(char), c);
 
             Assert.Throws(exceptionType, () => char.Parse(s));
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0x30 }, '\u0030')] // ASCII byte
+        [InlineData(new byte[] { 0xC3, 0x90 }, '\u00d0')] // [ C3 90 ] is U+00D0 LATIN CAPITAL LETTER ETH
+        [InlineData(new byte[] { 0xE2, 0x88, 0xB4 }, '\u2234')] // [ E2 88 B4 ] is U+2234 THEREFORE
+        public static void ParseUtf8(byte[] data, char expectedChar)
+        {
+            Assert.Equal(expectedChar, Utf8SpanParsableHelper<char>.Parse(data, null));
+            Assert.True(Utf8SpanParsableHelper<char>.TryParse(data, null, out char actualChar));
+            Assert.Equal(expectedChar, actualChar);
+        }
+
+        [Theory]
+        [InlineData(new byte[0], typeof(FormatException))] // empty buffer
+        [InlineData(new byte[] { 0x30, 0x40, 0x50 }, typeof(FormatException))] // Multiple ASCII bytes
+        [InlineData(new byte[] { 0x80 }, typeof(FormatException))] // standalone continuation byte
+        [InlineData(new byte[] { 0x80, 0x80, 0x80 }, typeof(FormatException))] // standalone continuation byte
+        [InlineData(new byte[] { 0xC1 }, typeof(FormatException))] // C1 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xF5 }, typeof(FormatException))] // F5 is never a valid UTF-8 byte
+        [InlineData(new byte[] { 0xC2 }, typeof(FormatException))] // C2 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xED }, typeof(FormatException))] // ED is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xF4 }, typeof(FormatException))] // F4 is a valid byte; expecting it to be followed by a continuation byte
+        [InlineData(new byte[] { 0xC2, 0xC2 }, typeof(FormatException))] // C2 not followed by continuation byte
+        [InlineData(new byte[] { 0xC1, 0xBF }, typeof(FormatException))] // [ C1 BF ] is overlong 2-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0x9F }, typeof(FormatException))] // [ E0 9F ] is overlong 3-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE0, 0xA0 }, typeof(FormatException))] // [ E0 A0 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0x9F }, typeof(FormatException))] // [ ED 9F ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xED, 0xBF }, typeof(FormatException))] // [ ED BF ] would place us in UTF-16 surrogate range, all surrogate sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xEE, 0x80 }, typeof(FormatException))] // [ EE 80 ] is valid 2-byte start of 3-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x8F }, typeof(FormatException))] // [ F0 8F ] is overlong 4-byte sequence, all overlong sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xF0, 0x90 }, typeof(FormatException))] // [ F0 90 ] is valid 2-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF4, 0x90 }, typeof(FormatException))] // [ F4 90 ] would place us beyond U+10FFFF, all such sequences have maximal invalid subsequence length 1
+        [InlineData(new byte[] { 0xE2, 0x88, 0xC0 }, typeof(FormatException))] // [ E2 88 ] followed by non-continuation byte, maximal invalid subsequence length 2
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98 }, typeof(FormatException))] // [ F0 9F 98 ] is valid 3-byte start of 4-byte sequence
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0x20 }, typeof(FormatException))] // [ F0 9F 98 ] followed by non-continuation byte, maximal invalid subsequence length 3
+        [InlineData(new byte[] { 0xF0, 0x9F, 0x98, 0xB2 }, typeof(OverflowException))] // [ F0 9F 98 B2 ] is U+1F632 ASTONISHED FACE; outside char range
+        public static void ParseUtf8_Invalid(byte[] data, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => Utf8SpanParsableHelper<char>.Parse(data, null));
+            Assert.False(Utf8SpanParsableHelper<char>.TryParse(data, null, out char actualChar));
+            Assert.Equal('\0', actualChar);
         }
 
         private static IEnumerable<char> GetTestCharsNotInCategory(params UnicodeCategory[] categories)

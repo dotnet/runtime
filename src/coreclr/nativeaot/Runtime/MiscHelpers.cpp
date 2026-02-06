@@ -9,8 +9,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -18,7 +18,6 @@
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
-#include "varint.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
@@ -37,6 +36,7 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 #include <minipal/debugger.h>
+#include <minipal/time.h>
 
 FCIMPL0(void, RhDebugBreak)
 {
@@ -67,16 +67,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhFlushProcessWriteBuffers");
-
-    PalFlushProcessWriteBuffers();
-}
-
-// Get the list of currently loaded Redhawk modules (as OS HMODULE handles). The caller provides a reference
+// Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
 // that is less than, equal to or greater than the number of elements in the array). If there are more modules
 // loaded than the array will hold then the array is filled to capacity and the caller can tell further
@@ -346,7 +337,7 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         pCode++;
     }
     // is this an indirect jump?
-    // pcalau12i $t7, imm20; ld.d $t7, $t7, imm12; jirl $r0, $t7, 0
+    // pcalau12i $rd, imm20; ld.d $rd, $rj, imm12; jirl $rd, $rj, 0
     if ((pCode[0] & 0xfe000000) == 0x1a000000 &&
         (pCode[1] & 0xffc00000) == 0x28c00000 &&
         (pCode[2] & 0xfc000000) == 0x4c000000)
@@ -419,11 +410,6 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 }
 FCIMPLEND
 
-EXTERN_C uint64_t QCALLTYPE RhpGetTickCount64()
-{
-    return PalGetTickCount64();
-}
-
 EXTERN_C int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
 EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
@@ -490,13 +476,6 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
     return g_pRhConfig->GetKnobCount();
 }
 FCIMPLEND
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
-{
-    __cpuidex(cpuInfo, functionId, subFunctionId);
-}
-#endif
 
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {

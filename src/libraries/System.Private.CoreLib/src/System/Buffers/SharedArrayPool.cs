@@ -60,7 +60,7 @@ namespace System.Buffers
             SharedArrayPoolThreadLocalArray[]? tlsBuckets = t_tlsBuckets;
             if (tlsBuckets is not null && (uint)bucketIndex < (uint)tlsBuckets.Length)
             {
-                buffer = Unsafe.As<T[]?>(tlsBuckets[bucketIndex].Array);
+                buffer = Unsafe.As<T[]>(tlsBuckets[bucketIndex].Array);
                 if (buffer is not null)
                 {
                     tlsBuckets[bucketIndex].Array = null;
@@ -79,7 +79,7 @@ namespace System.Buffers
                 SharedArrayPoolPartitions? b = perCoreBuckets[bucketIndex];
                 if (b is not null)
                 {
-                    buffer = Unsafe.As<T[]?>(b.TryPop());
+                    buffer = Unsafe.As<T[]>(b.TryPop());
                     if (buffer is not null)
                     {
                         if (log.IsEnabled())
@@ -100,14 +100,20 @@ namespace System.Buffers
                 // as it's a valid length array, and we want the pool to be usable in general instead of using
                 // `new`, even for computed lengths. But, there's no need to log the empty array.  Our pool is
                 // effectively infinite for empty arrays and we'll never allocate for rents and never store for returns.
-                return Array.Empty<T>();
+                return [];
             }
             else
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(minimumLength);
             }
 
-            buffer = GC.AllocateUninitializedArray<T>(minimumLength);
+            // For large arrays, we prefer to avoid the zero-initialization costs. However, as the resulting
+            // arrays could end up containing arbitrary bit patterns, we only allow this for types for which
+            // every possible bit pattern is valid.
+            buffer = typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
+                GC.AllocateUninitializedArray<T>(minimumLength) :
+                new T[minimumLength];
+
             if (log.IsEnabled())
             {
                 int bufferId = buffer.GetHashCode();

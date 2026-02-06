@@ -245,6 +245,12 @@ namespace System.Net.Http
                 switch (challenge.AuthenticationType)
                 {
                     case AuthenticationType.Digest:
+                        if (CredentialCache.DefaultCredentials == credentials)
+                        {
+                            // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
+                            break;
+                        }
+
                         var digestResponse = new DigestResponse(challenge.ChallengeData);
                         if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                         {
@@ -266,6 +272,12 @@ namespace System.Net.Http
                         break;
 
                     case AuthenticationType.Basic:
+                        if (CredentialCache.DefaultCredentials == credentials)
+                        {
+                            // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
+                            break;
+                        }
+
                         if (preAuthCredential != null)
                         {
                             if (NetEventSource.Log.IsEnabled())

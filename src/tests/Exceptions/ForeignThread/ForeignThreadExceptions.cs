@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public delegate void MyCallback();
 
@@ -14,6 +15,12 @@ public class ForeignThreadExceptionsTest
 
     [DllImport("ForeignThreadExceptionsNative")]
     public static extern void InvokeCallbackOnNewThread(MyCallback callback);
+
+    [DllImport("ForeignThreadExceptionsNative")]
+    public static extern void InvokeCallbackAndCatchTwiceOnNewThread(MyCallback callback);
+
+    [DllImport("ForeignThreadExceptionsNative")]
+    public static extern void ThrowException();
 
     public static void MethodThatThrows()
     {
@@ -56,8 +63,32 @@ public class ForeignThreadExceptionsTest
                 Console.WriteLine("Caught hardware exception in a delegate called through Reverse PInvoke on a foreign thread.");
             }
         });
+
+        if (OperatingSystem.IsWindows() && !TestLibrary.Utilities.IsNativeAot && !TestLibrary.Utilities.IsMonoRuntime)
+        {
+            InvokeCallbackAndCatchTwiceOnNewThread(() => {
+                throw new Exception("Exception unhandled in any managed code");
+            });
+
+            int finallyCallsCount = 0;
+            InvokeCallbackAndCatchTwiceOnNewThread(() => {
+                try
+                {
+                    // Throw native exception that is not handled in any managed code
+                    ThrowException();
+                }
+                finally
+                {
+                    finallyCallsCount++;
+                }
+            });
+
+            Assert.Equal(2, finallyCallsCount);
+        }
     }
 
+    [ActiveIssue("llvmfullaot: EH problem", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     [Fact]
     public static int TestEntryPoint()
     {

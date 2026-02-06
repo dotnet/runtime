@@ -79,11 +79,15 @@ namespace NetClient
             return 100;
         }
 
+        private class InterfaceImpl : Server.Contract.IInterface1
+        {
+        }
+
         private static void ValidationTests()
         {
             Console.WriteLine($"Running {nameof(ValidationTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- Primitives <=> VARIANT...");
             {
@@ -160,12 +164,10 @@ namespace NetClient
             }
 
             Console.WriteLine("-- Wrappers <=> VARIANT...");
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
             {
                 var expected = 123.456m;
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new CurrencyWrapper(expected)));
             }
-#pragma warning restore 0618
             {
                 var expected = "The quick Fox jumped over the lazy Dog.";
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new BStrWrapper(expected)));
@@ -209,13 +211,22 @@ namespace NetClient
                 var expected = new Guid("{8EFAD956-B33D-46CB-90F4-45F55BA68A96}");
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
             }
+
+            Console.WriteLine("-- Interfaces...");
+            {
+                Assert.True(new MiscTypesTestingClass() is Server.Contract.IInterface1);
+                Assert.True(Activator.CreateInstance(typeof(MiscTypesTestingClass)) is Server.Contract.IInterface1);
+
+                var interfaceMaybe = miscTypeTesting.Marshal_Interface(new InterfaceImpl());
+                Assert.True(interfaceMaybe is Server.Contract.IInterface1);
+            }
         }
 
         private static void ValidateNegativeTests()
         {
             Console.WriteLine($"Running {nameof(ValidateNegativeTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- DispatchWrapper with non-IDispatch object <=> VARIANT...");
             {

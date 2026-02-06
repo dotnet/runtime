@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -190,12 +192,12 @@ namespace System.Threading.Tests
         [MemberData(nameof(GetValidNames))]
         public void Ctor_ValidName_Windows(string name)
         {
-            new Semaphore(0, 1, name).Dispose();
+            new Semaphore(0, 1, name, options: default).Dispose();
 
             bool createdNew;
-            using var s = new Semaphore(0, 1, name, out createdNew);
+            using var s = new Semaphore(0, 1, name, options: default, out createdNew);
             Assert.True(createdNew);
-            new Semaphore(0, 1, name, out createdNew).Dispose();
+            new Semaphore(0, 1, name, options: default, out createdNew).Dispose();
             Assert.False(createdNew);
         }
 
@@ -204,15 +206,10 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
-            string name = Guid.NewGuid().ToString("N");
-
-            Assert.Throws<PlatformNotSupportedException>(() => new Semaphore(0, 1, name));
-
-            Assert.Throws<PlatformNotSupportedException>(() =>
-            {
-                bool createdNew;
-                new Semaphore(0, 1, name, out createdNew).Dispose();
-            });
+            Assert.Throws<PlatformNotSupportedException>(() => new Semaphore(0, 1, "anything"));
+            Assert.Throws<PlatformNotSupportedException>(() => new Semaphore(0, 1, "anything", options: default));
+            Assert.Throws<PlatformNotSupportedException>(() => new Semaphore(0, 1, "anything", out _));
+            Assert.Throws<PlatformNotSupportedException>(() => new Semaphore(0, 1, "anything", options: default, out _));
         }
 
         [Fact]
@@ -225,15 +222,15 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0));
             AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, null, options: default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, null, options: default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, null, options: default));
             AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1, null));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, "CtorSemaphoreTest", out createdNew));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, "CtorSemaphoreTest", out createdNew));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, "CtorSemaphoreTest", out createdNew));
-            AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-1, 1, "CtorSemaphoreTest", options: default, out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialCount", () => new Semaphore(-2, 1, "CtorSemaphoreTest", options: default, out createdNew));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumCount", () => new Semaphore(0, 0, "CtorSemaphoreTest", options: default, out createdNew));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1, "CtorSemaphoreTest", options: default, out createdNew));
         }
 
         [Fact]
@@ -300,16 +297,19 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
-        [Fact]
-        public void NamedProducerConsumer()
+        [Theory]
+        [MemberData(nameof(MutexTests.NameOptionCombinations_MemberData), MemberType = typeof(MutexTests))]
+        public void NamedProducerConsumer(bool currentUserOnly, bool currentSessionOnly)
         {
             string name = Guid.NewGuid().ToString("N");
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
             const int NumItems = 5;
             var b = new Barrier(2);
             Task.WaitAll(
                 Task.Factory.StartNew(() =>
                 {
-                    using (var s = new Semaphore(0, int.MaxValue, name))
+                    using (var s = new Semaphore(0, int.MaxValue, name, options))
                     {
                         Assert.True(b.SignalAndWait(FailedWaitTimeout));
                         for (int i = 0; i < NumItems; i++)
@@ -319,7 +319,7 @@ namespace System.Threading.Tests
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
                 Task.Factory.StartNew(() =>
                 {
-                    using (var s = new Semaphore(0, int.MaxValue, name))
+                    using (var s = new Semaphore(0, int.MaxValue, name, options))
                     {
                         Assert.True(b.SignalAndWait(FailedWaitTimeout));
                         for (int i = 0; i < NumItems; i++)
@@ -333,11 +333,10 @@ namespace System.Threading.Tests
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.OpenExisting(null));
-            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.OpenExisting(string.Empty));
             Assert.Throws<PlatformNotSupportedException>(() => Semaphore.OpenExisting("anything"));
-            Semaphore semaphore;
-            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.TryOpenExisting("anything", out semaphore));
+            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.OpenExisting("anything", options: default));
+            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.TryOpenExisting("anything", out _));
+            Assert.Throws<PlatformNotSupportedException>(() => Semaphore.TryOpenExisting("anything", options: default, out _));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
@@ -345,7 +344,9 @@ namespace System.Threading.Tests
         public void OpenExisting_InvalidNames_Windows()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Semaphore.OpenExisting(null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => Semaphore.OpenExisting(null, options: default));
             AssertExtensions.Throws<ArgumentException>("name", null, () => Semaphore.OpenExisting(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => Semaphore.OpenExisting(string.Empty, options: default));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
@@ -353,27 +354,30 @@ namespace System.Threading.Tests
         public void OpenExisting_UnavailableName_Windows()
         {
             string name = Guid.NewGuid().ToString("N");
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, options: default));
             Semaphore s;
-            Assert.False(Semaphore.TryOpenExisting(name, out s));
+            Assert.False(Semaphore.TryOpenExisting(name, options: default, out s));
             Assert.Null(s);
 
-            using (s = new Semaphore(0, 1, name)) { }
-            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
-            Assert.False(Semaphore.TryOpenExisting(name, out s));
+            using (s = new Semaphore(0, 1, name, options: default)) { }
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, options: default));
+            Assert.False(Semaphore.TryOpenExisting(name, options: default, out s));
             Assert.Null(s);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix
-        [Fact]
-        public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
+        [Theory]
+        [MemberData(nameof(MutexTests.NameOptionCombinations_MemberData), MemberType = typeof(MutexTests))]
+        public void NameUsedByOtherSynchronizationPrimitive_Windows(bool currentUserOnly, bool currentSessionOnly)
         {
             string name = Guid.NewGuid().ToString("N");
-            using (Mutex mtx = new Mutex(true, name))
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+            using (Mutex mtx = new Mutex(true, name, options))
             {
-                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
-                Semaphore ignored;
-                Assert.False(Semaphore.TryOpenExisting(name, out ignored));
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => new Semaphore(initialCount: 1, maximumCount: 1, name, options));
+                Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, options));
+                Assert.False(Semaphore.TryOpenExisting(name, options, out _));
             }
         }
 
@@ -383,11 +387,11 @@ namespace System.Threading.Tests
         public void OpenExisting_SameAsOriginal_Windows(string name)
         {
             bool createdNew;
-            using (Semaphore s1 = new Semaphore(0, int.MaxValue, name, out createdNew))
+            using (Semaphore s1 = new Semaphore(0, int.MaxValue, name, options: default, out createdNew))
             {
                 Assert.True(createdNew);
 
-                using (Semaphore s2 = Semaphore.OpenExisting(name))
+                using (Semaphore s2 = Semaphore.OpenExisting(name, options: default))
                 {
                     Assert.False(s1.WaitOne(0));
                     Assert.False(s2.WaitOne(0));
@@ -400,7 +404,7 @@ namespace System.Threading.Tests
                 }
 
                 Semaphore s3;
-                Assert.True(Semaphore.TryOpenExisting(name, out s3));
+                Assert.True(Semaphore.TryOpenExisting(name, options: default, out s3));
                 using (s3)
                 {
                     Assert.False(s1.WaitOne(0));
@@ -415,18 +419,155 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
+        [MemberData(nameof(MutexTests.NamePrefixes_MemberData), MemberType = typeof(MutexTests))]
         [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
-        public void PingPong()
+        public void NameOptionsApiCompatibilityTest(string namePrefix)
+        {
+            string name = Guid.NewGuid().ToString("N");
+            string prefixedName = namePrefix + name;
+            bool currentSessionOnly = namePrefix != @"Global\";
+
+            using (var s = new Semaphore(initialCount: 1, maximumCount: 1, prefixedName, out bool createdNew))
+            {
+                Assert.True(createdNew);
+
+                new Semaphore(
+                    initialCount: 1,
+                    maximumCount: 1,
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    out createdNew).Dispose();
+                Assert.False(createdNew);
+
+                Semaphore.OpenExisting(
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
+
+                Assert.True(
+                    Semaphore.TryOpenExisting(
+                        name,
+                        new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                        out Semaphore s2));
+                s2.Dispose();
+            }
+
+            using (var s =
+                new Semaphore(
+                    initialCount: 1,
+                    maximumCount: 1,
+                    name,
+                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    out bool createdNew))
+            {
+                Assert.True(createdNew);
+
+                new Semaphore(initialCount: 1, maximumCount: 1, prefixedName, out createdNew).Dispose();
+                Assert.False(createdNew);
+
+                Semaphore.OpenExisting(prefixedName).Dispose();
+
+                Assert.True(Semaphore.TryOpenExisting(prefixedName, out Semaphore s2));
+                s2.Dispose();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MutexTests.NamePrefixAndOptionsCompatibilityTest_MemberData), MemberType = typeof(MutexTests))]
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
+        public void NamePrefixAndOptionsCompatibilityTest(bool currentUserOnly, bool currentSessionOnly, string namePrefix)
+        {
+            string name = namePrefix + Guid.NewGuid().ToString("N");
+            bool currentSessionOnlyBasedOnPrefix = namePrefix != @"Global\";
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
+            if (string.IsNullOrEmpty(namePrefix) || currentSessionOnlyBasedOnPrefix == currentSessionOnly)
+            {
+                new Semaphore(initialCount: 1, maximumCount: 1, name, options).Dispose();
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentException>("name",
+                    () => new Semaphore(initialCount: 1, maximumCount: 1, name, options));
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Windows Nano Server and Server Core apparently use the same namespace for the Local\ and Global\ prefixes
+        [MemberData(nameof(MutexTests.NameNamespaceTests_MemberData), MemberType = typeof(MutexTests))]
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
+        public void NameNamespaceTest(
+            bool create_currentUserOnly,
+            bool create_currentSessionOnly,
+            bool open_currentUserOnly,
+            bool open_currentSessionOnly)
+        {
+            string name = Guid.NewGuid().ToString("N");
+            NamedWaitHandleOptions createOptions =
+                new() { CurrentUserOnly = create_currentUserOnly, CurrentSessionOnly = create_currentSessionOnly };
+            NamedWaitHandleOptions openOptions =
+                new() { CurrentUserOnly = open_currentUserOnly, CurrentSessionOnly = open_currentSessionOnly };
+
+            using (var s = new Semaphore(initialCount: 1, maximumCount: 1, name, createOptions))
+            {
+                if (PlatformDetection.IsWindows &&
+                    openOptions.CurrentSessionOnly == createOptions.CurrentSessionOnly &&
+                    !createOptions.CurrentUserOnly &&
+                    openOptions.CurrentUserOnly)
+                {
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(
+                        () => new Semaphore(initialCount: 1, maximumCount: 1, name, openOptions));
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, openOptions));
+                    Assert.False(Semaphore.TryOpenExisting(name, openOptions, out _));
+                    return;
+                }
+
+                bool sameOptions =
+                    openOptions.CurrentUserOnly == createOptions.CurrentUserOnly &&
+                    openOptions.CurrentSessionOnly == createOptions.CurrentSessionOnly;
+                bool expectedCreatedNew =
+                    !sameOptions &&
+                    (!PlatformDetection.IsWindows || openOptions.CurrentSessionOnly != createOptions.CurrentSessionOnly);
+
+                new Semaphore(initialCount: 1, maximumCount: 1, name, openOptions, out bool createdNew).Dispose();
+                Assert.Equal(expectedCreatedNew, createdNew);
+
+                if (expectedCreatedNew)
+                {
+                    Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name, openOptions));
+                }
+                else
+                {
+                    Semaphore.OpenExisting(name, openOptions).Dispose();
+                }
+
+                Assert.Equal(!expectedCreatedNew, Semaphore.TryOpenExisting(name, openOptions, out Semaphore s2));
+                s2?.Dispose();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(MutexTests.NameOptionCombinations_MemberData), MemberType = typeof(MutexTests))]
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
+        public void PingPong(bool currentUserOnly, bool currentSessionOnly)
         {
             // Create names for the two semaphores
             string outboundName = Guid.NewGuid().ToString("N");
             string inboundName = Guid.NewGuid().ToString("N");
 
+            NamedWaitHandleOptions options =
+                new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly };
+
             // Create the two semaphores and the other process with which to synchronize
-            using (var inbound = new Semaphore(1, 1, inboundName))
-            using (var outbound = new Semaphore(0, 1, outboundName))
-            using (var remote = RemoteExecutor.Invoke(new Action<string, string>(PingPong_OtherProcess), outboundName, inboundName))
+            using (var inbound = new Semaphore(1, 1, inboundName, options))
+            using (var outbound = new Semaphore(0, 1, outboundName, options))
+            using (var remote =
+                RemoteExecutor.Invoke(
+                    PingPong_OtherProcess,
+                    outboundName,
+                    inboundName,
+                    options.CurrentUserOnly ? "1" : "0",
+                    options.CurrentSessionOnly ? "1" : "0"))
             {
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
@@ -437,11 +578,22 @@ namespace System.Threading.Tests
             }
         }
 
-        private static void PingPong_OtherProcess(string inboundName, string outboundName)
+        private static void PingPong_OtherProcess(
+            string inboundName,
+            string outboundName,
+            string currentUserOnlyStr,
+            string currentSessionOnlyStr)
         {
+            NamedWaitHandleOptions options =
+                new()
+                {
+                    CurrentUserOnly = int.Parse(currentUserOnlyStr) != 0,
+                    CurrentSessionOnly = int.Parse(currentSessionOnlyStr) != 0
+                };
+
             // Open the two semaphores
-            using (var inbound = Semaphore.OpenExisting(inboundName))
-            using (var outbound = Semaphore.OpenExisting(outboundName))
+            using (var inbound = Semaphore.OpenExisting(inboundName, options))
+            using (var outbound = Semaphore.OpenExisting(outboundName, options))
             {
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)

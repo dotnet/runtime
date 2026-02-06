@@ -21,7 +21,6 @@ Revision History:
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
-#include "pal/critsect.h"
 #include "pal/module.h"
 
 #include "errorstrings.h"

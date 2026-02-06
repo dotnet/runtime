@@ -15,27 +15,40 @@ namespace Wasm.Build.Tests;
 
 public class WasmSdkBasedProjectProvider : ProjectProviderBase
 {
-    private readonly string _defaultTargetFramework;
+    public string DefaultTargetFramework { get; }
+
     public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
             : base(_testOutput, _projectDir)
     {
-        _defaultTargetFramework = defaultTargetFramework;
+        DefaultTargetFramework = defaultTargetFramework;
     }
 
     protected override string BundleDirName { get { return "wwwroot"; } }
 
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
-        => new SortedDictionary<string, bool>()
-            {
-               { "dotnet.js", false },
-               { "dotnet.js.map", false },
-               { "dotnet.native.js", true },
-               { "dotnet.native.js.symbols", false },
-               { "dotnet.native.wasm", true },
-               { "dotnet.native.worker.mjs", true },
-               { "dotnet.runtime.js", true },
-               { "dotnet.runtime.js.map", false },
-            };
+    {
+        var result = new SortedDictionary<string, bool>()
+        {
+            { "dotnet.js", true },
+            { "dotnet.js.map", false },
+            { "dotnet.native.js", true },
+            { "dotnet.native.js.symbols", false },
+            { "dotnet.native.wasm", true },
+            { "dotnet.native.worker.mjs", true },
+            { "dotnet.runtime.js", true },
+            { "dotnet.runtime.js.map", false },
+            { "dotnet.diagnostics.js", true },
+            { "dotnet.diagnostics.js.map", false },
+        };
+
+        if ((assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js")) ?? false)
+            result[assertOptions.BuildOptions.BootConfigFileName] = true;
+
+        if (assertOptions.ExpectDotnetJsFingerprinting == false)
+            result["dotnet.js"] = false;
+
+        return result;
+    }
 
     protected override IReadOnlySet<string> GetDotNetFilesExpectedSet(AssertBundleOptions assertOptions)
     {
@@ -60,6 +73,16 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");
 
+        if (assertOptions.BuildOptions.EnableDiagnostics)
+        {
+            res.Add("dotnet.diagnostics.js");
+            if (!assertOptions.BuildOptions.IsPublish)
+                res.Add("dotnet.diagnostics.js.map");
+        }
+
+        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
+            res.Add(assertOptions.BuildOptions.BootConfigFileName);
+
         return res;
     }
 
@@ -71,10 +94,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         (config == Configuration.Release) ? NativeFilesType.Relinked :
         NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
-            GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
+            GetBinFrameworkDir(config, buildOptions.IsPublish, DefaultTargetFramework) :
             buildOptions.NonDefaultFrameworkDir;
 
         AssertBundle(new AssertBundleOptions(
@@ -84,7 +107,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             BinFrameworkDir: frameworkDir,
             ExpectSymbolsFile: true,
             AssertIcuAssets: true,
-            AssertSymbolsFile: false
+            AssertSymbolsFile: false,
+            ExpectDotnetJsFingerprinting: wasmFingerprintDotnetJs
         ));
     }
 
@@ -153,23 +177,24 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, string? buildOutput = null)
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null, string? buildOutput = null)
     {
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
         }
-        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }
 
-    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)
+    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish, string? projectDir = null)
     {
-        Assert.NotNull(ProjectDir);
+        projectDir ??= ProjectDir!;
+        Assert.NotNull(projectDir);
         string configStr = configuration.ToString();
-        string objDir = Path.Combine(ProjectDir, "obj", configStr, _defaultTargetFramework);
-        string binDir = Path.Combine(ProjectDir, "bin", configStr, _defaultTargetFramework);
-        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
+        string objDir = Path.Combine(projectDir, "obj", configStr, DefaultTargetFramework);
+        string binDir = Path.Combine(projectDir, "bin", configStr, DefaultTargetFramework);
+        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, DefaultTargetFramework);
 
         string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
         // for build: we should take from runtime pack?

@@ -169,6 +169,95 @@ namespace System.Security.Cryptography
             }
         }
 
+        private static void CheckInvalidKey(SafeEvpPKeyHandle key)
+        {
+            if (key == null || key.IsInvalid)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+        }
+
+        public static ECParameters ExportParameters(SafeEvpPKeyHandle pkey, bool includePrivateParameters)
+        {
+            CheckInvalidKey(pkey);
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkey))
+            {
+                if (ecKey == null || ecKey.IsInvalid)
+                {
+                    // This may happen when EVP_PKEY was created by provider and getting EC_KEY is not possible.
+                    return ExportECParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
+                }
+
+                return ECOpenSsl.ExportParameters(ecKey, includePrivateParameters);
+            }
+        }
+
+        public static ECParameters ExportExplicitParameters(SafeEvpPKeyHandle pkey, bool includePrivateParameters)
+        {
+            CheckInvalidKey(pkey);
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(pkey))
+            {
+                if (ecKey == null || ecKey.IsInvalid)
+                {
+                    // This may happen when EVP_PKEY was created by provider and getting EC_KEY is not possible.
+                    return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
+                }
+
+                return ECOpenSsl.ExportExplicitParameters(ecKey, includePrivateParameters);
+            }
+        }
+
+        /// <summary>
+        /// Extracts ECParameters from an EVP_PKEY* using OpenSSL 3 params API.
+        /// This is needed in case EVP_PKEY* was created by provider and getting EC_KEY is not possible.
+        /// For keys created with EC_KEY, ECOpenSsl.ExportParameters should be used.
+        /// </summary>
+        private static ECParameters ExportECParametersFromEvpPKeyUsingParams(SafeEvpPKeyHandle pkey, bool includePrivateParameters)
+        {
+            string? curveName = Interop.Crypto.EvpPKeyGetCurveName(pkey);
+            if (curveName == null)
+            {
+                return ExportExplicitCurveParametersFromEvpPKeyUsingParams(pkey, includePrivateParameters);
+            }
+            else
+            {
+                return ExportNamedCurveParametersFromEvpPKeyUsingParams(pkey, curveName, includePrivateParameters);
+            }
+        }
+
+        private static ECParameters ExportNamedCurveParametersFromEvpPKeyUsingParams(SafeEvpPKeyHandle pkey, string curveName, bool includePrivateParameters)
+        {
+            Debug.Assert(curveName != null);
+            ECParameters parameters = Interop.Crypto.EvpPKeyGetEcKeyParameters(pkey, includePrivateParameters);
+
+            bool hasPrivateKey = (parameters.D != null);
+
+            if (hasPrivateKey != includePrivateParameters)
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
+
+            // Assign Curve
+            parameters.Curve = ECCurve.CreateFromValue(curveName);
+
+            return parameters;
+        }
+
+        private static ECParameters ExportExplicitCurveParametersFromEvpPKeyUsingParams(SafeEvpPKeyHandle pkey, bool includePrivateParameters)
+        {
+            ECParameters parameters = Interop.Crypto.EvpPKeyGetEcCurveParameters(pkey, includePrivateParameters);
+
+            bool hasPrivateKey = (parameters.D != null);
+            if (hasPrivateKey != includePrivateParameters)
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
+
+            return parameters;
+        }
+
         public static SafeEcKeyHandle GenerateKeyByKeySize(int keySize)
         {
             string oid;

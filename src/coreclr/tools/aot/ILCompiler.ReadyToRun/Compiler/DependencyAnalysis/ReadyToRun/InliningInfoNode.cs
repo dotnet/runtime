@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.NativeFormat;
 using Internal.ReadyToRunConstants;
 using Internal.Text;
@@ -139,16 +140,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 EcmaMethod inlinee = inlineeWithInliners.Key;
                 int inlineeRid = MetadataTokens.GetRowNumber(inlinee.Handle);
                 int hashCode;
-                
+
                 if (AllowCrossModuleInlines)
                 {
                     // CrossModuleInlineInfo format
-                    hashCode = ReadyToRunHashCode.MethodHashCode(inlinee);
+                    hashCode = inlinee.GetHashCode();
                 }
                 else
                 {
                     // InliningInfo2 format
-                    hashCode = ReadyToRunHashCode.ModuleNameHashCode(inlinee.Module);
+                    hashCode = VersionResilientHashCode.ModuleNameHashCode(inlinee.Module);
                     hashCode ^= inlineeRid;
                 }
 

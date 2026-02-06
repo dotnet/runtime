@@ -28,8 +28,8 @@ namespace TypeSystemTests
         [Fact]
         public void TestGenericNameFormatting()
         {
-            MetadataType testClass = _testModule.GetType("ILDisassembler", "TestGenericClass`1");
-            EcmaMethod testMethod = (EcmaMethod)testClass.GetMethod("TestMethod", null);
+            MetadataType testClass = _testModule.GetType("ILDisassembler"u8, "TestGenericClass`1"u8);
+            EcmaMethod testMethod = (EcmaMethod)testClass.GetMethod("TestMethod"u8, null);
             EcmaMethodIL methodIL = EcmaMethodIL.Create(testMethod);
 
             Dictionary<int, string> interestingLines = new Dictionary<int, string>

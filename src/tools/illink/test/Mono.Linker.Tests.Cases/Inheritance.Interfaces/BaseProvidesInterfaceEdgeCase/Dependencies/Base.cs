@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEdgeCase.Dependencies
 {
-	public class Base
-	{
-		public virtual void Method ()
-		{
-			throw new NotImplementedException ();
-		}
-	}
+    public class Base
+    {
+        public virtual void Method()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -58,7 +58,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData("name")]
-        public void GetClassName_InvokeWithParent_ReturnsExpected(string result)
+        public void GetClassName_InvokeWithParent_ReturnsExpected(string? result)
         {
             var mockParentDescriptor = new Mock<ICustomTypeDescriptor>(MockBehavior.Strict);
             mockParentDescriptor
@@ -88,7 +88,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData("name")]
-        public void GetComponentName_InvokeWithParent_ReturnsExpected(string result)
+        public void GetComponentName_InvokeWithParent_ReturnsExpected(string? result)
         {
             var mockParentDescriptor = new Mock<ICustomTypeDescriptor>(MockBehavior.Strict);
             mockParentDescriptor
@@ -214,7 +214,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetEditor_InvokeWithoutParent_ReturnsNull(Type editorBaseType)
+        public void GetEditor_InvokeWithoutParent_ReturnsNull(Type? editorBaseType)
         {
             var descriptor = new SubCustomTypeDescriptor();
             Assert.Null(descriptor.GetEditor(editorBaseType));

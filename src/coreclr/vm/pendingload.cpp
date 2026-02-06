@@ -48,7 +48,7 @@ void PendingTypeLoadTable::Entry::InitCrst()
 {
     WRAPPER_NO_CONTRACT;
     m_Crst.Init(CrstPendingTypeLoadEntry,
-                CrstFlags(CRST_HOST_BREAKABLE|CRST_UNSAFE_SAMELEVEL));
+                CrstFlags(CRST_UNSAFE_SAMELEVEL));
 }
 
 void PendingTypeLoadTable::Entry::Init(Entry *pNext, DWORD hash, TypeHandle typeHnd)
@@ -165,7 +165,7 @@ void PendingTypeLoadTable::Entry::SetException(Exception *pException)
     {
         m_pException=NULL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void PendingTypeLoadTable::Entry::SetResult(TypeHandle typeHnd)
@@ -312,7 +312,7 @@ PendingTypeLoadTable::Entry* PendingTypeLoadTable::Shard::InsertPendingTypeLoadE
         dynamicResult->Init(m_pLinkedListOfActiveEntries, hash, typeHnd);
         result = dynamicResult.Extract();
     }
-    
+
     m_pLinkedListOfActiveEntries = result;
     return result;
 }

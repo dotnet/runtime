@@ -11,6 +11,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lclvars.cpp Line: 4039
 // 
+
+namespace Runtime_61074;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

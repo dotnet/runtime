@@ -238,7 +238,7 @@ TypeInfoBase* GetLocalTypeInfo(MethodDesc *methodDescPtr,
 
         if (FAILED(methodDescPtr->GetMDImport()->GetSigFromToken(method.GetLocalVarSigTok(), &cbSigLen, &pComSig)))
         {
-            printf("\nInvalid record");
+            minipal_log_print_error("\nInvalid record");
             return nullptr;
         }
 
@@ -2512,7 +2512,7 @@ void NotifyGdb::MethodPrepared(MethodDesc* methodDescPtr)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
@@ -2560,18 +2560,6 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
         bNotify = bNotify || bEmitted;
     }
 #endif
-
-    // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
-    LPWSTR pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
-    if (!pNIExt)
-    {
-      pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
-    }
-
-    if (pNIExt)
-    {
-      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
-    }
 
     if (isListedModule(wszModuleFile))
     {
@@ -2939,45 +2927,6 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     elfBuilder.CloseSection();
 
     return true;
-}
-
-void NotifyGdb::MethodPitched(MethodDesc* methodDescPtr)
-{
-    PCODE pCode = methodDescPtr->GetNativeCode();
-
-    if (pCode == NULL)
-        return;
-
-    CrstHolder crst(&g_jitDescriptorCrst);
-
-    /* Find relevant entry */
-    for (jit_code_entry* jit_symbols = __jit_debug_descriptor.first_entry; jit_symbols != 0; jit_symbols = jit_symbols->next_entry)
-    {
-        const char* ptr = jit_symbols->symfile_addr;
-        uint64_t size = jit_symbols->symfile_size;
-
-        const Elf_Ehdr* pEhdr = reinterpret_cast<const Elf_Ehdr*>(ptr);
-        const Elf_Shdr* pShdr = reinterpret_cast<const Elf_Shdr*>(ptr + pEhdr->e_shoff);
-        pShdr += ELF_BUILDER_TEXT_SECTION_INDEX; // bump to .text section
-        if (pShdr->sh_addr == pCode)
-        {
-            /* Notify the debugger */
-            __jit_debug_descriptor.relevant_entry = jit_symbols;
-            __jit_debug_descriptor.action_flag = JIT_UNREGISTER_FN;
-            __jit_debug_register_code();
-
-            /* Free memory */
-            delete[] ptr;
-
-            /* Unlink from list */
-            if (jit_symbols->prev_entry == 0)
-                __jit_debug_descriptor.first_entry = jit_symbols->next_entry;
-            else
-                jit_symbols->prev_entry->next_entry = jit_symbols->next_entry;
-            delete jit_symbols;
-            break;
-        }
-    }
 }
 
 /* Build the DWARF .debug_line section */

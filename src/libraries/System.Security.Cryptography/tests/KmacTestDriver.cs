@@ -24,6 +24,10 @@ namespace System.Security.Cryptography.Tests
         static abstract void GetHashAndReset(TKmac kmac, Span<byte> destination);
         static abstract byte[] GetCurrentHash(TKmac kmac, int outputLength);
         static abstract void GetCurrentHash(TKmac kmac, Span<byte> destination);
+        static abstract bool VerifyCurrentHash(TKmac kmac, ReadOnlySpan<byte> hash);
+        static abstract bool VerifyCurrentHash(TKmac kmac, byte[] hash);
+        static abstract bool VerifyHashAndReset(TKmac kmac, ReadOnlySpan<byte> hash);
+        static abstract bool VerifyHashAndReset(TKmac kmac, byte[] hash);
         static abstract TKmac Clone(TKmac kmac);
 
         static abstract byte[] HashData(byte[] key, byte[] source, int outputLength, byte[] customizationString);
@@ -52,6 +56,36 @@ namespace System.Security.Cryptography.Tests
             byte[] key,
             Stream source,
             int outputLength,
+            byte[] customizationString,
+            CancellationToken cancellationToken);
+
+        static abstract bool Verify(
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString);
+
+        static abstract bool Verify(byte[] key, byte[] source, byte[] hash, byte[] customizationString);
+
+        static abstract bool Verify(
+            ReadOnlySpan<byte> key,
+            Stream source,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> customizationString);
+
+        static abstract bool Verify(byte[] key, Stream source, byte[] hash, byte[] customizationString);
+
+        static abstract ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            ReadOnlyMemory<byte> customizationString,
+            CancellationToken cancellationToken);
+
+        static abstract ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
             byte[] customizationString,
             CancellationToken cancellationToken);
     }
@@ -95,7 +129,7 @@ namespace System.Security.Cryptography.Tests
         public static bool IsSupported => TKmacTrait.IsSupported;
         public static bool IsNotSupported => !IsSupported;
         public static KeySizes? PlatformKeySizeRequirements { get; } =
-            PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsAzureLinux ? new KeySizes(4, 512, 1) : null;
+            PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsSymCryptOpenSsl ? new KeySizes(4, 512, 1) : null;
 
         public static int? PlatformMaxOutputSize { get; } = PlatformDetection.IsOpenSslSupported ? 0xFFFFFF / 8 : null;
         public static int? PlatformMaxCustomizationStringSize { get; } = PlatformDetection.IsOpenSslSupported ? 512 : null;
@@ -286,6 +320,98 @@ namespace System.Security.Cryptography.Tests
                     TKmacTrait.AppendData(clone, testVector.MsgBytes);
                     TKmacTrait.GetCurrentHash(clone, mac);
                     Assert.Equal(testVector.Mac, Convert.ToHexString(mac), ignoreCase: true);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyCurrentHash_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+
+                    bool validHash = TKmacTrait.VerifyCurrentHash(kmac, testVector.MacBytes);
+                    AssertExtensions.TrueExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(testVector.MacBytes));
+                    AssertExtensions.TrueExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, testVector.MacBytes);
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyHashAndReset_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    bool validHash = TKmacTrait.VerifyHashAndReset(kmac, testVector.MacBytes);
+                    AssertExtensions.TrueExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, new ReadOnlySpan<byte>(testVector.MsgBytes));
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, new ReadOnlySpan<byte>(testVector.MacBytes));
+                    AssertExtensions.TrueExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, testVector.MacBytes);
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyCurrentHash_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] tamperedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(tamperedMac);
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+
+                    bool validHash = TKmacTrait.VerifyCurrentHash(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(tamperedMac));
+                    AssertExtensions.FalseExpression(validHash);
+
+                    validHash = TKmacTrait.VerifyCurrentHash(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_VerifyHashAndReset_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] tamperedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(tamperedMac);
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    bool validHash = TKmacTrait.VerifyHashAndReset(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, new ReadOnlySpan<byte>(testVector.MsgBytes));
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, new ReadOnlySpan<byte>(tamperedMac));
+                    AssertExtensions.FalseExpression(validHash);
+
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+                    validHash = TKmacTrait.VerifyHashAndReset(kmac, tamperedMac);
+                    AssertExtensions.FalseExpression(validHash);
                 }
             }
         }
@@ -736,6 +862,232 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_ByteArray_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                bool validHash = TKmacTrait.Verify(
+                    testVector.KeyBytes,
+                    testVector.MsgBytes,
+                    testVector.MacBytes,
+                    testVector.CustomBytes);
+
+                AssertExtensions.TrueExpression(validHash);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_Span_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                bool validHash = TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(testVector.KeyBytes),
+                    new ReadOnlySpan<byte>(testVector.MsgBytes),
+                    new ReadOnlySpan<byte>(testVector.MacBytes),
+                    new ReadOnlySpan<byte>(testVector.CustomBytes));
+
+                AssertExtensions.TrueExpression(validHash);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_ByteArray_Stream_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = TKmacTrait.Verify(
+                        testVector.KeyBytes,
+                        source,
+                        testVector.MacBytes,
+                        testVector.CustomBytes);
+
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_Span_Stream_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = TKmacTrait.Verify(
+                        new ReadOnlySpan<byte>(testVector.KeyBytes),
+                        source,
+                        new ReadOnlySpan<byte>(testVector.MacBytes),
+                        new ReadOnlySpan<byte>(testVector.CustomBytes));
+
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task KnownAnswerTests_VerifyAsync_ByteArray_Stream_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = await TKmacTrait.VerifyAsync(
+                        testVector.KeyBytes,
+                        source,
+                        testVector.MacBytes,
+                        testVector.CustomBytes,
+                        default(CancellationToken));
+
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task KnownAnswerTests_VerifyAsync_Memory_Stream_Valid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = await TKmacTrait.VerifyAsync(
+                        new ReadOnlyMemory<byte>(testVector.KeyBytes),
+                        source,
+                        new ReadOnlyMemory<byte>(testVector.MacBytes),
+                        new ReadOnlyMemory<byte>(testVector.CustomBytes),
+                        default(CancellationToken));
+
+                    AssertExtensions.TrueExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_ByteArray_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                bool validHash = TKmacTrait.Verify(
+                    testVector.KeyBytes,
+                    testVector.MsgBytes,
+                    modifiedMac,
+                    testVector.CustomBytes);
+
+                AssertExtensions.FalseExpression(validHash);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_Span_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                bool validHash = TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(testVector.KeyBytes),
+                    new ReadOnlySpan<byte>(testVector.MsgBytes),
+                    new ReadOnlySpan<byte>(modifiedMac),
+                    new ReadOnlySpan<byte>(testVector.CustomBytes));
+
+                AssertExtensions.FalseExpression(validHash);
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_ByteArray_Stream_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = TKmacTrait.Verify(
+                        testVector.KeyBytes,
+                        source,
+                        modifiedMac,
+                        testVector.CustomBytes);
+
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Verify_Span_Stream_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = TKmacTrait.Verify(
+                        new ReadOnlySpan<byte>(testVector.KeyBytes),
+                        source,
+                        new ReadOnlySpan<byte>(modifiedMac),
+                        new ReadOnlySpan<byte>(testVector.CustomBytes));
+
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task KnownAnswerTests_VerifyAsync_ByteArray_Stream_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = await TKmacTrait.VerifyAsync(
+                        testVector.KeyBytes,
+                        source,
+                        modifiedMac,
+                        testVector.CustomBytes,
+                        default(CancellationToken));
+
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task KnownAnswerTests_VerifyAsync_Memory_Stream_Invalid()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] modifiedMac = testVector.MacBytes.AsSpan().ToArray();
+                FlipRandomBit(modifiedMac);
+
+                using (MemoryStream source = new(testVector.MsgBytes))
+                {
+                    bool validHash = await TKmacTrait.VerifyAsync(
+                        new ReadOnlyMemory<byte>(testVector.KeyBytes),
+                        source,
+                        new ReadOnlyMemory<byte>(modifiedMac),
+                        new ReadOnlyMemory<byte>(testVector.CustomBytes),
+                        default(CancellationToken));
+
+                    AssertExtensions.FalseExpression(validHash);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void Clone_DifferentInstance()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -967,6 +1319,150 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Verify_KeyNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => TKmacTrait.Verify((byte[])null, (byte[])null, (byte[])null, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => TKmacTrait.Verify((byte[])null, (Stream)null, (byte[])null, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => TKmacTrait.VerifyAsync((byte[])null, (Stream)null, (byte[])null, (byte[])null, default));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Verify_SourceNull()
+        {
+            byte[] hash = new byte[1];
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => TKmacTrait.Verify(MinimalKey, (byte[])null, hash, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => TKmacTrait.Verify(MinimalKey, (Stream)null, hash, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => TKmacTrait.VerifyAsync(MinimalKey, (Stream)null, hash, (byte[])null, default));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Verify_HashNull()
+        {
+            byte[] source = Array.Empty<byte>();
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "hash",
+                () => TKmacTrait.Verify(MinimalKey, source, (byte[])null, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "hash",
+                () => TKmacTrait.Verify(MinimalKey, Stream.Null, (byte[])null, (byte[])null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "hash",
+                () => TKmacTrait.VerifyAsync(MinimalKey, Stream.Null, (byte[])null, (byte[])null, default));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Verify_HashEmpty()
+        {
+            byte[] source = Array.Empty<byte>();
+
+            AssertExtensions.Throws<ArgumentException>("hash", () => TKmacTrait.Verify(
+                new ReadOnlySpan<byte>(MinimalKey),
+                new ReadOnlySpan<byte>(source),
+                ReadOnlySpan<byte>.Empty,
+                ReadOnlySpan<byte>.Empty));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "hash",
+                () => TKmacTrait.Verify(MinimalKey, source, Array.Empty<byte>(), (byte[])null));
+
+            AssertExtensions.Throws<ArgumentException>("hash", () => TKmacTrait.Verify(
+                new ReadOnlySpan<byte>(MinimalKey),
+                Stream.Null,
+                ReadOnlySpan<byte>.Empty,
+                ReadOnlySpan<byte>.Empty));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "hash",
+                () => TKmacTrait.Verify(MinimalKey, Stream.Null, Array.Empty<byte>(), (byte[])null));
+
+            AssertExtensions.Throws<ArgumentException>("hash", () => TKmacTrait.VerifyAsync(
+                new ReadOnlyMemory<byte>(MinimalKey),
+                Stream.Null,
+                ReadOnlyMemory<byte>.Empty,
+                ReadOnlyMemory<byte>.Empty,
+                default));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "hash",
+                () => TKmacTrait.VerifyAsync(MinimalKey, Stream.Null, Array.Empty<byte>(), (byte[])null, default));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Verify_StreamUnreadable()
+        {
+            byte[] hash = new byte[1];
+
+            AssertExtensions.Throws<ArgumentException>("source", () => TKmacTrait.Verify(
+                new ReadOnlySpan<byte>(MinimalKey),
+                UntouchableStream.Instance,
+                new ReadOnlySpan<byte>(hash),
+                ReadOnlySpan<byte>.Empty));
+
+            AssertExtensions.Throws<ArgumentException>("source", () => TKmacTrait.Verify(
+                MinimalKey,
+                UntouchableStream.Instance,
+                hash,
+                Array.Empty<byte>()));
+
+            AssertExtensions.Throws<ArgumentException>("source", () => TKmacTrait.VerifyAsync(
+                new ReadOnlyMemory<byte>(MinimalKey),
+                UntouchableStream.Instance,
+                new ReadOnlyMemory<byte>(hash),
+                ReadOnlyMemory<byte>.Empty,
+                default));
+
+            AssertExtensions.Throws<ArgumentException>("source", () => TKmacTrait.VerifyAsync(
+                MinimalKey,
+                UntouchableStream.Instance,
+                hash,
+                Array.Empty<byte>(),
+                default));
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task ArgValidation_Verify_Cancelled()
+        {
+            CancellationToken cancelledToken = new CancellationToken(canceled: true);
+            byte[] hash = [0];
+
+            ValueTask<bool> arrayVerify = TKmacTrait.VerifyAsync(
+                MinimalKey,
+                Stream.Null,
+                hash,
+                Array.Empty<byte>(),
+                cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await arrayVerify);
+
+            ValueTask<bool> memoryVerify = TKmacTrait.VerifyAsync(
+                new ReadOnlyMemory<byte>(MinimalKey),
+                Stream.Null,
+                new ReadOnlyMemory<byte>(hash),
+                ReadOnlyMemory<byte>.Empty,
+                cancelledToken);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await memoryVerify);
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void ArgValidation_Allocated_GetCurrentHash_OutputLengthNegative()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -1000,6 +1496,58 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_VerifyHashAndReset_NullHash()
+        {
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "hash",
+                    () => TKmacTrait.VerifyHashAndReset(kmac, (byte[])null));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_VerifyHashAndReset_EmptyHash()
+        {
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "hash",
+                    () => TKmacTrait.VerifyHashAndReset(kmac, Array.Empty<byte>()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "hash",
+                    () => TKmacTrait.VerifyHashAndReset(kmac, ReadOnlySpan<byte>.Empty));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_VerifyCurrentHash_NullHash()
+        {
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
+            {
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "hash",
+                    () => TKmacTrait.VerifyCurrentHash(kmac, (byte[])null));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void ArgValidation_Allocated_VerifyCurrentHash_EmptyHash()
+        {
+            using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
+            {
+                AssertExtensions.Throws<ArgumentException>(
+                    "hash",
+                    () => TKmacTrait.VerifyCurrentHash(kmac, Array.Empty<byte>()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "hash",
+                    () => TKmacTrait.VerifyCurrentHash(kmac, ReadOnlySpan<byte>.Empty));
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void ArgValidation_Allocated_UseAfterDispose()
         {
             byte[] buffer = new byte[1];
@@ -1014,6 +1562,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.GetCurrentHash(kmac, outputLength: 1));
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.GetCurrentHash(kmac, buffer.AsSpan()));
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.Clone(kmac));
+            Assert.Throws<ObjectDisposedException>(() => TKmacTrait.VerifyHashAndReset(kmac, buffer));
+            Assert.Throws<ObjectDisposedException>(() => TKmacTrait.VerifyHashAndReset(kmac, new ReadOnlySpan<byte>(buffer)));
+            Assert.Throws<ObjectDisposedException>(() => TKmacTrait.VerifyCurrentHash(kmac, buffer));
+            Assert.Throws<ObjectDisposedException>(() => TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(buffer)));
         }
 
         [ConditionalFact(nameof(IsNotSupported))]
@@ -1022,6 +1574,7 @@ namespace System.Security.Cryptography.Tests
             byte[] source = new byte[1];
             byte[] destination = [];
             byte[] customizationString = [];
+            byte[] hash = new byte[1];
 
             Assert.Throws<PlatformNotSupportedException>(
                 () => TKmacTrait.Create(MinimalKey, customizationString));
@@ -1090,6 +1643,50 @@ namespace System.Security.Cryptography.Tests
                     new Memory<byte>(destination),
                     new ReadOnlyMemory<byte>(customizationString),
                     default(CancellationToken)));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(MinimalKey),
+                    new ReadOnlySpan<byte>(source),
+                    new ReadOnlySpan<byte>(hash),
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.Verify(
+                    MinimalKey,
+                    source,
+                    hash,
+                    customizationString));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(MinimalKey),
+                    Stream.Null,
+                    new ReadOnlySpan<byte>(hash),
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.Verify(
+                    MinimalKey,
+                    Stream.Null,
+                    hash,
+                    customizationString));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.VerifyAsync(
+                    new ReadOnlyMemory<byte>(MinimalKey),
+                    Stream.Null,
+                    new ReadOnlyMemory<byte>(hash),
+                    new ReadOnlyMemory<byte>(customizationString),
+                    default));
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => TKmacTrait.VerifyAsync(
+                    MinimalKey,
+                    Stream.Null,
+                    hash,
+                    customizationString,
+                    default));
         }
 
         [ConditionalFact(nameof(IsSupported))]
@@ -1144,6 +1741,31 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void CryptographicException_Instance_OutputSize()
+        {
+            if (PlatformMaxOutputSize + 1 is int tooBigOutputSize)
+            {
+                byte[] tooBigBuffer = new byte[tooBigOutputSize];
+
+                using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.GetCurrentHash(kmac, tooBigOutputSize));
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.GetCurrentHash(kmac, tooBigBuffer));
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.GetHashAndReset(kmac, tooBigOutputSize));
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.GetHashAndReset(kmac, tooBigBuffer));
+
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.VerifyCurrentHash(kmac, tooBigBuffer));
+                    Assert.ThrowsAny<CryptographicException>(() => TKmacTrait.VerifyHashAndReset(kmac, tooBigBuffer));
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(tooBigBuffer)));
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => TKmacTrait.VerifyHashAndReset(kmac, new ReadOnlySpan<byte>(tooBigBuffer)));
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public async Task CryptographicException_OneShot_CustomizationStringSize()
         {
             if (PlatformMaxCustomizationStringSize + 1 is int tooBigCustomizationString)
@@ -1194,6 +1816,7 @@ namespace System.Security.Cryptography.Tests
             byte[] source = [1];
             byte[] destination = new byte[outputSize];
             byte[] customizationString = new byte[customizationStringSize.GetValueOrDefault()];
+            byte[] hash = new byte[outputSize];
 
             Assert.ThrowsAny<TException>(
                 () => TKmacTrait.HashData(key, source, outputSize, customizationString));
@@ -1233,6 +1856,34 @@ namespace System.Security.Cryptography.Tests
                     destination,
                     customizationString));
 
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(key),
+                    new ReadOnlySpan<byte>(source),
+                    new ReadOnlySpan<byte>(hash),
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.Verify(
+                    key,
+                    source,
+                    hash,
+                    customizationString));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.Verify(
+                    new ReadOnlySpan<byte>(key),
+                    Stream.Null,
+                    new ReadOnlySpan<byte>(hash),
+                    new ReadOnlySpan<byte>(customizationString)));
+
+            Assert.ThrowsAny<TException>(
+                () => TKmacTrait.Verify(
+                    key,
+                    Stream.Null,
+                    hash,
+                    customizationString));
+
             await Assert.ThrowsAnyAsync<TException>(
                 async () => await TKmacTrait.HashDataAsync(
                     key,
@@ -1256,6 +1907,22 @@ namespace System.Security.Cryptography.Tests
                     new Memory<byte>(destination),
                     new ReadOnlyMemory<byte>(customizationString),
                     default(CancellationToken)));
+
+            await Assert.ThrowsAnyAsync<TException>(
+                async () => await TKmacTrait.VerifyAsync(
+                    new ReadOnlyMemory<byte>(key),
+                    Stream.Null,
+                    new ReadOnlyMemory<byte>(hash),
+                    new ReadOnlyMemory<byte>(customizationString),
+                    default(CancellationToken)));
+
+            await Assert.ThrowsAnyAsync<TException>(
+                async () => await TKmacTrait.VerifyAsync(
+                    key,
+                    Stream.Null,
+                    hash,
+                    customizationString,
+                    default(CancellationToken)));
         }
 
         private static bool PlatformSupportsKmac()
@@ -1278,6 +1945,12 @@ namespace System.Security.Cryptography.Tests
             }
 
             return false;
+        }
+
+        private static void FlipRandomBit(Span<byte> input)
+        {
+            int index = Random.Shared.Next(0, input.Length);
+            input[index] = (byte)(input[index] ^ 0b_10000000);
         }
     }
 

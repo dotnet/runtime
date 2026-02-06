@@ -27,6 +27,13 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), s => s, i => i.ToString(), (s, e) => s));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), async (s, ct) => s, async (i, ct) => i.ToString(), async (s, e, ct) => s));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable_String()
         {
             Random rand = new(42);

@@ -19,6 +19,12 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
+#include "exinfo.h"
+
 typedef IDacDbiInterface::StackWalkHandle StackWalkHandle;
 
 
@@ -261,8 +267,7 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
                 // Just continue onto the next managed stack frame.
                 continue;
             }
-#ifdef FEATURE_EH_FUNCLETS
-            else if (g_isNewExceptionHandlingEnabled && pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            else if (pIter->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD)
             {
                 // Skip the new exception handling managed code, the debugger clients are not supposed to see them
                 MethodDesc *pMD = pIter->m_crawl.GetFunction();
@@ -275,7 +280,6 @@ BOOL DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHandle pSFIHandle)
 
                 fIsAtEndOfStack = FALSE;
             }
-#endif // FEATURE_EH_FUNCLETS
             else
             {
                 fIsAtEndOfStack = FALSE;
@@ -375,7 +379,6 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
 
             case StackFrameIterator::SFITER_FRAMELESS_METHOD:
                 {
-#ifdef FEATURE_EH_FUNCLETS
                     MethodDesc *pMD = pIter->m_crawl.GetFunction();
                     // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
                     if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass)
@@ -383,7 +386,6 @@ IDacDbiInterface::FrameType DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(St
                         ftResult = kManagedExceptionHandlingCodeFrame;
                     }
                     else
-#endif // FEATURE_EH_FUNCLETS
                     {
                         ftResult = kManagedStackFrame;
                         fInitFrameData = TRUE;
@@ -461,12 +463,11 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
     ULONG32 uCount = 0;
     while (pFrame != FRAME_TOP)
     {
-#ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
-            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {
@@ -474,7 +475,6 @@ ULONG32 DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Thread vmThread)
                 continue;
             }
         }
-#endif // FEATURE_EH_FUNCLETS
         CorDebugInternalFrameType ift = GetInternalFrameType(pFrame);
         if (ift != STUBFRAME_NONE)
         {
@@ -514,12 +514,11 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
 
     while (pFrame != FRAME_TOP)
     {
-#ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled && InlinedCallFrame::FrameHasActiveCall(pFrame))
+        if (InlinedCallFrame::FrameHasActiveCall(pFrame))
         {
             // Skip new exception handling helpers
-            InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pFrame;
-            PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
+            InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
+            PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
             TADDR datum = dac_cast<TADDR>(pMD);
             if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
             {
@@ -527,7 +526,6 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 continue;
             }
         }
-#endif // FEATURE_EH_FUNCLETS
         // check if the internal frame is interesting
         frameData.stubFrame.frameType = GetInternalFrameType(pFrame);
         if (frameData.stubFrame.frameType != STUBFRAME_NONE)
@@ -558,7 +556,7 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                 // it.  In this case, pMD will remain NULL.
                 EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
                 {
-                    if (pFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr())
+                    if (pFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame)
                     {
                         ComMethodFrame * pCOMFrame = dac_cast<PTR_ComMethodFrame>(pFrame);
                         PTR_VOID pUnkStackSlot     = pCOMFrame->GetPointerToArguments();
@@ -609,19 +607,13 @@ BOOL DacDbiInterfaceImpl::IsMatchingParentFrame(FramePointer fpToCheck, FramePoi
 {
     DD_ENTER_MAY_THROW;
 
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfToCheck = StackFrame((UINT_PTR)fpToCheck.GetSPValue());
 
     StackFrame sfParent  = StackFrame((UINT_PTR)fpParent.GetSPValue());
 
-    // Ask the ExceptionTracker to figure out the answer.
+    // Ask the ExInfo to figure out the answer.
     // Don't try to compare the StackFrames/FramePointers ourselves.
-    return ExceptionTracker::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
-
-#else // !FEATURE_EH_FUNCLETS
-    return FALSE;
-
-#endif // FEATURE_EH_FUNCLETS
+    return ExInfo::IsUnwoundToTargetParentFrame(sfToCheck, sfParent);
 }
 
 // Return the stack parameter size of the given method.
@@ -804,9 +796,13 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         // Strictly speaking, we can do this in CordbJITILFrame::Init(), but it's just easier and more
         // efficiently to do it here.  CordbJITILFrame::Init() will initialize the other vararg-related
         // fields.  We don't have the native var info here to fully initialize everything.
-        pFrameData->v.fVarArgs = (pMD->IsVarArg() == TRUE);
+        pFrameData->v.fVarArgs = pMD->IsVarArg();
 
-        pFrameData->v.fNoMetadata = (pMD->IsNoMetadata() == TRUE);
+        // Check if this is a NoMetadata method or if the method should be hidden.
+        // These methods should not be visible in the debugger both for convenience and 
+        // because they don't have backing metadata. For more information see comments in
+        // MethodDesc::IsNoMetadata and MethodDesc::IsDiagnosticsHidden.
+        pFrameData->v.fNoMetadata = pMD->IsNoMetadata() || pMD->IsDiagnosticsHidden();
 
         pFrameData->v.taAmbientESP = pCF->GetAmbientSPFromCrawlFrame();
         if (pMD->IsSharedByGenericInstantiations())
@@ -963,18 +959,17 @@ void DacDbiInterfaceImpl::InitNativeCodeAddrAndSize(TADDR                      t
 void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
                                               DebuggerIPCE_JITFuncData * pJITFuncData)
 {
-#ifdef FEATURE_EH_FUNCLETS
     pJITFuncData->fIsFilterFrame = pCF->IsFilterFunclet();
 
     if (pCF->IsFunclet())
     {
         DWORD dwParentOffset;
-        StackFrame sfParent = ExceptionTracker::FindParentStackFrameEx(pCF, &dwParentOffset);
+        StackFrame sfParent = ExInfo::FindParentStackFrameEx(pCF, &dwParentOffset);
 
         //
         // For funclets, fpParentOrSelf is the FramePointer of the parent.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
+        // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfParent.SP);
@@ -982,18 +977,17 @@ void DacDbiInterfaceImpl::InitParentFrameInfo(CrawlFrame * pCF,
     }
     else
     {
-        StackFrame sfSelf = ExceptionTracker::GetStackFrameForParentCheck(pCF);
+        StackFrame sfSelf = ExInfo::GetStackFrameForParentCheck(pCF);
 
         //
         // For non-funclets, fpParentOrSelf is the FramePointer of the current frame itself.
         // Don't mess around with this FramePointer.  The only thing we can do with it is to pass it back
-        // to the ExceptionTracker when we are checking if a particular frame is the parent frame.
+        // to the ExInfo when we are checking if a particular frame is the parent frame.
         //
 
         pJITFuncData->fpParentOrSelf = FramePointer::MakeFramePointer(sfSelf.SP);
         pJITFuncData->parentNativeOffset = 0;
     }
-#endif // FEATURE_EH_FUNCLETS
 }
 
 // Return the stack parameter size of the given method.
@@ -1142,7 +1136,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
                 }
                 else if (ft == Frame::TYPE_EXIT)
                 {
-                    if ((pFrame->GetVTablePtr() != InlinedCallFrame::GetMethodFrameVPtr()) ||
+                    if ((pFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame) ||
                         InlinedCallFrame::FrameHasActiveCall(pFrame))
                     {
                         resultType = STUBFRAME_M2U;
@@ -1153,7 +1147,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 
         case Frame::TT_M2U:
             // Refer to the comment in DebuggerWalkStackProc() for StubDispatchFrame.
-            if (pFrame->GetVTablePtr() != StubDispatchFrame::GetMethodFrameVPtr())
+            if (pFrame->GetFrameIdentifier() != FrameIdentifier::StubDispatchFrame)
             {
                 if (it == Frame::INTERCEPTION_SECURITY)
                 {
@@ -1205,31 +1199,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
                                                    T_CONTEXT *  pContext)
 {
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-    // Do a partial copy first.
-    pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
-
-    pContext->Edi = *pRegDisp->GetEdiLocation();
-    pContext->Esi = *pRegDisp->GetEsiLocation();
-    pContext->Ebx = *pRegDisp->GetEbxLocation();
-    pContext->Ebp = *pRegDisp->GetEbpLocation();
-    pContext->Eax = *pRegDisp->GetEaxLocation();
-    pContext->Ecx = *pRegDisp->GetEcxLocation();
-    pContext->Edx = *pRegDisp->GetEdxLocation();
-    pContext->Esp = pRegDisp->SP;
-    pContext->Eip = pRegDisp->ControlPC;
-
-    // If we still have the pointer to the leaf CONTEXT, and the leaf CONTEXT is the same as the CONTEXT for
-    // the current frame (i.e. the stackwalker is at the leaf frame), then we do a full copy.
-    if ((pRegDisp->pContext != NULL) &&
-        (CompareControlRegisters(const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pContext)),
-                                 const_cast<const DT_CONTEXT *>(reinterpret_cast<DT_CONTEXT *>(pRegDisp->pContext)))))
-    {
-        *pContext = *pRegDisp->pContext;
-    }
-#else // TARGET_X86 && !FEATURE_EH_FUNCLETS
     *pContext = *pRegDisp->pCurrentContext;
-#endif // !TARGET_X86 || FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------

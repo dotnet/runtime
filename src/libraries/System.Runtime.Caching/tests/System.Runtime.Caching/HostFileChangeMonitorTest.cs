@@ -30,14 +30,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Caching;
 using System.Runtime.Caching.Hosting;
 using System.Text;
-
-using Xunit;
+using System.Threading;
+using System.Threading.Tasks;
 using MonoTests.Common;
+using Xunit;
 
 namespace MonoTests.System.Runtime.Caching
 {
@@ -84,7 +86,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void Constructor_MissingFiles_Handler()
         {
             HostFileChangeMonitor monitor;
@@ -132,7 +133,6 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void Constructor_Duplicates()
         {
             HostFileChangeMonitor monitor;
@@ -148,9 +148,9 @@ namespace MonoTests.System.Runtime.Caching
             monitor.Dispose();
         }
 
-        private static Tuple<string, string, string, IList<string>> SetupMonitoring()
+        private static Tuple<string, string, string, IList<string>> SetupMonitoring(string uniqueId)
         {
-            string testPath = Path.Combine(Path.GetTempPath(), "HostFileChangeMonitorTest", "Dispose_Calls_StopMonitoring");
+            string testPath = Path.Combine(Path.GetTempPath(), "HostFileChangeMonitorTest", uniqueId);
             if (!Directory.Exists(testPath))
                 Directory.CreateDirectory(testPath);
 
@@ -201,13 +201,12 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34497", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void UniqueId()
         {
             Tuple<string, string, string, IList<string>> setup = null;
             try
             {
-                setup = SetupMonitoring();
+                setup = SetupMonitoring(nameof(UniqueId));
                 FileInfo fi;
                 var monitor = new HostFileChangeMonitor(setup.Item4);
                 var sb = new StringBuilder();
@@ -241,6 +240,48 @@ namespace MonoTests.System.Runtime.Caching
                 monitor = new HostFileChangeMonitor(list);
                 Assert.Equal(sb.ToString(), monitor.UniqueId);
                 monitor.Dispose();
+            }
+            finally
+            {
+                CleanupMonitoring(setup);
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task Reasonable_Delay()
+        {
+            Tuple<string, string, string, IList<string>> setup = null;
+            try
+            {
+                setup = SetupMonitoring(nameof(Reasonable_Delay));
+
+                using var monitor = new HostFileChangeMonitor(setup.Item4);
+                var policy = new CacheItemPolicy
+                {
+                    ChangeMonitors = { monitor }
+                };
+                var config = new NameValueCollection();
+                var mc = new PokerMemoryCache("MyCache", config);
+
+                mc.Set("key", "value", policy);
+
+                // Verify the cache item is set
+                Assert.Equal("value", mc["key"]);
+
+                // Update the file dependency
+                File.WriteAllText(setup.Item2, "I am the first file. Updated.");
+
+                // Wait for the monitor to detect the change - 5s should be more than enough
+                var stop = DateTime.UtcNow.AddMilliseconds(5000);
+                while (DateTime.UtcNow < stop)
+                {
+                    if (!mc.Contains("key"))
+                        break;
+                    await Task.Delay(50);
+                }
+
+                Assert.Null(mc["key"]);
             }
             finally
             {

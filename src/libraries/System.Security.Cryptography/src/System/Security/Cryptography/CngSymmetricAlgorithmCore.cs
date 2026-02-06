@@ -50,6 +50,27 @@ namespace System.Security.Cryptography
             }
         }
 
+        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, CngKey key)
+        {
+            Debug.Assert(key is not null);
+
+            CngAlgorithm actualAlgorithm = key.Algorithm;
+            string algorithm = outer.GetNCryptAlgorithmIdentifier();
+
+            if (algorithm != actualAlgorithm.Algorithm)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_CngKeyWrongAlgorithm,
+                        actualAlgorithm.Algorithm,
+                        algorithm));
+            }
+
+            _outer = outer;
+            _outer.BaseKeySize = key.KeySize;
+            _key = key;
+        }
+
         /// <summary>
         /// Note! This can and likely will throw if the algorithm was given a hardware-based key.
         /// </summary>
@@ -71,7 +92,8 @@ namespace System.Security.Cryptography
         public void SetKey(byte[] key)
         {
             _outer.BaseKey = key;
-            _keyName = null; // Setting _keyName to null signifies that this object is now based on a plaintext key, not a stored CNG key.
+            _keyName = null; // Setting _keyName and _key to null signifies that this object is now based on a plaintext key, not a stored CNG key.
+            _key = null;
         }
 
         public void SetKeySize(int keySize, ICngSymmetricAlgorithm outer)
@@ -81,7 +103,8 @@ namespace System.Security.Cryptography
             Debug.Assert(_outer == null || _outer == outer);
 
             outer.BaseKeySize = keySize;
-            _keyName = null; // Setting _keyName to null signifies that this object is now based on a plaintext key, not a stored CNG key.
+            _keyName = null; // Setting _keyName and _key to null signifies that this object is now based on a plaintext key, not a stored CNG key.
+            _key = null;
         }
 
         public void GenerateKey()
@@ -244,17 +267,24 @@ namespace System.Security.Cryptography
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private CngKey ProduceCngKey()
+        private readonly CngKey ProduceCngKey()
         {
             Debug.Assert(!KeyInPlainText);
 
-            return CngKey.Open(_keyName!, _provider!, _optionOptions);
+            if (_key is null)
+            {
+                return CngKey.Open(_keyName!, _provider!, _optionOptions);
+            }
+            else
+            {
+                // This needs to return a duplicate because it gets handed out as an ICryptoTransform, which will
+                // do NCryptSetProperty on the key handle for the chaining mode. Different ICryptoTransforms produced
+                // from the same SymmetricCng type should have independent chaining modes.
+                return CngHelpers.Duplicate(_key.HandleNoDuplicate, _key.IsEphemeral);
+            }
         }
 
-        private bool KeyInPlainText
-        {
-            get { return _keyName == null; }
-        }
+        private readonly bool KeyInPlainText => _keyName is null && _key is null;
 
         private void ValidateFeedbackSize(CipherMode mode, int feedbackSizeInBits)
         {
@@ -299,10 +329,14 @@ namespace System.Security.Cryptography
 
         private readonly ICngSymmetricAlgorithm _outer;
 
-        // If using a stored CNG key, these fields provide the CngKey.Open() parameters. If using a plaintext key, _keyName is set to null.
+        // If using a stored CNG key, these fields provide the CngKey.Open() parameters. If using a plaintext key,
+        // _keyName and _key is set to null.
         private string? _keyName;
         private readonly CngProvider? _provider;
         private readonly CngKeyOpenOptions _optionOptions;
+
+        // If using a stored CNG key supplied by a CngKey, not a name, this will be non-null, and _keyName will be null.
+        private CngKey? _key;
 
         private const int BitsPerByte = 8;
     }

@@ -30,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         // The following helpers are used for generic lookups only
         TypeHandle,
         NecessaryTypeHandle,
+        MetadataTypeHandle,
         DeclaringTypeHandle,
         MethodHandle,
         FieldHandle,
@@ -45,6 +46,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
+        private static readonly Utf8String s_RhpResolveInterfaceMethod = new Utf8String("RhpResolveInterfaceMethod"u8);
+
         private readonly ReadyToRunHelperId _id;
         private readonly object _target;
 

@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
+        public async Task UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
                         (Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
         [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
-        public async void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+        public async Task UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
                         (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
@@ -132,7 +132,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedCallback_InFileType(Configuration config, bool aot)
+        public async Task UnmanagedCallback_InFileType(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_filetype");
             string programRelativePath = Path.Combine("Common", "Program.cs");
@@ -151,7 +151,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
+        public async Task UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "cb_namespace");
             string programRelativePath = Path.Combine("Common", "Program.cs");
@@ -231,31 +231,30 @@ namespace Wasm.Build.Tests
             """;
             UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
 
-            string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                              "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                              s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks",
-                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
-            if (!Directory.Exists(tasksDir)) {
-                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
-                if (!string.IsNullOrEmpty (tasksDirParent)) {
-                    if (!Directory.Exists(tasksDirParent)) {
-                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
-                    }
-                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
-                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
-                        _testOutput.WriteLine($"  - {subdir}");
-                    }
-                }
-                throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
-            }
+            string tasksBaseDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
+                                                "Microsoft.NET.Runtime.WebAssembly.Sdk",
+                                                s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
+                                                "tasks");
+            if (!Directory.Exists(tasksBaseDir))
+                throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
+
+            string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
+            // select the first non-net4.x directory
+            string? tasksDir = taskDirectories.FirstOrDefault(dir =>
+            {
+                string tfm = Path.GetFileName(dir);
+                return tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) && !tfm.StartsWith("net4", StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (string.IsNullOrEmpty(tasksDir))
+                throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
 
             string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
                                             .FirstOrDefault();
             if (string.IsNullOrEmpty(taskPath))
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
 
-            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
+            _testOutput.WriteLine("Using WasmAppBuilder.dll from {0}", taskPath);
 
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
             string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
@@ -276,7 +275,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
-        public async void BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
+        public async Task BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures
             // Prompted by https://github.com/dotnet/runtime/issues/71149
@@ -351,12 +350,12 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        public async void EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
+        public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
+        public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
@@ -373,7 +372,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void UCOWithSpecialCharacters(Configuration config, bool aot)
+        public async Task UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
             var extraItems = @"<NativeFileReference Include=""local.c"" />";

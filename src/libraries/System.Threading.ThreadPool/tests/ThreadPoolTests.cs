@@ -1470,22 +1470,31 @@ namespace System.Threading.ThreadPools.Tests
             // Run in a separate process to test in a clean thread pool environment such that we don't count external work items
             RemoteExecutor.Invoke(() =>
             {
-                using var manualResetEvent = new ManualResetEventSlim(false);
+                const int WorkItemCount = 4;
 
-                var overlapped = new Overlapped();
-                NativeOverlapped* nativeOverlapped = overlapped.Pack((errorCode, numBytes, innerNativeOverlapped) =>
+                int completedWorkItemCount = 0;
+                using var allWorkItemsCompleted = new AutoResetEvent(false);
+
+                IOCompletionCallback callback =
+                    (errorCode, numBytes, innerNativeOverlapped) =>
+                    {
+                        Overlapped.Free(innerNativeOverlapped);
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCount)
+                        {
+                            allWorkItemsCompleted.Set();
+                        }
+                    };
+                for (int i = 0; i < WorkItemCount; i++)
                 {
-                    Overlapped.Free(innerNativeOverlapped);
-                    manualResetEvent.Set();
-                }, null);
+                    ThreadPool.UnsafeQueueNativeOverlapped(new Overlapped().Pack(callback, null));
+                }
 
-                ThreadPool.UnsafeQueueNativeOverlapped(nativeOverlapped);
-                manualResetEvent.Wait();
+                allWorkItemsCompleted.CheckedWait();
 
-                // Allow work item(s) to be marked as completed during this time, should be only one
-                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount == 1);
+                // Allow work items to be marked as completed during this time
+                ThreadTestHelpers.WaitForCondition(() => ThreadPool.CompletedWorkItemCount >= WorkItemCount);
                 Thread.Sleep(50);
-                Assert.Equal(1, ThreadPool.CompletedWorkItemCount);
+                Assert.Equal(WorkItemCount, ThreadPool.CompletedWorkItemCount);
             }).Dispose();
         }
 

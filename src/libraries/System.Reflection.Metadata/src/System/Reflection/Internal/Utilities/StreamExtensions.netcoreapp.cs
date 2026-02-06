@@ -7,7 +7,7 @@ namespace System.Reflection.Internal
 {
     internal static partial class StreamExtensions
     {
-        internal static unsafe int Read(this Stream stream, byte* buffer, int size)
-            => stream.Read(new Span<byte>(buffer, size));
+        internal static unsafe void ReadExactly(this Stream stream, byte* buffer, int size)
+            => stream.ReadExactly(new Span<byte>(buffer, size));
     }
 }

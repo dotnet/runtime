@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 11
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 18
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 11
+#define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -39,6 +39,19 @@
 // R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
 // R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
+// R2R Version 12 requires all return buffers to be always on the stack
+// R2R Version 13 removes usage of PSPSym, changes ABI for funclets to match NativeAOT, changes register for
+//                exception parameter on AMD64, and redefines generics instance context stack slot in GCInfo v4
+//                to be SP/FP relative
+// R2R Version 13.1 added long/ulong to float helper calls
+// R2R Version 14 changed x86 code generation to use funclets
+// R2R Version 15 removes double to int/uint helper calls
+// R2R Version 16 replaces the compression format for debug boundaries with a new format that is smaller and more efficient to parse
+//     R2R 16 is not backward compatible with 15.x or earlier.
+// R2R Version 17 adds support for producing "fat" debug information (that e.g. can include async debug info)
+//     R2R 17 is not backward compatible with 16.x or earlier.
+// R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
+// R2R Version 18 updates fields layout algorithm
 
 struct READYTORUN_CORE_HEADER
 {
@@ -75,6 +88,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
     READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
     READYTORUN_FLAG_UNRELATED_R2R_CODE          = 0x00000080,   // This R2R module has code in it that would not be naturally encoded into this module
+    READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE       = 0x00000100,   // The owning composite executable is in the platform native format
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -282,6 +296,10 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+    READYTORUN_FIXUP_Continuation_Layout        = 0x37, /* Layout of an async method continuation type */
+
+    READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
+                                                        /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };
 
 //
@@ -320,6 +338,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
@@ -344,7 +363,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
 
     // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
+    READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0
 
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
@@ -396,14 +415,16 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_UMod                      = 0xCF,
 
     // Floating point conversions
-    READYTORUN_HELPER_Dbl2Int                   = 0xD0,
+    READYTORUN_HELPER_Dbl2Int                   = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2IntOvf                = 0xD1,
     READYTORUN_HELPER_Dbl2Lng                   = 0xD2,
     READYTORUN_HELPER_Dbl2LngOvf                = 0xD3,
-    READYTORUN_HELPER_Dbl2UInt                  = 0xD4,
+    READYTORUN_HELPER_Dbl2UInt                  = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
+    READYTORUN_HELPER_Lng2Flt                   = 0xD8,
+    READYTORUN_HELPER_ULng2Flt                  = 0xD9,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
@@ -413,11 +434,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
-#ifdef FEATURE_EH_FUNCLETS
     // Personality routines
     READYTORUN_HELPER_PersonalityRoutine        = 0xF0,
     READYTORUN_HELPER_PersonalityRoutineFilterFunclet = 0xF1,
-#endif
 
     // Synchronized methods
     READYTORUN_HELPER_MonitorEnter              = 0xF8,
@@ -448,6 +467,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    READYTORUN_HELPER_AllocContinuation = 0x113,
+    READYTORUN_HELPER_AllocContinuationClass = 0x114,
+    READYTORUN_HELPER_AllocContinuationMethod = 0x115,
 };
 
 #include "readytoruninstructionset.h"

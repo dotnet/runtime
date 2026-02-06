@@ -67,9 +67,6 @@ Each and every callback wrapper must have some common gunk at the top.  Here's a
 
         // Yay!
         CAN_TAKE_LOCK;
-
-        // Yay!
-        ASSERT_NO_EE_LOCKS_HELD();
     }
     CONTRACTL_END;
     CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,

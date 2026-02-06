@@ -16,6 +16,10 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// Provides stateless methods for decoding .NET Remoting Binary Format (NRBF) encoded data.
 /// </summary>
+/// <remarks>
+/// NrbfDecoder is an implementation of an NRBF reader, but its behaviors don't strictly follow BinaryFormatter's implementation.
+/// You shouldn't use the output of NrbfDecoder to determine whether a call to BinaryFormatter would be safe.
+/// </remarks>
 public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
@@ -51,14 +55,8 @@ public static class NrbfDecoder
     /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(stream);
-#else
-        if (stream is null)
-        {
-            throw new ArgumentNullException(nameof(stream));
-        }
-#endif
+
         if (!stream.CanSeek)
         {
             throw new ArgumentException(SR.Argument_NonSeekableStream, nameof(stream));
@@ -129,14 +127,7 @@ public static class NrbfDecoder
     /// <inheritdoc cref="Decode(Stream, PayloadOptions?, bool)"/>
     public static SerializationRecord Decode(Stream payload, out IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(payload);
-#else
-        if (payload is null)
-        {
-            throw new ArgumentNullException(nameof(payload));
-        }
-#endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
         try

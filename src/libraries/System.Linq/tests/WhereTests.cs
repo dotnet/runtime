@@ -892,14 +892,14 @@ namespace System.Linq.Tests
         public void SingleElementPredicateFalse()
         {
             int[] source = [3];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]
         public void PredicateFalseForAll()
         {
             int[] source = [9, 7, 15, 3, 27];
-            Assert.Empty(source.Where(IsEven));
+            Assert.DoesNotContain(source, IsEven);
         }
 
         [Fact]
@@ -1107,44 +1107,40 @@ namespace System.Linq.Tests
         [Fact]
         public void WhereFirstLast()
         {
-            Assert.All(IdentityTransforms<int>(), transform =>
+            Assert.All(CreateSources(Enumerable.Range(0, 10)), source =>
             {
-                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+                Assert.Equal(3, source.Where(i => i == 3).First());
+                Assert.Equal(0, source.Where(i => i % 2 == 0).First());
 
-                Assert.Equal(3, data.Where(i => i == 3).First());
-                Assert.Equal(0, data.Where(i => i % 2 == 0).First());
+                Assert.Equal(3, source.Where(i => i == 3).Last());
+                Assert.Equal(8, source.Where(i => i % 2 == 0).Last());
 
-                Assert.Equal(3, data.Where(i => i == 3).Last());
-                Assert.Equal(8, data.Where(i => i % 2 == 0).Last());
+                Assert.Equal(3, source.Where(i => i == 3).ElementAt(0));
+                Assert.Equal(8, source.Where(i => i % 2 == 0).ElementAt(4));
 
-                Assert.Equal(3, data.Where(i => i == 3).ElementAt(0));
-                Assert.Equal(8, data.Where(i => i % 2 == 0).ElementAt(4));
-
-                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).First());
-                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Last());
-                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).ElementAt(0));
+                Assert.Throws<InvalidOperationException>(() => source.Where(i => i == 10).First());
+                Assert.Throws<InvalidOperationException>(() => source.Where(i => i == 10).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => source.Where(i => i == 10).ElementAt(0));
             });
         }
 
         [Fact]
         public void WhereSelectFirstLast()
         {
-            Assert.All(IdentityTransforms<int>(), transform =>
+            Assert.All(CreateSources(Enumerable.Range(0, 10)), source =>
             {
-                IEnumerable<int> data = transform(Enumerable.Range(0, 10));
+                Assert.Equal(6, source.Where(i => i == 3).Select(i => i * 2).First());
+                Assert.Equal(0, source.Where(i => i % 2 == 0).Select(i => i * 2).First());
 
-                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).First());
-                Assert.Equal(0, data.Where(i => i % 2 == 0).Select(i => i * 2).First());
+                Assert.Equal(6, source.Where(i => i == 3).Select(i => i * 2).Last());
+                Assert.Equal(16, source.Where(i => i % 2 == 0).Select(i => i * 2).Last());
 
-                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).Last());
-                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).Last());
+                Assert.Equal(6, source.Where(i => i == 3).Select(i => i * 2).ElementAt(0));
+                Assert.Equal(16, source.Where(i => i % 2 == 0).Select(i => i * 2).ElementAt(4));
 
-                Assert.Equal(6, data.Where(i => i == 3).Select(i => i * 2).ElementAt(0));
-                Assert.Equal(16, data.Where(i => i % 2 == 0).Select(i => i * 2).ElementAt(4));
-
-                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).First());
-                Assert.Throws<InvalidOperationException>(() => data.Where(i => i == 10).Select(i => i * 2).Last());
-                Assert.Throws<ArgumentOutOfRangeException>(() => data.Where(i => i == 10).Select(i => i * 2).ElementAt(0));
+                Assert.Throws<InvalidOperationException>(() => source.Where(i => i == 10).Select(i => i * 2).First());
+                Assert.Throws<InvalidOperationException>(() => source.Where(i => i == 10).Select(i => i * 2).Last());
+                Assert.Throws<ArgumentOutOfRangeException>(() => source.Where(i => i == 10).Select(i => i * 2).ElementAt(0));
             });
         }
 
@@ -1152,7 +1148,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> seq = GenerateRandomSequnce(seed: 0xdeadbeef, count: 10);
 
-            foreach (IEnumerable<int> seq2 in IdentityTransforms<int>().Select(t => t(seq)))
+            foreach (IEnumerable<int> seq2 in CreateSources(seq))
             {
                 yield return [seq2];
             }
@@ -1166,6 +1162,31 @@ namespace System.Linq.Tests
             {
                 yield return random.Next(int.MinValue, int.MaxValue);
             }
+        }
+
+        [Fact]
+        public void Where_SourceIsIList_EnumeratorDisposedOnComplete()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            foreach (int item in source.Where(i => i % 2 == 0))
+            {
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
+        }
+
+        [Fact]
+        public void Where_SourceIsIList_EnumeratorDisposedOnExplicitDispose()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            using (var enumerator = source.Where(i => i % 2 == 0).GetEnumerator())
+            {
+                enumerator.MoveNext();
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
         }
     }
 }

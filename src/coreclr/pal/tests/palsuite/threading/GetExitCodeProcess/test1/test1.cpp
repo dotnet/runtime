@@ -38,7 +38,7 @@ PALTEST(threading_GetExitCodeProcess_test1_paltest_getexitcodeprocess_test1, "th
     DWORD dwSize;
 
     char  rgchDirName[_MAX_DIR];
-    char  absPathBuf[_MAX_PATH];
+    char  absPathBuf[MAX_PATH];
     char* rgchAbsPathName;
 
     /* initialize the PAL */

@@ -161,35 +161,35 @@ class DevirtualizationTests {
 		try {
 			y.method1();
 			return 1;
-		} catch(NullReferenceException e) {
+		} catch (NullReferenceException e) {
 			;//ok
 		}
 
 		try {
 			y.method2();
 			return 2;
-		} catch(NullReferenceException e) {
+		} catch (NullReferenceException e) {
 			;//ok
 		}
 
 		try {
 			y.method3();
 			return 3;
-		} catch(NullReferenceException e) {
+		} catch (NullReferenceException e) {
 			;//ok
 		}
 		
 		try {
 			x.method4();
 			return 4;
-		} catch(NullReferenceException e) {
+		} catch (NullReferenceException e) {
 			;//ok
 		}
 
 		try {
 			x.method5();
 			return 5;
-		} catch(NullReferenceException e) {
+		} catch (NullReferenceException e) {
 			;//ok
 		}
 		

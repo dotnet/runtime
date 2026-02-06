@@ -85,8 +85,20 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
+            bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
+
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst)
+            {
+                // These platforms do not support jitted code, so we want to ensure that we don't
+                // need to fall back to the interpreter for any hardware-intrinsic optimizations.
+                // Disable optimistic instruction sets by default.
+                allowOptimistic = false;
+            }
+
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger);
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
+                allowOptimistic: allowOptimistic,
+                isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
@@ -159,7 +171,7 @@ namespace ILCompiler
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
-                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                            && module.PEReader.TryGetCompositeReadyToRunHeader(out int _))
                         {
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
@@ -399,6 +411,12 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                    if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
+                    {
+                        throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -554,6 +572,16 @@ namespace ILCompiler
                             }
                         }
                     }
+
+                    if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
+                    {
+                        // For some platforms, we cannot JIT.
+                        // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
+                        // that are marked as supported.
+                        // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
+                        compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
+                    }
+
                     // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
                     // or produce debuggable code if an explicit optimization level was not specified on the command line
                     OptimizationMode optimizationMode = _command.OptimizationMode;
@@ -595,6 +623,7 @@ namespace ILCompiler
                     nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -613,6 +642,7 @@ namespace ILCompiler
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
+                        .UseContainerFormat(format)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)
@@ -690,7 +720,7 @@ namespace ILCompiler
             int curIndex = 0;
             foreach (var searchMethod in owningType.GetMethods())
             {
-                if (searchMethod.Name != singleMethodName)
+                if (searchMethod.GetName() != singleMethodName)
                     continue;
 
                 curIndex++;
@@ -720,7 +750,7 @@ namespace ILCompiler
                 curIndex = 0;
                 foreach (var searchMethod in owningType.GetMethods())
                 {
-                    if (searchMethod.Name != singleMethodName)
+                    if (searchMethod.GetName() != singleMethodName)
                         continue;
 
                     curIndex++;
@@ -756,12 +786,12 @@ namespace ILCompiler
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
 
             sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
-            sb.Append($" --singlemethodname \"{method.Name}\"");
+            sb.Append($" --singlemethodname \"{method.GetName()}\"");
             {
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (searchMethod.Name != method.Name)
+                    if (!searchMethod.Name.SequenceEqual(method.Name))
                         continue;
 
                     curIndex++;
@@ -908,15 +938,19 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new Crossgen2RootCommand(args)
+            new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

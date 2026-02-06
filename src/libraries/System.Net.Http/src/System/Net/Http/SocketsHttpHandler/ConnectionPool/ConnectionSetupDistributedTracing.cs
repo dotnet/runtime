@@ -12,7 +12,7 @@ namespace System.Net.Http
     {
         private static readonly ActivitySource s_connectionsActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionsNamespace);
 
-        public static Activity? StartConnectionSetupActivity(bool isSecure, HttpAuthority authority)
+        public static Activity? StartConnectionSetupActivity(bool isSecure, string? serverAddress, int port)
         {
             Activity? activity = null;
             if (s_connectionsActivitySource.HasListeners())
@@ -25,11 +25,12 @@ namespace System.Net.Http
 
             if (activity is not null)
             {
-                activity.DisplayName = $"HTTP connection_setup {authority.HostValue}:{authority.Port}";
+                Debug.Assert(serverAddress is not null, "serverAddress should not be null when System.Net.Http.EnableActivityPropagation is true.");
+                activity.DisplayName = $"HTTP connection_setup {serverAddress}:{port}";
                 if (activity.IsAllDataRequested)
                 {
-                    activity.SetTag("server.address", authority.HostValue);
-                    activity.SetTag("server.port", authority.Port);
+                    activity.SetTag("server.address", serverAddress);
+                    activity.SetTag("server.port", port);
                     activity.SetTag("url.scheme", isSecure ? "https" : "http");
                 }
             }
@@ -72,10 +73,7 @@ namespace System.Net.Http
         public static Activity? StartWaitForConnectionActivity(HttpAuthority authority)
         {
             Activity? activity = s_connectionsActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.WaitForConnectionActivityName);
-            if (activity is not null)
-            {
-                activity.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
-            }
+            activity?.DisplayName = $"HTTP wait_for_connection {authority.HostValue}:{authority.Port}";
 
             return activity;
         }
@@ -85,7 +83,7 @@ namespace System.Net.Http
             Debug.Assert(connectionSetupActivity is not null);
 
             // We only support links for request activities created by the "System.Net.Http" ActivitySource.
-            if (DiagnosticsHandler.s_activitySource.HasListeners())
+            if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && DiagnosticsHandler.s_activitySource.HasListeners())
             {
                 Activity? requestActivity = Activity.Current;
                 if (requestActivity?.Source == DiagnosticsHandler.s_activitySource)

@@ -20,20 +20,28 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false));
+            return Impl(source.WithCancellation(cancellationToken));
 
             static async ValueTask<TSource[]> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source)
             {
-                List<TSource> list = [];
-                await foreach (TSource element in source)
+                await using ConfiguredCancelableAsyncEnumerable<TSource>.Enumerator e = source.GetAsyncEnumerator();
+
+                if (await e.MoveNextAsync())
                 {
-                    list.Add(element);
+                    List<TSource> list = [];
+                    do
+                    {
+                        list.Add(e.Current);
+                    }
+                    while (await e.MoveNextAsync());
+
+                    return list.ToArray();
                 }
 
-                return list.ToArray();
+                return [];
             }
         }
     }

@@ -14,6 +14,10 @@ if (CLR_CMAKE_TARGET_APPLE)
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
     add_compile_options(-Wno-poison-system-directories)
+elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND CLR_CMAKE_TARGET_BROWSER)
+    # When cross-compiling for browser-wasm on macOS, suppress warnings about
+    # /usr/local/include which may be added by the toolchain (e.g., brew's clang)
+    add_compile_options(-Wno-poison-system-directories)
 elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
@@ -81,6 +85,18 @@ check_c_source_compiles(
     }
     "
     HAVE_IP_MREQN)
+
+check_c_source_compiles(
+    "
+    #include <sys/socket.h>
+    #include <${SOCKET_INCLUDES}>
+    int main(void)
+    {
+        int opt = IP_MULTICAST_IFINDEX;
+        return 0;
+    }
+    "
+    HAVE_IP_MULTICAST_IFINDEX)
 
 # /in_pktinfo
 
@@ -324,6 +340,12 @@ check_struct_has_member(
     "sys/mount.h"
     HAVE_STATVFS_FSTYPENAME)
 
+check_struct_has_member(
+    "struct statvfs"
+    f_basetype
+    "sys/statvfs.h"
+    HAVE_STATVFS_BASETYPE)
+
 set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
 
 # statfs: Find whether this struct exists
@@ -368,21 +390,6 @@ check_c_source_compiles(
     }
     "
     HAVE_GNU_STRERROR_R)
-
-check_c_source_compiles(
-    "
-    #include <dirent.h>
-    #include <stddef.h>
-    int main(void)
-    {
-        DIR* dir = NULL;
-        struct dirent* entry = NULL;
-        struct dirent* result;
-        readdir_r(dir, entry, &result);
-        return 0;
-    }
-    "
-    HAVE_READDIR_R)
 
 check_c_source_compiles(
     "
@@ -659,6 +666,7 @@ endif()
 
 if (NOT CLR_CMAKE_TARGET_WASI)
     check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    check_library_exists(${PTHREAD_LIBRARY} pthread_mutex_clocklock "" HAVE_PTHREAD_MUTEX_CLOCKLOCK)
 endif()
 
 check_symbol_exists(
@@ -883,6 +891,10 @@ check_include_files(
     HAVE_DLFCN_H)
 
 check_include_files(
+    "sys/statfs.h"
+    HAVE_SYS_STATFS_H)
+
+check_include_files(
     "sys/statvfs.h"
     HAVE_SYS_STATVFS_H)
 
@@ -954,6 +966,10 @@ check_include_files(
 check_include_files(
     "sys/mntent.h"
     HAVE_SYS_MNTENT_H)
+
+check_include_files(
+    "mntent.h"
+    HAVE_MNTENT_H)
 
 check_include_files(
     "stdint.h;net/if_media.h"

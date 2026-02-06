@@ -3685,6 +3685,86 @@ EXTERN_C const IID IID_ISOSDacInterface15;
 #endif 	/* __ISOSDacInterface15_INTERFACE_DEFINED__ */
 
 
+#ifndef __ISOSDacInterface16_INTERFACE_DEFINED__
+#define __ISOSDacInterface16_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface16 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface16;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("4ba12ff8-daac-4e43-ac56-98cf8d5c595d")
+    ISOSDacInterface16 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetGCDynamicAdaptationMode( 
+            int *pDynamicAdaptationMode) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface16Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface16 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface16 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface16 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCDynamicAdaptationMode )( 
+            ISOSDacInterface16 * This,
+            int *pDynamicAdaptationMode);
+        
+        END_INTERFACE
+    } ISOSDacInterface16Vtbl;
+
+    interface ISOSDacInterface16
+    {
+        CONST_VTBL struct ISOSDacInterface16Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface16_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface16_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface16_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface16_GetGCDynamicAdaptationMode(This,pDynamicAdaptationMode)	\
+    ( (This)->lpVtbl -> GetGCDynamicAdaptationMode(This,pDynamicAdaptationMode) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface16_INTERFACE_DEFINED__ */
+
+
 /* Additional Prototypes for ALL interfaces */
 
 /* end of Additional Prototypes */

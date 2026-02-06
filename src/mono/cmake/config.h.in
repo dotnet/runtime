@@ -263,20 +263,8 @@
 /* CLOCK_MONOTONIC */
 #cmakedefine HAVE_CLOCK_MONOTONIC 1
 
-/* CLOCK_MONOTONIC_COARSE */
-#cmakedefine HAVE_CLOCK_MONOTONIC_COARSE 1
-
 /* clockid_t */
 #cmakedefine HAVE_CLOCKID_T 1
-
-/* mach_absolute_time */
-#cmakedefine HAVE_MACH_ABSOLUTE_TIME 1
-
-/* gethrtime */
-#cmakedefine HAVE_GETHRTIME 1
-
-/* read_real_time */
-#cmakedefine HAVE_READ_REAL_TIME 1
 
 /* Define to 1 if you have the `clock_nanosleep' function. */
 #cmakedefine HAVE_CLOCK_NANOSLEEP 1

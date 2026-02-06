@@ -18,6 +18,7 @@
 #include "mdutil.h"
 #include "rwutil.h"
 #include "mdlog.h"
+#include "memorystreams.h"
 #include "importhelper.h"
 #include "filtermanager.h"
 #include "switches.h"
@@ -27,18 +28,10 @@
 
 #include <metamodelrw.h>
 
-#define DEFINE_CUSTOM_NODUPCHECK    1
-#define DEFINE_CUSTOM_DUPCHECK      2
-#define SET_CUSTOM                  3
-
 #if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
 
 #ifdef FEATURE_METADATA_EMIT
 
@@ -908,7 +901,7 @@ HRESULT RegMeta::_DefineTypeRef(
     {
         szUTF8FullQualName = (LPUTF8)szName;
     }
-    PREFIX_ASSUME(szUTF8FullQualName != NULL);
+    _ASSERTE(szUTF8FullQualName != NULL);
 
     ulStringLen = (ULONG)(strlen(szUTF8FullQualName) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));
@@ -1276,7 +1269,7 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     mdEvent     mdEv;
     LPUTF8      szUTF8Event;
     UTF8STR(szEvent, szUTF8Event);
-    PREFIX_ASSUME(szUTF8Event != NULL);
+    _ASSERTE(szUTF8Event != NULL);
 
 
 
@@ -1824,10 +1817,6 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     ULONG       ulStringLen;            // Length of the TypeDef string.
     int         bSuccess;               // Return value for SplitPath().
 
-
-
-    _ASSERTE(IsTdAutoLayout(dwTypeDefFlags) || IsTdSequentialLayout(dwTypeDefFlags) || IsTdExplicitLayout(dwTypeDefFlags));
-
     _ASSERTE(ptd);
     _ASSERTE(TypeFromToken(tkExtends) == mdtTypeRef || TypeFromToken(tkExtends) == mdtTypeDef || TypeFromToken(tkExtends) == mdtTypeSpec
               || IsNilToken(tkExtends));
@@ -1835,7 +1824,7 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     _ASSERTE(IsNilToken(tdEncloser) || IsTdNested(dwTypeDefFlags));
 
     UTF8STR(szTypeDef, szTypeDefUTF8);
-    PREFIX_ASSUME(szTypeDefUTF8 != NULL);
+    _ASSERTE(szTypeDefUTF8 != NULL);
 
     ulStringLen = (ULONG)(strlen(szTypeDefUTF8) + 1);
     IfFailGo(qbNamespace.ReSizeNoThrow(ulStringLen));

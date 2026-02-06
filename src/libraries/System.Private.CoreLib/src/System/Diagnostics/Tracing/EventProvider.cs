@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -129,7 +130,7 @@ namespace System.Diagnostics.Tracing
         {
             //
             // explicit cleanup is done by calling Dispose with true from
-            // Dispose() or Close(). The disposing arguement is ignored because there
+            // Dispose() or Close(). The disposing argument is ignored because there
             // are no unmanaged resources.
             // The finalizer calls Dispose with false.
             //
@@ -478,8 +479,8 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+                InlineArray8<object?> eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = eightObjectStack;
 
@@ -748,7 +749,7 @@ namespace System.Diagnostics.Tracing
 
         private readonly WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
-        private GCHandle _gcHandle;
+        private GCHandle<EtwEventProvider> _gcHandle;
         private List<SessionInfo>? _liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private Guid _providerId;
 
@@ -817,7 +818,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            EtwEventProvider _this = GCHandle<EtwEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
 
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
@@ -830,7 +831,7 @@ namespace System.Diagnostics.Tracing
         internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
-            _gcHandle = GCHandle.Alloc(this);
+            _gcHandle = new GCHandle<EtwEventProvider>(this);
 
             long registrationHandle = 0;
             _providerId = id;
@@ -838,11 +839,11 @@ namespace System.Diagnostics.Tracing
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
                 &Callback,
-                (void*)GCHandle.ToIntPtr(_gcHandle),
+                (void*)GCHandle<EtwEventProvider>.ToIntPtr(_gcHandle),
                 &registrationHandle);
             if (status != 0)
             {
-                _gcHandle.Free();
+                _gcHandle.Dispose();
                 throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
             }
 
@@ -859,10 +860,7 @@ namespace System.Diagnostics.Tracing
                 _registrationHandle = 0;
             }
 
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
         }
 
         // Write an event.
@@ -906,32 +904,16 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        private static bool s_setInformationMissing;
-
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
             void* data,
             uint dataSize)
         {
-            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
-
-            if (!s_setInformationMissing)
-            {
-                try
-                {
-                    status = Interop.Advapi32.EventSetInformation(
-                        _registrationHandle,
-                        eventInfoClass,
-                        data,
-                        dataSize);
-                }
-                catch (TypeLoadException)
-                {
-                    s_setInformationMissing = true;
-                }
-            }
-
-            return status;
+            return Interop.Advapi32.EventSetInformation(
+                _registrationHandle,
+                eventInfoClass,
+                data,
+                dataSize);
         }
 
         /// <summary>

@@ -110,6 +110,7 @@ namespace System
         /// </remarks>
         internal static readonly SZGenericArrayEnumerator<T> Empty = new SZGenericArrayEnumerator<T>(null, 0);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SZGenericArrayEnumerator(T[]? array, int endIndex)
             : base(endIndex)
         {

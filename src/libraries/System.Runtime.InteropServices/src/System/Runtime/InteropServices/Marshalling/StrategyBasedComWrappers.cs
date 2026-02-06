@@ -5,12 +5,17 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// A <see cref="ComWrappers"/>-based type that uses customizable strategy objects to implement COM object wrappers and managed object wrappers exposed to COM.
     /// </summary>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]
     public class StrategyBasedComWrappers : ComWrappers
     {
@@ -84,7 +89,7 @@ namespace System.Runtime.InteropServices.Marshalling
             return null;
         }
 
-        /// <inheritdoc cref="ComWrappers.CreateObject" />
+        /// <inheritdoc cref="ComWrappers.CreateObject(nint, CreateObjectFlags)" />
         protected sealed override unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {
             if (flags.HasFlag(CreateObjectFlags.TrackerObject)
@@ -99,6 +104,12 @@ namespace System.Runtime.InteropServices.Marshalling
             };
 
             return rcw;
+        }
+
+        /// <inheritdoc cref="ComWrappers.CreateObject(nint, CreateObjectFlags, object?, out CreatedWrapperFlags)" />
+        protected sealed override object? CreateObject(nint externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags wrapperFlags)
+        {
+            return base.CreateObject(externalComObject, flags, userState, out wrapperFlags);
         }
 
         /// <inheritdoc cref="ComWrappers.ReleaseObjects" />

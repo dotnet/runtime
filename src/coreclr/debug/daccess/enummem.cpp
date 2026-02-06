@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: enummem.cpp
 //
-
-//
 // ICLRDataEnumMemoryRegions implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -24,6 +22,9 @@
 #include <interoplibinterface.h>
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
+
+#include "cdacplatformmetadata.hpp"
+#include "contract-descriptor.h"
 
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
@@ -201,8 +202,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
@@ -318,8 +320,12 @@ HRESULT ClrDataAccess::EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        EEJitManager* managerPtr = ExecutionManager::GetEEJitManager();
+        EECodeGenManager* managerPtr = ExecutionManager::GetEEJitManager();
         managerPtr->EnumMemoryRegions(flags);
+#ifdef FEATURE_INTERPRETER
+        managerPtr = ExecutionManager::GetInterpreterJitManager();
+        managerPtr->EnumMemoryRegions(flags);
+#endif // FEATURE_INTERPRETER
     }
 
     return status;
@@ -557,7 +563,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // included in the dump.  When we touch the header and each element looking for the
     // MD this happens.
     StackTraceArray stackTrace;
-    exceptRef->GetStackTrace(stackTrace);
+    exceptRef->GetStackTrace(stackTrace, /*outKeepAliveArray*/ NULL, /* pCurrentThread */ NULL);
 
     // The stackTraceArrayObj can be either a byte[] with the actual stack trace array or an object[] where the first element is the actual stack trace array.
     // In case it was the latter, we need to dump the actual stack trace array object here too.
@@ -587,9 +593,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            // Pulls in sequence points.
-            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
-            PCODE addr = pMD->GetNativeCode();
+            PCODE addr = pMD->GetCodeForInterpreterOrJitted();
             if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);
@@ -714,16 +718,18 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
             {
                 // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
                 // was thrown. Used generating dumps, where rethrow will cancel dump.
+                RethrowCancelExceptions();
             }
-            EX_END_CATCH(RethrowCancelExceptions)
+            EX_END_CATCH
         }
     }
     EX_CATCH
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     m_dumpStats.m_cbModuleList = m_cbMemoryReported - cbMemoryReported;
 
@@ -966,10 +972,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
 
-                            // Pulls in sequence points and local variable info
-                            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(USE_GC_INFO_DECODER)
 
                             if (addr != (PCODE)NULL)
                             {
@@ -990,7 +993,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     }
                                 }
                             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // USE_GC_INFO_DECODER
                         }
                         pMethodDefinition.Clear();
                     }
@@ -1009,8 +1012,9 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         status = E_FAIL;
         // Catch the exception and keep going unless a COR_E_OPERATIONCANCELED
         // was thrown. In which case, rethrow to cancel the dump gathering
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 #if defined(DAC_MEASURE_PERF)
     uint64_t nEnd = GetCycleCount();
@@ -1626,6 +1630,79 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     return status;
 }
 
+typedef DPTR(ContractDescriptor) PTR_ContractDescriptor;
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// Reports datadescriptor data for the cDAC.
+// Hardcodes number of subdescriptors and does not recursively enumerate them.
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+
+    uint64_t contractDescriptorAddr = 0;
+    if (!TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+        return E_FAIL;
+
+    // Save the main descriptor
+    EnumDataDescriptorHelper((TADDR)contractDescriptorAddr);
+
+    // Assume that subdescriptors will be the n last pointers in the pointer_data array
+    // Must be updated if further subdescriptors are added
+    // This could be improved by iterating all of the pointer data recursively and identifying subdescriptors by
+    // the magic field in ContractDescriptor. Given the low number of subdescriptors, this is not necessary right now.
+    int cSubDescriptors = 1;
+    PTR_ContractDescriptor pContractDescriptor = dac_cast<PTR_ContractDescriptor>((TADDR)contractDescriptorAddr);
+    for (int i = 0; i < cSubDescriptors; i++)
+    {
+        int subDescriptorIndex = (pContractDescriptor->pointer_data_count - 1) - i;
+
+        TADDR pSubDescriptorAddr;
+        ULONG32 bytesRead;
+        if (FAILED(m_pTarget->ReadVirtual(
+            (TADDR)pContractDescriptor->pointer_data + subDescriptorIndex * sizeof(void*),
+            (PBYTE)&pSubDescriptorAddr, sizeof(TADDR), &bytesRead))
+            || bytesRead != sizeof(TADDR)
+            || pSubDescriptorAddr == 0)
+        {
+            continue;
+        }
+
+        TADDR subDescriptorAddr;
+        if (FAILED(m_pTarget->ReadVirtual(
+            pSubDescriptorAddr,
+            (PBYTE)&subDescriptorAddr, sizeof(TADDR), &bytesRead))
+            || bytesRead != sizeof(TADDR)
+            || subDescriptorAddr == 0)
+        {
+            continue;
+        }
+
+        // Save the subdescriptor
+        EnumDataDescriptorHelper(subDescriptorAddr);
+    }
+
+    return S_OK;
+}
+
+void ClrDataAccess::EnumDataDescriptorHelper(TADDR dataDescriptorAddr)
+{
+    PTR_ContractDescriptor pDataDescriptor = dac_cast<PTR_ContractDescriptor>(dataDescriptorAddr);
+
+    EX_TRY
+    {
+        // Enumerate the ContractDescriptor structure
+        ReportMem(dac_cast<TADDR>(pDataDescriptor), sizeof(ContractDescriptor));
+        // Report the pointer data array
+        ReportMem((TADDR)pDataDescriptor->pointer_data, pDataDescriptor->pointer_data_count * sizeof(void*));
+        // Report the JSON blob
+        ReportMem((TADDR)pDataDescriptor->descriptor, pDataDescriptor->descriptor_size);
+    }
+    EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
@@ -2054,6 +2131,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             }
         }
 #endif
+
+        EnumMemDataDescriptors(flags);
+
         Flush();
     }
     EX_CATCH
@@ -2069,7 +2149,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // fix for issue 866100: DAC is too late in releasing ICLRDataEnumMemoryRegionsCallback2*
     if (m_updateMemCb)

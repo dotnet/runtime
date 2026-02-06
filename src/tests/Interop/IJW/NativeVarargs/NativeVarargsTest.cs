@@ -9,15 +9,17 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace NativeVarargsTest
 {
     public class NativeVarargsTest
     {
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7 || TestLibrary.Utilities.IsWindowsNanoServer)
+            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindowsNanoServer)
             {
                 return 100;
             }

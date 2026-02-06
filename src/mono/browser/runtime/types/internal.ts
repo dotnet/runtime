@@ -73,18 +73,16 @@ export function coerceNull<T extends ManagedPointer | NativePointer> (ptr: T | n
 
 // when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
-    linkerEnabled?: boolean,
     assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
-    browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
-    forwardConsoleLogsToWS?: boolean,
+    forwardConsole?: boolean,
     asyncFlushOnExit?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
@@ -110,7 +108,7 @@ export type RunArguments = {
 export interface AssetEntryInternal extends AssetEntry {
     // this could have multiple values in time, because of re-try download logic
     pendingDownloadInternal?: LoadingResource
-    noCache?: boolean
+    cache?: RequestCache
     useCredentials?: boolean
     isCore?: boolean
 }
@@ -129,9 +127,9 @@ export type LoaderHelpers = {
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
     loadedAssemblies: string[],
-    scriptDirectory: string
-    scriptUrl: string
-    modulesUniqueQuery?: string
+    scriptDirectory: string,
+    scriptUrl: string,
+    modulesUniqueQuery?: string,
     preferredIcuAsset?: string | null,
     workerNextNumber: number,
 
@@ -165,9 +163,7 @@ export type LoaderHelpers = {
 
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-    logDownloadStatsToConsole: () => void;
     installUnhandledErrorHandler: () => void;
-    purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -180,6 +176,7 @@ export type LoaderHelpers = {
     // from wasm-feature-detect npm package
     exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
+    relaxedSimd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
@@ -196,7 +193,6 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
@@ -222,8 +218,6 @@ export type RuntimeHelpers = {
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
-    beforePreInit: PromiseAndController<void>,
-    afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterMonoStarted: PromiseAndController<void>,
@@ -234,6 +228,7 @@ export type RuntimeHelpers = {
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,
+    featureWasmRelaxedSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
@@ -243,22 +238,23 @@ export type RuntimeHelpers = {
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
+    utf8ToString: (ptr: CharPtr) => string,
+    mono_background_exec: () => void,
+    mono_wasm_ds_exec: () => void,
+    SystemJS_GetCurrentProcessId: () => number,
+}
 
-    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
-    stringToUTF16Ptr: (str: string) => VoidPtr,
-    utf16ToString: (startPtr: number, endPtr: number) => string,
-    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
-    localHeapViewU16: () => Uint16Array,
-    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
-    setI32: (offset: MemOffset, value: number) => void,
+export type DiagnosticHelpers = {
+    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
+    ds_rt_websocket_poll:(client_socket :number) => number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
+    ds_rt_websocket_close:(client_socket :number) => number,
 }
 
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
-}
-
-export type BrowserProfilerOptions = {
 }
 
 export type LogProfilerOptions = {
@@ -281,8 +277,9 @@ export type EmscriptenBuildOptions = {
     wasmEnableSIMD: boolean,
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
-    enableBrowserProfiler: boolean,
+    enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
+    enableEventPipe: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
@@ -303,11 +300,11 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    diagnosticHelpers: DiagnosticHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
     fetch: any,
-    require: any,
     modulePThread: PThreadLibrary | undefined | null
     scriptDirectory: string;
     ENVIRONMENT_IS_WORKER: boolean;
@@ -440,7 +437,6 @@ export declare interface EmscriptenModuleInternal {
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
     wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
@@ -496,6 +492,10 @@ export type RuntimeModuleExportsInternal = {
     configureEmscriptenStartup: configureEmscriptenStartupType,
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,
+}
+
+export type DiagnosticModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
 }
 
 export type NativeModuleExportsInternal = {

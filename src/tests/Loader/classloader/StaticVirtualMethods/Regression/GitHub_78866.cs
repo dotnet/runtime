@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 public interface ITestInterfaceEx1<TSelf>
@@ -33,6 +34,7 @@ public struct Test : ITestInterface<Test>
 
 public class Program
 {
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     public static void TestEntryPoint()
     {

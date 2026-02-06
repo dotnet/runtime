@@ -16,8 +16,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if every element of the source sequence passes the test in the specified predicate,
-        /// or if the sequence is empty; otherwise, false.
+        /// <see langword="true"/> if every element of the source sequence passes the test in the specified predicate,
+        /// or if the sequence is empty; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -26,10 +26,10 @@ namespace System.Linq
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), predicate);
+            return Impl(source.WithCancellation(cancellationToken), predicate);
 
             static async ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,
@@ -53,8 +53,8 @@ namespace System.Linq
         /// <param name="predicate">A function to test each element for a condition.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>
-        /// true if every element of the source sequence passes the test in the specified predicate,
-        /// or if the sequence is empty; otherwise, false.
+        /// <see langword="true"/> if every element of the source sequence passes the test in the specified predicate,
+        /// or if the sequence is empty; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate"/> is <see langword="null"/>.</exception>
@@ -64,8 +64,8 @@ namespace System.Linq
             ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 
@@ -74,9 +74,9 @@ namespace System.Linq
                 Func<TSource, CancellationToken, ValueTask<bool>> predicate,
                 CancellationToken cancellationToken)
             {
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
-                    if (!await predicate(element, cancellationToken).ConfigureAwait(false))
+                    if (!await predicate(element, cancellationToken))
                     {
                         return false;
                     }

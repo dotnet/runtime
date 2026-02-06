@@ -21,6 +21,7 @@ namespace System.IO.Hashing.Tests
         }
 
         protected abstract NonCryptographicHashAlgorithm CreateInstance();
+        protected abstract NonCryptographicHashAlgorithm Clone(NonCryptographicHashAlgorithm instance);
 
         protected abstract byte[] StaticOneShot(byte[] source);
         protected abstract byte[] StaticOneShot(ReadOnlySpan<byte> source);
@@ -281,6 +282,47 @@ namespace System.IO.Hashing.Tests
                     Assert.Equal(fill, buf[j]);
                 }
             }
+        }
+
+        [Fact]
+        public void Clone_ProducesSameSequence()
+        {
+            NonCryptographicHashAlgorithm hash = CreateInstance();
+
+            for (int outer = 0; outer < 4; outer++)
+            {
+                NonCryptographicHashAlgorithm clone = Clone(hash);
+                Assert.Equal(hash.HashLengthInBytes, clone.HashLengthInBytes);
+                Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+
+                Random r = new Random(42);
+                byte[] bytes = new byte[r.Next(1, 10)];
+
+                for (int inner = 0; inner < 4; inner++)
+                {
+                    r.NextBytes(bytes);
+                    hash.Append(bytes);
+                    clone.Append(bytes);
+
+                    Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+                }
+            }
+        }
+
+        [Fact]
+        public void AppendingEmptyHasNoEffect()
+        {
+            NonCryptographicHashAlgorithm reference = CreateInstance();
+            reference.Append(new byte[] { 1, 2, 3 });
+            byte[] expected = reference.GetCurrentHash();
+
+            NonCryptographicHashAlgorithm hash = CreateInstance();
+            hash.Append(ReadOnlySpan<byte>.Empty);
+            hash.Append(new byte[] { 1, 2, 3 });
+            hash.Append(ReadOnlySpan<byte>.Empty);
+            byte[] actual = hash.GetCurrentHash();
+
+            Assert.Equal(expected, actual);
         }
 
         private void VerifyEmptyResult(ReadOnlySpan<byte> result)

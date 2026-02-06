@@ -110,15 +110,15 @@ namespace System.IO.Pipes
 
         // Reads a byte from the pipe stream.  Returns the byte cast to an int
         // or -1 if the connection has been broken.
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) > 0 ? b : -1;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) > 0 ? b : -1;
         }
 
-        public override unsafe void WriteByte(byte value)
+        public override void WriteByte(byte value)
         {
-            Write(new ReadOnlySpan<byte>(&value, 1));
+            Write([value]);
         }
 
         public override void Flush()
@@ -144,6 +144,11 @@ namespace System.IO.Pipes
 
         protected override void Dispose(bool disposing)
         {
+            // Mark the pipe as closed before calling DisposeCore. That way, other threads that might
+            // be synchronizing on shared resources disposed of in DisposeCore will be guaranteed to
+            // see the closed state after that synchronization.
+            _state = PipeState.Closed;
+
             try
             {
                 // Nothing will be done differently based on whether we are
@@ -159,8 +164,6 @@ namespace System.IO.Pipes
             {
                 base.Dispose(disposing);
             }
-
-            _state = PipeState.Closed;
         }
 
         // ********************** Public Properties *********************** //

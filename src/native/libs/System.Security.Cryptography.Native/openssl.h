@@ -23,7 +23,7 @@ PALEXPORT ASN1_OBJECT* CryptoNative_GetX509SignatureAlgorithm(X509* x509);
 
 PALEXPORT int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, int32_t cBuf);
 
-PALEXPORT ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509);
+PALEXPORT const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509);
 
 PALEXPORT int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_t cBuf);
 
@@ -62,6 +62,8 @@ PALEXPORT STACK_OF(X509) * CryptoNative_NewX509Stack(void);
 PALEXPORT int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* x509);
 
 PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
+
+PALEXPORT int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm);
 
 PALEXPORT int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName);
 

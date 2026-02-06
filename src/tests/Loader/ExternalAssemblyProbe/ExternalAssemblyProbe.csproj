@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- External assembly probe via host-runtime contract is not implemented.
+         The test uses probing to start at all, so it needs to be disabled in the project, not via an attribute -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ExternalAssemblyProbe.cs" />
+
+    <CLRTestEnvironmentVariable Include="APP_ASSEMBLIES" Value="EXTERNAL" />
+  </ItemGroup>
+</Project>

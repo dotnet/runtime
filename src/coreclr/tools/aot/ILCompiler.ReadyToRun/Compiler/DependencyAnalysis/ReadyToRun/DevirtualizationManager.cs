@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (!implType.IsObject)
                 {
                     TypeDesc typeThatDerivesFromObject = implType;
-                    while(!typeThatDerivesFromObject.BaseType.IsObject)
+                    while (!typeThatDerivesFromObject.BaseType.IsObject)
                     {
                         typeThatDerivesFromObject = typeThatDerivesFromObject.BaseType;
                     }

@@ -26,6 +26,24 @@
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+#endif
+C_FUNC(\Name):
+.endm
+
+// On MacOS, local labels cannot be used in arithmetic expressions.
+#if defined(__APPLE__)
+#define FIXUP_LABEL(name) name
+#else
+#define FIXUP_LABEL(name) .L##name
+#endif
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
 #if defined(__APPLE__)
@@ -46,8 +64,13 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
         .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop
@@ -101,6 +124,13 @@ C_FUNC(\Name\()_End):
         mov fp, sp
         .cfi_def_cfa_register fp
         .endif
+.endm
+
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, \ofs]!
+        .cfi_adjust_cfa_offset -\ofs
+        .cfi_rel_offset \reg1, 0
+        .cfi_rel_offset \reg2, 8
 .endm
 
 .macro EPILOG_RESTORE_REG reg, ofs
@@ -159,6 +189,7 @@ C_FUNC(\Name\()_End):
 // ArgumentRegisters::x2
 // ArgumentRegisters::x1
 // ArgumentRegisters::x0
+// ArgumentRegisters::x8
 // FloatRegisters::q7
 // FloatRegisters::q6
 // FloatRegisters::q5
@@ -167,7 +198,7 @@ C_FUNC(\Name\()_End):
 // FloatRegisters::q2
 // FloatRegisters::q1
 // FloatRegisters::q0
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1
 
         __PWTB_FloatArgumentRegisters = \extraLocals
         __PWTB_SaveFPArgs = \SaveFPArgs
@@ -178,9 +209,9 @@ C_FUNC(\Name\()_End):
 
         __PWTB_TransitionBlock = __PWTB_FloatArgumentRegisters
 
-        .if (__PWTB_SaveFPArgs == 1)
-            __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
-        .endif
+        // Always reserve space for the FP arg regs, even if they are not saved in the PROLOG_WITH_TRANSITION_BLOCK
+        // Some code using this macro saves them optionally
+        __PWTB_TransitionBlock = __PWTB_TransitionBlock + SIZEOF__FloatArgumentRegisters
 
         __PWTB_StackAlloc = __PWTB_TransitionBlock
         __PWTB_ArgumentRegisters = __PWTB_StackAlloc + 104
@@ -197,8 +228,10 @@ C_FUNC(\Name\()_End):
         // Allocate space for the rest of the frame
         PROLOG_STACK_ALLOC  __PWTB_StackAlloc
 
-        // Spill argument registers.
-        SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+        .if (\SaveGPArgs == 1)
+                // Spill argument registers.
+                SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+        .endif
 
         .if (__PWTB_SaveFPArgs == 1)
                 SAVE_FLOAT_ARGUMENT_REGISTERS sp, \extraLocals
@@ -276,6 +309,20 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+// Same as EPILOG_WITH_TRANSITION_BLOCK_RETURN but skips restoring x21 (SwiftError)
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG   x22, 40
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+        ret
+
+.endm
 
 //-----------------------------------------------------------------------------
 // Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
@@ -298,6 +345,142 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
 
+.endm
+
+// Loads the address of a thread-local variable into the target register,
+// which cannot be x0.
+// Preserves registers except for xip0 and xip1 on Apple
+.macro INLINE_GET_TLS_VAR target, var
+    .ifc \target, x0
+        .error "target cannot be x0"
+    .endif
+
+    // This sequence of instructions is recognized and potentially patched
+    // by the linker (GD->IE/LE relaxation).
+#if defined(__APPLE__)
+
+    adrp    x0, \var@TLVPPAGE
+    ldr     x0, [x0, \var@TLVPPAGEOFF]
+    ldr     \target, [x0]
+
+    blr     \target
+    // End of the sequence
+
+    mov     \target, x0
+#else
+    adrp    x0, :tlsdesc:\var
+    ldr     \target, [x0, #:tlsdesc_lo12:\var]
+    add     x0, x0, :tlsdesc_lo12:\var
+    .tlsdesccall \var
+    blr     \target
+    // End of the sequence
+
+    mrs     \target, tpidr_el0
+    add     \target, \target, x0
+#endif
+
+.endm
+
+
+// Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+        .ifc  \target, x0
+                .error "target cannot be x0"
+        .endif
+        .ifc  \target, x1
+                .error "target cannot be x1"
+        .endif
+
+#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+        PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+
+        bl      C_FUNC(GetThreadEEAllocContext)
+        mov     \target, x0
+
+        EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+#else
+        PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
+        INLINE_GET_TLS_VAR \target, t_runtime_thread_locals
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                add     \target, x0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        .endif
+
+        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
+#endif
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+        mov     \target, sp
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+.endm
+
+// Pushes a full TransitionBlock on the stack including argument registers and
+// floating point argument registers. Used for exception throw helpers where we
+// need to capture the complete register state including FP callee-saved registers.
+//
+// Stack layout (from low to high address):
+//   sp+0:     FP callee-saved registers (d8-d15, 64 bytes)
+//   sp+64:    FloatArgumentRegisters (q0-q7, 128 bytes)
+//   sp+192:   TransitionBlock start (176 bytes)
+//             - CalleeSavedRegisters (fp, lr, x19-x28 - 96 bytes)
+//             - padding (8 bytes)
+//             - x8 (8 bytes)
+//             - ArgumentRegisters (x0-x7, 64 bytes)
+//
+// On exit, \target contains the TransitionBlock pointer (sp+192).
+.macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+        // Allocate space for FloatArgumentRegisters (128) + FP callee-saved (64) = 192 bytes
+        PROLOG_STACK_ALLOC 192
+
+        // Save argument registers (x8, x0-x7) at offset 296 from sp (192 + 104)
+        SAVE_ARGUMENT_REGISTERS sp, 296
+
+        // Save floating point argument registers (q0-q7) at sp+64
+        SAVE_FLOAT_ARGUMENT_REGISTERS sp, 64
+
+        // Save FP callee-saved registers (d8-d15) at sp+0
+        str     d8,  [sp, #0]
+        str     d9,  [sp, #8]
+        str     d10, [sp, #16]
+        str     d11, [sp, #24]
+        str     d12, [sp, #32]
+        str     d13, [sp, #40]
+        str     d14, [sp, #48]
+        str     d15, [sp, #56]
+
+        // Set target to TransitionBlock pointer
+        add     \target, sp, #192
 .endm
 
 // ------------------------------------------------------------------
@@ -380,4 +563,14 @@ $__RedirectionStubEndFuncName
         EMIT_BREAKPOINT
 0:
 #endif
+.endm
+
+#define xip0 x16
+#define xip1 x17
+#define xpr x18
+
+// Inlined version of RhpGetThread. Target cannot be x0.
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+    ldr     \target, [\target, #OFFSETOF__ThreadLocalInfo__m_pThread]
 .endm

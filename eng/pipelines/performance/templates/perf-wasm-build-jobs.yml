@@ -1,0 +1,16 @@
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      nameSuffix: wasm
+      isOfficialBuild: false
+      postBuildSteps:
+        - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
+          parameters:
+            configForBuild: Release

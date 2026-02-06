@@ -18,6 +18,7 @@
 #include "olevariant.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
+#include "mdfileformat.h"  // For CPackedLen
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -331,7 +332,7 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
         paramString.Printf("parameter #%u", paramIdx);
 
     SString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString.GetUnicode(), errorString.GetUnicode());
 }
@@ -725,10 +726,6 @@ namespace
 //==========================================================================
 // Constructs MarshalInfo.
 //==========================================================================
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 MarshalInfo::MarshalInfo(Module* pModule,
                          SigPointer sig,
                          const SigTypeContext *pTypeContext,
@@ -2080,11 +2077,8 @@ lReallyExit:
     //_ASSERTE(!"Invalid ELEMENT_TYPE/NATIVE_TYPE combination");
     goto lExit;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
-VOID MarshalInfo::EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx)
+VOID MarshalInfo::EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx)
 {
     CONTRACTL
     {
@@ -2114,7 +2108,7 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
     StackSString ssFieldName(SString::Utf8, pFieldDesc->GetName());
 
     StackSString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
         GetFullyQualifiedNameForClassW(pFieldDesc->GetEnclosingMethodTable()),
@@ -2248,7 +2242,7 @@ HRESULT MarshalInfo::HandleArrayElemType(NativeTypeParamInfo *pParamInfo, TypeHa
     return S_OK;
 }
 
-ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, NDirectStubLinker* psl)
+ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, PInvokeStubLinker* psl)
 {
     CONTRACTL
     {
@@ -2272,7 +2266,7 @@ ILMarshaler* CreateILMarshaler(MarshalInfo::MarshalType mtype, NDirectStubLinker
             UNREACHABLE_MSG("unexpected MarshalType passed to CreateILMarshaler");
     }
 
-    pMarshaler->SetNDirectStubLinker(psl);
+    pMarshaler->SetPInvokeStubLinker(psl);
     return pMarshaler;
 }
 
@@ -2325,7 +2319,7 @@ namespace
     }
 }
 
-void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
+void MarshalInfo::GenerateArgumentIL(PInvokeStubLinker* psl,
                                      int argOffset, // the argument's index is m_paramidx + argOffset
                                      BOOL fMngToNative)
 {
@@ -2395,12 +2389,12 @@ void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
     if (pMarshaler->NeedsMarshalCleanupIndex())
     {
         // we don't bother writing to the counter if marshaling does not need cleanup
-        psl->EmitSetArgMarshalIndex(pcsMarshal, NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_paramidx + argOffset);
+        psl->EmitSetArgMarshalIndex(pcsMarshal, PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + m_paramidx + argOffset);
     }
     if (pMarshaler->NeedsUnmarshalCleanupIndex())
     {
         // we don't bother writing to the counter if unmarshaling does not need exception cleanup
-        psl->EmitSetArgMarshalIndex(pcsUnmarshal, NDirectStubLinker::CLEANUP_INDEX_ARG0_UNMARSHAL + m_paramidx + argOffset);
+        psl->EmitSetArgMarshalIndex(pcsUnmarshal, PInvokeStubLinker::CLEANUP_INDEX_ARG0_UNMARSHAL + m_paramidx + argOffset);
     }
 
     pcsMarshal->EmitNOP("// } argument");
@@ -2418,7 +2412,7 @@ void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
     }
 }
 
-void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
+void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
     int argOffset,
     BOOL fMngToNative,
     BOOL fieldGetter,
@@ -2496,7 +2490,7 @@ void MarshalInfo::GenerateReturnIL(NDirectStubLinker* psl,
     }
 }
 
-void MarshalInfo::GenerateFieldIL(NDirectStubLinker* psl,
+void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     UINT32 managedOffset,
     UINT32 nativeOffset,
     FieldDesc* pFieldDesc)
@@ -2548,14 +2542,9 @@ void MarshalInfo::SetupArgumentSizes()
     }
     CONTRACTL_END;
 
-    const unsigned targetPointerSize = TARGET_POINTER_SIZE;
-    const bool pointerIsValueType = false;
-    const bool pointerIsFloatHfa = false;
-    _ASSERTE(targetPointerSize == StackElemSize(TARGET_POINTER_SIZE, pointerIsValueType, pointerIsFloatHfa));
-
     if (m_byref)
     {
-        m_nativeArgSize = targetPointerSize;
+        m_nativeArgSize = TARGET_POINTER_SIZE;
     }
     else
     {
@@ -2569,7 +2558,7 @@ void MarshalInfo::SetupArgumentSizes()
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (m_nativeArgSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
     {
-        m_nativeArgSize = targetPointerSize;
+        m_nativeArgSize = TARGET_POINTER_SIZE;
     }
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }

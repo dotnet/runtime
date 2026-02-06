@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -66,7 +66,7 @@ namespace System.Net.Security.Tests
             return data;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [MemberData(nameof(BoolAndCertSourceData))]
         public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, ClientCertSource certSource)
         {
@@ -114,9 +114,13 @@ namespace System.Net.Security.Tests
                     Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
                 }
             }
+
+            // Assert that the certificates are not being disposed
+            Assert.NotEqual(_clientCertificate.Handle, IntPtr.Zero);
+            Assert.NotEqual(_serverCertificate.Handle, IntPtr.Zero);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_CachedCredentials_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -152,7 +156,8 @@ namespace System.Net.Security.Tests
                     // mutual authentication should only be set if server required client cert
                     Assert.Equal(expectMutualAuthentication, server.IsMutuallyAuthenticated);
                     Assert.Equal(expectMutualAuthentication, client.IsMutuallyAuthenticated);
-                };
+                }
+                ;
             }
         }
 
@@ -222,7 +227,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsClientCollection_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -268,11 +273,12 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsCallbackSet_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -322,11 +328,12 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public async Task SslStream_ResumedSessionsCallbackMaybeSet_IsMutuallyAuthenticatedCorrect(
            SslProtocols protocol)
@@ -380,7 +387,56 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Null(server.RemoteCertificate);
                     }
-                };
+                }
+                ;
+            }
+        }
+
+        [Theory]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        public async Task SslStream_Tls13ResumptionWithClientCert_IsMutuallyAuthenticatedTrue(
+            SslProtocols protocol)
+        {
+            string targetHost = Guid.NewGuid().ToString("N");
+
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                TargetHost = targetHost,
+                ClientCertificates = new X509CertificateCollection { _clientCertificate },
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = AllowAnyCertificate,
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions
+            {
+                ServerCertificate = _serverCertificate,
+                ClientCertificateRequired = true,
+                EnabledSslProtocols = protocol,
+                RemoteCertificateValidationCallback = AllowAnyCertificate,
+            };
+
+            for (int i = 0; i < 3; i++)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    // PingPong triggers new session ticket delivery (TLS 1.3)
+                    await TestHelper.PingPong(client, server);
+
+                    // Regression test: all connections (including resumed ones) must report mutual auth
+                    Assert.True(client.IsMutuallyAuthenticated, $"Client connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.True(server.IsMutuallyAuthenticated, $"Server connection {i}: IsMutuallyAuthenticated should be true");
+                    Assert.NotNull(client.LocalCertificate);
+                    Assert.NotNull(server.RemoteCertificate);
+
+                    await client.ShutdownAsync();
+                    await server.ShutdownAsync();
+                }
             }
         }
 

@@ -37,6 +37,7 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -69,7 +70,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Libs
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
             includeAllPlatforms: true
             # extra steps, run tests
@@ -95,7 +96,7 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:IlcUseServerGc=false /p:RunAnalyzers=false
             timeoutInMinutes: 360
             # extra steps, run tests
             postBuildSteps:
@@ -120,8 +121,8 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SizeOpt
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false /p:RunAnalyzers=false
-            timeoutInMinutes: 240
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size /p:IlcUseServerGc=false /p:RunAnalyzers=false
+            timeoutInMinutes: 300
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
@@ -145,8 +146,8 @@ extends:
             testGroup: innerloop
             isSingleFile: true
             nameSuffix: NativeAOT_Checked_Libs_SpeedOpt
-            buildArgs: -s clr.aot+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false /p:RunAnalyzers=false
-            timeoutInMinutes: 240
+            buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed /p:IlcUseServerGc=false /p:RunAnalyzers=false
+            timeoutInMinutes: 300
             # extra steps, run tests
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
@@ -155,7 +156,7 @@ extends:
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
 
       #
-      # CoreCLR NativeAOT checked build and Pri0 tests
+      # CoreCLR NativeAOT checked build and Pri1 tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -167,14 +168,15 @@ extends:
           - windows_x86
           - linux_x64
           - linux_arm
+          - linux_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
-            nameSuffix: NativeAOT_Pri0
+            timeoutInMinutes: 480
+            nameSuffix: NativeAOT_Pri1
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
@@ -182,11 +184,11 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
                   liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
+            testRunNamePrefixSuffix: NativeAOT_Pri1_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
-                  testGroup: innerloop
+                  testGroup: outerloop
                   liveLibrariesBuildConfig: Release
 
       #
@@ -217,6 +219,39 @@ extends:
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_Pri0_CET_CFG_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+
+      #
+      # CoreCLR NativeAOT checked build and Pri0 tests
+      # Test windows_arm64 with CFG
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
+          platforms:
+          - windows_arm64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
+            nameSuffix: NativeAOT_Pri0_CFG
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
+                  liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_Pri0_CFG_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:

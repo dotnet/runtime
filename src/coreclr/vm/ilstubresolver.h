@@ -11,7 +11,7 @@
 #define __ILSTUBRESOLVER_H__
 
 #include "stubgen.h"
-class ILStubResolver : DynamicResolver
+class ILStubResolver : public DynamicResolver
 {
     friend class ILStubCache;
     friend class ILStubLinker;
@@ -47,28 +47,30 @@ public:
     // -----------------------------------
     // ILStubResolver-specific methods
     // -----------------------------------
-    MethodDesc* GetStubMethodDesc();
-    MethodDesc* GetStubTargetMethodDesc();
-    void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
-    void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
-    void SetStubMethodDesc(MethodDesc* pStubMD);
-
-    COR_ILMETHOD_DECODER * AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
-    COR_ILMETHOD_DECODER * GetILHeader();
-    COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
+    ILStubResolver();
 
     bool IsCompiled();
     bool IsILGenerated();
 
-    ILStubResolver();
+    MethodDesc* GetStubMethodDesc();
+    MethodDesc* GetStubTargetMethodDesc();
+    COR_ILMETHOD_DECODER* GetILHeader();
 
-    void SetTokenLookupMap(TokenLookupMap* pMap);
-
-    void SetJitFlags(CORJIT_FLAGS jitFlags);
-
+#ifndef DACCESS_COMPILE
     // This is only set for StructMarshal interop stubs.
     // See callsites for more details.
     void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
+    void SetTokenLookupMap(TokenLookupMap* pMap);
+    void SetJitFlags(CORJIT_FLAGS jitFlags);
+    void SetStubMethodDesc(MethodDesc* pStubMD);
+    void SetStubTargetMethodDesc(MethodDesc* pStubTargetMD);
+    void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
+
+    COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
+    COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
+
+    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
+#endif // !DACCESS_COMPILE
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
@@ -107,6 +109,5 @@ protected:
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
-
 
 #endif // __ILSTUBRESOLVER_H__

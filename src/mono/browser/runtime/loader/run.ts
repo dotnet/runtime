@@ -4,19 +4,18 @@
 import BuildConfiguration from "consts:configuration";
 
 import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal } from "../types/internal";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
+import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm, try_resolve_single_asset_path } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
-import { initCacheToUseIfEnabled } from "./assetsCache";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -26,125 +25,6 @@ export class HostBuilder implements DotnetHostBuilder {
     withModuleConfig (moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             deep_merge_module(emscriptenModule, moduleConfig);
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withOnConfigLoaded (onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
-        try {
-            deep_merge_module(emscriptenModule, {
-                onConfigLoaded
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withConsoleForwarding (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                forwardConsoleLogsToWS: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withExitOnUnhandledError (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                exitOnUnhandledError: true
-            });
-            installUnhandledErrorHandler();
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withAsyncFlushOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                asyncFlushOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withExitCodeLogging (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                logExitCode: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withElementOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                appendElementOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withInteropCleanupOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                interopCleanupOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withDumpThreadsOnNonZeroExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                dumpThreadsOnNonZeroExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    //  todo fallback later by debugLevel
-    withWaitingForDebugger (level: number): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                waitForDebugger: level
-            });
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -369,13 +249,30 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run (): Promise<number> {
+    run (): Promise<number> {
+        return this.runMainAndExit();
+    }
+
+    async runMainAndExit (): Promise<number> {
         try {
             mono_assert(emscriptenModule.config, "Null moduleConfig.config");
             if (!this.instance) {
                 await this.create();
             }
             return this.instance!.runMainAndExit();
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    async runMain (): Promise<number> {
+        try {
+            mono_assert(emscriptenModule.config, "Null moduleConfig.config");
+            if (!this.instance) {
+                await this.create();
+            }
+            return this.instance!.runMain();
         } catch (err) {
             mono_exit(1, err);
             throw err;
@@ -394,7 +291,7 @@ async function prepareEmscripten (moduleFactory: DotnetModuleConfig | ((api: Run
         return;
     }
     emscriptenPrepared = true;
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
     mono_assert(emscriptenModule, "Null moduleConfig");
@@ -424,6 +321,9 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
         mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
+    }
 
     registerEmscriptenExitHandlers();
 
@@ -434,13 +334,14 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
 let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+let jsModuleDiagnosticPromise: Promise<DiagnosticModuleExportsInternal>;
 
 // in the future we can use feature detection to load different flavors
 function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
     if (jsModuleRuntimePromise && jsModuleNativePromise) {
-        return [jsModuleRuntimePromise, jsModuleNativePromise];
+        return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
     }
 
     if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
@@ -456,20 +357,35 @@ function importModules () {
         mono_log_debug(() => `Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-    return [jsModuleRuntimePromise, jsModuleNativePromise];
+
+    const jsModuleDiagnosticAsset = try_resolve_single_asset_path("js-module-diagnostics");
+    if (jsModuleDiagnosticAsset) {
+        if (typeof jsModuleDiagnosticAsset.moduleExports === "object") {
+            jsModuleDiagnosticPromise = jsModuleDiagnosticAsset.moduleExports;
+        } else {
+            mono_log_debug(() => `Attempting to import '${jsModuleDiagnosticAsset.resolvedUrl}' for ${jsModuleDiagnosticAsset.name}`);
+            jsModuleDiagnosticPromise = import(/*! webpackIgnore: true */jsModuleDiagnosticAsset.resolvedUrl!);
+        }
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal?]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
+    const diagnosticModule = es6Modules[2];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    if (diagnosticModule) {
+        diagnosticModule.setRuntimeGlobals(globalObjectsRoot);
+    }
+
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
-    const result = emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
+    const result = emscriptenFactory((/*originalModule: EmscriptenModuleInternal*/) => {
         Object.assign(emscriptenModule, {
-            ready: originalModule.ready,
             __dotnet_runtime: {
                 initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, passEmscriptenInternals
             }
@@ -493,8 +409,6 @@ async function downloadOnly ():Promise<void> {
 
     prepareAssets();
 
-    await initCacheToUseIfEnabled();
-
     init_globalization();
 
     mono_download_assets(); // intentionally not awaited
@@ -509,8 +423,6 @@ async function createEmscriptenMain (): Promise<RuntimeAPI> {
     prepareAssets();
 
     const promises = importModules();
-
-    await initCacheToUseIfEnabled();
 
     streamingCompileWasm(); // intentionally not awaited
 

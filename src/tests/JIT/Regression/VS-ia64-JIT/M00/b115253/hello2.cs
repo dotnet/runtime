@@ -9,6 +9,7 @@ namespace hello
 {
     public class Class1
     {
+        [OuterLoop]
         [Fact]
         static public void TestEntryPoint()
         {

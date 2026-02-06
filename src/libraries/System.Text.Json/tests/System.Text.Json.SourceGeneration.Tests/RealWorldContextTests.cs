@@ -1122,6 +1122,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(MemberTypes.Field, nameof(PocoWithMixedVisibilityMembers.FieldWithCustomName), "customField")]
         [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.BaseProperty))]
         [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.ShadowProperty))]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.ExperimentalProperty))]
         public void JsonPropertyInfo_PopulatesAttributeProvider(MemberTypes memberType, string propertyName, string? jsonPropertyName = null)
         {
             if (DefaultContext.JsonSourceGenerationMode is JsonSourceGenerationMode.Serialization)
@@ -1134,7 +1135,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonPropertyInfo prop = typeInfo.Properties.FirstOrDefault(prop => prop.Name == name);
             Assert.NotNull(prop);
 
-            MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(prop.AttributeProvider);
+            MemberInfo memberInfo;
+            if (prop.AttributeProvider is null)
+            {
+                Assert.Equal(typeof(object), prop.PropertyType);
+                memberInfo = typeof(PocoWithMixedVisibilityMembers).GetMember(propertyName, memberType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Single();
+                Type actualPropertyType = memberInfo is PropertyInfo pInfo ? pInfo.PropertyType : ((FieldInfo)memberInfo).FieldType;
+                Assert.False(typeInfo.Options.TryGetTypeInfo(actualPropertyType, out _));
+                return;
+            }
+
+            memberInfo = Assert.IsAssignableFrom<MemberInfo>(prop.AttributeProvider);
             string? actualJsonPropertyName = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
 
             Assert.True(memberInfo.DeclaringType.IsAssignableFrom(typeInfo.Type));

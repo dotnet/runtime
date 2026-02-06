@@ -30,17 +30,6 @@
 class CodeGenInterface;
 class emitter;
 
-// Small helper types
-
-//-------------------- Register selection ---------------------------------
-
-struct RegState
-{
-    regMaskTP rsCalleeRegArgMaskLiveIn; // mask of register arguments (live on entry to method)
-    unsigned  rsCalleeRegArgCount;      // total number of incoming register arguments of this kind (int or float)
-    bool      rsIsFloat;                // true for float argument registers, false for integer argument registers
-};
-
 //-------------------- CodeGenInterface ---------------------------------
 // interface to hide the full CodeGen implementation from rest of Compiler
 
@@ -71,20 +60,40 @@ public:
 
     Compiler* GetCompiler() const
     {
-        return compiler;
+        return m_compiler;
     }
 
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
+    regMaskTP rbmAllInt;
     regMaskTP rbmFltCalleeTrash;
+    regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
+    FORCEINLINE regMaskTP get_RBM_ALLINT() const
+    {
+        return this->rbmAllInt;
+    }
     FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
+    }
+    FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
+    {
+        return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
     }
 #endif // TARGET_AMD64
 
@@ -135,21 +144,23 @@ public:
                                    unsigned* mulPtr,
                                    ssize_t*  cnsPtr) = 0;
 
-    GCInfo gcInfo;
+    GCInfo    gcInfo;
+    RegSet    regSet;
+    regMaskTP calleeRegArgMaskLiveIn; // Mask of register arguments live on entry to the (root) method.
 
-    RegSet                regSet;
-    RegState              intRegState;
-    RegState              floatRegState;
+#if HAS_FIXED_REGISTER_SET
     NodeInternalRegisters internalRegisters;
+#endif
 
 protected:
-    Compiler* compiler;
+    Compiler* m_compiler;
     bool      m_genAlignLoops;
 
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -159,8 +170,15 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool     instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
+    static bool instIsEmbeddedMaskingCompatible(instruction ins);
+
     static unsigned instInputSize(instruction ins);
+    static unsigned instKMaskBaseSize(instruction ins);
+
+    static bool instHasPseudoName(instruction ins);
+
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
@@ -189,6 +207,8 @@ public:
 #ifdef DEBUG
     bool genWriteBarrierUsed;
 #endif
+
+    regMaskTP genGetGSCookieTempRegs(bool tailCall);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
@@ -224,6 +244,42 @@ public:
         m_cgFrameRequired = value;
     }
 
+#if !HAS_FIXED_REGISTER_SET
+private:
+    // For targets without a fixed SP/FP, these are the registers with which they are associated.
+    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
+    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
+
+public:
+    void SetStackPointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgStackPointerReg = reg;
+    }
+    void SetFramePointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgFramePointerReg = reg;
+    }
+    regNumber GetStackPointerReg() const
+    {
+        return m_cgStackPointerReg;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return m_cgFramePointerReg;
+    }
+#else  // HAS_FIXED_REGISTER_SET
+    regNumber GetStackPointerReg() const
+    {
+        return REG_SPBASE;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return REG_FPBASE;
+    }
+#endif // HAS_FIXED_REGISTER_SET
+
 public:
     int genCallerSPtoFPdelta() const;
     int genCallerSPtoInitialSPdelta() const;
@@ -240,7 +296,7 @@ public:
 #ifdef TARGET_XARCH
 #ifdef TARGET_AMD64
     // There are no reloc hints on x86
-    unsigned short genAddrRelocTypeHint(size_t addr);
+    CorInfoReloc genAddrRelocTypeHint(size_t addr);
 #endif
     bool genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
     bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
@@ -317,6 +373,16 @@ public:
     }
 
 #endif // !DOUBLE_ALIGN
+
+#ifdef TARGET_WASM
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
+#endif
 
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't
@@ -749,7 +815,7 @@ public:
         unsigned int m_LiveDscCount;  // count of args, special args, and IL local variables to report home
         unsigned int m_LiveArgsCount; // count of arguments to report home
 
-        Compiler* m_Compiler;
+        Compiler* m_compiler;
 
         VariableLiveDescriptor* m_vlrLiveDsc; // Array of descriptors that manage VariableLiveRanges.
                                               // Its indices correspond to lvaTable indexes (or lvSlotNum).
@@ -802,10 +868,49 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
-
-#if defined(TARGET_XARCH)
-    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
-#endif
 };
+
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+// Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
+// such as X86's SETcc. A sequence of instructions rather than just a single one is required for
+// certain floating point conditions.
+// For example, X86's UCOMISS sets ZF to indicate equality but it also sets it, together with PF,
+// to indicate an unordered result. So for GenCondition::FEQ we first need to check if PF is 0
+// and then jump if ZF is 1:
+//       JP fallThroughBlock
+//       JE jumpDestBlock
+//   fallThroughBlock:
+//       ...
+//   jumpDestBlock:
+//
+// This is very similar to the way shortcircuit evaluation of bool AND and OR operators works so
+// in order to make the GenConditionDesc mapping tables easier to read, a bool expression-like
+// pattern is used to encode the above:
+//     { EJ_jnp, GT_AND, EJ_je  }
+//     { EJ_jp,  GT_OR,  EJ_jne }
+//
+// For more details check inst_JCC and inst_SETCC functions.
+//
+struct GenConditionDesc
+{
+    emitJumpKind jumpKind1;
+    genTreeOps   oper;
+    emitJumpKind jumpKind2;
+    char         padTo4Bytes;
+
+    static const GenConditionDesc& Get(GenCondition condition)
+    {
+        assert(condition.GetCode() < ArrLen(map));
+        const GenConditionDesc& desc = map[condition.GetCode()];
+        assert(desc.jumpKind1 != EJ_NONE);
+        assert((desc.oper == GT_NONE) || (desc.oper == GT_AND) || (desc.oper == GT_OR));
+        assert((desc.oper == GT_NONE) == (desc.jumpKind2 == EJ_NONE));
+        return desc;
+    }
+
+private:
+    static const GenConditionDesc map[32];
+};
+#endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #endif // _CODEGEN_INTERFACE_H_

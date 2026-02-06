@@ -24,26 +24,27 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         sd    t0, OFFSETOF__PInvokeTransitionFrame__m_Flags(a0)
 
         // get TLS global variable address
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
+        // Save MethodTable pointer. INLINE_GETTHREAD will trash a0.
+        mv               t2, a0
         INLINE_GETTHREAD a1
-#endif
 
-        sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(a0)
-        sd    a0, OFFSETOF__Thread__m_pTransitionFrame(a1)
-        jr  ra
+        sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(t2)
+        sd    t2, OFFSETOF__Thread__m_pTransitionFrame(a1)
+        ret
 NESTED_END RhpPInvoke, _TEXT
 
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
         ld    t0, OFFSETOF__PInvokeTransitionFrame__m_pThread(a0)
-        sd    zero, OFFSETOF__Thread__m_pTransitionFrame(t0)
+        mv    t1, zero
+        sd    t1, OFFSETOF__Thread__m_pTransitionFrame(t0)
 
-        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a5
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t0
 
-        bne   t0, zero, 1f   // TrapThreadsFlags_None = 0
-        jr  ra
-1:
-        // passing transition frame pointer in a0
-        tail  C_FUNC(RhpWaitForGC2)
+        bnez    t0, 0f  // If TrapThreadsFlags_None is non-zero, branch
+        ret
+
+0:
+        // Passing transition frame pointer in a0
+        tail    RhpWaitForGC2
+
 LEAF_END RhpPInvokeReturn, _TEXT

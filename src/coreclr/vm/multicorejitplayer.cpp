@@ -18,9 +18,10 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "fstream.h"
 #include "hash.h"
 #include "clrex.h"
+#include "minipal/time.h"
+#include <dn-stdio.h>
 
 #include "appdomain.hpp"
 
@@ -382,7 +383,7 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AssemblyBinder * pBinder, L
     m_pFileBuffer        = NULL;
     m_nFileSize          = 0;
 
-    m_nStartTime         = GetTickCount();
+    m_nStartTime         = (unsigned int)minipal_lowres_ticks();
 }
 
 
@@ -733,7 +734,7 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
         return false;
     }
 
-    if (GetTickCount() - m_nStartTime > MULTICOREJITLIFE)
+    if ((unsigned int)minipal_lowres_ticks() - m_nStartTime > MULTICOREJITLIFE)
     {
         MulticoreJitTrace(("MulticoreJitProfilePlayer::ShouldAbort time over"));
 
@@ -921,7 +922,7 @@ HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned module
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             CompileMethodInfoRecord(pModule, pMethod, true);
         }
@@ -1028,22 +1029,17 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
     HRESULT hr = S_OK;
 
     {
-        HANDLE hFile = WszCreateFile(pFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (hFile == INVALID_HANDLE_VALUE)
+        FILE* fp;
+        if (fopen_lp(&fp, pFileName, W("rb")) != 0)
         {
             return COR_E_FILENOTFOUND;
         }
 
         HeaderRecord header;
 
-        DWORD cbRead = 0;
+        size_t cbRead = fread(&header, sizeof(header), 1, fp);
 
-        if (! ::ReadFile(hFile, & header, sizeof(header), &cbRead, NULL))
-        {
-            hr = COR_E_BADIMAGEFORMAT;
-        }
-        else if (cbRead != sizeof(header))
+        if (cbRead != sizeof(header))
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
@@ -1071,7 +1067,8 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         if (SUCCEEDED(hr))
         {
-            m_nFileSize = SafeGetFileSize(hFile, 0);
+            uint64_t fSize = fgetsize(fp);
+            m_nFileSize = fSize > UINT32_MAX ? UINT32_MAX : (unsigned int)fSize;
 
             if (m_nFileSize > sizeof(header))
             {
@@ -1083,7 +1080,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
                 {
                     hr = E_OUTOFMEMORY;
                 }
-                else if (::ReadFile(hFile, m_pFileBuffer, m_nFileSize, & cbRead, NULL))
+                else if ((cbRead = fread(m_pFileBuffer, 1, m_nFileSize, fp)) > 0)
                 {
                     if (cbRead != m_nFileSize)
                     {
@@ -1101,7 +1098,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
             }
         }
 
-        CloseHandle(hFile);
+        fclose(fp);
 
         _FireEtwMulticoreJit(W("PLAYER"), W("Header"), hr, m_headerModuleCount, header.methodCount);
     }
@@ -1117,7 +1114,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     HRESULT hr = S_OK;
 
-    DWORD start = GetTickCount();
+    DWORD start = (DWORD)minipal_lowres_ticks();
 
     Thread * pThread = GetThread();
 
@@ -1311,7 +1308,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         }
     }
 
-    start = GetTickCount() - start;
+    start = (DWORD)minipal_lowres_ticks() - start;
 
     {
         FireEtwThreadTerminated((ULONGLONG) pThread, (ULONGLONG) GetAppDomain(), GetClrInstanceId());
@@ -1354,7 +1351,7 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
             m_stats.m_hr = COR_E_EXCEPTION;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return (DWORD) m_stats.m_hr;
 }

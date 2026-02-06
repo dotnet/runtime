@@ -180,7 +180,6 @@ typedef int __ptrace_request;
 
 #define ASSIGN_INTEGER_REGS \
     ASSIGN_REG(R0)     \
-    ASSIGN_REG(Tp)     \
     ASSIGN_REG(A0)     \
     ASSIGN_REG(A1)     \
     ASSIGN_REG(A2)     \
@@ -317,6 +316,11 @@ typedef int __ptrace_request;
     ASSIGN_REG(R29)     \
     ASSIGN_REG(R30)
 
+#elif defined(HOST_WASM)
+#define ASSIGN_CONTROL_REGS  \
+    ASSERT("WASM does not have registers");
+#define ASSIGN_INTEGER_REGS  \
+    ASSERT("WASM does not have registers");
 #else
 #error "Don't know how to assign registers on this architecture"
 #endif
@@ -805,7 +809,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #elif defined(HOST_S390X)
         fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -883,7 +887,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 
                     dest = FPREG_Xstate_Egpr(native, &size);
                     _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
+                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
                 }
 #endif //  !TARGET_OSX
             }
@@ -1162,7 +1166,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #elif defined(HOST_S390X)
         const fpregset_t *fp = &native->uc_mcontext.fpregs;
-        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        static_assert(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
         memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #elif defined(HOST_LOONGARCH64)
         struct sctx_info* info = (struct sctx_info*) native->uc_mcontext.__extcontext;
@@ -1179,6 +1183,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LSX;
         }
         else if (LASX_CTX_MAGIC == info->magic)
         {
@@ -1186,6 +1191,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->Fcsr = fpr->fcsr;
             lpContext->Fcc  = fpr->fcc;
             memcpy(lpContext->F, fpr->regs, sizeof(fpr->regs));
+            lpContext->ContextFlags |= CONTEXT_LASX;
         }
         else
         {
@@ -1239,7 +1245,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             {
                 src = FPREG_Xstate_Egpr(native, &size);
                 _ASSERT(size == (sizeof(DWORD64) * 16));
-                memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+                memcpy_s(&lpContext->R16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
             }
@@ -1620,12 +1626,12 @@ CONTEXT_GetThreadContextFromPort(
         // if it fails, get the FLOAT state and if that fails, take AVX512 state. Both AVX and AVX512 states
         // are supersets of the FLOAT state.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
 
@@ -1925,12 +1931,12 @@ CONTEXT_SetThreadContextOnPort(
         // x86_avx_state64_t is identical to x86_float_state64_t
         // and x86_avx512_state64_t to _x86_avx_state64_t.
         // Check a few fields to make sure the assumption is correct.
-        static_assert_no_msg(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
-        static_assert_no_msg(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
-        static_assert_no_msg(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(sizeof(x86_avx_state64_t) > sizeof(x86_float_state64_t));
+        static_assert(sizeof(x86_avx512_state64_t) > sizeof(x86_avx_state64_t));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_fcw) == offsetof(x86_float_state64_t, __fpu_fcw));
+        static_assert(offsetof(x86_avx512_state64_t, __fpu_xmm0) == offsetof(x86_float_state64_t, __fpu_xmm0));
 
         x86_avx512_state64_t State;
         if (lpContext->ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
@@ -2184,6 +2190,8 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_WASM)
+    // do nothing, no instruction cache to flush
 #elif defined(HOST_APPLE) && !defined(HOST_OSX)
     sys_icache_invalidate((void *)lpBaseAddress, dwSize);
 #else
@@ -2198,17 +2206,19 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
-        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
         {
-            copySize = sizeof(CONTEXT);
-        }
-        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
-        {
-            copySize = offsetof(CONTEXT, Egpr16);
+            copySize = offsetof(CONTEXT, R16);
         }
         else
         {
             copySize = offsetof(CONTEXT, KMask0);
+        }
+
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        {
+            // Copy APX EGPRs separately.
+            memcpy(&(this->R16), &(ctx.R16), sizeof(DWORD64) * 16);
         }
     }
     else

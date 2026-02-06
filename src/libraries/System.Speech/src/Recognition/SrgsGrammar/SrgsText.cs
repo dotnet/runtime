@@ -18,7 +18,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsText(string text)
         {
-            Helpers.ThrowIfNull(text, nameof(text));
+            ArgumentNullException.ThrowIfNull(text);
 
             Text = text;
         }
@@ -34,7 +34,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 // Parse the text to check for errors
                 XmlParser.ParseText(null, value, null, null, -1f, null);

@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
         /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, Span{T})" />
         /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, int)" />
         /// <seealso cref="GetHexString(Span{char}, bool)" />
-        public static unsafe string GetString(ReadOnlySpan<char> choices, int length)
+        public static string GetString(ReadOnlySpan<char> choices, int length)
         {
             if (choices.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -257,9 +257,6 @@
   </data>
   <data name="AmbiguousMatch_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'</value>
-  </data>
-  <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
-    <value>Method '{0}' does not have a method body.</value>
   </data>
   <data name="Argument_RedefinedLabel" xml:space="preserve">
     <value>Label defined multiple times.</value>

@@ -56,10 +56,7 @@ namespace System.ComponentModel.Composition
                 genericMethod = _createStronglyTypedLazyOfT.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType);
             }
 
-            if (genericMethod == null)
-            {
-                throw new ArgumentNullException(nameof(genericMethod));
-            }
+            ArgumentNullException.ThrowIfNull(genericMethod);
 
             return (Func<Export, object>)Delegate.CreateDelegate(typeof(Func<Export, object>), genericMethod);
         }
@@ -69,10 +66,7 @@ namespace System.ComponentModel.Composition
             MethodInfo genericMethod = _createSemiStronglyTypedLazy.MakeGenericMethod(
                 exportType ?? ExportServices.DefaultExportedValueType,
                 metadataViewType ?? ExportServices.DefaultMetadataViewType);
-            if (genericMethod == null)
-            {
-                throw new ArgumentNullException(nameof(genericMethod));
-            }
+            ArgumentNullException.ThrowIfNull(genericMethod);
             return (Func<Export, Lazy<object, object>>)Delegate.CreateDelegate(typeof(Func<Export, Lazy<object, object>>), genericMethod);
         }
 

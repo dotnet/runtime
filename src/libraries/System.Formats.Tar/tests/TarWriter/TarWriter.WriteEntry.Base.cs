@@ -108,7 +108,7 @@ namespace System.Formats.Tar.Tests
             if (!formatIsOctalOnly)
             {
                 // Min value property.
-                yield return DateTimeOffset.MinValue; // This is not representable with the octal format.
+                yield return default; // This is not representable with the octal format.
 
                 // One second past what a 12-byte field can store with octal representation
                 yield return DateTimeOffset.UnixEpoch + new TimeSpan((0x1FFFFFFFF + 1) * TimeSpan.TicksPerSecond);

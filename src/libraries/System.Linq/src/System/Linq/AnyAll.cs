@@ -20,8 +20,7 @@ namespace System.Linq
                 return gc.Count != 0;
             }
 
-#if !OPTIMIZE_FOR_SIZE
-            if (source is Iterator<TSource> iterator)
+            if (!IsSizeOptimized && source is Iterator<TSource> iterator)
             {
                 int count = iterator.GetCount(onlyIfCheap: true);
                 if (count >= 0)
@@ -32,7 +31,6 @@ namespace System.Linq
                 iterator.TryGetFirst(out bool found);
                 return found;
             }
-#endif
 
             if (source is ICollection ngc)
             {

@@ -291,11 +291,16 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
-	mono_thread_info_set_is_async_context (TRUE);
+	gboolean restore_async_context = FALSE;
+	if (!mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
 
 	MONO_PROFILER_RAISE (sample_hit, ((const mono_byte*)mono_arch_ip_from_context (ctx), ctx));
 
-	mono_thread_info_set_is_async_context (FALSE);
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
 
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
 
@@ -418,8 +423,6 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
-	add_signal_handler (SIGTERM, mono_sigterm_signal_handler, SA_RESTART);
-	sigaddset (&signal_set, SIGTERM);
 	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);

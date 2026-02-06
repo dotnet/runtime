@@ -81,6 +81,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Collect_CallsFinalizer()
         {
             FinalizerTest.Run();
@@ -88,7 +89,7 @@ namespace System.Tests
 
         private class FinalizerTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndDropTest()
             {
                 new TestObject();
@@ -138,6 +139,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void KeepAlive()
         {
             KeepAliveTest.Run();
@@ -145,7 +147,7 @@ namespace System.Tests
 
         private class KeepAliveTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndDropDNKA()
             {
                 new DoNotKeepAliveObject();
@@ -188,6 +190,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void KeepAlive_Null()
         {
             KeepAliveNullTest.Run();
@@ -195,7 +198,7 @@ namespace System.Tests
 
         private class KeepAliveNullTest
         {
-            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void MakeAndNull()
             {
                 var obj = new TestObject();
@@ -349,6 +352,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void ReRegisterForFinalize()
         {
             ReRegisterForFinalizeTest.Run();
@@ -373,6 +377,7 @@ namespace System.Tests
                 Assert.True(TestObject.Finalized);
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateObject()
             {
                 using (var obj = new TestObject())
@@ -1092,6 +1097,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         private static void AllocateArrayNegativeSize(int negValue)
         {
             Assert.Throws<OverflowException>(() => GC.AllocateUninitializedArray<byte>(-1));

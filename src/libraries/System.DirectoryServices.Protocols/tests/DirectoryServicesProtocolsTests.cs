@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
+using System.IO;
 using System.Net;
-using System.Text;
-using System.Threading;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -16,6 +14,7 @@ namespace System.DirectoryServices.Protocols.Tests
     {
         internal static bool LdapConfigurationExists => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => LdapConfigurationExists && LdapConfiguration.Configuration.IsActiveDirectoryServer;
+        internal static bool UseTls => LdapConfigurationExists && LdapConfiguration.Configuration.UseTls;
 
         internal static bool IsServerSideSortSupported => LdapConfigurationExists && LdapConfiguration.Configuration.SupportsServerSideSort;
 
@@ -706,6 +705,64 @@ namespace System.DirectoryServices.Protocols.Tests
             connection.Timeout = new TimeSpan(0, 3, 0);
         }
 
+#if NET
+        [ConditionalFact(nameof(UseTls))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void StartNewTlsSessionContext()
+        {
+            using (var connection = GetConnection(bind: false))
+            {
+                // We use "." as the directory since it must be a valid directory for StartNewTlsSessionContext() + Bind() to be successful even
+                // though there are no client certificates in ".".
+                connection.SessionOptions.TrustedCertificatesDirectory = ".";
+
+                // For a real-world scenario, we would call 'StartTransportLayerSecurity(null)' here which would do the TLS handshake including
+                // providing the client certificate to the server and validating the server certificate. However, this requires additional
+                // setup that we don't have including trusting the server certificate and by specifying "demand" in the setup of the server
+                // via 'LDAP_TLS_VERIFY_CLIENT=demand' to force the TLS handshake to occur.
+
+                connection.SessionOptions.StartNewTlsSessionContext();
+                connection.Bind();
+
+                SearchRequest searchRequest = new (LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.Subtree);
+                _ = (SearchResponse)connection.SendRequest(searchRequest);
+            }
+        }
+
+        [ConditionalFact(nameof(UseTls))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void StartNewTlsSessionContext_ThrowsLdapException()
+        {
+            using (var connection = GetConnection(bind: false))
+            {
+                // Create a new session context without setting TrustedCertificatesDirectory.
+                connection.SessionOptions.StartNewTlsSessionContext();
+                Assert.Throws<PlatformNotSupportedException>(() => connection.Bind());
+            }
+        }
+
+        [ConditionalFact(nameof(LdapConfigurationExists))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void TrustedCertificatesDirectory_ThrowsDirectoryNotFoundException()
+        {
+            using (var connection = GetConnection(bind: false))
+            {
+                Assert.Throws<DirectoryNotFoundException>(() => connection.SessionOptions.TrustedCertificatesDirectory = "nonexistent");
+            }
+        }
+
+        [ConditionalFact(nameof(LdapConfigurationExists))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void StartNewTlsSessionContext_ThrowsPlatformNotSupportedException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<PlatformNotSupportedException>(() => options.StartNewTlsSessionContext());
+            }
+        }
+#endif
+
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)
         {
             string dn = entryDn + "," + LdapConfiguration.Configuration.SearchDn;
@@ -786,24 +843,24 @@ namespace System.DirectoryServices.Protocols.Tests
             return null;
         }
 
-        private LdapConnection GetConnection(string server)
+        private static LdapConnection GetConnection(string server)
         {
             LdapDirectoryIdentifier directoryIdentifier = new LdapDirectoryIdentifier(server, fullyQualifiedDnsHostName: true, connectionless: false);
 
             return GetConnection(directoryIdentifier);
         }
 
-        private LdapConnection GetConnection()
+        private static LdapConnection GetConnection(bool bind = true)
         {
             LdapDirectoryIdentifier directoryIdentifier = string.IsNullOrEmpty(LdapConfiguration.Configuration.Port) ?
                                         new LdapDirectoryIdentifier(LdapConfiguration.Configuration.ServerName, fullyQualifiedDnsHostName: true, connectionless: false) :
                                         new LdapDirectoryIdentifier(LdapConfiguration.Configuration.ServerName,
                                                                     int.Parse(LdapConfiguration.Configuration.Port, NumberStyles.None, CultureInfo.InvariantCulture),
                                                                     fullyQualifiedDnsHostName: true, connectionless: false);
-            return GetConnection(directoryIdentifier);
+            return GetConnection(directoryIdentifier, bind);
         }
 
-        private static LdapConnection GetConnection(LdapDirectoryIdentifier directoryIdentifier)
+        private static LdapConnection GetConnection(LdapDirectoryIdentifier directoryIdentifier, bool bind = true)
         {
             NetworkCredential credential = new NetworkCredential(LdapConfiguration.Configuration.UserName, LdapConfiguration.Configuration.Password);
 
@@ -816,7 +873,11 @@ namespace System.DirectoryServices.Protocols.Tests
             // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
             connection.SessionOptions.ProtocolVersion = 3;
             connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
-            connection.Bind();
+
+            if (bind)
+            {
+                connection.Bind();
+            }
 
             connection.Timeout = new TimeSpan(0, 3, 0);
             return connection;

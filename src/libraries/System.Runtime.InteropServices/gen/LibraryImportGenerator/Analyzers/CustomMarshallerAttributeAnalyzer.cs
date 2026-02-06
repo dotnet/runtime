@@ -645,7 +645,7 @@ namespace Microsoft.Interop.Analyzers
                 if (attr.Operation is IObjectCreationOperation attrCreation
                     && attrCreation.Type.Equals(_customMarshallerAttribute, SymbolEqualityComparer.Default))
                 {
-                    INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol!;
+                    INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol;
                     IArgumentOperation? managedTypeArgument = attrCreation.GetArgumentByOrdinal(0);
                     if (managedTypeArgument.Value.IsNullLiteralOperation())
                     {

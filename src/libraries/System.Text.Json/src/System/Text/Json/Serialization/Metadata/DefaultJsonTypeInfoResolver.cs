@@ -50,15 +50,8 @@ namespace System.Text.Json.Serialization.Metadata
             Justification = "The ctor is marked RequiresDynamicCode.")]
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
         {
-            if (type == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
-
-            if (options == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(options);
 
             _mutable = false;
 

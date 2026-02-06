@@ -22,7 +22,7 @@ namespace System.Speech.Synthesis
         }
         public PromptBuilder(CultureInfo culture)
         {
-            Helpers.ThrowIfNull(culture, nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {
@@ -54,7 +54,7 @@ namespace System.Speech.Synthesis
         /// </summary>
         public void AppendText(string textToSpeak)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             // Validate that text can be added in this context
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
@@ -63,7 +63,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendText(string textToSpeak, PromptRate rate)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (rate < PromptRate.NotSet || rate > PromptRate.ExtraSlow)
             {
@@ -101,7 +101,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendText(string textToSpeak, PromptVolume volume)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (volume < PromptVolume.NotSet || volume > PromptVolume.Default)
             {
@@ -141,7 +141,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendText(string textToSpeak, PromptEmphasis emphasis)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (emphasis < PromptEmphasis.NotSet || emphasis > PromptEmphasis.Reduced)
             {
@@ -162,7 +162,7 @@ namespace System.Speech.Synthesis
         }
         public void StartStyle(PromptStyle style)
         {
-            Helpers.ThrowIfNull(style, nameof(style));
+            ArgumentNullException.ThrowIfNull(style);
 
             // Validate that text can be added in this context
             StackElement stackElement = _elementStack.Peek();
@@ -268,7 +268,7 @@ namespace System.Speech.Synthesis
         }
         public void StartVoice(VoiceInfo voice)
         {
-            Helpers.ThrowIfNull(voice, nameof(voice));
+            ArgumentNullException.ThrowIfNull(voice);
 
             if (!VoiceInfo.ValidateGender(voice.Gender))
             {
@@ -424,7 +424,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendTextWithHint(string textToSpeak, SayAs sayAs)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
 
             if (sayAs < SayAs.SpellOut || sayAs > SayAs.Text)
             {
@@ -543,7 +543,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendTextWithHint(string textToSpeak, string sayAs)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
             Helpers.ThrowIfEmptyOrNull(sayAs, nameof(sayAs));
 
             // check for well formed document
@@ -574,8 +574,8 @@ namespace System.Speech.Synthesis
         }
         public void AppendTextWithAlias(string textToSpeak, string substitute)
         {
-            Helpers.ThrowIfNull(textToSpeak, nameof(textToSpeak));
-            Helpers.ThrowIfNull(substitute, nameof(substitute));
+            ArgumentNullException.ThrowIfNull(textToSpeak);
+            ArgumentNullException.ThrowIfNull(substitute);
 
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Text);
@@ -675,7 +675,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendAudio(Uri audioFile)
         {
-            Helpers.ThrowIfNull(audioFile, nameof(audioFile));
+            ArgumentNullException.ThrowIfNull(audioFile);
 
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Audio);
@@ -688,8 +688,8 @@ namespace System.Speech.Synthesis
         }
         public void AppendAudio(Uri audioFile, string alternateText)
         {
-            Helpers.ThrowIfNull(audioFile, nameof(audioFile));
-            Helpers.ThrowIfNull(alternateText, nameof(alternateText));
+            ArgumentNullException.ThrowIfNull(audioFile);
+            ArgumentNullException.ThrowIfNull(alternateText);
 
             // check for well formed document
             ValidateElement(_elementStack.Peek(), SsmlElement.Audio);
@@ -717,7 +717,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendPromptBuilder(PromptBuilder promptBuilder)
         {
-            Helpers.ThrowIfNull(promptBuilder, nameof(promptBuilder));
+            ArgumentNullException.ThrowIfNull(promptBuilder);
 
             StringReader sr = new(promptBuilder.ToXml());
             XmlTextReader reader = new(sr);
@@ -733,7 +733,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendSsml(Uri ssmlFile)
         {
-            Helpers.ThrowIfNull(ssmlFile, nameof(ssmlFile));
+            ArgumentNullException.ThrowIfNull(ssmlFile);
 
             string localFile;
             Uri redirectUri;
@@ -751,7 +751,7 @@ namespace System.Speech.Synthesis
         }
         public void AppendSsml(XmlReader ssmlFile)
         {
-            Helpers.ThrowIfNull(ssmlFile, nameof(ssmlFile));
+            ArgumentNullException.ThrowIfNull(ssmlFile);
 
             AppendSsmlInternal(ssmlFile);
         }
@@ -832,10 +832,7 @@ namespace System.Speech.Synthesis
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _culture = value;
             }

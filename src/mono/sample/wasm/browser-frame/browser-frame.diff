@@ -14,9 +14,9 @@ diff -ru browser-frame/wwwroot/index.html browser-frame/wwwroot/index.html
 --- a/browser-frame/wwwroot/index.html	2024-03-07 09:00:37
 +++ b/browser-frame/wwwroot/index.html	2024-03-05 15:38:42
 @@ -8,6 +8,7 @@
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <script type='module' src="./main.js"></script>
+   <link rel="preload" id="webassembly" />
+   <script type="importmap"></script>
+   <script type='module' src="main#[.{fingerprint}].js"></script>
 +  <script type="module" src="./frame.js"></script>
  </head>
  

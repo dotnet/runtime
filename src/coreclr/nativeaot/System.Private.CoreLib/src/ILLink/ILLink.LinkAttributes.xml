@@ -5,9 +5,6 @@
     <type fullname="System.Runtime.CompilerServices.IntrinsicAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
     <type fullname="System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

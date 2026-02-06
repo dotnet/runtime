@@ -144,13 +144,13 @@ namespace System
                 }
 
                 dstObject = RuntimeImports.RhNewObject(dstEEType);
-                PrimitiveWiden(dstElementType, srcElementType, ref dstObject.GetRawData(), ref srcObject.GetRawData());
+                PrimitiveWiden(ref srcObject.GetRawData(), ref dstObject.GetRawData(), srcElementType, dstElementType);
             }
             return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
-        internal static void PrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType, ref byte dstValue, ref byte srcValue)
+        internal static void PrimitiveWiden(ref byte srcValue, ref byte dstValue, EETypeElementType srcType, EETypeElementType dstType)
         {
             // Caller must check that the conversion is valid and the source/destination types are different
             Debug.Assert(CanPrimitiveWiden(dstType, srcType) && dstType != srcType);
@@ -409,11 +409,8 @@ namespace System
         }
 
         internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, MethodTable* dstEEType, bool destinationIsByRef = false)
-            => CreateChangeTypeArgumentException(srcEEType, Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType)), destinationIsByRef);
-
-        internal static ArgumentException CreateChangeTypeArgumentException(MethodTable* srcEEType, Type dstType, bool destinationIsByRef = false)
         {
-            object? destinationTypeName = dstType;
+            object? destinationTypeName = Type.GetTypeFromHandle(new RuntimeTypeHandle(dstEEType));
             if (destinationIsByRef)
                 destinationTypeName += "&";
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));

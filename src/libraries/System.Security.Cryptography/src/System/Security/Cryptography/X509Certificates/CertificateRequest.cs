@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
     [UnsupportedOSPlatform("browser")]
     public sealed partial class CertificateRequest
     {
-        private readonly AsymmetricAlgorithm? _key;
+        private readonly object? _key;
         private readonly X509SignatureGenerator? _generator;
         private readonly RSASignaturePadding? _rsaPadding;
 
@@ -179,7 +180,167 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
-        /// Create a CertificateRequest for the specified subject name, encoded public key, and hash algorithm.
+        ///   Create a CertificateRequest for the specified subject name and ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            MLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = new X500DistinguishedName(subjectName);
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForMLDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            MLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = subjectName;
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForMLDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = new X500DistinguishedName(subjectName);
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and SLH-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An SLH-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            SlhDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = subjectName;
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForSlhDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            string subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name and Composite ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   A Composite ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="subjectName" /> or <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>
+        ///   Create a CertificateRequest for the specified subject name, encoded public key, and hash algorithm.
         /// </summary>
         /// <param name="subjectName">
         ///   The parsed representation of the subject name for the certificate or certificate request.
@@ -194,7 +355,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -225,7 +389,10 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -320,6 +487,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>
         ///     This object was created with a constructor which did not accept a signing key.
         ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///     but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   A cryptographic error occurs while creating the signing request.
@@ -333,6 +505,12 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
             ArgumentNullException.ThrowIfNull(signatureGenerator);
+
+            if (string.IsNullOrEmpty(HashAlgorithm.Name) &&
+                Helpers.HashAlgorithmRequired(signatureGenerator.PublicKey.Oid.Value))
+            {
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoHashAlgorithmProvided);
+            }
 
             X501Attribute[] attributes = Array.Empty<X501Attribute>();
             bool hasExtensions = CertificateExtensions.Count > 0;
@@ -456,6 +634,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>
         ///     This object was created with a constructor which did not accept a signing key.
         ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///     but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   A cryptographic error occurs while creating the signing request.
@@ -512,23 +695,21 @@ namespace System.Security.Cryptography.X509Certificates
                 notAfter,
                 serialNumber))
             {
-                RSA? rsa = _key as RSA;
-
-                if (rsa != null)
+                switch (_key)
                 {
-                    return certificate.CopyWithPrivateKey(rsa);
-                }
-
-                ECDsa? ecdsa = _key as ECDsa;
-
-                if (ecdsa != null)
-                {
-                    return certificate.CopyWithPrivateKey(ecdsa);
+                    case RSA rsa:
+                        return certificate.CopyWithPrivateKey(rsa);
+                    case ECDsa ecdsa:
+                        return certificate.CopyWithPrivateKey(ecdsa);
+                    case MLDsa mldsa:
+                        return certificate.CopyWithPrivateKey(mldsa);
+                    case SlhDsa slhDsa:
+                        return certificate.CopyWithPrivateKey(slhDsa);
+                    default:
+                        Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
+                        throw new CryptographicException();
                 }
             }
-
-            Debug.Fail($"Key was of no known type: {_key?.GetType().FullName ?? "null"}");
-            throw new CryptographicException();
         }
 
         /// <summary>
@@ -568,8 +749,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created without
-        ///   specifying an <see cref="RSASignaturePadding"/> value in the constructor.
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
+        ///     which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> uses a public key algorithm which requires a non-default value
+        ///     for <see cref="HashAlgorithm"/>, but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
@@ -619,8 +807,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
-        ///   which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
+        ///     which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> uses a public key algorithm which requires a non-default value
+        ///     for <see cref="HashAlgorithm"/>, but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
@@ -759,6 +954,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///   but this object was created without one being provided.
+        /// </exception>
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
@@ -800,6 +999,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///   but this object was created without one being provided.
+        /// </exception>
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
@@ -814,6 +1017,12 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber.Length < 1)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
+
+            if (string.IsNullOrEmpty(HashAlgorithm.Name) &&
+                Helpers.HashAlgorithmRequired(generator.PublicKey.Oid.Value))
+            {
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoHashAlgorithmProvided);
+            }
 
             byte[] signatureAlgorithm = generator.GetSignatureAlgorithmIdentifier(HashAlgorithm);
             AlgorithmIdentifierAsn signatureAlgorithmAsn;
@@ -838,7 +1047,7 @@ namespace System.Security.Cryptography.X509Certificates
                     Algorithm = new AlgorithmIdentifierAsn
                     {
                         Algorithm = PublicKey.Oid!.Value!,
-                        Parameters = PublicKey.EncodedParameters.RawData,
+                        Parameters = PublicKey.EncodedParameters?.RawData.ToNullableMemory(),
                     },
                     SubjectPublicKey = PublicKey.EncodedKeyValue.RawData,
                 },

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Formats.Tar
@@ -37,7 +38,7 @@ namespace System.Formats.Tar
             Debug.Assert(EntryType is TarEntryType.HardLink);
             Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
             Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            Interop.Kernel32.CreateHardLink(hardLinkFilePath, targetFilePath);
+            File.CreateHardLink(hardLinkFilePath, targetFilePath);
         }
 #pragma warning restore IDE0060
     }

@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     /// <summary>
     /// Minimalistic logger that does nothing.
     /// </summary>
-    public class NullLogger : ILogger
+    public sealed class NullLogger : ILogger
     {
         /// <summary>
         /// Returns the shared instance of <see cref="NullLogger"/>.

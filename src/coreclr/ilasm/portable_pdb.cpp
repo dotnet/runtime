@@ -93,7 +93,7 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
     time_t now;
     time(&now);
     m_pdbStream.id.pdbTimeStamp = (ULONG)now;
-    if (!minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&m_pdbStream.id.pdbGuid)))
+    if (!minipal_guid_v4_create(&m_pdbStream.id.pdbGuid))
     {
         hr = E_FAIL;
         goto exit;

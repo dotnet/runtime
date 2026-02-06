@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data);
             ValidateKeyStorageFlagsCore(keyStorageFlags);
 
             return LoadPkcs12(
@@ -373,7 +373,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(data);
             ValidateKeyStorageFlagsCore(keyStorageFlags);
 
             return LoadPkcs12Collection(
@@ -708,16 +708,6 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
         }
 
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
-        {
-            if (argument is null)
-            {
-                ThrowNull(paramName);
-            }
-        }
-
         private static void ThrowIfNullOrEmpty(
             [NotNull] string? argument,
             [CallerArgumentExpression(nameof(argument))] string? paramName = null)
@@ -737,7 +727,7 @@ namespace System.Security.Cryptography.X509Certificates
         [DoesNotReturn]
         private static void ThrowNullOrEmpty(string? argument, string? paramName)
         {
-            ThrowIfNull(argument, paramName);
+            ArgumentNullException.ThrowIfNull(argument, paramName);
             throw new ArgumentException(SR.Argument_EmptyString, paramName);
         }
     }

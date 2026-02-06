@@ -192,10 +192,7 @@ namespace System.Resources
             // the purpose of RuntimeResourceSet is to lazily load and cache.
             base()
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             _defaultReader = reader as DeserializingResourceReader ??
                 throw new ArgumentException(SR.Format(SR.NotSupported_WrongResourceReader_Type, reader.GetType()), nameof(reader));
@@ -266,10 +263,7 @@ namespace System.Resources
         private object? GetObject(string key, bool ignoreCase, bool isString)
         {
 #if RESOURCES_EXTENSIONS
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 #else
             ArgumentNullException.ThrowIfNull(key);
 #endif

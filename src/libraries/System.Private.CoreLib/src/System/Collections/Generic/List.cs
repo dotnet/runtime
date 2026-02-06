@@ -80,7 +80,7 @@ namespace System.Collections.Generic
             else
             {
                 _items = s_emptyArray;
-                using (IEnumerator<T> en = collection!.GetEnumerator())
+                using (IEnumerator<T> en = collection.GetEnumerator())
                 {
                     while (en.MoveNext())
                     {
@@ -461,7 +461,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="indexToInsert">Index of the first insertion.</param>
         /// <param name="insertionCount">How many elements will be inserted.</param>
-        private void GrowForInsertion(int indexToInsert, int insertionCount = 1)
+        internal void GrowForInsertion(int indexToInsert, int insertionCount = 1)
         {
             Debug.Assert(insertionCount > 0);
 
@@ -1185,16 +1185,15 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>, IEnumerator
         {
             private readonly List<T> _list;
-            private int _index;
             private readonly int _version;
+
+            private int _index;
             private T? _current;
 
             internal Enumerator(List<T> list)
             {
                 _list = list;
-                _index = 0;
                 _version = list._version;
-                _current = default;
             }
 
             public void Dispose()
@@ -1205,24 +1204,20 @@ namespace System.Collections.Generic
             {
                 List<T> localList = _list;
 
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
-                {
-                    _current = localList._items[_index];
-                    _index++;
-                    return true;
-                }
-                return MoveNextRare();
-            }
-
-            private bool MoveNextRare()
-            {
                 if (_version != _list._version)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                _index = _list._size + 1;
+                if ((uint)_index < (uint)localList._size)
+                {
+                    _current = localList._items[_index];
+                    _index++;
+                    return true;
+                }
+
                 _current = default;
+                _index = -1;
                 return false;
             }
 
@@ -1232,11 +1227,12 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_index == 0 || _index == _list._size + 1)
+                    if (_index <= 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
-                    return Current;
+
+                    return _current;
                 }
             }
 

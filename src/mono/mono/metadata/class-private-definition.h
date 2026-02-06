@@ -81,6 +81,7 @@ struct _MonoClass {
 	/* next byte*/
 	guint is_exception_class : 1; /* is System.Exception or derived from it */
 	guint variant_search_table_inited : 1;
+	guint skip_generic_constraints : 1; /* type created for AOT wrapper methods, which don't need to comply with generic constraints */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;

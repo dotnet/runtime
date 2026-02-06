@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// <code>^(?&lt;proto&gt;\w+)://[^/]+?(?&lt;port&gt;:\d+)?/</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
@@ -367,25 +367,8 @@ namespace System.Text.RegularExpressions.Tests
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static bool IsWordChar(char ch)
                         {
-                            // Mask of Unicode categories that combine to form [\w]
-                            const int WordCategoriesMask =
-                                1 << (int)UnicodeCategory.UppercaseLetter |
-                                1 << (int)UnicodeCategory.LowercaseLetter |
-                                1 << (int)UnicodeCategory.TitlecaseLetter |
-                                1 << (int)UnicodeCategory.ModifierLetter |
-                                1 << (int)UnicodeCategory.OtherLetter |
-                                1 << (int)UnicodeCategory.NonSpacingMark |
-                                1 << (int)UnicodeCategory.DecimalDigitNumber |
-                                1 << (int)UnicodeCategory.ConnectorPunctuation;
-
-                            // Bitmap for whether each character 0 through 127 is in [\w]
-                            ReadOnlySpan<byte> ascii = new byte[]
-                            {
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
-                                0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
-                            };
-
                             // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
+                            ReadOnlySpan<byte> ascii = WordCharBitmap;
                             int chDiv8 = ch >> 3;
                             return (uint)chDiv8 < (uint)ascii.Length ?
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
@@ -454,6 +437,24 @@ namespace System.Text.RegularExpressions.Tests
                             }
                             return actual;
                         }
+
+                        /// <summary>Provides a mask of Unicode categories that combine to form [\w].</summary>
+                        private const int WordCategoriesMask =
+                            1 << (int)UnicodeCategory.UppercaseLetter |
+                            1 << (int)UnicodeCategory.LowercaseLetter |
+                            1 << (int)UnicodeCategory.TitlecaseLetter |
+                            1 << (int)UnicodeCategory.ModifierLetter |
+                            1 << (int)UnicodeCategory.OtherLetter |
+                            1 << (int)UnicodeCategory.NonSpacingMark |
+                            1 << (int)UnicodeCategory.DecimalDigitNumber |
+                            1 << (int)UnicodeCategory.ConnectorPunctuation;
+
+                        /// <summary>Gets a bitmap for whether each character 0 through 127 is in [\w]</summary>
+                        private static ReadOnlySpan<byte> WordCharBitmap => new byte[]
+                        {
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
+                            0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
+                        };
                     }
                 }
                 """
@@ -481,7 +482,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     /// <remarks>
                     /// Pattern:<br/>
-                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// <code>href\s*=\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\s]+))</code><br/>
                     /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
@@ -754,7 +755,7 @@ namespace System.Text.RegularExpressions.Tests
                     }
 
                     /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
                     file static class Utilities
                     {
                         /// <summary>Supports searching for the string "href".</summary>
@@ -789,7 +790,7 @@ namespace System.Text.RegularExpressions.Tests
                     /// <code>[A-Za-z]+</code><br/>
                     /// Explanation:<br/>
                     /// <code>
-                    /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
+                    /// ○ Match an ASCII letter atomically at least once.<br/>
                     /// </code>
                     /// </remarks>
                     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
@@ -863,7 +864,7 @@ namespace System.Text.RegularExpressions.Tests
                                     // Empty matches aren't possible.
                                     if ((uint)pos < (uint)inputSpan.Length)
                                     {
-                                        // The pattern begins with a character in the set [A-Za-z].
+                                        // The pattern begins with an ASCII letter.
                                         // Find the next occurrence. If it can't be found, there's no match.
                                         int i = inputSpan.Slice(pos).IndexOfAny(Utilities.s_asciiLetters);
                                         if (i >= 0)
@@ -887,7 +888,7 @@ namespace System.Text.RegularExpressions.Tests
                                     int matchStart = pos;
                                     ReadOnlySpan<char> slice = inputSpan.Slice(pos);
 
-                                    // Match a character in the set [A-Za-z] atomically at least once.
+                                    // Match an ASCII letter atomically at least once.
                                     {
                                         int iteration = slice.IndexOfAnyExcept(Utilities.s_asciiLetters);
                                         if (iteration < 0)
@@ -930,6 +931,267 @@ namespace System.Text.RegularExpressions.Tests
                 }
                 """
             };
+
+            yield return new object[]
+            {
+                """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"abcd*e|f")]
+                    public static partial Regex Valid();
+                }
+                """,
+
+                """
+                // <auto-generated/>
+                #nullable enable
+                #pragma warning disable CS0162 // Unreachable code
+                #pragma warning disable CS0164 // Unreferenced label
+                #pragma warning disable CS0219 // Variable assigned but never used
+
+                partial class C
+                {
+                    /// <remarks>
+                    /// Pattern:<br/>
+                    /// <code>abcd*e|f</code><br/>
+                    /// Explanation:<br/>
+                    /// <code>
+                    /// ○ Match with 2 alternative expressions, atomically.<br/>
+                    ///     ○ Match a sequence of expressions.<br/>
+                    ///         ○ Match the string "abc".<br/>
+                    ///         ○ Match 'd' atomically any number of times.<br/>
+                    ///         ○ Match 'e'.<br/>
+                    ///     ○ Match 'f'.<br/>
+                    /// </code>
+                    /// </remarks>
+                    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    public static partial global::System.Text.RegularExpressions.Regex Valid() => global::System.Text.RegularExpressions.Generated.Valid_0.Instance;
+                }
+
+                namespace System.Text.RegularExpressions.Generated
+                {
+                    using System;
+                    using System.Buffers;
+                    using System.CodeDom.Compiler;
+                    using System.Collections;
+                    using System.ComponentModel;
+                    using System.Globalization;
+                    using System.Runtime.CompilerServices;
+                    using System.Text.RegularExpressions;
+                    using System.Threading;
+
+                    /// <summary>Custom <see cref="Regex"/>-derived type for the Valid method.</summary>
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    [SkipLocalsInit]
+                    file sealed class Valid_0 : Regex
+                    {
+                        /// <summary>Cached, thread-safe singleton instance.</summary>
+                        internal static readonly Valid_0 Instance = new();
+
+                        /// <summary>Initializes the instance.</summary>
+                        private Valid_0()
+                        {
+                            base.pattern = "abcd*e|f";
+                            base.roptions = RegexOptions.None;
+                            ValidateMatchTimeout(Utilities.s_defaultTimeout);
+                            base.internalMatchTimeout = Utilities.s_defaultTimeout;
+                            base.factory = new RunnerFactory();
+                            base.capsize = 1;
+                        }
+
+                        /// <summary>Provides a factory for creating <see cref="RegexRunner"/> instances to be used by methods on <see cref="Regex"/>.</summary>
+                        private sealed class RunnerFactory : RegexRunnerFactory
+                        {
+                            /// <summary>Creates an instance of a <see cref="RegexRunner"/> used by methods on <see cref="Regex"/>.</summary>
+                            protected override RegexRunner CreateInstance() => new Runner();
+
+                            /// <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+                            private sealed class Runner : RegexRunner
+                            {
+                                /// <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+                                /// <param name="inputSpan">The text being scanned by the regular expression.</param>
+                                protected override void Scan(ReadOnlySpan<char> inputSpan)
+                                {
+                                    // Search until we can't find a valid starting position, we find a match, or we reach the end of the input.
+                                    while (TryFindNextPossibleStartingPosition(inputSpan) &&
+                                           !TryMatchAtCurrentPosition(inputSpan) &&
+                                           base.runtextpos != inputSpan.Length)
+                                    {
+                                        base.runtextpos++;
+                                        if (Utilities.s_hasTimeout)
+                                        {
+                                            base.CheckTimeout();
+                                        }
+                                    }
+                                }
+
+                                /// <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+                                /// <param name="inputSpan">The text being scanned by the regular expression.</param>
+                                /// <returns>true if a possible match was found; false if no more matches are possible.</returns>
+                                private bool TryFindNextPossibleStartingPosition(ReadOnlySpan<char> inputSpan)
+                                {
+                                    int pos = base.runtextpos;
+
+                                    // Empty matches aren't possible.
+                                    if ((uint)pos < (uint)inputSpan.Length)
+                                    {
+                                        // The pattern begins with a character in the set [af].
+                                        // Find the next occurrence. If it can't be found, there's no match.
+                                        int i = inputSpan.Slice(pos).IndexOfAny('a', 'f');
+                                        if (i >= 0)
+                                        {
+                                            base.runtextpos = pos + i;
+                                            return true;
+                                        }
+                                    }
+
+                                    // No match found.
+                                    base.runtextpos = inputSpan.Length;
+                                    return false;
+                                }
+
+                                /// <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+                                /// <param name="inputSpan">The text being scanned by the regular expression.</param>
+                                /// <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+                                private bool TryMatchAtCurrentPosition(ReadOnlySpan<char> inputSpan)
+                                {
+                                    int pos = base.runtextpos;
+                                    int matchStart = pos;
+                                    ReadOnlySpan<char> slice = inputSpan.Slice(pos);
+
+                                    // Match with 2 alternative expressions, atomically.
+                                    {
+                                        if (slice.IsEmpty)
+                                        {
+                                            return false; // The input didn't match.
+                                        }
+
+                                        switch (slice[0])
+                                        {
+                                            case 'a':
+                                                // Match the string "bc".
+                                                if (!slice.Slice(1).StartsWith("bc"))
+                                                {
+                                                    return false; // The input didn't match.
+                                                }
+
+                                                // Match 'd' atomically any number of times.
+                                                {
+                                                    int iteration = slice.Slice(3).IndexOfAnyExcept('d');
+                                                    if (iteration < 0)
+                                                    {
+                                                        iteration = slice.Length - 3;
+                                                    }
+
+                                                    slice = slice.Slice(iteration);
+                                                    pos += iteration;
+                                                }
+
+                                                // Match 'e'.
+                                                if ((uint)slice.Length < 4 || slice[3] != 'e')
+                                                {
+                                                    return false; // The input didn't match.
+                                                }
+
+                                                pos += 4;
+                                                slice = inputSpan.Slice(pos);
+                                                break;
+
+                                            case 'f':
+                                                pos++;
+                                                slice = inputSpan.Slice(pos);
+                                                break;
+
+                                            default:
+                                                return false; // The input didn't match.
+                                        }
+                                    }
+
+                                    // The input matched.
+                                    base.runtextpos = pos;
+                                    base.Capture(0, matchStart, pos);
+                                    return true;
+                                }
+                            }
+                        }
+
+                    }
+
+                    /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
+                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "%VERSION%")]
+                    file static class Utilities
+                    {
+                        /// <summary>Default timeout value set in <see cref="AppContext"/>, or <see cref="Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+                        internal static readonly TimeSpan s_defaultTimeout = AppContext.GetData("REGEX_DEFAULT_MATCH_TIMEOUT") is TimeSpan timeout ? timeout : Regex.InfiniteMatchTimeout;
+
+                        /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
+                        internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
+                    }
+                }
+                """
+            };
+        }
+
+        [Fact]
+        public async Task Pattern_Should_Not_Be_Double_Escaped_In_Documentation()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"\.")]
+                    public static partial Regex DotPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should show \. (single backslash) not \\. (double backslash) in the documentation
+            Assert.Contains("/// <code>\\.</code><br/>", actual);
+            Assert.DoesNotContain("/// <code>\\\\.</code><br/>", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Control_Characters_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("a\0b")]
+                    public static partial Regex NullCharPattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape null characters as Unicode escape sequences for XML safety in the documentation
+            Assert.Contains("/// <code>a\\u0000b</code><br/>", actual);
+            
+            // The actual pattern string (base.pattern assignment) should properly escape the null character for C#
+            Assert.Contains("base.pattern = \"a\\0b\";", actual);
+        }
+
+        [Fact]
+        public async Task Pattern_With_Newline_Should_Be_Escaped_For_XML()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex("\n")]
+                    public static partial Regex NewlinePattern();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // The pattern should escape newline as Unicode escape sequence to avoid breaking XML comments
+            Assert.Contains("/// <code>\\u000A</code><br/>", actual);
+            
+            // The actual pattern string should properly escape the newline for C#
+            Assert.Contains("base.pattern = \"\\n\";", actual);
         }
     }
 }

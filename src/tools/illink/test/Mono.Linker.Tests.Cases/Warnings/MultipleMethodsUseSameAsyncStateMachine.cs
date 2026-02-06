@@ -11,17 +11,17 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings
 {
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/MultipleMethodsUseSameAsyncStateMachine.il" })]
-	[ExpectedNoWarnings]
-	[LogContains ("IL2107.*<M>g__LocalFunction().*M().*both associated with state machine type.*<StateMachine>d", regexMatch: true)]
-	class MultipleMethodsUseSameAsyncStateMachine
-	{
-		public static void Main ()
-		{
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/MultipleMethodsUseSameAsyncStateMachine.il" })]
+    [ExpectedNoWarnings]
+    [LogContains("IL2107.*<M>g__LocalFunction().*M().*both associated with state machine type.*<StateMachine>d", regexMatch: true)]
+    class MultipleMethodsUseSameAsyncStateMachine
+    {
+        public static void Main()
+        {
 #if IL_ASSEMBLY_AVAILABLE
-			Dependencies.MultipleMethodsUseSameAsyncStateMachine.M();
+            Dependencies.MultipleMethodsUseSameAsyncStateMachine.M();
 #endif
-		}
-	}
+        }
+    }
 }

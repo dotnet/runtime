@@ -19,7 +19,7 @@ namespace System.Composition.AttributeModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Name")]
-        public void Ctor_SharingBoundaryName(string sharingBoundaryName)
+        public void Ctor_SharingBoundaryName(string? sharingBoundaryName)
         {
             var attribute = new SharedAttribute(sharingBoundaryName);
             Assert.Equal(sharingBoundaryName, attribute.SharingBoundary);

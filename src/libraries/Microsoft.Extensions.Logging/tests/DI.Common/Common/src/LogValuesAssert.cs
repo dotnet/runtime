@@ -34,12 +34,11 @@ namespace Microsoft.Extensions.Logging.Testing
             IEnumerable<KeyValuePair<string, object>> expectedValues,
             IEnumerable<KeyValuePair<string, object>> actualValues)
         {
-            if (expectedValues == null)
+            if (expectedValues is null)
             {
                 throw new ArgumentNullException(nameof(expectedValues));
             }
-
-            if (actualValues == null)
+            if (actualValues is null)
             {
                 throw new ArgumentNullException(nameof(actualValues));
             }

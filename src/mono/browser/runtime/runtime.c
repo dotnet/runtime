@@ -325,7 +325,7 @@ mono_wasm_load_runtime_common (int debug_level, MonoLogCallback log_callback, co
 	 */
 	if (debug_level) {
 		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
+		interp_opts = "-all,simd";
 		mono_wasm_enable_debugging (debug_level);
 	}
 #endif

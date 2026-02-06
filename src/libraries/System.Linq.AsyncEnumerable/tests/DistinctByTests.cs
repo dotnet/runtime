@@ -20,6 +20,13 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => AsyncEnumerable.DistinctBy(AsyncEnumerable.Empty<int>(), (Func<int, CancellationToken, ValueTask<int>>)null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().DistinctBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<int>(), AsyncEnumerable.Empty<int>().DistinctBy(async (i, ct) => i));
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0])]
@@ -111,6 +118,22 @@ namespace System.Linq.Tests
             Assert.Equal(4, source.CurrentCount);
             Assert.Equal(1, source.DisposeAsyncCount);
             Assert.Equal(4, funcCount);
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().DistinctBy(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return i;
+                }));
+            });
         }
     }
 }

@@ -27,9 +27,17 @@ namespace Profiler.Tests
                 return RunTest(args);
             }
 
+            Console.WriteLine($"Running the test using environment variables with CORECLR prefix.");
+            ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                   testName: "ALCTest",
+                                   profilerClsid: AssemblyProfilerGuid,
+                                   envVarProfilerPrefix: "CORECLR");
+
+            Console.WriteLine($"Running the test using environment variables with DOTNET prefix.");
             return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                           testName: "ALCTest",
-                                          profilerClsid: AssemblyProfilerGuid);
+                                          profilerClsid: AssemblyProfilerGuid,
+                                          envVarProfilerPrefix: "DOTNET");
         }
     }
 }

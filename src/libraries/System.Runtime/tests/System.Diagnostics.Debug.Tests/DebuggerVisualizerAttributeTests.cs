@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("VisualizerTypeName")]
-        public void Ctor_VisualizerTypeName(string visualizerTypeName)
+        public void Ctor_VisualizerTypeName(string? visualizerTypeName)
         {
             var attribute = new DebuggerVisualizerAttribute(visualizerTypeName);
             Assert.Equal(visualizerTypeName, attribute.VisualizerTypeName);
@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null, null)]
         [InlineData("VisualizerTypeName", "VisualizerObjectSourceTypeName")]
-        public void Ctor_VisualizerTypeName_VisualizerObjectSourceTypeName(string visualizerTypeName, string visualizerObjectSourceTypeName)
+        public void Ctor_VisualizerTypeName_VisualizerObjectSourceTypeName(string? visualizerTypeName, string? visualizerObjectSourceTypeName)
         {
             var attribute = new DebuggerVisualizerAttribute(visualizerTypeName, visualizerObjectSourceTypeName);
             Assert.Equal(visualizerTypeName, attribute.VisualizerTypeName);
@@ -34,7 +34,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null, typeof(int))]
         [InlineData("VisualizerTypeName", typeof(DebuggerVisualizerAttributeTests))]
-        public void Ctor_VisualizerTypeName_VisualizerObjectSourceType(string visualizerTypeName, Type visualizerObjectSourceType)
+        public void Ctor_VisualizerTypeName_VisualizerObjectSourceType(string? visualizerTypeName, Type visualizerObjectSourceType)
         {
             var attribute = new DebuggerVisualizerAttribute(visualizerTypeName, visualizerObjectSourceType);
             Assert.Equal(visualizerTypeName, attribute.VisualizerTypeName);
@@ -70,7 +70,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(typeof(string), null)]
         [InlineData(typeof(DebuggerVisualizerAttributeTests), "VisualizerObjectSourceTypeName")]
-        public void Ctor_VisualizerType_VisualizerObjectSourceTypeName(Type visualizerType, string visualizerObjectSourceTypeName)
+        public void Ctor_VisualizerType_VisualizerObjectSourceTypeName(Type visualizerType, string? visualizerObjectSourceTypeName)
         {
             var attribute = new DebuggerVisualizerAttribute(visualizerType, visualizerObjectSourceTypeName);
             Assert.Equal(visualizerType.AssemblyQualifiedName, attribute.VisualizerTypeName);

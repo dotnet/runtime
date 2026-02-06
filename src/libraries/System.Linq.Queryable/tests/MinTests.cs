@@ -606,5 +606,26 @@ namespace System.Linq.Tests
             IQueryable<int> source = Enumerable.Range(1, 20).AsQueryable();
             Assert.Equal(1, source.MinBy(x => -x, Comparer<int>.Create((x, y) => -x.CompareTo(y))));
         }
+
+        private sealed class Folk
+        {
+            public string Name { get; set; }
+            public int Age { get; set; }
+        }
+
+        [Fact]
+        public void MinBy_CustomComparer_DistinctTypes()
+        {
+            var data = new Folk[] {
+                new Folk { Name="Doug", Age=42 },
+                new Folk { Name="John", Age=18 },
+                new Folk { Name="Bob", Age=21 }
+            };
+
+            IQueryable<Folk> source = data.AsQueryable();
+            var result = source.MinBy(e => e.Age, Comparer<int>.Default);
+            Assert.NotNull(result);
+            Assert.Equal("John", result.Name);
+        }
     }
 }

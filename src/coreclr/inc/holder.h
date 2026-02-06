@@ -144,25 +144,12 @@ class HolderBase
 
 };  // class HolderBase<>
 
-#ifndef _PREFAST_ // Work around an ICE error in EspX.dll
-
 template <typename TYPE>
 BOOL CompareDefault(TYPE value, TYPE defaultValue)
 {
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value == defaultValue;
 }
-
-#else
-
-template <typename TYPE>
-BOOL CompareDefault(TYPE value, TYPE defaultValue)
-{
-    return FALSE;
-}
-
-#endif
-
 
 template <typename TYPE>
 BOOL NoNull(TYPE value, TYPE defaultValue)
@@ -1038,6 +1025,13 @@ public:
         STATIC_CONTRACT_WRAPPER;
     }
 
+    NewInterfaceArrayHolder(INTERFACE ** value, ULONG32 cElements) :
+        NewArrayHolder<INTERFACE *>(value),
+        m_cElements(cElements)
+    {
+        STATIC_CONTRACT_WRAPPER;
+    }
+
     NewInterfaceArrayHolder& operator=(INTERFACE ** value)
     {
         STATIC_CONTRACT_WRAPPER;
@@ -1054,10 +1048,13 @@ public:
     ~NewInterfaceArrayHolder()
     {
         STATIC_CONTRACT_LEAF;
-        for (ULONG32 i=0; i < m_cElements; i++)
+        if (this->m_acquired)
         {
-            if (this->m_value[i] != NULL)
-                this->m_value[i]->Release();
+            for (ULONG32 i=0; i < m_cElements; i++)
+            {
+                if (this->m_value[i] != NULL)
+                    this->m_value[i]->Release();
+            }
         }
     }
 
@@ -1179,7 +1176,7 @@ public:
     ErrorModeHolder()
         : m_revert{ FALSE }
     {
-        DWORD newMode = SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS;
+        DWORD newMode = SEM_FAILCRITICALERRORS;
         m_revert = ::SetThreadErrorMode(newMode, &m_oldMode);
     }
     ~ErrorModeHolder() noexcept

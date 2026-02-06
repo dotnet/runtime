@@ -23,8 +23,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
 
-    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
+    protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, string? targetFramework = null)
+                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, targetFramework ?? DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
@@ -67,7 +67,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
-    public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
+    public void InitBlazorWasmProjectDir(string id)
     {
         InitPaths(id);
         if (Directory.Exists(_projectDir))
@@ -76,7 +76,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
         File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
                             GetNuGetConfigWithLocalPackagesPath(
-                                        GetNuGetConfigPathFor(targetFramework),
+                                        GetNuGetConfigPath(),
                                         s_buildEnv.BuiltNuGetsPath));
 
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
@@ -220,6 +220,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         return serverEnvironment;
     }
 
-    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
-        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
+    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null)
+        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework ?? DefaultTargetFrameworkForBlazor, projectDir: projectDir);
 }

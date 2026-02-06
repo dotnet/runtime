@@ -129,7 +129,6 @@ enum
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Pc)         \
-    ASSIGN_REG(Tp)         \
     ASSIGN_REG(Sp)         \
     ASSIGN_REG(Fp)         \
     ASSIGN_REG(Ra)         \
@@ -448,7 +447,6 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
     unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
@@ -499,6 +497,8 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_PPC64_R28, (unw_word_t *) &winContext->R28);
     unw_get_reg(cursor, UNW_PPC64_R29, (unw_word_t *) &winContext->R29);
     unw_get_reg(cursor, UNW_PPC64_R30, (unw_word_t *) &winContext->R30);
+#elif defined(HOST_WASM)
+    ASSERT("UnwindContextToWinContext not implemented for WASM");
 #else
 #error unsupported architecture
 #endif
@@ -586,7 +586,6 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, (SIZE_T **)&contextPointers->R15);
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, (SIZE_T **)&contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, (SIZE_T **)&contextPointers->Tp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, (SIZE_T **)&contextPointers->Fp);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, (SIZE_T **)&contextPointers->S0);
     GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, (SIZE_T **)&contextPointers->S1);
@@ -634,6 +633,8 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_PPC64_R29, (SIZE_T **)&contextPointers->R29);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R30, (SIZE_T **)&contextPointers->R30);
     GetContextPointer(cursor, unwContext, UNW_PPC64_R31, (SIZE_T **)&contextPointers->R31);
+#elif defined(HOST_WASM)
+    ASSERT("GetContextPointers not implemented for WASM");
 #else
 #error unsupported architecture
 #endif
@@ -691,6 +692,17 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         // happened in the first instruction of a function.
         CONTEXTSetPC(context, curPc + 1);
     }
+#ifndef UNW_VERSION // This is LLVM libunwind
+    else
+    {
+        // LLVM libunwind doesn't move the current PC back by one when unwinding from
+        // a non-hardware exception frame, unlike the HP libunwind implementation.
+        // So we compensate it here to have consistent behavior across all platforms.
+        // That allows proper unwinding in case a function ends with a call and the
+        // address after the call doesn't belong to the same function as the call.
+        CONTEXTSetPC(context, curPc - 1);
+    }
+#endif // !UNW_VERSION
 
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
 // The unw_getcontext is defined in the libunwind headers for ARM as inline assembly with
@@ -934,11 +946,14 @@ RaiseException(IN DWORD dwExceptionCode,
 
     // Capture the context of RaiseException.
     ZeroMemory(contextRecord, sizeof(CONTEXT));
+    // WASM-TODO: reconsider this
+#ifndef TARGET_WASM
     contextRecord->ContextFlags = CONTEXT_FULL;
     CONTEXT_CaptureContext(contextRecord);
 
     // We have to unwind one level to get the actual context user code could be resumed at.
     PAL_VirtualUnwind(contextRecord, NULL);
+#endif // !TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 

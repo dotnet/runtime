@@ -11,7 +11,7 @@ namespace System.Formats.Nrbf;
 /// Class information with type info.
 /// </summary>
 /// <remarks>
-/// SystemClassWithMembersAndType records are described in <see href="https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/ecb47445-831f-4ef5-9c9b-afd4d06e3657">[MS-NRBF] 2.3.2.3</see>.
+/// SystemClassWithMembersAndType records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/ecb47445-831f-4ef5-9c9b-afd4d06e3657">[MS-NRBF] 2.3.2.3</see>.
 /// </remarks>
 internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 {
@@ -95,7 +95,9 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         bool HasMember(string name, int order, PrimitiveType primitiveType)
             => classInfo.MemberNames.TryGetValue(name, out int memberOrder)
             && memberOrder == order
-            && ((PrimitiveType)memberTypeInfo.Infos[order].AdditionalInfo!) == primitiveType;
+            && memberTypeInfo.Infos[order].BinaryType == BinaryType.Primitive
+            && memberTypeInfo.Infos[order].AdditionalInfo is PrimitiveType pt
+            && pt == primitiveType;
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

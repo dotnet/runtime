@@ -8,9 +8,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace CollectibleThreadStaticShutdownRace
 {
+    public interface IGetAnInt
+    {
+        int GetInt();
+    }
+
+    public class GetAnInt : IGetAnInt
+    {
+        public int GetInt()
+        {
+            return 1;
+        }
+    }
+
     public class CollectibleThreadStaticShutdownRace
     {
         Action? UseTLSStaticFromLoaderAllocator = null;
@@ -40,6 +54,10 @@ namespace CollectibleThreadStaticShutdownRace
             }
         }
 
+        public static IGetAnInt s_getAnInt = new GetAnInt();
+        static FieldInfo s_getAnIntField;
+        static MethodInfo s_getAnIntMethod;
+
         void CreateLoaderAllocatorWithTLS()
         {
             ulong collectibleIndex = s_collectibleIndex++;
@@ -66,7 +84,8 @@ namespace CollectibleThreadStaticShutdownRace
                         "Method",
                         MethodAttributes.Public | MethodAttributes.Static);
                 var ilg = mb.GetILGenerator();
-                ilg.Emit(OpCodes.Ldc_I4_1);
+                ilg.Emit(OpCodes.Ldsfld, s_getAnIntField);
+                ilg.Emit(OpCodes.Callvirt, s_getAnIntMethod);
                 ilg.Emit(OpCodes.Stsfld, fb);
                 ilg.Emit(OpCodes.Ret);
             }
@@ -93,9 +112,14 @@ namespace CollectibleThreadStaticShutdownRace
 
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
         [Fact]
         public static void TestEntryPoint()
         {
+            s_getAnIntField = typeof(CollectibleThreadStaticShutdownRace).GetField("s_getAnInt");
+            s_getAnIntMethod = typeof(IGetAnInt).GetMethod("GetInt");
+
             new CollectibleThreadStaticShutdownRace().ForceCollectibleTLSStaticToGoThroughThreadTermination();
         }
     }

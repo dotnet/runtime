@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,10 +24,11 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     // So, copy the reference for latest TFM, and add that back with the
     // TFM=DefaultTargetFramework
     //
-    // This is useful for the case when we are on tfm=net10.0, but sdk, and packages
-    // are really 10.0 .
-    private const string s_latestTargetFramework = "net10.0";
-    private const string s_previousTargetFramework = "net9.0";
+    // This is useful for the case when we are on latest TFM, but sdk, and packages
+    // are really the previous version.
+    private const int TargetMajorVersion = 11; /* net11 */
+    private static readonly string s_latestTargetFramework = $"net{TargetMajorVersion}.0";
+    private static readonly string s_previousTargetFramework = $"net{TargetMajorVersion - 1}.0";
     private static string s_directoryBuildTargetsForPreviousTFM =
         $$"""
             <Project>
@@ -69,7 +71,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         (
             EnvironmentVariables.WorkloadsTestPreviousVersions
                 ? [
-                    "net6.0",
                     s_previousTargetFramework,
                     s_latestTargetFramework
                 ]
@@ -83,7 +84,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
-                               // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
     [Theory]
@@ -92,7 +92,6 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
-                               // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
     private void NonWasmConsoleBuild(Configuration config,

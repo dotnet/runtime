@@ -1189,6 +1189,21 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
 
     return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
 }
+
+bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!ep_enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
+}
 """
 
 def generateEventPipeImplFiles(

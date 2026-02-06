@@ -40,6 +40,31 @@ const size_t Compiler::s_optCSEhashSizeInitial  = EXPSET_SZ * 2;
 const size_t Compiler::s_optCSEhashGrowthFactor = 2;
 const size_t Compiler::s_optCSEhashBucketSize   = 4;
 
+// Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
+//
+// The value of aggressiveRefCnt and moderateRefCnt start off as zero and
+// when enregCount reached a certain value we assign the current LclVar
+// (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
+//
+//
+// On Windows x64 this yields:
+// CNT_AGGRESSIVE_ENREG == 12 and CNT_MODERATE_ENREG == 38
+// Thus we will typically set the cutoff values for
+//   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
+//   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
+//
+// For other architecture and platforms these values dynamically change
+// based upon the number of callee saved and callee scratch registers.
+//
+#define CNT_AGGRESSIVE_ENREG ((CNT_CALLEE_ENREG_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG   ((CNT_CALLEE_ENREG_FOR_CSE * 3) + (CNT_CALLEE_TRASH_FOR_CSE * 2))
+
+#define CNT_AGGRESSIVE_ENREG_FLT ((CNT_CALLEE_ENREG_FLOAT_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG_FLT   ((CNT_CALLEE_ENREG_FLOAT_FOR_CSE * 3) + (CNT_CALLEE_TRASH_FLOAT_FOR_CSE * 2))
+
+#define CNT_AGGRESSIVE_ENREG_MSK ((CNT_CALLEE_ENREG_MASK_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG_MSK   ((CNT_CALLEE_ENREG_MASK_FOR_CSE * 3) + (CNT_CALLEE_TRASH_MASK_FOR_CSE * 2))
+
 /*****************************************************************************
  *
  *  We've found all the candidates, build the index for easy access.
@@ -184,7 +209,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
 Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
 {
     GenTree*         tree      = *pTree;
-    Compiler*        comp      = walkData->compiler;
+    Compiler*        comp      = walkData->m_compiler;
     optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
 
     return WALK_CONTINUE;
@@ -298,8 +323,8 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
 /* static */
 bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    GenTree* exp1 = dsc1->csdTree;
-    GenTree* exp2 = dsc2->csdTree;
+    GenTree* exp1 = dsc1->csdTreeList.tslTree;
+    GenTree* exp2 = dsc2->csdTreeList.tslTree;
 
     auto expCost1 = exp1->GetCostEx();
     auto expCost2 = exp2->GetCostEx();
@@ -334,8 +359,8 @@ bool Compiler::optCSEcostCmpEx::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
 /* static */
 bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc2)
 {
-    GenTree* exp1 = dsc1->csdTree;
-    GenTree* exp2 = dsc2->csdTree;
+    GenTree* exp1 = dsc1->csdTreeList.tslTree;
+    GenTree* exp2 = dsc2->csdTreeList.tslTree;
 
     auto expCost1 = exp1->GetCostSz();
     auto expCost2 = exp2->GetCostSz();
@@ -434,7 +459,7 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
     };
 
     LocalCountingVisitor lcv(compiler);
-    lcv.WalkTree(&csdTree, nullptr);
+    lcv.WalkTree(&csdTreeList.tslTree, nullptr);
 
     numDistinctLocals   = lcv.m_count;
     numLocalOccurrences = lcv.m_occurrences;
@@ -615,99 +640,85 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
     for (hashDsc = optCSEhash[hval]; hashDsc; hashDsc = hashDsc->csdNextInBucket)
     {
-        if (hashDsc->csdHashKey == key)
+        if (hashDsc->csdHashKey != key)
         {
-            // Check for mismatched types on GT_CNS_INT nodes
-            if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
+            continue;
+        }
+
+        assert(hashDsc->csdTreeList.tslTree != nullptr);
+
+        // Check for mismatched types on GT_CNS_INT nodes
+        if (tree->OperIs(GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
+        {
+            continue;
+        }
+
+        // Have we started the list of matching nodes?
+
+        if (hashDsc->csdTreeList.tslNext == nullptr)
+        {
+            // This is the second time we see this value. Handle cases
+            // where the first value dominates the second one and we can
+            // already prove that the first one is _not_ going to be a
+            // valid def for the second one, due to the second one having
+            // more exceptions. This happens for example in code like
+            // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
+            // on top of "x". In those cases it is always better to let the
+            // second value be the def.
+            // It also happens for GT_COMMA, but that one is special cased
+            // above; this handling is a less special-casey version of the
+            // GT_COMMA handling above. However, it is quite limited since
+            // it only handles the def/use being in the same block.
+            if (compCurBB == hashDsc->csdTreeList.tslBlock)
             {
-                continue;
-            }
-
-            treeStmtLst* newElem;
-
-            // Have we started the list of matching nodes?
-
-            if (hashDsc->csdTreeList == nullptr)
-            {
-                // This is the second time we see this value. Handle cases
-                // where the first value dominates the second one and we can
-                // already prove that the first one is _not_ going to be a
-                // valid def for the second one, due to the second one having
-                // more exceptions. This happens for example in code like
-                // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
-                // on top of "x". In those cases it is always better to let the
-                // second value be the def.
-                // It also happens for GT_COMMA, but that one is special cased
-                // above; this handling is a less special-casey version of the
-                // GT_COMMA handling above. However, it is quite limited since
-                // it only handles the def/use being in the same block.
-                if (compCurBB == hashDsc->csdBlock)
+                GenTree* prevTree  = hashDsc->csdTreeList.tslTree;
+                ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
+                if (prevVnLib != vnLib)
                 {
-                    GenTree* prevTree  = hashDsc->csdTree;
-                    ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
-                    if (prevVnLib != vnLib)
+                    ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                    ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                    if ((prevExceptionSet != curExceptionSet) &&
+                        vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
                     {
-                        ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
-                        ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
-                        if ((prevExceptionSet != curExceptionSet) &&
-                            vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
-                        {
-                            JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
-                                    "more exceptions\n",
-                                    prevTree->gtTreeID, tree->gtTreeID);
-                            prevTree->gtCSEnum = 0;
-                            hashDsc->csdStmt   = stmt;
-                            hashDsc->csdTree   = tree;
-                            tree->gtCSEnum     = (signed char)hashDsc->csdIndex;
-                            return hashDsc->csdIndex;
-                        }
+                        JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
+                                "more exceptions\n",
+                                prevTree->gtTreeID, tree->gtTreeID);
+                        prevTree->gtCSEnum           = 0;
+                        hashDsc->csdTreeList.tslStmt = stmt;
+                        hashDsc->csdTreeList.tslTree = tree;
+                        tree->gtCSEnum               = (signed char)hashDsc->csdIndex;
+                        return hashDsc->csdIndex;
                     }
                 }
-
-                // Create the new element based upon the matching hashDsc element.
-
-                newElem = new (this, CMK_TreeStatementList) treeStmtLst;
-
-                newElem->tslTree  = hashDsc->csdTree;
-                newElem->tslStmt  = hashDsc->csdStmt;
-                newElem->tslBlock = hashDsc->csdBlock;
-                newElem->tslNext  = nullptr;
-
-                /* Start the list with the first CSE candidate recorded */
-
-                hashDsc->csdTreeList = newElem;
-                hashDsc->csdTreeLast = newElem;
-
-                hashDsc->csdIsSharedConst = isSharedConst;
             }
 
-            noway_assert(hashDsc->csdTreeList);
-
-            /* Append this expression to the end of the list */
-
-            newElem = new (this, CMK_TreeStatementList) treeStmtLst;
-
-            newElem->tslTree  = tree;
-            newElem->tslStmt  = stmt;
-            newElem->tslBlock = compCurBB;
-            newElem->tslNext  = nullptr;
-
-            hashDsc->csdTreeLast->tslNext = newElem;
-            hashDsc->csdTreeLast          = newElem;
-
-            optDoCSE = true; // Found a duplicate CSE tree
-
-            /* Have we assigned a CSE index? */
-            if (hashDsc->csdIndex == 0)
-            {
-                newCSE = true;
-                break;
-            }
-
-            assert(FitsIn<signed char>(hashDsc->csdIndex));
-            tree->gtCSEnum = ((signed char)hashDsc->csdIndex);
-            return hashDsc->csdIndex;
+            hashDsc->csdIsSharedConst = isSharedConst;
         }
+
+        // Append this expression to the end of the list
+
+        treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
+
+        newElem->tslTree  = tree;
+        newElem->tslStmt  = stmt;
+        newElem->tslBlock = compCurBB;
+        newElem->tslNext  = nullptr;
+
+        hashDsc->csdTreeLast->tslNext = newElem;
+        hashDsc->csdTreeLast          = newElem;
+
+        optDoCSE = true; // Found a duplicate CSE tree
+
+        /* Have we assigned a CSE index? */
+        if (hashDsc->csdIndex == 0)
+        {
+            newCSE = true;
+            break;
+        }
+
+        assert(FitsIn<signed char>(hashDsc->csdIndex));
+        tree->gtCSEnum = ((signed char)hashDsc->csdIndex);
+        return hashDsc->csdIndex;
     }
 
     if (!newCSE)
@@ -763,10 +774,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
             hashDsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
 
-            hashDsc->csdTree     = tree;
-            hashDsc->csdStmt     = stmt;
-            hashDsc->csdBlock    = compCurBB;
-            hashDsc->csdTreeList = nullptr;
+            hashDsc->csdTreeList.tslTree  = tree;
+            hashDsc->csdTreeList.tslStmt  = stmt;
+            hashDsc->csdTreeList.tslBlock = compCurBB;
+            hashDsc->csdTreeList.tslNext  = nullptr;
+
+            hashDsc->csdTreeLast = &hashDsc->csdTreeList;
 
             /* Append the entry to the hash bucket */
 
@@ -793,7 +806,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             return 0;
         }
 
-        C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
+        static_assert((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
 
@@ -801,11 +814,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         hashDsc->csdIndex = CSEindex;
 
         /* Update the gtCSEnum field in the original tree */
-        noway_assert(hashDsc->csdTreeList->tslTree->gtCSEnum == 0);
+        noway_assert(hashDsc->csdTreeList.tslTree->gtCSEnum == 0);
         assert(FitsIn<signed char>(CSEindex));
 
-        hashDsc->csdTreeList->tslTree->gtCSEnum = ((signed char)CSEindex);
-        noway_assert(((unsigned)hashDsc->csdTreeList->tslTree->gtCSEnum) == CSEindex);
+        hashDsc->csdTreeList.tslTree->gtCSEnum = ((signed char)CSEindex);
+        noway_assert(((unsigned)hashDsc->csdTreeList.tslTree->gtCSEnum) == CSEindex);
 
         tree->gtCSEnum = ((signed char)CSEindex);
 
@@ -975,7 +988,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     {
         CSEdsc*      dsc      = optCSEtab[inx];
         unsigned     CSEindex = dsc->csdIndex;
-        treeStmtLst* lst      = dsc->csdTreeList;
+        treeStmtLst* lst      = &dsc->csdTreeList;
         noway_assert(lst);
 
         while (lst != nullptr)
@@ -997,6 +1010,11 @@ void Compiler::optValnumCSE_InitDataFlow()
             }
             lst = lst->tslNext;
         }
+    }
+
+    if (compIsAsync())
+    {
+        optValnumCSE_SetUpAsyncByrefKills();
     }
 
     for (BasicBlock* const block : Blocks())
@@ -1037,7 +1055,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                     unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
                     BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
                 }
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Any cse's that we haven't placed in the block->bbCseGen set
                     // aren't currently alive (using cseAvailCrossCallBit)
@@ -1082,6 +1100,112 @@ void Compiler::optValnumCSE_InitDataFlow()
 #endif // DEBUG
 }
 
+//---------------------------------------------------------------------------
+// optValnumCSE_SetUpAsyncByrefKills:
+//   Compute kills because of async calls requiring byrefs not to be live
+//   across them.
+//
+void Compiler::optValnumCSE_SetUpAsyncByrefKills()
+{
+    bool anyAsyncKills = false;
+    cseAsyncKillsMask  = BitVecOps::MakeFull(cseLivenessTraits);
+    for (unsigned inx = 1; inx <= optCSECandidateCount; inx++)
+    {
+        CSEdsc* dsc = optCSEtab[inx - 1];
+        assert(dsc->csdIndex == inx);
+        bool isByRef = false;
+        if (dsc->csdTreeList.tslTree->TypeIs(TYP_BYREF))
+        {
+            isByRef = true;
+        }
+        else if (dsc->csdTreeList.tslTree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = dsc->csdTreeList.tslTree->GetLayout(this);
+            isByRef             = layout->HasGCByRef();
+        }
+
+        if (isByRef)
+        {
+            // We generate a bit pattern like: 1111111100111100 where there
+            // are 0s only for the byref CSEs.
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailBit(inx));
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailCrossCallBit(inx));
+            anyAsyncKills = true;
+        }
+    }
+
+    if (!anyAsyncKills)
+    {
+        return;
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        Statement* asyncCallStmt = nullptr;
+        GenTree*   asyncCall     = nullptr;
+        // Find last async call in block
+        Statement* stmt = block->lastStmt();
+        if (stmt == nullptr)
+        {
+            continue;
+        }
+
+        while (asyncCall == nullptr)
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+            {
+                for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
+                {
+                    if (tree->IsCall() && tree->AsCall()->IsAsync())
+                    {
+                        asyncCallStmt = stmt;
+                        asyncCall     = tree;
+                        break;
+                    }
+                }
+            }
+
+            if (stmt == block->firstStmt())
+                break;
+
+            stmt = stmt->GetPrevStmt();
+        }
+
+        if (asyncCall == nullptr)
+        {
+            continue;
+        }
+
+        // This block has a suspension point. Make all BYREF CSEs unavailable.
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseGen, cseAsyncKillsMask);
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseOut, cseAsyncKillsMask);
+
+        // Now make all byref CSEs after the suspension point available.
+        Statement* curStmt = asyncCallStmt;
+        GenTree*   curTree = asyncCall;
+        while (true)
+        {
+            do
+            {
+                if (IS_CSE_INDEX(curTree->gtCSEnum))
+                {
+                    unsigned CSEnum = GET_CSE_INDEX(curTree->gtCSEnum);
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, getCSEAvailBit(CSEnum));
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseOut, getCSEAvailBit(CSEnum));
+                }
+
+                curTree = curTree->gtNext;
+            } while (curTree != nullptr);
+
+            curStmt = curStmt->GetNextStmt();
+            if (curStmt == nullptr)
+                break;
+
+            curTree = curStmt->GetTreeList();
+        }
+    }
+}
+
 /*****************************************************************************
  *
  * CSE Dataflow, so that all helper methods for dataflow are in a single place
@@ -1089,12 +1213,12 @@ void Compiler::optValnumCSE_InitDataFlow()
  */
 class CSE_DataFlow
 {
-    Compiler* m_comp;
+    Compiler* m_compiler;
     EXPSET_TP m_preMergeOut;
 
 public:
     CSE_DataFlow(Compiler* pCompiler)
-        : m_comp(pCompiler)
+        : m_compiler(pCompiler)
         , m_preMergeOut(BitVecOps::UninitVal())
     {
     }
@@ -1106,14 +1230,14 @@ public:
         // It is used in EndMerge() to control the termination of the DataFlow algorithm.
         // Note that the first time we visit a block, the value of bbCseOut is MakeFull()
         //
-        BitVecOps::Assign(m_comp->cseLivenessTraits, m_preMergeOut, block->bbCseOut);
+        BitVecOps::Assign(m_compiler->cseLivenessTraits, m_preMergeOut, block->bbCseOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("StartMerge " FMT_BB "\n", block->bbNum);
-            printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
+            printf("  :: cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
 #endif // 0
@@ -1124,22 +1248,22 @@ public:
     {
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("Merge " FMT_BB " and " FMT_BB "\n", block->bbNum, predBlock->bbNum);
-            printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
-            printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
+            printf("  :: cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
+            printf("  :: cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
 #endif // 0
 
-        BitVecOps::IntersectionD(m_comp->cseLivenessTraits, block->bbCseIn, predBlock->bbCseOut);
+        BitVecOps::IntersectionD(m_compiler->cseLivenessTraits, block->bbCseIn, predBlock->bbCseOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
-            printf("  => cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
+            printf("  => cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
         }
 #endif // DEBUG
 #endif // 0
@@ -1170,17 +1294,17 @@ public:
         //
         if (block->HasFlag(BBF_NO_CSE_IN))
         {
-            BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
+            BitVecOps::ClearD(m_compiler->cseLivenessTraits, block->bbCseIn);
         }
 
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //
-        if (!block->HasFlag(BBF_HAS_CALL) || BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
+        if (!block->HasFlag(BBF_HAS_CALL) || BitVecOps::IsEmpty(m_compiler->cseLivenessTraits, block->bbCseIn))
         {
             // No callsite in 'block' or 'block->bbCseIn was empty, so we can use bbCseIn directly
             //
-            BitVecOps::DataFlowD(m_comp->cseLivenessTraits, block->bbCseOut, block->bbCseGen, block->bbCseIn);
+            BitVecOps::DataFlowD(m_compiler->cseLivenessTraits, block->bbCseOut, block->bbCseGen, block->bbCseIn);
         }
         else
         {
@@ -1190,12 +1314,12 @@ public:
 
             // cseIn_withCallsKill is set to (bbCseIn AND cseCallKillsMask)
             //
-            BitVecOps::Assign(m_comp->cseLivenessTraits, cseIn_withCallsKill, block->bbCseIn);
-            BitVecOps::IntersectionD(m_comp->cseLivenessTraits, cseIn_withCallsKill, m_comp->cseCallKillsMask);
+            BitVecOps::Assign(m_compiler->cseLivenessTraits, cseIn_withCallsKill, block->bbCseIn);
+            BitVecOps::IntersectionD(m_compiler->cseLivenessTraits, cseIn_withCallsKill, m_compiler->cseCallKillsMask);
 
             // Call DataFlowD with the modified BitVec: (bbCseIn AND cseCallKillsMask)
             //
-            BitVecOps::DataFlowD(m_comp->cseLivenessTraits, block->bbCseOut, block->bbCseGen, cseIn_withCallsKill);
+            BitVecOps::DataFlowD(m_compiler->cseLivenessTraits, block->bbCseOut, block->bbCseGen, cseIn_withCallsKill);
         }
 
         // The bool 'notDone' is our terminating condition.
@@ -1207,22 +1331,22 @@ public:
         // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
-        bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
+        bool notDone = !BitVecOps::Equal(m_compiler->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
 
 #if 0
 #ifdef DEBUG
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("EndMerge " FMT_BB "\n", block->bbNum);
-            printf("  :: cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
+            printf("  :: cseIn     = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseIn));
             if (block->HasFlag(BBC_HAS_CALL) &&
-                !BitVecOps::IsEmpty(m_comp->cseLivenessTraits, block->bbCseIn))
+                !BitVecOps::IsEmpty(m_compiler->cseLivenessTraits, block->bbCseIn))
             {
-                printf("  -- cseKill   = %s\n", genES2str(m_comp->cseLivenessTraits, m_comp->cseCallKillsMask));
+                printf("  -- cseKill   = %s\n", genES2str(m_compiler->cseLivenessTraits, m_compiler->cseCallKillsMask));
             }
-            printf("  :: cseGen    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseGen));
-            printf("  => cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
-            printf("  != preMerge  = %s, => %s\n", genES2str(m_comp->cseLivenessTraits, m_preMergeOut),
+            printf("  :: cseGen    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseGen));
+            printf("  => cseOut    = %s\n", genES2str(m_compiler->cseLivenessTraits, block->bbCseOut));
+            printf("  != preMerge  = %s, => %s\n", genES2str(m_compiler->cseLivenessTraits, m_preMergeOut),
                    notDone ? "true" : "false");
         }
 #endif // DEBUG
@@ -1420,6 +1544,37 @@ void Compiler::optValnumCSE_Availability()
                             // This is the first time visited, so record this defs exception set
                             desc->defExcSetCurrent = theLiberalExcSet;
                         }
+                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        {
+                            // We will change the value of desc->defExcSetCurrent to be the intersection of
+                            // these two sets.
+                            // This is the set of exceptions that all CSE defs have (that we have visited so
+                            // far)
+                            //
+                            ValueNum intersectionExcSet =
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+#ifdef DEBUG
+                            if (this->verbose)
+                            {
+                                printf(">>> defExcSetCurrent is ");
+                                vnStore->vnDumpExc(this, desc->defExcSetCurrent);
+                                printf("\n");
+
+                                printf(">>> theLiberalExcSet is ");
+                                vnStore->vnDumpExc(this, theLiberalExcSet);
+                                printf("\n");
+
+                                printf(">>> the intersectionExcSet is ");
+                                vnStore->vnDumpExc(this, intersectionExcSet);
+                                printf("\n");
+                            }
+#endif // DEBUG
+
+                            // Change the defExcSetCurrent to be a subset of its prior value
+                            //
+                            assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
+                            desc->defExcSetCurrent = intersectionExcSet;
+                        }
 
                         // Have we seen a CSE use and made a promise of an exception set?
                         //
@@ -1432,51 +1587,6 @@ void Compiler::optValnumCSE_Availability()
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
                                 //
-
-                                // no update is needed when these are the same VN
-                                if (desc->defExcSetCurrent != theLiberalExcSet)
-                                {
-                                    // We will change the value of desc->defExcSetCurrent to be the intersection of
-                                    // these two sets.
-                                    // This is the set of exceptions that all CSE defs have (that we have visited so
-                                    // far)
-                                    //
-                                    ValueNum intersectionExcSet =
-                                        vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
-#ifdef DEBUG
-                                    if (this->verbose)
-                                    {
-                                        VNFuncApp excSeq;
-
-                                        vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
-                                        printf(">>> defExcSetCurrent is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
-                                        printf(">>> theLiberalExcSet is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                        {
-                                            printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                        }
-                                        else
-                                        {
-                                            vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                            printf(">>> the intersectionExcSet is ");
-                                            vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                            printf("\n");
-                                        }
-                                    }
-#endif // DEBUG
-
-                                    // Change the defExcSetCurrent to be a subset of its prior value
-                                    //
-                                    assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
-                                    desc->defExcSetCurrent = intersectionExcSet;
-                                }
                             }
                             else // This CSE def doesn't satisfy one of the exceptions already promised to a CSE use
                             {
@@ -1577,7 +1687,7 @@ void Compiler::optValnumCSE_Availability()
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
                 // generates a CSE).
                 //
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Check for the common case of an already empty available_cses set
                     // and thus nothing needs to be killed
@@ -1594,6 +1704,12 @@ void Compiler::optValnumCSE_Availability()
                             // partially kill any cse's that are currently alive (using the cseCallKillsMask set)
                             //
                             BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseCallKillsMask);
+
+                            // In async state machines, make all byref CSEs unavailable after suspension points.
+                            if (tree->AsCall()->IsAsync() && compIsAsync())
+                            {
+                                BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseAsyncKillsMask);
+                            }
 
                             if (isDef)
                             {
@@ -1627,19 +1743,24 @@ void Compiler::optValnumCSE_Availability()
 //  This creates the basic CSE heuristic. It never does any CSEs.
 //
 CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler)
-    : m_pCompiler(pCompiler)
+    : m_compiler(pCompiler)
 {
     m_addCSEcount  = 0; /* Count of the number of LclVars for CSEs that we added */
     sortTab        = nullptr;
     sortSiz        = 0;
     madeChanges    = false;
-    codeOptKind    = m_pCompiler->compCodeOpt();
+    codeOptKind    = m_compiler->compCodeOpt();
     enableConstCSE = Compiler::optConstantCSEEnabled();
+#if defined(TARGET_AMD64)
+    cntCalleeTrashInt = pCompiler->get_CNT_CALLEE_TRASH_INT();
+    cntCalleeTrashFlt = pCompiler->get_CNT_CALLEE_TRASH_FLOAT();
+    cntCalleeTrashMsk = pCompiler->get_CNT_CALLEE_TRASH_MASK();
+#endif // TARGET_AMD64
 
 #ifdef DEBUG
     // Track the order of CSEs done (candidate number)
     //
-    CompAllocator allocator = m_pCompiler->getAllocator(CMK_CSE);
+    CompAllocator allocator = m_compiler->getAllocator(CMK_CSE);
     m_sequence              = new (allocator) jitstd::vector<unsigned>(allocator);
 #endif
 
@@ -1748,7 +1869,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
             if (call->IsHelperCall() &&
-                Compiler::s_helperCallProperties.IsAllocator(m_pCompiler->eeGetHelperNum(call->gtCallMethHnd)))
+                Compiler::s_helperCallProperties.IsAllocator(m_compiler->eeGetHelperNum(call->gtCallMethHnd)))
             {
                 return false;
             }
@@ -1756,7 +1877,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // If we have a simple helper call with no other persistent side-effects
             // then we allow this tree to be a CSE candidate
             //
-            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+            if (m_compiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
             {
                 return false;
             }
@@ -1770,7 +1891,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
                 the second would not allow it */
 
-            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            if (tree->AsOp()->gtOp1->OperIs(GT_ARR_ELEM))
             {
                 return false;
             }
@@ -1804,7 +1925,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_NOT:
         case GT_BSWAP:
         case GT_BSWAP16:
-        case GT_CAST:
         case GT_BITCAST:
             break;
 
@@ -1822,9 +1942,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ROR:
             break;
 
-        case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
+        case GT_ADD: // Check for ADDRMODE flag on these operators
         case GT_MUL:
         case GT_LSH:
+        case GT_CAST:
             if (tree->IsPartOfAddressMode())
             {
                 return false;
@@ -1900,11 +2021,16 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_COMMA:
+            if (tree->gtEffectiveVal()->OperIs(GT_FIELD_LIST))
+            {
+                return false;
+            }
             break;
 
         case GT_COLON:
         case GT_QMARK:
         case GT_NOP:
+        case GT_GCPOLL:
         case GT_RETURN:
             return false; // Currently the only special nodes that we hit
                           // that we know that we don't want to CSE
@@ -1913,7 +2039,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             return false;
     }
 
-    ValueNumStore* const vnStore = m_pCompiler->GetValueNumStore();
+    ValueNumStore* const vnStore = m_compiler->GetValueNumStore();
 
     ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
     if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
@@ -1967,7 +2093,7 @@ void CSE_HeuristicCommon::DumpMetrics()
 CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler)
     : CSE_HeuristicCommon(pCompiler)
 {
-    m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
+    m_cseRNG.Init(m_compiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
 }
 
 //------------------------------------------------------------------------
@@ -2000,9 +2126,9 @@ void CSE_HeuristicRandom::ConsiderCandidates()
 {
     // Generate a random permutation of all candidates.
     // We rely on the fact that SortCandidates set up
-    // sortTab to be a copy of m_pCompiler->optCSEtab.
+    // sortTab to be a copy of m_compiler->optCSEtab.
     //
-    const unsigned n = m_pCompiler->optCSECandidateCount;
+    const unsigned n = m_compiler->optCSECandidateCount;
 
     if (n == 0)
     {
@@ -2013,7 +2139,7 @@ void CSE_HeuristicRandom::ConsiderCandidates()
     // Fill sortTab with random permutation of the optCSETab
     // (via the "inside-out" Fisher-Yates shuffle)
     //
-    sortTab = new (m_pCompiler, CMK_CSE) CSEdsc*[n];
+    sortTab = new (m_compiler, CMK_CSE) CSEdsc*[n];
 
     for (unsigned i = 0; i < n; i++)
     {
@@ -2024,7 +2150,7 @@ void CSE_HeuristicRandom::ConsiderCandidates()
         {
             sortTab[i] = sortTab[j];
         }
-        sortTab[j] = m_pCompiler->optCSEtab[i];
+        sortTab[j] = m_compiler->optCSEtab[i];
     }
 
     // Randomly perform the first K of these CSEs
@@ -2035,17 +2161,17 @@ void CSE_HeuristicRandom::ConsiderCandidates()
     CSEdsc** ptr = sortTab;
     for (; (k > 0); k--, ptr++)
     {
-        const int     attempt = m_pCompiler->optCSEattempt++;
+        const int     attempt = m_compiler->optCSEattempt++;
         CSEdsc* const dsc     = *ptr;
         CSE_Candidate candidate(this, dsc);
 
         JITDUMP("\nRandomly attempting " FMT_CSE "\n", candidate.CseIndex());
         JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
 #ifdef DEBUG
-        if (m_pCompiler->optConfigDisableCSE2())
+        if (m_compiler->optConfigDisableCSE2())
         {
             continue;
         }
@@ -2127,7 +2253,7 @@ bool CSE_HeuristicReplay::ConsiderTree(GenTree* tree, bool isReturn)
 //
 void CSE_HeuristicReplay::ConsiderCandidates()
 {
-    const unsigned n = m_pCompiler->optCSECandidateCount;
+    const unsigned n = m_compiler->optCSECandidateCount;
 
     if (n == 0)
     {
@@ -2149,13 +2275,13 @@ void CSE_HeuristicReplay::ConsiderCandidates()
             JITDUMP("Invalid candidate number %d\n", index + 1);
             continue;
         }
-        const int     attempt = m_pCompiler->optCSEattempt++;
-        CSEdsc* const dsc     = m_pCompiler->optCSEtab[index];
+        const int     attempt = m_compiler->optCSEattempt++;
+        CSEdsc* const dsc     = m_compiler->optCSEtab[index];
         CSE_Candidate candidate(this, dsc);
 
         JITDUMP("\nReplay attempting " FMT_CSE "\n", candidate.CseIndex());
         JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
         if (!dsc->IsViable())
@@ -2200,15 +2326,15 @@ CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler)
 
     // Stopping "parameter"
     //
-    m_registerPressure = CNT_CALLEE_TRASH + CNT_CALLEE_SAVED;
+    m_registerPressure = CNT_CALLEE_TRASH_FOR_CSE + CNT_CALLEE_SAVED_FOR_CSE;
 
     // Verbose
     //
     m_verbose = (JitConfig.JitRLCSEVerbose() > 0);
 
 #ifdef DEBUG
-    m_verbose |= m_pCompiler->verbose;
-    CompAllocator allocator = m_pCompiler->getAllocator(CMK_CSE);
+    m_verbose |= m_compiler->verbose;
+    CompAllocator allocator = m_compiler->getAllocator(CMK_CSE);
     m_likelihoods           = new (allocator) jitstd::vector<double>(allocator);
 #endif
 }
@@ -2218,10 +2344,10 @@ CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler)
 //
 void CSE_HeuristicParameterized::ConsiderCandidates()
 {
-    const int numCandidates = m_pCompiler->optCSECandidateCount;
-    sortTab                 = new (m_pCompiler, CMK_CSE) CSEdsc*[numCandidates];
+    const int numCandidates = m_compiler->optCSECandidateCount;
+    sortTab                 = new (m_compiler, CMK_CSE) CSEdsc*[numCandidates];
     sortSiz                 = numCandidates * sizeof(*sortTab);
-    memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
+    memcpy(sortTab, m_compiler->optCSEtab, sortSiz);
 
     // Capture distribution of enregisterable local var weights.
     //
@@ -2255,12 +2381,12 @@ bool CSE_HeuristicParameterized::ConsiderTree(GenTree* tree, bool isReturn)
 void CSE_HeuristicParameterized::CaptureLocalWeights()
 {
     JITDUMP("Local weight table...\n");
-    CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
+    CompAllocator allocator = m_compiler->getAllocator(CMK_SSA);
     m_localWeights          = new (allocator) jitstd::vector<double>(allocator);
 
-    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+    for (unsigned trackedIndex = 0; trackedIndex < m_compiler->lvaTrackedCount; trackedIndex++)
     {
-        LclVarDsc* const varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+        LclVarDsc* const varDsc = m_compiler->lvaGetDescByTrackedIndex(trackedIndex);
 
         // Locals with no references aren't enregistered
         //
@@ -2283,7 +2409,7 @@ void CSE_HeuristicParameterized::CaptureLocalWeights()
             continue;
         }
 
-        JITDUMP("V%02u," FMT_WT "\n", m_pCompiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
+        JITDUMP("V%02u," FMT_WT "\n", m_compiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
         m_localWeights->push_back(varDsc->lvRefCntWtd() / BB_UNITY_WEIGHT);
     }
 }
@@ -2302,9 +2428,9 @@ void CSE_HeuristicParameterized::GreedyPolicy()
     // Number of choices is num candidates + 1, since
     // early stopping is also a choice.
     //
-    const int          numCandidates = m_pCompiler->optCSECandidateCount;
-    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE), numCandidates + 1);
-    unsigned           numUnmarked       = m_pCompiler->optCSEunmarks;
+    const int          numCandidates = m_compiler->optCSECandidateCount;
+    ArrayStack<Choice> choices(m_compiler->getAllocator(CMK_CSE), numCandidates + 1);
+    unsigned           numUnmarked       = m_compiler->optCSEunmarks;
     bool               recomputeFeatures = true;
 
     while (true)
@@ -2338,7 +2464,7 @@ void CSE_HeuristicParameterized::GreedyPolicy()
         }
 
         JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
         PerformCSE(&candidate);
@@ -2348,7 +2474,7 @@ void CSE_HeuristicParameterized::GreedyPolicy()
         // If performing this CSE impacted other CSEs, we need to
         // recompute all cse features.
         //
-        unsigned newNumUnmarked = m_pCompiler->optCSEunmarks;
+        unsigned newNumUnmarked = m_compiler->optCSEunmarks;
         assert(newNumUnmarked >= numUnmarked);
         recomputeFeatures = (numUnmarked != newNumUnmarked);
         numUnmarked       = newNumUnmarked;
@@ -2409,14 +2535,14 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
         return;
     }
 
-    const unsigned char costEx       = cse->csdTree->GetCostEx();
+    const unsigned char costEx       = cse->csdTreeList.tslTree->GetCostEx();
     const double        deMinimis    = 1e-3;
     const double        deMinimusAdj = -log(deMinimis);
 
     features[0] = costEx;
     features[1] = deMinimusAdj + log(max(deMinimis, cse->csdUseWtCnt));
     features[2] = deMinimusAdj + log(max(deMinimis, cse->csdDefWtCnt));
-    features[3] = cse->csdTree->GetCostSz();
+    features[3] = cse->csdTreeList.tslTree->GetCostSz();
     features[4] = cse->csdUseCount;
     features[5] = cse->csdDefCount;
 
@@ -2426,9 +2552,9 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     const bool isLiveAcrossCall = cse->csdLiveAcrossCall;
 
     features[6] = booleanScale * isLiveAcrossCall;
-    features[7] = booleanScale * varTypeUsesIntReg(cse->csdTree->TypeGet());
+    features[7] = booleanScale * varTypeUsesIntReg(cse->csdTreeList.tslTree->TypeGet());
 
-    const bool isConstant       = cse->csdTree->OperIsConst();
+    const bool isConstant       = cse->csdTreeList.tslTree->OperIsConst();
     const bool isSharedConstant = cse->csdIsSharedConst;
 
     features[8] = booleanScale * (isConstant & !isSharedConstant);
@@ -2448,13 +2574,13 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
     // Is any CSE tree for this candidate marked GTF_MAKE_CSE (hoisting)
     // Also gather data for "distance" metric.
     //
-    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    const unsigned numBBs            = m_compiler->fgBBcount;
     bool           isMakeCse         = false;
     unsigned       minPostorderNum   = numBBs;
     unsigned       maxPostorderNum   = 0;
     BasicBlock*    minPostorderBlock = nullptr;
     BasicBlock*    maxPostorderBlock = nullptr;
-    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    for (treeStmtLst* treeList = &cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
         BasicBlock* const treeBlock    = treeList->tslBlock;
         unsigned          postorderNum = treeBlock->bbPostorderNum;
@@ -2483,12 +2609,12 @@ void CSE_HeuristicParameterized::GetFeatures(CSEdsc* cse, double* features)
 
     // More
     //
-    features[17] = booleanScale * ((cse->csdTree->gtFlags & GTF_CALL) != 0);
+    features[17] = booleanScale * ((cse->csdTreeList.tslTree->gtFlags & GTF_CALL) != 0);
     features[18] = deMinimusAdj + log(max(deMinimis, cse->csdUseCount * cse->csdUseWtCnt));
     features[19] = deMinimusAdj + log(max(deMinimis, cse->numLocalOccurrences * cse->csdUseWtCnt));
     features[20] = booleanScale * ((double)(blockSpread) / numBBs);
 
-    const bool isContainable = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
+    const bool isContainable = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
     features[21]             = booleanScale * isContainable;
     features[22]             = booleanScale * (isContainable && isLowCost);
 
@@ -2715,7 +2841,7 @@ void CSE_HeuristicParameterized::BuildChoices(ArrayStack<Choice>& choices)
 {
     JITDUMP("Building choice array...\n");
 
-    for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
+    for (unsigned i = 0; i < m_compiler->optCSECandidateCount; i++)
     {
         CSEdsc* const dsc = sortTab[i];
         if ((dsc == nullptr) || !dsc->IsViable())
@@ -2778,7 +2904,7 @@ void CSE_HeuristicParameterized::DumpMetrics()
 //
 void CSE_HeuristicParameterized::DumpFeatures(CSEdsc* dsc, double* features)
 {
-    printf("features,%d," FMT_CSE, m_pCompiler->info.compMethodSuperPMIIndex, dsc == nullptr ? 0 : dsc->csdIndex);
+    printf("features,%d," FMT_CSE, m_compiler->info.compMethodSuperPMIIndex, dsc == nullptr ? 0 : dsc->csdIndex);
     for (int i = 0; i < numParameters; i++)
     {
         printf(",%f", features[i]);
@@ -2904,7 +3030,7 @@ void CSE_HeuristicRLHook::ConsiderCandidates()
         ConfigIntArray JitRLHookCSEDecisions;
         JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
 
-        unsigned cnt = m_pCompiler->optCSECandidateCount;
+        unsigned cnt = m_compiler->optCSECandidateCount;
         for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
         {
             const int index = JitRLHookCSEDecisions.GetData()[i];
@@ -2914,19 +3040,19 @@ void CSE_HeuristicRLHook::ConsiderCandidates()
                 continue;
             }
 
-            CSEdsc* const dsc = m_pCompiler->optCSEtab[index];
+            CSEdsc* const dsc = m_compiler->optCSEtab[index];
             if (!dsc->IsViable())
             {
                 JITDUMP("Abandoned " FMT_CSE " -- not viable\n", dsc->csdIndex);
                 continue;
             }
 
-            const int     attempt = m_pCompiler->optCSEattempt++;
+            const int     attempt = m_compiler->optCSEattempt++;
             CSE_Candidate candidate(this, dsc);
 
             JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
             JITDUMP("CSE Expression : \n");
-            JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+            JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
             JITDUMP("\n");
 
             PerformCSE(&candidate);
@@ -2961,9 +3087,9 @@ void CSE_HeuristicRLHook::DumpMetrics()
     }
 
     // features
-    for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
+    for (unsigned i = 0; i < m_compiler->optCSECandidateCount; i++)
     {
-        CSEdsc* const cse = m_pCompiler->optCSEtab[i];
+        CSEdsc* const cse = m_compiler->optCSEtab[i];
 
         int features[maxFeatures];
         GetFeatures(cse, features);
@@ -3017,9 +3143,10 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     CSE_Candidate candidate(this, cse);
 
     int enregCount = 0;
-    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+
+    for (unsigned trackedIndex = 0; trackedIndex < m_compiler->lvaTrackedCount; trackedIndex++)
     {
-        LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+        LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(trackedIndex);
         var_types  varTyp = varDsc->TypeGet();
 
         // Locals with no references aren't enregistered
@@ -3036,24 +3163,24 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
 
         if (!varTypeIsFloating(varTyp))
         {
-            enregCount++; // The primitive types, including TYP_SIMD types use one register
+            enregCount++;
 
 #ifndef TARGET_64BIT
             if (varTyp == TYP_LONG)
             {
                 enregCount++; // on 32-bit targets longs use two registers
             }
-#endif
+#endif // TARGET_64BIT
         }
     }
 
-    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    const unsigned numBBs            = m_compiler->fgBBcount;
     bool           isMakeCse         = false;
     unsigned       minPostorderNum   = numBBs;
     unsigned       maxPostorderNum   = 0;
     BasicBlock*    minPostorderBlock = nullptr;
     BasicBlock*    maxPostorderBlock = nullptr;
-    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    for (treeStmtLst* treeList = &cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
     {
         BasicBlock* const treeBlock    = treeList->tslBlock;
         unsigned          postorderNum = treeBlock->bbPostorderNum;
@@ -3075,6 +3202,7 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     const unsigned blockSpread = maxPostorderNum - minPostorderNum;
 
     int type = rlHookTypeOther;
+
     if (candidate.Expr()->TypeIs(TYP_INT))
     {
         type = rlHookTypeInt;
@@ -3095,31 +3223,22 @@ void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
     {
         type = rlHookTypeStruct;
     }
-
-#ifdef FEATURE_SIMD
     else if (varTypeIsSIMD(candidate.Expr()->TypeGet()))
     {
         type = rlHookTypeSimd;
     }
-#ifdef TARGET_XARCH
-    else if (candidate.Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
-    {
-        type = rlHookTypeSimd;
-    }
-#endif
-#endif
 
     int i         = 0;
     features[i++] = type;
     features[i++] = cse->IsViable() ? 1 : 0;
     features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
-    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->OperIsConst() ? 1 : 0;
     features[i++] = cse->csdIsSharedConst ? 1 : 0;
     features[i++] = isMakeCse ? 1 : 0;
-    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
-    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
-    features[i++] = cse->csdTree->GetCostEx();
-    features[i++] = cse->csdTree->GetCostSz();
+    features[i++] = ((cse->csdTreeList.tslTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
+    features[i++] = cse->csdTreeList.tslTree->GetCostEx();
+    features[i++] = cse->csdTreeList.tslTree->GetCostSz();
     features[i++] = cse->csdUseCount;
     features[i++] = cse->csdDefCount;
     features[i++] = (int)cse->csdUseWtCnt;
@@ -3178,7 +3297,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 {
     // Set up the random state
     //
-    m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
+    m_cseRNG.Init(m_compiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
 
     // Parameters
     //
@@ -3261,7 +3380,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
         m_greedy = true;
     }
 
-    CompAllocator allocator = m_pCompiler->getAllocator(CMK_CSE);
+    CompAllocator allocator = m_compiler->getAllocator(CMK_CSE);
     m_baseLikelihoods       = new (allocator) jitstd::vector<double>(allocator);
     m_features              = new (allocator) jitstd::vector<char*>(allocator);
 }
@@ -3379,10 +3498,10 @@ bool CSE_HeuristicRL::ConsiderTree(GenTree* tree, bool isReturn)
 //
 void CSE_HeuristicRL::ConsiderCandidates()
 {
-    const int numCandidates = m_pCompiler->optCSECandidateCount;
-    sortTab                 = new (m_pCompiler, CMK_CSE) CSEdsc*[numCandidates];
+    const int numCandidates = m_compiler->optCSECandidateCount;
+    sortTab                 = new (m_compiler, CMK_CSE) CSEdsc*[numCandidates];
     sortSiz                 = numCandidates * sizeof(*sortTab);
-    memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
+    memcpy(sortTab, m_compiler->optCSEtab, sortSiz);
 
     // Capture distribution of enregisterable local var weights.
     //
@@ -3421,8 +3540,8 @@ void CSE_HeuristicRL::SoftmaxPolicy()
     // Number of choices is num candidates + 1, since
     // early stopping is also a choice.
     //
-    const int          numCandidates = m_pCompiler->optCSECandidateCount;
-    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE), numCandidates + 1);
+    const int          numCandidates = m_compiler->optCSECandidateCount;
+    ArrayStack<Choice> choices(m_compiler->getAllocator(CMK_CSE), numCandidates + 1);
     bool               first = true;
 
     while (true)
@@ -3472,7 +3591,7 @@ void CSE_HeuristicRL::SoftmaxPolicy()
         }
 
         JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
         PerformCSE(&candidate);
@@ -3585,7 +3704,7 @@ void CSE_HeuristicRL::Softmax(ArrayStack<Choice>& choices)
 //
 void CSE_HeuristicRL::UpdateParameters()
 {
-    const unsigned n = m_pCompiler->optCSECandidateCount;
+    const unsigned n = m_compiler->optCSECandidateCount;
 
     if (n == 0)
     {
@@ -3593,7 +3712,7 @@ void CSE_HeuristicRL::UpdateParameters()
         return;
     }
 
-    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE));
+    ArrayStack<Choice> choices(m_compiler->getAllocator(CMK_CSE));
     ConfigIntArray     JitReplayCSEArray;
     JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
 
@@ -3650,7 +3769,7 @@ void CSE_HeuristicRL::UpdateParameters()
         BuildChoices(choices);
         Softmax(choices);
 
-        const int     attempt = m_pCompiler->optCSEattempt++;
+        const int     attempt = m_compiler->optCSEattempt++;
         CSEdsc* const dsc     = sortTab[index];
 
         // purge this CSE so we don't consider it again when
@@ -3677,7 +3796,7 @@ void CSE_HeuristicRL::UpdateParameters()
         }
 
         JITDUMP("CSE Expression : \n");
-        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMPEXEC(m_compiler->gtDispTree(candidate.Expr()));
         JITDUMP("\n");
 
         // Compute the parameter update impact from this step
@@ -3846,12 +3965,14 @@ CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Cho
 //
 CSE_Heuristic::CSE_Heuristic(Compiler* pCompiler)
     : CSE_HeuristicCommon(pCompiler)
+    , aggressiveRefCnt(0)
+    , moderateRefCnt(0)
+    , enregCountInt(0)
+    , enregCountFlt(0)
+    , enregCountMsk(0)
+    , largeFrame(false)
+    , hugeFrame(false)
 {
-    aggressiveRefCnt = 0;
-    moderateRefCnt   = 0;
-    enregCount       = 0;
-    largeFrame       = false;
-    hugeFrame        = false;
 }
 
 //------------------------------------------------------------------------
@@ -3881,12 +4002,14 @@ void CSE_Heuristic::Initialize()
 {
     // Record the weighted ref count of the last "for sure" callee saved LclVar
 
-    unsigned   frameSize        = 0;
-    unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
+    unsigned   frameSize           = 0;
+    unsigned   regAvailEstimateInt = CNT_MODERATE_ENREG + 1;
+    unsigned   regAvailEstimateFlt = CNT_MODERATE_ENREG_FLT + 1;
+    unsigned   regAvailEstimateMsk = CNT_MODERATE_ENREG_MSK + 1;
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
-    for (lclNum = 0, varDsc = m_pCompiler->lvaTable; lclNum < m_pCompiler->lvaCount; lclNum++, varDsc++)
+    for (lclNum = 0, varDsc = m_compiler->lvaTable; lclNum < m_compiler->lvaCount; lclNum++, varDsc++)
     {
         // Locals with no references don't use any local stack frame slots
         if (varDsc->lvRefCnt() == 0)
@@ -3905,14 +4028,31 @@ void CSE_Heuristic::Initialize()
         // its size is not yet known and it doesn't affect local
         // offsets from the frame pointer (though it may affect
         // them from the stack pointer).
-        noway_assert(m_pCompiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
-        if (lclNum == m_pCompiler->lvaOutgoingArgSpaceVar)
+        noway_assert(m_compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
+        if (lclNum == m_compiler->lvaOutgoingArgSpaceVar)
         {
             continue;
         }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-        bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
+        unsigned* pRegAvailEstimate;
+
+        if (varTypeUsesIntReg(varDsc->TypeGet()))
+        {
+            pRegAvailEstimate = &regAvailEstimateInt;
+        }
+        else if (varTypeUsesMaskReg(varDsc->TypeGet()))
+        {
+            pRegAvailEstimate = &regAvailEstimateMsk;
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(varDsc->TypeGet()));
+            pRegAvailEstimate = &regAvailEstimateFlt;
+        }
+
+        // true when it is likely that this LclVar will have a stack home
+        bool onStack = (*pRegAvailEstimate) == 0;
 
         // Some LclVars always have stack homes
         if (varDsc->lvDoNotEnregister)
@@ -3921,16 +4061,16 @@ void CSE_Heuristic::Initialize()
         }
 
 #ifdef TARGET_X86
-        // Treat floating point and 64 bit integers as always on the stack
-        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsLong(varDsc->TypeGet()))
+        // Treat 64 bit integers as always on the stack
+        if (varTypeIsLong(varDsc->TypeGet()))
         {
             onStack = true;
         }
-#endif
+#endif // TARGET_X86
 
         if (onStack)
         {
-            frameSize += m_pCompiler->lvaLclSize(lclNum);
+            frameSize += m_compiler->lvaLclStackHomeSize(lclNum);
         }
         else
         {
@@ -3942,19 +4082,19 @@ void CSE_Heuristic::Initialize()
             if (varDsc->lvRefCnt() <= 2)
             {
                 // a single use single def LclVar only uses 1
-                regAvailEstimate -= 1;
+                *pRegAvailEstimate -= 1;
             }
             else
             {
                 // a LclVar with multiple uses and defs uses 2
-                if (regAvailEstimate >= 2)
+                if (*pRegAvailEstimate >= 2)
                 {
-                    regAvailEstimate -= 2;
+                    *pRegAvailEstimate -= 2;
                 }
                 else
                 {
                     // Don't try to subtract when regAvailEstimate is 1
-                    regAvailEstimate = 0;
+                    *pRegAvailEstimate = 0;
                 }
             }
         }
@@ -4018,9 +4158,9 @@ void CSE_Heuristic::Initialize()
     // are likely be allocated in the stack frame. The value of enregCount is incremented when we visit a LclVar
     // that can be enregistered.
     //
-    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+    for (unsigned trackedIndex = 0; trackedIndex < m_compiler->lvaTrackedCount; trackedIndex++)
     {
-        LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+        LclVarDsc* varDsc = m_compiler->lvaGetDescByTrackedIndex(trackedIndex);
         var_types  varTyp = varDsc->TypeGet();
 
         // Locals with no references aren't enregistered
@@ -4035,43 +4175,44 @@ void CSE_Heuristic::Initialize()
             continue;
         }
 
-        // enregCount only tracks the uses of integer registers.
-        //
-        // We could track floating point register usage separately
-        // but it isn't worth the additional complexity as floating point CSEs
-        // are rare and we typically have plenty of floating point register available.
-        //
-        if (!varTypeIsFloating(varTyp))
+        unsigned enregCount;
+        unsigned cntAggressiveEnreg;
+        unsigned cntModerateEnreg;
+
+        if (varTypeUsesIntReg(varTyp))
         {
-            enregCount++; // The primitive types, including TYP_SIMD types use one register
+            enregCountInt++;
 
 #ifndef TARGET_64BIT
             if (varTyp == TYP_LONG)
             {
-                enregCount++; // on 32-bit targets longs use two registers
+                enregCountInt++; // on 32-bit targets longs use two registers
             }
-#endif
+#endif // TARGET_64BIT
+
+            enregCount         = enregCountInt;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;
+            cntModerateEnreg   = CNT_MODERATE_ENREG;
+        }
+        else if (varTypeUsesMaskReg(varTyp))
+        {
+            enregCountMsk++;
+
+            enregCount         = enregCountMsk;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_MSK;
+            cntModerateEnreg   = CNT_MODERATE_ENREG_MSK;
+        }
+        else
+        {
+            assert(varTypeUsesFloatReg(varTyp));
+            enregCountFlt++;
+
+            enregCount         = enregCountFlt;
+            cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_FLT;
+            cntModerateEnreg   = CNT_MODERATE_ENREG_FLT;
         }
 
-        // Set the cut off values to use for deciding when we want to use aggressive, moderate or conservative
-        //
-        // The value of aggressiveRefCnt and moderateRefCnt start off as zero and
-        // when enregCount reached a certain value we assign the current LclVar
-        // (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
-        //
-        const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
-        const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
-        //
-        // On Windows x64 this yields:
-        // aggressiveEnregNum == 12 and moderateEnregNum == 38
-        // Thus we will typically set the cutoff values for
-        //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
-        //   moderateRefCnt based upon the weight of T39 (the 39th tracked LclVar)
-        //
-        // For other architecture and platforms these values dynamically change
-        // based upon the number of callee saved and callee scratch registers.
-        //
-        if ((aggressiveRefCnt == 0) && (enregCount > aggressiveEnregNum))
+        if ((aggressiveRefCnt == 0) && (enregCount > cntAggressiveEnreg))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4083,7 +4224,7 @@ void CSE_Heuristic::Initialize()
             }
             aggressiveRefCnt += BB_UNITY_WEIGHT;
         }
-        if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
+        if ((moderateRefCnt == 0) && (enregCount > cntModerateEnreg))
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
@@ -4108,12 +4249,14 @@ void CSE_Heuristic::Initialize()
     moderateRefCnt = max(BB_UNITY_WEIGHT, moderateRefCnt);
 
 #ifdef DEBUG
-    if (m_pCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("\n");
         printf("Aggressive CSE Promotion cutoff is %f\n", aggressiveRefCnt);
         printf("Moderate CSE Promotion cutoff is %f\n", moderateRefCnt);
-        printf("enregCount is %u\n", enregCount);
+        printf("enregCountInt is %u\n", enregCountInt);
+        printf("enregCountFlt is %u\n", enregCountFlt);
+        printf("enregCountMsk is %u\n", enregCountMsk);
         printf("Framesize estimate is 0x%04X\n", frameSize);
         printf("We have a %s frame\n", hugeFrame ? "huge" : (largeFrame ? "large" : "small"));
     }
@@ -4130,29 +4273,29 @@ void CSE_Heuristic::Initialize()
 void CSE_Heuristic::SortCandidates()
 {
     /* Create an expression table sorted by decreasing cost */
-    sortTab = new (m_pCompiler, CMK_CSE) CSEdsc*[m_pCompiler->optCSECandidateCount];
+    sortTab = new (m_compiler, CMK_CSE) CSEdsc*[m_compiler->optCSECandidateCount];
 
-    sortSiz = m_pCompiler->optCSECandidateCount * sizeof(*sortTab);
-    memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
+    sortSiz = m_compiler->optCSECandidateCount * sizeof(*sortTab);
+    memcpy(sortTab, m_compiler->optCSEtab, sortSiz);
 
     if (CodeOptKind() == Compiler::SMALL_CODE)
     {
-        jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpSz());
+        jitstd::sort(sortTab, sortTab + m_compiler->optCSECandidateCount, Compiler::optCSEcostCmpSz());
     }
     else
     {
-        jitstd::sort(sortTab, sortTab + m_pCompiler->optCSECandidateCount, Compiler::optCSEcostCmpEx());
+        jitstd::sort(sortTab, sortTab + m_compiler->optCSECandidateCount, Compiler::optCSEcostCmpEx());
     }
 
 #ifdef DEBUG
-    if (m_pCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("\nSorted CSE candidates:\n");
         /* Print out the CSE candidates */
-        for (unsigned cnt = 0; cnt < m_pCompiler->optCSECandidateCount; cnt++)
+        for (unsigned cnt = 0; cnt < m_compiler->optCSECandidateCount; cnt++)
         {
             CSEdsc*  dsc  = sortTab[cnt];
-            GenTree* expr = dsc->csdTree;
+            GenTree* expr = dsc->csdTreeList.tslTree;
 
             weight_t def;
             weight_t use;
@@ -4162,13 +4305,13 @@ void CSE_Heuristic::SortCandidates()
             {
                 def  = dsc->csdDefCount; // def count
                 use  = dsc->csdUseCount; // use count (excluding the implicit uses at defs)
-                cost = dsc->csdTree->GetCostSz();
+                cost = dsc->csdTreeList.tslTree->GetCostSz();
             }
             else
             {
                 def  = dsc->csdDefWtCnt; // weighted def count
                 use  = dsc->csdUseWtCnt; // weighted use count (excluding the implicit uses at defs)
-                cost = dsc->csdTree->GetCostEx();
+                cost = dsc->csdTreeList.tslTree->GetCostEx();
             }
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
@@ -4184,7 +4327,7 @@ void CSE_Heuristic::SortCandidates()
                        dspPtr(kVal), dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
-            m_pCompiler->gtDispTree(expr, nullptr, nullptr, true);
+            m_compiler->gtDispTree(expr, nullptr, nullptr, true);
         }
         printf("\n");
     }
@@ -4205,7 +4348,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     bool result = false;
 
 #ifdef DEBUG
-    if (m_pCompiler->optConfigDisableCSE2())
+    if (m_compiler->optConfigDisableCSE2())
     {
         return false; // skip this CSE
     }
@@ -4267,16 +4410,35 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
     weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
-    bool     canEnregister = true;
-    unsigned slotCount     = 1;
+    bool     canEnregister      = true;
+    unsigned slotCount          = 1;
+    unsigned enregCount         = 0;
+    unsigned cntAggressiveEnreg = 0;
+
     if (candidate->Expr()->TypeIs(TYP_STRUCT))
     {
         // This is a non-enregisterable struct.
         canEnregister = false;
-        unsigned size = candidate->Expr()->GetLayout(m_pCompiler)->GetSize();
+        unsigned size = candidate->Expr()->GetLayout(m_compiler)->GetSize();
         // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
         // because it doesn't take into account that we might use a vector register for struct copies.
         slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+    }
+    else if (varTypeUsesIntReg(candidate->Expr()->TypeGet()))
+    {
+        enregCount         = enregCountInt;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG;
+    }
+    else if (varTypeUsesMaskReg(candidate->Expr()->TypeGet()))
+    {
+        enregCount         = enregCountMsk;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_MSK;
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(candidate->Expr()->TypeGet()));
+        enregCount         = enregCountFlt;
+        cntAggressiveEnreg = CNT_AGGRESSIVE_ENREG_FLT;
     }
 
     if (CodeOptKind() == Compiler::SMALL_CODE)
@@ -4292,7 +4454,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             //
             candidate->SetAggressive();
 #ifdef DEBUG
-            if (m_pCompiler->verbose)
+            if (m_compiler->verbose)
             {
                 printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
             }
@@ -4329,7 +4491,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             if (largeFrame)
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
                 }
@@ -4354,7 +4516,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             else // small frame
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Codesize CSE Promotion (small frame)\n");
                 }
@@ -4371,14 +4533,14 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 #endif
             }
         }
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         if (varTypeIsFloating(candidate->Expr()->TypeGet()))
         {
             // floating point loads/store encode larger
             cse_def_cost += 2;
             cse_use_cost += 1;
         }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     }
     else // not SMALL_CODE ...
     {
@@ -4391,7 +4553,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             //
             candidate->SetAggressive();
 #ifdef DEBUG
-            if (m_pCompiler->verbose)
+            if (m_compiler->verbose)
             {
                 printf("Aggressive CSE Promotion (%f >= %f)\n", cseRefCnt, aggressiveRefCnt);
             }
@@ -4410,7 +4572,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             if (!candidate->LiveAcrossCall() && canEnregister)
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Moderate CSE Promotion (CSE never live at call) (%f >= %f)\n", cseRefCnt, moderateRefCnt);
                 }
@@ -4421,7 +4583,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             else // candidate is live across call or not enregisterable.
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Moderate CSE Promotion (%s) (%f >= %f)\n",
                            candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
@@ -4431,7 +4593,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 cse_def_cost = 2;
                 if (canEnregister)
                 {
-                    if (enregCount < (CNT_CALLEE_ENREG * 3 / 2))
+                    if (enregCount < cntAggressiveEnreg)
                     {
                         cse_use_cost = 1;
                     }
@@ -4454,7 +4616,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             if (!candidate->LiveAcrossCall() && canEnregister)
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Conservative CSE Promotion (%s) (%f < %f)\n",
                            candidate->LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable", cseRefCnt,
@@ -4467,7 +4629,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             else // candidate is live across call
             {
 #ifdef DEBUG
-                if (m_pCompiler->verbose)
+                if (m_compiler->verbose)
                 {
                     printf("Conservative CSE Promotion (%f < %f)\n", cseRefCnt, moderateRefCnt);
                 }
@@ -4477,7 +4639,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
 
             // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
-            if (m_pCompiler->lvaTrackedCount == (unsigned)JitConfig.JitMaxLocalsToTrack())
+            if (m_compiler->lvaTrackedCount == (unsigned)JitConfig.JitMaxLocalsToTrack())
             {
                 cse_def_cost += 1;
                 cse_use_cost += 1;
@@ -4495,20 +4657,59 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     //
     if (candidate->LiveAcrossCall())
     {
-        // If we have a floating-point CSE that is both live across a call and there
-        // are no callee-saved FP registers available, the RA will have to spill at
+        // If we have certain CSEs that are both live across a call and there
+        // are no callee-saved registers available, the RA will have to spill at
         // the def site and reload at the (first) use site, if the variable is a register
         // candidate. Account for that.
-        if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
+        if (!candidate->IsConservative())
         {
-            cse_def_cost += 1;
-            cse_use_cost += 1;
+            bool hasRequiredSpill = false;
+
+            if (varTypeUsesIntReg(candidate->Expr()))
+            {
+                assert(CNT_CALLEE_SAVED_FOR_CSE != 0);
+            }
+            else if (varTypeUsesMaskReg(candidate->Expr()))
+            {
+                if (CNT_CALLEE_SAVED_MASK_FOR_CSE == 0)
+                {
+                    hasRequiredSpill = true;
+                }
+            }
+            else
+            {
+                assert(varTypeUsesFloatReg(candidate->Expr()));
+
+                if (CNT_CALLEE_SAVED_FLOAT_FOR_CSE == 0)
+                {
+                    hasRequiredSpill = true;
+                }
+#if defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH)
+                else if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+                {
+                    hasRequiredSpill = true;
+                }
+#elif defined(TARGET_ARM64)
+                else if (candidate->Expr()->TypeIs(TYP_SIMD16))
+                {
+                    hasRequiredSpill = true;
+                }
+#endif
+#endif // FEATURE_SIMD
+            }
+
+            if (hasRequiredSpill)
+            {
+                cse_def_cost += 1;
+                cse_use_cost += 1;
+            }
         }
 
         // If we don't have a lot of variables to enregister or we have a floating point type
         // then we will likely need to spill an additional caller save register.
         //
-        if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
+        if (enregCount < cntAggressiveEnreg)
         {
             // Extra cost in case we have to spill/restore a caller saved register
             extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
@@ -4518,38 +4719,6 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 extra_yes_cost *= 2; // full cost if we are being Conservative
             }
         }
-
-#ifdef FEATURE_SIMD
-        // SIMD types may cause a SIMD register to be spilled/restored in the prolog and epilog.
-        //
-        if (varTypeIsSIMD(candidate->Expr()->TypeGet()))
-        {
-            // We don't have complete information about when these extra spilled/restore will be needed.
-            // Instead we are conservative and assume that each SIMD CSE that is live across a call
-            // will cause an additional spill/restore in the prolog and epilog.
-            //
-            int spillSimdRegInProlog = 1;
-
-#if defined(TARGET_XARCH)
-            // If we have a SIMD32/64 that is live across a call we have even higher spill costs
-            //
-            if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
-            {
-                // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
-                // (to hold the upper half of the simd32 register that isn't preserved across the call)
-                //
-                spillSimdRegInProlog++;
-
-                // We also increase the CSE use cost here to because we may have to generate instructions
-                // to move the upper half of the simd32 before and after a call.
-                //
-                cse_use_cost += 2;
-            }
-#endif // TARGET_XARCH
-
-            extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
-        }
-#endif // FEATURE_SIMD
     }
 
     // estimate the cost from lost codesize reduction if we do not perform the CSE
@@ -4571,7 +4740,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
     yes_cse_cost += extra_yes_cost;
 
 #ifdef DEBUG
-    if (m_pCompiler->verbose)
+    if (m_compiler->verbose)
     {
         printf("cseRefCnt=%f, aggressiveRefCnt=%f, moderateRefCnt=%f\n", cseRefCnt, aggressiveRefCnt, moderateRefCnt);
         printf("defCnt=%f, useCnt=%f, cost=%d, size=%d%s\n", candidate->DefCount(), candidate->UseCount(),
@@ -4598,7 +4767,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         {
             int percentage = (int)((no_cse_cost * 100) / yes_cse_cost);
 
-            if (m_pCompiler->compStressCompile(Compiler::STRESS_MAKE_CSE, percentage))
+            if (m_compiler->compStressCompile(Compiler::STRESS_MAKE_CSE, percentage))
             {
                 result = true; // Yes make this a CSE
             }
@@ -4676,7 +4845,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         heuristicTempMessage = ": random";
     }
 
-    const char* const grabTempMessage = m_pCompiler->printfAlloc(FMT_CSE "%s", dsc->csdIndex, heuristicTempMessage);
+    const char* const grabTempMessage = m_compiler->printfAlloc(FMT_CSE "%s", dsc->csdIndex, heuristicTempMessage);
 
     // Add this candidate to the CSE sequence
     //
@@ -4686,13 +4855,13 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
     //  Allocate a CSE temp
     //
-    unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
+    unsigned  cseLclVarNum = m_compiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
     var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
 
-    LclVarDsc* const lclDsc = m_pCompiler->lvaGetDesc(cseLclVarNum);
+    LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(cseLclVarNum);
     if (cseLclVarTyp == TYP_STRUCT)
     {
-        m_pCompiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_pCompiler), false);
+        m_compiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_compiler), false);
     }
     lclDsc->lvType  = cseLclVarTyp;
     lclDsc->lvIsCSE = true;
@@ -4700,8 +4869,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     // Record that we created a new LclVar for use as a CSE temp
     //
     m_addCSEcount++;
-    m_pCompiler->optCSEcount++;
-    m_pCompiler->Metrics.CseCount++;
+    m_compiler->optCSEcount++;
+    m_compiler->Metrics.CseCount++;
 
     //  Walk all references to this CSE, adding an store to
     //  the CSE temp to all defs and changing all refs to
@@ -4721,7 +4890,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     ValueNum     bestVN         = ValueNumStore::NoVN;
     bool         bestIsDef      = false;
     ssize_t      bestConstValue = 0;
-    treeStmtLst* lst            = dsc->csdTreeList;
+    treeStmtLst* lst            = &dsc->csdTreeList;
 
     while (lst != nullptr)
     {
@@ -4729,9 +4898,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
         {
             // We used the liberal Value numbers when building the set of CSE
-            ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+            ValueNum currVN = m_compiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
             assert(currVN != ValueNumStore::NoVN);
-            ssize_t curConstValue = isSharedConst ? m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN) : 0;
+            ssize_t curConstValue = isSharedConst ? m_compiler->vnStore->CoercedConstantValue<ssize_t>(currVN) : 0;
 
             GenTree* exp   = lst->tslTree;
             bool     isDef = IS_CSE_DEF(exp->gtCSEnum);
@@ -4773,7 +4942,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
 
             BasicBlock* blk       = lst->tslBlock;
-            weight_t    curWeight = blk->getBBWeight(m_pCompiler);
+            weight_t    curWeight = blk->getBBWeight(m_compiler);
 
             if (setRefCnt)
             {
@@ -4783,14 +4952,14 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
             else
             {
-                lclDsc->incRefCnts(curWeight, m_pCompiler);
+                lclDsc->incRefCnts(curWeight, m_compiler);
             }
 
             // A CSE Def references the LclVar twice
             //
             if (isDef)
             {
-                lclDsc->incRefCnts(curWeight, m_pCompiler);
+                lclDsc->incRefCnts(curWeight, m_compiler);
                 INDEBUG(lclDsc->lvIsHoist |= ((lst->tslTree->gtFlags & GTF_MAKE_CSE) != 0));
             }
         }
@@ -4801,7 +4970,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     dsc->csdConstDefVN    = bestVN;
 
 #ifdef DEBUG
-    if (m_pCompiler->verbose)
+    if (m_compiler->verbose)
     {
         if (!allSame)
         {
@@ -4812,16 +4981,16 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             }
             else // !isSharedConst
             {
-                lst                = dsc->csdTreeList;
+                lst                = &dsc->csdTreeList;
                 GenTree* firstTree = lst->tslTree;
-                printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
+                printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_compiler->info.compFullName,
                        GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
                 while (lst != nullptr)
                 {
                     if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
                     {
-                        ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
-                        printf("[%06d](%s " FMT_VN ") ", m_pCompiler->dspTreeID(lst->tslTree),
+                        ValueNum currVN = m_compiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                        printf("[%06d](%s " FMT_VN ") ", m_compiler->dspTreeID(lst->tslTree),
                                IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def", currVN);
                     }
                     lst = lst->tslNext;
@@ -4832,12 +5001,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     }
 #endif // DEBUG
 
-    IncrementalSsaBuilder ssaBuilder(m_pCompiler, cseLclVarNum);
+    IncrementalSsaBuilder ssaBuilder(m_compiler, cseLclVarNum);
 
-    ArrayStack<UseDefLocation> defUses(m_pCompiler->getAllocator(CMK_CSE));
+    ArrayStack<UseDefLocation> defUses(m_compiler->getAllocator(CMK_CSE));
 
     // First process the defs.
-    for (lst = dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+    for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
         GenTree* const    exp  = lst->tslTree;
         Statement* const  stmt = lst->tslStmt;
@@ -4849,7 +5018,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
 
 #ifdef DEBUG
-        if (m_pCompiler->verbose)
+        if (m_compiler->verbose)
         {
             printf("\n" FMT_CSE " def at ", GET_CSE_INDEX(exp->gtCSEnum));
             Compiler::printTreeID(exp);
@@ -4860,18 +5029,18 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         GenTree* val = exp;
         if (isSharedConst)
         {
-            ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
-            ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+            ValueNum currVN   = m_compiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+            ssize_t  curValue = m_compiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                val = m_pCompiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
+                val = m_compiler->gtNewIconNode(dsc->csdConstDefValue, cseLclVarTyp);
                 val->gtVNPair.SetBoth(dsc->csdConstDefVN);
             }
         }
 
         // Create a store of the value to the temp
-        GenTree* store     = m_pCompiler->gtNewTempStore(cseLclVarNum, val);
+        GenTree* store     = m_compiler->gtNewTempStore(cseLclVarNum, val);
         GenTree* origStore = store;
 
         if (!store->OperIs(GT_STORE_LCL_VAR))
@@ -4887,8 +5056,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
 
         // Assign the proper Value Numbers.
-        ValueNumPair valExc = m_pCompiler->vnStore->VNPExceptionSet(val->gtVNPair);
-        store->gtVNPair     = m_pCompiler->vnStore->VNPWithExc(ValueNumStore::VNPForVoid(), valExc);
+        ValueNumPair valExc = m_compiler->vnStore->VNPExceptionSet(val->gtVNPair);
+        store->gtVNPair     = m_compiler->vnStore->VNPWithExc(ValueNumStore::VNPForVoid(), valExc);
         noway_assert(store->OperIs(GT_STORE_LCL_VAR));
 
         // Move the information about the CSE def to the store; it now indicates a completed
@@ -4899,31 +5068,31 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         exp->gtCSEnum   = NO_CSE;
 
         // Create a reference to the CSE temp
-        GenTreeLclVar* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
-        cseLclVar->gtVNPair      = m_pCompiler->vnStore->VNPNormalPair(val->gtVNPair);
+        GenTreeLclVar* cseLclVar = m_compiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+        cseLclVar->gtVNPair      = m_compiler->vnStore->VNPNormalPair(val->gtVNPair);
 
         GenTree* cseUse = cseLclVar;
         if (isSharedConst)
         {
-            ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
-            ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+            ValueNum currVN   = m_compiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+            ssize_t  curValue = m_compiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
-                cseUse             = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
+                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseLclVarTyp);
+                cseUse             = m_compiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cseLclVar, deltaNode);
                 cseUse->SetDoNotCSE();
                 cseUse->gtVNPair.SetBoth(currVN);
             }
         }
 
         // Create a comma node for the CSE assignment
-        GenTree* cse = m_pCompiler->gtNewOperNode(GT_COMMA, genActualType(exp), origStore, cseUse);
+        GenTree* cse = m_compiler->gtNewOperNode(GT_COMMA, genActualType(exp), origStore, cseUse);
 
         // Compute new VN for the store. It usually matches 'val', but it may
         // not for shared-constant CSE.
-        ValueNumPair sideEffExcSet = m_pCompiler->vnStore->VNPExceptionSet(origStore->gtVNPair);
-        cse->gtVNPair              = m_pCompiler->vnStore->VNPWithExc(cseUse->gtVNPair, sideEffExcSet);
+        ValueNumPair sideEffExcSet = m_compiler->vnStore->VNPExceptionSet(origStore->gtVNPair);
+        cse->gtVNPair              = m_compiler->vnStore->VNPWithExc(cseUse->gtVNPair, sideEffExcSet);
 
         ReplaceCSENode(stmt, exp, cse);
 
@@ -4946,7 +5115,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     }
 
     // Now process the actual uses.
-    for (lst = dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
+    for (lst = &dsc->csdTreeList; lst != nullptr; lst = lst->tslNext)
     {
         GenTree* const    exp  = lst->tslTree;
         Statement* const  stmt = lst->tslStmt;
@@ -4958,11 +5127,11 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         }
 
         // Make sure we update the weighted ref count correctly
-        m_pCompiler->optCSEweight = blk->getBBWeight(m_pCompiler);
+        m_compiler->optCSEweight = blk->getBBWeight(m_compiler);
 
         // This is a use of the CSE
 #ifdef DEBUG
-        if (m_pCompiler->verbose)
+        if (m_compiler->verbose)
         {
             printf("\nWorking on the replacement of the " FMT_CSE " use at ", exp->gtCSEnum);
             Compiler::printTreeID(exp);
@@ -4975,20 +5144,20 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         //
 
         // Create a reference to the CSE temp
-        GenTreeLclVar* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+        GenTreeLclVar* cseLclVar = m_compiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
         GenTree*       cse       = cseLclVar;
 
         if (isSharedConst)
         {
             cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
 
-            ValueNum currVN   = m_pCompiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
-            ssize_t  curValue = m_pCompiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
+            ValueNum currVN   = m_compiler->vnStore->VNLiberalNormalValue(exp->gtVNPair);
+            ssize_t  curValue = m_compiler->vnStore->CoercedConstantValue<ssize_t>(currVN);
             ssize_t  delta    = curValue - dsc->csdConstDefValue;
             if (delta != 0)
             {
-                GenTree* deltaNode = m_pCompiler->gtNewIconNode(delta, cseLclVarTyp);
-                cse                = m_pCompiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cse, deltaNode);
+                GenTree* deltaNode = m_compiler->gtNewIconNode(delta, cseLclVarTyp);
+                cse                = m_compiler->gtNewOperNode(GT_ADD, cseLclVarTyp, cse, deltaNode);
                 cse->SetDoNotCSE();
                 cse->gtVNPair.SetBoth(currVN);
             }
@@ -4998,7 +5167,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             // Use the VNP that was on the expression. The conservative VN
             // might not match the reaching def, but if things are in SSA we
             // will fix that up later.
-            cse->gtVNPair = m_pCompiler->vnStore->VNPNormalPair(exp->gtVNPair);
+            cse->gtVNPair = m_compiler->vnStore->VNPNormalPair(exp->gtVNPair);
         }
 
         INDEBUG(cse->gtDebugFlags |= GTF_DEBUG_VAR_CSE_REF);
@@ -5012,25 +5181,25 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         //
         exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
-        GenTree* sideEffList = m_pCompiler->optExtractSideEffectsForCSE(exp);
+        GenTree* sideEffList = m_compiler->optExtractSideEffectsForCSE(exp);
 
         // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
         //
         if (sideEffList != nullptr)
         {
 #ifdef DEBUG
-            if (m_pCompiler->verbose)
+            if (m_compiler->verbose)
             {
                 printf("\nThis CSE use has side effects and/or nested CSE defs. The sideEffectList:\n");
-                m_pCompiler->gtDispTree(sideEffList);
+                m_compiler->gtDispTree(sideEffList);
                 printf("\n");
             }
 #endif
-            ValueNumPair sideEffExcSet        = m_pCompiler->vnStore->VNPExceptionSet(sideEffList->gtVNPair);
-            ValueNumPair cseWithSideEffVNPair = m_pCompiler->vnStore->VNPWithExc(cse->gtVNPair, sideEffExcSet);
+            ValueNumPair sideEffExcSet        = m_compiler->vnStore->VNPExceptionSet(sideEffList->gtVNPair);
+            ValueNumPair cseWithSideEffVNPair = m_compiler->vnStore->VNPWithExc(cse->gtVNPair, sideEffExcSet);
 
             // Create a comma node with the sideEffList as op1
-            cse           = m_pCompiler->gtNewOperNode(GT_COMMA, genActualType(exp), sideEffList, cse);
+            cse           = m_compiler->gtNewOperNode(GT_COMMA, genActualType(exp), sideEffList, cse);
             cse->gtVNPair = cseWithSideEffVNPair;
         }
 
@@ -5047,8 +5216,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             {
                 // For shared const CSE we should never change VN when finding a new reaching def.
                 assert(!isSharedConst && (cse->gtEffectiveVal() == cseLclVar));
-                ValueNumPair sideEffExcSet = m_pCompiler->vnStore->VNPExceptionSet(sideEffList->gtVNPair);
-                cse->gtVNPair              = m_pCompiler->vnStore->VNPWithExc(cseLclVar->gtVNPair, sideEffExcSet);
+                ValueNumPair sideEffExcSet = m_compiler->vnStore->VNPExceptionSet(sideEffList->gtVNPair);
+                cse->gtVNPair              = m_compiler->vnStore->VNPWithExc(cseLclVar->gtVNPair, sideEffExcSet);
             }
         }
     }
@@ -5072,7 +5241,7 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
     // Walk the statement 'stmt' and find the pointer
     // in the tree is pointing to 'exp'
     //
-    Compiler::FindLinkData linkData = m_pCompiler->gtFindLink(stmt, exp);
+    Compiler::FindLinkData linkData = m_compiler->gtFindLink(stmt, exp);
     GenTree**              link     = linkData.result;
 
 #ifdef DEBUG
@@ -5084,10 +5253,10 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
         Compiler::printTreeID(exp);
         printf("\n");
         printf("stm =");
-        m_pCompiler->gtDispStmt(stmt);
+        m_compiler->gtDispStmt(stmt);
         printf("\n");
         printf("exp =");
-        m_pCompiler->gtDispTree(exp);
+        m_compiler->gtDispTree(exp);
         printf("\n");
     }
 #endif // DEBUG
@@ -5098,9 +5267,9 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
     //
     *link = newNode;
 
-    m_pCompiler->gtSetStmtInfo(stmt);
-    m_pCompiler->fgSetStmtSeq(stmt);
-    m_pCompiler->gtUpdateStmtSideEffects(stmt);
+    m_compiler->gtSetStmtInfo(stmt);
+    m_compiler->fgSetStmtSeq(stmt);
+    m_compiler->gtUpdateStmtSideEffects(stmt);
 }
 
 //------------------------------------------------------------------------
@@ -5119,7 +5288,7 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     GenTreeLclVar* lcl = useDefLoc.Tree;
     assert(lcl->HasSsaName());
 
-    LclVarDsc* lclDsc = m_pCompiler->lvaGetDesc(lcl);
+    LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
     // Fix up the conservative VN using information about the reaching def.
     LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
 
@@ -5129,10 +5298,10 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     // If the old VN was flagged as a checked bound then propagate that to the
     // new VN to make sure assertion prop will pay attention to this VN.
     if ((oldConservativeVN != ssaDsc->m_vnPair.GetConservative()) &&
-        m_pCompiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
-        !m_pCompiler->vnStore->IsVNConstant(ssaDsc->m_vnPair.GetConservative()))
+        m_compiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
+        !m_compiler->vnStore->IsVNConstant(ssaDsc->m_vnPair.GetConservative()))
     {
-        m_pCompiler->vnStore->SetVNIsCheckedBound(ssaDsc->m_vnPair.GetConservative());
+        m_compiler->vnStore->SetVNIsCheckedBound(ssaDsc->m_vnPair.GetConservative());
     }
 }
 
@@ -5170,11 +5339,11 @@ void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)
 void CSE_HeuristicCommon::ConsiderCandidates()
 {
     /* Consider each CSE candidate, in order of decreasing cost */
-    unsigned cnt = m_pCompiler->optCSECandidateCount;
+    unsigned cnt = m_compiler->optCSECandidateCount;
     CSEdsc** ptr = sortTab;
     for (; (cnt > 0); cnt--, ptr++)
     {
-        const int     attempt = m_pCompiler->optCSEattempt++;
+        const int     attempt = m_compiler->optCSEattempt++;
         CSEdsc* const dsc     = *ptr;
         CSE_Candidate candidate(this, dsc);
 
@@ -5186,7 +5355,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         candidate.InitializeCounts();
 
 #ifdef DEBUG
-        if (m_pCompiler->verbose)
+        if (m_compiler->verbose)
         {
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
@@ -5202,7 +5371,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");
-            m_pCompiler->gtDispTree(candidate.Expr());
+            m_compiler->gtDispTree(candidate.Expr());
             printf("\n");
         }
 #endif // DEBUG
@@ -5213,7 +5382,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
 
         const int hash = JitConfig.JitCSEHash();
 
-        if ((hash == 0) || (m_pCompiler->info.compMethodHash() == (unsigned)hash))
+        if ((hash == 0) || (m_compiler->info.compMethodHash() == (unsigned)hash))
         {
             // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
             // Note methods with >= 32 CSEs are currently quite rare.
@@ -5231,7 +5400,7 @@ void CSE_HeuristicCommon::ConsiderCandidates()
             }
         }
 
-        if (m_pCompiler->verbose)
+        if (m_compiler->verbose)
         {
             if (doCSE)
             {
@@ -5704,12 +5873,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if (configValue == CONST_CSE_ENABLE_ARM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
     return enableSharedConstCSE;
 }
@@ -5729,8 +5898,8 @@ bool Compiler::optConstantCSEEnabled()
     {
         enableConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
     {
         enableConstCSE = true;
     }

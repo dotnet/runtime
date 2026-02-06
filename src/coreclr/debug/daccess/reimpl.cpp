@@ -38,9 +38,9 @@ DacGetThread(ULONG32 osThread)
         UNREACHABLE();
     }
 
-    // Note that if we had access to TLS, we could get this at index gThreadTLSIndex for the specified
-    // thread.  However, this is the only place we might want to use TLS, and it's not performance critical,
-    // so we haven't added TLS support to ICorDebugDataTarget (the legacy ICLRDataTarget interface has it though)
+    // Note that if we had access to TLS, we could get this at TLS for the specified thread.  However, this is
+    // the only place we might want to use TLS, and it's not performance critical, so we haven't added TLS support
+    // to ICorDebugDataTarget (the legacy ICLRDataTarget interface has it though)
 
     // Scan the whole thread store to see if there's a matching thread.
 

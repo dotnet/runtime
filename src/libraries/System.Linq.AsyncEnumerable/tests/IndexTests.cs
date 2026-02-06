@@ -16,6 +16,12 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => AsyncEnumerable.Index<int>(null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<(int, string)>(), AsyncEnumerable.Empty<string>().Index());
+        }
+
 #if NET
         [Theory]
         [InlineData(new int[0])]

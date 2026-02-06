@@ -44,18 +44,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 
 const int CorUnix::CThreadSynchronizationInfo::PendingSignalingsArraySize;
 
-// We use the synchronization manager's worker thread to handle
-// process termination requests. It does so by calling the
-// registered handler function.
-PTERMINATION_REQUEST_HANDLER g_terminationRequestHandler = NULL;
-
-// Set the handler for process termination requests.
-VOID PALAPI PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationHandler)
-{
-    g_terminationRequestHandler = terminationHandler;
-}
-
 namespace CorUnix
 {
     /////////////////////////////////
@@ -153,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csSynchProcessLock;
-    CRITICAL_SECTION CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -170,9 +158,7 @@ namespace CorUnix
           m_cacheSynchData(SynchDataCacheMaxSize),
           m_cacheSHRSynchData(SynchDataCacheMaxSize),
           m_cacheWTListNodes(WTListNodeCacheMaxSize),
-          m_cacheSHRWTListNodes(WTListNodeCacheMaxSize),
-          m_cacheThreadApcInfoNodes(ApcInfoNodeCacheMaxSize),
-          m_cacheOwnedObjectsListNodes(OwnedObjectsListCacheMaxSize)
+          m_cacheSHRWTListNodes(WTListNodeCacheMaxSize)
     {
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
         m_iKQueue = -1;
@@ -197,7 +183,6 @@ namespace CorUnix
     PAL_ERROR CPalSynchronizationManager::BlockThread(
         CPalThread *pthrCurrent,
         DWORD dwTimeout,
-        bool fAlertable,
         bool fIsSleep,
         ThreadWakeupReason *ptwrWakeupReason,
         DWORD * pdwSignaledObject)
@@ -207,7 +192,6 @@ namespace CorUnix
         DWORD * pdwWaitState;
         DWORD dwWaitState = 0;
         DWORD dwSigObjIdx = 0;
-        bool fRaceAlerted = false;
         bool fEarlyDeath = false;
 
         pdwWaitState = SharedIDToTypePointer(DWORD,
@@ -219,105 +203,58 @@ namespace CorUnix
 
         if (fIsSleep)
         {
-            // If fIsSleep is true we are being called by Sleep/SleepEx
-            // and we need to switch the wait state to TWS_WAITING or
-            // TWS_ALERTABLE (according to fAlertable)
+            // Setting the thread in wait state
+            dwWaitState = TWS_WAITING;
 
-            if (fAlertable)
+            TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u [current *pdwWaitState=%u]\n",
+                    pdwWaitState, dwWaitState, *pdwWaitState);
+
+            dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
+                                                        dwWaitState,
+                                                        TWS_ACTIVE);
+
+            if ((DWORD)TWS_ACTIVE != dwWaitState)
             {
-                // If we are in alertable mode we need to grab the lock to
-                // make sure that no APC is queued right before the
-                // InterlockedCompareExchange.
-                // If there are APCs queued at this time, no native wakeup
-                // will be posted, so we need to skip the native wait
-
-                // Lock
-                AcquireLocalSynchLock(pthrCurrent);
-
-                if (AreAPCsPending(pthrCurrent))
+                if ((DWORD)TWS_EARLYDEATH == dwWaitState)
                 {
-                    // APCs have been queued when the thread wait status was
-                    // still TWS_ACTIVE, therefore the queueing thread will not
-                    // post any native wakeup: we need to skip the actual
-                    // native wait
-                    fRaceAlerted = true;
+                    // Process is terminating, this thread will soon be suspended (by SuspendOtherThreads).
+                    WARN("Thread is about to get suspended by TerminateProcess\n");
+
+                    fEarlyDeath = true;
+                    palErr = WAIT_FAILED;
                 }
-            }
-
-            if (!fRaceAlerted)
-            {
-                // Setting the thread in wait state
-                dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE : TWS_WAITING);
-
-                TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u [current *pdwWaitState=%u]\n",
-                      pdwWaitState, dwWaitState, *pdwWaitState);
-
-                dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
-                                                         dwWaitState,
-                                                         TWS_ACTIVE);
-
-                if ((DWORD)TWS_ACTIVE != dwWaitState)
+                else
                 {
-                    if (fAlertable)
-                    {
-                        // Unlock
-                        ReleaseLocalSynchLock(pthrCurrent);
-                    }
-
-                    if ((DWORD)TWS_EARLYDEATH == dwWaitState)
-                    {
-                        // Process is terminating, this thread will soon be suspended (by SuspendOtherThreads).
-                        WARN("Thread is about to get suspended by TerminateProcess\n");
-
-                        fEarlyDeath = true;
-                        palErr = WAIT_FAILED;
-                    }
-                    else
-                    {
-                        ASSERT("Unexpected thread wait state %u\n", dwWaitState);
-                        palErr = ERROR_INTERNAL_ERROR;
-                    }
-
-                    goto BT_exit;
+                    ASSERT("Unexpected thread wait state %u\n", dwWaitState);
+                    palErr = ERROR_INTERNAL_ERROR;
                 }
-            }
 
-            if (fAlertable)
-            {
-                // Unlock
-                ReleaseLocalSynchLock(pthrCurrent);
-            }
-        }
-
-        if (fRaceAlerted)
-        {
-            twrWakeupReason = Alerted;
-        }
-        else
-        {
-            TRACE("Current thread is about to block for waiting\n");
-
-            palErr = ThreadNativeWait(
-                &pthrCurrent->synchronizationInfo.m_tnwdNativeData,
-                dwTimeout,
-                &twrWakeupReason,
-                &dwSigObjIdx);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("ThreadNativeWait() failed [palErr=%d]\n", palErr);
-                twrWakeupReason = WaitFailed;
                 goto BT_exit;
             }
-
-            TRACE("ThreadNativeWait returned {WakeupReason=%u "
-                  "dwSigObjIdx=%u}\n", twrWakeupReason, dwSigObjIdx);
         }
+
+        TRACE("Current thread is about to block for waiting\n");
+
+        palErr = ThreadNativeWait(
+            &pthrCurrent->synchronizationInfo.m_tnwdNativeData,
+            dwTimeout,
+            &twrWakeupReason,
+            &dwSigObjIdx);
+
+        if (NO_ERROR != palErr)
+        {
+            ERROR("ThreadNativeWait() failed [palErr=%d]\n", palErr);
+            twrWakeupReason = WaitFailed;
+            goto BT_exit;
+        }
+
+        TRACE("ThreadNativeWait returned {WakeupReason=%u "
+                "dwSigObjIdx=%u}\n", twrWakeupReason, dwSigObjIdx);
 
         if (WaitTimeout == twrWakeupReason)
         {
             // timeout reached. set wait state back to 'active'
-            dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE : TWS_WAITING);
+            dwWaitState = TWS_WAITING;
 
             TRACE("Current thread awakened for timeout: switching wait "
                   "state [%p] from %u to TWS_ACTIVE [current *pdwWaitState=%u]\n",
@@ -376,7 +313,6 @@ namespace CorUnix
                     palErr = WAIT_FAILED;
                     break;
                 case TWS_WAITING:
-                case TWS_ALERTABLE:
                 default:
                     _ASSERT_MSG(dwOldWaitState == dwWaitState,
                                 "Unexpected wait status: actual=%u, expected=%u\n",
@@ -408,11 +344,10 @@ namespace CorUnix
                 break;
             }
             case WaitSucceeded:
-            case MutexAbandoned:
                 *pdwSignaledObject = dwSigObjIdx;
                 break;
             default:
-                // 'Alerted' and 'WaitFailed' go through this case
+                // 'WaitFailed' goes through this case
                 break;
         }
 
@@ -542,128 +477,6 @@ namespace CorUnix
 
     TNW_exit:
         TRACE("ThreadNativeWait: returning %u [WakeupReason=%u]\n", palErr, *ptwrWakeupReason);
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::AbandonObjectsOwnedByThread
-
-    This method is called by a thread at thread-exit time to abandon
-    any currently owned waitable object (mutexes). If pthrTarget is
-    different from pthrCurrent, AbandonObjectsOwnedByThread assumes
-    to be called whether by TerminateThread or at shutdown time. See
-    comments below for more details
-    --*/
-    PAL_ERROR CPalSynchronizationManager::AbandonObjectsOwnedByThread(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        OwnedObjectsListNode * poolnItem;
-        CThreadSynchronizationInfo * pSynchInfo = &pthrTarget->synchronizationInfo;
-        CPalSynchronizationManager * pSynchManager = GetInstance();
-
-        // The shared memory manager's process lock is acquired before calling into some PAL synchronization primitives that may
-        // take the PAL synchronization manager's synch lock (acquired below). For example, when using a file lock
-        // implementation for a named mutex (see NamedMutexProcessData::NamedMutexProcessData()), under the shared memory
-        // manager's process lock, CreateMutex is called, which acquires the PAL synchronization manager's synch lock. The same
-        // lock order needs to be maintained here to avoid a deadlock.
-        bool abandonNamedMutexes = pSynchInfo->OwnsAnyNamedMutex();
-        if (abandonNamedMutexes)
-        {
-            SharedMemoryManager::AcquireCreationDeletionProcessLock();
-        }
-
-        // Local lock
-        AcquireLocalSynchLock(pthrCurrent);
-
-        // Abandon owned objects
-        while (NULL != (poolnItem = pSynchInfo->RemoveFirstObjectFromOwnedList()))
-        {
-            CSynchData * psdSynchData = poolnItem->pPalObjSynchData;
-
-            _ASSERT_MSG(NULL != psdSynchData,
-                        "NULL psdSynchData pointer in ownership list node\n");
-
-            VALIDATEOBJECT(psdSynchData);
-
-            TRACE("Abandoning object with SynchData at %p\n", psdSynchData);
-
-            // Reset ownership data
-            psdSynchData->ResetOwnership();
-
-            // Set abandoned status; in case there is a thread to be released:
-            //  - if the thread is local, ReleaseFirstWaiter will reset the
-            //    abandoned status
-            //  - if the thread is remote, the remote worker thread will use
-            //    the value and reset it
-            psdSynchData->SetAbandoned(true);
-
-            // Signal the object and trigger thread awakening
-            psdSynchData->Signal(pthrCurrent, 1);
-
-            // Release reference to SynchData
-            psdSynchData->Release(pthrCurrent);
-
-            // Return node to the cache
-            pSynchManager->m_cacheOwnedObjectsListNodes.Add(pthrCurrent, poolnItem);
-        }
-
-        if (abandonNamedMutexes)
-        {
-            // Abandon owned named mutexes
-            while (true)
-            {
-                NamedMutexProcessData *processData = pSynchInfo->RemoveFirstOwnedNamedMutex();
-                if (processData == nullptr)
-                {
-                    break;
-                }
-                processData->Abandon();
-            }
-        }
-
-        if (pthrTarget != pthrCurrent)
-        {
-            // If the target thead is not the current one, we are being called
-            // at shutdown time, right before the target thread is suspended,
-            // or anyway the target thread is being terminated.
-            // In this case we switch its wait state to TWS_EARLYDEATH so that,
-            // if the thread is currently waiting/sleeping and it wakes up
-            // before shutdown code manage to suspend it, it will be rerouted
-            // to ThreadPrepareForShutdown (that will be done without holding
-            // any internal lock, in a way to accommodate shutdown time thread
-            // suspension).
-            // At this time we also unregister the wait, so no dummy nodes are
-            // left around on waiting objects.
-            // The TWS_EARLYDEATH wait-state will also prevent the thread from
-            // successfully registering for a possible new wait in the same
-            // time window.
-            LONG lTWState;
-            DWORD * pdwWaitState;
-
-            pdwWaitState = SharedIDToTypePointer(DWORD, pthrTarget->synchronizationInfo.m_shridWaitAwakened);
-            lTWState = InterlockedExchange((LONG *)pdwWaitState, TWS_EARLYDEATH);
-
-            if (( ((LONG)TWS_WAITING == lTWState) || ((LONG)TWS_ALERTABLE == lTWState) ) &&
-                (0 < pSynchInfo->m_twiWaitInfo.lObjCount))
-            {
-                // Unregister the wait
-                UnRegisterWait(pthrCurrent, &pSynchInfo->m_twiWaitInfo);
-            }
-        }
-
-        // Unlock
-        ReleaseLocalSynchLock(pthrCurrent);
-
-        if (abandonNamedMutexes)
-        {
-            SharedMemoryManager::ReleaseCreationDeletionProcessLock();
-        }
-
-        DiscardAllPendingAPCs(pthrCurrent, pthrTarget);
-
         return palErr;
     }
 
@@ -1044,251 +857,6 @@ namespace CorUnix
 
     /*++
     Method:
-      CPalSynchronizationManager::QueueUserAPC
-
-    Internal implementation of QueueUserAPC
-    --*/
-    PAL_ERROR CPalSynchronizationManager::QueueUserAPC(CPalThread * pthrCurrent,
-        CPalThread * pthrTarget,
-        PAPCFUNC pfnAPC,
-        ULONG_PTR uptrData)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        ThreadApcInfoNode * ptainNode = NULL;
-        DWORD dwWaitState;
-        DWORD * pdwWaitState;
-        ThreadWaitInfo * pTargetTWInfo = GetThreadWaitInfo(pthrTarget);
-        bool fLocalSynchLock = false;
-        bool fThreadLock = false;
-
-        ptainNode = m_cacheThreadApcInfoNodes.Get(pthrCurrent);
-        if (NULL == ptainNode)
-        {
-            ERROR("No memory for new APCs linked list entry\n");
-            palErr = ERROR_NOT_ENOUGH_MEMORY;
-            goto QUAPC_exit;
-        }
-
-        ptainNode->pfnAPC = pfnAPC;
-        ptainNode->pAPCData = uptrData;
-        ptainNode->pNext = NULL;
-
-        AcquireLocalSynchLock(pthrCurrent);
-        fLocalSynchLock = true;
-
-        pthrTarget->Lock(pthrCurrent);
-        fThreadLock = true;
-
-        if (TS_DONE == pthrTarget->synchronizationInfo.GetThreadState())
-        {
-            ERROR("Thread %#x has terminated; can't queue an APC on it\n",
-                  pthrTarget->GetThreadId());
-            palErr = ERROR_INVALID_PARAMETER;
-            goto QUAPC_exit;
-        }
-        pdwWaitState = SharedIDToTypePointer(DWORD,
-            pthrTarget->synchronizationInfo.m_shridWaitAwakened);
-        if (TWS_EARLYDEATH == VolatileLoad(pdwWaitState))
-        {
-            ERROR("Thread %#x is about to be suspended for process shutdwon, "
-                  "can't queue an APC on it\n", pthrTarget->GetThreadId());
-            palErr = ERROR_INVALID_PARAMETER;
-            goto QUAPC_exit;
-        }
-
-        if (NULL == pthrTarget->apcInfo.m_ptainTail)
-        {
-            _ASSERT_MSG(NULL == pthrTarget->apcInfo.m_ptainHead, "Corrupted APC list\n");
-
-            pthrTarget->apcInfo.m_ptainHead = ptainNode;
-            pthrTarget->apcInfo.m_ptainTail = ptainNode;
-        }
-        else
-        {
-            pthrTarget->apcInfo.m_ptainTail->pNext = ptainNode;
-            pthrTarget->apcInfo.m_ptainTail = ptainNode;
-        }
-
-        // Set ptainNode to NULL so it won't be readded to the cache
-        ptainNode = NULL;
-
-        TRACE("APC %p with parameter %p added to APC queue\n", pfnAPC, uptrData);
-
-        dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
-                                                 (LONG)TWS_ACTIVE,
-                                                 (LONG)TWS_ALERTABLE);
-
-        // Release thread lock
-        pthrTarget->Unlock(pthrCurrent);
-        fThreadLock = false;
-
-        if (TWS_ALERTABLE == dwWaitState)
-        {
-            // Unregister the wait
-            UnRegisterWait(pthrCurrent, pTargetTWInfo);
-
-            // Wake up target thread
-            palErr = WakeUpLocalThread(
-                pthrCurrent,
-                pthrTarget,
-                Alerted,
-                0);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("Failed to wakeup local thread %#x for dispatching APCs [err=%u]\n",
-                    pthrTarget->GetThreadId(), palErr);
-            }
-        }
-
-    QUAPC_exit:
-        if (fThreadLock)
-        {
-            pthrTarget->Unlock(pthrCurrent);
-        }
-
-        if (fLocalSynchLock)
-        {
-            ReleaseLocalSynchLock(pthrCurrent);
-        }
-
-        if (ptainNode)
-        {
-            m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-        CPalSynchronizationManager::SendTerminationRequestToWorkerThread
-
-    Send a request to the worker thread to initiate process termination.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
-    {
-        PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
-        if (palErr != NO_ERROR)
-        {
-            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n",
-                  errno, strerror(errno));
-            palErr = ERROR_INTERNAL_ERROR;
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::AreAPCsPending
-
-    Returns 'true' if there are APCs currently pending for the target
-    thread (normally the current one)
-    --*/
-    bool CPalSynchronizationManager::AreAPCsPending(
-        CPalThread * pthrTarget)
-    {
-        // No need to lock here
-        return (NULL != pthrTarget->apcInfo.m_ptainHead);
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DispatchPendingAPCs
-
-    Executes any pending APC for the current thread
-    --*/
-    PAL_ERROR CPalSynchronizationManager::DispatchPendingAPCs(
-        CPalThread * pthrCurrent)
-    {
-        ThreadApcInfoNode * ptainNode, * ptainLocalHead;
-        int iAPCsCalled = 0;
-
-        while (TRUE)
-        {
-            // Lock
-            pthrCurrent->Lock(pthrCurrent);
-            ptainLocalHead = pthrCurrent->apcInfo.m_ptainHead;
-            if (ptainLocalHead)
-            {
-                pthrCurrent->apcInfo.m_ptainHead = NULL;
-                pthrCurrent->apcInfo.m_ptainTail = NULL;
-            }
-
-            // Unlock
-            pthrCurrent->Unlock(pthrCurrent);
-
-            if (NULL == ptainLocalHead)
-            {
-                break;
-            }
-
-            while (ptainLocalHead)
-            {
-                ptainNode = ptainLocalHead;
-                ptainLocalHead = ptainNode->pNext;
-
-#if _ENABLE_DEBUG_MESSAGES_
-                // reset ENTRY nesting level back to zero while
-                // inside the callback ...
-                int iOldLevel = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-                TRACE("Calling APC %p with parameter %#x\n",
-                      ptainNode->pfnAPC, ptainNode->pfnAPC);
-
-                // Actual APC call
-                ptainNode->pfnAPC(ptainNode->pAPCData);
-
-#if _ENABLE_DEBUG_MESSAGES_
-                // ... and set nesting level back to what it was
-                DBG_change_entrylevel(iOldLevel);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-                iAPCsCalled++;
-                m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-            }
-        }
-
-        return (iAPCsCalled > 0) ? NO_ERROR : ERROR_NOT_FOUND;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DiscardAllPendingAPCs
-
-    Discards any pending APC for the target pthrTarget thread
-    --*/
-    void CPalSynchronizationManager::DiscardAllPendingAPCs(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        ThreadApcInfoNode * ptainNode, * ptainLocalHead;
-
-        // Lock
-        pthrTarget->Lock(pthrCurrent);
-        ptainLocalHead = pthrTarget->apcInfo.m_ptainHead;
-        if (ptainLocalHead)
-        {
-            pthrTarget->apcInfo.m_ptainHead = NULL;
-            pthrTarget->apcInfo.m_ptainTail = NULL;
-        }
-
-        // Unlock
-        pthrTarget->Unlock(pthrCurrent);
-
-        while (ptainLocalHead)
-        {
-            ptainNode = ptainLocalHead;
-            ptainLocalHead = ptainNode->pNext;
-
-            m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-        }
-    }
-
-    /*++
-    Method:
       CPalSynchronizationManager::CreatePalSynchronizationManager
 
     Creates the Synchronization Manager.
@@ -1329,8 +897,8 @@ namespace CorUnix
             goto I_exit;
         }
 
-        InternalInitializeCriticalSection(&s_csSynchProcessLock);
-        InternalInitializeCriticalSection(&s_csMonitoredProcessesLock);
+        minipal_mutex_init(&s_csSynchProcessLock);
+        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
         pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
@@ -1340,13 +908,14 @@ namespace CorUnix
             goto I_exit;
         }
 
+#ifndef __wasm__
         if (!pSynchManager->CreateProcessPipe())
         {
             ERROR("Unable to create process pipe \n");
             palErr = ERROR_OPEN_FAILED;
             goto I_exit;
         }
-
+#endif
         s_pObjSynchMgr = pSynchManager;
 
         // Initialization was successful
@@ -1557,22 +1126,6 @@ namespace CorUnix
         return palErr;
     }
 
-    // Entry point routine for the thread that initiates process termination.
-    DWORD PALAPI TerminationRequestHandlingRoutine(LPVOID pArg)
-    {
-        // Call the termination request handler if one is registered.
-        if (g_terminationRequestHandler != NULL)
-        {
-            // The process will terminate normally by calling exit.
-            // We use an exit code of '128 + signo'. This is a convention used in popular
-            // shells to calculate an exit code when the process was terminated by a signal.
-            // This is also used by the Process.ExitCode implementation.
-            g_terminationRequestHandler(128 + SIGTERM);
-        }
-
-        return 0;
-    }
-
     /*++
     Method:
       CPalSynchronizationManager::WorkerThread
@@ -1611,31 +1164,6 @@ namespace CorUnix
             }
             switch (swcCmd)
             {
-                case SynchWorkerCmdTerminationRequest:
-                    // This worker thread is being asked to initiate process termination
-
-                    HANDLE hTerminationRequestHandlingThread;
-                    palErr = InternalCreateThread(pthrWorker,
-                                      NULL,
-                                      0,
-                                      &TerminationRequestHandlingRoutine,
-                                      NULL,
-                                      0,
-                                      PalWorkerThread,
-                                      NULL,
-                                      &hTerminationRequestHandlingThread);
-
-                    if (NO_ERROR != palErr)
-                    {
-                        ERROR("Unable to create worker thread\n");
-                    }
-
-                    if (hTerminationRequestHandlingThread != NULL)
-                    {
-                        CloseHandle(hTerminationRequestHandlingThread);
-                    }
-
-                    break;
                 case SynchWorkerCmdNop:
                     TRACE("Synch Worker: received SynchWorkerCmdNop\n");
                     if (fShuttingDown)
@@ -1775,8 +1303,7 @@ namespace CorUnix
             }
 
             _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd ||
-                        SynchWorkerCmdShutdown == swcWorkerCmd ||
-                        SynchWorkerCmdTerminationRequest == swcWorkerCmd,
+                        SynchWorkerCmdShutdown == swcWorkerCmd,
                         "Unknown worker command code %u\n", swcWorkerCmd);
 
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
@@ -1834,9 +1361,9 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
-                        tccMillieSecondsToMicroSeconds;
-                    tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                    tv.tv_usec = (iTimeout % tccSecondsToMilliSeconds) *
+                        tccMilliSecondsToMicroSeconds;
+                    tv.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                     ptv = &tv;
                 }
 
@@ -1865,9 +1392,9 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
-                            tccMillieSecondsToNanoSeconds;
-                        ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                        ts.tv_nsec = (iTimeout % tccSecondsToMilliSeconds) *
+                            tccMilliSecondsToNanoSeconds;
+                        ts.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                         pts = &ts;
                     }
 
@@ -2215,9 +1742,8 @@ namespace CorUnix
                     "Value too big for swcWorkerCmd\n");
 
         _ASSERT_MSG((SynchWorkerCmdNop == swcWorkerCmd) ||
-                    (SynchWorkerCmdShutdown == swcWorkerCmd) ||
-                    (SynchWorkerCmdTerminationRequest == swcWorkerCmd),
-                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
+                    (SynchWorkerCmdShutdown == swcWorkerCmd),
+                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop and SynchWorkerCmdShutdown."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
         BYTE byCmd = (BYTE)(swcWorkerCmd & 0xFF);
@@ -2416,7 +1942,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         fMonitoredProcessesLock = true;
 
@@ -2465,7 +1991,7 @@ namespace CorUnix
         }
 
         // Unlock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -2485,8 +2011,7 @@ namespace CorUnix
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent,
-                                         &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         return palErr;
@@ -2511,7 +2036,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
@@ -2550,7 +2075,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -2609,7 +2134,7 @@ namespace CorUnix
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
@@ -2654,7 +2179,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -2664,7 +2189,7 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_enter(&s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
 
             // Start from the beginning of the exited processes list
@@ -2724,7 +2249,7 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         if (fLocalSynchLock)
@@ -2750,7 +2275,7 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        InternalEnterCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         while (m_pmplnMonitoredProcesses)
         {
@@ -2762,7 +2287,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        InternalLeaveCriticalSection(pthrCurrent, &s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
     }
 
     /*++
@@ -3063,8 +2588,7 @@ namespace CorUnix
     CThreadSynchronizationInfo::CThreadSynchronizationInfo() :
             m_tsThreadState(TS_IDLE),
             m_shridWaitAwakened(NULL),
-            m_lLocalSynchLockCount(0),
-            m_ownedNamedMutexListHead(nullptr)
+            m_lLocalSynchLockCount(0)
     {
         InitializeListHead(&m_leOwnedObjsList);
 
@@ -3264,133 +2788,6 @@ namespace CorUnix
         return palErr;
     }
 
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::AddObjectToOwnedList
-
-    Adds an object to the list of currently owned objects.
-    --*/
-    void CThreadSynchronizationInfo::AddObjectToOwnedList(POwnedObjectsListNode pooln)
-    {
-        InsertTailList(&m_leOwnedObjsList, &pooln->Link);
-    }
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::RemoveObjectFromOwnedList
-
-    Removes an object from the list of currently owned objects.
-    --*/
-    void CThreadSynchronizationInfo::RemoveObjectFromOwnedList(POwnedObjectsListNode pooln)
-    {
-        RemoveEntryList(&pooln->Link);
-    }
-
-    /*++
-    Method:
-      CThreadSynchronizationInfo::RemoveFirstObjectFromOwnedList
-
-    Removes the first object from the list of currently owned objects.
-    --*/
-    POwnedObjectsListNode CThreadSynchronizationInfo::RemoveFirstObjectFromOwnedList()
-    {
-        OwnedObjectsListNode * poolnItem;
-
-        if (IsListEmpty(&m_leOwnedObjsList))
-        {
-            poolnItem = NULL;
-        }
-        else
-        {
-            PLIST_ENTRY pLink = RemoveHeadList(&m_leOwnedObjsList);
-            poolnItem = CONTAINING_RECORD(pLink, OwnedObjectsListNode, Link);
-        }
-
-        return poolnItem;
-    }
-
-    void CThreadSynchronizationInfo::AddOwnedNamedMutex(NamedMutexProcessData *processData)
-    {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-        _ASSERTE(processData != nullptr);
-        _ASSERTE(processData->IsLockOwnedByCurrentThread());
-        _ASSERTE(processData->GetNextInThreadOwnedNamedMutexList() == nullptr);
-
-        processData->SetNextInThreadOwnedNamedMutexList(m_ownedNamedMutexListHead);
-        m_ownedNamedMutexListHead = processData;
-    }
-
-    void CThreadSynchronizationInfo::RemoveOwnedNamedMutex(NamedMutexProcessData *processData)
-    {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-        _ASSERTE(processData != nullptr);
-        _ASSERTE(processData->IsLockOwnedByCurrentThread());
-
-        if (m_ownedNamedMutexListHead == processData)
-        {
-            m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
-            processData->SetNextInThreadOwnedNamedMutexList(nullptr);
-        }
-        else
-        {
-            bool found = false;
-            for (NamedMutexProcessData
-                    *previous = m_ownedNamedMutexListHead,
-                    *current = previous->GetNextInThreadOwnedNamedMutexList();
-                current != nullptr;
-                previous = current, current = current->GetNextInThreadOwnedNamedMutexList())
-            {
-                if (current == processData)
-                {
-                    found = true;
-                    previous->SetNextInThreadOwnedNamedMutexList(current->GetNextInThreadOwnedNamedMutexList());
-                    current->SetNextInThreadOwnedNamedMutexList(nullptr);
-                    break;
-                }
-            }
-            _ASSERTE(found);
-        }
-    }
-
-    NamedMutexProcessData *CThreadSynchronizationInfo::RemoveFirstOwnedNamedMutex()
-    {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-
-        NamedMutexProcessData *processData = m_ownedNamedMutexListHead;
-        if (processData != nullptr)
-        {
-            _ASSERTE(processData->IsLockOwnedByCurrentThread());
-            m_ownedNamedMutexListHead = processData->GetNextInThreadOwnedNamedMutexList();
-            processData->SetNextInThreadOwnedNamedMutexList(nullptr);
-        }
-        return processData;
-    }
-
-    bool CThreadSynchronizationInfo::OwnsNamedMutex(NamedMutexProcessData *processData)
-    {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-
-        for (NamedMutexProcessData *current = m_ownedNamedMutexListHead;
-            current != nullptr;
-            current = current->GetNextInThreadOwnedNamedMutexList())
-        {
-            _ASSERTE(current->IsLockOwnedByCurrentThread());
-            if (current == processData)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    bool CThreadSynchronizationInfo::OwnsAnyNamedMutex() const
-    {
-        _ASSERTE(this == &GetCurrentPalThread()->synchronizationInfo);
-        return m_ownedNamedMutexListHead != nullptr;
-    }
-
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
 
     /*++
@@ -3582,31 +2979,9 @@ namespace CorUnix
     Tries to change the target wait status to 'active' in an interlocked fashion
     --*/
     bool CPalSynchronizationManager::InterlockedAwaken(
-        DWORD *pWaitState,
-        bool fAlertOnly)
+        DWORD *pWaitState)
     {
-        DWORD dwPrevState;
-
-        dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_ALERTABLE);
-        if (TWS_ALERTABLE != dwPrevState)
-        {
-            if (fAlertOnly)
-            {
-                return false;
-            }
-
-            dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_WAITING);
-            if (TWS_WAITING == dwPrevState)
-            {
-                return true;
-            }
-        }
-        else
-        {
-            return true;
-        }
-
-        return false;
+        return InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_WAITING) == TWS_WAITING;
     }
 
     /*++
@@ -3652,8 +3027,8 @@ namespace CorUnix
 #endif
         if (0 == iRet)
         {
-            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
-            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMillieSeconds) * tccMillieSecondsToNanoSeconds;
+            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;
+            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
             while (ptsAbsTmo->tv_nsec >= tccSecondsToNanoSeconds)
             {
                 ptsAbsTmo->tv_sec  += 1;

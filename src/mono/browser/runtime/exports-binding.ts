@@ -4,27 +4,29 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
-import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_bind_js_import_ST, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport_MT, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
-import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
+import { SystemInteropJS_ReleaseCSOwnedObject } from "./gc-handles";
+import { SystemInteropJS_BindJSImportST, SystemInteropJS_InvokeJSFunction, SystemInteropJS_InvokeJSImportSync, SystemInteropJS_InvokeJSImportST } from "./invoke-js";
+import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
-import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
-import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
-import { mono_wasm_asm_loaded } from "./startup";
-import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
-import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
-import { mono_wasm_browser_entropy } from "./crypto";
-import { mono_wasm_cancel_promise } from "./cancelable-promise";
+import { SystemInteropJS_ResolveOrRejectPromise } from "./marshal-to-js";
+import { SystemJS_ScheduleTimerImpl, SystemJS_ScheduleBackgroundJobImpl } from "./scheduling";
+import { mono_wasm_asm_loaded, SystemJS_GetCurrentProcessId } from "./startup";
+import { mono_log_warn, SystemJS_ConsoleClear, mono_wasm_trace_logger } from "./logging";
+import { SystemJS_RandomBytes } from "./crypto";
+import { SystemInteropJS_CancelPromise } from "./cancelable-promise";
 
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
-    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async, mono_wasm_warn_about_blocking_wait
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, SystemInteropJS_InstallWebWorkerInteropImpl, SystemInteropJS_UninstallWebWorkerInterop, mono_wasm_start_io_thread_async, SystemJS_WarnAboutBlockingWait
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { mono_wasm_js_globalization_imports } from "./globalization";
+import { SystemJS_GetLocaleInfo } from "./globalization-locale";
+
+import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
+import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -42,15 +44,15 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_dump_threads,
 
     // corebindings.c
-    mono_wasm_install_js_worker_interop,
-    mono_wasm_uninstall_js_worker_interop,
-    mono_wasm_invoke_jsimport_MT,
-    mono_wasm_warn_about_blocking_wait,
+    SystemInteropJS_InstallWebWorkerInteropImpl,
+    SystemInteropJS_UninstallWebWorkerInterop,
+    SystemInteropJS_InvokeJSImportSync,
+    SystemJS_WarnAboutBlockingWait,
 ];
 
 export const mono_wasm_imports = [
     // mini-wasm.c
-    mono_wasm_schedule_timer,
+    SystemJS_ScheduleTimerImpl,
 
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
@@ -59,7 +61,7 @@ export const mono_wasm_imports = [
     mono_wasm_fire_debugger_agent_message_with_data,
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
     // mono-threads-wasm.c
-    schedule_background_exec,
+    SystemJS_ScheduleBackgroundJobImpl,
 
     // interp.c and jiterpreter.c
     mono_interp_tier_prepare_jiterpreter,
@@ -68,35 +70,45 @@ export const mono_wasm_imports = [
     mono_interp_jit_wasm_jit_call_trampoline,
     mono_interp_invoke_wasm_jit_call_trampoline,
     mono_interp_flush_jitcall_queue,
-    mono_jiterp_free_method_data_js,
+    mono_wasm_free_method_data,
 
-    mono_wasm_profiler_enter,
-    mono_wasm_profiler_leave,
+    // browser.c, ep-rt-mono-runtime-provider.c
+    mono_wasm_profiler_now,
+    mono_wasm_profiler_record,
 
     // driver.c
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
 
     // src/native/minipal/random.c
-    mono_wasm_browser_entropy,
+    SystemJS_RandomBytes,
+
+    // mono-proclib.c
+    SystemJS_GetCurrentProcessId,
 
     // corebindings.c
-    mono_wasm_console_clear,
-    mono_wasm_release_cs_owned_object,
-    mono_wasm_bind_js_import_ST,
-    mono_wasm_invoke_js_function,
-    mono_wasm_invoke_jsimport_ST,
-    mono_wasm_resolve_or_reject_promise,
-    mono_wasm_cancel_promise,
+    SystemJS_ConsoleClear,
+    SystemInteropJS_ReleaseCSOwnedObject,
+    SystemInteropJS_BindJSImportST,
+    SystemInteropJS_InvokeJSFunction,
+    SystemInteropJS_InvokeJSImportST,
+    SystemInteropJS_ResolveOrRejectPromise,
+    SystemInteropJS_CancelPromise,
+    SystemJS_GetLocaleInfo,
+
+    //event pipe
+    ds_rt_websocket_create,
+    ds_rt_websocket_send,
+    ds_rt_websocket_poll,
+    ds_rt_websocket_recv,
+    ds_rt_websocket_close,
 ];
 
-
+// !!! Keep in sync with exports-linker.ts
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // globalization exports
-    ...mono_wasm_js_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {

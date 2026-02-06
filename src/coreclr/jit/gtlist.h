@@ -9,11 +9,10 @@
 /*****************************************************************************/
 //
 //     Node enum
-//                       , GenTree struct flavor
-//                                           ,commutative
-//                                             ,illegal as VN func
-//                                               ,oper kind | DEBUG oper kind
-
+//                      , GenTree struct flavor
+//                      ,                    ,commutative
+//                      ,                    , ,illegal as VN func
+//                      ,                    , , ,(oper kind | DEBUG oper kind)
 GTNODE(NONE             , char               ,0,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
@@ -33,10 +32,13 @@ GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,0,GTK_LEAF)             // local
 //-----------------------------------------------------------------------------
 
 GTNODE(CATCH_ARG        , GenTree            ,0,0,GTK_LEAF)             // Exception object in a catch block
+GTNODE(ASYNC_CONTINUATION, GenTree           ,0,0,GTK_LEAF)            // Access returned continuation by an async call
 GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
+GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -212,6 +214,12 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
 // AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
 GTNODE(AND_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 
+// OrNot - emitted on ARM64 as the ORN instruction.
+GTNODE(OR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// XorNot - emitted on ARM64 as the EON instruction.
+GTNODE(XOR_NOT          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 #endif
@@ -238,11 +246,16 @@ GTNODE(JCC              , GenTreeCC          ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(SETCC            , GenTreeCC          ,0,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECTCC         , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
-#ifdef TARGET_ARM64
-// The arm64 ccmp instruction. If the specified condition is true, compares two
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+// The arm64 and x86 ccmp instruction. If the specified condition is true, compares two
 // operands and sets the condition flags according to the result. Otherwise
 // sets the condition flags to the specified immediate value.
 GTNODE(CCMP             , GenTreeCCMP        ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#endif
+
+
+#ifdef TARGET_ARM64
 // Maps to arm64 csinc/cinc instruction. Computes result = condition ? op1 : op2 + 1.
 // If op2 is null, computes result = condition ? op1 + 1 : op1.
 GTNODE(SELECT_INC       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
@@ -258,6 +271,36 @@ GTNODE(SELECT_INVCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SELECT_NEG       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of SELECT_NEG that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+//-----------------------------------------------------------------------------
+//  LIR specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+#ifdef TARGET_RISCV64
+// Maps to riscv64 sh1add instruction. Computes result = op2 + (op1 << 1).
+GTNODE(SH1ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh1add.uw instruction. Computes result = op2 + (zext(op1[31..0]) << 1).
+GTNODE(SH1ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add instruction. Computes result = op2 + (op1 << 2).
+GTNODE(SH2ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add.uw instruction. Computes result = op2 + (zext(op1[31..0]) << 2).
+GTNODE(SH2ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add instruction. Computes result = op2 + (op1 << 3).
+GTNODE(SH3ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add.uw instruction. Computes result = op2 + (zext(op1[31..0]) << 3).
+GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 add.uw instruction. Computes result = op2 + zext(op1[31..0]).
+GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0]) << imm.
+GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// Maps to bset/bseti instruction. Computes result = op1 | (1 << op2)
+GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
+GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
+GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -278,14 +321,16 @@ GTNODE(RETURN           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(SWITCH           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP that cannot be deleted.
 
+// Suspend an async method, returning a continuation.
+// Before lowering this is a seemingly normal TYP_VOID node with a lot of side effects (GTF_CALL | GTF_GLOB_REF | GTF_ORDER_SIDEEFF).
+// Lowering then removes all successor nodes and leaves it as the terminator node.
+GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
+
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if defined(FEATURE_EH_WINDOWS_X86)
-GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // FEATURE_EH_WINDOWS_X86
 
 //-----------------------------------------------------------------------------
 //  Swift interop-specific nodes:
@@ -313,13 +358,11 @@ GTNODE(PINVOKE_EPILOG   , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // a conditional call to wait on gc
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)  // operator that places outgoing arg in stack
-#if FEATURE_ARG_SPLIT
-GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,0,GTK_UNOP|DBK_NOTHIR)              // operator that places outgoing arg in registers with stack (split struct in ARM32)
-#endif // FEATURE_ARG_SPLIT
 GTNODE(SWAP             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR) // op1 and op2 swap (registers)
 GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // Copies a variable from its current location to a register that satisfies
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.
 GTNODE(IL_OFFSET        , GenTreeILOffset    ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // marks an IL offset for debugging purposes
+GTNODE(RECORD_ASYNC_RESUME, GenTreeVal       ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // record native offset for async resumption info
 
 /*****************************************************************************/
 #undef  GTNODE

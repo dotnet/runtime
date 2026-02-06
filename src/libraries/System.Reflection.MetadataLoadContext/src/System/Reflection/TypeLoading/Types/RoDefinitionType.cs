@@ -89,8 +89,7 @@ namespace System.Reflection.TypeLoading
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
-            if (typeArguments is null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
@@ -144,6 +143,9 @@ namespace System.Reflection.TypeLoading
             }
         }
 
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018; // TypeAttributes.ExtendedLayout
+        private const LayoutKind LayoutKindExtended = (LayoutKind)1;
+
         public sealed override StructLayoutAttribute? StructLayoutAttribute
         {
             get
@@ -159,6 +161,7 @@ namespace System.Reflection.TypeLoading
                     TypeAttributes.ExplicitLayout => LayoutKind.Explicit,
                     TypeAttributes.AutoLayout => LayoutKind.Auto,
                     TypeAttributes.SequentialLayout => LayoutKind.Sequential,
+                    TypeAttributesExtendedLayout => LayoutKindExtended,
                     _ => LayoutKind.Auto,
                 };
                 CharSet charSet = (attributes & TypeAttributes.StringFormatMask) switch

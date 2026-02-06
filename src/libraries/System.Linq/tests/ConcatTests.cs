@@ -31,8 +31,8 @@ namespace System.Linq.Tests
             first = from item in first select item;
             second = from item in second select item;
 
-            VerifyEqualsWorker(first.Concat(second), first.Concat(second));
-            VerifyEqualsWorker(second.Concat(first), second.Concat(first));
+            Assert.Equal(first.Concat(second), first.Concat(second));
+            Assert.Equal(second.Concat(first), second.Concat(first));
         }
 
         [Theory]
@@ -41,8 +41,8 @@ namespace System.Linq.Tests
         [InlineData(new int[] { 2, 3, 5, 9 }, new int[] { 8, 10 }, new int[] { 2, 3, 5, 9, 8, 10 })] // Neither side is empty
         public void PossiblyEmptyInputs(IEnumerable<int> first, IEnumerable<int> second, IEnumerable<int> expected)
         {
-            VerifyEqualsWorker(expected, first.Concat(second));
-            VerifyEqualsWorker(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
+            Assert.Equal(expected, first.Concat(second));
+            Assert.Equal(expected.Skip(first.Count()).Concat(expected.Take(first.Count())), second.Concat(first)); // Swap the inputs around
         }
 
         [Fact]
@@ -80,7 +80,7 @@ namespace System.Linq.Tests
         public void VerifyEquals(IEnumerable<int> expected, IEnumerable<int> actual)
         {
             // workaround: xUnit type inference doesn't work if the input type is not T (like IEnumerable<T>)
-            VerifyEqualsWorker(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
         [Theory]
@@ -130,23 +130,6 @@ namespace System.Linq.Tests
                 Assert.Equal(enumeratedFirst, first);
                 Assert.Equal(enumeratedLast, last);
                 Assert.Equal(enumeratedElementAt, elementAt);
-            }
-        }
-
-        private static void VerifyEqualsWorker<T>(IEnumerable<T> expected, IEnumerable<T> actual)
-        {
-            // Returns a list of functions that, when applied to enumerable, should return
-            // another one that has equivalent contents.
-            var identityTransforms = IdentityTransforms<T>();
-
-            // We run the transforms N^2 times, by testing all transforms
-            // of expected against all transforms of actual.
-            foreach (var outTransform in identityTransforms)
-            {
-                foreach (var inTransform in identityTransforms)
-                {
-                    Assert.Equal(outTransform(expected), inTransform(actual));
-                }
             }
         }
 
@@ -292,7 +275,7 @@ namespace System.Linq.Tests
                 }
 
                 Assert.Equal(sources.Sum(s => s.Count()), concatee.Count());
-                VerifyEqualsWorker(sources.SelectMany(s => s), concatee);
+                Assert.Equal(sources.SelectMany(s => s), concatee);
             }
         }
 
@@ -320,7 +303,7 @@ namespace System.Linq.Tests
             yield return [Enumerable.Range(0, 500).Select(i => Enumerable.Repeat(i, 1)).Reverse()];
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void CountOfConcatIteratorShouldThrowExceptionOnIntegerOverflow()
         {
             var supposedlyLargeCollection = new DelegateBasedCollection<int> { CountWorker = () => int.MaxValue };

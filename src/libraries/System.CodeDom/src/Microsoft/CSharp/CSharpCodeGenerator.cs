@@ -192,10 +192,8 @@ namespace Microsoft.CSharp
             // If the string is short, use C style quoting (e.g "\r\n")
             // Also do it if it is too long to fit in one line
             // If the string contains '\0', verbatim style won't work.
-#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'
-            if (value.Length < 256 || value.Length > 1500 || (value.IndexOf('\0') != -1)) // string.Contains(char) is .NetCore2.1+ specific
+            if (value.Length < 256 || value.Length > 1500 || value.Contains('\0'))
                 return QuoteSnippetStringCStyle(value);
-#pragma warning restore CA2249
 
             // Otherwise, use 'verbatim' style quoting (e.g. @"foo")
             return QuoteSnippetStringVerbatimStyle(value);
@@ -531,10 +529,7 @@ namespace Microsoft.CSharp
 
         private void GenerateStatement(CodeStatement e)
         {
-            if (e is null)
-            {
-                throw new ArgumentNullException(nameof(e));
-            }
+            ArgumentNullException.ThrowIfNull(e);
 
             if (e.StartDirectives.Count > 0)
             {
@@ -1233,14 +1228,8 @@ namespace Microsoft.CSharp
             }
             else
             {
-                if (e == null)
-                {
-                    throw new ArgumentNullException(nameof(e));
-                }
-                else
-                {
-                    throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
-                }
+                ArgumentNullException.ThrowIfNull(e);
+                throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
             }
         }
 
@@ -2695,10 +2684,7 @@ namespace Microsoft.CSharp
 
         public string CreateValidIdentifier(string name)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (CSharpHelpers.IsPrefixTwoUnderscore(name))
             {
@@ -2715,10 +2701,7 @@ namespace Microsoft.CSharp
 
         public string CreateEscapedIdentifier(string name)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return CSharpHelpers.CreateEscapedIdentifier(name);
         }
@@ -2902,10 +2885,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -2919,10 +2899,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -2936,10 +2913,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -2953,10 +2927,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -2970,14 +2941,8 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileNames is null)
-            {
-                throw new ArgumentNullException(nameof(fileNames));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(fileNames);
 
             try
             {
@@ -2998,10 +2963,7 @@ namespace Microsoft.CSharp
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             try
             {
@@ -3015,10 +2977,7 @@ namespace Microsoft.CSharp
 
         private CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             return FromDomBatch(options, new CodeCompileUnit[1] { e });
         }
@@ -3026,14 +2985,8 @@ namespace Microsoft.CSharp
 
         private static CompilerResults FromFile(CompilerParameters options, string fileName)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (fileName is null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(fileName);
 
             // Try opening the file to make sure it exists.  This will throw an exception
             // if it doesn't
@@ -3044,24 +2997,15 @@ namespace Microsoft.CSharp
 
         private static CompilerResults FromSource(CompilerParameters options, string source)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             return FromSourceBatch(options, new string[1] { source });
         }
 
         private CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (ea is null)
-            {
-                throw new ArgumentNullException(nameof(ea));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(ea);
 
             string[] filenames = new string[ea.Length];
 
@@ -3101,14 +3045,8 @@ namespace Microsoft.CSharp
 
         private static CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (sources is null)
-            {
-                throw new ArgumentNullException(nameof(sources));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(sources);
 
             string[] filenames = new string[sources.Length];
 

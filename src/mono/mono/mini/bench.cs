@@ -82,8 +82,8 @@ class Tests {
 		bool flag13 = true;
 
 		// First set of tests.
-		for(iter = 0; iter < 2000000; ++iter) {
-			if((flag1 || flag2) && (flag3 || flag4) &&
+		for (iter = 0; iter < 2000000; ++iter) {
+			if ((flag1 || flag2) && (flag3 || flag4) &&
 			   (flag5 || flag6 || flag7))
 				{
 				flag8 = !flag8;
@@ -212,25 +212,25 @@ class Tests {
 
 		int iterations = 1;
 		
-		while(iterations-- > 0) {
+		while (iterations-- > 0) {
 
 			// Draw fake picture
-			for(int i = 0; i < size; i++) {
-				for(int j = 0; j < size; j++) {   
+			for (int i = 0; i < size; i++) {
+				for (int j = 0; j < size; j++) {   
 					arr1[i, j] = (byte) (i%255); 
 				}
 			}
 
-			for(int n = 0; n < num; n++) { // num rounds of blurring
-				for(int i = 3; i < size-3; i++) // vertical blur arr1 -> arr2
-					for(int j = 0; j < size; j++)
+			for (int n = 0; n < num; n++) { // num rounds of blurring
+				for (int i = 3; i < size-3; i++) // vertical blur arr1 -> arr2
+					for (int j = 0; j < size; j++)
 						arr2[i, j] = (byte)((arr1[i-3, j] + arr1[i+3, j]
 								     + 6*(arr1[i-2, j]+arr1[i+2, j])
 								     + 15*(arr1[i-1, j]+arr1[i+1, j])
 								     + 20*arr1[i, j] + 32)>>6);
 
-				for(int j = 3; j < size-3; j++) // horizontal blur arr1 -> arr2
-					for(int i = 0; i < size; i++)
+				for (int j = 3; j < size-3; j++) // horizontal blur arr1 -> arr2
+					for (int i = 0; i < size; i++)
 						arr1[i, j] = (byte)((arr2[i, j-3] + arr2[i, j+3]
 								     + 6*(arr2[i, j-2]+arr2[i, j+2])
 								     + 15*(arr2[i, j-1]+arr2[i, j+1])

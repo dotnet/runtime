@@ -23,17 +23,12 @@
 #include "fcall.h"
 #include "qcall.h"
 #include "windows.h"
-#undef GetCurrentTime
 
 //
 //
 // EXCEPTION NATIVE
 //
 //
-
-#ifdef FEATURE_COMINTEROP
-void FreeExceptionData(ExceptionData *pedata);
-#endif
 
 class ExceptionNative
 {
@@ -87,9 +82,6 @@ public:
     static FCDECL3(VOID, BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount);
 };
 
-extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length);
-extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length);
-
 const UINT MEM_PRESSURE_COUNT = 4;
 
 struct GCGenerationInfo
@@ -139,7 +131,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
-using EnumerateConfigurationValuesCallback = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+using EnumerateConfigurationValuesCallback = void (*)(void* context, const char* name, const char* publicKey, GCConfigurationType type, int64_t data);
 
 struct GCHeapHardLimitInfo
 {
@@ -180,7 +172,7 @@ public:
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
 
     static FCDECL0(int,     GetMaxGeneration);
-    static FCDECL1(void,    KeepAlive, Object *obj);
+    static FCDECL0(FC_BOOL_RET, IsServerGC);
     static FCDECL1(void,    SuppressFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
@@ -210,7 +202,7 @@ extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT3
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure);
 
 extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
 
@@ -243,6 +235,40 @@ extern "C" enable_no_gc_region_callback_status QCALLTYPE GCInterface_EnableNoGCR
 
 extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation);
 
+//
+// EnvironmentNative
+//
+class EnvironmentNative
+{
+public:
+    // Functions on the System.Environment class
+    static FCDECL1(VOID,SetExitCode,INT32 exitcode);
+    static FCDECL0(INT32, GetExitCode);
+};
+
+extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
+
+extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource);
+
+// Returns the number of logical processors that can be used by managed code
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
+
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString);
+
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString);
+
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString);
+
+class ObjectNative
+{
+public:
+    static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
+    static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
+};
+
+extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
+extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
+
 class COMInterlocked
 {
 public:
@@ -256,14 +282,13 @@ public:
         static FCDECL2_IV(INT64, ExchangeAdd64, INT64 *location, INT64 value);
 };
 
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
-
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
     static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
+    static FCDECL1(OBJECTHANDLE, GetLoaderAllocatorHandle, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

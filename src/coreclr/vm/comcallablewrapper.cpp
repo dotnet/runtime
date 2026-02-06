@@ -411,8 +411,9 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             EX_CATCH
                             {
                                 pADThrowable = GET_THROWABLE();
+                                RethrowTerminalExceptions();
                             }
-                            EX_END_CATCH(RethrowTerminalExceptions);
+                            EX_END_CATCH
                         }
 
                         if (pADThrowable != NULL)
@@ -442,8 +443,9 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             {
                                 fNonTransientExceptionThrown = !GET_EXCEPTION()->IsTransient();
                                 pADThrowable = GET_THROWABLE();
+                                RethrowTerminalExceptions();
                             }
-                            EX_END_CATCH(RethrowTerminalExceptions);
+                            EX_END_CATCH
 
                             if (pADThrowable != NULL)
                             {
@@ -465,7 +467,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                 // AppDomain then can't use the stub and must report an error.
                 pStub = NULL;
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             if (pThrowable != NULL)
             {
@@ -624,7 +626,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
             }
             EX_CATCH
             { }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 
         if (g_pConfig->ShouldLogCCWRefCountChange(pszClassName, pszNamespace))
@@ -639,7 +641,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCSTR szOperation, StackSStr
             }
             EX_CATCH
             { }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     }
 }
@@ -664,7 +666,7 @@ void SimpleComCallWrapper::LogRefCount(ComCallWrapper *pWrap, StackSString &ssMe
         }
         EX_CATCH
         { }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         LogCCWRefCountChange_BREAKPOINT(pWrap);
     }
@@ -847,7 +849,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     CONTRACTL_END;
 
     MethodTable* pMT = pTemplate->GetClassType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 
     m_pMT = pMT;
@@ -1054,19 +1056,13 @@ ConnectionPoint *SimpleComCallWrapper::TryCreateConnectionPoint(ComCallWrapper *
     }
     CONTRACT_END;
 
-    ConnectionPoint *pCP = NULL;
-
     EX_TRY
     {
-        pCP = CreateConnectionPoint(pWrap, pEventMT);
+        RETURN CreateConnectionPoint(pWrap, pEventMT);
     }
-    EX_CATCH
-    {
-        pCP = NULL;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_SWALLOW_NONTERMINAL
 
-    RETURN pCP;
+    RETURN nullptr;
 }
 
 ConnectionPoint *SimpleComCallWrapper::CreateConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
@@ -3317,9 +3313,10 @@ void ComMethodTable::LayOutClassMethodTable()
                 pCurrParentInteropMD = &pCurrParentInteropMT->pVTable[i];
                 pParentMD = pCurrParentInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsOverloadedComVisibleMember(pMD, pParentMD))
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsOverloadedComVisibleMember(pMD, pParentMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     // some bytes are reserved for CALL xxx before the method desc
                     ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -3350,9 +3347,10 @@ void ComMethodTable::LayOutClassMethodTable()
                 pCurrInteropMD = &pCurrInteropMT->pVTable[i];
                 pMD = pCurrInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsNewComVisibleMember(pMD))
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsNewComVisibleMember(pMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     // some bytes are reserved for CALL xxx before the method desc
                     ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -3380,8 +3378,12 @@ void ComMethodTable::LayOutClassMethodTable()
                 if (!it.IsVirtual()) {
                     MethodDesc* pMD = it.GetMethodDesc();
 
-                    if (pMD != NULL && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber()) &&
-                        IsNewComVisibleMember(pMD) && !pMD->IsStatic() && !pMD->IsCtor()
+                    if (pMD != NULL
+                        && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber())
+                        && IsNewComVisibleMember(pMD)
+                        && !pMD->IsStatic()
+                        && !pMD->IsCtor()
+                        && !pMD->IsAsyncMethod()
                         && (!pCurrMT->IsValueType() || (GetClassInterfaceType() != clsIfAutoDual && IsStrictlyUnboxed(pMD))))
                     {
                         // some bytes are reserved for CALL xxx before the method desc
@@ -3562,6 +3564,8 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     ArrayList NewCOMMethodDescs;
     ComCallMethodDescArrayHolder NewCOMMethodDescsHolder(&NewCOMMethodDescs);
 
+    unsigned numVtableSlots = 0;
+
     for (i = 0; i < cbSlots; i++)
     {
         // Some space for a CALL xx xx xx xx stub is reserved before the beginning of the MethodDesc
@@ -3569,6 +3573,15 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         NewCOMMethodDescs.Append(pNewMD);
 
         MethodDesc* pIntfMD = m_pMT->GetMethodDescForSlot(i);
+
+        if (pIntfMD->IsAsyncMethod())
+        {
+            // Async methods are not supported on COM interfaces
+            // And we don't include them in the calculation of COM vtable slots.
+            continue;
+        }
+
+        numVtableSlots++;
 
         if (m_pMT->HasInstantiation())
         {
@@ -3620,8 +3633,10 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         SLOT *pComVtableRW = (SLOT*)((BYTE*)pComVtable + writeableOffset);
 
         // Method descs are at the end of the vtable
-        // m_cbSlots interfaces methods + IUnk methods
+        // numVtableSlots interfaces methods + IUnk methods
+        unsigned cbEmittedSlots = 0;
         pMethodDescMemory = (BYTE *)&pComVtable[m_cbSlots];
+        _ASSERTE(numVtableSlots <= m_cbSlots);
         for (i = 0; i < cbSlots; i++)
         {
             ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -3629,13 +3644,24 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
 
             MethodDesc* pIntfMD  = m_pMT->GetMethodDescForSlot(i);
 
+            if (pIntfMD->IsAsyncMethod())
+            {
+                // Async methods are not supported on COM interfaces
+                // We skip them above in the vtable calculation
+                // so don't fill in the COM vtable slot here.
+                continue;
+            }
+
             emitCOMStubCall(pNewMD, pNewMDRW, GetEEFuncEntryPoint(ComCallPreStub));
 
             UINT slotIndex = (pIntfMD->GetComSlot() - cbExtraSlots);
             FillInComVtableSlot(pComVtableRW, slotIndex, pNewMD);
 
             pMethodDescMemory += (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc));
+            cbEmittedSlots++;
         }
+
+        _ASSERTE(numVtableSlots == cbEmittedSlots);
 
         // Set the layout complete flag and release the lock.
         comMTWriterHolder.GetRW()->m_Flags |= enum_LayoutComplete;
@@ -3647,8 +3673,8 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
-        CHAR rIID[GUID_STR_BUFFER_LEN];
-        GuidToLPSTR(m_IID, rIID);
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(m_IID, rIID, MINIPAL_GUID_BUFFER_LEN);
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%hs, IID:%s, vTbl:%#08x\n",
              pItfClass->GetDebugClassName(), rIID, pUnkVtable));
 #else
@@ -3862,7 +3888,7 @@ void ComCallWrapperTemplate::Init()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY | CRST_HOST_BREAKABLE));
+    g_CreateWrapperTemplateCrst.Init(CrstWrapperTemplate, (CrstFlags)(CRST_REENTRANCY));
 }
 
 ComCallWrapperTemplate::ComCallWrapperTemplate()
@@ -4070,7 +4096,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
     {
         isSafe = FALSE;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (isSafe)
     {
@@ -4252,9 +4278,10 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 pCurrParentInteropMD = &pCurrParentInteropMT->pVTable[i];
                 pParentMD = pCurrParentInteropMD->pMD;
 
-                if (pMD &&
-                    !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsOverloadedComVisibleMember(pMD, pParentMD))
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsOverloadedComVisibleMember(pMD, pParentMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     cbNewPublicMethods++;
                 }
@@ -4271,9 +4298,10 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 pCurrInteropMD = &pCurrInteropMT->pVTable[i];
                 pMD = pCurrInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsNewComVisibleMember(pMD))
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsNewComVisibleMember(pMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     cbNewPublicMethods++;
                 }
@@ -4286,9 +4314,13 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 if (!it.IsVirtual())
                 {
                     MethodDesc* pMD = it.GetMethodDesc();
-                        if (pMD && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber()) && IsNewComVisibleMember(pMD) &&
-                        !pMD->IsStatic() && !pMD->IsCtor() &&
-                        (!pCurrMT->IsValueType() || (ClassItfType != clsIfAutoDual && IsStrictlyUnboxed(pMD))))
+                        if (pMD
+                            && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber())
+                            && IsNewComVisibleMember(pMD)
+                            && !pMD->IsStatic()
+                            && !pMD->IsCtor()
+                            && !pMD->IsAsyncMethod()
+                            && (!pCurrMT->IsValueType() || (ClassItfType != clsIfAutoDual && IsStrictlyUnboxed(pMD))))
                     {
                         cbNewPublicMethods++;
                     }
@@ -4698,8 +4730,8 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
                 GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[GUID_STR_BUFFER_LEN];
-            GuidToLPSTR(IClassXIID, rIID);
+            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
             SString ssName;
             thClass.GetName(ssName);
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",

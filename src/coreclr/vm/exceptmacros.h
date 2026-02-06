@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 //
 // EXCEPTMACROS.H -
@@ -67,7 +66,7 @@
 //          ...guarded code...
 //      } EX_CATCH {
 //          ...handler...
-//      } EX_END_CATCH(SwallowAllExceptions)
+//      } EX_END_CATCH
 //
 //
 // EX_TRY blocks can be nested.
@@ -106,8 +105,6 @@
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
 //
-//
-
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -117,10 +114,6 @@ class Thread;
 class Frame;
 class Exception;
 struct REGDISPLAY;
-
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-#endif
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
@@ -184,68 +177,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
         PAL_ENDTRY                                                      \
     }
 
-
-
-
-//==========================================================================
-// Helpful macros to declare exception handlers, their implementation,
-// and to call them.
-//==========================================================================
-
-#define _EXCEPTION_HANDLER_DECL(funcname)                                                               \
-    EXCEPTION_DISPOSITION __cdecl funcname(EXCEPTION_RECORD *pExceptionRecord,                          \
-                                           struct _EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame,    \
-                                           CONTEXT *pContext,                                           \
-                                           DISPATCHER_CONTEXT *pDispatcherContext)
-
-#define EXCEPTION_HANDLER_DECL(funcname) \
-    extern "C"  _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_IMPL(funcname) \
-    _EXCEPTION_HANDLER_DECL(funcname)
-
-#define EXCEPTION_HANDLER_FWD(funcname) \
-    funcname(pExceptionRecord, pEstablisherFrame, pContext, pDispatcherContext)
-
-//==========================================================================
-// Declares a CLR frame handler that can be used to make sure that
-// exceptions that should be handled from within managed code
-// are handled within and don't leak out to give other handlers a
-// chance at them.
-//==========================================================================
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER()                                     \
-    DECLARE_CPFH_EH_RECORD(GET_THREAD());                                       \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()
-
-#define INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE()                          \
-{                                                                               \
-    INSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));                \
-    /* work around unreachable code warning */                                  \
-    if (true) {
-
-#define UNINSTALL_COMPLUS_EXCEPTION_HANDLER()                                   \
-    }                                                                           \
-    UNINSTALL_EXCEPTION_HANDLING_RECORD(&(___pExRecord->m_ExReg));              \
-}
-
-#if !defined(FEATURE_EH_FUNCLETS)
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)                                                                       \
-   NestedHandlerExRecord *__pNestedHandlerExRecord = (NestedHandlerExRecord*) _alloca(sizeof(NestedHandlerExRecord)); \
-   __pNestedHandlerExRecord->m_handlerInfo.m_hThrowable = NULL;                                                       \
-   __pNestedHandlerExRecord->Init((PEXCEPTION_ROUTINE)COMPlusNestedExceptionHandler, frame);                          \
-   INSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()                                                                          \
-   UNINSTALL_EXCEPTION_HANDLING_RECORD(&(__pNestedHandlerExRecord->m_ExReg));
-
-#else // defined(FEATURE_EH_FUNCLETS)
-
-#define INSTALL_NESTED_EXCEPTION_HANDLER(frame)
-#define UNINSTALL_NESTED_EXCEPTION_HANDLER()
-
-#endif // !defined(FEATURE_EH_FUNCLETS)
-
 enum VEH_ACTION
 {
     VEH_NO_ACTION = -3,
@@ -260,7 +191,7 @@ VEH_ACTION CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 // Actual UEF worker prototype for use by GCUnhandledExceptionFilter.
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);
 
-VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
+VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
 #if defined(DACCESS_COMPILE)
 
@@ -274,18 +205,29 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
+#ifdef FEATURE_INTERPRETER
+VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP);
+#endif // FEATURE_INTERPRETER
+
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
 
-#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX     \
         PAL_SEHException exCopy;                    \
         bool hasCaughtException = false;            \
         try {
 
-#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER        \
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
         }                                           \
         catch (PAL_SEHException& ex)                \
-        {                                           \
+        {                        \
+            if (nativeRethrow || (ex.HasTargetFrame() && ex.TargetFrameSp > (SIZE_T)&exCopy))               \
+            { \
+                throw; \
+            } \
             exCopy = std::move(ex);                 \
             hasCaughtException = true;              \
         }                                           \
@@ -293,6 +235,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             DispatchManagedException(exCopy, false);\
         }
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER      \
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(false)
 
 // Install trap that catches unhandled managed exception and dumps its stack
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP                                            \
@@ -312,7 +257,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
-#else // TARGET_UNIX
+#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
 #define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
@@ -320,60 +265,77 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 #define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
 
+// We use [UN]INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX to backpatch the SEH record installed
+// in CallDescrWorkerInternal from ProcessCLRException to CallDescrWorkerUnwindFrameChainHandler
+// when throwing an exception. This ensures that class loading exceptions are propagated through
+// unmanaged code before being forwarded to the managed one.
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX \
+        try \
+        {
+
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(nativeRethrow) \
+        } \
+        catch (...) \
+        { \
+            if (nativeRethrow) \
+            { \
+                PEXCEPTION_REGISTRATION_RECORD pExceptionRecord = GetCurrentSEHRecord(); \
+                _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                while (pExceptionRecord->Handler != (PEXCEPTION_ROUTINE)ProcessCLRException) \
+                { \
+                    pExceptionRecord = pExceptionRecord->Next; \
+                    _ASSERTE(pExceptionRecord != EXCEPTION_CHAIN_END); \
+                } \
+                pExceptionRecord->Handler = (PEXCEPTION_ROUTINE)CallDescrWorkerUnwindFrameChainHandler; \
+            } \
+            throw; \
+        }
+
+#else // TARGET_UNIX
+
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+#define UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX
+
+#define INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+#define UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP
+
 #endif // TARGET_UNIX
 
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                        \
+// The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed
+// exception before it hits managed code.
+
+#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                              \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH)
+        bool       __fExceptionCaught = false;                                              \
+        if (true) PAL_CPP_TRY {
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER                                                 \
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX                                            \
-    /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
-    /* exception before it hits managed code. */
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 
-// Optimized version for helper method frame. Avoids redundant GetThread() calls.
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
-    {                                                                                       \
-        Exception* __pUnCException  = NULL;                                                 \
-        Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();                                                            \
-            DEBUG_ASSURE_NO_RETURN_BEGIN(IUACH);
-
-#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
-            DEBUG_ASSURE_NO_RETURN_END(IUACH)                                               \
-            SCAN_EHMARKER_END_TRY();                                                        \
+#define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             __pUnCException = Exception::GetOOMException();                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
-            __fExceptionCaught = true;                                                     \
-            SCAN_EHMARKER_END_CATCH();                                                      \
+            __fExceptionCaught = true;                                                      \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
             __pUnCException = __pException;                                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
             __fExceptionCaught = true;                                                     \
-            SCAN_EHMARKER_END_CATCH();                                                      \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
         if (__fExceptionCaught)                                                            \
         {                                                                                   \
-            SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException, nativeRethrow);    \
         }                                                                                   \
     }                                                                                       \
@@ -410,7 +372,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 // Adds a record to the contract chain.
 //==========================================================================
 
-#define CANNOTTHROWCOMPLUSEXCEPTION() ANNOTATION_NOTHROW; \
+#define CANNOTTHROWCOMPLUSEXCEPTION() \
     COMPlusCannotThrowExceptionHelper _dummyvariable(TRUE, __FUNCTION__, __FILE__, __LINE__);
 
 extern const char *g_ExceptionFile;
@@ -432,9 +394,7 @@ extern DWORD g_ExceptionLine;
 
 #else // ENABLE_CONTRACTS && !DACCESS_COMPILE
 
-#define CANNOTTHROWCOMPLUSEXCEPTION() ANNOTATION_NOTHROW
-#define BEGINCANNOTTHROWCOMPLUSEXCEPTION_SEH() ANNOTATION_NOTHROW
-#define ENDCANNOTTHROWCOMPLUSEXCEPTION_SEH()
+#define CANNOTTHROWCOMPLUSEXCEPTION()
 
 #define COMPlusThrow                        RealCOMPlusThrow
 #define COMPlusThrowNonLocalized            RealCOMPlusThrowNonLocalized
@@ -488,12 +448,12 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
   {                                                 \
     MAKE_CURRENT_THREAD_AVAILABLE();                \
     BEGIN_GCX_ASSERT_PREEMP;                        \
-    CoopTransitionHolder __CoopTransition(CURRENT_THREAD); \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(COOP_TRANSITION)
+    {                                               \
+        CoopTransitionHolder __CoopTransition(CURRENT_THREAD);
 
 #define COOPERATIVE_TRANSITION_END()                \
-    DEBUG_ASSURE_NO_RETURN_END(COOP_TRANSITION)     \
-    __CoopTransition.SuppressRelease();             \
+        __CoopTransition.SuppressRelease();         \
+    }                                               \
     END_GCX_ASSERT_PREEMP;                          \
   }
 

@@ -326,7 +326,6 @@ protected:
     void GetExceptionName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPackageMoniker(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
     void GetPRAID(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
-    void GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength);
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
@@ -526,7 +525,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* tar
     {
         wcsncpy_s(targetParam, maxLength, W("missing"), _TRUNCATE);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
@@ -661,7 +660,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(_Out_writes_(maxLength) WCHAR* 
         {
             failed = true;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     if (!pModule || failed)
@@ -768,7 +767,7 @@ void BaseBucketParamsManager::GetExceptionName(_Out_writes_(maxLength) WCHAR* ta
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 
         _ASSERTE(pExceptionName);
@@ -810,31 +809,6 @@ void BaseBucketParamsManager::GetPRAID(_Out_writes_(maxLength) WCHAR* targetPara
     _ASSERTE(!"PRAID support NYI for CoreCLR");
 }
 
-void BaseBucketParamsManager::GetIlRva(_Out_writes_(maxLength) WCHAR* targetParam, int maxLength)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD ilOffset = GetILOffset();
-
-    if (ilOffset == MAXDWORD)
-        ilOffset = 0;
-
-    if (m_pFaultingMD)
-        ilOffset += m_pFaultingMD->GetRVA();
-
-    _snwprintf_s(targetParam,
-                maxLength,
-                _TRUNCATE,
-                W("%x"),
-                ilOffset);
-}
-
 // helper functions
 
 DWORD BaseBucketParamsManager::GetILOffset()
@@ -873,7 +847,7 @@ DWORD BaseBucketParamsManager::GetILOffset()
         {
             // Swallow the exception, and just use MAXDWORD.
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     return ilOffset;

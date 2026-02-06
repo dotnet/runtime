@@ -38,6 +38,8 @@ namespace System.Reflection.Metadata
 
         public static bool IsMonoRuntime => PlatformDetection.IsMonoRuntime;
 
+        public static bool IsNotMonoRuntime => !PlatformDetection.IsMonoRuntime;
+
         private static readonly Lazy<bool> s_isSupportedMonoConfiguration = new Lazy<bool>(CheckSupportedMonoConfiguration);
 
         public static bool IsSupportedMonoConfiguration => s_isSupportedMonoConfiguration.Value;

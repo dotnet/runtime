@@ -15,7 +15,7 @@ internal struct Intersections
     public Vector256<int> ThingIndices;
 
     public static readonly Vector256<float> NullDistance = Vector256.Create(float.MaxValue);
-    public static readonly Vector256<int> NullIndex = Vector256.Create(-1);
+    public static readonly Vector256<int> NullIndex = Vector256<int>.NegativeOne;
 
     public Intersections(Vector256<float> dis, Vector256<int> things)
     {

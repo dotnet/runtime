@@ -134,8 +134,7 @@ namespace System.Management
             if (nsPath.Length != 0)
             {
                 // Any path separators present?
-                char[] pathSeparators = { '\\', '/' };
-                if (nsPath.IndexOfAny(pathSeparators) == -1)
+                if (nsPath.AsSpan().IndexOfAny('\\', '/') < 0)
                 {
                     // No separators.  The only valid path is "root".
                     if (!string.Equals("root", nsPath, StringComparison.OrdinalIgnoreCase))
@@ -1105,10 +1104,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is ManagementPath && destinationType == typeof(InstanceDescriptor))
             {

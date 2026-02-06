@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 using Internal.IL;
@@ -141,24 +142,27 @@ namespace ILCompiler
                     throw new UnreachableException();
             }
 
+            static bool IsSystemType(TypeDesc t)
+                => t is MetadataType mdType && mdType.Name.SequenceEqual("Type"u8) && mdType.Namespace.SequenceEqual("System"u8);
+
             static bool IsTypeGetTypeFromHandle(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name == "GetTypeFromHandle"
-                && method.OwningType is MetadataType { Name: "Type", Namespace: "System" };
+                && method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8)
+                && IsSystemType(method.OwningType);
 
             static bool IsTypeEquals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name is "op_Equality"
-                && method.OwningType is MetadataType { Name: "Type", Namespace: "System" };
+                && method.IsIntrinsic && method.Name.SequenceEqual("op_Equality"u8)
+                && IsSystemType(method.OwningType);
 
             static bool IsTypeInequals(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name is "op_Inequality"
-                && method.OwningType is MetadataType { Name: "Type", Namespace: "System" };
+                && method.IsIntrinsic && method.Name.SequenceEqual("op_Inequality"u8)
+                && IsSystemType(method.OwningType);
 
             static bool IsObjectGetType(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
                 => opcode is ILOpcode.call or ILOpcode.callvirt && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
-                && method.IsIntrinsic && method.Name is "GetType" && method.OwningType.IsObject;
+                && method.IsIntrinsic && method.Name.SequenceEqual("GetType"u8) && method.OwningType.IsObject;
 
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)
                 => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3);

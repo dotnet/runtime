@@ -2,30 +2,30 @@
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass3
-	{
-		public static void Main ()
-		{
-			new B ().Foo ();
-		}
+    class ClassImplemtingInterfaceMethodsThroughBaseClass3
+    {
+        public static void Main()
+        {
+            new B().Foo();
+        }
 
-		interface IFoo
-		{
-			void Foo ();
-		}
+        interface IFoo
+        {
+            void Foo();
+        }
 
-		[KeptMember (".ctor()")]
-		class B
-		{
-			[Kept]
-			public void Foo ()
-			{
-			}
-		}
+        [KeptMember(".ctor()")]
+        class B
+        {
+            [Kept]
+            public void Foo()
+            {
+            }
+        }
 
-		class A : B, IFoo
-		{
-			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
-		}
-	}
+        class A : B, IFoo
+        {
+            //my IFoo.Foo() is actually implemented by B which doesn't know about it.
+        }
+    }
 }

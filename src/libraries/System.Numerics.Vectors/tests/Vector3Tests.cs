@@ -207,6 +207,17 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Cross did not return the expected value.");
         }
 
+        // A test for Cross (Vector3f, Vector3f)
+        // Cross test of the same parallel vector
+        [Fact]
+        public void Vector3CrossSameParallelVectors()
+        {
+            var v = new Vector3(-1, 1, 0);
+            var n = Vector3.Normalize(v);
+            var actual = Vector3.Cross(n, n);
+            Assert.Equal(Vector3.Zero, actual);
+        }
+
         // A test for Distance (Vector3f, Vector3f)
         [Fact]
         public void Vector3DistanceTest()
@@ -1875,6 +1886,43 @@ namespace System.Numerics.Tests
             Assert.Equal(x, vector.X);
             Assert.Equal(y, vector.Y);
             Assert.Equal(z, vector.Z);
+        }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void AsVector2Test(float x, float y, float z)
+        {
+            var vector = Vector3.Create(x, y, z).AsVector2();
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+        }
+
+        [Fact]
+        public void CreateScalarTest()
+        {
+            var vector = Vector3.CreateScalar(float.Pi);
+
+            Assert.Equal(float.Pi, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+
+            vector = Vector3.CreateScalar(float.E);
+
+            Assert.Equal(float.E, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+        }
+
+        [Fact]
+        public void CreateScalarUnsafeTest()
+        {
+            var vector = Vector3.CreateScalarUnsafe(float.Pi);
+            Assert.Equal(float.Pi, vector.X);
+
+            vector = Vector3.CreateScalarUnsafe(float.E);
+            Assert.Equal(float.E, vector.X);
         }
     }
 }

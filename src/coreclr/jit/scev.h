@@ -82,11 +82,7 @@ struct Scev
 
 struct ScevConstant : Scev
 {
-    ScevConstant(var_types type, int64_t value)
-        : Scev(ScevOper::Constant, type)
-        , Value(value)
-    {
-    }
+    ScevConstant(var_types type, int64_t value);
 
     int64_t Value;
 };
@@ -218,7 +214,7 @@ struct SimplificationAssumptions
 // also maintains a cache.
 class ScalarEvolutionContext
 {
-    Compiler*             m_comp;
+    Compiler*             m_compiler;
     FlowGraphNaturalLoop* m_loop = nullptr;
     ScalarEvolutionMap    m_cache;
 

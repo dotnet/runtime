@@ -6,7 +6,17 @@
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
+
+  <!-- Translate runtime-local $(RuntimeBuildWasiSdkPath) to $(WASI_SDK_PATH) that "WasiApp.targets" understands. -->
+  <Target Name="SetWasiSdkPathForRuntimeBuild"
+          DependsOnTargets="AcquireWasiSdk"
+          BeforeTargets="_SetupWasiSdk">
+    <PropertyGroup>
+      <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
+    </PropertyGroup>
+  </Target>
 
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">

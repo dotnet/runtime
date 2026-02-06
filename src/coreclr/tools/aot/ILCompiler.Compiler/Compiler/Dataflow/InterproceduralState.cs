@@ -67,8 +67,8 @@ namespace ILCompiler.Dataflow
             methodBody = GetInstantiatedMethodIL(methodBody);
 
             // Work around the fact that ValueSet is readonly
-            Debug.Assert (!MethodBodies.IsUnknown ());
-            var methodsList = new List<MethodBodyValue>(MethodBodies.GetKnownValues ());
+            Debug.Assert(!MethodBodies.IsUnknown());
+            var methodsList = new List<MethodBodyValue>(MethodBodies.GetKnownValues());
             methodsList.Add(new MethodBodyValue(methodBody));
 
             // For state machine methods, also scan the state machine members.

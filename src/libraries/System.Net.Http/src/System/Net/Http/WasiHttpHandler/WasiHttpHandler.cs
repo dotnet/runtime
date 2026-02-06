@@ -43,7 +43,9 @@ namespace System.Net.Http
                 outgoingRequest.SetPathWithQuery(request.RequestUri.PathAndQuery);
 
 #pragma warning disable CS4014 // intentionaly not awaited
+#pragma warning disable CA2025
                 SendContent(request.Content, outgoingRequest, cancellationToken);
+#pragma warning restore CA2025
 #pragma warning restore CS4014
 
                 future = OutgoingHandlerInterop.Handle(outgoingRequest, null);
@@ -146,8 +148,7 @@ namespace System.Net.Http
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = false;
 
-        private Dictionary<string, object?>? _properties;
-        public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+        public IDictionary<string, object?> Properties => field ??= new Dictionary<string, object?>();
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

@@ -9,15 +9,18 @@ namespace System.Net.Http
     internal sealed class HttpConnectionHandler : HttpMessageHandlerStage
     {
         private readonly HttpConnectionPoolManager _poolManager;
+        private readonly bool _doRequestAuth;
 
-        public HttpConnectionHandler(HttpConnectionPoolManager poolManager)
+        public HttpConnectionHandler(HttpConnectionPoolManager poolManager, bool doRequestAuth)
         {
             _poolManager = poolManager;
+            _doRequestAuth = doRequestAuth;
         }
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            return _poolManager.SendAsync(request, async, doRequestAuth: false, cancellationToken);
+            bool doRequestAuth = _doRequestAuth && !request.IsAuthDisabled();
+            return _poolManager.SendAsync(request, async, doRequestAuth, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

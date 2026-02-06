@@ -4,16 +4,6 @@
 project(singlefilehost)
 set(DOTNET_PROJECT_NAME "singlefilehost")
 
-# Add RPATH to the apphost binary that allows using local copies of shared libraries
-# dotnet core depends on for special scenarios when system wide installation of such
-# dependencies is not possible for some reason.
-# This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
-# doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
-endif()
-
 include_directories(..)
 include_directories(../..)
 include_directories(../../hostmisc)
@@ -25,7 +15,9 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
+
+add_compile_definitions(RAPIDJSON_HAS_CXX17)
 
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)
@@ -69,7 +61,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_compile_definitions(UNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp
-        ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
     )
 
     list(APPEND HEADERS
@@ -127,12 +118,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
-
-    # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
-
-    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -152,16 +137,11 @@ if(CLR_CMAKE_TARGET_WIN32)
         shlwapi.lib
         shell32.lib
         bcrypt.lib
-        RuntimeObject.lib
-        delayimp.lib
     )
 
     # additional requirements for System.IO.Compression.Native
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
-
-    set(RUNTIMEINFO_LIB runtimeinfo)
-
 else()
     if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
         LIST(APPEND NATIVE_LIBS createdump_static)
@@ -176,10 +156,11 @@ else()
     )
 
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        list(APPEND NATIVE_LIBS
-            System.Net.Security.Native-Static
-            System.Security.Cryptography.Native.OpenSsl-Static
-        )
+        list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+
+        if(NOT CLR_CMAKE_TARGET_APPLE)
+            list(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)
+        endif()
     else()
         list(APPEND NATIVE_LIBS
             System.Security.Cryptography.Native.Android-Static
@@ -190,7 +171,13 @@ else()
         coreclrpal_dac
         corguids
         dbgutil
-        eventprovider
+    )
+    if (FEATURE_EVENT_TRACE)
+        LIST(APPEND NATIVE_LIBS
+            eventprovider
+        )
+    endif(FEATURE_EVENT_TRACE)
+    LIST(APPEND NATIVE_LIBS
         nativeresourcestring
     )
 
@@ -198,7 +185,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
@@ -208,15 +195,16 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
+    if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
     endif()
-
-    set(RUNTIMEINFO_LIB runtimeinfo)
-
 endif()
+
+LIST(APPEND NATIVE_LIBS
+    gcinfo
+)
 
 if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS
@@ -272,21 +260,9 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_APPLE)
     )
 endif()
 
-if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
-endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
-
 if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
     add_linker_flag(-Wl,-z,notext)
 endif()
-
-if(CLR_CMAKE_TARGET_APPLE)
-    # These options are used to force every object to be included even if it's unused.
-    set(START_WHOLE_ARCHIVE -force_load)
-    set(END_WHOLE_ARCHIVE )
-endif(CLR_CMAKE_TARGET_APPLE)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
@@ -295,11 +271,13 @@ target_link_libraries(
     PRIVATE
     ${NATIVE_LIBS}
 
-    ${START_WHOLE_ARCHIVE}
-    ${RUNTIMEINFO_LIB}
-    ${END_WHOLE_ARCHIVE}
+    $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>
 )
 
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(singlefilehost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()

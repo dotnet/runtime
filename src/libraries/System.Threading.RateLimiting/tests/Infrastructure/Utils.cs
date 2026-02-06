@@ -237,4 +237,15 @@ namespace System.Threading.RateLimiting.Tests
         public Action<bool> DisposeImpl = _ => { };
         protected override void Dispose(bool disposing) => DisposeImpl(disposing);
     }
+
+    internal sealed class ThrowDisposeLease : RateLimitLease
+    {
+        public override bool IsAcquired => true;
+
+        public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
+
+        public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
+
+        protected override void Dispose(bool disposing) => throw new NotImplementedException();
+    }
 }

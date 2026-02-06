@@ -58,9 +58,7 @@ endif ; _DEBUG
 ifdef FEATURE_HIJACK
 EXTERN  JIT_TailCallHelper:PROC
 endif
-EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
-EXTERN _s_gsCookie:DWORD
 
 EXTERN g_pPollGC:DWORD
 EXTERN g_TrapReturningThreads:DWORD
@@ -73,10 +71,6 @@ g_GCShadowEnd                   TEXTEQU <?g_GCShadowEnd@@3PAEA>
 EXTERN  g_GCShadow:DWORD
 EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
-endif
-
-ifndef FEATURE_EH_FUNCLETS
-EXTERN _COMPlusEndCatch@20:PROC
 endif
 
 .686P
@@ -723,26 +717,18 @@ VSDHelperLabel:
 ; m_regs
 ; m_CallerAddress
 ; m_pThread
-; vtbl
-; GSCookie
+; frame identifier
 ; &VSDHelperLabel
-OffsetOfTailCallFrame = 8
+OffsetOfTailCallFrame = 4 ; Offset to start of TailCallFrame, includes only the &VSDHelperLabel
 
 ; ebx = pThread
 
-ifdef _DEBUG
-        mov     esi, _s_gsCookie        ; GetProcessGSCookie()
-        cmp     dword ptr [esp+OffsetOfTailCallFrame-SIZEOF_GSCookie], esi
-        je      TailCallFrameGSCookieIsValid
-        call    @JIT_FailFast@0
-    TailCallFrameGSCookieIsValid:
-endif
         ; remove the padding frame from the chain
         mov     esi, dword ptr [esp+OffsetOfTailCallFrame+4]    ; esi = TailCallFrame::m_Next
         mov     dword ptr [ebx + Thread_m_pFrame], esi
 
         ; skip the frame
-        add     esp, 20     ; &VSDHelperLabel, GSCookie, vtbl, m_Next, m_CallerAddress
+        add     esp, 16     ; &VSDHelperLabel, vtbl, m_Next, m_CallerAddress
 
         pop     edi         ; restore callee saved registers
         pop     esi
@@ -914,7 +900,7 @@ VSDTailCall:
         ; If there is sufficient space, we will setup the frame and then slide
         ; the arguments up the stack. Else, we first need to slide the arguments
         ; down the stack to make space for the TailCallFrame
-        sub     edi, (SIZEOF_GSCookie + SIZEOF_TailCallFrame)
+        sub     edi, (SIZEOF_TailCallFrame)
         cmp     edi, esi
         jae     VSDSpaceForFrameChecked
 
@@ -954,29 +940,25 @@ VSDSpaceForFrameChecked:
         ; At this point, we have enough space on the stack for the TailCallFrame,
         ; and we may already have slided down the arguments
 
-        mov     eax, _s_gsCookie                ; GetProcessGSCookie()
-        mov     dword ptr [edi], eax            ; set GSCookie
-        mov     eax, _g_TailCallFrameVptr       ; vptr
         mov     edx, dword ptr [esp+OrigRetAddr]        ; orig return address
-        mov     dword ptr [edi+SIZEOF_GSCookie], eax            ; TailCallFrame::vptr
-        mov     dword ptr [edi+SIZEOF_GSCookie+28], edx         ; TailCallFrame::m_ReturnAddress
+        mov     dword ptr [edi], FRAMETYPE_TailCallFrame  ; FrameIdentifier::TailCallFrame
+        mov     dword ptr [edi+28], edx         ; TailCallFrame::m_ReturnAddress
 
         mov     eax, dword ptr [esp+CallersEdi]         ; restored edi
         mov     edx, dword ptr [esp+CallersEsi]         ; restored esi
-        mov     dword ptr [edi+SIZEOF_GSCookie+12], eax         ; TailCallFrame::m_regs::edi
-        mov     dword ptr [edi+SIZEOF_GSCookie+16], edx         ; TailCallFrame::m_regs::esi
-        mov     dword ptr [edi+SIZEOF_GSCookie+20], ebx         ; TailCallFrame::m_regs::ebx
-        mov     dword ptr [edi+SIZEOF_GSCookie+24], ebp         ; TailCallFrame::m_regs::ebp
+        mov     dword ptr [edi+12], eax         ; TailCallFrame::m_regs::edi
+        mov     dword ptr [edi+16], edx         ; TailCallFrame::m_regs::esi
+        mov     dword ptr [edi+20], ebx         ; TailCallFrame::m_regs::ebx
+        mov     dword ptr [edi+24], ebp         ; TailCallFrame::m_regs::ebp
 
         mov     ebx, dword ptr [esp+pThread]            ; ebx = pThread
 
         mov     eax, dword ptr [ebx+Thread_m_pFrame]
-        lea     edx, [edi+SIZEOF_GSCookie]
-        mov     dword ptr [edi+SIZEOF_GSCookie+4], eax          ; TailCallFrame::m_pNext
-        mov     dword ptr [ebx+Thread_m_pFrame], edx    ; hook the new frame into the chain
+        mov     dword ptr [edi+4], eax          ; TailCallFrame::m_pNext
+        mov     dword ptr [ebx+Thread_m_pFrame], edi    ; hook the new frame into the chain
 
         ; setup ebp chain
-        lea     ebp, [edi+SIZEOF_GSCookie+24]                   ; TailCallFrame::m_regs::ebp
+        lea     ebp, [edi+24]                   ; TailCallFrame::m_regs::ebp
 
         ; Do not copy arguments again if they are in place already
         ; Otherwise, we will need to slide the new arguments up the stack
@@ -987,7 +969,7 @@ VSDSpaceForFrameChecked:
         ; or the TailCallFrame is a perfect fit
         ; set the caller address
         mov     edx, dword ptr [esp+ExtraSpace+RetAddr] ; caller address
-        mov     dword ptr [edi+SIZEOF_GSCookie+8], edx         ; TailCallFrame::m_CallerAddress
+        mov     dword ptr [edi+8], edx         ; TailCallFrame::m_CallerAddress
 
         ; adjust edi as it would by copying
         neg     ecx
@@ -998,7 +980,7 @@ VSDSpaceForFrameChecked:
 VSDTailCallFrameInserted_DoSlideUpArgs:
         ; set the caller address
         mov     edx, dword ptr [esp+ExtraSpace+RetAddr] ; caller address
-        mov     dword ptr [edi+SIZEOF_GSCookie+8], edx          ; TailCallFrame::m_CallerAddress
+        mov     dword ptr [edi+8], edx          ; TailCallFrame::m_CallerAddress
 
         ; copy the arguments to the final destination
         test    ecx, ecx
@@ -1089,37 +1071,6 @@ _JIT_PatchedCodeLast@0 endp
 _JIT_PatchedCodeEnd@0 proc public
 ret
 _JIT_PatchedCodeEnd@0 endp
-
-
-ifndef FEATURE_EH_FUNCLETS
-; Note that the debugger skips this entirely when doing SetIP,
-; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
-; asserts that to be true.  If this ends up doing more work, then the
-; debugger may need additional support.
-; void __stdcall JIT_EndCatch();
-JIT_EndCatch PROC stdcall public
-
-    ; make temp storage for return address, and push the address of that
-    ; as the last arg to COMPlusEndCatch
-    mov     ecx, [esp]
-    push    ecx;
-    push    esp;
-
-    ; push the rest of COMPlusEndCatch's args, right-to-left
-    push    esi
-    push    edi
-    push    ebx
-    push    ebp
-
-    call    _COMPlusEndCatch@20 ; returns old esp value in eax, stores jump address
-    ; now eax = new esp, [esp] = new eip
-
-    pop     edx         ; edx = new eip
-    mov     esp, eax    ; esp = new esp
-    jmp     edx         ; eip = new eip
-
-JIT_EndCatch ENDP
-endif
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.

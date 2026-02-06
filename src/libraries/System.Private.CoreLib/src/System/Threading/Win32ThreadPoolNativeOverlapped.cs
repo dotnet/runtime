@@ -216,7 +216,7 @@ namespace System.Threading
         private static unsafe void OnExecutionContextCallback(object? state)
         {
             Debug.Assert(state != null);
-            ExecutionContextCallbackArgs args = (ExecutionContextCallbackArgs)state!;
+            ExecutionContextCallbackArgs args = (ExecutionContextCallbackArgs)state;
 
             uint errorCode = args._errorCode;
             uint bytesWritten = args._bytesWritten;

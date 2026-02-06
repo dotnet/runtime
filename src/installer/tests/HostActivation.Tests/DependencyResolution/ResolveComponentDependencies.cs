@@ -330,25 +330,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
         }
 
-        [Fact]
-        public void ComponentWithSameDependencyNativeImageShouldFail()
-        {
-            // Add a reference to a package which has asset of the native image of the existing ComponentDependency.
-            var component = sharedTestState.CreateComponentWithDependencies(b => b
-                .WithPackage("ComponentDependency_NI", "1.0.0", p => p
-                    .WithAssemblyGroup(null, g => g
-                        .WithAsset("ComponentDependency.ni.dll"))));
-
-            sharedTestState.RunComponentResolutionTest(component)
-                .Should().Fail()
-                .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverResolveFailure.ToString("x")}]")
-                .And.HaveStdOutContaining("corehost reported errors:")
-                .And.HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
-                .And.HaveStdOutContaining("package: 'ComponentDependency_NI', version: '1.0.0'")
-                .And.HaveStdOutContaining("path: 'ComponentDependency.ni.dll'")
-                .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(component.Location, "ComponentDependency.dll")}'");
-        }
-
         // This test also validates that corehost_set_error_writer custom writer
         // correctly captures errors from hostpolicy.
         [Fact]
@@ -365,7 +346,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining("corehost reported errors:")
-                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{component.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
+                .And.HaveStdOutContaining($"Failed to parse file [{component.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
                 .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {component.DepsJson}");
         }
 
@@ -426,7 +407,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Should().Fail()
                 .And.HaveStdOutContaining($"ComponentA: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.ResolverInitFailure.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentA: corehost reported errors:")
-                .And.HaveStdOutContaining($"ComponentA: A JSON parsing exception occurred in [{componentWithNoDependencies.DepsJson}], offset 0 (line 1, column 1): Invalid value.")
+                .And.HaveStdOutContaining($"ComponentA: Failed to parse file [{componentWithNoDependencies.DepsJson}]. JSON parsing exception: Invalid value. [offset 0: line 1, column 1]")
                 .And.HaveStdOutContaining($"ComponentA: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependencies.DepsJson}")
                 .And.HaveStdOutContaining($"ComponentB: corehost_resolve_component_dependencies:Fail[0x{Constants.ErrorCode.LibHostInvalidArgs.ToString("x")}]")
                 .And.HaveStdOutContaining($"ComponentB: corehost reported errors:")
@@ -451,14 +432,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public TestApp CreateComponentWithDependencies(Action<NetCoreAppBuilder> customizer = null, string location = null)
             {
                 TestApp componentWithDependencies = CreateTestApp(location, "ComponentWithDependencies");
-                FileUtils.EnsureDirectoryExists(componentWithDependencies.Location);
+                Directory.CreateDirectory(componentWithDependencies.Location);
                 NetCoreAppBuilder builder = NetCoreAppBuilder.PortableForNETCoreApp(componentWithDependencies)
                     .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
                     .WithProject("ComponentDependency", "1.0.0", p => p.WithAssemblyGroup(null, g => g.WithAsset("ComponentDependency.dll")))
                     .WithPackage(AdditionalDependencyName, "2.0.1", p => p.WithAssemblyGroup(null, g => g
                         .WithAsset($"lib/netstandard1.0/{AdditionalDependencyName}.dll", f => f
                             .WithVersion("2.0.0.0", "2.0.1.23344")
-                            .WithFileOnDiskPath($"{AdditionalDependencyName}.dll"))))
+                            .WithLocalPath($"{AdditionalDependencyName}.dll"))))
                     .WithPackage("Libuv", "1.9.1", p => p
                         .WithNativeLibraryGroup("debian-x64", g => g.WithAsset("runtimes/debian-x64/native/libuv.so"))
                         .WithNativeLibraryGroup("fedora-x64", g => g.WithAsset("runtimes/fedora-x64/native/libuv.so"))

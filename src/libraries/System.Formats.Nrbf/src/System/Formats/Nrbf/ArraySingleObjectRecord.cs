@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Represents a single dimensional array of <see cref="object" />.
+/// Represents a single-dimensional array of <see cref="object" />.
 /// </summary>
 /// <remarks>
 /// ArraySingleObject records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/982b2f50-6367-402a-aaf2-44ee96e2a5e0">[MS-NRBF] 2.4.3.2</see>.

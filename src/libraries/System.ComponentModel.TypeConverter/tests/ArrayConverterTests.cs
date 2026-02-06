@@ -124,7 +124,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("nonArrayValue")]
-        public void GetProperties_GetSetInvalidValue_Nop(string value)
+        public void GetProperties_GetSetInvalidValue_Nop(string? value)
         {
             var array = new int[] { 1, 2, 3 };
             PropertyDescriptor property = Converter.GetProperties(array)[2];

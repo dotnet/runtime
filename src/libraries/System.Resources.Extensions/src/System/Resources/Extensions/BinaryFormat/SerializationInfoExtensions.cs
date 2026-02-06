@@ -12,7 +12,7 @@ internal static class SerializationInfoExtensions
     private static readonly Action<SerializationInfo, string, object, Type> s_updateValue =
         typeof(SerializationInfo)
         .GetMethod("UpdateValue", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!
-#if NETCOREAPP
+#if NET
         .CreateDelegate<Action<SerializationInfo, string, object, Type>>();
 #else
         .CreateDelegate(typeof(Action<SerializationInfo, string, object, Type>)) as Action<SerializationInfo, string, object, Type>;

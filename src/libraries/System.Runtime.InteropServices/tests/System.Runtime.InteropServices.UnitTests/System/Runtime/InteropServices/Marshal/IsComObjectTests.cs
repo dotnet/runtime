@@ -48,6 +48,7 @@ namespace System.Runtime.InteropServices.Tests
             ModuleBuilder comImportModuleBuilder = comImportAssemblyBuilder.DefineDynamicModule("Module");
             TypeBuilder comImportTypeBuilder = comImportModuleBuilder.DefineType("Type");
             comImportTypeBuilder.SetCustomAttribute(comImportAttributeBuilder);
+            comImportTypeBuilder.DefineMethod(".ctor", MethodAttributes.SpecialName, null, null);
 
             Type collectibleComImportObject = comImportTypeBuilder.CreateType();
             yield return new object[] { collectibleComImportObject };

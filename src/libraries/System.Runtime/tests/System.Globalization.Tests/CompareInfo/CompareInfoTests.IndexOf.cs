@@ -12,10 +12,17 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> IndexOf_TestData()
         {
-            // Empty string
+            // Empty string, invariant
             yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_invariantCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
+
+            // Empty string, using non-invariant (s_germanCompare) CompareInfo to test the ICU path
+            yield return new object[] { s_germanCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_germanCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
+            yield return new object[] { s_germanCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_germanCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2, 1 };
@@ -75,10 +82,59 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
 
-            // Ignore symbols
-            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform) // IgnoreSymbols are not supported
-                yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
+            // Ignore symbols - punctuation characters
+            yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
+            yield return new object[] { s_invariantCompare, "-Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test(ing)", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing]", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "{Test}ing", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 1, 8 };
+            yield return new object[] { s_invariantCompare, "\"Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+
+            // Ignore symbols - currency and math symbols
+            yield return new object[] { s_invariantCompare, "$Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test€ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing¢", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "+Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Test=ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 };
+            yield return new object[] { s_invariantCompare, "Testing%", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "x$test$xtest$x", "test", 0, 14, CompareOptions.IgnoreSymbols, 2, 4 };
+
+            // Ignore symbols - whitespace characters
+            yield return new object[] { s_invariantCompare, " Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 };
+            yield return new object[] { s_invariantCompare, "Testing ", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 };
+            yield return new object[] { s_invariantCompare, "Test\u00A0ing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 8 }; // Non-breaking space
+            yield return new object[] { s_invariantCompare, "Testing\u2028", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 0, 7 }; // Line separator
+            yield return new object[] { s_invariantCompare, "\u2029Testing", "Testing", 0, 8, CompareOptions.IgnoreSymbols, 1, 7 }; // Paragraph separator
+            yield return new object[] { s_invariantCompare, "Test\ting\n", "Testing", 0, 9, CompareOptions.IgnoreSymbols, 0, 8 }; // Tab and newline
+
+            // Ignore symbols - multiple whitespace and punctuation
+            yield return new object[] { s_invariantCompare, "  Testing,  ", "Testing", 0, 12, CompareOptions.IgnoreSymbols, 2, 7 };
+            yield return new object[] { s_invariantCompare, "'Te st  i ng!", "Testing", 0, 13, CompareOptions.IgnoreSymbols, 1, 11 };
+
+            // Ignore symbols - mixed categories
+            yield return new object[] { s_invariantCompare, "$Te%s t&ing+", "Testing", 0, 12, CompareOptions.IgnoreSymbols, 1, 10 };
+            yield return new object[] { s_invariantCompare, ", Hello World!", "HelloWorld", 0, 14, CompareOptions.IgnoreSymbols, 2, 11 };
+
+            // Ignore symbols - source contains surrogates (to match) + symbols (to ignore)
+            yield return new object[] { s_invariantCompare, "$\U0001D7D8Testing!", "\U0001D7D8Testing", 0, 11, CompareOptions.IgnoreSymbols, 1, 9 }; 
+            yield return new object[] { s_invariantCompare, "Test$\U0001D7D8ing", "Test\U0001D7D8ing", 0, 10, CompareOptions.IgnoreSymbols, 0, 10 }; 
+            yield return new object[] { s_invariantCompare, "$Testing\U0001D7DA", "Testing\U0001D7DA", 0, 10, CompareOptions.IgnoreSymbols, 1, 9 }; 
+            yield return new object[] { s_invariantCompare, "$\U0001D7D8Test!\U0001D7D9ing", "\U0001D7D8Test\U0001D7D9ing", 0, 13, CompareOptions.IgnoreSymbols, 1, 12 }; 
+            yield return new object[] { s_invariantCompare, "\U0001D7D8 Test$ \U0001D7D9 ing!", "\U0001D7D8 Test \U0001D7D9 ing", 0, 16, CompareOptions.IgnoreSymbols, 0, 15 };
+            yield return new object[] { s_invariantCompare, "!$\U0001D7D8Test\U0001D7D9ing\U0001D7DA!", "\U0001D7D8Test\U0001D7D9ing\U0001D7DA", 0, 16, CompareOptions.IgnoreSymbols, 2, 13 };
+
+            // With symbols - should not match
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "Tes ting", "Testing", 0, 8, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "'Te st  i ng!", "Testing", 0, 11, CompareOptions.IgnoreSymbols, -1, 0 }; // Not enough characters to match
+
+            // Ignore symbols - long strings (over 256 chars) to test ArrayPool buffer allocation on iOS
+            if (PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            {
+                yield return new object[] { s_invariantCompare, new string('a', 100) + new string('b', 50) + "$" + new string('b', 50) + "!" + new string('c', 100), new string('b', 100), 0, 302, CompareOptions.IgnoreSymbols, 100, 101 };
+                yield return new object[] { s_invariantCompare, new string('a', 100) + new string('b', 100) + new string('c', 100), new string('b', 100), 0, 300, CompareOptions.IgnoreSymbols, 100, 100 };
+            }
+
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2, 2 };
 
             // Ordinal should be case-sensitive
@@ -138,8 +194,8 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 7 };
-                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 6 };
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 7 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 6 };
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, CompareOptions.IgnoreNonSpace, 3, 2 };
@@ -153,7 +209,7 @@ namespace System.Globalization.Tests
         {
             bool useNls = PlatformDetection.IsNlsGlobalization;
             // Searches for the ligature \u00C6
-            string source1 = "Is AE or ae the same as \u00C6 or \u00E6?"; // 3 failures here
+            string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24, 1 };
@@ -171,7 +227,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
         {
             // Searches for the combining character sequence Latin capital letter U with diaeresis or Latin small letter u with diaeresis.
-            string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?"; // 7 failures here
+            string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?";
             yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };

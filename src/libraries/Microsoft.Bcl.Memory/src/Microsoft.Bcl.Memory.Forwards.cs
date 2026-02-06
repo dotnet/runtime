@@ -3,6 +3,7 @@
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Index))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Range))]
-#if NET9_0_OR_GREATER
+#if NET
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Text.Unicode.Utf8))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Buffers.Text.Base64Url))]
 #endif

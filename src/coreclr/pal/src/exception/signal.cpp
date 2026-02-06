@@ -188,7 +188,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGINT, sigint_handler, &g_previous_sigint, 0 /* additionalFlags */, true /* skipIgnored */);
         handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit, 0 /* additionalFlags */, true /* skipIgnored */);
 
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || !HAVE_SIGALTSTACK
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
@@ -206,7 +206,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         }
 
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 8 * 4096;
+        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 9 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         int flags = MAP_ANONYMOUS | MAP_PRIVATE;
@@ -219,6 +219,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             return FALSE;
         }
 
+#ifndef TARGET_WASM
         // create a guard page for the alternate stack
         int st = mprotect((void*)g_stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE);
         if (st != 0)
@@ -226,6 +227,7 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             munmap((void*)g_stackOverflowHandlerStack, stackOverflowStackSize);
             return FALSE;
         }
+#endif // TARGET_WASM
 
         g_stackOverflowHandlerStack = (void*)((size_t)g_stackOverflowHandlerStack + stackOverflowStackSize);
 #endif // HAVE_MACH_EXCEPTIONS
@@ -420,7 +422,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         if (signalRestarts)
         {
             // This signal mustn't be ignored because it will be restarted.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
         return;
     }
@@ -431,7 +433,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             // Shutdown and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-            PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
@@ -442,7 +444,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         {
             // We can't invoke the original handler because returning from the
             // handler doesn't restart the exception.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
     }
     else if (IsSaSigInfo(action))
@@ -460,7 +462,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 }
 
 /*++
@@ -558,8 +560,13 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // fault. We must disassemble the instruction at record.ExceptionAddress
     // to correctly fill in this value.
 
-    // Unmask the activation signal now that we are running on the original stack of the thread
-    UnmaskActivationSignal();
+    if (code != (SIGSEGV | StackOverflowFlag))
+    {
+        // Unmask the activation signal now that we are running on the original stack of the thread
+        // except for the stack overflow case when we are actually running on a special stack overflow
+        // stack.
+        UnmaskActivationSignal();
+    }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 
@@ -569,6 +576,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     RtlRestoreContext(&returnPoint->context, NULL);
 }
 
+#if HAVE_SIGALTSTACK
 /*++
 Function :
     SwitchStackAndExecuteHandler
@@ -609,13 +617,14 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
 
     return pReturnPoint->returnFromHandler;
 }
+#endif
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
 // Temporary locals to debug issue https://github.com/dotnet/runtime/issues/110173
 static SIZE_T stackOverflowThreadId = -1;
 static const char StackOverflowOnTheSameThreadMessage[] = "Stack overflow occurred on the same thread again!\n";
-static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned!\n";
+static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned, invoking previous action!\n";
 //
 
 /*++
@@ -644,6 +653,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         {
             if (GetCurrentPalThread())
             {
+#if defined(TARGET_TVOS)
+                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                PROCAbort(SIGSEGV, siginfo, context);
+#else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
                 {
@@ -669,9 +682,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
-                    PROCAbort(SIGSEGV, siginfo);
+                    PROCAbort(SIGSEGV, siginfo, context);
                 }
+                (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
+#endif // TARGET_TVOS
             }
             else
             {
@@ -686,6 +700,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
             // hardware signal handler on the original stack.
 
+#if HAVE_SIGALTSTACK
             if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
             {
                 if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
@@ -694,6 +709,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                 }
             }
             else
+#endif
             {
                 // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
                 // by coreclr. In both cases, we execute the common_signal_handler directly.
@@ -835,17 +851,11 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code, siginfo, false);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, false);
         }
-        // g_pSynchronizationManager shouldn't be null if PAL is initialized.
-        _ASSERTE(g_pSynchronizationManager != nullptr);
+    }
 
-        g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
-    }
-    else
-    {
-        restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
-    }
+    restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
 }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
@@ -868,7 +878,7 @@ Parameters :
 __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
-    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_InvokeActivationHandlerReturnAddress = _ReturnAddress();
     g_activationFunction(pWinContext);
 }
 
@@ -926,22 +936,20 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
             CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
+
+    // Call the original handler when it is not ignored or default (terminate).
+    if (g_previous_activation.sa_flags & SA_SIGINFO)
+    {
+        _ASSERTE(g_previous_activation.sa_sigaction != NULL);
+        g_previous_activation.sa_sigaction(code, siginfo, context);
+    }
     else
     {
-        // Call the original handler when it is not ignored or default (terminate).
-        if (g_previous_activation.sa_flags & SA_SIGINFO)
+        if (g_previous_activation.sa_handler != SIG_IGN &&
+            g_previous_activation.sa_handler != SIG_DFL)
         {
-            _ASSERTE(g_previous_activation.sa_sigaction != NULL);
-            g_previous_activation.sa_sigaction(code, siginfo, context);
-        }
-        else
-        {
-            if (g_previous_activation.sa_handler != SIG_IGN &&
-                g_previous_activation.sa_handler != SIG_DFL)
-            {
-                _ASSERTE(g_previous_activation.sa_handler != NULL);
-                g_previous_activation.sa_handler(code);
-            }
+            _ASSERTE(g_previous_activation.sa_handler != NULL);
+            g_previous_activation.sa_handler(code);
         }
     }
 }

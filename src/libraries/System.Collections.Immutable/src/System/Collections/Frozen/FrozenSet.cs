@@ -61,7 +61,7 @@ namespace System.Collections.Frozen
         /// <summary>Extracts from the source either an existing <see cref="FrozenSet{T}"/> instance or a <see cref="HashSet{T}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
         private static FrozenSet<T>? GetExistingFrozenOrNewSet<T>(IEnumerable<T> source, IEqualityComparer<T>? comparer, out HashSet<T>? newSet)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             comparer ??= EqualityComparer<T>.Default;
 
             // If the source is already frozen with the same comparer, it can simply be returned.
@@ -271,7 +271,7 @@ namespace System.Collections.Frozen
         /// <param name="destinationIndex">The zero-based index in <paramref name="destination"/> at which copying begins.</param>
         public void CopyTo(T[] destination, int destinationIndex)
         {
-            ThrowHelper.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(destination);
             CopyTo(destination.AsSpan(destinationIndex));
         }
 
@@ -343,7 +343,7 @@ namespace System.Collections.Frozen
         /// the lookup is created, we only pay for generic virtual method invocation once.
         /// </remarks>
         private protected virtual AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             // This method will only ever be used on .NET 9+. However, because of how everything is structured,
             // and to avoid a proliferation of conditional files for many of the derived types (in particular
@@ -359,7 +359,7 @@ namespace System.Collections.Frozen
         /// for the <typeparamref name="TAlternate"/>.
         /// </summary>
         internal delegate int AlternateLookupDelegate<TAlternate>(FrozenSet<T> set, TAlternate key)
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
@@ -370,7 +370,7 @@ namespace System.Collections.Frozen
         /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternate}"/> which always returns -1.
         /// </summary>
         private static class AlternateLookupDelegateHolder<TAlternate>
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
@@ -424,7 +424,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsProperSubsetOf(IEnumerable{T})" />
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsProperSubsetOfCore(other);
         }
 
@@ -434,7 +434,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsProperSupersetOf(IEnumerable{T})" />
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsProperSupersetOfCore(other);
         }
 
@@ -444,7 +444,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsSubsetOf(IEnumerable{T})" />
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsSubsetOfCore(other);
         }
 
@@ -454,7 +454,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsSupersetOf(IEnumerable{T})" />
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsSupersetOfCore(other);
         }
 
@@ -464,7 +464,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.Overlaps(IEnumerable{T})" />
         public bool Overlaps(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return OverlapsCore(other);
         }
 
@@ -474,7 +474,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.SetEquals(IEnumerable{T})" />
         public bool SetEquals(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return SetEqualsCore(other);
         }
 

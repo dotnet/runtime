@@ -29,6 +29,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define DLLEXPORT
 #endif // !DLLEXPORT
 
+#include "minipal/log.h"
+
 /*****************************************************************************/
 
 ICorJitHost* g_jitHost        = nullptr;
@@ -146,10 +148,19 @@ FILE* jitstdout()
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
 int jitprintf(const char* fmt, ...)
 {
+    int     status;
     va_list vl;
     va_start(vl, fmt);
-    int status = vfprintf(jitstdout(), fmt, vl);
+    if (jitstdout() == procstdout())
+    {
+        status = minipal_log_vprint_verbose(fmt, vl);
+    }
+    else
+    {
+        status = vfprintf(jitstdout(), fmt, vl);
+    }
     va_end(vl);
+
     return status;
 }
 
@@ -262,7 +273,7 @@ void JitTls::SetCompiler(Compiler* compiler)
 #endif // !defined(DEBUG)
 
 //****************************************************************************
-// The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
+// The main JIT function for the JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
@@ -312,7 +323,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
 void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 {
     assert(versionIdentifier != nullptr);
-    memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
+    *versionIdentifier = JITEEVersionIdentifier;
 }
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
@@ -992,7 +1003,7 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
     {
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            eeBoundaries[which].source   = loc.EncodeSourceTypes();
+            eeBoundaries[which].source   = loc.GetSourceTypes();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
@@ -1085,12 +1096,17 @@ void Compiler::eeDispLineInfo(const ICorDebugInfo::OffsetMapping* line)
         {
             printf("CALL_SITE ");
         }
+        if ((line->source & ICorDebugInfo::ASYNC) != 0)
+        {
+            printf("ASYNC ");
+        }
         printf(")");
     }
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
+    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::ASYNC)) ==
+           0);
 }
 
 void Compiler::eeDispLineInfos()
@@ -1104,6 +1120,19 @@ void Compiler::eeDispLineInfos()
 }
 #endif // DEBUG
 
+bool Compiler::eeDataWithCodePointersNeedsRelocs()
+{
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // On these platforms, for ELF/MachO, we allocate this data in read-write
+    // data and need to report relocations to the EE. Otherwise we allocate
+    // next to the code chunk and hence do not need to report any relocs.
+    return opts.compReloc && !TargetOS::IsWindows;
+#else
+    // Other targets allocate code and data separately and always needs relocs.
+    return opts.compReloc;
+#endif
+}
+
 /*****************************************************************************
  *
  *                      ICorJitInfo wrapper functions
@@ -1113,21 +1142,40 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
-void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSectionAlignment)
+void Compiler::eeAllocMem(AllocMemChunk& codeChunk,
+                          AllocMemChunk* coldCodeChunk,
+                          AllocMemChunk* dataChunks,
+                          unsigned       numDataChunks,
+                          unsigned       numExceptions)
 {
+    ArrayStack<AllocMemChunk> chunks(getAllocator(CMK_Codegen));
+
+    chunks.Push(codeChunk);
+
+    int coldCodeChunkIndex = -1;
+    if (coldCodeChunk != nullptr)
+    {
+        coldCodeChunkIndex = chunks.Height();
+        chunks.Push(*coldCodeChunk);
+    }
+
 #ifdef DEBUG
 
     // Fake splitting implementation: place hot/cold code in contiguous section.
-    UNATIVE_OFFSET coldCodeOffset = 0;
-    if (JitConfig.JitFakeProcedureSplitting() && (args->coldCodeSize > 0))
+    if (JitConfig.JitFakeProcedureSplitting() && (coldCodeChunk != nullptr))
     {
-        coldCodeOffset = args->hotCodeSize;
-        assert(coldCodeOffset > 0);
-        args->hotCodeSize += args->coldCodeSize;
-        args->coldCodeSize = 0;
+        // Keep offset into hot code in the block/blockRW pointers
+        coldCodeChunk->block   = (uint8_t*)(uintptr_t)chunks.BottomRef(0).size;
+        coldCodeChunk->blockRW = (uint8_t*)(uintptr_t)chunks.BottomRef(0).size;
+        chunks.BottomRef(0).size += coldCodeChunk->size;
+        // Remove cold chunk
+        chunks.Pop();
+        coldCodeChunkIndex = -1;
     }
 
 #endif // DEBUG
+
+    int firstDataChunk = chunks.Height();
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
@@ -1136,40 +1184,93 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
     // For LoongArch64 using `pcaddi + ld` to access such data.
 
-    UNATIVE_OFFSET roDataAlignmentDelta = 0;
-    if (args->roDataSize > 0)
+    for (unsigned i = 0; i < numDataChunks; i++)
     {
-        roDataAlignmentDelta = AlignmentPad(args->hotCodeSize, roDataSectionAlignment);
+        if (((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0) && eeDataWithCodePointersNeedsRelocs())
+        {
+            // These are always passed to the EE as separate chunks since their relocations need special treatment
+            chunks.Push(dataChunks[i]);
+        }
+        else
+        {
+            // Increase size of the hot code chunk and store offset in data chunk
+            AllocMemChunk& codeChunk = chunks.BottomRef(0);
+
+            codeChunk.size        = AlignUp(codeChunk.size, dataChunks[i].alignment);
+            dataChunks[i].block   = (uint8_t*)(uintptr_t)codeChunk.size;
+            dataChunks[i].blockRW = (uint8_t*)(uintptr_t)codeChunk.size;
+            codeChunk.size += dataChunks[i].size;
+
+            codeChunk.alignment = max(codeChunk.alignment, dataChunks[i].alignment);
+        }
     }
 
-    const UNATIVE_OFFSET roDataOffset = args->hotCodeSize + roDataAlignmentDelta;
-    args->hotCodeSize                 = roDataOffset + args->roDataSize;
-    args->roDataSize                  = 0;
+#else
+
+    for (unsigned i = 0; i < numDataChunks; i++)
+    {
+        chunks.Push(dataChunks[i]);
+    }
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-    info.compCompHnd->allocMem(args);
+    AllocMemArgs args;
+    args.chunks      = chunks.Data();
+    args.chunksCount = (unsigned)chunks.Height();
+    args.xcptnsCount = numExceptions;
+
+    info.compCompHnd->allocMem(&args);
+
+    codeChunk.block   = chunks.BottomRef(0).block;
+    codeChunk.blockRW = chunks.BottomRef(0).blockRW;
+
+    if (coldCodeChunkIndex != -1)
+    {
+        coldCodeChunk->block   = chunks.BottomRef(coldCodeChunkIndex).block;
+        coldCodeChunk->blockRW = chunks.BottomRef(coldCodeChunkIndex).blockRW;
+    }
 
 #ifdef DEBUG
 
-    if (JitConfig.JitFakeProcedureSplitting() && (coldCodeOffset > 0))
+    if (JitConfig.JitFakeProcedureSplitting() && (coldCodeChunk != nullptr))
     {
         // Fix up cold code pointers. Cold section is adjacent to hot section.
-        assert(args->coldCodeBlock == nullptr);
-        assert(args->coldCodeBlockRW == nullptr);
-        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + coldCodeOffset;
-        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + coldCodeOffset;
+        assert(coldCodeChunk != nullptr);
+        coldCodeChunk->block   = codeChunk.block + (uintptr_t)coldCodeChunk->block;
+        coldCodeChunk->blockRW = codeChunk.blockRW + (uintptr_t)coldCodeChunk->blockRW;
     }
 
 #endif // DEBUG
 
+    int curDataChunk = firstDataChunk;
+
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // Fix up data section pointers.
-    assert(args->roDataBlock == nullptr);
-    assert(args->roDataBlockRW == nullptr);
-    args->roDataBlock   = ((BYTE*)args->hotCodeBlock) + roDataOffset;
-    args->roDataBlockRW = ((BYTE*)args->hotCodeBlockRW) + roDataOffset;
+    for (unsigned i = 0; i < numDataChunks; i++)
+    {
+        if (((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0) && eeDataWithCodePointersNeedsRelocs())
+        {
+            // These are always passed to the EE as separate chunks since their relocations need special treatment
+            dataChunks[i].block   = chunks.BottomRef(curDataChunk).block;
+            dataChunks[i].blockRW = chunks.BottomRef(curDataChunk).blockRW;
+            curDataChunk++;
+        }
+        else
+        {
+            dataChunks[i].block   = codeChunk.block + (size_t)dataChunks[i].block;
+            dataChunks[i].blockRW = codeChunk.blockRW + (size_t)dataChunks[i].blockRW;
+        }
+    }
+
+#else
+
+    for (unsigned i = 0; i < numDataChunks; i++)
+    {
+        dataChunks[i].block   = chunks.BottomRef(curDataChunk).block;
+        dataChunks[i].blockRW = chunks.BottomRef(curDataChunk).blockRW;
+        curDataChunk++;
+    }
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
@@ -1260,7 +1361,7 @@ void Compiler::eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
     }
 }
 
-WORD Compiler::eeGetRelocTypeHint(void* target)
+CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
 {
     if (info.compMatchedVM)
     {
@@ -1269,7 +1370,7 @@ WORD Compiler::eeGetRelocTypeHint(void* target)
     else
     {
         // No hints
-        return (WORD)-1;
+        return CorInfoReloc::NONE;
     }
 }
 

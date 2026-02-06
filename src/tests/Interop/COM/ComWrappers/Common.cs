@@ -337,6 +337,15 @@ namespace ComWrappersTests.Common
         }
     }
 
+    [Guid("DA582249-EBf7-437E-BBF8-3B6775BFDB9D")]
+    public interface INotWrappedObject
+    {
+    }
+
+    sealed class NotWrappedObject : INotWrappedObject
+    {
+    }
+
     class ComWrappersHelper
     {
         public static readonly Guid IID_IReferenceTracker = new Guid("11d3b13a-180e-4789-a8be-7712882893e6");

@@ -19,25 +19,26 @@ namespace System.Linq.Tests
         [MemberData(nameof(EnumerableData), MemberType = typeof(SkipTakeData))]
         public void SkipLast(IEnumerable<int> source, int count)
         {
-            Assert.All(IdentityTransforms<int>(), transform =>
-            {
-                IEnumerable<int> equivalent = transform(source);
+            int[] expected = source.Reverse().Skip(count).Reverse().ToArray();
 
-                IEnumerable<int> expected = equivalent.Reverse().Skip(count).Reverse();
-                IEnumerable<int> actual = equivalent.SkipLast(count);
+            Assert.All(CreateSources(source), source =>
+            {
+                IEnumerable<int> actual = source.SkipLast(count);
 
                 Assert.Equal(expected, actual);
-                Assert.Equal(expected.Count(), actual.Count());
+
+                Assert.Equal(expected.Length, actual.Count());
                 Assert.Equal(expected, actual.ToArray());
                 Assert.Equal(expected, actual.ToList());
-
                 Assert.Equal(expected.FirstOrDefault(), actual.FirstOrDefault());
                 Assert.Equal(expected.LastOrDefault(), actual.LastOrDefault());
 
-                Assert.All(Enumerable.Range(0, expected.Count()), index =>
+                if (expected.Length > 0)
                 {
-                    Assert.Equal(expected.ElementAt(index), actual.ElementAt(index));
-                });
+                    Assert.Equal(expected[0], actual.ElementAt(0));
+                    Assert.Equal(expected[^1], actual.ElementAt(expected.Length - 1));
+                    Assert.Equal(expected[expected.Length / 2], actual.ElementAt(expected.Length / 2));
+                }
 
                 Assert.Equal(0, actual.ElementAtOrDefault(-1));
                 Assert.Equal(0, actual.ElementAtOrDefault(actual.Count()));
