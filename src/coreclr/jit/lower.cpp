@@ -6367,6 +6367,15 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     return result;
 }
 
+//----------------------------------------------------------------------------------------------
+// LowerDelegateInvoke: lower a delegate invoke, accessing fields of the delgate
+//
+// Arguments:
+//     call - call representing a delegate invoke.
+//
+// Return Value:
+//    Control expr for the delegate invoke call, for futher lowering.
+//
 GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
@@ -6433,10 +6442,13 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // PUTARG_REG node ahead.
 #if HAS_FIXED_REGISTER_SET
     thisArgNode->AsOp()->gtOp1 = newThis;
-#endif
-
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
+#else
+    thisExprUse.ReplaceWith(newThis);
+    BlockRange().Remove(thisExpr);
+    BlockRange().InsertBefore(call, thisExpr, newThisAddr, newThis);
+#endif
 
     ContainCheckIndir(newThis->AsIndir());
 
