@@ -121,26 +121,30 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
-        AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-        while (assemblyIterator.Next(pAssembly.This()))
+        AppDomain *pAppDomain = GetAppDomain();
+        if (pAppDomain != nullptr)
         {
-            // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
-            if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
+            AppDomain::AssemblyIterator assemblyIterator = pAppDomain->IterateAssembliesEx(
+                (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+            CollectibleAssemblyHolder<Assembly *> pAssembly;
+            while (assemblyIterator.Next(pAssembly.This()))
             {
-                Module *pModule = pAssembly->GetModule();
-                if (pModule->IsReadyToRun())
+                // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
+                if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
                 {
-                    ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
-
-                    while (mi.Next())
+                    Module *pModule = pAssembly->GetModule();
+                    if (pModule->IsReadyToRun())
                     {
-                        // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
-                        MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
-                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
+                        ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
+
+                        while (mi.Next())
                         {
-                            PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
+                            // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
+                            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
+                            if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
+                            {
+                                PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
+                            }
                         }
                     }
                 }
