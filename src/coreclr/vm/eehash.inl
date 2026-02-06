@@ -58,7 +58,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Destroy()
 
         delete[] (m_pVolatileBucketTable->m_pBuckets-1);
 
-		m_pVolatileBucketTable = NULL;
+		m_pVolatileBucketTable = nullptr;
     }
 
 }

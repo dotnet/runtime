@@ -84,9 +84,9 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
 
-Volatile<int64_t> g_cbILJitted = 0;
-Volatile<int64_t> g_cMethodsJitted = 0;
-Volatile<int64_t> g_c100nsTicksInJit = 0;
+Volatile<int64_t> g_cbILJitted(0);
+Volatile<int64_t> g_cMethodsJitted(0);
+Volatile<int64_t> g_c100nsTicksInJit(0);
 thread_local int64_t t_cbILJittedForThread = 0;
 thread_local int64_t t_cMethodsJittedForThread = 0;
 thread_local int64_t t_c100nsTicksInJitForThread = 0;

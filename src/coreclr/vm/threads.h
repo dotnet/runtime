@@ -5271,7 +5271,7 @@ class DeadlockAwareLock
     static void ReleaseBlockingLock()
     {
         Thread *pThread = GetThread();
-        pThread->m_pBlockingLock = NULL;
+        pThread->m_pBlockingLock = nullptr;
     }
 public:
     typedef StateHolder<DoNothing,DeadlockAwareLock::ReleaseBlockingLock> BlockingLockHolder;

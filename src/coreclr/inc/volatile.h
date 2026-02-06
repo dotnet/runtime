@@ -363,7 +363,7 @@ public:
     //
     // Allow initialization of Volatile<T> from a T
     //
-    inline Volatile(const T& val)
+    inline explicit Volatile(const T& val)
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
         ((volatile T &)m_val) = val;
@@ -372,11 +372,8 @@ public:
     //
     // Copy constructor
     //
-    inline Volatile(const Volatile<T>& other)
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-        ((volatile T &)m_val) = other.Load();
-    }
+    inline Volatile(const Volatile<T>& other) = delete;
+    inline Volatile(const Volatile<T>&& other) = delete;
 
     //
     // Loads the value of the volatile variable.  See code:VolatileLoad for the semantics of this operation.
@@ -445,6 +442,8 @@ public:
     // Assignment from T
     //
     inline Volatile<T>& operator=(T val) {Store(val); return *this;}
+    inline Volatile<T>& operator=(const Volatile<T>& val) {Store(val.Load()); return *this;}
+    inline Volatile<T>& operator=(Volatile<T>&& val) = delete;
 
     //
     // Get the address of the volatile variable.  This is dangerous, as it allows the value of the
@@ -516,20 +515,21 @@ public:
     }
 
     //
-    // Allow assignment from the pointer type.
+    // Allow construction from the pointer type and from various representations of NULL; HOWEVER, note that construction must be explicit since
+    // these constructions do not do a volatile store.
     //
-    inline VolatilePtr(P val) : Volatile<P>(val)
+    inline explicit VolatilePtr(P val) : Volatile<P>(val)
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
 
-    //
-    // Copy constructor
-    //
-    inline VolatilePtr(const VolatilePtr& other) : Volatile<P>(other)
+    inline explicit VolatilePtr(nullptr_t val) : Volatile<P>((P)val)
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
+
+    VolatilePtr(const VolatilePtr& other) = delete;
+    VolatilePtr(const VolatilePtr&& other) = delete;
 
     //
     // Cast to the pointer type
@@ -539,6 +539,15 @@ public:
         STATIC_CONTRACT_SUPPORTS_DAC;
         return (P)this->Load();
     }
+
+    //
+    // Assignment from P
+    //
+    inline VolatilePtr<T, P>& operator=(P val) {Store(val); return *this;}
+    inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {Store(val.Load()); return *this;}
+    inline VolatilePtr<T, P>& operator=(VolatilePtr<T, P>&& val) = delete;
+    // nullptr is assigned via nullptr_t
+    inline VolatilePtr<T, P>& operator=(nullptr_t val) {Store((P)nullptr); return *this;}
 
     //
     // Member access
@@ -594,8 +603,10 @@ public:
 // Disable use of Volatile<T> for GC/HandleTable code except on platforms where it's absolutely necessary.
 #if defined(_MSC_VER) && !defined(HOST_ARM) && !defined(HOST_ARM64)
 #define VOLATILE(T) T RAW_KEYWORD(volatile)
+#define VOLATILE_INIT(val) = val
 #else
 #define VOLATILE(T) Volatile<T>
+#define VOLATILE_INIT(val) (val)
 #endif
 
 #endif // DACCESS_COMPILE

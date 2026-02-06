@@ -235,7 +235,7 @@ HRESULT g_EEStartupStatus = S_OK;
 // Flag indicating if the EE has been started.  This is set prior to initializing the default AppDomain, and so does not indicate that
 // the EE is fully able to execute arbitrary managed code.  To ensure the EE is fully started, call EnsureEEStarted rather than just
 // checking this flag.
-Volatile<BOOL> g_fEEStarted = FALSE;
+Volatile<BOOL> g_fEEStarted(FALSE);
 
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
 DWORD   g_dwStartupThreadId = 0;
@@ -503,7 +503,7 @@ void InitGSCookie()
     }
 }
 
-Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
+Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized(FALSE);
 
 void SetGarbageCollectorFullyInitialized()
 {

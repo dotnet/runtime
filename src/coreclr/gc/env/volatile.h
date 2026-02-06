@@ -311,18 +311,16 @@ public:
     //
     // Allow initialization of Volatile<T> from a T
     //
-    inline Volatile(const T& val)
+    inline explicit Volatile(const T& val)
     {
         ((volatile T &)m_val) = val;
     }
 
     //
-    // Copy constructor
+    // Copy/Move constructor deleted
     //
-    inline Volatile(const Volatile<T>& other)
-    {
-        ((volatile T &)m_val) = other.Load();
-    }
+    Volatile(const Volatile<T>& other) = delete;
+    Volatile(Volatile<T>&& other) = delete;
 
     //
     // Loads the value of the volatile variable.  See code:VolatileLoad for the semantics of this operation.
@@ -386,6 +384,8 @@ public:
     // Assignment from T
     //
     inline Volatile<T>& operator=(T val) {Store(val); return *this;}
+    inline Volatile<T>& operator=(const Volatile<T> & val) {Store(val.Load()); return *this;}
+    inline Volatile<T>& operator=(Volatile<T> && val) = delete;
 
     //
     // Get the address of the volatile variable.  This is dangerous, as it allows the value of the
@@ -456,18 +456,10 @@ public:
     }
 
     //
-    // Allow assignment from the pointer type.
+    // Copy/Move constructors deleted
     //
-    inline VolatilePtr(P val) : Volatile<P>(val)
-    {
-    }
-
-    //
-    // Copy constructor
-    //
-    inline VolatilePtr(const VolatilePtr& other) : Volatile<P>(other)
-    {
-    }
+    VolatilePtr(const VolatilePtr& other) = delete;
+    VolatilePtr(VolatilePtr&& other) = delete;
 
     //
     // Cast to the pointer type
@@ -476,6 +468,15 @@ public:
     {
         return (P)this->Load();
     }
+
+    //
+    // Assignment from P
+    //
+    inline VolatilePtr<T, P>& operator=(P val) {Store(val); return *this;}
+    inline VolatilePtr<T, P>& operator=(const VolatilePtr<T, P>& val) {Store(val.Load()); return *this;}
+    inline VolatilePtr<T, P>& operator=(VolatilePtr<T, P>&& val) = delete;
+    // nullptr is assigned via nullptr_t
+    inline VolatilePtr<T, P>& operator=(nullptr_t val) {Store((P)nullptr); return *this;}
 
     //
     // Member access
@@ -504,5 +505,6 @@ public:
 };
 
 #define VOLATILE(T) Volatile<T>
+#define VOLATILE_INIT(val) (val)
 
 #endif //_VOLATILE_H_

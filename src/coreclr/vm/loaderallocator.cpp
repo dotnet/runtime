@@ -84,7 +84,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pMarshalingData = NULL;
 
 #ifdef FEATURE_COMINTEROP
-    m_pComCallWrapperCache = NULL;
+    m_pComCallWrapperCache = nullptr;
 #endif // FEATURE_COMINTEROP
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -698,7 +698,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     #ifdef _DEBUG
             else
             {
-                pLoaderAllocator->m_pComCallWrapperCache = NULL;
+                pLoaderAllocator->m_pComCallWrapperCache = nullptr;
                 LOG((LF_CLASSLOADER, LL_INFO10, "LoaderAllocator::Destroy ComCallWrapperCache not released\n"));
             }
     #endif // _DEBUG

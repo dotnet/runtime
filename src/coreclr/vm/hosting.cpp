@@ -85,9 +85,9 @@ SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SI
 }
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
-static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
-static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
-static Volatile<DWORD> s_dwProtection = 0;
+static VolatilePtr<BYTE> s_pStartOfUEFSection(nullptr);
+static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary(nullptr);
+static Volatile<DWORD> s_dwProtection(0);
 #endif // _DEBUG && !TARGET_UNIX
 
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)

@@ -85,7 +85,7 @@ namespace
     // This is a linked list of the LCGMethodResolvers that represent DynamicMethodDescs
     // waiting to be destroyed. The resolvers are used since they can be chained together
     // to avoid allocations when destroying multiple DynamicMethodDescs.
-    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod = nullptr;
+    VolatilePtr<LCGMethodResolver> s_delayDestroyDynamicMethod(nullptr);
 
     bool HasDelayedDynamicMethod()
     {

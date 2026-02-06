@@ -748,7 +748,7 @@ VOID SimpleComCallWrapper::Cleanup()
     if (m_pAuxData)
     {
         delete m_pAuxData;
-        m_pAuxData = NULL;
+        m_pAuxData = nullptr;
     }
 }
 

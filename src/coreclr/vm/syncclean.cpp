@@ -8,8 +8,8 @@
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
-VolatilePtr<Bucket> SyncClean::m_HashMap = NULL;
-VolatilePtr<EEHashEntry*> SyncClean::m_EEHashTable;
+VolatilePtr<Bucket> SyncClean::m_HashMap(nullptr);
+VolatilePtr<EEHashEntry*> SyncClean::m_EEHashTable(nullptr);
 
 void SyncClean::Terminate()
 {

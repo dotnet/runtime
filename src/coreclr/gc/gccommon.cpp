@@ -36,7 +36,7 @@ uint8_t* g_shadow_lowest_address = NULL;
 
 uint32_t* g_gc_card_table;
 
-VOLATILE(int32_t) g_fSuspensionPending = 0;
+VOLATILE(int32_t) g_fSuspensionPending VOLATILE_INIT(0);
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 uint32_t* g_gc_card_bundle_table;

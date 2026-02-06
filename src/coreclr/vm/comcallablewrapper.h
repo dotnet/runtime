@@ -1072,7 +1072,7 @@ struct SimpleCCWAuxData
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pDispatchExInfo = NULL;
+        m_pDispatchExInfo = nullptr;
     }
 
     ~SimpleCCWAuxData()
@@ -1082,7 +1082,7 @@ struct SimpleCCWAuxData
         if (m_pDispatchExInfo)
         {
             delete m_pDispatchExInfo;
-            m_pDispatchExInfo = NULL;
+            m_pDispatchExInfo = nullptr;
         }
     }
 };

@@ -1094,7 +1094,7 @@ uint32_t GetOsPageSizeUncached()
 
 namespace
 {
-    Volatile<uint32_t> g_pageSize = 0;
+    Volatile<uint32_t> g_pageSize(0);
 }
 
 uint32_t GetOsPageSize()

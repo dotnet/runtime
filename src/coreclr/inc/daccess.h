@@ -2230,7 +2230,7 @@ public: name(int dummy) : base(dummy) {}
 #define VOLATILE_SVAL_IMPL(type, cls, var) \
     Volatile<type> cls::var
 #define VOLATILE_SVAL_IMPL_INIT(type, cls, var, init) \
-    Volatile<type> cls::var = init
+    Volatile<type> cls::var(init)
 #define SVAL_IMPL_NS(type, ns, cls, var) \
     type cls::var
 #define SVAL_IMPL_NS_INIT(type, ns, cls, var, init) \

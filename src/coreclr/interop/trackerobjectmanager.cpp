@@ -13,7 +13,7 @@ namespace
     const GUID IID_IFindReferenceTargetsCallback = { 0x04b3486c, 0x4687, 0x4229, { 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88} };
 
     VolatilePtr<IReferenceTrackerManager> s_TrackerManager; // The one and only Tracker Manager instance
-    Volatile<bool> s_HasTrackingStarted = false;
+    Volatile<bool> s_HasTrackingStarted(false);
 
     // Indicates if walking the external objects is needed.
     // (i.e. Have any IReferenceTracker instances been found?)

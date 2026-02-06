@@ -30,7 +30,7 @@ void CreateCrashDumpIfEnabled(bool stackoverflow = false);
 #endif
 
 // Global state counter to implement SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE.
-Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
+Volatile<LONG> g_DbgSuppressAllocationAsserts(0);
 
 static void GetExecutableFileNameUtf8(SString& value)
 {

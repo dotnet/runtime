@@ -131,7 +131,7 @@ uint64_t getTickFrequency()
 
 #ifdef STRESS_LOG
 
-StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, TLS_OUT_OF_INDEXES, 0, 0, 0 };
+StressLog StressLog::theLog = { 0, 0, 0, 0, Volatile<LONG>(0), Volatile<ThreadStressLog*>(0), TLS_OUT_OF_INDEXES, Volatile<LONG>(0), 0, 0 };
 const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
 
 /*********************************************************************************/

@@ -18,7 +18,7 @@
 #include "gc.h"
 #include "objecthandle.h"
 
-VOLATILE(int32_t) GCScan::m_GcStructuresInvalidCnt = 1;
+VOLATILE(int32_t) GCScan::m_GcStructuresInvalidCnt VOLATILE_INIT(1);
 
 bool GCScan::GetGcRuntimeStructuresValid ()
 {

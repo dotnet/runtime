@@ -22,7 +22,7 @@
 #undef __IN_CRST_CPP
 
 #ifndef DACCESS_COMPILE
-Volatile<LONG> g_ShutdownCrstUsageCount = 0;
+Volatile<LONG> g_ShutdownCrstUsageCount(0);
 
 //-----------------------------------------------------------------
 // Initialize critical section

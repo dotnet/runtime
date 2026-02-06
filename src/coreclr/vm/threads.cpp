@@ -1201,7 +1201,7 @@ Thread::Thread()
 
     m_dwForbidSuspendThread = 0;
 
-    m_pBlockingLock = NULL;
+    m_pBlockingLock = nullptr;
 
     m_pRuntimeThreadLocals = nullptr;
     m_thAllocContextObj = 0;
@@ -1336,7 +1336,7 @@ Thread::Thread()
 #endif // defined(GCCOVER_TOLERATE_SPURIOUS_AV)
 #endif // HAVE_GCCOVER
 
-    m_debuggerActivePatchSkipper = NULL;
+    m_debuggerActivePatchSkipper = nullptr;
     m_dwThreadHandleBeingUsed = 0;
     SetProfilerCallbacksAllowed(TRUE);
 
@@ -6311,7 +6311,7 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
 }
 
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
-  : m_pHoldingThread(NULL)
+  : m_pHoldingThread(nullptr)
 #ifdef _DEBUG
     , m_description(description)
 #endif
@@ -6510,7 +6510,7 @@ void DeadlockAwareLock::LeaveLock()
     CONSISTENCY_CHECK(m_pHoldingThread == GetThread());
     CONSISTENCY_CHECK(GetThread()->m_pBlockingLock.Load() == NULL);
 
-    m_pHoldingThread = NULL;
+    m_pHoldingThread = nullptr;
 }
 
 

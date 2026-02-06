@@ -76,7 +76,7 @@ inline void ProfilerInfo::ResetPerSessionStatus()
 {
     LIMITED_METHOD_CONTRACT;
 
-    pProfInterface = NULL;
+    pProfInterface = nullptr;
     eventMask.SetEventMask(COR_PRF_MONITOR_NONE);
     eventMask.SetEventMaskHigh(COR_PRF_HIGH_MONITOR_NONE);
 }

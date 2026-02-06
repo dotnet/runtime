@@ -157,7 +157,7 @@ uint8_t g_build_variant = 1;
 uint8_t g_build_variant = 2;
 #endif //BUILDENV_DEBUG
 
-VOLATILE(int32_t) g_no_gc_lock = -1;
+VOLATILE(int32_t) g_no_gc_lock VOLATILE_INIT(-1);
 
 #ifdef TRACE_GC
 const char * const allocation_state_str[] = {
@@ -467,7 +467,7 @@ int gc_heap::gchist_index = 0;
 gc_mechanisms_store gc_heap::gchist[max_history_count];
 
 #ifndef MULTIPLE_HEAPS
-VOLATILE(bgc_state) gc_heap::current_bgc_state = bgc_not_in_process;
+VOLATILE(bgc_state) gc_heap::current_bgc_state(bgc_not_in_process);
 int gc_heap::gchist_index_per_heap = 0;
 gc_heap::gc_history gc_heap::gchist_per_heap[max_history_count];
 #endif //MULTIPLE_HEAPS
@@ -2456,12 +2456,12 @@ last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
 
 uint64_t    gc_heap::last_alloc_reset_suspended_end_time = 0;
 size_t      gc_heap::max_peak_heap_size = 0;
-VOLATILE(size_t) gc_heap::llc_size = 0;
+VOLATILE(size_t) gc_heap::llc_size(0);
 
 #ifdef BACKGROUND_GC
 last_recorded_gc_info gc_heap::last_bgc_info[2];
-VOLATILE(bool)        gc_heap::is_last_recorded_bgc = false;
-VOLATILE(int)         gc_heap::last_bgc_info_index = 0;
+VOLATILE(bool)        gc_heap::is_last_recorded_bgc(false);
+VOLATILE(int)         gc_heap::last_bgc_info_index(0);
 #endif //BACKGROUND_GC
 
 #ifdef DYNAMIC_HEAP_COUNT
@@ -2473,7 +2473,7 @@ size_t      gc_heap::bgc_th_count_created = 0;
 size_t      gc_heap::bgc_th_count_created_th_existed = 0;
 size_t      gc_heap::bgc_th_count_creation_failed = 0;
 size_t      gc_heap::bgc_init_gc_index = 0;
-VOLATILE(short) gc_heap::bgc_init_n_heaps = 0;
+VOLATILE(short) gc_heap::bgc_init_n_heaps(0);
 size_t      gc_heap::hc_change_cancelled_count_bgc = 0;
 #endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
@@ -2556,9 +2556,9 @@ BOOL        gc_heap::do_concurrent_p = FALSE;
 
 size_t      gc_heap::ephemeral_fgc_counts[max_generation];
 
-VOLATILE(c_gc_state) gc_heap::current_c_gc_state = c_gc_state_free;
+VOLATILE(c_gc_state) gc_heap::current_c_gc_state(c_gc_state_free);
 
-VOLATILE(BOOL) gc_heap::gc_background_running = FALSE;
+VOLATILE(BOOL) gc_heap::gc_background_running(FALSE);
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
@@ -3010,7 +3010,7 @@ GCSpinLock gc_heap::more_space_lock_soh;
 GCSpinLock gc_heap::more_space_lock_uoh;
 
 #ifdef BACKGROUND_GC
-VOLATILE(int32_t) gc_heap::uoh_alloc_thread_count = 0;
+VOLATILE(int32_t) gc_heap::uoh_alloc_thread_count(0);
 #endif //BACKGROUND_GC
 
 #ifdef SYNCHRONIZATION_STATS
@@ -21679,9 +21679,13 @@ int gc_heap::generation_to_condemn (int n_initial,
                                     BOOL* elevation_requested_p,
                                     BOOL check_only_p)
 {
-    gc_mechanisms temp_settings = settings;
+    gc_mechanisms temp_settings;
     gen_to_condemn_tuning temp_condemn_reasons;
     gc_mechanisms* local_settings = (check_only_p ? &temp_settings : &settings);
+    if (check_only_p)
+    {
+        temp_settings = settings;
+    }
     gen_to_condemn_tuning* local_condemn_reasons = (check_only_p ? &temp_condemn_reasons : &gen_to_condemn_reasons);
     if (!check_only_p)
     {
@@ -29494,8 +29498,8 @@ void gc_heap::process_mark_overflow_internal (int condemned_gen_number,
 // achieved via two shared booleans (defined below). These both act as latches that are transitioned only from
 // false -> true by unsynchronized code. They are only read or reset to false by a single thread under the
 // protection of a join.
-static VOLATILE(BOOL) s_fUnpromotedHandles = FALSE;
-static VOLATILE(BOOL) s_fUnscannedPromotions = FALSE;
+static VOLATILE(BOOL) s_fUnpromotedHandles(FALSE);
+static VOLATILE(BOOL) s_fUnscannedPromotions(FALSE);
 static VOLATILE(BOOL) s_fScanRequired;
 void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc, BOOL initial_scan_p)
 {
@@ -47849,14 +47853,14 @@ void gc_heap::descr_generations (const char* msg)
 //-----------------------------------------------------------------------------
 
 //Static member variables.
-VOLATILE(BOOL)    GCHeap::GcInProgress            = FALSE;
+VOLATILE(BOOL)    GCHeap::GcInProgress(FALSE);
 GCEvent           *GCHeap::WaitForGCEvent         = NULL;
 unsigned          GCHeap::GcCondemnedGeneration   = 0;
 size_t            GCHeap::totalSurvivedSize       = 0;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 CFinalize*        GCHeap::m_Finalize              = 0;
 BOOL              GCHeap::GcCollectClasses        = FALSE;
-VOLATILE(int32_t) GCHeap::m_GCFLock               = 0;
+VOLATILE(int32_t) GCHeap::m_GCFLock(0);
 
 #ifndef FEATURE_NATIVEAOT // NativeAOT forces relocation a different way
 #ifdef STRESS_HEAP

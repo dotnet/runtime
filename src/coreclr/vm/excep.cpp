@@ -3627,7 +3627,7 @@ bool CheckThreadExceptionStateForInterception()
 // UNHANDLED EXCEPTION HANDLING
 //
 
-static Volatile<BOOL> fReady = 0;
+static Volatile<BOOL> fReady(0);
 static SpinLock initLock;
 
 //******************************************************************************
