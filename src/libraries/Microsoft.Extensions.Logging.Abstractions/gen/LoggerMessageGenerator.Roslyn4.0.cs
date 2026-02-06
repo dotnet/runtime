@@ -95,9 +95,12 @@ namespace Microsoft.Extensions.Logging.Generators
             foreach (var item in items)
             {
                 // Report diagnostics
-                foreach (var diagnostic in item.Diagnostics)
+                if (item.Diagnostics is not null)
                 {
-                    context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                    foreach (var diagnostic in item.Diagnostics)
+                    {
+                        context.ReportDiagnostic(diagnostic.CreateDiagnostic());
+                    }
                 }
 
                 if (item.LoggerClassSpec != null)
