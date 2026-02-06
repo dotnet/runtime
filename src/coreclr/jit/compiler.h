@@ -4214,6 +4214,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
+    void lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
