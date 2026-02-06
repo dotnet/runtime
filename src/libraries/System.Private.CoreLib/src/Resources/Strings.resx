@@ -4444,4 +4444,7 @@
   <data name="Argument_MustBeFunctionPointer" xml:space="preserve">
     <value>Argument must represent a function pointer type.</value>
   </data>
+  <data name="ManagedFunctionPointer_CallingConventionsNotAllowed">
+    <value>Unmanaged calling conventions cannot be specified for managed function pointers.</value>
+  </data>
 </root>

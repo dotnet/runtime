@@ -313,6 +313,16 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void MakeSignatureFunctionPointerTypeManaged_InvalidCallingConventions()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                Type[] paramTypes = [typeof(string), typeof(bool)];
+                Type t = Type.MakeFunctionPointerSignatureType(typeof(int), paramTypes, false, [typeof(CallConvCdecl)]);
+            });
+        }
+
+        [Fact]
         public static void MakeSignatureFunctionPointerTypeUnmanaged1()
         {
             Type[] paramTypes = [typeof(short)];

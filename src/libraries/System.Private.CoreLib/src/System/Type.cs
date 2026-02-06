@@ -665,6 +665,9 @@ namespace System
             for (int i = 0; i < callingConventions.Length; i++)
                 ArgumentNullException.ThrowIfNull(callingConventions[i], nameof(callingConventions));
 
+            if (!isUnmanaged && callingConventions.Length >= 1)
+                throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
+
             bool builtInCallConv = false;
             if (callingConventions.Length == 1)
             {
