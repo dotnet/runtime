@@ -2774,6 +2774,17 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            // Continuations require special handling to encode the layout of the type.
+            // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
+            // PrecodeHelper(
+            //   TypeHandle(ReadyToRunFixupKind.ContinuationLayout)
+            // )
+            if (type is AsyncContinuationType act)
+            {
+                Import import = (Import)_compilation.SymbolNodeFactory.ContinuationTypeSymbol(act);
+                ppIndirection = (void*)ObjectToHandle(import);
+                return null;
+            }
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
                 throw new RequiresRuntimeJitException(type.ToString());
 
