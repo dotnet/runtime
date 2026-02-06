@@ -4,8 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/124044 -->
-    <EnablePreviewFeatures Condition="'$(TargetsAppleMobile)' != 'true'">true</EnablePreviewFeatures>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
 
     <!-- these tests depend on the pdb files -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
