@@ -277,7 +277,7 @@ if ($vmrCommit -and $vmrBranch) {
                         $msg = ($c.commit.message -split "`n")[0]
                         if ($msg.Length -gt 100) { $msg = $msg.Substring(0, 97) + "..." }
                         $date = $c.commit.committer.date
-                        Write-Host "    $($c.sha.Substring(0,8)) $date $msg"
+                        Write-Host "    $(Get-ShortSha $c.sha 8) $date $msg"
                     }
                 }
 
@@ -429,7 +429,13 @@ if ($TraceFix) {
             $manifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$encodedManifestBranch"
             $manifestJson = Invoke-GitHubApi $manifestUrl -Raw
             if ($manifestJson) {
-                $manifest = $manifestJson | ConvertFrom-Json
+                try {
+                    $manifest = $manifestJson | ConvertFrom-Json
+                }
+                catch {
+                    Write-Warning "Could not parse VMR source-manifest.json: $_"
+                    $manifest = $null
+                }
 
                 # Find the repo in the manifest
                 $escapedRepo = [regex]::Escape($traceRepo)
@@ -475,7 +481,13 @@ if ($TraceFix) {
                         $snapshotManifestUrl = "/repos/dotnet/dotnet/contents/src/source-manifest.json?ref=$snapshotRef"
                         $snapshotJson = Invoke-GitHubApi $snapshotManifestUrl -Raw
                         if ($snapshotJson) {
-                            $snapshotData = $snapshotJson | ConvertFrom-Json
+                            try {
+                                $snapshotData = $snapshotJson | ConvertFrom-Json
+                            }
+                            catch {
+                                Write-Warning "Could not parse snapshot manifest: $_"
+                                $snapshotData = $null
+                            }
 
                             $snapshotEntry = $snapshotData.repositories | Where-Object {
                                 $_.remoteUri -match "${escapedRepo}(\.git)?$" -or $_.path -eq $traceRepo
