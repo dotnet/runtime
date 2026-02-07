@@ -142,6 +142,19 @@ mono_100ns_datetime_from_timeval (struct timeval tv)
 #if defined(HOST_DARWIN)
 
 void
+mono_clock_init (mono_clock_id_t *clk_id)
+{
+	kern_return_t ret;
+
+	do {
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, clk_id);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
+}
+
+void
 mono_clock_cleanup (mono_clock_id_t clk_id)
 {
 	kern_return_t ret;
@@ -175,6 +188,14 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 #elif defined(__linux__) || defined (TARGET_WASM)
 
 void
+mono_clock_init (mono_clock_id_t *clk_id)
+{
+#ifdef CLOCK_MONOTONIC
+	*clk_id = CLOCK_MONOTONIC;
+#endif
+}
+
+void
 mono_clock_cleanup (mono_clock_id_t clk_id)
 {
 }
@@ -195,6 +216,12 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 }
 
 #else
+
+void
+mono_clock_init (mono_clock_id_t *clk_id)
+{
+	// TODO: need to implement this function for Windows
+}
 
 void
 mono_clock_cleanup (mono_clock_id_t clk_id)
