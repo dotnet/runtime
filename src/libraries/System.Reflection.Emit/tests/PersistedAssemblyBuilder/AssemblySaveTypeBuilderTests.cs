@@ -641,13 +641,12 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
                     MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
                     CallingConventions.Standard,
-                    returnType: typeof(void),
-                    returnTypeRequiredCustomModifiers: [],
-                    returnTypeOptionalCustomModifiers: [],
-                    // typeof(delegate*<in long, void>) does not copy the modreq, so get the modified type from the interface method.
-                    parameterTypes: [typeof(int).MakeByRefType(), mRun.GetParameters()[1].GetModifiedParameterType()],
-                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)], []],
-                    parameterTypeOptionalCustomModifiers: [[], []]);
+                    returnType: mRun.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    parameterTypes: mRun.GetParameters().Select(x => x.GetModifiedParameterType()).ToArray(),
+                    parameterTypeRequiredCustomModifiers: null,
+                    parameterTypeOptionalCustomModifiers: null);
                 // The method's parameter has a modreq; make sure it is added to the override's signature.
                 // See https://github.com/dotnet/runtime/issues/123857
                 tb.DefineMethodOverride(m, mRun);
