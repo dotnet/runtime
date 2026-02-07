@@ -508,11 +508,12 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
 //
 void Compiler::lvaInitWasmStackPtrArg(unsigned* curVarNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-    varDsc->lvType    = TYP_I_IMPL;
-    varDsc->lvIsParam = 1;
-    varDsc->lvOnFrame = true;
-    lvaWasmSpArg      = *curVarNum;
+    LclVarDsc* varDsc              = lvaGetDesc(*curVarNum);
+    varDsc->lvType                 = TYP_I_IMPL;
+    varDsc->lvIsParam              = 1;
+    varDsc->lvOnFrame              = true;
+    varDsc->lvImplicitlyReferenced = 1;
+    lvaWasmSpArg                   = *curVarNum;
     (*curVarNum)++;
 }
 
@@ -525,8 +526,10 @@ void Compiler::lvaAllocWasmStackPtr()
 {
     if (lvaWasmSpArg == BAD_VAR_NUM)
     {
-        lvaWasmSpArg                     = lvaGrabTemp(false DEBUGARG("SP"));
-        lvaGetDesc(lvaWasmSpArg)->lvType = TYP_I_IMPL;
+        lvaWasmSpArg                   = lvaGrabTemp(false DEBUGARG("SP"));
+        LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
+        varDsc->lvType                 = TYP_I_IMPL;
+        varDsc->lvImplicitlyReferenced = 1;
     }
 }
 
