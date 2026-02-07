@@ -518,7 +518,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetTraitValue="manifest"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="Never"
-      ContentRoot="$(OutDir)wwwroot"
+      ContentRoot="$(IntermediateOutputPath)"
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="_WasmBuildBootConfigStaticWebAsset" />
