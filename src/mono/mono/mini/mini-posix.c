@@ -476,7 +476,14 @@ static clock_serv_t sampling_clock;
 static void
 clock_init_for_profiler (MonoProfilerSampleMode mode)
 {
-	mono_clock_init (&sampling_clock);
+	kern_return_t ret;
+
+	do {
+		ret = host_get_clock_service (mach_host_self (), SYSTEM_CLOCK, &sampling_clock);
+	} while (ret == KERN_ABORTED);
+
+	if (ret != KERN_SUCCESS)
+		g_error ("%s: host_get_clock_service () returned %d", __func__, ret);
 }
 
 static void
