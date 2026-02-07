@@ -589,7 +589,7 @@ if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; th
     export PATH="$scriptroot/..:$PATH"
     export USE_SCCACHE=true
     export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
-    export SCCACHE_AZURE_CONNECTION_STRING="BlobEndPoint=https://runsccache.blob.core.windows.net"
+    export SCCACHE_AZURE_CONNECTION_STRING="BlobEndpoint=https://runsccache.blob.core.windows.net"
     echo "sccache enabled for linux-x64 build"
     sccache -s
 fi
