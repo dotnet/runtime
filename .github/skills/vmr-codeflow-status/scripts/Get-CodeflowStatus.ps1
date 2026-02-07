@@ -365,7 +365,7 @@ if ($body -match '\*\*Commit Diff\*\*:\s*\[([^\]]+)\]\(([^\)]+)\)') {
 
 # Extract associated repo changes from footer
 $repoChanges = @()
-$changeMatches = [regex]::Matches($body, '- (https://github\.com/([^/]+/[^/]+)/compare/([a-f0-9]+)\.\.\.([a-f0-9]+))')
+$changeMatches = [regex]::Matches($body, '- (https://github\.com/([^/]+/[^/]+)/compare/([a-fA-F0-9]+)\.\.\.([a-fA-F0-9]+))')
 foreach ($m in $changeMatches) {
     $repoChanges += @{
         URL      = $m.Groups[1].Value
@@ -412,8 +412,9 @@ if ($prCommits) {
     foreach ($c in $reversedCommits) {
         $msg = $c.messageHeadline
         # Backflow commits: "Backflow from https://github.com/dotnet/dotnet / <sha> build <id>"
-        if ($msg -match '(?:Backflow|Forward flow) from .+ / ([a-f0-9]+)') {
+        if ($msg -match '(?:Backflow|Forward flow) from .+ / ([a-fA-F0-9]+)') {
             $branchVmrCommit = $Matches[1]
+            # Keep scanning — we want the most recent (last in original order = first in reversed)
             break
         }
     }
@@ -650,7 +651,7 @@ if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
 
         # Extract conflicting files
         $conflictFiles = @()
-        $fileMatches = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\n')
+        $fileMatches = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\r?\n')
         foreach ($fm in $fileMatches) {
             $conflictFiles += $fm.Groups[1].Value
         }
@@ -662,12 +663,12 @@ if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
         }
 
         # Extract VMR commit from the conflict comment
-        if ($lastConflictComment.body -match 'sources from \[`([a-f0-9]+)`\]') {
+        if ($lastConflictComment.body -match 'sources from \[`([a-fA-F0-9]+)`\]') {
             Write-Host "  Conflicting VMR commit: $($Matches[1])" -ForegroundColor DarkGray
         }
 
         # Extract resolve command
-        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-f0-9-]+)') {
+        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-fA-F0-9-]+)') {
             Write-Host ""
             Write-Host "  Resolve command:" -ForegroundColor White
             Write-Host "    $($Matches[1])" -ForegroundColor DarkGray
@@ -683,13 +684,13 @@ if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
         Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
 
         # Extract darc commands from the warning
-        if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-f0-9-]+)(?:\s+--force)?') {
+        if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-fA-F0-9-]+)(?:\s+--force)?') {
             Write-Host ""
             Write-Host "  Suggested commands from Maestro:" -ForegroundColor White
-            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+)\s*\n') {
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+)\s*\r?\n') {
                 Write-Host "    Normal trigger: $($Matches[1])"
             }
-            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-f0-9-]+ --force)') {
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+ --force)') {
                 Write-Host "    Force trigger:  $($Matches[1])"
             }
         }
@@ -907,12 +908,7 @@ $issues = @()
 
 # Summarize issues
 if ($conflictWarnings.Count -gt 0) {
-    $conflictFileList = @()
-    if ($lastConflictComment) {
-        $fileMatches2 = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\n')
-        foreach ($fm in $fileMatches2) { $conflictFileList += $fm.Groups[1].Value }
-    }
-    $fileHint = if ($conflictFileList.Count -gt 0) { " in $($conflictFileList -join ', ')" } else { "" }
+    $fileHint = if ($conflictFiles -and $conflictFiles.Count -gt 0) { " in $($conflictFiles -join ', ')" } else { "" }
     $issues += "Conflict detected$fileHint — manual resolution required"
 }
 
