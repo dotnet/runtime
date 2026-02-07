@@ -73,6 +73,14 @@ namespace System.Globalization
         Float = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign |
                    AllowDecimalPoint | AllowExponent,
 
+        /// <summary>
+        /// Indicates that the <see cref="AllowLeadingWhite"/>, <see cref="AllowTrailingWhite"/>,
+        /// <see cref="AllowLeadingSign"/>, <see cref="AllowHexSpecifier"/>, and <see cref="AllowDecimalPoint"/>
+        /// styles are used. This is a composite number style used for parsing hexadecimal floating-point values
+        /// as defined in IEEE 754:2008 §5.12.3.
+        /// </summary>
+        HexFloat = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowHexSpecifier | AllowDecimalPoint,
+
         Currency = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowTrailingSign |
                    AllowParentheses | AllowDecimalPoint | AllowThousands | AllowCurrencySymbol,
 
