@@ -1954,5 +1954,31 @@ namespace System.Numerics.Tests
             Assert.True(Vector2.LessThanOrEqualAny(Vector2.Create(3, 2), Vector2.Create(1, 2))); // Y equal
             Assert.True(Vector2.LessThanOrEqualAny(Vector2.Create(0, 4), Vector2.Create(1, 2))); // X less
         }
+
+        [Fact]
+        public void GreaterThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th (0 >= 0) could give false positive
+            // with undefined upper elements from AsVector128Unsafe
+            Assert.True(Vector2.GreaterThanOrEqualAll(Vector2.Create(2, 3), Vector2.Create(1, 2)));
+            Assert.True(Vector2.GreaterThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(1, 2))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.GreaterThanOrEqualAll(Vector2.Create(0, 3), Vector2.Create(1, 2))); // X not greater or equal
+            Assert.False(Vector2.GreaterThanOrEqualAll(Vector2.Create(2, 1), Vector2.Create(1, 2))); // Y not greater or equal
+        }
+
+        [Fact]
+        public void LessThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 2 elements pass, but 3rd/4th could give false positive
+            // with undefined upper elements from AsVector128Unsafe
+            Assert.True(Vector2.LessThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(2, 3)));
+            Assert.True(Vector2.LessThanOrEqualAll(Vector2.Create(1, 2), Vector2.Create(1, 2))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector2.LessThanOrEqualAll(Vector2.Create(3, 2), Vector2.Create(2, 3))); // X not less or equal
+            Assert.False(Vector2.LessThanOrEqualAll(Vector2.Create(1, 4), Vector2.Create(2, 3))); // Y not less or equal
+        }
     }
 }
