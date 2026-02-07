@@ -116,7 +116,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
+                dstCount = m_compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             srcCount = BuildStoreLoc(tree->AsLclVarCommon());
             break;
@@ -310,7 +310,7 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            killMask = m_compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
         }
         break;
@@ -586,7 +586,7 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STOREIND:
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
+            if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -684,7 +684,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
     assert(!tree->IsValue() || (dstCount != 0));
-    assert(dstCount == tree->GetRegisterDstCount(compiler));
+    assert(dstCount == tree->GetRegisterDstCount(m_compiler));
     return srcCount;
 }
 
@@ -772,7 +772,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_SUB:
         case GT_DIV:
         {
-            return !varTypeIsFloating(tree->TypeGet()) || !compiler->canUseVexEncoding();
+            return !varTypeIsFloating(tree->TypeGet()) || !m_compiler->canUseVexEncoding();
         }
 
         // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
@@ -784,7 +784,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         {
             if (varTypeIsFloating(tree->TypeGet()))
             {
-                return !compiler->canUseVexEncoding();
+                return !m_compiler->canUseVexEncoding();
             }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
         }
@@ -794,12 +794,12 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_MULHI:
         {
             // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
-            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
+            return !(tree->IsUnsigned() && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2));
         }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            return tree->isRMWHWIntrinsic(compiler);
+            return tree->isRMWHWIntrinsic(m_compiler);
 #endif // FEATURE_HW_INTRINSICS
 
         default:
@@ -1084,8 +1084,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
-        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) &&
-            tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
+        if ((genActualType(targetType) == TYP_LONG) &&
+            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && tree->OperIs(GT_ROL, GT_ROR) &&
+            (shiftByValue > 0) && (shiftByValue < 64))
         {
             srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
             dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
@@ -1094,7 +1095,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
+             m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2) && !tree->gtSetFlags())
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
@@ -1225,7 +1226,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_X86
-    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(m_compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
@@ -1275,7 +1276,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
                     regNumber argReg           = seg.GetRegister();
-                    regNumber correspondingReg = compiler->getCallArgIntRegister(argReg);
+                    regNumber correspondingReg = m_compiler->getCallArgIntRegister(argReg);
                     buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(correspondingReg));
                     callHasFloatRegArgs = true;
                 }
@@ -1298,14 +1299,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
-            if (compiler->getNeedsGSSecurityCookie())
+            if (m_compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
             }
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
-                 !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                 !m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
@@ -1331,20 +1332,20 @@ int LinearScan::BuildCall(GenTreeCall* call)
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
-    if (call->NeedsVzeroupper(compiler))
+    if (call->NeedsVzeroupper(m_compiler))
     {
         // Much like for Contains256bitOrMoreAVX, we want to track if any
         // call needs a vzeroupper inserted. This allows us to reduce
         // the total number of vzeroupper being inserted for cases where
         // no 256+ AVX is used directly by the method.
 
-        compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
+        m_compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
     }
 
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    if (call->IsAsync() && m_compiler->compIsAsync() && !call->IsFastTailCall())
     {
         MarkAsyncContinuationBusyForCall(call);
     }
@@ -1502,7 +1503,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
             case GenTreeBlk::BlkOpKindUnroll:
             {
-                unsigned regSize   = compiler->roundDownSIMDSize(size);
+                unsigned regSize   = m_compiler->roundDownSIMDSize(size);
                 unsigned remainder = size;
 
                 if ((size >= regSize) && (regSize > 0))
@@ -1557,7 +1558,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // Lowering was expected to get rid of memmove in case of zero
                 assert(size > 0);
 
-                const unsigned simdSize = compiler->roundDownSIMDSize(size);
+                const unsigned simdSize = m_compiler->roundDownSIMDSize(size);
                 if ((size >= simdSize) && (simdSize > 0))
                 {
                     unsigned simdRegs = size / simdSize;
@@ -1853,14 +1854,14 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
 
         // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
-        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))
+        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= m_compiler->eeGetPageSize()))
         {
             buildInternalIntRegisterDefForNode(tree);
         }
     }
     else
     {
-        if (!compiler->info.compInitMem)
+        if (!m_compiler->info.compInitMem)
         {
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
@@ -2196,9 +2197,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
-        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+        bool isRMW = intrinsicTree->isRMWHWIntrinsic(m_compiler);
 
-        const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
+        const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(m_compiler);
 #ifdef TARGET_AMD64
         const bool canHWIntrinsicUseApxRegs = isEvexCompatible && getEvexIsSupported();
 #else
@@ -2286,7 +2287,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     // we will use the SIMD temp location to store the vector.
 
                     var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
-                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                    m_compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 else if (op1->IsCnsVec())
                 {
@@ -2309,7 +2310,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // we will use the SIMD temp location to store the vector.
 
                 var_types requiredSimdTempType = intrinsicTree->TypeGet();
-                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+                m_compiler->getSIMDInitTempVarNum(requiredSimdTempType);
 
                 // We then customize the uses as we will effectively be spilling
                 // op1, storing op3 to that spill location based on op2. Then
@@ -2375,7 +2376,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 3);
 
-                if (!compiler->canUseVexEncoding())
+                if (!m_compiler->canUseVexEncoding())
                 {
                     assert(isRMW);
 
@@ -2644,7 +2645,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (op2->IsEmbMaskOp())
                 {
                     // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
-                    assert(!op2->isRMWHWIntrinsic(compiler));
+                    assert(!op2->isRMWHWIntrinsic(m_compiler));
 
                     if (isRMW)
                     {
@@ -2836,12 +2837,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
 
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
                     // generate a pblendvpd, which requires XMM0 specifically for the mask register.
                     buildInternalFloatRegisterDefForNode(intrinsicTree,
-                                                         compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                                                         m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                                              ? lowSIMDRegs()
                                                              : SRBM_XMM0);
                 }
@@ -2986,7 +2987,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     {
 #if defined(TARGET_AMD64)
         // TODO-xarch-apx: there might be some problem if we allow EGPR as the dst of some instructions.
-        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(m_compiler);
 
         if (!isEvexCompatible)
         {
@@ -3222,7 +3223,7 @@ int LinearScan::BuildMul(GenTree* tree)
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
     bool useMulx =
-        !tree->OperIs(GT_MUL) && isUnsignedMultiply && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
+        !tree->OperIs(GT_MUL) && isUnsignedMultiply && m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
     int              srcCount      = 0;
@@ -3316,17 +3317,17 @@ int LinearScan::BuildMul(GenTree* tree)
 //
 void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 {
-    if (!compiler->canUseVexEncoding())
+    if (!m_compiler->canUseVexEncoding())
     {
         return;
     }
 
-    compiler->GetEmitter()->SetContainsAVX(true);
+    m_compiler->GetEmitter()->SetContainsAVX(true);
 
     if (sizeOfSIMDVector >= 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncodingDebugOnly()));
-        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && m_compiler->canUseEvexEncodingDebugOnly()));
+        m_compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
 

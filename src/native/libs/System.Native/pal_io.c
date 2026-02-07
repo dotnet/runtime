@@ -1575,166 +1575,34 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD) || defined(TARGET_HAIKU)
-static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
+#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_BASETYPE || defined(TARGET_HAIKU)
+static uint32_t FileSystemNameSupportsLocking(const char* fileSystemName)
 {
-    uint32_t result = 0;
-
-    if (strcmp(fileSystemName, "adfs") == 0) result = 0xADF5;
-    else if (strcmp(fileSystemName, "affs") == 0) result = 0xADFF;
-    else if (strcmp(fileSystemName, "afs") == 0) result = 0x5346414F;
-    else if (strcmp(fileSystemName, "anoninode") == 0) result = 0x09041934;
-    else if (strcmp(fileSystemName, "apfs") == 0) result = 0x1A;
-    else if (strcmp(fileSystemName, "aufs") == 0) result = 0x61756673;
-    else if (strcmp(fileSystemName, "autofs") == 0) result = 0x0187;
-    else if (strcmp(fileSystemName, "autofs4") == 0) result = 0x6D4A556D;
-    else if (strcmp(fileSystemName, "befs") == 0) result = 0x42465331;
-    else if (strcmp(fileSystemName, "bdevfs") == 0) result = 0x62646576;
-    else if (strcmp(fileSystemName, "bfs") == 0) result = 0x1BADFACE;
-    else if (strcmp(fileSystemName, "bpf_fs") == 0) result = 0xCAFE4A11;
-    else if (strcmp(fileSystemName, "binfmt_misc") == 0) result = 0x42494E4D;
-    else if (strcmp(fileSystemName, "bootfs") == 0) result = 0xA56D3FF9;
-    else if (strcmp(fileSystemName, "btrfs") == 0) result = 0x9123683E;
-    else if (strcmp(fileSystemName, "ceph") == 0) result = 0x00C36400;
-    else if (strcmp(fileSystemName, "cgroupfs") == 0) result = 0x0027E0EB;
-    else if (strcmp(fileSystemName, "cgroup2fs") == 0) result = 0x63677270;
-    else if (strcmp(fileSystemName, "cifs") == 0) result = 0xFF534D42;
-    else if (strcmp(fileSystemName, "coda") == 0) result = 0x73757245;
-    else if (strcmp(fileSystemName, "coherent") == 0) result = 0x012FF7B7;
-    else if (strcmp(fileSystemName, "configfs") == 0) result = 0x62656570;
-    else if (strcmp(fileSystemName, "cpuset") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "cramfs") == 0) result = 0x28CD3D45;
-    else if (strcmp(fileSystemName, "ctfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "debugfs") == 0) result = 0x64626720;
-    else if (strcmp(fileSystemName, "dev") == 0) result = 0x1373;
-    else if (strcmp(fileSystemName, "devfs") == 0) result = 0x1373;
-    else if (strcmp(fileSystemName, "devpts") == 0) result = 0x1CD1;
-    else if (strcmp(fileSystemName, "ecryptfs") == 0) result = 0xF15F;
-    else if (strcmp(fileSystemName, "efs") == 0) result = 0x00414A53;
-    else if (strcmp(fileSystemName, "exofs") == 0) result = 0x5DF5;
-    else if (strcmp(fileSystemName, "ext") == 0) result = 0x137D;
-    else if (strcmp(fileSystemName, "ext2_old") == 0) result = 0xEF51;
-    else if (strcmp(fileSystemName, "ext2") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "ext3") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "ext4") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "f2fs") == 0) result = 0xF2F52010;
-    else if (strcmp(fileSystemName, "fat") == 0) result = 0x4006;
-    else if (strcmp(fileSystemName, "fd") == 0) result = 0xF00D1E;
-    else if (strcmp(fileSystemName, "fhgfs") == 0) result = 0x19830326;
-    else if (strcmp(fileSystemName, "fuse") == 0) result = 0x65735546;
-    else if (strcmp(fileSystemName, "fuseblk") == 0) result = 0x65735546;
-    else if (strcmp(fileSystemName, "fusectl") == 0) result = 0x65735543;
-    else if (strcmp(fileSystemName, "futexfs") == 0) result = 0x0BAD1DEA;
-    else if (strcmp(fileSystemName, "gfsgfs2") == 0) result = 0x1161970;
-    else if (strcmp(fileSystemName, "gfs2") == 0) result = 0x01161970;
-    else if (strcmp(fileSystemName, "gpfs") == 0) result = 0x47504653;
-    else if (strcmp(fileSystemName, "hfs") == 0) result = 0x4244;
-    else if (strcmp(fileSystemName, "hfsplus") == 0) result = 0x482B;
-    else if (strcmp(fileSystemName, "hpfs") == 0) result = 0xF995E849;
-    else if (strcmp(fileSystemName, "hugetlbfs") == 0) result = 0x958458F6;
-    else if (strcmp(fileSystemName, "inodefs") == 0) result = 0x11307854;
-    else if (strcmp(fileSystemName, "inotifyfs") == 0) result = 0x2BAD1DEA;
-    else if (strcmp(fileSystemName, "isofs") == 0) result = 0x9660;
-    else if (strcmp(fileSystemName, "jffs") == 0) result = 0x07C0;
-    else if (strcmp(fileSystemName, "jffs2") == 0) result = 0x72B6;
-    else if (strcmp(fileSystemName, "jfs") == 0) result = 0x3153464A;
-    else if (strcmp(fileSystemName, "kafs") == 0) result = 0x6B414653;
-    else if (strcmp(fileSystemName, "lofs") == 0) result = 0xEF53;
-    else if (strcmp(fileSystemName, "logfs") == 0) result = 0xC97E8168;
-    else if (strcmp(fileSystemName, "lustre") == 0) result = 0x0BD00BD0;
-    else if (strcmp(fileSystemName, "minix_old") == 0) result = 0x137F;
-    else if (strcmp(fileSystemName, "minix") == 0) result = 0x138F;
-    else if (strcmp(fileSystemName, "minix2") == 0) result = 0x2468;
-    else if (strcmp(fileSystemName, "minix2v2") == 0) result = 0x2478;
-    else if (strcmp(fileSystemName, "minix3") == 0) result = 0x4D5A;
-    else if (strcmp(fileSystemName, "mntfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "mqueue") == 0) result = 0x19800202;
-    else if (strcmp(fileSystemName, "msdos") == 0) result = 0x4D44;
-    else if (strcmp(fileSystemName, "nfs") == 0) result = 0x6969;
-    else if (strcmp(fileSystemName, "nfsd") == 0) result = 0x6E667364;
-    else if (strcmp(fileSystemName, "nilfs") == 0) result = 0x3434;
-    else if (strcmp(fileSystemName, "novell") == 0) result = 0x564C;
-    else if (strcmp(fileSystemName, "ntfs") == 0) result = 0x5346544E;
-    else if (strcmp(fileSystemName, "objfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "ocfs2") == 0) result = 0x7461636F;
-    else if (strcmp(fileSystemName, "openprom") == 0) result = 0x9FA1;
-    else if (strcmp(fileSystemName, "omfs") == 0) result = 0xC2993D87;
-    else if (strcmp(fileSystemName, "overlay") == 0) result = 0x794C7630;
-    else if (strcmp(fileSystemName, "overlayfs") == 0) result = 0x794C764F;
-    else if (strcmp(fileSystemName, "panfs") == 0) result = 0xAAD7AAEA;
-    else if (strcmp(fileSystemName, "pipefs") == 0) result = 0x50495045;
-    else if (strcmp(fileSystemName, "proc") == 0) result = 0x9FA0;
-    else if (strcmp(fileSystemName, "pstorefs") == 0) result = 0x6165676C;
-    else if (strcmp(fileSystemName, "qnx4") == 0) result = 0x002F;
-    else if (strcmp(fileSystemName, "qnx6") == 0) result = 0x68191122;
-    else if (strcmp(fileSystemName, "ramfs") == 0) result = 0x858458F6;
-    else if (strcmp(fileSystemName, "reiserfs") == 0) result = 0x52654973;
-    else if (strcmp(fileSystemName, "romfs") == 0) result = 0x7275;
-    else if (strcmp(fileSystemName, "rootfs") == 0) result = 0x53464846;
-    else if (strcmp(fileSystemName, "rpc_pipefs") == 0) result = 0x67596969;
-    else if (strcmp(fileSystemName, "samba") == 0) result = 0x517B;
-    else if (strcmp(fileSystemName, "sdcardfs") == 0) result = 0x5DCA2DF5;
-    else if (strcmp(fileSystemName, "securityfs") == 0) result = 0x73636673;
-    else if (strcmp(fileSystemName, "selinux") == 0) result = 0xF97CFF8C;
-    else if (strcmp(fileSystemName, "sffs") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "sharefs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "smb") == 0) result = 0x517B;
-    else if (strcmp(fileSystemName, "smb2") == 0) result = 0xFE534D42;
-    else if (strcmp(fileSystemName, "sockfs") == 0) result = 0x534F434B;
-    else if (strcmp(fileSystemName, "squashfs") == 0) result = 0x73717368;
-    else if (strcmp(fileSystemName, "sysfs") == 0) result = 0x62656572;
-    else if (strcmp(fileSystemName, "sysv2") == 0) result = 0x012FF7B6;
-    else if (strcmp(fileSystemName, "sysv4") == 0) result = 0x012FF7B5;
-    else if (strcmp(fileSystemName, "tmpfs") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "tracefs") == 0) result = 0x74726163;
-    else if (strcmp(fileSystemName, "ubifs") == 0) result = 0x24051905;
-    else if (strcmp(fileSystemName, "udf") == 0) result = 0x15013346;
-    else if (strcmp(fileSystemName, "ufs") == 0) result = 0x00011954;
-    else if (strcmp(fileSystemName, "ufscigam") == 0) result = 0x54190100;
-    else if (strcmp(fileSystemName, "ufs2") == 0) result = 0x19540119;
-    else if (strcmp(fileSystemName, "usbdevice") == 0) result = 0x9FA2;
-    else if (strcmp(fileSystemName, "v9fs") == 0) result = 0x01021997;
-    else if (strcmp(fileSystemName, "vagrant") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "vboxfs") == 0) result = 0x786F4256;
-    else if (strcmp(fileSystemName, "vmhgfs") == 0) result = 0xBACBACBC;
-    else if (strcmp(fileSystemName, "vxfs") == 0) result = 0xA501FCF5;
-    else if (strcmp(fileSystemName, "vzfs") == 0) result = 0x565A4653;
-    else if (strcmp(fileSystemName, "xenfs") == 0) result = 0xABBA1974;
-    else if (strcmp(fileSystemName, "xenix") == 0) result = 0x012FF7B4;
-    else if (strcmp(fileSystemName, "xfs") == 0) result = 0x58465342;
-    else if (strcmp(fileSystemName, "xia") == 0) result = 0x012FD16D;
-    else if (strcmp(fileSystemName, "udev") == 0) result = 0x01021994;
-    else if (strcmp(fileSystemName, "zfs") == 0) result = 0x2FC12FC1;
-
-    assert(result != 0);
-    return result;
+    if (strcmp(fileSystemName, "nfs") == 0 ||
+        strcmp(fileSystemName, "cifs") == 0 ||
+        strcmp(fileSystemName, "smb") == 0 ||
+        strcmp(fileSystemName, "smb2") == 0)
+    {
+        return 0;
+    }
+    return 1;
 }
 #endif
 #endif /* TARGET_WASI */
 
-uint32_t SystemNative_GetFileSystemType(intptr_t fd)
+// LOCK_SH does not work well for write access on nfs/cifs/samba. For example, writes are dropped silently.
+// See https://github.com/dotnet/runtime/issues/44546 and https://github.com/dotnet/runtime/issues/53182.
+uint32_t SystemNative_FileSystemSupportsLocking(intptr_t fd, int32_t lockOperation, int32_t accessWrite)
 {
-#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
-    int statfsRes;
-    struct statfs statfsArgs;
-    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
-    // which got deprecated in macOS 10.6, in favor of statfs
-    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-    if (statfsRes == -1) return 0;
-
-#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
-    // * On OSX-like systems, f_type is version-specific. Don't use it, just map the name.
-    // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
-    //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
-    //   get the correct filesystem type.
-    return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
+    assert(lockOperation == PAL_LOCK_SH || lockOperation == PAL_LOCK_EX);
+#if defined(TARGET_WASI) || defined(TARGET_WASM)
+    return 0; // WASI/WASM doesn't support locking.
 #else
-    // On Linux, f_type is signed. This causes some filesystem types to be represented as
-    // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
-    uint32_t result = (uint32_t)statfsArgs.f_type;
-    return result;
-#endif
-#elif defined(TARGET_HAIKU)
+    if (lockOperation == PAL_LOCK_EX || accessWrite == 0)
+    {
+        return 1;
+    }
+#if defined(TARGET_HAIKU)
     struct stat st;
     int fstatRes;
     while ((fstatRes = fstat(ToFileDescriptor(fd), &st)) == -1 && errno == EINTR);
@@ -1745,26 +1613,38 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((fsStatDevRes = fs_stat_dev(st.st_dev, &info)) == -1 && errno == EINTR);
     if (fsStatDevRes == -1) return 0;
 
-    if (strcmp(info.fsh_name, "bfs") == 0)
-    {
-        // Haiku names its own BFS filesystem "bfs", but on Linux and some other UNIXes
-        // it is called "befs" to avoid confusion with Boot File System.
-        strncpy(info.fsh_name, "befs", sizeof(info.fsh_name) - 1);
-        info.fsh_name[sizeof(info.fsh_name) - 1] = '\0';
-    }
+    return FileSystemNameSupportsLocking(info.fsh_name);
+#elif HAVE_STATFS_FSTYPENAME || defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    if (statfsRes == -1) return 0;
 
-    return MapFileSystemNameToEnum(info.fsh_name);
-#elif defined(TARGET_WASI)
-    return EINTR;
-#elif !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE
+#if HAVE_STATFS_FSTYPENAME
+    return FileSystemNameSupportsLocking(statfsArgs.f_fstypename);
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    unsigned int f_type = (unsigned int)statfsArgs.f_type;
+    if (f_type == 0x6969 ||     // NFS_SUPER_MAGIC
+        f_type == 0xFF534D42 || // CIFS_SUPER_MAGIC
+        f_type == 0x517B ||     // SMB_SUPER_MAGIC
+        f_type == 0xFE534D42)   // SMB2_SUPER_MAGIC
+    {
+        return 0;
+    }
+    return 1;
+#endif
+#elif HAVE_STATVFS_BASETYPE
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     if (statfsRes == -1) return 0;
 
-    return MapFileSystemNameToEnum(statfsArgs.f_basetype);
+    return FileSystemNameSupportsLocking(statfsArgs.f_basetype);
 #else
     #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
 #endif
 }
 
@@ -1849,31 +1729,97 @@ int32_t SystemNative_CanGetHiddenFlag(void)
 #endif
 }
 
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* threadInfo)
 {
 #ifdef __sun
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/lwp/%d/lwpsinfo", pid, tid);
 
     intptr_t fd;
-    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
     if (fd < 0)
     {
         return 0;
     }
 
-    psinfo_t status;
-    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    lwpsinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
     close(fd);
-    if (result >= 0)
+    if (result < sizeof (pr))
     {
-        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
-        return 1;
+        errno = EIO;
+        return -1;
+    }
+
+    threadInfo->Tid = pr.pr_lwpid;
+    threadInfo->Priority = pr.pr_pri;
+    threadInfo->NiceVal = pr.pr_nice;
+    // Status code, a char: ...
+    threadInfo->StatusCode = (uchar_t)pr.pr_sname;
+    // Thread start time and CPU time
+    threadInfo->StartTime = pr.pr_start.tv_sec;
+    threadInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    threadInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    threadInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    return 0;
+#else
+    (void)pid, (void)tid, (void)threadInfo;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
+}
+
+// The struct passing is limited, so the args string is handled separately here.
+int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint8_t *argBuf, int32_t argBufSize)
+{
+#ifdef __sun
+    if (argBufSize != 0 && argBufSize < PRARGSZ)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    char infoFilename[64];
+    snprintf(infoFilename, sizeof(infoFilename), "/proc/%d/psinfo", pid);
+
+    intptr_t fd;
+    while ((fd = open(infoFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    psinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
+    close(fd);
+    if (result < sizeof (pr))
+    {
+        errno = EIO;
+        return -1;
+    }
+
+    processInfo->Pid = pr.pr_pid;
+    processInfo->ParentPid = pr.pr_ppid;
+    processInfo->SessionId = pr.pr_sid;
+    processInfo->Priority = pr.pr_lwp.pr_pri;
+    processInfo->NiceVal = pr.pr_lwp.pr_nice;
+    // pr_size and pr_rsize are in Kbytes.
+    processInfo->VirtualSize = (uint64_t)pr.pr_size * 1024;
+    processInfo->ResidentSetSize = (uint64_t)pr.pr_rssize * 1024;
+    processInfo->StartTime = pr.pr_start.tv_sec;
+    processInfo->StartTimeNsec = pr.pr_start.tv_nsec;
+    processInfo->CpuTotalTime = pr.pr_time.tv_sec;
+    processInfo->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    if (argBuf != NULL && argBufSize != 0)
+    {
+        SafeStringCopy((char*)argBuf, PRARGSZ, pr.pr_psargs);
     }
 
     return 0;
 #else
-    (void)pid, (void)processStatus;
+    (void)pid, (void)processInfo, (void)argBuf, (void)argBufSize;
     errno = ENOTSUP;
     return -1;
 #endif // __sun

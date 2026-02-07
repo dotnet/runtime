@@ -2,11 +2,11 @@
 excludeAgent: code-review-agent
 ---
 
-**Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
+**Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
 You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
-If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm. You can avoid building if you only change comments or files that do not affect builds and tests (e.g. README.md).
+If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
@@ -35,7 +35,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 
 ## ⚠️ MANDATORY: Run Baseline Build First
 
-**You MUST complete these steps BEFORE making any code changes.** Skipping this causes "missing testhost" and "shared framework" errors that waste time.
+**You MUST complete a baseline build BEFORE making any code changes.** Skipping this causes "missing testhost" and "shared framework" errors that waste time.
 
 ### Step 1: Identify Your Component
 
@@ -52,7 +52,6 @@ Based on file paths you will modify:
 | `src/native/managed` | Tools |
 | `src/tasks` | Build Tasks |
 | `src/tests` | Runtime Tests |
-| None of the above | Docs/infra only — skip build steps |
 
 **WASM/WASI Library Detection:** A change under `src/libraries/` is WASM/WASI-relevant if the library's `.csproj` has explicit Browser/WASM or WASI targets (`TargetFrameworks`, `TARGET_BROWSER`, `TARGET_WASI` constants, or `Condition` attributes referencing `browser`/`wasi`), **and** the changed file is not excluded from those targets via `Condition` on `<ItemGroup>` or `<Compile>`.
 
@@ -88,14 +87,12 @@ dotnet --version  # Should match sdk.version in global.json
 
 ## Component-Specific Workflows
 
-After completing the baseline build above, use the appropriate workflow for your changes.
+After completing the baseline build above (the baseline build MUST be completed before running tests), use the appropriate workflow for your changes.
 All commands must complete with exit code 0, and all tests must pass with zero failures.
 
 ### Libraries (Most Common)
 
-**Build:** `./build.sh libs -rc release` (from repo root)
-
-**Test a specific library:**
+**Build and test a specific library:**
 ```bash
 cd src/libraries/<LibraryName>
 dotnet build
@@ -106,19 +103,15 @@ Test projects are typically at: `tests/<LibraryName>.Tests.csproj` or `tests/<Li
 
 **Test all libraries:** `./build.sh libs.tests -test -rc release`
 
-**System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc release`
+**System.Private.CoreLib:** Rebuild with `./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked`
 
 Before completing, ensure ALL tests for affected libraries pass.
 
 ### CoreCLR
 
-**Build:** `./build.sh clr`
-
 **Test:** `cd src/tests && ./build.sh && ./run.sh`
 
 ### Mono
-
-**Build:** `./build.sh mono+libs`
 
 **Test:**
 ```bash

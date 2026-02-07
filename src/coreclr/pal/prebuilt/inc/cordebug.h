@@ -387,6 +387,13 @@ typedef interface ICorDebugProcess11 ICorDebugProcess11;
 #endif  /* __ICorDebugProcess11_FWD_DEFINED__ */
 
 
+#ifndef __ICorDebugProcess12_FWD_DEFINED__
+#define __ICorDebugProcess12_FWD_DEFINED__
+typedef interface ICorDebugProcess12 ICorDebugProcess12;
+
+#endif  /* __ICorDebugProcess12_FWD_DEFINED__ */
+
+
 #ifndef __ICorDebugModuleDebugEvent_FWD_DEFINED__
 #define __ICorDebugModuleDebugEvent_FWD_DEFINED__
 typedef interface ICorDebugModuleDebugEvent ICorDebugModuleDebugEvent;
@@ -8561,6 +8568,90 @@ EXTERN_C const IID IID_ICorDebugProcess11;
 
 
 #endif  /* __ICorDebugProcess11_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICorDebugProcess12_INTERFACE_DEFINED__
+#define __ICorDebugProcess12_INTERFACE_DEFINED__
+
+/* interface ICorDebugProcess12 */
+/* [unique][uuid][local][object] */
+
+
+EXTERN_C const IID IID_ICorDebugProcess12;
+#if defined(__cplusplus) && !defined(CINTERFACE)
+
+    MIDL_INTERFACE("4dcd6fb9-3cf0-43f0-9edf-e833070fe644")
+    ICorDebugProcess12 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE GetAsyncStack(
+            /* [in] */ CORDB_ADDRESS continuationAddress,
+            /* [out] */ ICorDebugStackWalk **ppStackWalk) = 0;
+
+    };
+
+
+#else   /* C style interface */
+
+    typedef struct ICorDebugProcess12Vtbl
+    {
+        BEGIN_INTERFACE
+
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )(
+            ICorDebugProcess12 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */
+            _COM_Outptr_  void **ppvObject);
+
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )(
+            ICorDebugProcess12 * This);
+
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )(
+            ICorDebugProcess12 * This);
+        DECLSPEC_XFGVIRT(ICorDebugProcess12, GetAsyncStack)
+        HRESULT ( STDMETHODCALLTYPE *GetAsyncStack )(
+            ICorDebugProcess12 * This,
+            /* [in] */ CORDB_ADDRESS continuationAddress,
+            /* [out] */ ICorDebugStackWalk **ppStackWalk);
+        END_INTERFACE
+    } ICorDebugProcess12Vtbl;
+
+    interface ICorDebugProcess12
+    {
+        CONST_VTBL struct ICorDebugProcess12Vtbl *lpVtbl;
+    };
+
+
+
+#ifdef COBJMACROS
+
+
+#define ICorDebugProcess12_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+
+#define ICorDebugProcess12_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) )
+
+#define ICorDebugProcess12_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) )
+
+
+#define ICorDebugProcess12_GetAsyncStack(This,continuationAddress,ppStackWalk)  \
+    ( (This)->lpVtbl -> GetAsyncStack(This,continuationAddress,ppStackWalk) )
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorDebugProcess12_INTERFACE_DEFINED__ */
+
 
 
 #ifndef __ICorDebugModuleDebugEvent_INTERFACE_DEFINED__

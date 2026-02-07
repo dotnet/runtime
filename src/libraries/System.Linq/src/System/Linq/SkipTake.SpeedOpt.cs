@@ -148,7 +148,11 @@ namespace System.Linq
             {
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
                 {
-                    sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    if (sourceIndex < sourceSpan.Length)
+                    {
+                        sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    }
+
                     return;
                 }
 
