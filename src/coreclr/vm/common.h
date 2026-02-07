@@ -215,13 +215,6 @@ FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
     return memcpy(dest, src, len);
 }
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    // You should be using CopyValueClass if you are doing an memcpy
-    // in the GC heap.
-    extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);
-#define memcpy(dest, src, len) GCSafeMemCpy(dest, src, len)
-#endif // _DEBUG && !DACCESS_COMPILE
-
 namespace Loader
 {
     typedef enum

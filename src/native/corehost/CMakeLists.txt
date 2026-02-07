@@ -87,6 +87,7 @@ if(NOT CLR_CMAKE_TARGET_BROWSER)
         include_directories(${CLR_SRC_NATIVE_DIR}/external/)
     endif()
 
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal/ minipal)
     add_subdirectory(hostcommon)
     add_subdirectory(hostmisc)
     add_subdirectory(fxr)
