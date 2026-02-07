@@ -24249,7 +24249,7 @@ void gc_heap::pm_full_gc_init_or_clear()
             // Although arguably we should just turn off PM then...
             //assert (settings.entry_memory_load >= high_memory_load_th);
             assert (settings.entry_memory_load > 0);
-            settings.gc_index += 1;
+            settings.gc_index = settings.gc_index + 1;
             do_pre_gc();
         }
     }
