@@ -78,7 +78,7 @@ extends:
           - linux_x64
           jobParameters:
             nameSuffix: CoreCLR_Libraries
-            buildArgs: -s host -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s libs.native -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
