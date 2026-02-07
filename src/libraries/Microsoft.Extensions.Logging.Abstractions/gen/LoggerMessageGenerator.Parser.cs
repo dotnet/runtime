@@ -719,7 +719,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 // Report immediately if callback is provided (preserves pragma suppression with original locations)
                 _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
 
-                // Also collect for scenarios that need the diagnostics list (currently unused in Roslyn 4.0+ incremental generator)
+                // Also collect for scenarios that need the diagnostics list; in Roslyn 4.0+ incremental generators,
+                // this list is exposed via parser.Diagnostics (as ImmutableEquatableArray<DiagnosticInfo>) and reported in Execute.
                 Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
             }
 

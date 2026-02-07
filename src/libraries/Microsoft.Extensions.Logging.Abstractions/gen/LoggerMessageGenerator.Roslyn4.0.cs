@@ -136,7 +136,11 @@ namespace Microsoft.Extensions.Logging.Generators
             if (allLogClasses.Count > 0)
             {
                 var e = new Emitter(hasStringCreate);
-                string result = e.Emit(allLogClasses.Values.ToList(), context.CancellationToken);
+                var orderedLoggerClasses = allLogClasses
+                    .OrderBy(static kvp => kvp.Key, System.StringComparer.Ordinal)
+                    .Select(static kvp => kvp.Value)
+                    .ToList();
+                string result = e.Emit(orderedLoggerClasses, context.CancellationToken);
 
                 context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }
