@@ -105,8 +105,7 @@ function Write-Status {
 }
 
 # --- Parse repo owner/name ---
-$repoParts = $Repository -split '/'
-if ($repoParts.Count -ne 2) {
+if ($Repository -notmatch '^[^/]+/[^/]+$') {
     Write-Error "Repository must be in format 'owner/repo' (e.g., 'dotnet/sdk')"
     return
 }
