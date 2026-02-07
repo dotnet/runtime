@@ -32,6 +32,7 @@ namespace System.Formats.Tar
             => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
 
         /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool)" />
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format)
         {
@@ -73,6 +74,7 @@ namespace System.Formats.Tar
             => CreateFromDirectoryAsync(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
 
         /// <inheritdoc cref="CreateFromDirectoryAsync(string, Stream, bool, CancellationToken)" />
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
         {
