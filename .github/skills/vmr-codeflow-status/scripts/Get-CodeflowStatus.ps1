@@ -72,7 +72,7 @@ function Invoke-GitHubApi {
             $args += '-H'
             $args += 'Accept: application/vnd.github.raw'
         }
-        $result = gh api @args 2>&1
+        $result = gh api @args 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "GitHub API call failed: $Endpoint"
             return $null
@@ -186,12 +186,18 @@ if ($CheckMissing) {
         }
 
         # Get the PR body to extract VMR commit and VMR branch
-        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>&1
+        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "    ⚠️  Could not fetch PR #$($lastPR.number) details" -ForegroundColor Yellow
             continue
         }
-        $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
+        try {
+            $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
+        }
+        catch {
+            Write-Host "    ⚠️  Could not parse PR #$($lastPR.number) details" -ForegroundColor Yellow
+            continue
+        }
 
         $vmrCommitFromPR = $null
         $vmrBranchFromPR = $null
@@ -265,7 +271,7 @@ if ($CheckMissing) {
     Write-Host ""
     Write-Section "Forward flow PRs ($Repository → dotnet/dotnet)"
 
-    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 50 2>$null
+    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
     $fwdPRs = @()
     if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
         try { $fwdPRs = ($fwdPRsJson -join "`n") | ConvertFrom-Json } catch { $fwdPRs = @() }
@@ -286,12 +292,18 @@ if ($CheckMissing) {
             if ($Branch -and $fprBranch -ne $Branch) { continue }
 
             # Get PR details for staleness/conflict check
-            $fprDetailJson = gh pr view $fpr.number -R dotnet/dotnet --json body,comments,updatedAt 2>&1
+            $fprDetailJson = gh pr view $fpr.number -R dotnet/dotnet --json body,comments,updatedAt 2>$null
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not fetch details" -ForegroundColor Yellow
                 continue
             }
-            $fprDetail = ($fprDetailJson -join "`n") | ConvertFrom-Json
+            try {
+                $fprDetail = ($fprDetailJson -join "`n") | ConvertFrom-Json
+            }
+            catch {
+                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not parse details" -ForegroundColor Yellow
+                continue
+            }
 
             # Check for staleness warnings and conflicts in comments
             $hasStaleness = $false
@@ -498,7 +510,7 @@ if (-not $isForwardFlow) {
         }
         catch {
             # Fall back to regex if XML parsing fails
-            if ($vdContent -match '<Source\s+[^>]*Sha="([a-fA-F0-9]+)"') {
+            if ($vdContent -match '<Source\s+[^>]*Sha="([a-fA-F0-9]{40})"') {
                 $versionDetailsVmrCommit = $Matches[1]
                 $branchVmrCommit = $versionDetailsVmrCommit
             }
@@ -534,7 +546,7 @@ if ($branchVmrCommit -or $vmrCommit) {
 
         if ($vmrCommit) {
             $bodyShort = Get-ShortSha $vmrCommit
-            if ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit)) {
+            if ($vmrCommit.StartsWith($branchVmrCommit, [StringComparison]::OrdinalIgnoreCase) -or $branchVmrCommit.StartsWith($vmrCommit, [StringComparison]::OrdinalIgnoreCase)) {
                 Write-Host "  ✅ $sourceLabel ($branchShort) matches PR body ($bodyShort)" -ForegroundColor Green
             }
             else {
@@ -594,7 +606,7 @@ if ($vmrCommit -and $vmrBranch) {
         $sourceHeadSha = $branchHead.sha
         $sourceHeadDate = $branchHead.commit.committer.date
         $snapshotSource = if ($usedBranchSnapshot) {
-            if ($versionDetailsVmrCommit -and $vmrCommit.StartsWith($versionDetailsVmrCommit)) { "from Version.Details.xml" }
+            if ($versionDetailsVmrCommit -and $vmrCommit.StartsWith($versionDetailsVmrCommit, [StringComparison]::OrdinalIgnoreCase)) { "from Version.Details.xml" }
             elseif ($commitMsgVmrCommit) { "from branch commit" }
             else { "from branch" }
         } else { "from PR body" }
