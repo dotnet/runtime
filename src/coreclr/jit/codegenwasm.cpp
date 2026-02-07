@@ -534,6 +534,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // TODO-WASM-RA: remove KEEPALIVE after we've produced the GC info.
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             GetEmitter()->emitIns(INS_drop);
+
+        case GT_LCLHEAP:
+            genLclHeap(treeNode);
             break;
 
         default:
@@ -1808,6 +1811,136 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genLclHeap: Generate code for comparing ints or longs
+//
+// Arguments:
+//    tree -- LCH_HEAP tree
+//
+// Notes:
+//   Codegen varies depending on:
+//   * whether the size operand is a constant or not
+//   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
+//
+//   If the sp is changed, the value at sp[0] must be the frame pointer
+//   so that the runtime unwinder can locate the base of thie fixed area
+//   in the shadow stack.
+//
+void CodeGen::genLclHeap(GenTree* tree)
+{
+    assert(tree->OperIs(GT_LCLHEAP));
+    assert(m_compiler->compLocallocUsed);
+    assert(isFramePointerUsed());
+
+    bool const     needsZeroing = m_compiler->info.compInitMem;
+    GenTree* const size         = tree->AsOp()->gtOp1;
+
+    assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
+
+    // We reserve this amount of space below any allocation for
+    // establishing unwind invariants.
+    // (likely this constant will be needed elsewhere)
+    //
+    size_t const reservedSpace = TARGET_POINTER_SIZE;
+
+    // Constant LCLHEAP size operands are contained by lower.
+    //
+    if (size->isContainedIntOrIImmed())
+    {
+        size_t amount = size->AsIntCon()->gtIconVal;
+        amount        = AlignUp(amount, STACK_ALIGN);
+
+        // Handle zero
+        //
+        if (amount == 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Decrease the stack pointer by amount
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+
+            // Zero the newly allocated space if needed
+            //
+            if (needsZeroing)
+            {
+                // Adjust the base address to zero to account for the reserved space
+                //
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+                GetEmitter()->emitIns(INS_I_add);
+
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+
+                // TODO-WASM-CQ: possibly do small fills directly
+                //
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+            }
+
+            // SP now points at the reserved space just below the allocation.
+            // Save the frame pointer at sp[0].
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Leave the base address of the allocated region on the stack.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+    }
+    else
+    {
+        genConsumeReg(size);
+
+        // We will need an internal register for this.
+        //
+        NYI_WASM("variable-sized localloc");
+
+        // size is on the stack... we will need to spill it since
+        // we need to use it multiple times.
+        //
+        // local.tee $internalReg
+        //
+        // if
+        //    constant 0
+        // else
+        //    local.get $sp
+        //    local.get $internalReg
+        //    add STACK_ALIGN
+        //    and STACK_ALIGN-1
+        //    local.tee $internalReg
+        //    sub
+        //    local.set $Sp
+        //
+        // IF (need zeroing)
+        //       push 0
+        //       local.get $internalReg
+        //       local.get sp
+        //       add reservedSize
+        //       memory.fill
+        //
+        //   local.get $fp
+        //   store at sp[0]
+        //   local.get $sp
+        //
+        //   local.get $sp
+        //   add reservedSpace
+        //
+        // end
+    }
+
+    genProduceReg(tree);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
