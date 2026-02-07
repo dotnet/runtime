@@ -80,9 +80,5 @@ setup_dirs
 # Check prereqs.
 check_prereqs
 
-if [[ "$USE_SCCACHE" == "true" ]]; then
-    __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
-fi
-
 # Build the installer native components.
 build_native "$__TargetOS" "$__TargetArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "installer component"
