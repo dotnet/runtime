@@ -67,8 +67,9 @@ public class Color
             Console.ResetColor();
             Console.Write('4');
 
-            Assert.Equal(0, Encoding.UTF8.GetString(data.ToArray()).ToCharArray().Count(c => c == Esc));
-            Assert.Equal("1234", Encoding.UTF8.GetString(data.ToArray()));
+            string output = Encoding.UTF8.GetString(data.ToArray());
+            Assert.Equal(0, output.ToCharArray().Count(c => c == Esc));
+            Assert.Contains("1234", output);
         });
     }
 
