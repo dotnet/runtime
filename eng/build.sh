@@ -592,6 +592,8 @@ if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; th
     export SCCACHE_AZURE_CONNECTION_STRING="BlobEndpoint=https://runsccache.blob.core.windows.net"
     export SCCACHE_AZURE_NO_CREDENTIALS=true
 
+    sccache --stop-server || true
+
     # Write sccache logs to the AzDO artifact staging directory so they get published.
     # Fall back to the local artifacts/log directory if not running in CI.
     if [[ -n "${BUILD_ARTIFACTSTAGINGDIRECTORY:-}" ]]; then
