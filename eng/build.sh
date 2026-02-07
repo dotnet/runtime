@@ -591,6 +591,10 @@ if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; th
     export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
     export SCCACHE_AZURE_CONNECTION_STRING="BlobEndpoint=https://runsccache.blob.core.windows.net"
     export SCCACHE_AZURE_NO_CREDENTIALS=true
+    mkdir -p "$scriptroot/../artifacts/log"
+    export SCCACHE_ERROR_LOG="$scriptroot/../artifacts/log/sccache_debug.log"
+    export SCCACHE_LOG=debug
+    sccache --start-server
     echo "sccache enabled for linux-x64 build"
     sccache -s
 fi
