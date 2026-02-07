@@ -1353,6 +1353,20 @@ function Get-HelixWorkItemDetails {
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+
+        # Workaround for https://github.com/dotnet/dnceng/issues/6072:
+        # Helix API returns incorrect file URIs for files in subdirectories
+        # (e.g., xharness-output/testResults.xml). Rebuild URI from FileName.
+        if ($response -and $response.Files) {
+            $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+            foreach ($file in $response.Files) {
+                if ($file.FileName -and $file.FileName -match '/') {
+                    $encodedFileName = ($file.FileName -split '/' | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
+                    $file.Uri = "https://helix.dot.net/api/jobs/$JobId/workitems/$encodedWorkItem/files/$encodedFileName`?api-version=2019-06-17"
+                }
+            }
+        }
+
         return $response
     }
     catch {
