@@ -28,6 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_sendExistingReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -122,47 +123,47 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     if (sendExisting)
     {
         // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
-        // SystemDomain::Attach), the AppDomain may not exist yet. In this case, skip assembly
-        // iteration since no assemblies are loaded anyway. Future JIT'd methods will still be logged.
-        AppDomain *pAppDomain = GetAppDomain();
-        if (pAppDomain != nullptr)
+        // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
+        // may not exist yet. We use s_sendExistingReady (a Volatile<bool>) to guard against
+        // this, rather than null-checking individual pointers which would have race conditions
+        // due to non-Volatile statics like m_pEEJitManager.
+        // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
+        if (!s_sendExistingReady)
         {
-            AppDomain::AssemblyIterator assemblyIterator = pAppDomain->IterateAssembliesEx(
-                (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<Assembly *> pAssembly;
-            while (assemblyIterator.Next(pAssembly.This()))
-            {
-                // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
-                if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
-                {
-                    Module *pModule = pAssembly->GetModule();
-                    if (pModule->IsReadyToRun())
-                    {
-                        ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
+            return;
+        }
 
-                        while (mi.Next())
+        AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
+            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
+        {
+            // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
+            if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
+            {
+                Module *pModule = pAssembly->GetModule();
+                if (pModule->IsReadyToRun())
+                {
+                    ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
+
+                    while (mi.Next())
+                    {
+                        // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
+                        MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
+                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
                         {
-                            // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
-                            MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
-                            if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
-                            {
-                                PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
-                            }
+                            PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
                         }
                     }
                 }
             }
         }
 
-        // Similarly, the EEJitManager may not exist yet if called before ExecutionManager::Init().
-        // In this case, there's no JIT'd code to log anyway.
-        EEJitManager *pJitManager = ExecutionManager::GetEEJitManager();
-        if (pJitManager != nullptr)
         {
 #ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager::LockHolder codeVersioningLockHolder;
 #endif // FEATURE_CODE_VERSIONING
-            CodeHeapIterator heapIterator = pJitManager->GetCodeHeapIterator();
+            CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
             while (heapIterator.Next())
             {
                 MethodDesc * pMethod = heapIterator.GetMethod();
@@ -217,6 +218,15 @@ void PerfMap::Disable()
         // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
         PAL_PerfJitDump_Finish();
     }
+}
+
+// Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+// Called from EEStartup after ExecutionManager::Init.
+void PerfMap::SignalSendExistingReady()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_sendExistingReady = true;
 }
 
 // Construct a new map for the process.
