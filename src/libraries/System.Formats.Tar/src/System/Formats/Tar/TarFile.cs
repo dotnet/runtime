@@ -32,6 +32,9 @@ namespace System.Formats.Tar
             => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
 
         /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool)" />
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destination">The destination stream the archive.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the archive entry names.</param>
         /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format)
@@ -74,7 +77,11 @@ namespace System.Formats.Tar
             => CreateFromDirectoryAsync(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
 
         /// <inheritdoc cref="CreateFromDirectoryAsync(string, Stream, bool, CancellationToken)" />
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destination">The destination stream of the archive.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
         /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
         {
@@ -116,6 +123,10 @@ namespace System.Formats.Tar
             => CreateFromDirectory(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax);
 
         /// <inheritdoc cref="CreateFromDirectory(string, string, bool)" />
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destinationFileName">The path of the destination archive file.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format)
         {
@@ -154,7 +165,11 @@ namespace System.Formats.Tar
             => CreateFromDirectoryAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
 
         /// <inheritdoc cref="CreateFromDirectoryAsync(string, string, bool, CancellationToken)" />
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destinationFileName">The path of the destination archive file.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
         /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
         {
