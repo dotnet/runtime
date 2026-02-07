@@ -175,6 +175,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
         id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
 
     dispIns(id);
@@ -685,7 +686,7 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf(" ;; ");
+                printf("      ;;");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
@@ -693,17 +694,10 @@ void emitter::emitDispIns(
         }
     };
 
-    auto dispTargetOfCallIfAny = [this, id]() {
+    auto dispHandleIfAny = [this, id]() {
         if (m_debugInfoSize > 0)
         {
-            const void* const methodToken = (const void*)id->idDebugOnlyInfo()->idMemCookie;
-            if (methodToken != nullptr)
-            {
-                printf(" ;; ");
-                const char* const methodName =
-                    m_compiler->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
-                printf("%s", methodName);
-            }
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
         }
     };
 
@@ -721,7 +715,7 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
-            dispTargetOfCallIfAny();
+            dispHandleIfAny();
         }
         break;
 
@@ -729,7 +723,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu 0", (uint64_t)imm);
-            dispTargetOfCallIfAny();
+            dispHandleIfAny();
         }
         break;
 
