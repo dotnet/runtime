@@ -175,6 +175,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
         id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
 
     dispIns(id);
@@ -685,11 +686,18 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf(" ;; ");
+                printf("      ;;");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
             }
+        }
+    };
+
+    auto dispHandleIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
         }
     };
 
@@ -707,6 +715,7 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+            dispHandleIfAny();
         }
         break;
 
@@ -714,6 +723,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu 0", (uint64_t)imm);
+            dispHandleIfAny();
         }
         break;
 

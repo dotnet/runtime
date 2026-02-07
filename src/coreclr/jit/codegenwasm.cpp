@@ -1406,18 +1406,18 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
+    // We must consume the operands in the proper execution order,
+    // so that liveness is updated appropriately.
+    genConsumeAddress(addr);
+    genConsumeRegs(data);
+
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
-        NYI_WASM("write barriers in StoreInd");
+        genGCWriteBarrier(tree, writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
-        // We must consume the operands in the proper execution order,
-        // so that liveness is updated appropriately.
-        genConsumeAddress(addr);
-        genConsumeRegs(data);
-
         var_types   type = tree->TypeGet();
         instruction ins  = ins_Store(type);
 
@@ -1529,13 +1529,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             if (call->IsHelperCall())
             {
-                NYI_WASM("Call helper statically without indirection cell");
+                assert(!call->IsFastTailCall());
                 CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
                 noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
                 CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-                params.addr                       = helperLookup.addr;
                 assert(helperLookup.accessType == IAT_VALUE);
+                params.addr = helperLookup.addr;
             }
             else
             {
