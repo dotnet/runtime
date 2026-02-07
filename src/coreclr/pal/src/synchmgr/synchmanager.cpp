@@ -2671,7 +2671,7 @@ namespace CorUnix
         VolatileStore<DWORD>(pdwWaitState, TWS_ACTIVE);
         m_tsThreadState = TS_STARTING;
 
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
         attrsPtr = &attrs;
         iRet = pthread_condattr_init(&attrs);
         if (0 != iRet)
@@ -2699,7 +2699,7 @@ namespace CorUnix
             pthread_condattr_destroy(&attrs);
             goto IPrC_exit;
         }
-#endif // HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
 
         iEagains = 0;
     Mutex_retry:
@@ -2995,7 +2995,7 @@ namespace CorUnix
         PAL_ERROR palErr = NO_ERROR;
         int iRet;
 
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
         if (fPreferMonotonicClock)
         {
             iRet = clock_gettime(CLOCK_MONOTONIC, ptsAbsTmo);
@@ -3022,7 +3022,7 @@ namespace CorUnix
     #error "Don't know how to get hi-res current time on this platform"
 #endif
 #endif // HAVE_WORKING_CLOCK_GETTIME, HAVE_WORKING_GETTIMEOFDAY
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
         }
 #endif
         if (0 == iRet)

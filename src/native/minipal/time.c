@@ -97,7 +97,7 @@ int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
+#else
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     if (result != 0)
@@ -106,8 +106,6 @@ int64_t minipal_hires_ticks(void)
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-#else
-    #error "minipal_hires_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
@@ -115,7 +113,7 @@ int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
-#elif HAVE_CLOCK_MONOTONIC
+#else
     struct timespec ts;
 
     // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
@@ -140,8 +138,6 @@ int64_t minipal_lowres_ticks(void)
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
-#else
-    #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
