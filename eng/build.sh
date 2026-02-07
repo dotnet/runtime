@@ -632,3 +632,7 @@ if [[ "$bootstrap" == "1" ]]; then
 fi
 
 "$scriptroot/common/build.sh" ${arguments[@]+"${arguments[@]}"}
+
+if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
+    sccache -s
+fi
