@@ -1720,7 +1720,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         pb = (BYTE*)(((size_t)pb + 3) & ~3);
         PSTORAGEHEADER pSHdr = (PSTORAGEHEADER)pb;
         PSTORAGESTREAM pStr = (PSTORAGESTREAM)(pSHdr+1);
-        for(short iStr = 1; iStr <= VAL16(pSHdr->iStreams); iStr++)
+        for(int iStr = 1; iStr <= VAL16(pSHdr->iStreams); iStr++)
         {
             if((strcmp(pStr->rcName,"#-")==0)||(strcmp(pStr->rcName,"#~")==0))
             {
