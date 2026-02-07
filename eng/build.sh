@@ -499,20 +499,16 @@ while [[ $# -gt 0 ]]; do
 
 
       -ninja)
-      if [ -z ${2+x} ]; then
+      if [ -z ${2+x} ] || [[ "$2" == -* ]]; then
         useNinja=true
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
         shift 2
-        if [ "$ninja" = true ]; then
-          arguments+=("/p:Ninja=true")
-          useNinja=true
-        elif [ "$ninja" = false ]; then
+        if [ "$ninja" = false ]; then
           arguments+=("/p:Ninja=false")
           useNinja=false
         else
-          arguments+=("/p:Ninja=true")
           useNinja=true
         fi
       fi

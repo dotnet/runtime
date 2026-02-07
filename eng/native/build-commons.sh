@@ -415,19 +415,16 @@ while :; do
             ;;
 
         ninja|-ninja)
-            if [[ -n "$2" ]]; then
+            if [[ -z "${2+x}" ]] || [[ "$2" == -* ]]; then
+              __UseNinja=1
+            else
               ninja_arg="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
               if [[ "$ninja_arg" == "false" ]]; then
                 __UseNinja=0
-                shift
-              elif [[ "$ninja_arg" == "true" ]]; then
-                __UseNinja=1
-                shift
               else
                 __UseNinja=1
               fi
-            else
-              __UseNinja=1
+              shift
             fi
             ;;
 
