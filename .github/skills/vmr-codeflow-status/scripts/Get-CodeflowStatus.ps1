@@ -421,10 +421,10 @@ if ($prCommits) {
 
 if ($branchVmrCommit -or $vmrCommit) {
     Write-Section "Snapshot Validation"
+    $usedBranchSnapshot = $false
     if ($branchVmrCommit -and $vmrCommit) {
         $bodyShort = Get-ShortSha $vmrCommit
         $branchShort = $branchVmrCommit  # already short from commit message
-        $usedBranchSnapshot = $false
         if ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit)) {
             Write-Host "  ✅ PR body snapshot ($bodyShort) matches branch commit ($branchShort)" -ForegroundColor Green
         }
@@ -443,7 +443,6 @@ if ($branchVmrCommit -or $vmrCommit) {
         }
     }
     elseif ($branchVmrCommit -and -not $vmrCommit) {
-        $usedBranchSnapshot = $false
         Write-Host "  ⚠️  PR body has no commit reference, but branch commit references $branchVmrCommit" -ForegroundColor Yellow
         Write-Host "  Using branch commit for freshness check" -ForegroundColor Yellow
         $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
@@ -501,6 +500,9 @@ if ($vmrCommit -and $vmrBranch) {
                 $compareStatus = $compare.status
 
                 switch ($compareStatus) {
+                    'identical' {
+                        Write-Host "  ✅ PR is up to date with $freshnessRepoLabel branch" -ForegroundColor Green
+                    }
                     'ahead' {
                         Write-Host "  ⚠️  $freshnessRepoLabel is $aheadBy commit(s) ahead of the PR snapshot" -ForegroundColor Yellow
                     }
@@ -895,7 +897,7 @@ if ($stalenessWarnings.Count -gt 0) {
     $issues += "Staleness warning active — codeflow is blocked"
 }
 
-if ($vmrCommit -and $sourceHeadSha -and $vmrCommit -ne $sourceHeadSha) {
+if ($vmrCommit -and $sourceHeadSha -and $vmrCommit -ne $sourceHeadSha -and $compareStatus -ne 'identical') {
     switch ($compareStatus) {
         'ahead'    { $issues += "$freshnessRepoLabel is $aheadBy commit(s) ahead of PR snapshot" }
         'behind'   { $issues += "$freshnessRepoLabel is $behindBy commit(s) behind PR snapshot" }
