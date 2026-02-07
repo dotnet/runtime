@@ -2632,10 +2632,21 @@ namespace Internal.JitInterface
 
             MethodDesc contextMethod = callerHandle;
 
-            // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
+            // There is a pathological case where invalid IL references __Canon type directly, but there is no
+            // dictionary available to store the lookup.
+            // DevirtualizedMethodDescSlot is an exception only when the caller can provide generic context via `this`.
             if (!contextMethod.IsSharedByGenericInstantiations)
             {
-                ThrowHelper.ThrowInvalidProgramException();
+                if (entryKind != DictionaryEntryKind.DevirtualizedMethodDescSlot)
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
+
+                if (!contextMethod.AcquiresInstMethodTableFromThis())
+                {
+                    pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                    return;
+                }
             }
 
             if (contextMethod.RequiresInstMethodDescArg())

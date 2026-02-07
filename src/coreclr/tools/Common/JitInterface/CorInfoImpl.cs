@@ -1504,6 +1504,13 @@ namespace Internal.JitInterface
                     MethodBeingCompiled,
                     ref info->instParamLookup);
 #endif
+
+                if (info->instParamLookup.lookupKind.needsRuntimeLookup &&
+                    info->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED)
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
             }
 
 #if READYTORUN

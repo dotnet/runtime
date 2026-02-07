@@ -3010,9 +3010,22 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     MethodDesc* pContextMD = pCallerMD;
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 
-    // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
+    // There is a pathological case where invalid IL references __Canon type directly, but there is no
+    // dictionary available to store the lookup.
+    // DevirtualizedMethodDescSlot is an exception only when the caller can provide generic context via `this`.
     if (!pContextMD->IsSharedByGenericInstantiations())
-        COMPlusThrow(kInvalidProgramException);
+    {
+        if (entryKind != DevirtualizedMethodDescSlot)
+        {
+            COMPlusThrow(kInvalidProgramException);
+        }
+
+        if (!pContextMD->AcquiresInstMethodTableFromThis())
+        {
+            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
+            return;
+        }
+    }
 
     if (pContextMD->RequiresInstMethodDescArg())
     {
@@ -8854,6 +8867,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                                                           pDevirtMD,
                                                           m_pMethodBeingCompiled,
                                                           &info->instParamLookup);
+
+                if (info->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
+                }
             }
         }
 
