@@ -2807,6 +2807,13 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             std::swap(arg0VN, arg1VN);
         }
+
+        // ... unless one of them is a constant, in which case we want the constant to be arg1
+        // NOTE: we don't want to re-order "cns[H] binop cns"
+        if (IsVNConstantNonHandle(arg0VN))
+        {
+            std::swap(arg0VN, arg1VN);
+        }
     }
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
@@ -7124,36 +7131,24 @@ bool ValueNumStore::IsVNCheckedBoundAddConst(ValueNum vn, ValueNum* checkedBndVN
 {
     int       cns;
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && ((funcApp.m_func == VNF_ADD) || (funcApp.m_func == VNF_SUB)))
+    if (GetVNFunc(vn, &funcApp) && ((funcApp.m_func == VNF_ADD) || (funcApp.m_func == VNF_SUB)) &&
+        IsVNCheckedBound(funcApp.m_args[0]) && IsVNIntegralConstant(funcApp.m_args[1], &cns))
     {
-        // ADD is commutative, so check an unusual "cns + checkedBndVN" shape first
-        if ((funcApp.m_func == VNF_ADD) && IsVNCheckedBound(funcApp.m_args[1]) &&
-            IsVNIntegralConstant(funcApp.m_args[0], &cns))
+        // Normalize "checkedBndVN - cns" into "checkedBndVN + (-cns)" to make it easier for the caller to handle
+        // both cases.
+        if (funcApp.m_func == VNF_SUB)
         {
-            *checkedBndVN = funcApp.m_args[1];
-            *addCns       = cns;
-            return true;
-        }
-
-        // Otherwise, check if we have "checkedBndVN -/+ cns"
-        if (IsVNCheckedBound(funcApp.m_args[0]) && IsVNIntegralConstant(funcApp.m_args[1], &cns))
-        {
-            // Normalize "checkedBndVN - cns" into "checkedBndVN + (-cns)" to make it easier for the caller to handle
-            // both cases.
-            if (funcApp.m_func == VNF_SUB)
+            if (cns == INT32_MIN)
             {
-                if (cns == INT32_MIN)
-                {
-                    // Avoid possible overflow from negating cns.
-                    return false;
-                }
-                cns = -cns;
+                // Avoid possible overflow from negating cns.
+                return false;
             }
-
-            *checkedBndVN = funcApp.m_args[0];
-            *addCns       = cns;
-            return true;
+            cns = -cns;
         }
+
+        *checkedBndVN = funcApp.m_args[0];
+        *addCns       = cns;
+        return true;
     }
     return false;
 }
