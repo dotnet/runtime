@@ -17,18 +17,14 @@ Ask the user for the **backport PR URL** if not provided. Example:
 1. **Fetch the backport PR** using the GitHub MCP tools to get:
    - PR number and title
    - Target release branch (e.g., `release/9.0`)
-   - PR description containing the servicing template sections
+   - PR description (filled in from `servicing_pull_request_template.md`)
 
-2. **Extract from the PR description:**
-   - Link to the original main PR
-   - Link to the issue being fixed
-   - DESCRIPTION section
-   - CUSTOMER IMPACT section (including checkboxes)
-   - REGRESSION section (including checkboxes)
-   - TESTING section
-   - RISK section
+2. **Read the email template** at `.github/BACKPORT_EMAIL_TEMPLATE.md`
 
-3. **Generate the email** following the template at `.github/BACKPORT_EMAIL_TEMPLATE.md`
+3. **Generate the email** by:
+   - Filling in the subject line with the release branch, PR title, and PR number
+   - Extracting the issue link and main PR link from the PR description
+   - Copying the PR description verbatim as the email body
 
 ## Output Format
 
@@ -45,37 +41,12 @@ Fixes https://github.com/dotnet/runtime/issues/<ISSUE_NUMBER>
 
 main PR: <MAIN_PR_LINK>
 
-**DESCRIPTION**
-
-<description text>
-
-**CUSTOMER IMPACT**
-
-- [ ] Customer reported
-- [ ] Found internally
-
-<customer impact text>
-
-**REGRESSION**
-
-- [ ] Yes
-- [ ] No
-
-<regression text>
-
-**TESTING**
-
-<testing text>
-
-**RISK**
-
-<risk text>
+<PR description verbatim>
 ```
 
 ## Important Notes
 
 - **Do NOT attempt to open the email in Outlook or any email client.** Just output the formatted text for the user to copy.
-- Preserve the `**bold**` section headers as they appear reasonably well in plain-text emails.
-- Preserve the checkbox format `- [ ]` or `- [x]` from the PR description.
+- Copy the PR description verbatim — do not rewrite or restructure it.
 - Extract the release branch version (e.g., `9.0`) from the PR's base branch.
 - If any section is missing from the PR description, note it and leave a placeholder.
