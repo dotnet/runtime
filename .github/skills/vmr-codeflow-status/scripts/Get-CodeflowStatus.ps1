@@ -195,7 +195,7 @@ if ($CheckMissing) {
 
         $vmrCommitFromPR = $null
         $vmrBranchFromPR = $null
-        if ($prDetail.body -match '\*\*Commit\*\*:\s*\[([a-f0-9]+)\]') {
+        if ($prDetail.body -match '\*\*Commit\*\*:\s*\[([a-fA-F0-9]+)\]') {
             $vmrCommitFromPR = $Matches[1]
         }
         if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') {
@@ -237,7 +237,7 @@ if ($CheckMissing) {
             Write-Host "    Last merged VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
 
             # Check how long ago the last PR merged
-            $mergedTime = [DateTime]::Parse($lastPR.closedAt)
+            $mergedTime = [DateTimeOffset]::Parse($lastPR.closedAt).UtcDateTime
             $elapsed = [DateTime]::UtcNow - $mergedTime
             if ($elapsed.TotalHours -gt 6) {
                 Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
@@ -331,7 +331,7 @@ if ($body -match '\(Begin:([a-f0-9-]+)\)') {
 
 # Extract source commit (VMR commit for backflow, repo commit for forward flow)
 $sourceCommit = $null
-if ($body -match '\*\*Commit\*\*:\s*\[([a-f0-9]+)\]') {
+if ($body -match '\*\*Commit\*\*:\s*\[([a-fA-F0-9]+)\]') {
     $sourceCommit = $Matches[1]
     $commitLabel = if ($isForwardFlow) { "Source Commit" } else { "VMR Commit" }
     Write-Status $commitLabel $sourceCommit
@@ -668,7 +668,7 @@ if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
         }
 
         # Extract resolve command
-        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-fA-F0-9-]+)') {
+        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-fA-F0-9-]+(?:\s+--build [a-fA-F0-9-]+)?)') {
             Write-Host ""
             Write-Host "  Resolve command:" -ForegroundColor White
             Write-Host "    $($Matches[1])" -ForegroundColor DarkGray

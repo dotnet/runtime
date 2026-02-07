@@ -104,7 +104,6 @@ darc get-build --id <bar-build-id>
 
 # Resolve codeflow conflicts locally
 darc vmr resolve-conflict --subscription <subscription-id>
-darc vmr resolve --subscription <subscription-id> --build <bar-build-id>
 ```
 
 Install darc via `eng\common\darc-init.ps1` in any arcade-enabled repository.
