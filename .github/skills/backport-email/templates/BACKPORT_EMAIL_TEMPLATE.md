@@ -1,7 +1,7 @@
 # Backport Email Template
 
 Use this template when emailing Tactics to request approval for a backport to a release branch.
-The body of the email should be the PR description verbatim (from `servicing_pull_request_template.md`).
+The body of the email should be the PR description verbatim (based on the `pr_description_template` in `.github/workflows/backport.yml`).
 
 ---
 

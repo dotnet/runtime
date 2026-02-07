@@ -17,7 +17,7 @@ Ask the user for the **backport PR URL** if not provided. Example:
 1. **Fetch the backport PR** using the GitHub MCP tools to get:
    - PR number and title
    - Target release branch (e.g., `release/9.0`)
-   - PR description (filled in from `servicing_pull_request_template.md`)
+   - PR description (filled in from the `pr_description_template` in `.github/workflows/backport.yml`)
 
 2. **Read the email template** at `.github/skills/backport-email/templates/BACKPORT_EMAIL_TEMPLATE.md`
 
