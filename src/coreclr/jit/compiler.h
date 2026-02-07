@@ -7699,8 +7699,6 @@ public:
     {
         O1K_LCLVAR,
         O1K_VN,
-        O1K_BOUND_OPER_BND,
-        O1K_BOUND_LOOP_BND,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE
         // NOTE: as of today, only LCLVAR is used by both Local and Global assertion prop
@@ -7713,9 +7711,13 @@ public:
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
-        O2K_CHECKED_BOUND, // Array/Span length (or similar)
-        O2K_ZEROOBJ,       // zeroed struct
-        O2K_SUBRANGE       // IntegralRange
+
+        O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
+                                   // and op2.iconVal holds the "cns".
+                                   // "Checked bound" alone doesn't mean anything,
+                                   // nor it implies that it's never negative.
+        O2K_ZEROOBJ,
+        O2K_SUBRANGE
     };
 
     struct AssertionDsc
@@ -7770,7 +7772,8 @@ public:
 
         private:
             optOp2Kind m_kind;
-            uint16_t   m_encodedIconFlags; // encoded icon gtFlags
+            bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
+            uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
             ValueNum   m_vn;
             union
             {
@@ -7829,9 +7832,32 @@ public:
 
             ValueNum GetVN() const
             {
-                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ, O2K_CHECKED_BOUND));
+                assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
+            }
+
+            // For "checkedBndVN + cns" form, return the "cns" part.
+            int GetCheckedBoundConstant() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(FitsIn<int>(m_icon.m_iconVal));
+                return (int)m_icon.m_iconVal;
+            }
+
+            // For "checkedBndVN + cns" form, return the "checkedBndVN" part.
+            // We intentionally don't allow to use it via GetVN() to avoid confusion.
+            ValueNum GetCheckedBound() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(m_vn != ValueNumStore::NoVN);
+                return m_vn;
+            }
+
+            bool IsCheckedBoundNeverNegative() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                return m_checkedBoundIsNeverNegative;
             }
 
             optOp2Kind GetKind() const
@@ -7908,15 +7934,6 @@ public:
             return m_op2;
         }
 
-        bool IsCheckedBoundArithBound() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_OPER_BND));
-        }
-        bool IsCheckedBoundBound() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_LOOP_BND));
-        }
-
         bool IsCopyAssertion() const
         {
             return (KindIs(OAK_EQUAL) && GetOp1().KindIs(O1K_LCLVAR) && GetOp2().KindIs(O2K_LCLVAR_COPY));
@@ -7959,12 +7976,14 @@ public:
 
         bool IsBoundsCheckNoThrow() const
         {
-            // O1K_VN (idx) u< O2K_VN (len)
-            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND);
+            // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
+            // Effectively, it's "idx >= 0 && idx < len"
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
+                   (GetOp2().GetCheckedBoundConstant() == 0) && GetOp2().IsCheckedBoundNeverNegative();
         }
 
         // Convert VNFunc to optAssertionKind
-        static optAssertionKind FromVMFunc(VNFunc func)
+        static optAssertionKind FromVNFunc(VNFunc func)
         {
             switch (func)
             {
@@ -8133,8 +8152,10 @@ public:
                 case O2K_ZEROOBJ:
                     return true;
 
-                case O2K_CHECKED_BOUND:
-                    return GetOp2().GetVN() == that.GetOp2().GetVN();
+                case O2K_CHECKED_BOUND_ADD_CNS:
+                    return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
+                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
+                           GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
@@ -8320,8 +8341,9 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
+        // Effectively, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
@@ -8330,70 +8352,47 @@ public:
             dsc.m_assertionKind = OAK_LT_UN;
             dsc.m_op1.m_kind    = O1K_VN;
             dsc.m_op1.m_vn      = idxVN;
-            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND;
+            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
             dsc.m_op2.m_vn      = lenVN;
+
+            // Normally, "Checked bound" doesn't mean it's never negative, but in this particular case we know it is.
+            dsc.m_op2.m_checkedBoundIsNeverNegative = true;
+            dsc.m_op2.m_icon.m_iconVal              = 0;
             return dsc;
         }
 
-        // Create "i < bnd +/- k != 0" or just "i < bnd != 0" assertion
-        static AssertionDsc CreateCompareCheckedBoundArith(const Compiler* comp, ValueNum relopVN, bool withArith)
+        // Create "i <relop> (bnd + cns)" assertion
+        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
-            assert(relopVN != ValueNumStore::NoVN);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(checkedBndVN != ValueNumStore::NoVN);
 
-            if (withArith)
-            {
-                assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
-            }
-            else
-            {
-                assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
-            }
-
-            AssertionDsc dsc    = {};
-            dsc.m_assertionKind = OAK_NOT_EQUAL;
-            // TODO-Cleanup: Rename O1K_BOUND_OPER_BND and O1K_BOUND_LOOP_BND to something more meaningful
-            // Also, consider removing O1K_BOUND_LOOP_BND entirely and use O1K_BOUND_OPER_BND for both cases.
-            // O1K_BOUND_LOOP_BND is basically "i < bnd +/- 0 != 0". Unless it regresses TP.
-            dsc.m_op1.m_kind           = withArith ? O1K_BOUND_OPER_BND : O1K_BOUND_LOOP_BND;
-            dsc.m_op1.m_vn             = relopVN;
-            dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.m_op2.m_icon.m_iconVal = 0;
+            AssertionDsc dsc           = {};
+            dsc.m_assertionKind        = FromVNFunc(relop);
+            dsc.m_op1.m_kind           = O1K_VN;
+            dsc.m_op1.m_vn             = op1VN;
+            dsc.m_op2.m_kind           = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_vn             = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
 
         // Create "i < constant" or "i u< constant" assertion
-        // TODO-Cleanup: Rename it as it's not necessarily a loop bound
-        static AssertionDsc CreateConstantLoopBound(const Compiler* comp, ValueNum relopVN)
+        static AssertionDsc CreateConstantBound(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum cnsVN)
         {
-            assert(comp->vnStore->IsVNConstantBound(relopVN) || comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
+            assert(op1VN != ValueNumStore::NoVN);
 
-            VNFuncApp funcApp;
-            comp->vnStore->GetVNFunc(relopVN, &funcApp);
-
-            VNFunc   func = funcApp.m_func;
-            ValueNum op1  = funcApp.m_args[0];
-            ValueNum op2  = funcApp.m_args[1];
-
-            // if op1 is a constant, then swap the operands and the operator
-            if (comp->vnStore->IsVNInt32Constant(op1) && !comp->vnStore->IsVNInt32Constant(op2))
-            {
-                std::swap(op1, op2);
-                func = comp->vnStore->SwapRelop(func);
-            }
-            else
-            {
-                bool op2IsCns = comp->vnStore->IsVNInt32Constant(op2);
-                assert(op2IsCns);
-            }
+            ssize_t cns;
+            bool    op2IsCns = comp->vnStore->IsVNIntegralConstant(cnsVN, &cns);
+            assert(op2IsCns);
 
             AssertionDsc dsc           = {};
-            dsc.m_assertionKind        = FromVMFunc(func);
+            dsc.m_assertionKind        = FromVNFunc(relop);
             dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1;
+            dsc.m_op1.m_vn             = op1VN;
             dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = op2;
-            dsc.m_op2.m_icon.m_iconVal = comp->vnStore->CoercedConstantValue<ssize_t>(op2);
+            dsc.m_op2.m_vn             = cnsVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
     };
