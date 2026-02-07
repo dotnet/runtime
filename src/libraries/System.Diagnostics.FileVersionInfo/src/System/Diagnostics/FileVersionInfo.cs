@@ -61,7 +61,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the build number of the file.
         /// </summary>
-        /// <returns>A value representing the build number of the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the build number of the file or 0 (zero) if the file did not contain version information.</returns>
         public int FileBuildPart
         {
             get { return _fileBuild; }
@@ -106,7 +106,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the file private part number.
         /// </summary>
-        /// <returns>A value representing the file private part number or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the file private part number or 0 (zero) if the file did not contain version information.</returns>
         public int FilePrivatePart
         {
             get { return _filePrivate; }
@@ -223,7 +223,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the build number of the product this file is associated with.
         /// </summary>
-        /// <returns>A value representing the build number of the product this file is associated with or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the build number of the product this file is associated with or 0 (zero) if the file did not contain version information.</returns>
         public int ProductBuildPart
         {
             get { return _productBuild; }
@@ -232,7 +232,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the major part of the version number for the product this file is associated with.
         /// </summary>
-        /// <returns>A value representing the major part of the product version number or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the major part of the product version number or 0 (zero) if the file did not contain version information.</returns>
         public int ProductMajorPart
         {
             get { return _productMajor; }
@@ -241,7 +241,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the minor part of the version number for the product the file is associated with.
         /// </summary>
-        /// <returns>A value representing the minor part of the product version number or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the minor part of the product version number or 0 (zero) if the file did not contain version information.</returns>
         public int ProductMinorPart
         {
             get { return _productMinor; }
@@ -259,7 +259,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the private part number of the product this file is associated with.
         /// </summary>
-        /// <returns>A value representing the private part number of the product this file is associated with or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <returns>A value representing the private part number of the product this file is associated with or 0 (zero) if the file did not contain version information.</returns>
         public int ProductPrivatePart
         {
             get { return _productPrivate; }
