@@ -1987,5 +1987,33 @@ namespace System.Numerics.Tests
             Assert.True(Vector3.LessThanOrEqualAny(Vector3.Create(4, 5, 3), Vector3.Create(1, 2, 3))); // Z equal
             Assert.True(Vector3.LessThanOrEqualAny(Vector3.Create(0, 5, 6), Vector3.Create(1, 2, 3))); // X less
         }
+
+        [Fact]
+        public void GreaterThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 3 elements pass, but 4th could give false positive
+            // with undefined upper element from AsVector128Unsafe
+            Assert.True(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 3, 4), Vector3.Create(1, 2, 3)));
+            Assert.True(Vector3.GreaterThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(0, 3, 4), Vector3.Create(1, 2, 3))); // X not greater or equal
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 1, 4), Vector3.Create(1, 2, 3))); // Y not greater or equal
+            Assert.False(Vector3.GreaterThanOrEqualAll(Vector3.Create(2, 3, 2), Vector3.Create(1, 2, 3))); // Z not greater or equal
+        }
+
+        [Fact]
+        public void LessThanOrEqualAllTest()
+        {
+            // Test case that would have failed before fix: all 3 elements pass, but 4th could give false positive
+            // with undefined upper element from AsVector128Unsafe
+            Assert.True(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(2, 3, 4)));
+            Assert.True(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 3), Vector3.Create(1, 2, 3))); // All equal
+
+            // Test cases where not all elements pass
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(3, 2, 3), Vector3.Create(2, 3, 4))); // X not less or equal
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, 4, 3), Vector3.Create(2, 3, 4))); // Y not less or equal
+            Assert.False(Vector3.LessThanOrEqualAll(Vector3.Create(1, 2, 5), Vector3.Create(2, 3, 4))); // Z not less or equal
+        }
     }
 }
