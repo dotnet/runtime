@@ -83,7 +83,7 @@ darc update-dependencies --subscription <subscription-id> --dry-run
 
 ```bash
 # Resolve codeflow conflicts locally
-darc vmr resolve --subscription <subscription-id> --build <bar-build-id>
+darc vmr resolve-conflict --subscription <subscription-id> --build <bar-build-id>
 
 # Flow source from VMR → local repo
 darc vmr backflow --subscription <subscription-id>

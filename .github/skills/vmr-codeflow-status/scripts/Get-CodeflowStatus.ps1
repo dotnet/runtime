@@ -424,6 +424,7 @@ if ($branchVmrCommit -or $vmrCommit) {
     if ($branchVmrCommit -and $vmrCommit) {
         $bodyShort = Get-ShortSha $vmrCommit
         $branchShort = $branchVmrCommit  # already short from commit message
+        $usedBranchSnapshot = $false
         if ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit)) {
             Write-Host "  ✅ PR body snapshot ($bodyShort) matches branch commit ($branchShort)" -ForegroundColor Green
         }
@@ -434,6 +435,7 @@ if ($branchVmrCommit -or $vmrCommit) {
             $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
             if ($resolvedCommit) {
                 $vmrCommit = $resolvedCommit.sha
+                $usedBranchSnapshot = $true
             }
             else {
                 Write-Host "  ⚠️  Could not resolve branch commit SHA $branchVmrCommit — falling back to PR body" -ForegroundColor Yellow
@@ -441,11 +443,13 @@ if ($branchVmrCommit -or $vmrCommit) {
         }
     }
     elseif ($branchVmrCommit -and -not $vmrCommit) {
+        $usedBranchSnapshot = $false
         Write-Host "  ⚠️  PR body has no commit reference, but branch commit references $branchVmrCommit" -ForegroundColor Yellow
         Write-Host "  Using branch commit for freshness check" -ForegroundColor Yellow
         $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
         if ($resolvedCommit) {
             $vmrCommit = $resolvedCommit.sha
+            $usedBranchSnapshot = $true
         }
     }
     elseif ($vmrCommit -and -not $branchVmrCommit) {
@@ -481,11 +485,7 @@ if ($vmrCommit -and $vmrBranch) {
     if ($branchHead) {
         $sourceHeadSha = $branchHead.sha
         $sourceHeadDate = $branchHead.commit.committer.date
-        $snapshotSource = if ($branchVmrCommit -and -not ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit))) {
-            "from branch commit"
-        } else {
-            "from PR body"
-        }
+        $snapshotSource = if ($usedBranchSnapshot) { "from branch commit" } else { "from PR body" }
         Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) ($snapshotSource)"
         Write-Status "$freshnessRepoLabel HEAD" "$(Get-ShortSha $sourceHeadSha) ($sourceHeadDate)"
 
@@ -556,7 +556,6 @@ if ($vmrCommit -and $vmrBranch) {
 
                 # --- For backflow PRs that are behind: check pending forward flow PRs ---
                 if ($isBackflow -and $compareStatus -eq 'ahead' -and $aheadBy -gt 0 -and $vmrBranch) {
-                    $encodedVmrBranch = [uri]::EscapeDataString($vmrBranch)
                     $forwardPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from" --base $vmrBranch --json number,title --limit 20 2>&1
                     $pendingForwardPRs = @()
                     if ($LASTEXITCODE -eq 0 -and $forwardPRsJson) {
@@ -692,10 +691,6 @@ if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
                 Write-Host "    Force trigger:  $($Matches[1])"
             }
         }
-    }
-
-    if ($conflictWarnings.Count -eq 0 -and $stalenessWarnings.Count -eq 0) {
-        Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
     }
 }
 else {
