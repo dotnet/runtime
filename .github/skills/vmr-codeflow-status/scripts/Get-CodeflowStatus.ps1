@@ -260,14 +260,90 @@ if ($CheckMissing) {
         }
     }
 
-    Write-Section "Summary"
-    Write-Host "  Branches with open backflow PRs: $coveredCount" -ForegroundColor Green
-    Write-Host "  Branches up to date (no PR needed): $upToDateCount" -ForegroundColor Green
-    if ($missingCount -gt 0) {
-        Write-Host "  Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
+    # --- Forward flow: check PRs from this repo into the VMR ---
+    $repoShortName = $Repository -replace '^dotnet/', ''
+    Write-Host ""
+    Write-Section "Forward flow PRs ($Repository → dotnet/dotnet)"
+
+    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 50 2>$null
+    $fwdPRs = @()
+    if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
+        try { $fwdPRs = ($fwdPRsJson -join "`n") | ConvertFrom-Json } catch { $fwdPRs = @() }
+    }
+    # Filter to exact repo match (avoid dotnet/sdk matching dotnet/sdk-container-builds)
+    $fwdPRs = @($fwdPRs | Where-Object { $_.title -match "from dotnet/$([regex]::Escape($repoShortName))$" })
+
+    $fwdHealthy = 0
+    $fwdStale = 0
+    $fwdConflict = 0
+
+    if ($fwdPRs.Count -eq 0) {
+        Write-Host "  No open forward flow PRs found" -ForegroundColor DarkGray
     }
     else {
-        Write-Host "  No missing backflow PRs detected ✅" -ForegroundColor Green
+        foreach ($fpr in $fwdPRs) {
+            $fprBranch = if ($fpr.title -match '^\[([^\]]+)\]') { $Matches[1] } else { "unknown" }
+            if ($Branch -and $fprBranch -ne $Branch) { continue }
+
+            # Get PR details for staleness/conflict check
+            $fprDetailJson = gh pr view $fpr.number -R dotnet/dotnet --json body,comments,updatedAt 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not fetch details" -ForegroundColor Yellow
+                continue
+            }
+            $fprDetail = ($fprDetailJson -join "`n") | ConvertFrom-Json
+
+            # Check for staleness warnings and conflicts in comments
+            $hasStaleness = $false
+            $hasConflict = $false
+            if ($fprDetail.comments) {
+                foreach ($comment in $fprDetail.comments) {
+                    if ($comment.author.login -match '^dotnet-maestro') {
+                        if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') { $hasStaleness = $true }
+                        if ($comment.body -match 'Conflict detected') { $hasConflict = $true }
+                    }
+                }
+            }
+
+            $status = "✅ Healthy"
+            $color = "Green"
+            if ($hasConflict) {
+                $status = "🔴 Conflict"
+                $color = "Red"
+                $fwdConflict++
+            }
+            elseif ($hasStaleness) {
+                $status = "⚠️  Stale"
+                $color = "Yellow"
+                $fwdStale++
+            }
+            else {
+                $fwdHealthy++
+            }
+
+            Write-Host "  PR #$($fpr.number) [$fprBranch]: $status" -ForegroundColor $color
+            Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
+        }
+    }
+
+    Write-Section "Summary"
+    Write-Host "  Backflow ($Repository ← dotnet/dotnet):" -ForegroundColor White
+    Write-Host "    Branches with open PRs: $coveredCount" -ForegroundColor Green
+    Write-Host "    Branches up to date: $upToDateCount" -ForegroundColor Green
+    if ($missingCount -gt 0) {
+        Write-Host "    Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
+    }
+    else {
+        Write-Host "    No missing backflow PRs ✅" -ForegroundColor Green
+    }
+    Write-Host "  Forward flow ($Repository → dotnet/dotnet):" -ForegroundColor White
+    if ($fwdPRs.Count -eq 0) {
+        Write-Host "    No open forward flow PRs" -ForegroundColor DarkGray
+    }
+    else {
+        if ($fwdHealthy -gt 0) { Write-Host "    Healthy: $fwdHealthy" -ForegroundColor Green }
+        if ($fwdStale -gt 0) { Write-Host "    Stale: $fwdStale" -ForegroundColor Yellow }
+        if ($fwdConflict -gt 0) { Write-Host "    Conflicted: $fwdConflict" -ForegroundColor Red }
     }
     return
 }
