@@ -302,36 +302,40 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(GetTarEntryFormats))]
         public async Task CreateFromDirectoryAsync_WithFormat(TarEntryFormat format)
         {
-            using TempDirectory source = new TempDirectory();
-            using TempDirectory destination = new TempDirectory();
+            using (TempDirectory source = new TempDirectory())
+            using (TempDirectory destination = new TempDirectory())
+            {
+                string fileName = "file.txt";
+                File.Create(Path.Join(source.Path, fileName)).Dispose();
 
-            string fileName = "file.txt";
-            File.Create(Path.Join(source.Path, fileName)).Dispose();
+                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+                await TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format);
 
-            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
-            await TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format);
+                await using (FileStream fileStream = File.OpenRead(destinationArchiveFileName))
+                await using (TarReader reader = new TarReader(fileStream))
+                {
+                    TarEntry entry = await reader.GetNextEntryAsync();
+                    Assert.NotNull(entry);
+                    Assert.Equal(format, entry.Format);
+                    Assert.Equal(fileName, entry.Name);
 
-            await using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
-            await using TarReader reader = new TarReader(fileStream);
-
-            TarEntry entry = await reader.GetNextEntryAsync();
-            Assert.NotNull(entry);
-            Assert.Equal(format, entry.Format);
-            Assert.Equal(fileName, entry.Name);
-
-            Assert.Null(await reader.GetNextEntryAsync());
+                    Assert.Null(await reader.GetNextEntryAsync());
+                }
+            }
         }
 
         [Theory]
         [MemberData(nameof(GetInvalidTarEntryFormats))]
         public async Task CreateFromDirectoryAsync_InvalidFormat_Throws(TarEntryFormat format)
         {
-            using TempDirectory source = new TempDirectory();
-            using TempDirectory destination = new TempDirectory();
-            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            using (TempDirectory source = new TempDirectory())
+            using (TempDirectory destination = new TempDirectory())
+            {
+                string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
 
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
-                TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>("format", () =>
+                    TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format));
+            }
         }
     }
 }
