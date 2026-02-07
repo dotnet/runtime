@@ -1406,13 +1406,6 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return nullptr;
     }
 
-    // If importation has finished, we cannot rely on importer helpers that may append
-    // statements (e.g. impRuntimeLookupToTree spills helper calls to temps via impAppendTree).
-    if (fgImportDone)
-    {
-        return getLookupTree(pResolvedToken, pLookup, handleFlags, compileTimeHandle);
-    }
-
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
     return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
@@ -1698,6 +1691,12 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         assert(pRuntimeLookup->indirections != 0);
         GenTreeCall* helperCall = gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
 
+        if (fgImportDone)
+        {
+            // If importation has finished, we cannot spill the helper call to a temp
+            return helperCall;
+        }
+
         // Spilling it to a temp improves CQ (mainly in Tier0)
         unsigned callLclNum = lvaGrabTemp(true DEBUGARG("spilling helperCall"));
         impStoreToTemp(callLclNum, helperCall, CHECK_SPILL_NONE);
@@ -1717,10 +1716,34 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
     {
+        GenTree* tempStoreTree = nullptr;
+
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
         {
-            indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+            GenTree* clonedSlotPtrTree = gtClone(slotPtrTree, true);
+
+            if (clonedSlotPtrTree != nullptr)
+            {
+                indOffTree = clonedSlotPtrTree;
+            }
+            else
+            {
+                if (!fgImportDone)
+                {
+                    indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, CHECK_SPILL_ALL,
+                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+                }
+                else
+                {
+                    // In post-import phases we cannot spill new temps.
+                    unsigned tempNum  = lvaGrabTemp(true DEBUGARG("impRuntimeLookup indirectOffset"));
+                    tempStoreTree     = gtNewTempStore(tempNum, slotPtrTree, CHECK_SPILL_NONE);
+                    var_types tempTyp = genActualType(lvaGetDesc(tempNum)->TypeGet());
+
+                    indOffTree  = gtNewLclvNode(tempNum, tempTyp);
+                    slotPtrTree = gtNewLclvNode(tempNum, tempTyp);
+                }
+            }
         }
 
         if (i != 0)
@@ -1738,6 +1761,11 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         {
             slotPtrTree =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
+        }
+
+        if (tempStoreTree != nullptr)
+        {
+            slotPtrTree = gtNewOperNode(GT_COMMA, TYP_I_IMPL, tempStoreTree, slotPtrTree);
         }
     }
 
