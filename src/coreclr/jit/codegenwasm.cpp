@@ -1501,8 +1501,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 assert(!call->IsFastTailCall());
                 CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
                 noway_assert(helperNum != CORINFO_HELP_UNDEF);
-                genEmitHelperCall(helperNum, 0, EA_UNKNOWN);
-                return;
+                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+                assert(helperLookup.accessType == IAT_VALUE);
+                params.addr = helperLookup.addr;
             }
             else
             {
