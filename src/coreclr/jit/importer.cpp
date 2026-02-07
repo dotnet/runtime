@@ -1735,7 +1735,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                 }
                 else
                 {
-                    // In post-import phases we cannot spill new temps.
+                    // In post-import phases we cannot append statements to spill the expression
                     unsigned tempNum  = lvaGrabTemp(true DEBUGARG("impRuntimeLookup indirectOffset"));
                     tempStoreTree     = gtNewTempStore(tempNum, slotPtrTree, CHECK_SPILL_NONE);
                     var_types tempTyp = genActualType(lvaGetDesc(tempNum)->TypeGet());
