@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void TestRead1032Parameters_Public()
         {
-            RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA1032Parameters);
+            RSAParameters expectedParameters = ImportExport<TProvider>.MakePublic(TestData.RSA1032Parameters);
 
             // Bonus trait of this XML: the elements are all in different namespaces,
             // showing that isn't part of the reading consideration.
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [ConditionalFact(nameof(Supports16384))]
         public static void TestRead16384Parameters_Public()
         {
-            RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA16384Params);
+            RSAParameters expectedParameters = ImportExport<TProvider>.MakePublic(TestData.RSA16384Params);
 
             // Bonus trait of this XML: the Modulus and Exponent parameters
             // are not in canonical order.
@@ -396,7 +396,7 @@ zM=
         public static void TestReadDiminishedDPParameters_Public()
         {
             RSAParameters expectedParameters =
-                ImportExport.MakePublic(TestData.DiminishedDPParameters);
+                ImportExport<TProvider>.MakePublic(TestData.DiminishedDPParameters);
 
             TestReadXml(
                 // Bonus trait of this XML: Canonical element order, pretty-printed.

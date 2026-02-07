@@ -28,8 +28,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha3 => SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 
-    public partial class RSAFactory
-    {
-        private static readonly IRSAProvider s_provider = new RSAOpenSslProvider();
-    }
+    // Concrete test classes for RSAOpenSslProvider
+    public class RSAOpenSslImportExport : ImportExport<RSAOpenSslProvider> { }
+    public class RSAOpenSslKeyGeneration : KeyGeneration<RSAOpenSslProvider> { }
+    public class RSAOpenSslXml : RSAXml<RSAOpenSslProvider> { }
+    public class RSAOpenSslSignatureFormatterTests : RSASignatureFormatterTests<RSAOpenSslProvider> { }
+    public class RSAOpenSslKeyExchangeFormatterTests : RSAKeyExchangeFormatterTests<RSAOpenSslProvider> { }
+    public class RSAOpenSslFactoryTests : RSAFactoryTests<RSAOpenSslProvider> { }
+    public class RSAOpenSslKeyPemTests : RSAKeyPemTests<RSAOpenSslProvider> { }
+    public class RSAOpenSslKeyFileTests : RSAKeyFileTests<RSAOpenSslProvider> { }
 }

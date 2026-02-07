@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 // Some providers may generate the key in the constructor, but
                 // all of them should have generated it before answering ExportParameters.
                 RSAParameters keyParameters = rsa.ExportParameters(false);
-                ImportExport.ValidateParameters(ref keyParameters);
+                ImportExport<TProvider>.ValidateParameters(ref keyParameters);
 
                 // KeySize should still be what we set it to originally.
                 Assert.Equal(keySize, rsa.KeySize);
