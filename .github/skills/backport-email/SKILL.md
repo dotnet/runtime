@@ -19,7 +19,7 @@ Ask the user for the **backport PR URL** if not provided. Example:
    - Target release branch (e.g., `release/9.0`)
    - PR description (filled in from `servicing_pull_request_template.md`)
 
-2. **Read the email template** at `.github/skills/backport-email/BACKPORT_EMAIL_TEMPLATE.md`
+2. **Read the email template** at `.github/skills/backport-email/templates/BACKPORT_EMAIL_TEMPLATE.md`
 
 3. **Generate the email** by:
    - Filling in the subject line with the release branch, PR title, and PR number
