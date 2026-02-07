@@ -259,6 +259,8 @@ const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
 };
 const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptions) + 1;
 
+extern "C" void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage);
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // ECalls

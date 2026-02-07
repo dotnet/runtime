@@ -993,13 +993,15 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
-void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage)
+extern "C" void AsyncHelpers_ResumeInterpreterContinuationWorker(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
 
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetOrCreateInterpThreadContext();
@@ -1017,9 +1019,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
         {
         }
     }
-    frames(NULL);
-
-    _ASSERTE_MSG(false, "NULL transition block!!!");
+    frames(pTransitionBlock);
 
     CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
     NULL_CHECK(contRef);
@@ -1074,8 +1074,6 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
 
     cont.Set(frames.interpreterFrame.GetContinuation());
     frames.interpreterFrame.Pop();
-
-    END_QCALL;
 }
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)

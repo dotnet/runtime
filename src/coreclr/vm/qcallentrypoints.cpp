@@ -541,7 +541,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
 #ifdef FEATURE_INTERPRETER
-    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
+//    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
 #endif // FEATURE_INTERPRETER
 };
 
