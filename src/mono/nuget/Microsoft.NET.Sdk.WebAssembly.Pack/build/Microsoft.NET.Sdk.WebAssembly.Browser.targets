@@ -584,18 +584,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <PropertyGroup>
-      <_WasmBootConfigFileNameWithoutExtension>$([System.IO.Path]::GetFileNameWithoutExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileNameWithoutExtension>
-      <_WasmBootConfigFileExtension>$([System.IO.Path]::GetExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileExtension>
-    </PropertyGroup>
-    <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintAssets)' == 'true' and '$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="('$(_WasmFingerprintAssets)' != 'true' or '$(_WasmFingerprintBootConfig)' != 'true') and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
-    </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"
-      Assets="@(_WasmPreloadBuildScriptAsset)"
+      Assets="@(_WasmBuildBootConfigStaticWebAsset)"
       Filters="@(_WasmPreloadEndpointFilter)"
     >
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildScriptAssetEndpoint" />
@@ -614,13 +606,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
   <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <ItemGroup>
-      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == '$(_WasmPublishBootConfigFileName)'" />
-    </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"
-      Assets="@(_WasmPreloadPublishScriptAsset)"
+      Assets="@(_WasmPublishBootConfigStaticWebAsset)"
       Filters="@(_WasmPreloadEndpointFilter)"
     >
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadPublishScriptAssetEndpoint" />
