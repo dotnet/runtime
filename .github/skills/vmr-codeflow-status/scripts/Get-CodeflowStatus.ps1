@@ -739,6 +739,29 @@ if ($prCommits) {
             Write-Host "    $(Get-ShortSha $c.oid 8) [$authorName] $msg"
         }
     }
+
+    # Detect manual commits that look like codeflow-like changes (someone manually
+    # doing what Maestro would do while flow is paused)
+    $codeflowLikeManualCommits = @()
+    foreach ($c in $manualCommits) {
+        $msg = $c.messageHeadline
+        if ($msg -match 'Update dependencies' -or
+            $msg -match 'Version\.Details\.xml' -or
+            $msg -match 'Versions\.props' -or
+            $msg -match '[Bb]ackflow' -or
+            $msg -match '[Ff]orward flow' -or
+            $msg -match 'from dotnet/' -or
+            $msg -match '[a-f0-9]{7,40}' -or
+            $msg -match 'src/SourceBuild') {
+            $codeflowLikeManualCommits += $c
+        }
+    }
+
+    if ($codeflowLikeManualCommits.Count -gt 0 -and $stalenessWarnings.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  ⚠️  $($codeflowLikeManualCommits.Count) manual commit(s) appear to contain codeflow-like changes while flow is paused" -ForegroundColor Yellow
+        Write-Host "     The freshness gap reported above may be partially covered by these manual updates" -ForegroundColor DarkGray
+    }
 }
 
 # --- Step 6: Trace a specific fix (optional) ---
@@ -933,6 +956,11 @@ else {
         Write-Host "    2. Close & reopen — abandon this PR and let Maestro create a fresh one" -ForegroundColor White
     }
     elseif ($stalenessWarnings.Count -gt 0 -and $manualCommits.Count -gt 0) {
+        if ($codeflowLikeManualCommits -and $codeflowLikeManualCommits.Count -gt 0) {
+            Write-Host "    ℹ️  Note: Some manual commits appear to contain codeflow-like changes —" -ForegroundColor DarkGray
+            Write-Host "       the reported freshness gap may already be partially addressed" -ForegroundColor DarkGray
+            Write-Host ""
+        }
         Write-Host "    1. Merge as-is — keep manual commits, get remaining changes in next codeflow PR" -ForegroundColor White
         Write-Host "    2. Force trigger — updates codeflow but may revert manual commits" -ForegroundColor White
         if ($subscriptionId) {
