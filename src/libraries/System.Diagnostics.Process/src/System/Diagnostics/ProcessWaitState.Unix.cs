@@ -581,9 +581,26 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    // Unexpected.
-                    int errorCode = Marshal.GetLastWin32Error();
-                    Environment.FailFast("Error while reaping child. errno = " + errorCode);
+                    // waitpid returned -1
+                    Interop.Error error = Interop.Sys.GetLastError();
+                    if (error == Interop.Error.ECHILD)
+                    {
+                        // The child was already reaped by another waitpid call
+                        // (e.g., by an original SIGCHLD handler invoked before
+                        // the .NET handler, or by native code in the process).
+                        // The exit code is unavailable since it was consumed by
+                        // the other waiter; we leave _exitCode as null, similar
+                        // to CheckForNonChildExit.
+                        if (_usesTerminal)
+                        {
+                            Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
+                        }
+
+                        SetExited();
+                        return true;
+                    }
+
+                    Environment.FailFast("Error while reaping child. errno = " + Marshal.GetLastWin32Error());
                 }
                 return false;
             }
