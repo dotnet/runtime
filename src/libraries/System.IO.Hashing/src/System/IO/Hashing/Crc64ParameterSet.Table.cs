@@ -63,8 +63,8 @@ namespace System.IO.Hashing
         {
             private readonly ulong[] _lookupTable;
 
-            internal ReflectedTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectOutput)
-                : base(polynomial, initialValue, finalXorValue, reflectInput: true, reflectOutput)
+            internal ReflectedTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
             }
@@ -90,8 +90,8 @@ namespace System.IO.Hashing
         {
             private readonly ulong[] _lookupTable;
 
-            internal ForwardTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectOutput)
-                : base(polynomial, initialValue, finalXorValue, reflectInput: false, reflectOutput)
+            internal ForwardTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
             }

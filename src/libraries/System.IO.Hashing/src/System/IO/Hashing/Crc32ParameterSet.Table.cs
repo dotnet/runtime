@@ -63,8 +63,8 @@ namespace System.IO.Hashing
         {
             private readonly uint[] _lookupTable;
 
-            internal ReflectedTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue, bool reflectOutput)
-                : base(polynomial, initialValue, finalXorValue, reflectInput: true, reflectOutput)
+            internal ReflectedTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
             }
@@ -90,8 +90,8 @@ namespace System.IO.Hashing
         {
             private readonly uint[] _lookupTable;
 
-            internal ForwardTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue, bool reflectOutput)
-                : base(polynomial, initialValue, finalXorValue, reflectInput: false, reflectOutput)
+            internal ForwardTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
             }

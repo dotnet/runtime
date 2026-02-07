@@ -9,8 +9,7 @@ namespace System.IO.Hashing.Tests
             polynomial: 0x04C11DB7,
             initialValue: 0x00000000,
             finalXorValue: 0xFFFFFFFF,
-            reflectInput: false,
-            reflectOutput: false);
+            reflectValues: false);
 
         internal override string EmptyOutput => "FFFFFFFF";
         internal override string Residue => "38FB2284";
@@ -35,8 +34,7 @@ namespace System.IO.Hashing.Tests
             polynomial: 0x741b8cd7,
             initialValue: 0xFFFFFFFF,
             finalXorValue: 0x00000000,
-            reflectInput: true,
-            reflectOutput: true);
+            reflectValues: true);
 
         internal override string EmptyOutput => "FFFFFFFF";
         internal override string Residue => "00000000";
@@ -61,8 +59,7 @@ namespace System.IO.Hashing.Tests
             polynomial: 0x8001801B,
             initialValue: 0x00000000,
             finalXorValue: 0x00000000,
-            reflectInput: true,
-            reflectOutput: true);
+            reflectValues: true);
 
         internal override string EmptyOutput => "00000000";
         internal override string Residue => "00000000";

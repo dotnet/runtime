@@ -46,8 +46,7 @@ namespace System.IO.Hashing.Tests
             Assert.Equal(0xAD93D23594C93659UL, nvme.Polynomial);
             Assert.Equal(0xFFFFFFFFFFFFFFFFUL, nvme.InitialValue);
             Assert.Equal(0xFFFFFFFFFFFFFFFFUL, nvme.FinalXorValue);
-            Assert.True(nvme.ReflectInput);
-            Assert.True(nvme.ReflectOutput);
+            Assert.True(nvme.ReflectValues);
         }
     }
 }

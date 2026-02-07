@@ -46,8 +46,7 @@ namespace System.IO.Hashing.Tests
             Assert.Equal(0x42F0E1EBA9EA3693UL, crc64.Polynomial);
             Assert.Equal(0UL, crc64.InitialValue);
             Assert.Equal(0UL, crc64.FinalXorValue);
-            Assert.False(crc64.ReflectInput);
-            Assert.False(crc64.ReflectOutput);
+            Assert.False(crc64.ReflectValues);
         }
     }
 }

@@ -42,10 +42,9 @@ namespace System.IO.Hashing
         public uint InitialValue { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public uint Polynomial { get { throw null; } }
-        public bool ReflectInput { get { throw null; } }
-        public bool ReflectOutput { get { throw null; } }
+        public bool ReflectValues { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        public static System.IO.Hashing.Crc32ParameterSet Create(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput) { throw null; }
+        public static System.IO.Hashing.Crc32ParameterSet Create(uint polynomial, uint initialValue, uint finalXorValue, bool reflectValues) { throw null; }
     }
     public sealed partial class Crc64 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
@@ -84,10 +83,9 @@ namespace System.IO.Hashing
         public static System.IO.Hashing.Crc64ParameterSet Nvme { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public ulong Polynomial { get { throw null; } }
-        public bool ReflectInput { get { throw null; } }
-        public bool ReflectOutput { get { throw null; } }
+        public bool ReflectValues { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        public static System.IO.Hashing.Crc64ParameterSet Create(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput) { throw null; }
+        public static System.IO.Hashing.Crc64ParameterSet Create(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectValues) { throw null; }
     }
     public abstract partial class NonCryptographicHashAlgorithm
     {

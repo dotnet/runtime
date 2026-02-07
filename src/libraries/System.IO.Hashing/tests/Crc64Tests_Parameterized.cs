@@ -49,9 +49,8 @@ namespace System.IO.Hashing.Tests
                         
                         yield return arr;
 
-                        // CRC(data || CRC(data)) only produces a stable value if the
-                        // input and output are similarly reflected.
-                        if (s_parameterSet.ReflectOutput == s_parameterSet.ReflectInput)
+                        // If, in the future, refIn!=refOut is supported, then the residue and inverse residue test cases
+                        // would need to be skipped, as they are only valid when refIn==refOut.
                         {
                             arr[0] = new TestCase(testCase.Name + " Residue", inputHex + outputHex, residue);
                             yield return arr;
@@ -195,8 +194,8 @@ namespace System.IO.Hashing.Tests
         {
             var alg = new Crc64(s_parameterSet);
             alg.Append(testCase.Input);
-            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt64(), littleEndian: s_parameterSet.ReflectOutput);
-            AssertEqualHashNumber(testCase.OutputHex, Crc64.HashToUInt64(s_parameterSet, testCase.Input), littleEndian: s_parameterSet.ReflectOutput);
+            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt64(), littleEndian: s_parameterSet.ReflectValues);
+            AssertEqualHashNumber(testCase.OutputHex, Crc64.HashToUInt64(s_parameterSet, testCase.Input), littleEndian: s_parameterSet.ReflectValues);
         }
     }
 

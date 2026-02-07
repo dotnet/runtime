@@ -23,42 +23,43 @@ namespace System.IO.Hashing
         [CLSCompliant(false)]
         public ulong FinalXorValue { get; }
 
-        /// <summary>Gets a value indicating whether the input bytes are reflected (reversed bit order) before processing.</summary>
-        /// <value><see langword="true"/> if the input bytes are reflected; otherwise, <see langword="false"/>.</value>
-        public bool ReflectInput { get; }
+        /// <summary>
+        ///   Gets a value indicating whether the input and output bytes are most-significant-bit (MSB) first, or last.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if the MSB is the least significant bit of the last byte;
+        ///   <see langword="false"/> if the MSB is the most significant bit of the first byte.
+        /// </value>
+        public bool ReflectValues { get; }
 
-        /// <summary>Gets a value indicating whether the output CRC is reflected (reversed bit order) before applying the final XOR.</summary>
-        /// <value><see langword="true"/> if the output CRC is reflected; otherwise, <see langword="false"/>.</value>
-        public bool ReflectOutput { get; }
-
-        private Crc64ParameterSet(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput)
+        private Crc64ParameterSet(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectValues)
         {
             Polynomial = polynomial;
             InitialValue = initialValue;
             FinalXorValue = finalXorValue;
-            ReflectInput = reflectInput;
-            ReflectOutput = reflectOutput;
+            ReflectValues = reflectValues;
         }
 
         /// <summary>Creates a new <see cref="Crc64ParameterSet"/> with the specified parameters.</summary>
         /// <param name="polynomial">The polynomial value used for the CRC calculation.</param>
         /// <param name="initialValue">The initial value (seed) for the CRC calculation.</param>
         /// <param name="finalXorValue">The value to XOR with the final CRC result.</param>
-        /// <param name="reflectInput">Whether the input bytes are reflected (reversed bit order) before processing.</param>
-        /// <param name="reflectOutput">Whether the output CRC is reflected (reversed bit order) before applying the final XOR.</param>
+        /// <param name="reflectValues">
+        ///   <see langword="true"/> if the input values are least-significant-bit (LSB) first;
+        ///   <see langword="false"/> if the input values are most-significant-bit (MSB) first.
+        /// </param>
         /// <returns>A new <see cref="Crc64ParameterSet"/> instance.</returns>
         [CLSCompliant(false)]
         public static Crc64ParameterSet Create(
             ulong polynomial,
             ulong initialValue,
             ulong finalXorValue,
-            bool reflectInput,
-            bool reflectOutput)
+            bool reflectValues)
         {
-            Crc64ParameterSet set = reflectInput switch
+            Crc64ParameterSet set = reflectValues switch
             {
-                false => new ForwardTableBasedCrc64(polynomial, initialValue, finalXorValue, reflectOutput),
-                _ => new ReflectedTableBasedCrc64(polynomial, initialValue, finalXorValue, reflectOutput),
+                false => new ForwardTableBasedCrc64(polynomial, initialValue, finalXorValue),
+                _ => new ReflectedTableBasedCrc64(polynomial, initialValue, finalXorValue),
             };
 
             return set;
@@ -66,7 +67,7 @@ namespace System.IO.Hashing
 
         internal void WriteCrcToSpan(ulong crc, Span<byte> destination)
         {
-            if (ReflectOutput)
+            if (ReflectValues)
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(destination, crc);
             }
@@ -83,10 +84,8 @@ namespace System.IO.Hashing
         {
             ulong crc = value;
 
-            if (ReflectOutput != ReflectInput)
-            {
-                crc = ReverseBits(crc);
-            }
+            // If, in the future, refIn!=refOut is supported, then the
+            // answer should (probably) be bit-reversed here before the final XOR.
 
             return crc ^ FinalXorValue;
         }

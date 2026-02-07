@@ -11,8 +11,7 @@ namespace System.IO.Hashing.Tests
             polynomial: 0x42f0e1eba9ea3693,
             initialValue: 0xFFFFFFFFFFFFFFFF,
             finalXorValue: 0xFFFFFFFFFFFFFFFF,
-            reflectInput: false,
-            reflectOutput: false);
+            reflectValues: false);
 
         internal override string EmptyOutput => "0000000000000000";
         internal override string Residue => "03534142A6CE566D";
@@ -30,8 +29,7 @@ namespace System.IO.Hashing.Tests
                 "Lorem ipsum 272" => "10D41FA7ED684849",
                 "Lorem ipsum 384" => "225F96A9DD5ED822",
                 "Lorem ipsum 1001" => "033B46C6C3BC5254",
-                _ => null,
-                //_ => throw new ArgumentOutOfRangeException(nameof(testCaseName), testCaseName, "Unmapped Value"),
+                _ => throw new ArgumentOutOfRangeException(nameof(testCaseName), testCaseName, "Unmapped Value"),
             };
     }
 

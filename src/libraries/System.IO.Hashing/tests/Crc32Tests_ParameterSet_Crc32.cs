@@ -32,8 +32,7 @@ namespace System.IO.Hashing.Tests
             polynomial: 0x04C11DB7,
             initialValue: 0xFFFFFFFF,
             finalXorValue: 0xFFFFFFFF,
-            reflectInput: true,
-            reflectOutput: true);
+            reflectValues: true);
     }
 
     public sealed class Crc32Tests_ParameterSet_Crc32 : Crc32Tests_Parameterized<Crc32Driver>
@@ -53,8 +52,7 @@ namespace System.IO.Hashing.Tests
             Assert.Equal(0x04C11DB7u, crc32.Polynomial);
             Assert.Equal(0xFFFFFFFFu, crc32.InitialValue);
             Assert.Equal(0xFFFFFFFFu, crc32.FinalXorValue);
-            Assert.True(crc32.ReflectInput);
-            Assert.True(crc32.ReflectOutput);
+            Assert.True(crc32.ReflectValues);
         }
     }
 
@@ -73,8 +71,7 @@ namespace System.IO.Hashing.Tests
             Assert.Equal(0x04C11DB7u, crc32.Polynomial);
             Assert.Equal(0xFFFFFFFFu, crc32.InitialValue);
             Assert.Equal(0xFFFFFFFFu, crc32.FinalXorValue);
-            Assert.True(crc32.ReflectInput);
-            Assert.True(crc32.ReflectOutput);
+            Assert.True(crc32.ReflectValues);
         }
     }
 }

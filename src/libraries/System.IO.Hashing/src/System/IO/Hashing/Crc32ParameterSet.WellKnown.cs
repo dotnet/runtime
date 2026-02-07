@@ -42,14 +42,13 @@ namespace System.IO.Hashing
                 polynomial: 0x1edc6f41,
                 initialValue: 0xffffffff,
                 finalXorValue: 0xffffffff,
-                reflectInput: true,
-                reflectOutput: true);
+                reflectValues: true);
         }
 
         private sealed class Ieee8023ParameterSet : Crc32ParameterSet
         {
             public Ieee8023ParameterSet()
-                : base(0x04c11db7, 0xffffffff, 0xffffffff, true, true)
+                : base(0x04c11db7, 0xffffffff, 0xffffffff, reflectValues: true)
             {
             }
 
@@ -60,7 +59,7 @@ namespace System.IO.Hashing
         private sealed class Crc32CParameterSet : Crc32ParameterSet
         {
             public Crc32CParameterSet()
-                : base(0x1edc6f41, 0xffffffff, 0xffffffff, true, true)
+                : base(0x1edc6f41, 0xffffffff, 0xffffffff, reflectValues: true)
             {
             }
 

@@ -9,12 +9,12 @@ namespace System.IO.Hashing
             field ??= new Ecma182ParameterSet();
 
         public static Crc64ParameterSet Nvme =>
-            field ??= Create(0xAD93D23594C93659, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, true, true);
+            field ??= Create(0xAD93D23594C93659, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, true);
 
         private sealed class Ecma182ParameterSet : Crc64ParameterSet
         {
             public Ecma182ParameterSet()
-                : base(0x42F0E1EBA9EA3693, 0x0000000000000000, 0x0000000000000000, false, false)
+                : base(0x42F0E1EBA9EA3693, 0x0000000000000000, 0x0000000000000000, false)
             {
             }
 
