@@ -392,7 +392,6 @@ system_time_to_int64 (
 	time_t sec,
 	long nsec);
 
-
 void
 ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 {
