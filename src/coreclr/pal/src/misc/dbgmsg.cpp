@@ -63,7 +63,7 @@ BOOL g_Dbg_asserts_enabled;
 FILE *output_file = NULL;
 
 /* master switch for debug channel enablement, to be modified by debugger */
-Volatile<BOOL> dbg_master_switch = TRUE;
+Volatile<BOOL> dbg_master_switch(TRUE);
 
 
 static const char *dbg_channel_names[]=

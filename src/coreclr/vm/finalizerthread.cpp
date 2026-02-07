@@ -24,7 +24,7 @@ BOOL FinalizerThread::fQuitFinalizer = FALSE;
 extern bool s_forcedGCInProgress;
 int64_t FinalizerThread::LastHeapDumpTime = 0;
 
-Volatile<BOOL> g_TriggerHeapDump = FALSE;
+Volatile<BOOL> g_TriggerHeapDump(FALSE);
 #endif // __linux__
 
 CLREvent * FinalizerThread::hEventFinalizer = NULL;

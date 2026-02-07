@@ -23,7 +23,7 @@ namespace
 {
     volatile CrossreferenceHandleCallback g_MarkCrossReferences = NULL;
 
-    Volatile<bool> g_GCBridgeActive = false;
+    Volatile<bool> g_GCBridgeActive(false);
     CLREventStatic g_bridgeFinished;
 
     void ReleaseGCBridgeArgumentsWorker(
