@@ -37,6 +37,7 @@ namespace System.Formats.Tar
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
+            ValidateFormat(format);
 
             if (!destination.CanWrite)
             {
@@ -81,6 +82,7 @@ namespace System.Formats.Tar
             }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
+            ValidateFormat(format);
 
             if (!destination.CanWrite)
             {
@@ -117,6 +119,7 @@ namespace System.Formats.Tar
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+            ValidateFormat(format);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
@@ -158,6 +161,7 @@ namespace System.Formats.Tar
             }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+            ValidateFormat(format);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
@@ -553,6 +557,14 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
+        }
+
+        private static void ValidateFormat(TarEntryFormat format)
+        {
+            if (format is < TarEntryFormat.V7 or > TarEntryFormat.Gnu)
+            {
+                throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
     }
 }
