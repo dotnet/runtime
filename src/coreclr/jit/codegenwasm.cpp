@@ -1229,6 +1229,9 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     else
     {
         GetEmitter()->emitIns(INS_if);
+        // Throw helper arity is (i (sp)) -> (void).
+        // Push SP here as the arg for the call.
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
         GetEmitter()->emitIns(INS_end);
     }
@@ -1541,9 +1544,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 }
 
-/*****************************************************************************
- *  Emit a call to a helper function.
- */
+//------------------------------------------------------------------------
+// genEmitHelperCall: emit a call to a runtime helper
+//
+// Arguments:
+//   hgelper -- helper call index (CorinfoHelpFunc enum value)
+//   argSize -- ignored
+//   retSize -- ignored
+//   callTargetReg -- ignored
+//
+// Notes:
+//   Wasm helper calls use the managed calling convention.
+//   SP arg must be first, on the stack below any arguments.
+//
 void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
 {
     EmitCallParams params;
