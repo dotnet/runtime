@@ -94,7 +94,7 @@
   </Target>
 
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 --module $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/publish/wwwroot" Command="node $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
