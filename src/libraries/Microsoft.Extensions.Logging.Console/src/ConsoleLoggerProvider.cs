@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return true;
             }
-        
+
             // Then check NO_COLOR
             if (Environment.GetEnvironmentVariable("NO_COLOR") is not null)
             {
