@@ -99,7 +99,8 @@ int64_t minipal_hires_ticks(void)
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #else
     struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+    int result;
+    result = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC) failed");
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
@@ -124,7 +125,8 @@ int64_t minipal_lowres_ticks(void)
     const clockid_t clockType = CLOCK_MONOTONIC;
 #endif
 
-    int result = clock_gettime(clockType, &ts);
+    int result;
+    result = clock_gettime(clockType, &ts);
 #if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
     assert(result == 0 && "clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
 #else
