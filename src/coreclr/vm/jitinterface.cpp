@@ -3202,11 +3202,19 @@ NoSpecialCase:
         FALLTHROUGH;
 
     case MethodDescSlot:
+    case DevirtualizedMethodDescSlot:
     case MethodEntrySlot:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
-            if (pResolvedToken->pTypeSpec != NULL)
+            if (entryKind == DevirtualizedMethodDescSlot)
+            {
+                // For shared GVM devirtualization use the devirtualized method owner type from pTemplateMD.
+                _ASSERTE(pTemplateMD != NULL);
+                sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+                sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
+            }
+            else if (pResolvedToken->pTypeSpec != NULL)
             {
                 SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
                 sigptr.ConvertToInternalExactlyOne(pModule, NULL, &sigBuilder);
@@ -8585,9 +8593,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
-    info->isInstantiatingStub = false;
-    info->needsMethodContext = false;
-    info->needsRuntimeLookup = false;
+    memset(&info->instParamLookup, 0, sizeof(info->instParamLookup));
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8803,7 +8809,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
     bool isGenericVirtual = false;
-    bool needsMethodContext = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8815,7 +8820,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     else if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
-        needsMethodContext = true;
     }
     else
     {
@@ -8832,58 +8836,47 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         {
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
-            info->needsRuntimeLookup = pDevirtMD->IsWrapperStub() &&
+
+            const bool requiresRuntimeLookup = pDevirtMD->IsWrapperStub() &&
                 (pExactMT->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation()));
-            needsMethodContext = true;
+
+            if (requiresRuntimeLookup)
+            {
+                if (info->pResolvedTokenVirtualMethod == nullptr)
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                ComputeRuntimeLookupForSharedGenericToken(DevirtualizedMethodDescSlot,
+                                                          info->pResolvedTokenVirtualMethod,
+                                                          nullptr,
+                                                          pDevirtMD,
+                                                          m_pMethodBeingCompiled,
+                                                          &info->instParamLookup);
+            }
         }
 
         isGenericVirtual = true;
     }
-    
-    // Synthesize a resolved token for the devirtualized target so the JIT can
-    // materialize instantiation parameters for GVMs that require runtime lookup.
-    //
-    if (isGenericVirtual && needsMethodContext)
+
+    // For non-shared cases we pass the instantiating stub MethodDesc as a constant.
+    if (!info->instParamLookup.lookupKind.needsRuntimeLookup && (isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
     {
-        if (info->pResolvedTokenVirtualMethod == nullptr)
-        {
-            // We don't have enough information to synthesize the token.
-            // Just bail.
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
-
-        CORINFO_RESOLVED_TOKEN* const pTok = &info->resolvedTokenDevirtualizedMethod;
-
-        pTok->tokenContext = info->context;
-        pTok->tokenScope   = GetScopeHandle(pDevirtMD->GetModule());
-        pTok->token        = pDevirtMD->GetMemberDef();
-        pTok->tokenType    = CORINFO_TOKENKIND_DevirtualizedMethod;
-
-        pTok->hClass  = (CORINFO_CLASS_HANDLE)pExactMT;
-        pTok->hMethod = (CORINFO_METHOD_HANDLE)pDevirtMD;
-        pTok->hField  = NULL;
-
-        pTok->pTypeSpec    = NULL;
-        pTok->cbTypeSpec   = 0;
-        
-        pTok->pMethodSpec  = info->pResolvedTokenVirtualMethod->pMethodSpec;
-        pTok->cbMethodSpec = info->pResolvedTokenVirtualMethod->cbMethodSpec;
+        info->instParamLookup.lookupKind.needsRuntimeLookup = false;
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
 
     // Success! Pass back the results.
     //
     if (isArray || isGenericVirtual)
     {
-        info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->needsMethodContext = needsMethodContext;
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-        info->isInstantiatingStub = false;
-        info->needsMethodContext = false;
     }
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;

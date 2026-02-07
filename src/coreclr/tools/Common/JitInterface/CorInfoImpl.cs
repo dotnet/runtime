@@ -1345,9 +1345,7 @@ namespace Internal.JitInterface
             info->devirtualizedMethod = null;
             info->exactContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->isInstantiatingStub = false;
-            info->needsMethodContext = false;
-            info->needsRuntimeLookup = false;
+            info->instParamLookup = default(CORINFO_LOOKUP);
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1478,6 +1476,36 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
+            bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
+            bool isGenericVirtual = decl.HasInstantiation;
+
+            if (isGenericVirtual && impl.IsSharedByGenericInstantiations)
+            {
+                if (info->pResolvedTokenVirtualMethod == null)
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+#if READYTORUN
+                ComputeRuntimeLookupForSharedGenericToken(
+                    Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
+                    ref info->resolvedTokenDevirtualizedMethod,
+                    pConstrainedResolvedToken: null,
+                    impl,
+                    MethodBeingCompiled,
+                    ref info->instParamLookup);
+#else
+                object runtimeDeterminedMethod = GetRuntimeDeterminedObjectForToken(ref info->resolvedTokenDevirtualizedMethod);
+                ComputeLookup(
+                    ref info->resolvedTokenDevirtualizedMethod,
+                    runtimeDeterminedMethod,
+                    ReadyToRunHelperId.MethodHandle,
+                    MethodBeingCompiled,
+                    ref info->instParamLookup);
+#endif
+            }
+
 #if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
@@ -1492,8 +1520,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->isInstantiatingStub = false;
-            info->exactContext = contextFromType(owningType);
+            info->exactContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(impl) : contextFromType(owningType);
 
             return true;
 

@@ -918,17 +918,23 @@ namespace Internal.JitInterface
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                         }
-                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        ref CORINFO_RESOLVED_TOKEN helperArgToken = ref pResolvedToken;
+                        if (helperId == ReadyToRunHelperId.MethodHandle && pGenericLookupKind.runtimeLookupArgs != null)
+                        {
+                            helperArgToken = ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs;
+                        }
+
+                        object helperArg = GetRuntimeDeterminedObjectForToken(ref helperArgToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                            var methodIL = HandleToObject(helperArgToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref helperArgToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
                         {
-                            helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                            helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref helperArgToken));
                         }
 
                         var methodContext = new GenericContext(HandleToObject(callerHandle));
@@ -2644,18 +2650,26 @@ namespace Internal.JitInterface
                     break;
 
                 case DictionaryEntryKind.MethodDescSlot:
+                case DictionaryEntryKind.DevirtualizedMethodDescSlot:
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
                     {
-                        if (entryKind == DictionaryEntryKind.MethodDescSlot)
+                        if (entryKind == DictionaryEntryKind.MethodDescSlot || entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
                             pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
                         else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
                             pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                         else
                             pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
 
-                        pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
+                        if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
+                        {
+                            pResultLookup.lookupKind.runtimeLookupArgs = Unsafe.AsPointer(ref pResolvedToken);
+                        }
+                        else
+                        {
+                            pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
+                        }
                         break;
                     }
 
