@@ -906,9 +906,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(assertionIndex);
 
         Limit      limit(Limit::keUndef);
-        genTreeOps cmpOper             = GT_NONE;
-        bool       isConstantAssertion = false;
-        bool       isUnsigned          = false;
+        genTreeOps cmpOper    = GT_NONE;
+        bool       isUnsigned = false;
 
         // Current assertion is of the form (i < len - cns) != 0
         if (canUseCheckedBounds && curAssertion.IsCheckedBoundArithBound())
@@ -916,7 +915,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get i, len, cns and < as "info."
-            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion.op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBoundArithInfo(curAssertion.GetOp1().GetVN(), &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN != info.cmpOp)
@@ -945,7 +944,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             ValueNumStore::CompareCheckedBoundArithInfo info;
 
             // Get the info as "i", "<" and "len"
-            comp->vnStore->GetCompareCheckedBound(curAssertion.op1.vn, &info);
+            comp->vnStore->GetCompareCheckedBound(curAssertion.GetOp1().GetVN(), &info);
 
             // If we don't have the same variable we are comparing against, bail.
             if (normalLclVN == info.cmpOp)
@@ -964,55 +963,45 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
         }
         // Current assertion is of the form (i < 100) != 0
-        else if (curAssertion.IsConstantBound() || curAssertion.IsConstantBoundUnsigned())
+        else if (curAssertion.IsRelop() && curAssertion.GetOp2().KindIs(Compiler::O2K_CONST_INT) &&
+                 (curAssertion.GetOp1().GetVN() == normalLclVN) && FitsIn<int>(curAssertion.GetOp2().GetIntConstant()))
         {
-            ValueNumStore::ConstantBoundInfo info;
-
-            // Get the info as "i", "<" and "100"
-            comp->vnStore->GetConstantBoundInfo(curAssertion.op1.vn, &info);
-
-            // If we don't have the same variable we are comparing against, bail.
-            if (normalLclVN != info.cmpOpVN)
-            {
-                continue;
-            }
-
-            limit      = Limit(Limit::keConstant, info.constVal);
-            cmpOper    = (genTreeOps)info.cmpOper;
-            isUnsigned = info.isUnsigned;
+            isUnsigned = false;
+            cmpOper    = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit      = Limit(Limit::keConstant, static_cast<int>(curAssertion.GetOp2().GetIntConstant()));
         }
         // Current assertion is of the form i == 100
         else if (curAssertion.IsConstantInt32Assertion())
         {
-            if (curAssertion.op1.vn != normalLclVN)
+            if (curAssertion.GetOp1().GetVN() != normalLclVN)
             {
                 continue;
             }
 
             // Ignore GC values/NULL caught by IsConstantInt32Assertion assertion (may happen on 32bit)
-            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.op2.vn)))
+            if (varTypeIsGC(comp->vnStore->TypeOfVN(curAssertion.GetOp2().GetVN())))
             {
                 continue;
             }
 
-            int cnstLimit = (int)curAssertion.op2.u1.iconVal;
-            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.op2.vn));
+            int cnstLimit = (int)curAssertion.GetOp2().GetIntConstant();
+            assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.GetOp2().GetVN()));
 
-            if ((cnstLimit == 0) && (curAssertion.assertionKind == Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
-                comp->vnStore->IsVNCheckedBound(curAssertion.op1.vn))
+            if ((cnstLimit == 0) && curAssertion.KindIs(Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
+                comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
             {
                 // we have arr.Len != 0, so the length must be atleast one
                 limit   = Limit(Limit::keConstant, 1);
                 cmpOper = GT_GE;
             }
-            else if (curAssertion.assertionKind == Compiler::OAK_EQUAL)
+            else if (curAssertion.KindIs(Compiler::OAK_EQUAL))
             {
                 limit   = Limit(Limit::keConstant, cnstLimit);
                 cmpOper = GT_EQ;
             }
             else
             {
-                assert(curAssertion.assertionKind == Compiler::OAK_NOT_EQUAL);
+                assert(curAssertion.KindIs(Compiler::OAK_NOT_EQUAL));
 
                 // We have an assertion of the form "X != constLimit".
                 // For example, if the assertion is "X != 100" and the current range for X is [100, X],
@@ -1035,14 +1024,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     continue;
                 }
             }
-
-            isConstantAssertion = true;
         }
         // Current assertion asserts a bounds check does not throw
         else if (curAssertion.IsBoundsCheckNoThrow())
         {
-            ValueNum indexVN = curAssertion.op1.bnd.vnIdx;
-            ValueNum lenVN   = curAssertion.op1.bnd.vnLen;
+            // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
+            ValueNum indexVN = curAssertion.GetOp1().GetVN();
+            ValueNum lenVN   = curAssertion.GetOp2().GetVN();
             if (normalLclVN == indexVN)
             {
                 if (canUseCheckedBounds)
@@ -1098,9 +1086,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
+        // TODO-Cleanup: remove this once these assertions are no longer existed.
+        // All relop-related assertions should be "op1VN relop op2VN" instead of "relopVN ==/!= 0"
+        bool legacyAssertionKind =
+            curAssertion.GetOp1().KindIs(Compiler::O1K_BOUND_LOOP_BND, Compiler::O1K_BOUND_OPER_BND);
+
         // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
-        if (!isConstantAssertion && (curAssertion.assertionKind != Compiler::OAK_NO_THROW) &&
-            (curAssertion.op2.vn != comp->vnStore->VNZeroForType(TYP_INT)))
+        if (legacyAssertionKind && (curAssertion.GetOp2().GetVN() != comp->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
@@ -1149,7 +1141,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // If we have a non-constant assertion of the form == 0 (i.e., equals false), then reverse relop.
         // The relop has to be reversed because we have: (i < length) is false which is the same
         // as (i >= length).
-        if ((curAssertion.assertionKind == Compiler::OAK_EQUAL) && !isConstantAssertion)
+        if (curAssertion.KindIs(Compiler::OAK_EQUAL) && legacyAssertionKind)
         {
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }

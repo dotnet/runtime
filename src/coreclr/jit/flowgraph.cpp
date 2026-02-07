@@ -1284,7 +1284,7 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
 //
 bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow /* false */)
 {
-    if (varTypeIsFloating(fromType) && overflow)
+    if (overflow && varTypeIsFloating(fromType))
     {
         assert(varTypeIsIntegral(toType));
         return true;
@@ -1300,9 +1300,9 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
     {
 #if defined(TARGET_X86)
         return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
-#endif // TARGET_X86
-
+#else
         return true;
+#endif // TARGET_X86
     }
 #endif // !TARGET_64BIT
 

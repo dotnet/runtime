@@ -8832,7 +8832,7 @@ PhaseStatus Lowering::DoPhase()
     {
         assert(m_compiler->opts.OptimizationEnabled());
 
-        m_compiler->fgLocalVarLiveness();
+        m_compiler->fgPostLowerLiveness();
         // local var liveness can delete code, which may create empty blocks
         bool modified = m_compiler->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
@@ -8840,7 +8840,7 @@ PhaseStatus Lowering::DoPhase()
         {
             m_compiler->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
-            m_compiler->fgLocalVarLiveness();
+            m_compiler->fgPostLowerLiveness();
         }
 
         // Recompute local var ref counts again after liveness to reflect
