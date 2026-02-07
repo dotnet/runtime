@@ -1271,6 +1271,44 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     return true;
 }
 
+//-------------------------------------------------------------------------------------
+// fgCastRequiresHelper: Check whether a given cast must be converted to a helper call.
+//
+// Arguments:
+//    fromType - The source type of the cast.
+//    toType   - The target type of the cast.
+//    overflow - True if the cast has the GTF_OVERFLOW flag set.
+//
+// Return Value:
+//    True if the cast requires a helper call, otherwise false.
+//
+bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow /* false */)
+{
+    if (varTypeIsFloating(fromType) && overflow)
+    {
+        assert(varTypeIsIntegral(toType));
+        return true;
+    }
+
+#if !defined(TARGET_64BIT)
+    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
+    {
+        return true;
+    }
+
+    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    {
+#if defined(TARGET_X86)
+        return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
+#endif // TARGET_X86
+
+        return true;
+    }
+#endif // !TARGET_64BIT
+
+    return false;
+}
+
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
 {
     noway_assert(!compIsForInlining());

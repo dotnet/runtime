@@ -138,6 +138,8 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    // On x86, long->floating casts are implemented in DecomposeCast.
+    // Those nodes, plus any nodes that produce a long, will be examined.
     if (!tree->TypeIs(TYP_LONG) &&
         !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
 #else
@@ -159,6 +161,9 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         // HWIntrinsics can consume/produce a long directly, provided its source/target is memory.
         // Here we do a conservative check for specific cases where it is certain the load/store
         // can be contained. In those cases, we can skip decomposition.
+        //
+        // We also look for longs consumed directly by a long->floating cast. These can skip
+        // decomposition because the cast is implemented using HWIntrinsics.
 
         GenTree* user = use.User();
 
@@ -589,21 +594,17 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         // The sequence this creates is simply:
         //    AVX512DQ.VL.ConvertToVector128Single(Vector128.CreateScalarUnsafe(LONG)).ToScalar()
 
-        NamedIntrinsic intrinsicId      = NI_Illegal;
-        GenTree*       srcOp            = cast->CastOp();
-        var_types      dstType          = cast->CastToType();
-        var_types      baseFloatingType = (dstType == TYP_FLOAT) ? TYP_FLOAT : TYP_DOUBLE;
-        var_types      baseIntegralType = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
+        NamedIntrinsic intrinsicId = NI_Illegal;
+        GenTree*       srcOp       = cast->CastOp();
 
         assert(!cast->gtOverflow());
         assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512));
 
         intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512_ConvertToVector128Single : NI_AVX512_ConvertToVector128Double;
 
-        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
-        GenTree* convert =
-            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
-        GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
+        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, srcType, 16);
+        GenTree* convert  = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, srcType, 16);
+        GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(dstType, convert, dstType, 16);
 
         Range().InsertAfter(cast, createScalar, convert, toScalar);
         Range().Remove(cast);
