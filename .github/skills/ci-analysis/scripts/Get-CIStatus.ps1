@@ -65,26 +65,26 @@
     to find related build tests that do have binlogs for deeper analysis.
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327
+    .\Get-CIStatus.ps1 -BuildId 1276327
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+    .\Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
+    .\Get-CIStatus.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+    .\Get-CIStatus.ps1 -BuildId 1276327 -SearchMihuBot
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
     # Scans work items to find which ones contain MSBuild binlog files
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -ClearCache
+    .\Get-CIStatus.ps1 -ClearCache
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]

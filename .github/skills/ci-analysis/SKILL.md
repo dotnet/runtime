@@ -1,5 +1,5 @@
 ---
-name: azdo-helix-failures
+name: ci-analysis
 description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", or "is CI green".
 ---
 
@@ -30,18 +30,18 @@ Do **not** use this skill when:
 
 ```powershell
 # Analyze PR failures (most common) - defaults to dotnet/runtime
-./scripts/Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+./scripts/Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
 
 # Analyze by build ID
-./scripts/Get-HelixFailures.ps1 -BuildId 1276327 -ShowLogs
+./scripts/Get-CIStatus.ps1 -BuildId 1276327 -ShowLogs
 
 # Query specific Helix work item
-./scripts/Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
+./scripts/Get-CIStatus.ps1 -HelixJob "4b24b2c2-..." -WorkItem "System.Net.Http.Tests"
 
 # Other dotnet repositories
-./scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
-./scripts/Get-HelixFailures.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
-./scripts/Get-HelixFailures.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
+./scripts/Get-CIStatus.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+./scripts/Get-CIStatus.ps1 -PRNumber 67890 -Repository "dotnet/sdk"
+./scripts/Get-CIStatus.ps1 -PRNumber 11111 -Repository "dotnet/roslyn"
 ```
 
 ## Key Parameters
