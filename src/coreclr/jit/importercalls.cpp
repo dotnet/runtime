@@ -8843,7 +8843,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
 
-    if (needsInstParam)
+    if (derivedMethod != nullptr && needsInstParam)
     {
         if (needsCompileTimeLookup)
         {
