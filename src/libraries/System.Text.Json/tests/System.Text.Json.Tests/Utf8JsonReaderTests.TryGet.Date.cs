@@ -270,5 +270,45 @@ namespace System.Text.Json.Tests
             Assert.Equal(default, dateTimeOffset);
             JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader json) => json.GetDateTimeOffset());
         }
+
+        [Theory]
+        [InlineData("\"2007-04-05T24:00:00\"", "2007-04-06T00:00:00")]
+        [InlineData("\"2007-04-05T24:00:00.0000000\"", "2007-04-06T00:00:00")]
+        [InlineData("\"2023-12-31T24:00:00Z\"", "2024-01-01T00:00:00Z")]
+        [InlineData("\"2020-02-29T24:00:00+00:00\"", "2020-03-01T00:00:00+00:00")]
+        public static void TestingStrings_Hour24_Valid(string jsonString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    DateTime expected = DateTime.Parse(expectedString);
+                    Assert.True(json.TryGetDateTime(out DateTime actual));
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("\"2007-04-05T24:00:01\"")]  // Non-zero seconds
+        [InlineData("\"2007-04-05T24:01:00\"")]  // Non-zero minutes
+        [InlineData("\"2007-04-05T24:00:00.0000001\"")]  // Non-zero fraction
+        [InlineData("\"9999-12-31T24:00:00\"")]  // Would overflow
+        public static void TestingStrings_Hour24_Invalid(string testString)
+        {
+            var dataUtf8 = Encoding.UTF8.GetBytes(testString);
+            var json = new Utf8JsonReader(dataUtf8);
+            Assert.True(json.Read());
+
+            Assert.False(json.TryGetDateTime(out var dateTime));
+            Assert.Equal(default, dateTime);
+            JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader json) => json.GetDateTime());
+
+            Assert.False(json.TryGetDateTimeOffset(out var dateTimeOffset));
+            Assert.Equal(default, dateTimeOffset);
+            JsonTestHelper.AssertThrows<FormatException>(ref json, (ref Utf8JsonReader json) => json.GetDateTimeOffset());
+        }
     }
 }
