@@ -108,7 +108,7 @@ The script operates in three distinct modes depending on what information you ha
 
 **Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
 
-> ⚠️ **Infrastructure vs. code failures.** Same test failing across many unrelated jobs → likely a real code issue. Scattered failures on specific queues (iOS devices, Docker, network) → likely transient infrastructure. Don't conflate the two.
+> ⚠️ **Be cautious labeling failures as "infrastructure."** If Build Analysis didn't flag a failure as a known issue, treat it as potentially real — even if it looks like a device failure, Docker issue, or network timeout. Only conclude "infrastructure" when you have strong evidence (e.g., identical failure on main branch, Build Analysis match, or confirmed outage). Dismissing failures as transient without evidence delays real bug discovery.
 
 > ❌ **Missing packages on flow PRs are NOT always infrastructure failures.** When a codeflow or dependency-update PR fails with "package not found" or "version not available", don't assume it's a feed propagation delay. Flow PRs bring in behavioral changes from upstream repos that can cause the build to request *different* packages than before. Example: an SDK flow changed runtime pack resolution logic, causing builds to look for `Microsoft.NETCore.App.Runtime.browser-wasm` (CoreCLR — doesn't exist) instead of `Microsoft.NETCore.App.Runtime.Mono.browser-wasm` (what had always been used). The fix was in the flowed code, not in feed infrastructure. Always check *which* package is missing and *why* it's being requested before diagnosing as infrastructure.
 
@@ -129,11 +129,11 @@ The script provides a recommendation at the end:
 2. **Run the script** with `-ShowLogs` for detailed failure info
 3. **Check Build Analysis** - Known issues are safe to retry
 4. **Correlate with PR changes** - Same files failing = likely PR-related
-5. **Interpret patterns**:
+5. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue
-   - Device failures (iOS/Android/tvOS) → Often transient infrastructure
-   - Docker/container image pull failures → Infrastructure issue
-   - Network timeouts, "host not found" → Transient infrastructure
+   - Build Analysis flags a known issue → Safe to retry
+   - Failure is **not** in Build Analysis → Investigate further before assuming transient
+   - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against main branch first
    - Test timeout but tests passed → Executor issue, not test failure
 
 ## Presenting Results
