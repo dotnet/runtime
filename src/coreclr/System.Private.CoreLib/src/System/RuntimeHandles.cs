@@ -818,8 +818,6 @@ namespace System
 
         internal RuntimeType MakeFunctionPointer(Type[] parameterTypes, bool isUnmanaged)
         {
-            parameterTypes = (Type[])parameterTypes.Clone();
-
             int count = 1 + parameterTypes.Length;
             nint[] retAndParamTypeHandles = new nint[count];
 
