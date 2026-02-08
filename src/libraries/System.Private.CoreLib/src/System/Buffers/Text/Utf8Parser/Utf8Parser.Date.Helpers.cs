@@ -125,6 +125,32 @@ namespace System.Buffers.Text
                 return false;
             }
 
+            // ISO 8601 allows hour=24 to represent end of day (midnight), but only when minute, second, and fraction are all zero.
+            // In this case, we advance to the next day at 00:00.
+            if (hour == 24)
+            {
+                if (minute != 0 || second != 0 || fraction != 0)
+                {
+                    value = default;
+                    return false;
+                }
+
+                ReadOnlySpan<int> daysInMonth = DateTime.IsLeapYear(year) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
+                int yearMinus1 = year - 1;
+                int daysCount = (yearMinus1 * 365) + (yearMinus1 / 4) - (yearMinus1 / 100) + (yearMinus1 / 400) + daysInMonth[month - 1] + day - 1;
+                // Calculate ticks for current day and add one day to get to midnight of the next day
+                long nextDayTicks = daysCount * TimeSpan.TicksPerDay + TimeSpan.TicksPerDay;
+
+                if ((ulong)nextDayTicks > DateTime.MaxTicks)
+                {
+                    value = default;
+                    return false;
+                }
+
+                value = new DateTime(ticks: nextDayTicks, kind: kind);
+                return true;
+            }
+
             if (((uint)hour) > 23)
             {
                 value = default;

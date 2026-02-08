@@ -1629,5 +1629,53 @@ namespace System.Tests
         {
             VerifyDateTimeOffset(DateTimeOffset.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
+
+        // Tests for ISO 8601 24:00 support (end of day) in DateTimeOffset
+        [Theory]
+        [InlineData("2007-04-05T24:00:00.0000000+00:00", 2007, 4, 6, 0, 0, 0)]
+        [InlineData("2023-12-31T24:00:00.0000000Z", 2024, 1, 1, 0, 0, 0)]
+        [InlineData("2020-02-29T24:00:00.0000000-05:00", 2020, 3, 1, 0, 0, 0)]
+        public static void ParseExact_Hour24_Success(string input, int expectedYear, int expectedMonth, int expectedDay, int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            DateTimeOffset result = DateTimeOffset.ParseExact(input, "o", null);
+            Assert.Equal(expectedYear, result.Year);
+            Assert.Equal(expectedMonth, result.Month);
+            Assert.Equal(expectedDay, result.Day);
+            Assert.Equal(expectedHour, result.Hour);
+            Assert.Equal(expectedMinute, result.Minute);
+            Assert.Equal(expectedSecond, result.Second);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01.0000000Z")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00.0000000+00:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001-05:00")]  // Non-zero fraction
+        [InlineData("9999-12-31T24:00:00.0000000Z")]  // Would overflow
+        public static void ParseExact_Hour24_Invalid_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => DateTimeOffset.ParseExact(input, "o", null));
+        }
+
+        [Fact]
+        public static void Parse_Hour24_BasicTest()
+        {
+            DateTimeOffset result = DateTimeOffset.Parse("2007-04-05T24:00:00.0000000Z");
+            Assert.Equal(new DateTimeOffset(2007, 4, 6, 0, 0, 0, TimeSpan.Zero), result);
+        }
+
+        [Fact]
+        public static void TryParse_Hour24_Success()
+        {
+            bool success = DateTimeOffset.TryParseExact("2007-04-05T24:00:00.0000000+00:00", "o", null, DateTimeStyles.None, out DateTimeOffset result);
+            Assert.True(success);
+            Assert.Equal(new DateTimeOffset(2007, 4, 6, 0, 0, 0, TimeSpan.Zero), result);
+        }
+
+        [Fact]
+        public static void TryParse_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = DateTimeOffset.TryParseExact("2007-04-05T24:00:01.0000000Z", "o", null, DateTimeStyles.None, out DateTimeOffset result);
+            Assert.False(success);
+        }
     }
 }

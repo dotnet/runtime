@@ -5109,6 +5109,13 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
             }
 
+            // ISO 8601: hour=24 is only valid when minute, second, and fraction are all zero
+            if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
+            {
+                result.SetBadDateTimeFailure();
+                return false;
+            }
+
             if (!DateTime.TryCreate(year, month, day, hour, minute, second, 0, out DateTime dateTime))
             {
                 result.SetBadDateTimeFailure();

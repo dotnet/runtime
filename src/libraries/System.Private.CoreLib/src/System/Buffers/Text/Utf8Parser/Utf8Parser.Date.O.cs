@@ -193,6 +193,15 @@ namespace System.Buffers.Text
                 fraction = (int)(digit1 * 1000000 + digit2 * 100000 + digit3 * 10000 + digit4 * 1000 + digit5 * 100 + digit6 * 10 + digit7);
             }
 
+            // ISO 8601: hour=24 is only valid when minute, second, and fraction are all zero
+            if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
+            {
+                value = default;
+                bytesConsumed = 0;
+                kind = default;
+                return false;
+            }
+
             byte offsetChar = (source.Length <= 27) ? default : source[27];
             if (offsetChar != 'Z' && offsetChar != Utf8Constants.Plus && offsetChar != Utf8Constants.Minus)
             {
