@@ -262,10 +262,10 @@ namespace System.IO.Compression
             using (var compressor = new DerivedDeflateStreamWithByteArrayWriteAsync(ms, CompressionMode.Compress))
             {
                 byte[] data = new byte[] { 1, 2, 3, 4, 5 };
-                
+
                 // This should complete without hanging
                 var writeTask = compressor.WriteAsync(new ReadOnlyMemory<byte>(data)).AsTask();
-                
+
                 // Set a timeout to detect infinite loop
                 var completedTask = await Task.WhenAny(writeTask, Task.Delay(TimeSpan.FromSeconds(5)));
                 
