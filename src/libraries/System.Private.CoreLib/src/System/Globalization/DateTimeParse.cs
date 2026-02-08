@@ -2686,6 +2686,23 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
+            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (result.Hour == 24)
+            {
+                if (result.Minute != 0 || result.Second != 0 || raw.fraction != 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    TPTraceExit("0095 (hour 24 with non-zero minute/second/fraction)", dps);
+                    return false;
+                }
+
+                result.Hour = 0;
+                isEndOfDay = true;
+            }
+
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out DateTime time))
             {
@@ -2700,6 +2717,17 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 {
                     result.SetBadDateTimeFailure();
                     TPTraceExit("0100 (time.TryAddTicks)", dps);
+                    return false;
+                }
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                if (!time.TryAddTicks(TimeSpan.TicksPerDay, out time))
+                {
+                    result.SetBadDateTimeFailure();
+                    TPTraceExit("0105 (hour 24 overflow adding one day)", dps);
                     return false;
                 }
             }
