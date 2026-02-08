@@ -10,7 +10,6 @@ Analyze the health of VMR codeflow PRs in both directions:
 - **Forward flow**: product repos → `dotnet/dotnet`
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
-> 🚨 **NEVER** run `git checkout`, `git stash`, or `gh pr checkout`. You are always on the correct branch. Use `gh pr diff` to see changes.
 
 ## Prerequisites
 
