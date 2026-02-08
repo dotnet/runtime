@@ -7,6 +7,9 @@ description: Analyze CI build and test status from Azure DevOps and Helix for do
 
 Analyze CI build status and test failures in Azure DevOps and Helix for dotnet repositories (runtime, sdk, aspnetcore, roslyn, and more).
 
+> 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
+> 🚨 **NEVER** run `git checkout`, `git stash`, or `gh pr checkout`. You are always on the correct branch. Use `gh pr diff` to see changes.
+
 ## When to Use This Skill
 
 Use this skill when:
