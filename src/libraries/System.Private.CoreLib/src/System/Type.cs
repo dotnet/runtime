@@ -685,7 +685,7 @@ namespace System
                     builtInCallConv = true;
             }
 
-            if (isUnmanaged && !builtInCallConv)
+            if (isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
             {
                 // Newer or multiple calling conventions specified -> encoded as modopts
                 returnType = MakeModifiedSignatureType(

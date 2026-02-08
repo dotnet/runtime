@@ -173,7 +173,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public void TestDynamicMethodEmitCalliFnPtrManaged()
         {
             Type fnPtrType = Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]);
@@ -192,7 +192,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public void TestDynamicMethodEmitCalliFnPtrStdCall()
         {
             int a = 1, b = 1, result = 2;
@@ -225,7 +225,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public unsafe void TestDynamicMethodEmitCalli_NestedFunctionPointer()
         {
             // delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>
@@ -246,7 +246,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public unsafe void TestDynamicMethodEmitCalli_NestedFunctionPointer2()
         {
             // delegate*<delegate* unmanaged[Cdecl]<delegate*<delegate* unmanaged[Fastcall, SuppressGCTransition]<List<short>*>>>, delegate*<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, int>>
