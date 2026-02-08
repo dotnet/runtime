@@ -505,6 +505,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeFunctionPointerType_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_Invoke_ReturnsExpected(Type returnType, Type[] parameterTypes)
         {
             Type fnPtrType = returnType.MakeFunctionPointerType(parameterTypes);
@@ -518,6 +519,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_NullParameters_ReturnsExpected()
         {
             Type fnPtrType = typeof(int).MakeFunctionPointerType(null);
@@ -527,6 +529,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_Unmanaged_ReturnsExpected()
         {
             Type[] parameterTypes = [typeof(int), typeof(double)];
@@ -539,6 +542,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_ParameterArrayIsCloned()
         {
             Type[] parameterTypes = [typeof(int), typeof(string)];
@@ -550,6 +554,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_NullParameterInArray_ThrowsArgumentNullException()
         {
             Type[] parameterTypes = [typeof(int), null!, typeof(string)];
@@ -557,6 +562,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75348", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_GenericTypes_ContainsGenericParameters()
         {
             Type openGeneric = typeof(GenericClass<>);
