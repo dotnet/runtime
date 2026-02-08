@@ -458,7 +458,8 @@ if ($CheckMissing) {
         if ($openBranches.ContainsKey($branchName)) {
             $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
-            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ } else { $coveredCount++ }
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ }
+            elseif ($bfHealth.Status -notlike '*Unknown*') { $coveredCount++ }
             continue
         }
 
@@ -547,7 +548,8 @@ if ($CheckMissing) {
             Write-Host "  Branch: $branchName" -ForegroundColor White
             $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
-            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ } else { $coveredCount++ }
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ }
+            elseif ($bfHealth.Status -notlike '*Unknown*') { $coveredCount++ }
         }
     }
 
@@ -580,7 +582,7 @@ if ($CheckMissing) {
 
             if ($fwdHealth.HasConflict) { $fwdConflict++ }
             elseif ($fwdHealth.HasStaleness) { $fwdStale++ }
-            else { $fwdHealthy++ }
+            elseif ($fwdHealth.Status -notlike '*Unknown*') { $fwdHealthy++ }
 
             Write-Host "  PR #$($fpr.number) [$fprBranch]: $($fwdHealth.Status)" -ForegroundColor $fwdHealth.Color
             Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
