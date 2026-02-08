@@ -72,7 +72,7 @@ function Invoke-GitHubApi {
             $args += '-H'
             $args += 'Accept: application/vnd.github.raw'
         }
-        $result = gh api @args 2>&1
+        $result = gh api @args 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "GitHub API call failed: $Endpoint"
             return $null
@@ -186,12 +186,18 @@ if ($CheckMissing) {
         }
 
         # Get the PR body to extract VMR commit and VMR branch
-        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>&1
+        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "    ⚠️  Could not fetch PR #$($lastPR.number) details" -ForegroundColor Yellow
             continue
         }
-        $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
+        try {
+            $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
+        }
+        catch {
+            Write-Host "    ⚠️  Could not parse PR #$($lastPR.number) details" -ForegroundColor Yellow
+            continue
+        }
 
         $vmrCommitFromPR = $null
         $vmrBranchFromPR = $null
@@ -260,14 +266,96 @@ if ($CheckMissing) {
         }
     }
 
-    Write-Section "Summary"
-    Write-Host "  Branches with open backflow PRs: $coveredCount" -ForegroundColor Green
-    Write-Host "  Branches up to date (no PR needed): $upToDateCount" -ForegroundColor Green
-    if ($missingCount -gt 0) {
-        Write-Host "  Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
+    # --- Forward flow: check PRs from this repo into the VMR ---
+    $repoShortName = $Repository -replace '^dotnet/', ''
+    Write-Host ""
+    Write-Section "Forward flow PRs ($Repository → dotnet/dotnet)"
+
+    $fwdPRsJson = gh search prs --repo dotnet/dotnet --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/$repoShortName" --json number,title --limit 10 2>$null
+    $fwdPRs = @()
+    if ($LASTEXITCODE -eq 0 -and $fwdPRsJson) {
+        try { $fwdPRs = ($fwdPRsJson -join "`n") | ConvertFrom-Json } catch { $fwdPRs = @() }
+    }
+    # Filter to exact repo match (avoid dotnet/sdk matching dotnet/sdk-container-builds)
+    $fwdPRs = @($fwdPRs | Where-Object { $_.title -match "from dotnet/$([regex]::Escape($repoShortName))$" })
+
+    $fwdHealthy = 0
+    $fwdStale = 0
+    $fwdConflict = 0
+
+    if ($fwdPRs.Count -eq 0) {
+        Write-Host "  No open forward flow PRs found" -ForegroundColor DarkGray
     }
     else {
-        Write-Host "  No missing backflow PRs detected ✅" -ForegroundColor Green
+        foreach ($fpr in $fwdPRs) {
+            $fprBranch = if ($fpr.title -match '^\[([^\]]+)\]') { $Matches[1] } else { "unknown" }
+            if ($Branch -and $fprBranch -ne $Branch) { continue }
+
+            # Get PR details for staleness/conflict check
+            $fprDetailJson = gh pr view $fpr.number -R dotnet/dotnet --json body,comments,updatedAt 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not fetch details" -ForegroundColor Yellow
+                continue
+            }
+            try {
+                $fprDetail = ($fprDetailJson -join "`n") | ConvertFrom-Json
+            }
+            catch {
+                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not parse details" -ForegroundColor Yellow
+                continue
+            }
+
+            # Check for staleness warnings and conflicts in comments
+            $hasStaleness = $false
+            $hasConflict = $false
+            if ($fprDetail.comments) {
+                foreach ($comment in $fprDetail.comments) {
+                    if ($comment.author.login -match '^dotnet-maestro') {
+                        if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') { $hasStaleness = $true }
+                        if ($comment.body -match 'Conflict detected') { $hasConflict = $true }
+                    }
+                }
+            }
+
+            $status = "✅ Healthy"
+            $color = "Green"
+            if ($hasConflict) {
+                $status = "🔴 Conflict"
+                $color = "Red"
+                $fwdConflict++
+            }
+            elseif ($hasStaleness) {
+                $status = "⚠️  Stale"
+                $color = "Yellow"
+                $fwdStale++
+            }
+            else {
+                $fwdHealthy++
+            }
+
+            Write-Host "  PR #$($fpr.number) [$fprBranch]: $status" -ForegroundColor $color
+            Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
+        }
+    }
+
+    Write-Section "Summary"
+    Write-Host "  Backflow ($Repository ← dotnet/dotnet):" -ForegroundColor White
+    Write-Host "    Branches with open PRs: $coveredCount" -ForegroundColor Green
+    Write-Host "    Branches up to date: $upToDateCount" -ForegroundColor Green
+    if ($missingCount -gt 0) {
+        Write-Host "    Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
+    }
+    else {
+        Write-Host "    No missing backflow PRs ✅" -ForegroundColor Green
+    }
+    Write-Host "  Forward flow ($Repository → dotnet/dotnet):" -ForegroundColor White
+    if ($fwdPRs.Count -eq 0) {
+        Write-Host "    No open forward flow PRs" -ForegroundColor DarkGray
+    }
+    else {
+        if ($fwdHealthy -gt 0) { Write-Host "    Healthy: $fwdHealthy" -ForegroundColor Green }
+        if ($fwdStale -gt 0) { Write-Host "    Stale: $fwdStale" -ForegroundColor Yellow }
+        if ($fwdConflict -gt 0) { Write-Host "    Conflicted: $fwdConflict" -ForegroundColor Red }
     }
     return
 }
@@ -402,69 +490,101 @@ $freshnessRepoLabel = if ($isForwardFlow) { $sourceRepo } else { "VMR" }
 # Pre-load PR commits for use in validation and later analysis
 $prCommits = $pr.commits
 
-# --- Step 2b: Cross-reference PR body snapshot against actual branch commits ---
+# --- Step 2b: Determine actual VMR snapshot on the PR branch ---
+# Priority: 1) Version.Details.xml (ground truth), 2) commit messages, 3) PR body
 $branchVmrCommit = $null
+$commitMsgVmrCommit = $null
+$versionDetailsVmrCommit = $null
+
+# First: check eng/Version.Details.xml on the PR branch (authoritative source)
+if (-not $isForwardFlow) {
+    $vdContent = Invoke-GitHubApi "/repos/$Repository/contents/eng/Version.Details.xml?ref=$([System.Uri]::EscapeDataString($pr.headRefName))" -Raw
+    if ($vdContent) {
+        try {
+            [xml]$vdXml = $vdContent
+            $sourceNode = $vdXml.Dependencies.Source
+            if ($sourceNode -and $sourceNode.Sha -and $sourceNode.Sha -match '^[a-fA-F0-9]{40}$') {
+                $versionDetailsVmrCommit = $sourceNode.Sha
+                $branchVmrCommit = $versionDetailsVmrCommit
+            }
+        }
+        catch {
+            # Fall back to regex if XML parsing fails
+            if ($vdContent -match '<Source\s+[^>]*Sha="([a-fA-F0-9]{40})"') {
+                $versionDetailsVmrCommit = $Matches[1]
+                $branchVmrCommit = $versionDetailsVmrCommit
+            }
+        }
+    }
+}
+
+# Second: scan commit messages for "Backflow from" / "Forward flow from" SHAs
 if ($prCommits) {
-    # Look through PR branch commits (newest first) for "Backflow from" or "Forward flow from" messages
-    # containing the actual VMR/source SHA that was used to create the branch content
     $reversedCommits = @($prCommits)
     [Array]::Reverse($reversedCommits)
     foreach ($c in $reversedCommits) {
         $msg = $c.messageHeadline
-        # Backflow commits: "Backflow from https://github.com/dotnet/dotnet / <sha> build <id>"
         if ($msg -match '(?:Backflow|Forward flow) from .+ / ([a-fA-F0-9]+)') {
-            $branchVmrCommit = $Matches[1]
-            # Keep scanning — we want the most recent (last in original order = first in reversed)
+            $commitMsgVmrCommit = $Matches[1]
             break
         }
+    }
+    # For forward flow (no Version.Details.xml source), commit messages are primary
+    if (-not $branchVmrCommit -and $commitMsgVmrCommit) {
+        $branchVmrCommit = $commitMsgVmrCommit
     }
 }
 
 if ($branchVmrCommit -or $vmrCommit) {
     Write-Section "Snapshot Validation"
     $usedBranchSnapshot = $false
-    if ($branchVmrCommit -and $vmrCommit) {
-        $bodyShort = Get-ShortSha $vmrCommit
-        $branchShort = $branchVmrCommit  # already short from commit message
-        if ($vmrCommit.StartsWith($branchVmrCommit) -or $branchVmrCommit.StartsWith($vmrCommit)) {
-            Write-Host "  ✅ PR body snapshot ($bodyShort) matches branch commit ($branchShort)" -ForegroundColor Green
+
+    if ($branchVmrCommit) {
+        # We have a branch-derived snapshot (from Version.Details.xml or commit message)
+        $branchShort = Get-ShortSha $branchVmrCommit
+        $sourceLabel = if ($versionDetailsVmrCommit -and $branchVmrCommit -eq $versionDetailsVmrCommit) { "Version.Details.xml" } else { "branch commit" }
+
+        if ($vmrCommit) {
+            $bodyShort = Get-ShortSha $vmrCommit
+            if ($vmrCommit.StartsWith($branchVmrCommit, [StringComparison]::OrdinalIgnoreCase) -or $branchVmrCommit.StartsWith($vmrCommit, [StringComparison]::OrdinalIgnoreCase)) {
+                Write-Host "  ✅ $sourceLabel ($branchShort) matches PR body ($bodyShort)" -ForegroundColor Green
+            }
+            else {
+                Write-Host "  ⚠️  MISMATCH: $sourceLabel has $branchShort but PR body claims $bodyShort" -ForegroundColor Red
+                Write-Host "  PR body is stale — using $sourceLabel for freshness check" -ForegroundColor Yellow
+            }
         }
         else {
-            Write-Host "  ⚠️  MISMATCH: PR body claims $(Get-ShortSha $vmrCommit) but branch commit references $branchVmrCommit" -ForegroundColor Red
-            Write-Host "  The PR body may be stale — using branch commit ($branchVmrCommit) for freshness check" -ForegroundColor Yellow
-            # Resolve the short SHA from the branch commit to a full SHA for accurate comparison
+            Write-Host "  ℹ️  PR body has no commit reference — using $sourceLabel ($branchShort)" -ForegroundColor Yellow
+        }
+
+        # Resolve to full SHA for accurate comparison (skip API call if already full-length)
+        if ($branchVmrCommit.Length -ge 40) {
+            $vmrCommit = $branchVmrCommit
+            $usedBranchSnapshot = $true
+        }
+        else {
             $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
             if ($resolvedCommit) {
                 $vmrCommit = $resolvedCommit.sha
                 $usedBranchSnapshot = $true
             }
+            elseif ($vmrCommit) {
+                Write-Host "  ⚠️  Could not resolve $sourceLabel SHA $branchShort — falling back to PR body ($(Get-ShortSha $vmrCommit))" -ForegroundColor Yellow
+            }
             else {
-                Write-Host "  ⚠️  Could not resolve branch commit SHA $branchVmrCommit — falling back to PR body" -ForegroundColor Yellow
+                Write-Host "  ⚠️  Could not resolve $sourceLabel SHA $branchShort" -ForegroundColor Yellow
             }
         }
     }
-    elseif ($branchVmrCommit -and -not $vmrCommit) {
-        Write-Host "  ⚠️  PR body has no commit reference, but branch commit references $branchVmrCommit" -ForegroundColor Yellow
-        Write-Host "  Using branch commit for freshness check" -ForegroundColor Yellow
-        $resolvedCommit = Invoke-GitHubApi "/repos/$freshnessRepo/commits/$branchVmrCommit"
-        if ($resolvedCommit) {
-            $vmrCommit = $resolvedCommit.sha
-            $usedBranchSnapshot = $true
-        }
-    }
-    elseif ($vmrCommit -and -not $branchVmrCommit) {
+    else {
+        # No branch-derived snapshot — PR body only
         $commitCount = if ($prCommits) { $prCommits.Count } else { 0 }
-        if ($commitCount -eq 1) {
-            $firstMsg = $prCommits[0].messageHeadline
-            if ($firstMsg -match "^Initial commit for subscription") {
-                Write-Host "  ℹ️  PR has only an initial subscription commit — PR body snapshot ($(Get-ShortSha $vmrCommit)) not yet verifiable from branch" -ForegroundColor DarkGray
-            }
-            else {
-                Write-Host "  ⚠️  No VMR SHA found in branch commit messages — trusting PR body ($(Get-ShortSha $vmrCommit))" -ForegroundColor Yellow
-            }
+        if ($commitCount -eq 1 -and $prCommits[0].messageHeadline -match "^Initial commit for subscription") {
+            Write-Host "  ℹ️  PR has only an initial subscription commit — PR body snapshot ($(Get-ShortSha $vmrCommit)) not yet verifiable" -ForegroundColor DarkGray
         }
         else {
-            Write-Host "  ⚠️  No VMR SHA found in $commitCount branch commit messages — trusting PR body ($(Get-ShortSha $vmrCommit))" -ForegroundColor Yellow
+            Write-Host "  ⚠️  Could not verify PR body snapshot ($(Get-ShortSha $vmrCommit)) from branch" -ForegroundColor Yellow
         }
     }
 }
@@ -485,7 +605,11 @@ if ($vmrCommit -and $vmrBranch) {
     if ($branchHead) {
         $sourceHeadSha = $branchHead.sha
         $sourceHeadDate = $branchHead.commit.committer.date
-        $snapshotSource = if ($usedBranchSnapshot) { "from branch commit" } else { "from PR body" }
+        $snapshotSource = if ($usedBranchSnapshot) {
+            if ($versionDetailsVmrCommit -and $vmrCommit.StartsWith($versionDetailsVmrCommit, [StringComparison]::OrdinalIgnoreCase)) { "from Version.Details.xml" }
+            elseif ($commitMsgVmrCommit) { "from branch commit" }
+            else { "from branch" }
+        } else { "from PR body" }
         Write-Status "PR snapshot" "$(Get-ShortSha $vmrCommit) ($snapshotSource)"
         Write-Status "$freshnessRepoLabel HEAD" "$(Get-ShortSha $sourceHeadSha) ($sourceHeadDate)"
 
