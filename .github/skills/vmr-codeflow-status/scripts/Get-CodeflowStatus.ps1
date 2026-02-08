@@ -154,10 +154,14 @@ function Get-CodeflowPRHealth {
                             $lastWarnTime = $null
                             foreach ($comment in $prDetail.comments) {
                                 if ($comment.author.login -match '^dotnet-maestro' -and $comment.body -match 'codeflow cannot continue|the source repository has received code changes') {
-                                    $lastWarnTime = $comment.createdAt
+                                    $warnDt = [DateTimeOffset]::Parse($comment.createdAt).UtcDateTime
+                                    if (-not $lastWarnTime -or $warnDt -gt $lastWarnTime) {
+                                        $lastWarnTime = $warnDt
+                                    }
                                 }
                             }
-                            if ($lastWarnTime -and $lastCommitTime -and $lastCommitTime -gt $lastWarnTime) {
+                            $commitDt = if ($lastCommitTime) { [DateTimeOffset]::Parse($lastCommitTime).UtcDateTime } else { $null }
+                            if ($lastWarnTime -and $commitDt -and $commitDt -gt $lastWarnTime) {
                                 $hasStaleness = $false
                             }
                         }
@@ -407,6 +411,7 @@ if ($CheckMissing) {
     $upToDateCount = 0
     $blockedCount = 0
     $vmrBranchesFound = @{}
+    $cachedPRBodies = @{}
 
     # First pass: collect VMR branch mappings from merged PRs (needed for build freshness)
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
@@ -415,6 +420,7 @@ if ($CheckMissing) {
         $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
         if ($LASTEXITCODE -ne 0) { continue }
         try { $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json } catch { continue }
+        $cachedPRBodies[$branchName] = $prDetail
         $vmrBranchFromPR = $null
         if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') { $vmrBranchFromPR = $Matches[1] }
         if ($vmrBranchFromPR) { $vmrBranchesFound[$branchName] = $vmrBranchFromPR }
@@ -470,16 +476,10 @@ if ($CheckMissing) {
             continue
         }
 
-        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "    ⚠️  Could not fetch PR #$($lastPR.number) details" -ForegroundColor Yellow
-            continue
-        }
-        try {
-            $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json
-        }
-        catch {
-            Write-Host "    ⚠️  Could not parse PR #$($lastPR.number) details" -ForegroundColor Yellow
+        # Use cached PR body from first pass
+        $prDetail = $cachedPRBodies[$branchName]
+        if (-not $prDetail) {
+            Write-Host "    ⚠️  Could not fetch PR details" -ForegroundColor Yellow
             continue
         }
 
