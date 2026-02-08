@@ -348,10 +348,10 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
     // clang-format off
     static const uint8_t typecode_mapping[] = {
         0x00, // WasmValueType::Invalid = 0,
-        0x7C, // WasmValueType::F64 = 1,
-        0x7D, // WasmValueType::F32 = 2,
-        0x7E, // WasmValueType::I64 = 3,
-        0x7F, // WasmValueType::I32 = 4,
+        0x7F, // WasmValueType::I32 = 1,
+        0x7E, // WasmValueType::I64 = 2,
+        0x7D, // WasmValueType::F32 = 3,
+        0x7C, // WasmValueType::F64 = 4,
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
