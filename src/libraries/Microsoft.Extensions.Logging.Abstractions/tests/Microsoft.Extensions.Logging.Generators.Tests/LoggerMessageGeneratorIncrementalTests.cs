@@ -37,8 +37,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             driver = driver.RunGenerators(comp1);
 
-            // Add an unrelated type
-            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct Foo {}", new CSharpParseOptions(LanguageVersion.Preview)));
+            // Add an unrelated type - use consistent parse options from existing tree
+            SyntaxTree existingTree = comp1.SyntaxTrees.First();
+            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct Foo {}", (CSharpParseOptions)existingTree.Options));
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
