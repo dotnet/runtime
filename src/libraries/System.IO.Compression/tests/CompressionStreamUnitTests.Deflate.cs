@@ -268,7 +268,7 @@ namespace System.IO.Compression
 
                 // Set a timeout to detect infinite loop
                 var completedTask = await Task.WhenAny(writeTask, Task.Delay(TimeSpan.FromSeconds(5)));
-                
+
                 Assert.Same(writeTask, completedTask);
                 await writeTask; // Ensure no exceptions
                 Assert.True(compressor.WriteAsyncCalled);
