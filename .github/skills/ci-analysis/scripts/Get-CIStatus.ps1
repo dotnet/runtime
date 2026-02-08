@@ -152,7 +152,7 @@ $script:TempDir = Get-TempDirectory
 
 # Handle -ClearCache parameter
 if ($ClearCache) {
-    $cacheDir = Join-Path $script:TempDir "helix-failures-cache"
+    $cacheDir = Join-Path $script:TempDir "ci-analysis-cache"
     if (Test-Path $cacheDir) {
         $files = Get-ChildItem -Path $cacheDir -File
         $count = $files.Count
@@ -166,7 +166,7 @@ if ($ClearCache) {
 }
 
 # Setup caching
-$script:CacheDir = Join-Path $script:TempDir "helix-failures-cache"
+$script:CacheDir = Join-Path $script:TempDir "ci-analysis-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
 }
