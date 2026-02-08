@@ -419,14 +419,44 @@ if ($CheckMissing) {
             # Check for staleness warnings and conflicts in comments
             $hasStaleness = $false
             $hasConflict = $false
+            $lastConflictTime = $null
+            $lastStalenessTime = $null
             if ($fprDetail.comments) {
                 foreach ($comment in $fprDetail.comments) {
                     if ($comment.author.login -match '^dotnet-maestro') {
-                        if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') { $hasStaleness = $true }
-                        if ($comment.body -match 'Conflict detected') { $hasConflict = $true }
+                        if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') {
+                            $hasStaleness = $true
+                            $lastStalenessTime = $comment.createdAt
+                        }
+                        if ($comment.body -match 'Conflict detected') {
+                            $hasConflict = $true
+                            $lastConflictTime = $comment.createdAt
+                        }
                     }
                 }
             }
+
+            # If conflict/staleness was detected, check if it was resolved
+            # by looking at commits pushed after the warning and check status
+            $wasConflict = $hasConflict
+            $wasStaleness = $hasStaleness
+            if ($hasConflict -or $hasStaleness) {
+                $warningTime = if ($hasConflict) { $lastConflictTime } else { $lastStalenessTime }
+                # Check if there are commits after the warning (indicating resolution)
+                $checksJson = gh pr checks $fpr.number -R dotnet/dotnet --json name,state 2>$null
+                if ($LASTEXITCODE -eq 0 -and $checksJson) {
+                    try {
+                        $checks = ($checksJson -join "`n") | ConvertFrom-Json
+                        $codeflowCheck = $checks | Where-Object { $_.name -match 'Codeflow verification' }
+                        if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
+                            # Codeflow verification passed — conflict/staleness was resolved
+                            $hasConflict = $false
+                            $hasStaleness = $false
+                        }
+                    } catch { }
+                }
+            }
+
 
             $status = "✅ Healthy"
             $color = "Green"
@@ -441,6 +471,8 @@ if ($CheckMissing) {
                 $fwdStale++
             }
             else {
+                if ($wasConflict) { $status = "✅ Conflict resolved" }
+                elseif ($wasStaleness) { $status = "✅ Updated since staleness warning" }
                 $fwdHealthy++
             }
 
