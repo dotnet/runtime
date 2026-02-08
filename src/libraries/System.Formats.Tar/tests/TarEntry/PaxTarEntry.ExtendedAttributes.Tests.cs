@@ -75,95 +75,52 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(3000000, true)]  // Large value should add to ExtendedAttributes
-        [InlineData(1000, false)]     // Small value should not be in ExtendedAttributes
-        public void Uid_Setter_ShouldSyncWithExtendedAttributes(int uidValue, bool shouldBeInExtendedAttributes)
+        [InlineData("uid", 3000000, true)]
+        [InlineData("uid", 1000, false)]
+        [InlineData("gid", 3000000, true)]
+        [InlineData("gid", 1000, false)]
+        public void NumericProperty_Setter_ShouldSyncWithExtendedAttributes(string extAttrKey, int numericValue, bool shouldBeInExtendedAttributes)
         {
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt");
 
-            // Access ExtendedAttributes to initialize it
+            // Access ExtendedAttributes to force initialization of the backing dictionary
             _ = entry.ExtendedAttributes.Count;
 
-            // Set Uid
-            entry.Uid = uidValue;
+            if (extAttrKey == "uid")
+                entry.Uid = numericValue;
+            else
+                entry.Gid = numericValue;
 
-            // Verify ExtendedAttributes state
             if (shouldBeInExtendedAttributes)
             {
-                Assert.True(entry.ExtendedAttributes.ContainsKey("uid"));
-                Assert.Equal(uidValue.ToString(), entry.ExtendedAttributes["uid"]);
+                Assert.True(entry.ExtendedAttributes.ContainsKey(extAttrKey));
+                Assert.Equal(numericValue.ToString(), entry.ExtendedAttributes[extAttrKey]);
             }
             else
             {
-                Assert.False(entry.ExtendedAttributes.ContainsKey("uid"));
+                Assert.False(entry.ExtendedAttributes.ContainsKey(extAttrKey));
             }
         }
 
         [Theory]
-        [InlineData(3000000, true)]  // Large value should add to ExtendedAttributes
-        [InlineData(1000, false)]     // Small value should not be in ExtendedAttributes
-        public void Gid_Setter_ShouldSyncWithExtendedAttributes(int gidValue, bool shouldBeInExtendedAttributes)
+        [InlineData("uid")]
+        [InlineData("gid")]
+        public void NumericProperty_Setter_WithSmallValue_ShouldRemoveFromExtendedAttributes(string extAttrKey)
         {
-            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt");
-
-            // Access ExtendedAttributes to initialize it
-            _ = entry.ExtendedAttributes.Count;
-
-            // Set Gid
-            entry.Gid = gidValue;
-
-            // Verify ExtendedAttributes state
-            if (shouldBeInExtendedAttributes)
+            var extendedAttributes = new Dictionary<string, string>
             {
-                Assert.True(entry.ExtendedAttributes.ContainsKey("gid"));
-                Assert.Equal(gidValue.ToString(), entry.ExtendedAttributes["gid"]);
-            }
+                { extAttrKey, "3000000" }
+            };
+
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
+            Assert.True(entry.ExtendedAttributes.ContainsKey(extAttrKey));
+
+            if (extAttrKey == "uid")
+                entry.Uid = 1000;
             else
-            {
-                Assert.False(entry.ExtendedAttributes.ContainsKey("gid"));
-            }
-        }
+                entry.Gid = 1000;
 
-        [Fact]
-        public void Uid_Setter_WithSmallValue_ShouldRemoveFromExtendedAttributes()
-        {
-            // Create an entry with extended attributes including uid
-            Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
-            {
-                { "uid", "3000000" }
-            };
-
-            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
-
-            // Verify initial state
-            Assert.True(entry.ExtendedAttributes.ContainsKey("uid"));
-
-            // Set Uid to a value smaller than max octal (2097151)
-            entry.Uid = 1000;
-
-            // Verify ExtendedAttributes no longer contains uid (it fits in standard field)
-            Assert.False(entry.ExtendedAttributes.ContainsKey("uid"));
-        }
-
-        [Fact]
-        public void Gid_Setter_WithSmallValue_ShouldRemoveFromExtendedAttributes()
-        {
-            // Create an entry with extended attributes including gid
-            Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
-            {
-                { "gid", "3000000" }
-            };
-
-            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
-
-            // Verify initial state
-            Assert.True(entry.ExtendedAttributes.ContainsKey("gid"));
-
-            // Set Gid to a value smaller than max octal (2097151)
-            entry.Gid = 1000;
-
-            // Verify ExtendedAttributes no longer contains gid (it fits in standard field)
-            Assert.False(entry.ExtendedAttributes.ContainsKey("gid"));
+            Assert.False(entry.ExtendedAttributes.ContainsKey(extAttrKey));
         }
 
         [Fact]
