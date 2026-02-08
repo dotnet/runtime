@@ -58,8 +58,19 @@ namespace Microsoft.Extensions.Logging.Generators
                                       m.Parameters[0].Type.Name == "IFormatProvider" &&
                                       m.Parameters[1].RefKind == RefKind.Ref) ?? false;
 
-                        if (loggerMessageAttribute == null || loggerSymbol == null || logLevelSymbol == null ||
-                            exceptionSymbol == null || enumerableSymbol == null || stringSymbol == null)
+                        if (loggerMessageAttribute == null || loggerSymbol == null || logLevelSymbol == null)
+                        {
+                            // Required types aren't available
+                            return default;
+                        }
+
+                        if (exceptionSymbol == null)
+                        {
+                            var diagnostics = new[] { DiagnosticInfo.Create(DiagnosticDescriptors.MissingRequiredType, null, new object?[] { "System.Exception" }) }.ToImmutableEquatableArray();
+                            return (null, diagnostics, false);
+                        }
+
+                        if (enumerableSymbol == null || stringSymbol == null)
                         {
                             // Required types aren't available
                             return default;
