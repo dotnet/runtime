@@ -22,7 +22,7 @@ Use this skill when:
 - A PR has a Maestro staleness warning ("codeflow cannot continue") or conflict
 - You need to understand what manual commits would be lost if a codeflow PR is closed
 - You want to check the overall state of flow for a repo (backflow and forward flow health)
-- You need to know why backflow PRs are missing or when the last VMR build published
+- You need to know why backflow PRs are missing or when the last VMR build was published
 - Asked questions like "is this codeflow PR up to date", "has the runtime revert reached this PR", "why is the codeflow blocked", "what is the state of flow for the sdk", "what's the flow status for net11"
 
 ## Two Modes
@@ -30,9 +30,9 @@ Use this skill when:
 | Mode | Use When | Required Params |
 |------|----------|-----------------|
 | **PR analysis** | Investigating a specific codeflow PR | `-PRNumber` (and optionally `-Repository`) |
-| **Flow health** (`-CheckMissing`) | Checking overall repo flow status | `-Repository` `-CheckMissing` (and optionally `-Branch`) |
+| **Flow health** (`-CheckMissing`) | Checking overall repo flow status | `-CheckMissing` (optional: `-Repository`, `-Branch`) |
 
-> ⚠️ **Common mistake**: Don't use `-PRNumber` and `-CheckMissing` together — they are separate modes. `-CheckMissing` scans all branches, not a specific PR.
+> ⚠️ **Common mistake**: Don't use `-PRNumber` and `-CheckMissing` together — they are separate modes. `-CheckMissing` by default scans all branches (unless `-Branch` is provided), not a specific PR.
 
 ## Quick Start
 
