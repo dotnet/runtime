@@ -104,6 +104,71 @@ function Write-Status {
     Write-Host $Value -ForegroundColor $Color
 }
 
+function Get-VMRBuildFreshness {
+    param([string]$VMRBranch)
+
+    # Map VMR branch to aka.ms channel
+    $channel = $null
+    $blobUrl = $null
+
+    Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue
+    $handler = [System.Net.Http.HttpClientHandler]::new()
+    $handler.AllowAutoRedirect = $false
+    $client = [System.Net.Http.HttpClient]::new($handler)
+    $client.Timeout = [TimeSpan]::FromSeconds(15)
+
+    try {
+        if ($VMRBranch -eq "main") {
+            $tryChannels = @("11.0.1xx", "12.0.1xx", "10.0.1xx")
+            foreach ($ch in $tryChannels) {
+                try {
+                    $resp = $client.GetAsync("https://aka.ms/dotnet/$ch/daily/dotnet-sdk-win-x64.zip").Result
+                    if ([int]$resp.StatusCode -eq 301 -and $resp.Headers.Location) {
+                        $channel = $ch
+                        $blobUrl = $resp.Headers.Location.ToString()
+                        break
+                    }
+                } catch { }
+            }
+        }
+        elseif ($VMRBranch -match 'release/(\d+\.\d+\.\d+xx-preview\.?\d+)') {
+            # aka.ms uses "preview1" not "preview.1"
+            $channel = $Matches[1] -replace 'preview\.', 'preview'
+        }
+        elseif ($VMRBranch -match 'release/(\d+\.\d+)\.(\d)xx') {
+            $channel = "$($Matches[1]).$($Matches[2])xx"
+        }
+
+        if (-not $channel) { return $null }
+
+        if (-not $blobUrl) {
+            $resp = $client.GetAsync("https://aka.ms/dotnet/$channel/daily/dotnet-sdk-win-x64.zip").Result
+            if ([int]$resp.StatusCode -ne 301 -or -not $resp.Headers.Location) {
+                return $null
+            }
+            $blobUrl = $resp.Headers.Location.ToString()
+        }
+
+        $version = if ($blobUrl -match '/Sdk/([^/]+)/') { $Matches[1] } else { $null }
+        $head = Invoke-WebRequest -Uri $blobUrl -Method Head -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
+        $lastModStr = $head.Headers['Last-Modified']
+        if (-not $lastModStr) { return $null }
+        $published = [DateTimeOffset]::Parse($lastModStr).UtcDateTime
+        return @{
+            Channel   = $channel
+            Version   = $version
+            Published = $published
+            Age       = [DateTime]::UtcNow - $published
+        }
+    }
+    catch {
+        return $null
+    }
+    finally {
+        if ($client) { $client.Dispose() }
+    }
+}
+
 # --- Parse repo owner/name ---
 if ($Repository -notmatch '^[^/]+/[^/]+$') {
     Write-Error "Repository must be in format 'owner/repo' (e.g., 'dotnet/sdk')"
@@ -122,8 +187,13 @@ if ($CheckMissing) {
     # Find open backflow PRs (to know which branches are already covered)
     $openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>$null
     $openPRs = @()
+    $ghSearchFailed = $false
     if ($LASTEXITCODE -eq 0 -and $openPRsJson) {
         try { $openPRs = ($openPRsJson -join "`n") | ConvertFrom-Json } catch { $openPRs = @() }
+    }
+    elseif ($LASTEXITCODE -ne 0) {
+        Write-Warning "gh search failed (exit code $LASTEXITCODE). Check authentication with 'gh auth status'."
+        $ghSearchFailed = $true
     }
     $openBranches = @{}
     foreach ($opr in $openPRs) {
@@ -146,13 +216,21 @@ if ($CheckMissing) {
     if ($LASTEXITCODE -eq 0 -and $mergedPRsJson) {
         try { $mergedPRs = ($mergedPRsJson -join "`n") | ConvertFrom-Json } catch { $mergedPRs = @() }
     }
+    elseif ($LASTEXITCODE -ne 0 -and -not $ghSearchFailed) {
+        Write-Warning "gh search for merged PRs failed (exit code $LASTEXITCODE). Results may be incomplete."
+    }
 
     if ($mergedPRs.Count -eq 0 -and $openPRs.Count -eq 0) {
-        Write-Host "  No backflow PRs found (open or recently merged). This repo may not have backflow subscriptions." -ForegroundColor Yellow
+        if ($ghSearchFailed) {
+            Write-Host "  ❌ Could not query GitHub. Check 'gh auth status' and rate limits." -ForegroundColor Red
+        }
+        else {
+            Write-Host "  No backflow PRs found (open or recently merged). This repo may not have backflow subscriptions." -ForegroundColor Yellow
+        }
         return
     }
 
-    # Group merged PRs by branch, keeping only the most recent per branch
+    # Group merged PRs by branch, keeping only the most recently merged per branch
     $branchLastMerged = @{}
     foreach ($mpr in $mergedPRs) {
         if ($mpr.title -match '^\[([^\]]+)\]') {
@@ -160,6 +238,13 @@ if ($CheckMissing) {
             if ($Branch -and $branchName -ne $Branch) { continue }
             if (-not $branchLastMerged.ContainsKey($branchName)) {
                 $branchLastMerged[$branchName] = $mpr
+            }
+            else {
+                # Keep the one with the later closedAt (actual merge time)
+                $existing = $branchLastMerged[$branchName]
+                if ($mpr.closedAt -and $existing.closedAt -and $mpr.closedAt -gt $existing.closedAt) {
+                    $branchLastMerged[$branchName] = $mpr
+                }
             }
         }
     }
@@ -173,6 +258,7 @@ if ($CheckMissing) {
     $missingCount = 0
     $coveredCount = 0
     $upToDateCount = 0
+    $vmrBranchesFound = @{}
 
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
         $lastPR = $branchLastMerged[$branchName]
@@ -212,6 +298,8 @@ if ($CheckMissing) {
             Write-Host "    ⚠️  Could not parse VMR metadata from last merged PR #$($lastPR.number)" -ForegroundColor Yellow
             continue
         }
+
+        $vmrBranchesFound[$branchName] = $vmrBranchFromPR
 
         Write-Host "    Last merged: PR #$($lastPR.number) on $($lastPR.closedAt)" -ForegroundColor DarkGray
         Write-Host "    VMR branch: $vmrBranchFromPR" -ForegroundColor DarkGray
@@ -335,6 +423,31 @@ if ($CheckMissing) {
 
             Write-Host "  PR #$($fpr.number) [$fprBranch]: $status" -ForegroundColor $color
             Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
+        }
+    }
+
+    # --- Official build freshness check (when missing backflow detected) ---
+    if ($missingCount -gt 0 -and $vmrBranchesFound.Count -gt 0) {
+        Write-Section "Official Build Freshness (via aka.ms)"
+        $checkedChannels = @{}
+        $anyVeryStale = $false
+        foreach ($entry in $vmrBranchesFound.GetEnumerator()) {
+            $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
+            if ($freshness -and -not $checkedChannels.ContainsKey($freshness.Channel)) {
+                $checkedChannels[$freshness.Channel] = $freshness
+                $ageDays = $freshness.Age.TotalDays
+                $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
+                $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
+                $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
+                Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
+                if ($ageDays -gt 3) { $anyVeryStale = $true }
+            }
+        }
+        if ($anyVeryStale) {
+            Write-Host ""
+            Write-Host "  ⚠️  Official builds appear stale — VMR may be failing to build" -ForegroundColor Yellow
+            Write-Host "    Check https://dev.azure.com/dnceng-public/public/_build?definitionId=278 for public CI failures" -ForegroundColor DarkGray
+            Write-Host "    See also: https://github.com/dotnet/dotnet/issues?q=is:issue+is:open+%22Operational+Issue%22" -ForegroundColor DarkGray
         }
     }
 
