@@ -162,7 +162,7 @@ Canceled jobs (typically from timeouts) often still have useful artifacts. The H
 
 1. **Download build artifacts**: Use the AzDO artifacts API to get `Logs_Build_*` pipeline artifacts for the canceled job. These contain binlogs even for canceled jobs.
 2. **Extract Helix job IDs**: Use the MSBuild MCP server to load the `SendToHelix.binlog` and search for `"Sent Helix Job"` messages. Each contains a Helix job ID.
-3. **Query Helix directly**: For each job ID, query `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17` to get actual pass/fail results.
+3. **Query Helix directly**: For each job ID, query `https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems` to get actual pass/fail results.
 
 **Example**: A `browser-wasm windows WasmBuildTests` job was canceled after 3 hours. The binlog (truncated) still contained 12 Helix job IDs. Querying them revealed all 226 work items passed — the "failure" was purely a timeout in the AzDO wrapper.
 
