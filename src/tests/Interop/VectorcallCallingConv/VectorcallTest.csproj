@@ -3,8 +3,8 @@
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Vectorcall is only meaningful on Windows x86/x64, but the test handles this gracefully -->
-    <!-- On non-Windows, vectorcall falls back to the default calling convention -->
+    <!-- Only meaningful on Windows x86/x64 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'windows'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="VectorcallPInvokes.cs" />

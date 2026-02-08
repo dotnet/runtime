@@ -676,7 +676,10 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
                     // HVA consumes one argument position
                     m_argPosition++;
 
-                    unsigned stackSize = roundUp(structLayout->GetSize(), (unsigned)TARGET_POINTER_SIZE);
+                    // HVAs consist of SIMD elements; align to 16 bytes,
+                    // consistent with other SIMD stack arguments.
+                    m_stackArgSize = roundUp(m_stackArgSize, 16u);
+                    unsigned stackSize = roundUp(structLayout->GetSize(), 16u);
                     ABIPassingSegment segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, structLayout->GetSize());
                     m_stackArgSize += stackSize;
 
