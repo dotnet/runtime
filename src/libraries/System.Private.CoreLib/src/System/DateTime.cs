@@ -1980,7 +1980,8 @@ namespace System
 
             // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
             // (same instant as next day's 00:00:00), but only when minute, second, and millisecond are all zero.
-            // We advance to the next day at 00:00.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
             if (hour == 24)
             {
                 if (minute != 0 || second != 0 || millisecond != 0)
@@ -1988,23 +1989,8 @@ namespace System
                     return false;
                 }
 
-                // Advance to next day's 00:00:00
-                ReadOnlySpan<uint> daysInMonth = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
-                if ((uint)day > daysInMonth[month] - daysInMonth[month - 1])
-                {
-                    return false;
-                }
-
-                // Calculate ticks for the current day and add one day to get to next day's 00:00:00
-                ulong nextDayTicks = (DaysToYear((uint)year) + daysInMonth[month - 1] + (uint)day - 1) * (ulong)TimeSpan.TicksPerDay + TimeSpan.TicksPerDay;
-
-                if (nextDayTicks > MaxTicks)
-                {
-                    return false;
-                }
-
-                result = new DateTime(nextDayTicks);
-                return true;
+                hour = 0;
+                isEndOfDay = true;
             }
 
             if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
@@ -2038,6 +2024,16 @@ namespace System
             else
             {
                 return false;
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                ticks += TimeSpan.TicksPerDay;
+                if (ticks > MaxTicks)
+                {
+                    return false;
+                }
             }
 
             Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
