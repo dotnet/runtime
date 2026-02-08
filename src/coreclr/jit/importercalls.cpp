@@ -8912,7 +8912,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
         if (needsInstParam)
         {
-            instArg = " [instantiating stub]";
+            instArg = needsCompileTimeLookup ? eeGetMethodFullName(instantiatingStub) : "runtime lookup";
         }
 
         if (verbose || doPrint)
@@ -8921,7 +8921,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {
-                printf("    devirt to %s::%s -- %s%s\n", derivedClassName, derivedMethodName, note, instArg);
+                printf("    devirt to %s::%s -- %s%s%s\n", derivedClassName, derivedMethodName, note,
+                       needsInstParam ? ", instantiating stub: " : "", instArg);
                 gtDispTree(call);
             }
         }
@@ -9022,8 +9023,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (doPrint)
     {
-        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
-               baseMethodName, derivedClassName, derivedMethodName, note);
+        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]%s%s\n", callKind, baseClassName,
+               baseMethodName, derivedClassName, derivedMethodName, note,
+               needsInstParam ? ", instantiating stub: " : "", instArg);
     }
 
     // If we successfully devirtualized based on an exact or final class,
