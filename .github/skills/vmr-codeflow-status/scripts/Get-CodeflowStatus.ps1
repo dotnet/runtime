@@ -104,17 +104,21 @@ function Write-Status {
     Write-Host $Value -ForegroundColor $Color
 }
 
-# Check an open codeflow PR for staleness/conflict warnings and CI status
+# Check an open codeflow PR for staleness/conflict warnings
 # Returns a hashtable with: Status, Color, HasConflict, HasStaleness, WasResolved
 function Get-CodeflowPRHealth {
     param([int]$PRNumber, [string]$Repo = "dotnet/dotnet")
 
-    $result = @{ Status = "✅ Healthy"; Color = "Green"; HasConflict = $false; HasStaleness = $false; WasResolved = $false; Details = @() }
+    $result = @{ Status = "⚠️  Unknown"; Color = "Yellow"; HasConflict = $false; HasStaleness = $false; WasResolved = $false; Details = @() }
 
     $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $prJson) { return $result }
 
     try { $prDetail = ($prJson -join "`n") | ConvertFrom-Json } catch { return $result }
+
+    # If we got here, we can determine health
+    $result.Status = "✅ Healthy"
+    $result.Color = "Green"
 
     $hasConflict = $false
     $hasStaleness = $false
@@ -138,7 +142,7 @@ function Get-CodeflowPRHealth {
         if ($LASTEXITCODE -eq 0 -and $checksJson) {
             try {
                 $checks = ($checksJson -join "`n") | ConvertFrom-Json
-                $codeflowCheck = $checks | Where-Object { $_.name -match 'Codeflow verification' }
+                $codeflowCheck = @($checks | Where-Object { $_.name -match 'Codeflow verification' }) | Select-Object -First 1
                 if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
                     # Codeflow verification passing means no merge conflict
                     $hasConflict = $false
@@ -178,7 +182,6 @@ function Get-CodeflowPRHealth {
         elseif ($wasStaleness) { $result.Status = "✅ Updated since staleness warning"; $result.WasResolved = $true }
     }
 
-    # Also check CI status
     return $result
 }
 
@@ -246,10 +249,10 @@ function Get-VMRBuildFreshness {
             $lastMod = $headResp.Content.Headers.LastModified
             if ($null -eq $lastMod) { $lastMod = $headResp.Headers.LastModified }
             if ($null -ne $lastMod) { $published = ([DateTimeOffset]$lastMod).UtcDateTime }
-            $headResp.Dispose()
-            $request.Dispose()
         }
         finally {
+            if ($headResp) { $headResp.Dispose() }
+            if ($request) { $request.Dispose() }
             $blobClient.Dispose()
             $blobHandler.Dispose()
         }
@@ -271,7 +274,7 @@ function Get-VMRBuildFreshness {
 }
 
 # --- Parse repo owner/name ---
-if ($Repository -notmatch '^[^/]+/[^/]+$') {
+if ($Repository -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') {
     Write-Error "Repository must be in format 'owner/repo' (e.g., 'dotnet/sdk')"
     return
 }
@@ -401,6 +404,7 @@ if ($CheckMissing) {
     $missingCount = 0
     $coveredCount = 0
     $upToDateCount = 0
+    $blockedCount = 0
     $vmrBranchesFound = @{}
 
     # First pass: collect VMR branch mappings from merged PRs (needed for build freshness)
@@ -452,7 +456,7 @@ if ($CheckMissing) {
         if ($openBranches.ContainsKey($branchName)) {
             $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
-            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $missingCount++ } else { $coveredCount++ }
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ } else { $coveredCount++ }
             continue
         }
 
@@ -541,7 +545,7 @@ if ($CheckMissing) {
             Write-Host "  Branch: $branchName" -ForegroundColor White
             $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
-            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $missingCount++ } else { $coveredCount++ }
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ } else { $coveredCount++ }
         }
     }
 
@@ -583,12 +587,13 @@ if ($CheckMissing) {
 
     Write-Section "Summary"
     Write-Host "  Backflow ($Repository ← dotnet/dotnet):" -ForegroundColor White
-    Write-Host "    Branches with open PRs: $coveredCount" -ForegroundColor Green
-    Write-Host "    Branches up to date: $upToDateCount" -ForegroundColor Green
+    if ($coveredCount -gt 0) { Write-Host "    Branches with healthy open PRs: $coveredCount" -ForegroundColor Green }
+    if ($upToDateCount -gt 0) { Write-Host "    Branches up to date: $upToDateCount" -ForegroundColor Green }
+    if ($blockedCount -gt 0) { Write-Host "    Branches with blocked open PRs: $blockedCount" -ForegroundColor Red }
     if ($missingCount -gt 0) {
         Write-Host "    Branches MISSING backflow PRs: $missingCount" -ForegroundColor Red
     }
-    else {
+    if ($missingCount -eq 0 -and $blockedCount -eq 0) {
         Write-Host "    No missing backflow PRs ✅" -ForegroundColor Green
     }
     Write-Host "  Forward flow ($Repository → dotnet/dotnet):" -ForegroundColor White
