@@ -154,10 +154,29 @@ function Get-VMRBuildFreshness {
         }
 
         $version = if ($blobUrl -match '/Sdk/([^/]+)/') { $Matches[1] } else { $null }
-        $head = Invoke-WebRequest -Uri $blobUrl -Method Head -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
-        $lastModStr = $head.Headers['Last-Modified']
-        if (-not $lastModStr) { return $null }
-        $published = [DateTimeOffset]::Parse($lastModStr).UtcDateTime
+
+        # Use HttpClient HEAD (consistent with above, avoids mixing Invoke-WebRequest)
+        # Need a separate client with auto-redirect enabled for the blob URL
+        $blobHandler = [System.Net.Http.HttpClientHandler]::new()
+        $blobClient = [System.Net.Http.HttpClient]::new($blobHandler)
+        $blobClient.Timeout = [TimeSpan]::FromSeconds(15)
+        $published = $null
+        try {
+            $request = [System.Net.Http.HttpRequestMessage]::new([System.Net.Http.HttpMethod]::Head, $blobUrl)
+            $headResp = $blobClient.SendAsync($request, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).Result
+            # PowerShell unwraps Nullable<DateTimeOffset> — use cast, not .Value
+            $lastMod = $headResp.Content.Headers.LastModified
+            if ($null -eq $lastMod) { $lastMod = $headResp.Headers.LastModified }
+            if ($null -ne $lastMod) { $published = ([DateTimeOffset]$lastMod).UtcDateTime }
+            $headResp.Dispose()
+            $request.Dispose()
+        }
+        finally {
+            $blobClient.Dispose()
+            $blobHandler.Dispose()
+        }
+
+        if (-not $published) { return $null }
         return @{
             Channel   = $channel
             Version   = $version
