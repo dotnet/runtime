@@ -566,7 +566,7 @@ namespace System.Text.Json
             if (isEndOfDay)
             {
                 ticks += TimeSpan.TicksPerDay;
-                if ((ulong)ticks > DateTime.MaxTicks)
+                if ((ulong)ticks > (ulong)DateTime.MaxValue.Ticks)
                 {
                     value = default;
                     return false;
