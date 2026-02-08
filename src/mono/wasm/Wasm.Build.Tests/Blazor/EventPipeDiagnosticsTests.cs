@@ -148,7 +148,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             "System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count",
             "System.Diagnostics.Metrics/instrumentName/dotnet.timer.count",
             "Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown",
-            "Microsoft-DotNETCore-EventPipe/CommandLine//managed BlazorBasicTestApp",
             "Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"
         };
 

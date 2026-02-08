@@ -65,16 +65,16 @@ class OptBoolsDsc
 public:
     OptBoolsDsc(BasicBlock* b1, BasicBlock* b2, Compiler* comp)
     {
-        m_b1   = b1;
-        m_b2   = b2;
-        m_comp = comp;
+        m_b1       = b1;
+        m_b2       = b2;
+        m_compiler = comp;
     }
 
 private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. BBJ_COND type
 
-    Compiler* m_comp; // The pointer to the Compiler instance
+    Compiler* m_compiler; // The pointer to the Compiler instance
 
     OptTestInfo m_testInfo1; // The first test info
     OptTestInfo m_testInfo2; // The second test info
@@ -347,11 +347,11 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     optOptimizeBoolsUpdateTrees();
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
                m_b1->bbNum, m_b2->bbNum);
-        m_comp->gtDispStmt(s1);
+        m_compiler->gtDispStmt(s1);
         printf("\n");
     }
 #endif
@@ -798,7 +798,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!m_b2->hasSingleStmt() || (m_b2->GetUniquePred(m_comp) != m_b1))
+    if (!m_b2->hasSingleStmt() || (m_b2->GetUniquePred(m_compiler) != m_b1))
     {
         // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
         // Also, make sure m_b2 has no other predecessors.
@@ -815,13 +815,13 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // cmp2 can be either reversed or not
     const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
 
-    if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
+    if (!FoldRangeTests(m_compiler, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {
         return false;
     }
 
     // Re-direct firstBlock to jump to inRangeBb
-    FlowEdge* const newEdge      = m_comp->fgAddRefPred(inRangeBb, m_b1);
+    FlowEdge* const newEdge      = m_compiler->fgAddRefPred(inRangeBb, m_b1);
     FlowEdge* const oldFalseEdge = m_b1->GetFalseEdge();
     FlowEdge* const oldTrueEdge  = m_b1->GetTrueEdge();
     newEdge->setHeuristicBased(oldTrueEdge->isHeuristicBased());
@@ -843,8 +843,8 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     }
 
     // Remove the 2nd condition block as we no longer need it
-    m_comp->fgRemoveRefPred(oldFalseEdge);
-    m_comp->fgRemoveBlock(m_b2, true);
+    m_compiler->fgRemoveRefPred(oldFalseEdge);
+    m_compiler->fgRemoveBlock(m_b2, true);
 
     // Update profile
     if (m_b1->hasProfileWeight())
@@ -858,15 +858,15 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         {
             JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
                     "'s successors. Data %s inconsistent.\n",
-                    m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
-            m_comp->fgPgoConsistent = false;
+                    m_b1->bbNum, m_compiler->fgPgoConsistent ? "is now" : "was already");
+            m_compiler->fgPgoConsistent = false;
         }
     }
 
     Statement* const stmt = m_b1->lastStmt();
-    m_comp->gtSetStmtInfo(stmt);
-    m_comp->fgSetStmtSeq(stmt);
-    m_comp->gtUpdateStmtSideEffects(stmt);
+    m_compiler->gtSetStmtInfo(stmt);
+    m_compiler->fgSetStmtSeq(stmt);
+    m_compiler->gtUpdateStmtSideEffects(stmt);
     return true;
 }
 
@@ -1005,7 +1005,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Combining conditions means that all conditions are always fully evaluated.
     // Put a limit on the max size that can be combined.
-    if (!m_comp->compStressCompile(Compiler::STRESS_OPT_BOOLS_COMPARE_CHAIN_COST, 25))
+    if (!m_compiler->compStressCompile(Compiler::STRESS_OPT_BOOLS_COMPARE_CHAIN_COST, 25))
     {
         int op1Cost = cond1->GetCostEx();
         int op2Cost = cond2->GetCostEx();
@@ -1024,56 +1024,56 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Remove the first JTRUE statement.
     constexpr bool isUnlink = true;
-    m_comp->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
+    m_compiler->fgRemoveStmt(m_b1, s1 DEBUGARG(isUnlink));
 
     // Invert the condition.
     if (foundEndOfOrConditions)
     {
-        GenTree* revCond = m_comp->gtReverseCond(cond1);
+        GenTree* revCond = m_compiler->gtReverseCond(cond1);
         assert(cond1 == revCond); // Ensure `gtReverseCond` did not create a new node.
     }
 
     // Join the two conditions together
     genTreeOps chainedOper       = foundEndOfOrConditions ? GT_AND : GT_OR;
-    GenTree*   chainedConditions = m_comp->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
+    GenTree*   chainedConditions = m_compiler->gtNewOperNode(chainedOper, TYP_INT, cond1, cond2);
     cond1->gtFlags &= ~GTF_RELOP_JMP_USED;
     cond2->gtFlags &= ~GTF_RELOP_JMP_USED;
     chainedConditions->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
     // Add a test condition onto the front of the chain
     GenTree* testcondition =
-        m_comp->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_comp->gtNewZeroConNode(TYP_INT));
+        m_compiler->gtNewOperNode(GT_NE, TYP_INT, chainedConditions, m_compiler->gtNewZeroConNode(TYP_INT));
 
     // Wire the chain into the second block
     m_testInfo2.SetTestOp(testcondition);
     m_testInfo2.testTree->AsOp()->gtFlags |= (testcondition->gtFlags & GTF_ALL_EFFECT);
-    m_comp->gtSetEvalOrder(m_testInfo2.testTree);
-    m_comp->fgSetStmtSeq(s2);
+    m_compiler->gtSetEvalOrder(m_testInfo2.testTree);
+    m_compiler->fgSetStmtSeq(s2);
 
     // Update the flow.
     FlowEdge* const removedEdge  = m_b1->GetTrueEdge();
     FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
-    m_comp->fgRemoveRefPred(removedEdge);
+    m_compiler->fgRemoveRefPred(removedEdge);
     m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
 
     // Repair profile.
-    m_comp->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
+    m_compiler->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_comp->fgCanCompactBlock(m_b1))
+    if (m_compiler->fgCanCompactBlock(m_b1))
     {
-        m_comp->fgCompactBlock(m_b1);
+        m_compiler->fgCompactBlock(m_b1);
     }
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         JITDUMP("\nCombined conditions " FMT_BB " and " FMT_BB " into %s chain :\n", m_b1->bbNum, m_b2->bbNum,
                 GenTree::OpName(chainedOper));
-        m_comp->fgDumpBlock(m_b1);
+        m_compiler->fgDumpBlock(m_b1);
         JITDUMP("\n");
     }
 #endif
@@ -1196,7 +1196,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     assert(m_b1 != nullptr && m_b2 != nullptr);
     assert(m_cmpOp != GT_NONE && m_c1 != nullptr && m_c2 != nullptr);
 
-    GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
+    GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_compiler->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
 
     GenTree* t1Comp = m_testInfo1.compTree;
     t1Comp->SetOper(m_cmpOp);
@@ -1205,10 +1205,10 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgNodeThreading != NodeThreading::None)
+    if (m_compiler->fgNodeThreading != NodeThreading::None)
     {
-        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
-        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
+        m_compiler->gtSetStmtInfo(m_testInfo1.testStmt);
+        m_compiler->fgSetStmtSeq(m_testInfo1.testStmt);
     }
 
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
@@ -1239,7 +1239,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             // We will now reach via B1 true.
             // Modify flow for true side of B1
             //
-            m_comp->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
+            m_compiler->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
             origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
             newB1TrueLikelihood =
@@ -1257,8 +1257,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
         // We now reach B2's false target via B1 false.
         //
-        m_comp->fgReplacePred(origB2FalseEdge, m_b1);
-        m_comp->fgRemoveRefPred(origB2TrueEdge);
+        m_compiler->fgReplacePred(origB2FalseEdge, m_b1);
+        m_compiler->fgRemoveRefPred(origB2TrueEdge);
         FlowEdge* const newB1FalseEdge = origB2FalseEdge;
         m_b1->SetFalseEdge(newB1FalseEdge);
 
@@ -1279,18 +1279,18 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             {
                 JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
                         "'s successors. Data %s inconsistent.\n",
-                        m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
-                m_comp->fgPgoConsistent = false;
+                        m_b1->bbNum, m_compiler->fgPgoConsistent ? "is now" : "was already");
+                m_compiler->fgPgoConsistent = false;
             }
         }
     }
 
     // Get rid of the second block
 
-    m_comp->fgUnlinkBlockForRemoval(m_b2);
+    m_compiler->fgUnlinkBlockForRemoval(m_b2);
     m_b2->SetFlags(BBF_REMOVED);
     // If m_b2 was the last block of a try or handler, update the EH table.
-    m_comp->ehUpdateForDeletedBlock(m_b2);
+    m_compiler->ehUpdateForDeletedBlock(m_b2);
 
     // Update IL range of first block
     m_b1->bbCodeOffsEnd = m_b2->bbCodeOffsEnd;
@@ -1304,7 +1304,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
 void OptBoolsDsc::optOptimizeBoolsGcStress()
 {
-    if (!m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 20))
+    if (!m_compiler->compStressCompile(m_compiler->STRESS_OPT_BOOLS_GC, 20))
     {
         return;
     }
@@ -1333,11 +1333,11 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
         return;
     }
 
-    GenTree* comparandClone = m_comp->gtCloneExpr(comparand);
+    GenTree* comparandClone = m_compiler->gtCloneExpr(comparand);
 
     noway_assert(relop->AsOp()->gtOp1 == comparand);
-    genTreeOps oper      = m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
-    relop->AsOp()->gtOp1 = m_comp->gtNewOperNode(oper, TYP_I_IMPL, comparand, comparandClone);
+    genTreeOps oper      = m_compiler->compStressCompile(m_compiler->STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
+    relop->AsOp()->gtOp1 = m_compiler->gtNewOperNode(oper, TYP_I_IMPL, comparand, comparandClone);
 
     // Comparand type is already checked, and we have const int, there is no harm
     // morphing it into a TYP_I_IMPL.
@@ -1346,10 +1346,10 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 
     // Recost/rethread the tree if necessary
     //
-    if (m_comp->fgNodeThreading != NodeThreading::None)
+    if (m_compiler->fgNodeThreading != NodeThreading::None)
     {
-        m_comp->gtSetStmtInfo(test.testStmt);
-        m_comp->fgSetStmtSeq(test.testStmt);
+        m_compiler->gtSetStmtInfo(test.testStmt);
+        m_compiler->fgSetStmtSeq(test.testStmt);
     }
 }
 
@@ -1425,7 +1425,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         // and change the true to false.
         if (pOptTest->isBool)
         {
-            m_comp->gtReverseCond(cond);
+            m_compiler->gtReverseCond(cond);
             opr2->AsIntCon()->gtIconVal = 0;
         }
         else
