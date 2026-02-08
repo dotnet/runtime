@@ -91,7 +91,6 @@ namespace System.Buffers.Text.Tests
                 yield return new ParserTestData<DateTimeOffset>("2007-04-05T24:00:00.0000001Z", default, 'O', expectedSuccess: false);
                 yield return new ParserTestData<DateTimeOffset>("9999-12-31T24:00:00.0000000Z", default, 'O', expectedSuccess: false); // Would overflow
 
-
                 foreach (ParserTestData<DateTimeOffset> testData in DateTimeOffsetFormatterTestData.ToParserTheoryDataCollection())
                 {
                     bool roundTrippable = testData.FormatSymbol == 'O';
