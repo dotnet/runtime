@@ -254,6 +254,17 @@ if [[ "$regenerate" == "1" ]]; then
     # Generate new cache file from CMakeCache.txt
     new_cache="$tmpdir/new-cache.cmake"
 
+    # Detect compiler version for macOS platforms
+    compiler_version_line=""
+    if [[ "$platform" == osx-* ]]; then
+        clang_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
+        if [[ -n "$clang_version" ]]; then
+            compiler_version_line="# AppleClang major version this cache was generated with
+set(CLR_CMAKE_PLATFORM_CACHE_COMPILER_VERSION \"$clang_version\" CACHE STRING \"AppleClang version for this cache\")
+"
+        fi
+    fi
+
     # Write header
     cat > "$new_cache" << HEADER
 # CMake pre-configured cache for $platform builds
@@ -269,7 +280,7 @@ if [[ "$regenerate" == "1" ]]; then
 #     export CLR_CMAKE_SKIP_PLATFORM_CACHE=1
 #
 
-# Helper macro for TRY_RUN results
+${compiler_version_line}# Helper macro for TRY_RUN results
 macro(set_cache_value)
   set(\${ARGV0} \${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
   set(\${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)

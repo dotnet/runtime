@@ -3,19 +3,20 @@
 # This file caches the results of CMake feature detection checks to significantly
 # speed up the CMake configure phase for macOS ARM64 builds.
 #
-# Valid for:
-#   - macOS 14.0+ (Sonoma and later)
-#   - Xcode 15.0+ / AppleClang 15.0+
-#   - Architecture: arm64 (Apple Silicon)
+# IMPORTANT: This cache is tied to a specific AppleClang major version.
+# The loading script will skip this cache if the version doesn't match.
 #
 # PERFORMANCE IMPACT:
 #   - Reduces CMake configure time significantly
 #   - Eliminates redundant feature detection across coreclr, libs, and host
 #
 # HOW TO DISABLE:
-#   If you encounter issues (e.g., after Xcode upgrade), disable with:
+#   If you encounter issues, disable with:
 #     export CLR_CMAKE_SKIP_PLATFORM_CACHE=1
 #
+
+# AppleClang major version this cache was generated with
+set(CLR_CMAKE_PLATFORM_CACHE_COMPILER_VERSION "17" CACHE STRING "AppleClang version for this cache")
 
 # Helper macro for TRY_RUN results
 macro(set_cache_value)
