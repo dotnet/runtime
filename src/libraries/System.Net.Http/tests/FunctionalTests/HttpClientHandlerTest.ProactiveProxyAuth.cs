@@ -278,23 +278,124 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
                 });
 
-                await RemoteExecutor.Invoke(async (proxyUriString, username, password, useVersionString) =>
+                // Encode proxy URI with embedded credentials so we stay within RemoteExecutor's 3-arg limit
+                string proxyUriWithCreds = $"http://{ExpectedUsername}:{ExpectedPassword}@{proxyUri.Host}:{proxyUri.Port}";
+
+                await RemoteExecutor.Invoke(async (proxyUriString, useVersionString) =>
                 {
+                    var proxyUriParsed = new Uri(proxyUriString);
                     using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
-                    handler.Proxy = new WebProxy(new Uri(proxyUriString))
+                    handler.Proxy = new WebProxy(new Uri($"http://{proxyUriParsed.Host}:{proxyUriParsed.Port}"))
                     {
-                        Credentials = new NetworkCredential(username, password)
+                        Credentials = new NetworkCredential(
+                            proxyUriParsed.UserInfo.Split(':')[0],
+                            proxyUriParsed.UserInfo.Split(':')[1])
                     };
 
                     using HttpClient client = CreateHttpClient(handler, useVersionString);
                     using HttpResponseMessage response = await client.GetAsync("http://destination.test/");
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }, proxyUri.ToString(), ExpectedUsername, ExpectedPassword, UseVersion.ToString(),
+                }, proxyUriWithCreds, UseVersion.ToString(),
                    new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
                 await serverTask;
             });
+        }
+
+        /// <summary>
+        /// Tests proactive proxy auth across 4 proxy/request protocol combinations:
+        /// HTTP proxy + HTTP request, HTTP proxy + HTTPS request (CONNECT tunnel),
+        /// HTTPS proxy + HTTP request, HTTPS proxy + HTTPS request (CONNECT tunnel).
+        /// Verifies that the Proxy-Authorization header is present on the first request to the proxy.
+        /// </summary>
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false, false)] // HTTP proxy + HTTP request
+        [InlineData(false, true)]  // HTTP proxy + HTTPS request (CONNECT tunnel)
+        [InlineData(true, false)]  // HTTPS proxy + HTTP request
+        [InlineData(true, true)]   // HTTPS proxy + HTTPS request (CONNECT tunnel)
+        public async Task ProxyAuth_ProxyAndRequestProtocolCombinations_SentProactively(bool proxyUseSsl, bool requestUseSsl)
+        {
+            const string ExpectedUsername = "matrixuser";
+            const string ExpectedPassword = "matrixpass";
+            string expectedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ExpectedUsername}:{ExpectedPassword}"));
+
+            var proxyOptions = new LoopbackServer.Options { UseSsl = proxyUseSsl };
+
+            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add(ProxyPreAuthEnvVar, "1");
+
+                Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
+                {
+                    // Read the first request sent to the proxy
+                    List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+
+                    // Verify the Proxy-Authorization header is present on the first request
+                    string? authHeader = null;
+                    foreach (string line in lines)
+                    {
+                        if (line.StartsWith("Proxy-Authorization:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            authHeader = line;
+                            break;
+                        }
+                    }
+
+                    Assert.NotNull(authHeader);
+                    Assert.Contains("Basic", authHeader);
+                    Assert.Contains(expectedToken, authHeader);
+
+                    if (requestUseSsl)
+                    {
+                        // For HTTPS request, the proxy received a CONNECT request.
+                        // Verify it's a CONNECT method.
+                        Assert.StartsWith("CONNECT", lines[0]);
+
+                        // Send 200 to establish the tunnel
+                        await connection.SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+
+                        // Now the client will negotiate TLS through the tunnel.
+                        // Wrap the connection's stream in SSL to act as the destination server.
+                        var sslConnection = await LoopbackServer.Connection.CreateAsync(
+                            null, connection.Stream, new LoopbackServer.Options { UseSsl = true });
+                        await sslConnection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // For HTTP request, the proxy received a plain GET request.
+                        Assert.StartsWith("GET", lines[0]);
+                        await connection.SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+                    }
+                });
+
+                string requestScheme = requestUseSsl ? "https" : "http";
+
+                // Encode proxy URI with embedded credentials so we stay within RemoteExecutor's 3-arg limit
+                string proxyScheme = proxyUseSsl ? "https" : "http";
+                string proxyUriWithCreds = $"{proxyScheme}://{ExpectedUsername}:{ExpectedPassword}@{proxyUri.Host}:{proxyUri.Port}";
+
+                await RemoteExecutor.Invoke(async (proxyUriString, reqScheme, useVersionString) =>
+                {
+                    var proxyUriParsed = new Uri(proxyUriString);
+                    using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                    handler.Proxy = new WebProxy(new Uri($"{proxyUriParsed.Scheme}://{proxyUriParsed.Host}:{proxyUriParsed.Port}"))
+                    {
+                        Credentials = new NetworkCredential(
+                            proxyUriParsed.UserInfo.Split(':')[0],
+                            proxyUriParsed.UserInfo.Split(':')[1])
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler, useVersionString);
+                    using HttpResponseMessage response = await client.GetAsync($"{reqScheme}://destination.test/");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }, proxyUriWithCreds, requestScheme, UseVersion.ToString(),
+                   new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+
+                await serverTask;
+            }, proxyOptions);
         }
     }
 
