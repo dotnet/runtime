@@ -4762,6 +4762,22 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     return false;
                 }
             }
+
+            // ISO 8601 allows hour=24 to represent end of day (midnight), but only when minute, second, and fraction are all zero.
+            // In this case, we treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (result.Hour == 24)
+            {
+                if (result.Minute != 0 || result.Second != 0 || result.fraction != 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                result.Hour = 0;
+                isEndOfDay = true;
+            }
+
             if (!parseInfo.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out result.parsedDate))
             {
@@ -4771,6 +4787,16 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             if (result.fraction > 0)
             {
                 if (!result.parsedDate.TryAddTicks((long)Math.Round(result.fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+            }
+
+            // If hour was originally 24 (end of day), add one day to advance to the next day at midnight
+            if (isEndOfDay)
+            {
+                if (!result.parsedDate.TryAddTicks(TimeSpan.TicksPerDay, out result.parsedDate))
                 {
                     result.SetBadDateTimeFailure();
                     return false;
