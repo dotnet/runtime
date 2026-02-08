@@ -5,7 +5,9 @@ description: Analyze VMR codeflow PR status for dotnet repositories. Use when in
 
 # VMR Codeflow Status
 
-Analyze the health of VMR codeflow PRs (backflow from `dotnet/dotnet` to product repositories like `dotnet/sdk`).
+Analyze the health of VMR codeflow PRs in both directions:
+- **Backflow**: `dotnet/dotnet` → product repos (e.g., `dotnet/sdk`)
+- **Forward flow**: product repos → `dotnet/dotnet`
 
 ## When to Use This Skill
 
@@ -14,8 +16,8 @@ Use this skill when:
 - You need to check if a specific fix has flowed through the VMR pipeline to a codeflow PR
 - A PR has a Maestro staleness warning ("codeflow cannot continue") or conflict
 - You need to understand what manual commits would be lost if a codeflow PR is closed
-- You want to know if expected backflow PRs are missing for a repo/branch
-- Asked questions like "is this codeflow PR up to date", "has the runtime revert reached this PR", "why is the codeflow blocked"
+- You want to check the overall state of flow for a repo (backflow and forward flow health)
+- Asked questions like "is this codeflow PR up to date", "has the runtime revert reached this PR", "why is the codeflow blocked", "what is the state of flow for the sdk"
 
 ## Quick Start
 
@@ -29,7 +31,7 @@ Use this skill when:
 # Show individual VMR commits that are missing
 ./scripts/Get-CodeflowStatus.ps1 -PRNumber 52727 -Repository "dotnet/sdk" -ShowCommits
 
-# Check if any backflow PRs are missing for a repo
+# Check overall flow health for a repo (backflow + forward flow)
 ./scripts/Get-CodeflowStatus.ps1 -Repository "dotnet/roslyn" -CheckMissing
 
 # Check a specific branch only
@@ -44,7 +46,7 @@ Use this skill when:
 | `-Repository` | Target repo in `owner/repo` format (default: `dotnet/sdk`) |
 | `-TraceFix` | Trace a repo PR through the pipeline (e.g., `dotnet/runtime#123974`) |
 | `-ShowCommits` | Show individual VMR commits between PR snapshot and branch HEAD |
-| `-CheckMissing` | Check if backflow PRs are expected but missing for a repository |
+| `-CheckMissing` | Check overall flow health: missing backflow PRs and forward flow PR status |
 | `-Branch` | With `-CheckMissing`, only check a specific branch |
 
 ## What the Script Does
@@ -58,6 +60,7 @@ Use this skill when:
 7. **Traces fixes** (optional) — Checks if a specific fix has flowed through VMR → codeflow PR
 8. **Recommends actions** — Suggests force trigger, close/reopen, merge as-is, resolve conflicts, or wait
 9. **Checks for missing backflow** (optional) — Finds branches where a backflow PR should exist but doesn't
+10. **Scans forward flow** (optional) — Checks open forward flow PRs into `dotnet/dotnet` for staleness and conflicts
 
 ## Interpreting Results
 
