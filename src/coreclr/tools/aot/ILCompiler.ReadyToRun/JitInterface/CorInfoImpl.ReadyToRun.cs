@@ -993,6 +993,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT:
+                    id = ReadyToRunHelper.ThrowExact;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW:
                     id = ReadyToRunHelper.Overflow;
                     break;
@@ -1274,6 +1277,18 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
                     id = ReadyToRunHelper.ReversePInvokeExit;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                    id = ReadyToRunHelper.AllocContinuation;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                    id = ReadyToRunHelper.AllocContinuationMethod;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+                    id = ReadyToRunHelper.AllocContinuationClass;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
@@ -2771,6 +2786,17 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
         {
             TypeDesc type = HandleToObject(handle);
+            // Continuations require special handling to encode the layout of the type.
+            // The TypeSignature format used in TypeHandles is not sufficient for encoding specific continuation layouts
+            // PrecodeHelper(
+            //   TypeHandle(ReadyToRunFixupKind.ContinuationLayout)
+            // )
+            if (type is AsyncContinuationType act)
+            {
+                Import import = (Import)_compilation.SymbolNodeFactory.ContinuationTypeSymbol(act);
+                ppIndirection = (void*)ObjectToHandle(import);
+                return null;
+            }
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
                 throw new RequiresRuntimeJitException(type.ToString());
 
@@ -3239,7 +3265,7 @@ namespace Internal.JitInterface
                     // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
                     // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
                     // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear
-                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows 
+                    // to be handled here. This check is here in the place where I believe we actually would behave incorrectly, but we also have a check in CrossModuleInlineable which disallows
                     // the cross module inline of async methods currently.
                     throw new Exception("Inlining async methods is not supported in ReadyToRun compilation.");
                 }
@@ -3273,7 +3299,7 @@ namespace Internal.JitInterface
                     // 2. If at any time, the set of methods that are inlined includes a method which has an IL body without
                     //    tokens that are useable in compilation, record that information, and once the multi-threaded portion
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
-                    
+
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation) && methodIL is EcmaMethodIL)
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic
