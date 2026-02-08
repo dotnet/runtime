@@ -585,7 +585,7 @@ arguments+=("-clp:ForceNoAlign")
 initDistroRid "$os" "$arch" "$crossBuild"
 
 # Enable sccache for linux-x64 builds if the binary is present in the repo root.
-if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
+if [[ "${USE_SCCACHE:-}" != "true" && "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
     export PATH="$scriptroot/..:$PATH"
     export USE_SCCACHE=true
     export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
