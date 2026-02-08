@@ -126,7 +126,8 @@ namespace System.Buffers.Text
             }
 
             // ISO 8601 allows hour=24 to represent end of day (midnight), but only when minute, second, and fraction are all zero.
-            // In this case, we advance to the next day at 00:00.
+            // In this case, we treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
             if (hour == 24)
             {
                 if (minute != 0 || second != 0 || fraction != 0)
@@ -135,20 +136,8 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                ReadOnlySpan<int> daysInMonth = DateTime.IsLeapYear(year) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
-                int yearMinus1 = year - 1;
-                int daysCount = (yearMinus1 * 365) + (yearMinus1 / 4) - (yearMinus1 / 100) + (yearMinus1 / 400) + daysInMonth[month - 1] + day - 1;
-                // Calculate ticks for current day and add one day to get to midnight of the next day
-                long nextDayTicks = daysCount * TimeSpan.TicksPerDay + TimeSpan.TicksPerDay;
-
-                if ((ulong)nextDayTicks > DateTime.MaxTicks)
-                {
-                    value = default;
-                    return false;
-                }
-
-                value = new DateTime(ticks: nextDayTicks, kind: kind);
-                return true;
+                hour = 0;
+                isEndOfDay = true;
             }
 
             if (((uint)hour) > 23)
@@ -178,6 +167,18 @@ namespace System.Buffers.Text
             int totalSeconds = (hour * 3600) + (minute * 60) + second;
             ticks += totalSeconds * TimeSpan.TicksPerSecond;
             ticks += fraction;
+
+            // If hour was originally 24 (end of day), add one day to advance to the next day at midnight
+            if (isEndOfDay)
+            {
+                ticks += TimeSpan.TicksPerDay;
+                if ((ulong)ticks > DateTime.MaxTicks)
+                {
+                    value = default;
+                    return false;
+                }
+            }
+
             value = new DateTime(ticks: ticks, kind: kind);
             return true;
         }
