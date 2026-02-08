@@ -63,7 +63,7 @@ The script operates in three distinct modes depending on what information you ha
 |-------------|-----|-------------|
 | A GitHub PR number | `-PRNumber 12345` | Full analysis: all builds, failures, known issues, retry recommendation |
 | An AzDO build ID | `-BuildId 1276327` | Single build analysis: timeline, failures, Helix results |
-| A Helix job + work item | `-HelixJob "..." -WorkItem "..."` | Deep dive: console logs, artifacts, individual test results |
+| A Helix job ID (optionally a specific work item) | `-HelixJob "..." [-WorkItem "..."]` | Deep dive: list work items for the job, or with `-WorkItem`, focus on a single work item's console logs, artifacts, and test results |
 
 > ❌ **Don't guess the mode.** If the user gives a PR URL, use `-PRNumber`. If they paste an AzDO build link, extract the build ID. If they reference a specific Helix job, use `-HelixJob`.
 
@@ -73,7 +73,7 @@ The script operates in three distinct modes depending on what information you ha
 1. Discovers all AzDO builds associated with the PR
 2. Fetches Build Analysis for known issues
 3. Gets failed jobs from Azure DevOps timeline
-4. **Separates canceled jobs from failed jobs** (canceled = dependency failures)
+4. **Separates canceled jobs from failed jobs** (canceled may be dependency-canceled or timeout-canceled)
 5. Extracts Helix work item failures from each failed job
 6. Fetches console logs (with `-ShowLogs`)
 7. Searches for known issues with "Known Build Error" label
@@ -82,12 +82,12 @@ The script operates in three distinct modes depending on what information you ha
 
 ### Build ID Mode (`-BuildId`)
 1. Fetches the build timeline directly (skips PR discovery)
-2. Steps 2-9 same as PR Analysis Mode
+2. Performs steps 3–7 and 9 from PR Analysis Mode, but does **not** fetch Build Analysis known issues or correlate failures with PR file changes (those require a PR number)
 
-### Helix Work Item Mode (`-HelixJob` + `-WorkItem`)
-1. Queries the specific Helix work item for status and artifacts
-2. Fetches console log and file listing
-3. Displays detailed failure information for that work item
+### Helix Job Mode (`-HelixJob` [and optional `-WorkItem`])
+1. With `-HelixJob` alone: enumerates work items for the job and summarizes their status
+2. With `-HelixJob` and `-WorkItem`: queries the specific work item for status and artifacts
+3. Fetches console logs and file listings, displays detailed failure information
 
 > ⚠️ **Canceled ≠ Failed.** Canceled jobs often have completed Helix work items — the AzDO wrapper timed out but tests may have passed. See "Recovering Results from Canceled Jobs" below.
 
