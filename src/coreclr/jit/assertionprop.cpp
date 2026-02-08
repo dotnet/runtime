@@ -1380,7 +1380,7 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     {
         bool mayHaveDuplicates =
             optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
-        // We need to register op2.vn too, even if know for sure there are no duplicates
+        // We need to register op2.vn too, even if we know for sure there are no duplicates
         if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
         {
             mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
