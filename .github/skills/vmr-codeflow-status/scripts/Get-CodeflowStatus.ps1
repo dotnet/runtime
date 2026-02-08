@@ -104,6 +104,66 @@ function Write-Status {
     Write-Host $Value -ForegroundColor $Color
 }
 
+# Check an open codeflow PR for staleness/conflict warnings and CI status
+# Returns a hashtable with: Status, Color, HasConflict, HasStaleness, WasResolved
+function Get-CodeflowPRHealth {
+    param([int]$PRNumber, [string]$Repo = "dotnet/dotnet")
+
+    $result = @{ Status = "✅ Healthy"; Color = "Green"; HasConflict = $false; HasStaleness = $false; WasResolved = $false; Details = @() }
+
+    $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $prJson) { return $result }
+
+    try { $prDetail = ($prJson -join "`n") | ConvertFrom-Json } catch { return $result }
+
+    $hasConflict = $false
+    $hasStaleness = $false
+    if ($prDetail.comments) {
+        foreach ($comment in $prDetail.comments) {
+            if ($comment.author.login -match '^dotnet-maestro') {
+                if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') { $hasStaleness = $true }
+                if ($comment.body -match 'Conflict detected') { $hasConflict = $true }
+            }
+        }
+    }
+
+    $wasConflict = $hasConflict
+    $wasStaleness = $hasStaleness
+
+    # If issues detected, check if they were resolved via Codeflow verification
+    if ($hasConflict -or $hasStaleness) {
+        $checksJson = gh pr checks $PRNumber -R $Repo --json name,state 2>$null
+        if ($LASTEXITCODE -eq 0 -and $checksJson) {
+            try {
+                $checks = ($checksJson -join "`n") | ConvertFrom-Json
+                $codeflowCheck = $checks | Where-Object { $_.name -match 'Codeflow verification' }
+                if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
+                    $hasConflict = $false
+                    $hasStaleness = $false
+                }
+            } catch { }
+        }
+    }
+
+    if ($hasConflict) {
+        $result.Status = "🔴 Conflict"
+        $result.Color = "Red"
+        $result.HasConflict = $true
+    }
+    elseif ($hasStaleness) {
+        $result.Status = "⚠️  Stale"
+        $result.Color = "Yellow"
+        $result.HasStaleness = $true
+    }
+    else {
+        if ($wasConflict) { $result.Status = "✅ Conflict resolved"; $result.WasResolved = $true }
+        elseif ($wasStaleness) { $result.Status = "✅ Updated since staleness warning"; $result.WasResolved = $true }
+    }
+
+    # Also check CI status
+    return $result
+}
+
 function Get-VMRBuildFreshness {
     param([string]$VMRBranch)
 
@@ -289,8 +349,9 @@ if ($CheckMissing) {
         Write-Host "  Branch: $branchName" -ForegroundColor White
 
         if ($openBranches.ContainsKey($branchName)) {
-            Write-Host "    ✅ Open backflow PR #$($openBranches[$branchName]) exists" -ForegroundColor Green
-            $coveredCount++
+            $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
+            Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $missingCount++ } else { $coveredCount++ }
             continue
         }
 
@@ -372,8 +433,9 @@ if ($CheckMissing) {
             if ($Branch -and $branchName -ne $Branch) { continue }
             Write-Host ""
             Write-Host "  Branch: $branchName" -ForegroundColor White
-            Write-Host "    ✅ Open backflow PR #$($openBranches[$branchName]) exists" -ForegroundColor Green
-            $coveredCount++
+            $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
+            Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
+            if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $missingCount++ } else { $coveredCount++ }
         }
     }
 
@@ -402,81 +464,13 @@ if ($CheckMissing) {
             $fprBranch = if ($fpr.title -match '^\[([^\]]+)\]') { $Matches[1] } else { "unknown" }
             if ($Branch -and $fprBranch -ne $Branch) { continue }
 
-            # Get PR details for staleness/conflict check
-            $fprDetailJson = gh pr view $fpr.number -R dotnet/dotnet --json body,comments,updatedAt 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not fetch details" -ForegroundColor Yellow
-                continue
-            }
-            try {
-                $fprDetail = ($fprDetailJson -join "`n") | ConvertFrom-Json
-            }
-            catch {
-                Write-Host "  PR #$($fpr.number) [$fprBranch]: ⚠️  Could not parse details" -ForegroundColor Yellow
-                continue
-            }
+            $fwdHealth = Get-CodeflowPRHealth -PRNumber $fpr.number -Repo "dotnet/dotnet"
 
-            # Check for staleness warnings and conflicts in comments
-            $hasStaleness = $false
-            $hasConflict = $false
-            $lastConflictTime = $null
-            $lastStalenessTime = $null
-            if ($fprDetail.comments) {
-                foreach ($comment in $fprDetail.comments) {
-                    if ($comment.author.login -match '^dotnet-maestro') {
-                        if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') {
-                            $hasStaleness = $true
-                            $lastStalenessTime = $comment.createdAt
-                        }
-                        if ($comment.body -match 'Conflict detected') {
-                            $hasConflict = $true
-                            $lastConflictTime = $comment.createdAt
-                        }
-                    }
-                }
-            }
+            if ($fwdHealth.HasConflict) { $fwdConflict++ }
+            elseif ($fwdHealth.HasStaleness) { $fwdStale++ }
+            else { $fwdHealthy++ }
 
-            # If conflict/staleness was detected, check if it was resolved
-            # by looking at commits pushed after the warning and check status
-            $wasConflict = $hasConflict
-            $wasStaleness = $hasStaleness
-            if ($hasConflict -or $hasStaleness) {
-                $warningTime = if ($hasConflict) { $lastConflictTime } else { $lastStalenessTime }
-                # Check if there are commits after the warning (indicating resolution)
-                $checksJson = gh pr checks $fpr.number -R dotnet/dotnet --json name,state 2>$null
-                if ($LASTEXITCODE -eq 0 -and $checksJson) {
-                    try {
-                        $checks = ($checksJson -join "`n") | ConvertFrom-Json
-                        $codeflowCheck = $checks | Where-Object { $_.name -match 'Codeflow verification' }
-                        if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
-                            # Codeflow verification passed — conflict/staleness was resolved
-                            $hasConflict = $false
-                            $hasStaleness = $false
-                        }
-                    } catch { }
-                }
-            }
-
-
-            $status = "✅ Healthy"
-            $color = "Green"
-            if ($hasConflict) {
-                $status = "🔴 Conflict"
-                $color = "Red"
-                $fwdConflict++
-            }
-            elseif ($hasStaleness) {
-                $status = "⚠️  Stale"
-                $color = "Yellow"
-                $fwdStale++
-            }
-            else {
-                if ($wasConflict) { $status = "✅ Conflict resolved" }
-                elseif ($wasStaleness) { $status = "✅ Updated since staleness warning" }
-                $fwdHealthy++
-            }
-
-            Write-Host "  PR #$($fpr.number) [$fprBranch]: $status" -ForegroundColor $color
+            Write-Host "  PR #$($fpr.number) [$fprBranch]: $($fwdHealth.Status)" -ForegroundColor $fwdHealth.Color
             Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
         }
     }
