@@ -3163,8 +3163,6 @@ namespace System.Tests
         [InlineData("2007-04-05T24:00:01.0000000")]  // Non-zero seconds
         [InlineData("2007-04-05T24:01:00.0000000")]  // Non-zero minutes
         [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
-        [InlineData("2007-04-05T24:30:00.0000000")]  // Non-zero minutes
-        [InlineData("2007-04-05T24:00:30.0000000")]  // Non-zero seconds
         [InlineData("2007-04-05T24:01:01.0000000")]  // Non-zero minutes and seconds
         [InlineData("9999-12-31T24:00:00.0000000")]  // Would overflow (9999-12-31 + 1 day)
         public void ParseExact_Hour24_Invalid_ThrowsFormatException(string input)
