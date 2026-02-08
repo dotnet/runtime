@@ -431,31 +431,56 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
         op2 = impStackTop(0).val;
     }
 
-    if (!op1->OperIs(GT_CNS_STR) && !op2->OperIs(GT_CNS_STR))
-    {
-        return nullptr;
-    }
+    // Identify the constant string argument. It can be:
+    //  1) A string literal (GT_CNS_STR) - the common import-time case
+    //  2) A frozen object handle (GT_CNS_INT with GTF_ICON_OBJ_HDL) - e.g. a static readonly string
+    //     field that was resolved to its frozen object value by impImportStaticReadOnlyField
+    GenTree* varStr;
+    GenTree* cnsArg;
+    bool     isFrozenObj = false;
 
-    GenTree*       varStr;
-    GenTreeStrCon* cnsStr;
+    auto isFrozenObjHandle = [](GenTree* node) -> bool {
+        return node->IsIconHandle(GTF_ICON_OBJ_HDL) && node->TypeIs(TYP_REF);
+    };
+
     if (op2->OperIs(GT_CNS_STR))
     {
-        cnsStr = op2->AsStrCon();
+        cnsArg = op2;
         varStr = op1;
     }
-    else
+    else if (op1->OperIs(GT_CNS_STR))
     {
         if (kind != StringComparisonKind::Equals)
         {
             // StartsWith and EndsWith are not commutative
             return nullptr;
         }
-        cnsStr = op1->AsStrCon();
+        cnsArg = op1;
         varStr = op2;
+    }
+    else if (isFrozenObjHandle(op2))
+    {
+        cnsArg      = op2;
+        varStr      = op1;
+        isFrozenObj = true;
+    }
+    else if (isFrozenObjHandle(op1))
+    {
+        if (kind != StringComparisonKind::Equals)
+        {
+            return nullptr;
+        }
+        cnsArg      = op1;
+        varStr      = op2;
+        isFrozenObj = true;
+    }
+    else
+    {
+        return nullptr;
     }
 
     bool needsNullcheck = true;
-    if ((op1 != cnsStr) && !isStatic)
+    if ((op1 != cnsArg) && !isStatic)
     {
         // for the following cases we should not check varStr for null:
         //
@@ -470,26 +495,58 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
     int      cnsLength;
     char16_t str[MaxPossibleUnrollSize];
-    if (cnsStr->IsStringEmptyField())
+    if (isFrozenObj)
     {
-        // check for fake "" first
-        cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n", str)
+        // Read string content from frozen object (e.g. static readonly field resolved at Tier 1)
+        CORINFO_OBJECT_HANDLE objHnd = (CORINFO_OBJECT_HANDLE)cnsArg->AsIntCon()->IconValue();
+        if (!info.compCompHnd->isObjectImmutable(objHnd))
+        {
+            return nullptr;
+        }
+        cnsLength = info.compCompHnd->getArrayOrStringLength(objHnd);
+        if (cnsLength < 0 || cnsLength > (int)(getUnrollThreshold(MemcmpU16) / 2))
+        {
+            return nullptr;
+        }
+        if (cnsLength > 0)
+        {
+            if (cnsLength > MaxPossibleUnrollSize)
+            {
+                return nullptr;
+            }
+            if (!info.compCompHnd->getObjectContent(objHnd, (uint8_t*)str, (int)(cnsLength * sizeof(char16_t)),
+                                                    OFFSETOF__CORINFO_String__chars))
+            {
+                return nullptr;
+            }
+        }
+        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith from frozen object (len=%d)...\n", cnsLength)
     }
     else
     {
-        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
-        if (cnsLength < 0)
+        GenTreeStrCon* cnsStr = cnsArg->AsStrCon();
+        if (cnsStr->IsStringEmptyField())
         {
-            // We were unable to get the literal (e.g. dynamic context)
-            return nullptr;
+            // check for fake "" first
+            cnsLength = 0;
+            JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n", str)
         }
-        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
+        else
         {
-            JITDUMP("UTF16 data is too long to unroll - bail out.\n");
-            return nullptr;
+            cnsLength =
+                info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
+            if (cnsLength < 0)
+            {
+                // We were unable to get the literal (e.g. dynamic context)
+                return nullptr;
+            }
+            if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
+            {
+                JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+                return nullptr;
+            }
+            JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n")
         }
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n")
     }
 
     // Create a temp which is safe to gtClone for varStr
@@ -513,7 +570,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
         {
             GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
             unrolled =
-                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)),
+                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsArg)),
                                refEqualityColon);
         }
 

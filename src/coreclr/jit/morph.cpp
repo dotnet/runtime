@@ -6333,9 +6333,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     if (call->IsSpecialIntrinsic())
     {
-        NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
-        if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8 ||
-            ni == NI_System_String_StartsWith)
+        if (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd) ==
+            NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
         {
             // Expanded in fgVNBasedIntrinsicExpansion
             setMethodHasSpecialIntrinsics();
