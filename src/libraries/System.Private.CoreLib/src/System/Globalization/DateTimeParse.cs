@@ -2692,7 +2692,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             bool isEndOfDay = false;
             if (result.Hour == 24)
             {
-                if (result.Minute != 0 || result.Second != 0 || raw.fraction != 0)
+                if (result.Minute != 0 || result.Second != 0 || raw.fraction > 0)
                 {
                     result.SetBadDateTimeFailure();
                     TPTraceExit("0095 (hour 24 with non-zero minute/second/fraction)", dps);
@@ -4823,7 +4823,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             bool isEndOfDay = false;
             if (result.Hour == 24)
             {
-                if (result.Minute != 0 || result.Second != 0 || result.fraction != 0)
+                if (result.Minute != 0 || result.Second != 0 || result.fraction > 0)
                 {
                     result.SetBadDateTimeFailure();
                     return false;
