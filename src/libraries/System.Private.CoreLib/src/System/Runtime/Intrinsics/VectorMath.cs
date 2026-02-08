@@ -4314,6 +4314,19 @@ namespace System.Runtime.Intrinsics
             TVectorDouble zeroXResult = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, piResult, zeroResult);
             result = TVectorDouble.ConditionalSelect(bothZero, zeroXResult, result);
 
+            // Special case: when both x and y are infinite
+            // atan2(±∞, +∞) = ±π/4
+            // atan2(±∞, -∞) = ±3π/4
+            const double PI_OVER_4 = 0.78539816339744830961;   // 0x1.921fb54442d18p-1
+            const double THREE_PI_OVER_4 = 2.3561944901923449; // 0x1.2d97c7f3321d2p+1
+            TVectorDouble inf = TVectorDouble.Create(double.PositiveInfinity);
+            TVectorDouble xIsInf = TVectorDouble.Equals(TVectorDouble.Abs(x), inf);
+            TVectorDouble yIsInf = TVectorDouble.Equals(TVectorDouble.Abs(y), inf);
+            TVectorDouble bothInf = xIsInf & yIsInf;
+            TVectorDouble infBaseAngle = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, TVectorDouble.Create(THREE_PI_OVER_4), TVectorDouble.Create(PI_OVER_4));
+            TVectorDouble infResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, -infBaseAngle, infBaseAngle);
+            result = TVectorDouble.ConditionalSelect(bothInf, infResult, result);
+
             return result;
         }
 
