@@ -3677,21 +3677,20 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
         Range result = Limit(Limit::keUnknown);
         if (tree->OperIs(GT_MUL))
         {
-            result = RangeOps::Multiply(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
+            result = RangeOps::Multiply(op1Rng, op2Rng, tree->IsUnsigned());
         }
         else if (tree->OperIs(GT_ADD))
         {
-            result = RangeOps::Add(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
+            result = RangeOps::Add(op1Rng, op2Rng, tree->IsUnsigned());
         }
         else
         {
             assert(tree->OperIs(GT_SUB));
-            result = RangeOps::Subtract(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
+            result = RangeOps::Subtract(op1Rng, op2Rng, tree->IsUnsigned());
         }
 
-        // GetRangeFromAssertions is conservative around possible overflows -
-        // it returns an unknown range if the tree can overflow.
-        // Just for the extra safety, ignore the full ranges as well.
+        // If it produced a constant range for the result, we know the operation
+        // cannot overflow for any values consistent with the current assertions.
         if (result.IsConstantRange())
         {
             tree->ClearOverflow();

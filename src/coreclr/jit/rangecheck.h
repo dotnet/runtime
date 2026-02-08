@@ -355,18 +355,18 @@ struct RangeOps
         });
     }
 
-    static Range Subtract(const Range& r1, const Range& r2, bool unsigedSub = false)
+    static Range Subtract(const Range& r1, const Range& r2, bool unsignedSub = false)
     {
-        if (unsigedSub)
+        if (unsignedSub)
         {
-            return Limit(Limit::keUndef); // Give up on unsigned subtraction for now
+            return Limit(Limit::keUnknown); // Give up on unsigned subtraction for now
         }
 
         // Delegate to Add after negating the second operand. Possible overflows will be handled there.
         return Add(r1, Negate(r2));
     }
 
-    static Range Multiply(const Range& r1, const Range& r2, bool unsigedMul = false)
+    static Range Multiply(const Range& r1, const Range& r2, bool unsignedMul = false)
     {
         if (!r1.IsConstantRange() || !r2.IsConstantRange())
         {
@@ -379,8 +379,8 @@ struct RangeOps
         int r2hi = r2.UpperLimit().GetConstant();
 
         static_assert(CheckedOps::Unsigned == true);
-        if (CheckedOps::MulOverflows(r1lo, r2lo, unsigedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsigedMul) ||
-            CheckedOps::MulOverflows(r1hi, r2lo, unsigedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsigedMul))
+        if (CheckedOps::MulOverflows(r1lo, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsignedMul) ||
+            CheckedOps::MulOverflows(r1hi, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsignedMul))
         {
             return Limit(Limit::keUnknown);
         }
