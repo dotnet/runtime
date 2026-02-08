@@ -41,8 +41,19 @@ namespace Microsoft.Extensions.Logging.Generators
             INamedTypeSymbol? enumerableSymbol = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
             INamedTypeSymbol? stringSymbol = compilation.GetSpecialType(SpecialType.System_String);
 
-            if (loggerMessageAttribute == null || loggerSymbol == null || logLevelSymbol == null ||
-                exceptionSymbol == null || enumerableSymbol == null || stringSymbol == null)
+            if (loggerMessageAttribute == null || loggerSymbol == null || logLevelSymbol == null)
+            {
+                // Required types aren't available
+                return;
+            }
+
+            if (exceptionSymbol == null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception"));
+                return;
+            }
+
+            if (enumerableSymbol == null || stringSymbol == null)
             {
                 // Required types aren't available
                 return;
