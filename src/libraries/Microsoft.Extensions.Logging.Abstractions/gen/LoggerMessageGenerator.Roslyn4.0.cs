@@ -124,11 +124,25 @@ namespace Microsoft.Extensions.Logging.Generators
                     // Build unique key including parent class chain to handle nested classes
                     string classKey = BuildClassKey(item.LoggerClassSpec);
 
-                    // Each attributed method in a class produces the same LoggerClassSpec with all methods
-                    // Only add the first occurrence to avoid duplicates
-                    if (!allLogClasses.ContainsKey(classKey))
+                    // Each attributed method in a partial class file produces the same LoggerClassSpec with all methods in that file.
+                    // However, different partial class files (e.g., LevelTestExtensions.cs and LevelTestExtensions.WithDiagnostics.cs)
+                    // produce different LoggerClassSpecs with different methods. Merge them.
+                    if (!allLogClasses.TryGetValue(classKey, out LoggerClass? existingClass))
                     {
                         allLogClasses[classKey] = FromSpec(item.LoggerClassSpec);
+                    }
+                    else
+                    {
+                        // Merge methods from different partial class files
+                        var newClass = FromSpec(item.LoggerClassSpec);
+                        foreach (var method in newClass.Methods)
+                        {
+                            // Only add methods that don't already exist (avoid duplicates from same file)
+                            if (!existingClass.Methods.Any(m => m.Name == method.Name && m.EventId == method.EventId))
+                            {
+                                existingClass.Methods.Add(method);
+                            }
+                        }
                     }
                 }
             }

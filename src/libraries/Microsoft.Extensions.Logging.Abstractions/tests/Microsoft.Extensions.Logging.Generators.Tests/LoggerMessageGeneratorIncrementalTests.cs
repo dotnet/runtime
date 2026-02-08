@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, originalTree.Options);
+            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, (CSharpParseOptions?)originalTree.Options);
             Compilation comp2 = comp1.ReplaceSyntaxTree(originalTree, newTree);
 
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, originalTree.Options);
+            SyntaxTree newTree = CSharpSyntaxTree.ParseText(source2, (CSharpParseOptions?)originalTree.Options);
             Compilation comp2 = comp1.ReplaceSyntaxTree(originalTree, newTree);
 
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
