@@ -561,6 +561,13 @@ while [[ $# -gt 0 ]]; do
       shift 1
       ;;
 
+      -sourcebuild|-source-build|-sb)
+      # Export env var to disable platform cache for source builds
+      export CLR_CMAKE_SKIP_PLATFORM_CACHE=1
+      extraargs+=("$1")
+      shift 1
+      ;;
+
       *)
       extraargs+=("$1")
       shift 1
