@@ -1940,6 +1940,72 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
 
+                    // Backreferences with RightToLeft
+                    // Note: For RTL, the pattern is processed right-to-left, so the group must come
+                    // AFTER the backreference in the pattern (i.e., to the right of \1)
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aa", RegexOptions.RightToLeft, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aa", 0, 2),
+                            new CaptureData("a", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcabc", RegexOptions.RightToLeft, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcabc", 0, 6),
+                            new CaptureData("abc", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "abba", RegexOptions.RightToLeft, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("bb", 1, 2),
+                            new CaptureData("b", 2, 1),
+                        }
+                    };
+
+                    // Backreferences with RightToLeft and IgnoreCase
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aA", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aA", 0, 2),
+                            new CaptureData("A", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcABC", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcABC", 0, 6),
+                            new CaptureData("ABC", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aBBa", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("BB", 1, 2),
+                            new CaptureData("B", 2, 1),
+                        }
+                    };
+
                     // Actual - "(?<1>\\d+)abc(?(1)222|111)"
                     yield return new object[]
                     {

@@ -4525,8 +4525,10 @@ void emitter::emitRecomputeIGoffsets()
 //
 void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     const char* commentPrefix = "      ;";
+#elif defined(TARGET_WASM)
+    const char* commentPrefix = "      ;;";
 #else
     const char* commentPrefix = "      //";
 #endif
