@@ -9,9 +9,10 @@
     <!-- SQLitePCLRaw currently has non-portable RIDs (alpine). Update to newer version once it released.
          https://github.com/ericsink/SQLitePCL.raw/issues/543 -->
     <!-- SYSLIB1002, SYSLIB1013, SYSLIB1018: WithDiagnostics test files intentionally trigger these for testing.
+         CS8795: When generator reports diagnostics, it doesn't generate implementations for public partial methods.
          Pragma suppression doesn't work with incremental generators due to trimmed locations (known Roslyn limitation).
          Suppress at project level instead. -->
-    <NoWarn>$(NoWarn);NETSDK1206;SYSLIB1002;SYSLIB1013;SYSLIB1018</NoWarn>
+    <NoWarn>$(NoWarn);NETSDK1206;SYSLIB1002;SYSLIB1013;SYSLIB1018;CS8795</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
