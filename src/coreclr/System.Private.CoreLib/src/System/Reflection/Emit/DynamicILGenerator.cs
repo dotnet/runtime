@@ -130,6 +130,12 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(type);
 
+            if (opcode.Equals(OpCodes.Calli) && type.IsFunctionPointer)
+            {
+                EmitCalli(type);
+                return;
+            }
+
             RuntimeType rtType = type as RuntimeType ?? throw new ArgumentException(SR.Argument_MustBeRuntimeType);
             int token = GetTokenFor(rtType);
             EnsureCapacity(7);
