@@ -1978,8 +1978,9 @@ namespace System
                 return false;
             }
 
-            // ISO 8601 allows hour=24 to represent end of day (midnight), but only when minute, second, and millisecond are all zero.
-            // In this case, we advance to the next day at 00:00.
+            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and millisecond are all zero.
+            // We advance to the next day at 00:00.
             if (hour == 24)
             {
                 if (minute != 0 || second != 0 || millisecond != 0)
@@ -1987,14 +1988,14 @@ namespace System
                     return false;
                 }
 
-                // Advance to the next day at midnight (00:00)
+                // Advance to next day's 00:00:00
                 ReadOnlySpan<uint> daysInMonth = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
                 if ((uint)day > daysInMonth[month] - daysInMonth[month - 1])
                 {
                     return false;
                 }
 
-                // Calculate ticks for the current day and add one day to get to midnight of the next day
+                // Calculate ticks for the current day and add one day to get to next day's 00:00:00
                 ulong nextDayTicks = (DaysToYear((uint)year) + daysInMonth[month - 1] + (uint)day - 1) * (ulong)TimeSpan.TicksPerDay + TimeSpan.TicksPerDay;
 
                 if (nextDayTicks > MaxTicks)

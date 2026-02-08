@@ -125,8 +125,9 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            // ISO 8601 allows hour=24 to represent end of day (midnight), but only when minute, second, and fraction are all zero.
-            // In this case, we treat it as hour=0 and add one day at the end.
+            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
             bool isEndOfDay = false;
             if (hour == 24)
             {
@@ -168,7 +169,7 @@ namespace System.Buffers.Text
             ticks += totalSeconds * TimeSpan.TicksPerSecond;
             ticks += fraction;
 
-            // If hour was originally 24 (end of day), add one day to advance to the next day at midnight
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
             if (isEndOfDay)
             {
                 ticks += TimeSpan.TicksPerDay;
