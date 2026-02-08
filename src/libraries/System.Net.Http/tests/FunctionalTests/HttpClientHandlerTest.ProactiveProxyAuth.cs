@@ -16,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
     {
         public ProactiveProxyAuthTest(ITestOutputHelper helper) : base(helper) { }
 
+        private const string ProxyPreAuthEnvVar = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PROXYPREAUTHENTICATE";
+
         /// <summary>
         /// Tests that when proxy credentials are provided and the opt-in switch is enabled,
         /// the Proxy-Authorization header is sent proactively on the first request without
@@ -31,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var psi = new ProcessStartInfo();
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
-                psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_ENABLEPROACTIVEPROXYAUTH", "1");
+                psi.Environment.Add(ProxyPreAuthEnvVar, "1");
 
                 Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
                 {
@@ -75,6 +77,61 @@ namespace System.Net.Http.Functional.Tests
         }
 
         /// <summary>
+        /// Tests that credentials embedded in the proxy URL environment variable are sent proactively.
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ProxyAuth_CredentialsInEnvironmentUrl_SentProactively()
+        {
+            const string ExpectedUsername = "envuser";
+            const string ExpectedPassword = "envpass";
+
+            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
+            {
+                var psi = new ProcessStartInfo();
+                // Credentials embedded in the proxy URL (common pattern for HTTP_PROXY/HTTPS_PROXY)
+                psi.Environment.Add("http_proxy", $"http://{ExpectedUsername}:{ExpectedPassword}@{proxyUri.Host}:{proxyUri.Port}");
+                psi.Environment.Add(ProxyPreAuthEnvVar, "1");
+
+                Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
+                {
+                    List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+
+                    // Verify the first request has the Proxy-Authorization header
+                    string? authHeader = null;
+                    foreach (string line in lines)
+                    {
+                        if (line.StartsWith("Proxy-Authorization:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            authHeader = line;
+                            break;
+                        }
+                    }
+
+                    Assert.NotNull(authHeader);
+                    Assert.Contains("Basic", authHeader);
+
+                    // Verify the credentials are correct
+                    string expectedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ExpectedUsername}:{ExpectedPassword}"));
+                    Assert.Contains(expectedToken, authHeader);
+
+                    await connection.SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+                });
+
+                await RemoteExecutor.Invoke(async (useVersionString) =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                    using HttpClient client = CreateHttpClient(handler, useVersionString);
+                    using HttpResponseMessage response = await client.GetAsync("http://destination.test/");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }, UseVersion.ToString(),
+                   new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+
+                await serverTask;
+            });
+        }
+
+        /// <summary>
         /// Tests that without the opt-in switch, credentials are NOT sent proactively
         /// (default RFC-compliant behavior).
         /// </summary>
@@ -88,7 +145,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var psi = new ProcessStartInfo();
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
-                // NOT setting DOTNET_SYSTEM_NET_HTTP_ENABLEPROACTIVEPROXYAUTH
+                // NOT setting ProxyPreAuthEnvVar - default behavior
 
                 Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
                 {
@@ -150,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var psi = new ProcessStartInfo();
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
-                psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_ENABLEPROACTIVEPROXYAUTH", "1");
+                psi.Environment.Add(ProxyPreAuthEnvVar, "1");
 
                 Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
                 {
@@ -177,6 +234,63 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }, UseVersion.ToString(),
+                   new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+
+                await serverTask;
+            });
+        }
+
+        /// <summary>
+        /// Tests proactive auth with explicit WebProxy credentials (not environment variable).
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task ProxyAuth_ExplicitWebProxyCredentials_SentProactively()
+        {
+            const string ExpectedUsername = "proxyuser";
+            const string ExpectedPassword = "proxypass";
+
+            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
+            {
+                var psi = new ProcessStartInfo();
+                psi.Environment.Add(ProxyPreAuthEnvVar, "1");
+
+                Task serverTask = proxyServer.AcceptConnectionAsync(async connection =>
+                {
+                    List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+
+                    // Verify the first request has the Proxy-Authorization header
+                    string? authHeader = null;
+                    foreach (string line in lines)
+                    {
+                        if (line.StartsWith("Proxy-Authorization:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            authHeader = line;
+                            break;
+                        }
+                    }
+
+                    Assert.NotNull(authHeader);
+                    Assert.Contains("Basic", authHeader);
+
+                    string expectedToken = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ExpectedUsername}:{ExpectedPassword}"));
+                    Assert.Contains(expectedToken, authHeader);
+
+                    await connection.SendResponseAsync(HttpStatusCode.OK).ConfigureAwait(false);
+                });
+
+                await RemoteExecutor.Invoke(async (proxyUriString, username, password, useVersionString) =>
+                {
+                    using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                    handler.Proxy = new WebProxy(new Uri(proxyUriString))
+                    {
+                        Credentials = new NetworkCredential(username, password)
+                    };
+
+                    using HttpClient client = CreateHttpClient(handler, useVersionString);
+                    using HttpResponseMessage response = await client.GetAsync("http://destination.test/");
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }, proxyUri.ToString(), ExpectedUsername, ExpectedPassword, UseVersion.ToString(),
                    new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
                 await serverTask;
