@@ -79,7 +79,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 {
     bool FPBased;
-    int  lclOffset = emitComp->lvaFrameAddress(varx, &FPBased);
+    int  lclOffset = m_compiler->lvaFrameAddress(varx, &FPBased);
     int  offset    = lclOffset + offs;
     noway_assert(offset >= 0); // WASM address modes are unsigned.
 
@@ -133,7 +133,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
+    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
     {
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
@@ -175,11 +175,36 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
         id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
 
     dispIns(id);
     appendToCurIG(id);
-    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
+//------------------------------------------------------------------------
+// GetWasmArgsCount: Get WASM argument count for the root method.
+//
+// Arguments:
+//    compiler - The compiler object
+//
+// Return Value:
+//    The number of arguments in the WASM signature of the method being compiled.
+//
+static unsigned GetWasmArgsCount(Compiler* compiler)
+{
+    assert(compiler->funCurrentFunc()->funKind == FUNC_ROOT);
+
+    unsigned count = 0;
+    for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
+    {
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        {
+            count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+        }
+    }
+    return count;
 }
 
 //-----------------------------------------------------------------------------
@@ -206,7 +231,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->lclOffset = lclOffset;
+        id->idDebugOnlyInfo()->lclBaseIndex = GetWasmArgsCount(m_compiler) + lclOffset;
     }
 
     return id;
@@ -221,7 +246,9 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 //   ins      - instruction to emit
 //   imm      - immediate value (local count)
 //   valType  - value type of the local variable
-//   offs     - local variable offset (= count of preceding locals) for debug info
+//   offs     - local variable offset (= count of preceding locals) for debug info,
+//              only includes locals declared explicitly (not args)
+//
 void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs)
 {
     instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
@@ -565,13 +592,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
 #ifdef DEBUG
-    bool dspOffs = emitComp->opts.dspGCtbls;
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    bool dspOffs = m_compiler->opts.dspGCtbls;
+    if (m_compiler->opts.disAsm || m_compiler->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #else
-    if (emitComp->opts.disAsm)
+    if (m_compiler->opts.disAsm)
     {
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
@@ -659,11 +686,18 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf(" ;; ");
+                printf("      ;;");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
             }
+        }
+    };
+
+    auto dispHandleIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
         }
     };
 
@@ -681,6 +715,7 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+            dispHandleIfAny();
         }
         break;
 
@@ -688,6 +723,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu 0", (uint64_t)imm);
+            dispHandleIfAny();
         }
         break;
 
@@ -700,7 +736,7 @@ void emitter::emitDispIns(
             if (m_debugInfoSize > 0)
             {
                 // With debug info: print the local offsets being declared
-                int offs = id->idDebugOnlyInfo()->lclOffset;
+                int offs = id->idDebugOnlyInfo()->lclBaseIndex;
                 if (count > 1)
                 {
                     printf("[%u..%u] type=%s", offs, offs + count - 1, WasmValueTypeName(valType));
@@ -764,13 +800,13 @@ void emitter::emitDispInst(instruction ins)
 //
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    if (!emitComp->opts.disCodeBytes)
+    if (!m_compiler->opts.disCodeBytes)
     {
         return;
     }
 
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable && (sz != 0))
+    if (!m_compiler->opts.disDiffable && (sz != 0))
     {
         static const int PAD_WIDTH = 28; // From wasm-objdump output.
 
