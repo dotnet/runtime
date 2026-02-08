@@ -1641,7 +1641,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the checked bound to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, op1VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, op1VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1650,7 +1650,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> CheckedBnd"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op2VN))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, op2VN, 0);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1663,7 +1663,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         // Move the (CheckedBnd + CNS) part to the right side for simplicity
         relopFunc          = ValueNumStore::SwapRelop(relopFunc);
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op2VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op2VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -1672,7 +1672,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     // "X <relop> (CheckedBnd + CNS)"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBoundAddConst(op2VN, &checkedBnd, &checkedBndCns))
     {
-        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, checkedBnd, checkedBndCns);
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(relopFunc, op1VN, checkedBnd, checkedBndCns);
         AssertionIndex idx = optAddAssertion(dsc);
         optCreateComplementaryAssertion(idx);
         return idx;
@@ -3677,16 +3677,16 @@ GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTr
         Range result = Limit(Limit::keUnknown);
         if (tree->OperIs(GT_MUL))
         {
-            result = RangeOps::Multiply(op1Rng, op2Rng);
+            result = RangeOps::Multiply(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
         }
         else if (tree->OperIs(GT_ADD))
         {
-            result = RangeOps::Add(op1Rng, op2Rng);
+            result = RangeOps::Add(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
         }
         else
         {
             assert(tree->OperIs(GT_SUB));
-            result = RangeOps::Subtract(op1Rng, op2Rng);
+            result = RangeOps::Subtract(op1Rng, op2Rng, /*unsigned*/ tree->IsUnsigned());
         }
 
         // GetRangeFromAssertions is conservative around possible overflows -
