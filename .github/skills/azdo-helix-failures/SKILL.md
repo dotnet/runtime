@@ -61,7 +61,7 @@ Use this skill when:
 
 **Known Issues section**: Failures matching existing GitHub issues - these are tracked and being investigated.
 
-**Canceled jobs**: Jobs that were canceled (not failed) due to earlier stage failures or timeouts. These don't need separate investigation.
+**Canceled jobs**: Jobs that were canceled (not failed) due to earlier stage failures or timeouts. Dependency-canceled jobs (canceled because an earlier stage failed) don't need investigation. Timeout-canceled jobs may still have recoverable Helix results — see "Recovering Results from Canceled Jobs" below.
 
 **PR Change Correlation**: Files changed by PR appearing in failures - likely PR-related.
 
@@ -111,6 +111,20 @@ The script provides a recommendation at the end, but this is based on heuristics
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
 - **AzDO/Helix details**: See [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
+## Recovering Results from Canceled Jobs
+
+Canceled jobs (typically from timeouts) often still have useful artifacts. The Helix work items may have completed successfully even though the AzDO job was killed while waiting to collect results.
+
+**To investigate canceled jobs:**
+
+1. **Download build artifacts**: Use the AzDO artifacts API to get `Logs_Build_*` pipeline artifacts for the canceled job. These contain binlogs even for canceled jobs.
+2. **Extract Helix job IDs**: Use the MSBuild MCP server to load the `SendToHelix.binlog` and search for `"Sent Helix Job"` messages. Each contains a Helix job ID.
+3. **Query Helix directly**: For each job ID, query `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17` to get actual pass/fail results.
+
+**Example**: A `browser-wasm windows WasmBuildTests` job was canceled after 3 hours. The binlog (truncated) still contained 12 Helix job IDs. Querying them revealed all 226 work items passed — the "failure" was purely a timeout in the AzDO wrapper.
+
+**Key insight**: "Canceled" ≠ "Failed". Always check artifacts before concluding results are lost.
+
 ## Tips
 
 1. Read PR description and comments first for context
@@ -118,3 +132,4 @@ The script provides a recommendation at the end, but this is based on heuristics
 3. Look for `[ActiveIssue]` attributes for known skipped tests
 4. Use `-SearchMihuBot` for semantic search of related issues
 5. Binlogs in artifacts help diagnose MSB4018 task failures
+6. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
