@@ -668,6 +668,10 @@ namespace System
             if (!isUnmanaged && callingConventions.Length >= 1)
                 throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
 
+            // Reverse calling conventions for consistency with Roslyn:
+            // delegate* unmanaged[Cdecl, MemberFunction]<int> => int32 modopt(CallConvMemberFunction) modopt(CallConvCdecl) *()
+            Array.Reverse(callingConventions);
+
             bool builtInCallConv = false;
             if (callingConventions.Length == 1)
             {

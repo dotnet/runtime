@@ -105,14 +105,55 @@ namespace System.Reflection.Emit
             return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
-        internal static SignatureHelper GetMethodSigHelper(
-            MdSigCallingConvention callingConvention,
-            Type returnType,
-            Type[]? requiredCustomModifiers,
-            Type[]? optionalCustomModifiers)
+        internal static SignatureHelper GetMethodSigHelper(DynamicScope scope, Type functionPointerType)
         {
-            SignatureHelper sig = new SignatureHelper(null, callingConvention);
-            sig.AddReturnType(returnType, requiredCustomModifiers, optionalCustomModifiers);
+            Debug.Assert(functionPointerType.IsFunctionPointer);
+
+            Type retType = functionPointerType.GetFunctionPointerReturnType();
+            Type[] retTypeModReqs = retType.GetRequiredCustomModifiers();
+            Type[] retTypeModOpts = retType.GetOptionalCustomModifiers();
+            Type[] paramTypes = functionPointerType.GetFunctionPointerParameterTypes();
+            Type[][] paramModReqs = new Type[paramTypes.Length][];
+            Type[][] paramModOpts = new Type[paramTypes.Length][];
+
+            retType = retType.UnderlyingSystemType;
+
+            for (int i = 0; i < paramTypes.Length; i++)
+            {
+                paramModReqs[i] = paramTypes[i].GetRequiredCustomModifiers();
+                paramModOpts[i] = paramTypes[i].GetOptionalCustomModifiers();
+                paramTypes[i] = paramTypes[i].UnderlyingSystemType;
+            }
+
+            MdSigCallingConvention callConv = MdSigCallingConvention.Default;
+
+            if (functionPointerType.IsUnmanagedFunctionPointer)
+            {
+                callConv = MdSigCallingConvention.Unmanaged;
+
+                if (functionPointerType.GetFunctionPointerCallingConventions() is Type[] conventions && conventions.Length == 1)
+                {
+                    switch (conventions[0].FullName)
+                    {
+                        case "System.Runtime.CompilerServices.CallConvCdecl":
+                            callConv = MdSigCallingConvention.C;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvStdcall":
+                            callConv = MdSigCallingConvention.StdCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvThiscall":
+                            callConv = MdSigCallingConvention.ThisCall;
+                            break;
+                        case "System.Runtime.CompilerServices.CallConvFastcall":
+                            callConv = MdSigCallingConvention.FastCall;
+                            break;
+                    }
+                }
+            }
+
+            SignatureHelper sig = new(null, callConv);
+            sig.AddReturnType(scope, retType, retTypeModReqs, retTypeModOpts);
+            sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
             return sig;
         }
 
@@ -741,9 +782,34 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void AddReturnType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        internal void AddFunctionPointerType(DynamicScope scope, Type type)
+        {
+            Debug.Assert(type.IsFunctionPointer);
+
+            AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
+            SignatureHelper sig = GetMethodSigHelper(scope, type);
+            byte[] bytes = sig.GetSignature();
+
+            if (m_currSig + bytes.Length > m_signature.Length)
+            {
+                m_signature = ExpandArray(m_signature, m_signature.Length + bytes.Length);
+            }
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                m_signature[m_currSig++] = bytes[i];
+            }
+        }
+
+        internal void AddReturnType(DynamicScope scope, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             Debug.Assert(type != null);
+
+            if (type.IsFunctionPointer)
+            {
+                AddFunctionPointerType(scope, type);
+                return;
+            }
 
             if (optionalCustomModifiers != null)
             {
@@ -851,7 +917,18 @@ namespace System.Reflection.Emit
                 return;
 
             for (int i = 0; i < arguments.Length; i++)
-                AddDynamicArgument(dynamicScope, arguments[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
+            {
+                Type arg = arguments[i];
+
+                if (arg.IsFunctionPointer)
+                {
+                    IncrementArgCounts();
+                    AddFunctionPointerType(dynamicScope, arg);
+                    continue;
+                }
+
+                AddDynamicArgument(dynamicScope, arg, requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
+            }
         }
 
         #endregion

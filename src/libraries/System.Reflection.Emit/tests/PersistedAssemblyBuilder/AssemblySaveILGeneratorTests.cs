@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using Xunit;
@@ -3068,7 +3069,7 @@ public class MyType
         }
 
         [Fact]
-        public void CallFunctionPointerField()
+        public void EmitCalliFunctionPointerField()
         {
             using TempFile file = TempFile.Create();
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
@@ -3076,10 +3077,10 @@ public class MyType
             MethodBuilder methb = tb.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
             methb.SetReturnType(typeof(int));
             ILGenerator il = methb.GetILGenerator();
-            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointer).GetMethod("Init"));
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointers).GetMethod("Init"));
             il.Emit(OpCodes.Ldc_I4_2);
             il.Emit(OpCodes.Ldc_I4_3);
-            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointer).GetField("Method"));
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointers).GetField("FuncManaged"));
             il.EmitCalli(Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]));
             il.Emit(OpCodes.Ret);
             tb.CreateType();
@@ -3092,6 +3093,73 @@ public class MyType
             int result = (int)methodFromDisk.Invoke(null, null);
 
             Assert.Equal(5, result);
+            tlc.Unload();
+        }
+
+        [Fact]
+        public void EmitCalliVerifySignatures()
+        {
+            Type t1 = Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]);
+            Type t2 = Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)]);
+            Type t3 = Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)]);
+            Type t4 = Type.MakeFunctionPointerSignatureType(
+                typeof(string),
+                [Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(short)], true, [typeof(CallConvStdcall), typeof(CallConvMemberFunction)])],
+                true, [typeof(CallConvSwift)]);
+
+            using TempFile file = TempFile.Create();
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+            TypeBuilder tb = mb.DefineType("Program", TypeAttributes.Public);
+            MethodBuilder methb = tb.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator il = methb.GetILGenerator();
+            Label labelAfter = il.DefineLabel();
+
+            il.Emit(OpCodes.Br, labelAfter);
+            il.EmitCalli(t1);
+            il.EmitCalli(t2);
+            il.EmitCalli(t3);
+            il.EmitCalli(t4);
+            il.MarkLabel(labelAfter);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+            ab.Save(file.Path);
+
+            // Verifies EmitCalli produces valid signatures -> InvalidProgramException is thrown otherwise
+            TestAssemblyLoadContext tlc = new();
+            Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+            Type typeFromDisk = assemblyFromDisk.GetType("Program");
+            MethodInfo methodFromDisk = typeFromDisk.GetMethod("Test");
+            methodFromDisk.Invoke(null, null);
+            tlc.Unload();
+        }
+
+        [Fact]
+        public void EmitCalliVerifyStackChange()
+        {
+            Type fieldType = Type.MakeFunctionPointerSignatureType(
+                Type.MakeModifiedSignatureType(typeof(void), [typeof(IsConst)], null),
+                null);
+
+            using TempFile file = TempFile.Create();
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+            TypeBuilder tb = mb.DefineType("Program", TypeAttributes.Public);
+            FieldBuilder fb = tb.DefineField("Func", fieldType, FieldAttributes.Public | FieldAttributes.Static);
+            MethodBuilder methb = tb.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator il = methb.GetILGenerator();
+
+            il.Emit(OpCodes.Ldftn, typeof(Console).GetMethod("WriteLine", BindingFlags.Public | BindingFlags.Static, []));
+            il.Emit(OpCodes.Stsfld, fb);
+            il.Emit(OpCodes.Ldsfld, fb);
+            il.EmitCalli(fieldType);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+            ab.Save(file.Path);
+
+            TestAssemblyLoadContext tlc = new();
+            Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+            Type typeFromDisk = assemblyFromDisk.GetType("Program");
+            MethodInfo methodFromDisk = typeFromDisk.GetMethod("Test");
+            methodFromDisk.Invoke(null, null);
             tlc.Unload();
         }
     }

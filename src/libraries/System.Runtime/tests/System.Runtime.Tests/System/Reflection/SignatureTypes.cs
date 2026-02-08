@@ -364,6 +364,7 @@ namespace System.Reflection.Tests
             Type[] paramTypes = [typeof(short)];
             Type[] callConvs = [typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition)];
             Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
+            callConvs.Reverse();
 
             Type fnPtrRet = t.GetFunctionPointerReturnType();
             Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
@@ -374,6 +375,65 @@ namespace System.Reflection.Tests
             Assert.Equal(paramTypes.Select(t => t.ToString()), fnPtrParams.Select(t => t.ToString()));
             Assert.Equal(callConvs.Select(t => t.ToString()), fnPtrCallConvs.Select(t => t.ToString()));
             Assert.Equal(2, fnPtrRet.GetOptionalCustomModifiers().Length);
+        }
+
+        private static void AssertFunctionPointerTypesEqual(Type expected, Type actual)
+        {
+            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.IsFunctionPointer, actual.IsFunctionPointer);
+            Assert.Equal(expected.IsUnmanagedFunctionPointer, actual.IsUnmanagedFunctionPointer);
+            Assert.Equal(expected.GetFunctionPointerReturnType().UnderlyingSystemType, actual.GetFunctionPointerReturnType().UnderlyingSystemType);
+            Assert.Equal(expected.GetFunctionPointerReturnType().GetOptionalCustomModifiers(), actual.GetFunctionPointerReturnType().GetOptionalCustomModifiers());
+            Assert.Equal(expected.GetFunctionPointerParameterTypes().Select(p => p.UnderlyingSystemType), actual.GetFunctionPointerParameterTypes().Select(p => p.UnderlyingSystemType));
+            Assert.Equal(expected.GetFunctionPointerCallingConventions(), actual.GetFunctionPointerCallingConventions());
+        }
+
+        public static IEnumerable<object[]> SignatureFunctionPointerTypesTestData
+        {
+            get
+            {
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func1").GetModifiedFieldType()
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func2").GetModifiedFieldType()
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func3").GetModifiedFieldType()
+                ];
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SignatureFunctionPointerTypesTestData))]
+        public static void MakeSignatureFunctionPointerType_MatchesGetModifiedFieldType(Type signatureType, Type reflectedType)
+        {
+            AssertFunctionPointerTypesEqual(reflectedType, signatureType);
+        }
+
+        [Fact]
+        public static void MakeSignatureFunctionPointerType_MatchesGetModifiedFieldType_NestedFunctionPointer()
+        {
+            Type expected = typeof(ClassWithFunctionPointers).GetField("Func4").GetModifiedFieldType();
+            Type actual = Type.MakeFunctionPointerSignatureType(
+                typeof(string),
+                [Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(short)], true, [typeof(CallConvStdcall), typeof(CallConvMemberFunction)])],
+                true, [typeof(CallConvSwift)]);
+
+            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.IsFunctionPointer, actual.IsFunctionPointer);
+            Assert.Equal(expected.IsUnmanagedFunctionPointer, actual.IsUnmanagedFunctionPointer);
+            Assert.Equal(expected.GetFunctionPointerReturnType().UnderlyingSystemType, actual.GetFunctionPointerReturnType().UnderlyingSystemType);
+            Assert.Equal(expected.GetFunctionPointerCallingConventions(), actual.GetFunctionPointerCallingConventions());
+            AssertFunctionPointerTypesEqual(expected.GetFunctionPointerParameterTypes()[0], actual.GetFunctionPointerParameterTypes()[0]);
         }
 
         [Fact]
@@ -522,6 +582,14 @@ namespace System.Reflection.Tests
             public enum GenericEnum
             {
             }
+        }
+
+        private unsafe class ClassWithFunctionPointers
+        {
+            public static delegate*<int, int, int> Func1 = null;
+            public static delegate* unmanaged[Cdecl]<string, bool> Func2 = null;
+            public static delegate* unmanaged[Fastcall, SuppressGCTransition]<int, void> Func3 = null;
+            public static delegate* unmanaged[Swift]<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, string> Func4 = null;
         }
 
         private static void TestSignatureTypeInvariants(Type type)

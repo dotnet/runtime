@@ -614,6 +614,12 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(cls);
 
+            if (opcode.Equals(OpCodes.Calli) && cls.IsFunctionPointer)
+            {
+                EmitCalli(cls);
+                return;
+            }
+
             EmitOpcode(opcode);
             WriteOrReserveToken(_moduleBuilder.TryGetTypeHandle(cls), cls);
         }
@@ -742,7 +748,7 @@ namespace System.Reflection.Emit
         {
             int stackChange = 0;
             // If there is a non-void return type, push one.
-            if (returnType != voidType)
+            if (returnType?.UnderlyingSystemType != voidType)
             {
                 stackChange++;
             }
