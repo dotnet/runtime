@@ -674,7 +674,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void ParseExact_Hour24_Success()
+        public static void ParseExact_Hour24_Success()
         {
             // ISO 8601 allows 24:00:00 to represent end of day (midnight of next day)
             // For TimeOnly, this should wrap around to 00:00:00
@@ -686,7 +686,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void ParseExact_Hour24_Invalid_ThrowsFormatException()
+        public static void ParseExact_Hour24_Invalid_ThrowsFormatException()
         {
             // Hour=24 is only valid when minute, second, and fraction are all zero
             Assert.Throws<FormatException>(() => TimeOnly.ParseExact("24:00:01", "HH:mm:ss", CultureInfo.InvariantCulture));
@@ -695,7 +695,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void TryParseExact_Hour24_Success()
+        public static void TryParseExact_Hour24_Success()
         {
             bool success = TimeOnly.TryParseExact("24:00:00", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly result);
             Assert.True(success);
@@ -703,14 +703,14 @@ namespace System.Tests
         }
 
         [Fact]
-        public void TryParseExact_Hour24_Invalid_ReturnsFalse()
+        public static void TryParseExact_Hour24_Invalid_ReturnsFalse()
         {
             bool success = TimeOnly.TryParseExact("24:00:01", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly result);
             Assert.False(success);
         }
 
         [Fact]
-        public void Parse_Hour24_Success()
+        public static void Parse_Hour24_Success()
         {
             // TimeOnly.Parse goes through the heuristic parser (ProcessDateTimeSuffix)
             TimeOnly result = TimeOnly.Parse("24:00:00", CultureInfo.InvariantCulture);
@@ -718,7 +718,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void Parse_Hour24_Invalid_ThrowsFormatException()
+        public static void Parse_Hour24_Invalid_ThrowsFormatException()
         {
             // Hour=24 is only valid when minute, second, and fraction are all zero
             Assert.Throws<FormatException>(() => TimeOnly.Parse("24:00:01", CultureInfo.InvariantCulture));
@@ -727,7 +727,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void TryParse_Hour24_Success()
+        public static void TryParse_Hour24_Success()
         {
             bool success = TimeOnly.TryParse("24:00:00", CultureInfo.InvariantCulture, out TimeOnly result);
             Assert.True(success);
@@ -735,7 +735,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void TryParse_Hour24_Invalid_ReturnsFalse()
+        public static void TryParse_Hour24_Invalid_ReturnsFalse()
         {
             bool success = TimeOnly.TryParse("24:00:01", CultureInfo.InvariantCulture, out TimeOnly result);
             Assert.False(success);
