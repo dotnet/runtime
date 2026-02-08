@@ -1208,11 +1208,6 @@ static bool SigMatchesResumptionStubForMethod(MethodDesc* pAsyncMD, SigPointer &
         }
     }
 
-    // The sig should have AsyncVariant set (resumption stubs are for async variants)
-    bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
-    if (sigIsAsync != pAsyncMD->IsAsyncVariantMethod())
-        return false;
-
     return true;
 }
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Immutable;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -17,17 +16,15 @@ namespace ILCompiler
         private readonly MethodDesc _targetMethod;
         private readonly TypeDesc _owningType;
         private MethodSignature _signature;
-        private ImmutableArray<byte> _name;
 
         public AsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
         {
             Debug.Assert(targetMethod.IsAsyncCall());
             _targetMethod = targetMethod;
             _owningType = owningType;
-            _name = [.. "RESUME_"u8, .. _targetMethod.Name];
         }
 
-        public override ReadOnlySpan<byte> Name => _name.AsSpan();
+        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
         public override string DiagnosticName => "RESUME_" + _targetMethod.DiagnosticName;
 
         public override TypeDesc OwningType => _owningType;
@@ -38,6 +35,11 @@ namespace ILCompiler
 
         public MethodDesc TargetMethod => _targetMethod;
 
+        /// <summary>
+        /// The hash of the async variant method is used at runtime to find the bucket of the resumption stub.
+        /// These should be identical for the async variant and the resumption stub.
+        /// </summary>
+        protected override int ComputeHashCode() => _targetMethod.GetHashCode();
 
         private MethodSignature InitializeSignature()
         {
