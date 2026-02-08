@@ -135,10 +135,18 @@ namespace Microsoft.Extensions.Logging.Generators
                     {
                         // Merge methods from different partial class files
                         var newClass = FromSpec(item.LoggerClassSpec);
+
+                        // Use HashSet for O(1) lookup to avoid O(N×M) complexity
+                        var existingMethodKeys = new HashSet<(string Name, int EventId)>();
+                        foreach (var method in existingClass.Methods)
+                        {
+                            existingMethodKeys.Add((method.Name, method.EventId));
+                        }
+
                         foreach (var method in newClass.Methods)
                         {
                             // Only add methods that don't already exist (avoid duplicates from same file)
-                            if (!existingClass.Methods.Any(m => m.Name == method.Name && m.EventId == method.EventId))
+                            if (existingMethodKeys.Add((method.Name, method.EventId)))
                             {
                                 existingClass.Methods.Add(method);
                             }
