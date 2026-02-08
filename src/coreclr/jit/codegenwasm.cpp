@@ -1183,8 +1183,11 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
     var_types toType   = tree->TypeGet();
     var_types fromType = tree->gtGetOp1()->TypeGet();
 
+    assert(toType == genActualType(tree));
+    assert(fromType == genActualType(tree->gtGetOp1()));
+
     instruction ins = INS_none;
-    switch (PackTypes(fromType, toType))
+    switch (PackTypes(toType, fromType))
     {
         case PackTypes(TYP_INT, TYP_FLOAT):
             ins = INS_i32_reinterpret_f32;
