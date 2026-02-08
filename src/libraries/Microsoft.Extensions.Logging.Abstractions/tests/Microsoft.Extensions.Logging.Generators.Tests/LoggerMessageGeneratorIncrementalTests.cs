@@ -129,7 +129,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
                 """;
 
-            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText(source2, new CSharpParseOptions(LanguageVersion.Preview)));
+            SyntaxTree existingTree = comp1.SyntaxTrees.First();
+            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText(source2, (CSharpParseOptions)existingTree.Options));
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
