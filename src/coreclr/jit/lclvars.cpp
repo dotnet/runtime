@@ -322,6 +322,10 @@ void Compiler::lvaInitTypeRef()
     // emitter when the varNum is greater that 32767 (see emitLclVarAddr::initLclVarAddr)
     lvaAllocOutgoingArgSpaceVar();
 
+#ifdef TARGET_WASM
+    lvaAllocWasmStackPtr();
+#endif
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -351,7 +355,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     if (!opts.IsReversePInvoke())
     {
         // Wasm stack pointer is first arg
-        lvaInitWasmStackPtr(&varNum);
+        lvaInitWasmStackPtrArg(&varNum);
     }
 #endif
 
@@ -502,14 +506,31 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
 // Notes:
 //   The managed calling convention for Wasm passes the stack pointer as the first arg.
 //
-void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
+void Compiler::lvaInitWasmStackPtrArg(unsigned* curVarNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-    varDsc->lvType    = TYP_I_IMPL;
-    varDsc->lvIsParam = 1;
-    varDsc->lvOnFrame = true;
-    lvaWasmSpArg      = *curVarNum;
+    LclVarDsc* varDsc              = lvaGetDesc(*curVarNum);
+    varDsc->lvType                 = TYP_I_IMPL;
+    varDsc->lvIsParam              = 1;
+    varDsc->lvOnFrame              = true;
+    varDsc->lvImplicitlyReferenced = 1;
+    lvaWasmSpArg                   = *curVarNum;
     (*curVarNum)++;
+}
+
+//-----------------------------------------------------------------------------
+// lvaInitWasmStackPtr: set up the wasm stack pointer variable
+//
+// Allocates the stack pointer for methods where it is not an argument (RPI).
+//
+void Compiler::lvaAllocWasmStackPtr()
+{
+    if (lvaWasmSpArg == BAD_VAR_NUM)
+    {
+        lvaWasmSpArg                   = lvaGrabTemp(false DEBUGARG("SP"));
+        LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
+        varDsc->lvType                 = TYP_I_IMPL;
+        varDsc->lvImplicitlyReferenced = 1;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -2951,7 +2972,7 @@ var_types LclVarDsc::GetRegisterType() const
 {
     if (!TypeIs(TYP_STRUCT))
     {
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
         if (TypeIs(TYP_LONG))
         {
             return TYP_UNDEF;

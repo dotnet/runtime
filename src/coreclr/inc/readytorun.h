@@ -467,6 +467,10 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    READYTORUN_HELPER_AllocContinuation = 0x113,
+    READYTORUN_HELPER_AllocContinuationClass = 0x114,
+    READYTORUN_HELPER_AllocContinuationMethod = 0x115,
 };
 
 #include "readytoruninstructionset.h"
