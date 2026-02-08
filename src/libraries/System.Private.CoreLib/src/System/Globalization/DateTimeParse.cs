@@ -2686,7 +2686,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
-            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // Per ISO 8601, 24:00:00 represents end of a calendar day
             // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
             // We treat it as hour=0 and add one day at the end.
             bool isEndOfDay = false;
@@ -4817,8 +4817,8 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 }
             }
 
-            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
-            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // Per ISO 8601:2004, 24:00:00 represents the end of a calendar day
+            // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero.
             // We treat it as hour=0 and add one day at the end.
             bool isEndOfDay = false;
             if (result.Hour == 24)
@@ -5190,8 +5190,8 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
             }
 
-            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
-            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero
+            // Per ISO 8601, 24:00:00 represents the end of a calendar day
+            // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero
             if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
             {
                 result.SetBadDateTimeFailure();

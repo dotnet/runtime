@@ -125,7 +125,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // Per ISO 8601 (Date and time — Representations for information interchange), 24:00:00 represents end of a calendar day
             // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
             // We treat it as hour=0 and add one day at the end.
             bool isEndOfDay = false;
