@@ -176,3 +176,4 @@ Canceled jobs (typically from timeouts) often still have useful artifacts. The H
 4. Use `-SearchMihuBot` for semantic search of related issues
 5. Binlogs in artifacts help diagnose MSB4018 task failures
 6. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
+7. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** — `state` contains `SUCCESS`/`FAILURE` directly
