@@ -3049,6 +3049,22 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 }
             }
 
+            // Per ISO 8601 (https://www.iso8601.com/), 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (hour == 24)
+            {
+                if (minute != 0 || second != 0 || partSecond != 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                hour = 0;
+                isEndOfDay = true;
+            }
+
             Calendar calendar = GregorianCalendar.GetDefaultInstance();
             if (!calendar.TryToDateTime(raw.year, raw.GetNumber(0), raw.GetNumber(1),
                     hour, minute, second, 0, result.era, out DateTime time))
@@ -3061,6 +3077,16 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             {
                 result.SetBadDateTimeFailure();
                 return false;
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                if (!time.TryAddTicks(TimeSpan.TicksPerDay, out time))
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
             }
 
             result.parsedDate = time;

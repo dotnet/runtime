@@ -3173,9 +3173,32 @@ namespace System.Tests
         [Fact]
         public void Parse_Hour24_BasicTest()
         {
-            // Test basic Parse method (not just ParseExact)
+            // Test basic Parse method (not just ParseExact) - this uses ParseISO8601
             DateTime result = DateTime.Parse("2007-04-05T24:00:00.0000000", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
             Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:00")]  // No fraction
+        [InlineData("2023-12-31T24:00:00")]  // Year boundary
+        [InlineData("2020-02-29T24:00:00")]  // Leap year
+        public void Parse_Hour24_ISO8601Format_Success(string input)
+        {
+            // These use the ParseISO8601 code path
+            DateTime result = DateTime.Parse(input, CultureInfo.InvariantCulture);
+            // Verify the date advanced by one day
+            DateTime original = DateTime.Parse(input.Replace("24:00:00", "00:00:00"), CultureInfo.InvariantCulture);
+            Assert.Equal(original.AddDays(1), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        public void Parse_Hour24_ISO8601Format_Invalid_ThrowsFormatException(string input)
+        {
+            // These use the ParseISO8601 code path and should fail
+            Assert.Throws<FormatException>(() => DateTime.Parse(input, CultureInfo.InvariantCulture));
         }
 
         [Fact]

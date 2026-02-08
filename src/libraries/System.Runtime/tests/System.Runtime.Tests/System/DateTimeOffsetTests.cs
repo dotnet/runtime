@@ -1659,8 +1659,32 @@ namespace System.Tests
         [Fact]
         public static void Parse_Hour24_BasicTest()
         {
+            // Test with exact 'o' format
             DateTimeOffset result = DateTimeOffset.Parse("2007-04-05T24:00:00.0000000Z");
             Assert.Equal(new DateTimeOffset(2007, 4, 6, 0, 0, 0, TimeSpan.Zero), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:00Z")]  // No fraction
+        [InlineData("2023-12-31T24:00:00+00:00")]  // Year boundary with offset
+        [InlineData("2020-02-29T24:00:00-05:00")]  // Leap year with negative offset
+        public static void Parse_Hour24_ISO8601Format_Success(string input)
+        {
+            // These use the ParseISO8601 code path
+            DateTimeOffset result = DateTimeOffset.Parse(input, CultureInfo.InvariantCulture);
+            // Verify the UTC date advanced by one day (hour=24 becomes next day at 00:00)
+            DateTimeOffset original = DateTimeOffset.Parse(input.Replace("24:00:00", "00:00:00"), CultureInfo.InvariantCulture);
+            Assert.Equal(original.AddDays(1).UtcDateTime, result.UtcDateTime);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01Z")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00+00:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001-05:00")]  // Non-zero fraction
+        public static void Parse_Hour24_ISO8601Format_Invalid_ThrowsFormatException(string input)
+        {
+            // These use the ParseISO8601 code path and should fail
+            Assert.Throws<FormatException>(() => DateTimeOffset.Parse(input, CultureInfo.InvariantCulture));
         }
 
         [Fact]
