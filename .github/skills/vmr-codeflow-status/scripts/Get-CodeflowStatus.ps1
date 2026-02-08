@@ -316,7 +316,8 @@ if ($CheckMissing) {
                     $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
                     $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
                     $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
-                    Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
+                    $branchLabel = "$($entry.Key) → $($freshness.Channel)"
+                    Write-Host "  $($branchLabel.PadRight(40)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
                     if ($ageDays -gt 3) { $anyVeryStale = $true }
                 }
             }
@@ -432,7 +433,8 @@ if ($CheckMissing) {
                 $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
                 $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
                 $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
-                Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
+                $branchLabel = "$($entry.Key) → $($freshness.Channel)"
+                Write-Host "  $($branchLabel.PadRight(40)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
                 if ($ageDays -gt 3) { $buildsAreStale = $true }
             }
         }
