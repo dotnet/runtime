@@ -18,13 +18,14 @@ Use this skill when:
 - Asked questions like "why is this PR failing", "analyze the CI", "is CI green", "retry CI", "rerun tests", or "test failures"
 - Investigating canceled or timed-out jobs for recoverable results
 
-## When NOT to Use This Skill
+## Script Limitations
 
-Do **not** use this skill when:
-- The repository uses **GitHub Actions** instead of Azure DevOps (e.g., many community repos)
-- Tests are not sent to **Helix** infrastructure (check if the repo uses `eng/common/` Arcade tooling)
-- The user is asking about **build performance** or **compilation speed** (use MSBuild binlog analysis instead)
-- The failure is a **merge conflict** or **policy check** (not a test/build failure)
+The `Get-CIStatus.ps1` script targets **Azure DevOps + Helix** infrastructure specifically. It won't help with:
+- **GitHub Actions** workflows (different API, different log format)
+- Repos not using **Helix** for test distribution (no Helix work items to query)
+- Pure **build performance** questions (use MSBuild binlog analysis instead)
+
+However, the analysis patterns in this skill (interpreting failures, correlating with PR changes, distinguishing infrastructure vs. code issues) apply broadly even outside AzDO/Helix.
 
 ## Quick Start
 

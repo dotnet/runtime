@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Retrieves test failures from Azure DevOps builds and Helix test runs.
 
@@ -357,7 +357,7 @@ function Get-AzDOBuildIdFromPR {
     $ghExitCode = $LASTEXITCODE
 
     if ($ghExitCode -ne 0 -and -not ($checksOutput | Select-String -Pattern "buildId=")) {
-        throw "Failed to fetch CI status for PR #$PR in $Repository — check PR number and permissions"
+        throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
     }
 
     # Find ALL failing Azure DevOps builds
@@ -386,7 +386,7 @@ function Get-AzDOBuildIdFromPR {
                 }
             }
         }
-        throw "No CI build found for PR #$PR in $Repository — the CI pipeline has not been triggered yet"
+        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
     }
 
     # Return all unique failing build IDs
