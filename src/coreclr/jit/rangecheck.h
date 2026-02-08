@@ -354,6 +354,12 @@ struct RangeOps
         });
     }
 
+    static Range Subtract(const Range& r1, const Range& r2)
+    {
+        // Delegate to Add after negating the second operand. Possible overflows will be handled there.
+        return Add(r1, Negate(r2));
+    }
+
     static Range Multiply(const Range& r1, const Range& r2)
     {
         return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
@@ -737,6 +743,9 @@ public:
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
 
+    // Compute the range from the given type
+    static Range GetRangeFromType(var_types type);
+
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
@@ -757,9 +766,6 @@ private:
 
     // Internal worker for GetRange.
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
-
-    // Compute the range from the given type
-    static Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
