@@ -126,8 +126,10 @@ function Get-VMRBuildFreshness {
                     if ([int]$resp.StatusCode -eq 301 -and $resp.Headers.Location) {
                         $channel = $ch
                         $blobUrl = $resp.Headers.Location.ToString()
+                        $resp.Dispose()
                         break
                     }
+                    $resp.Dispose()
                 } catch { }
             }
         }
@@ -144,9 +146,11 @@ function Get-VMRBuildFreshness {
         if (-not $blobUrl) {
             $resp = $client.GetAsync("https://aka.ms/dotnet/$channel/daily/dotnet-sdk-win-x64.zip").Result
             if ([int]$resp.StatusCode -ne 301 -or -not $resp.Headers.Location) {
+                $resp.Dispose()
                 return $null
             }
             $blobUrl = $resp.Headers.Location.ToString()
+            $resp.Dispose()
         }
 
         $version = if ($blobUrl -match '/Sdk/([^/]+)/') { $Matches[1] } else { $null }

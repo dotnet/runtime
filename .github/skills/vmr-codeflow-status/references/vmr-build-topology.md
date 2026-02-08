@@ -62,6 +62,7 @@ $client = [System.Net.Http.HttpClient]::new($handler)
 # Step 1: Resolve aka.ms → ci.dot.net blob URL
 $resp = $client.GetAsync("https://aka.ms/dotnet/11.0.1xx/daily/dotnet-sdk-win-x64.zip").Result
 $blobUrl = $resp.Headers.Location.ToString()  # Only if StatusCode is 301
+$resp.Dispose()
 
 # Step 2: HEAD the blob for Last-Modified
 $head = Invoke-WebRequest -Uri $blobUrl -Method Head -UseBasicParsing
@@ -69,6 +70,7 @@ $published = [DateTimeOffset]::Parse($head.Headers['Last-Modified']).UtcDateTime
 $age = [DateTime]::UtcNow - $published
 
 $client.Dispose()
+$handler.Dispose()
 ```
 
 ### Interpreting results
