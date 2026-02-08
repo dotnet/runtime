@@ -7496,7 +7496,8 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 }
 
 //------------------------------------------------------------------------
-// impDevirtualizedCallHasConstInstParam: check if the instantiation argument is a compile-time lookup.
+// impDevirtualizedCallHasConstInstParam: check if the instantiation argument
+// is a compile-time lookup.
 //
 // Arguments:
 //   dvInfo - Devirtualization information returned by resolveVirtualMethod.
@@ -8851,15 +8852,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             //
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
 
-            if (dvInfo.instParamLookup.constLookup.accessType != IAT_VALUE)
-            {
-                JITDUMP("Unsupported devirt instantiation lookup access type %d\n",
-                        dvInfo.instParamLookup.constLookup.accessType);
-                return;
-            }
-
-            instantiatingStub = (CORINFO_METHOD_HANDLE)dvInfo.instParamLookup.constLookup.handle;
-
             // We don't expect R2R/NAOT to end up here for array interface devirtualization.
             // For NAOT, it has Array<T> and normal devirtualization.
             // For R2R, we don't (yet) support array interface devirtualization.
@@ -8877,27 +8869,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         // Devirtualization can return an instantiating stub. If so, switch to the wrapped
         // entrypoint and capture the stub as the instantiation argument source.
-        CORINFO_METHOD_HANDLE discoveredInstantiatingStub = NO_METHOD_HANDLE;
-        CORINFO_CLASS_HANDLE  ignoredClassArg             = NO_CLASS_HANDLE;
+        CORINFO_CLASS_HANDLE  ignore = NO_CLASS_HANDLE;
         CORINFO_METHOD_HANDLE wrappedMethod =
-            info.compCompHnd->getInstantiatedEntry(derivedMethod, &discoveredInstantiatingStub, &ignoredClassArg);
+            info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignore);
 
-        assert(ignoredClassArg == NO_CLASS_HANDLE);
+        assert(ignore == NO_CLASS_HANDLE);
         if (wrappedMethod != NO_METHOD_HANDLE)
         {
             derivedMethod = wrappedMethod;
-        }
-
-        if (discoveredInstantiatingStub != NO_METHOD_HANDLE)
-        {
-            if (instantiatingStub == NO_METHOD_HANDLE)
-            {
-                instantiatingStub = discoveredInstantiatingStub;
-            }
-            else
-            {
-                assert(instantiatingStub == discoveredInstantiatingStub);
-            }
         }
 
         assert(!needsCompileTimeLookup || (instantiatingStub != NO_METHOD_HANDLE));
