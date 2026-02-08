@@ -476,7 +476,7 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 - **Catch only expected exceptions in fuzz tests.** Catching all exceptions masks bugs like undocumented exceptions escaping the API.
   > "Would it be possible to catch only the exceptions that we expect here?... It has helped me to find that the library was throwing undocumented exceptions." — adamsitnik
 
-- **Use modern xUnit patterns.** Use `Assert.*` (not `return 100 == success`). Use `[Fact]`/`[Theory]`. Use `ThrowsAnyAsync<OperationCanceledException>` for cancellation. Name regression test classes after the issue number (e.g., `Runtime_117605`).
+- **Use modern xUnit patterns for xUnit-based tests.** In xUnit test projects (for example, most libraries tests), use `Assert.*` instead of the legacy `return 100 == success` pattern, use `[Fact]`/`[Theory]`, prefer `ThrowsAnyAsync<OperationCanceledException>` for cancellation, and name regression test classes after the issue number (e.g., `Runtime_117605`). Legacy non-xUnit tests under `src/tests` may continue to use the existing `return 100` convention.
   > "Can we change the tests here to use Asserts and not the legacy 'return 100 == success' model?" — jkoritzinsky
 
 - **Reduce test output volume.** Avoid megabytes of console output. Use `Thread.Sleep` with fewer iterations instead of busy loops.
