@@ -483,5 +483,45 @@ namespace System.IO.Compression
                 }
             }
         }
+
+        [Fact]
+        public async Task DerivedStream_WithByteArrayWriteAsync_DoesNotHang()
+        {
+            // This test simulates a .NET Standard 2.0 derived GZipStream that only overrides
+            // WriteAsync(byte[], int, int, CancellationToken). When used in .NET Core 3.1+,
+            // calling WriteAsync should not enter an infinite loop.
+            using (var ms = new MemoryStream())
+            using (var compressor = new DerivedGZipStreamWithByteArrayWriteAsync(ms, CompressionMode.Compress))
+            {
+                byte[] data = new byte[] { 1, 2, 3, 4, 5 };
+
+                // This should complete without hanging
+                var writeTask = compressor.WriteAsync(new ReadOnlyMemory<byte>(data)).AsTask();
+
+                // Set a timeout to detect infinite loop
+                var completedTask = await Task.WhenAny(writeTask, Task.Delay(TimeSpan.FromSeconds(5)));
+
+                Assert.Same(writeTask, completedTask);
+                await writeTask; // Ensure no exceptions
+                Assert.True(compressor.WriteAsyncCalled);
+            }
+        }
+
+        private sealed class DerivedGZipStreamWithByteArrayWriteAsync : GZipStream
+        {
+            public bool WriteAsyncCalled = false;
+
+            public DerivedGZipStreamWithByteArrayWriteAsync(Stream stream, CompressionMode mode)
+                : base(stream, mode)
+            {
+            }
+
+            // Only override the byte[] version, simulating .NET Standard 2.0
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                WriteAsyncCalled = true;
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+        }
     }
 }

@@ -111,8 +111,16 @@ namespace System.IO.Compression
             }
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
+        {
+            // Use WriteAsyncMemory directly to avoid a potential infinite loop.
+            // If a derived class (compiled against .NET Standard 2.0 where GZipStream doesn't override
+            // WriteAsync(byte[], ...)) calls base.WriteAsync, it goes to Stream.WriteAsync, which calls
+            // BeginWrite. If BeginWrite then calls WriteAsync, it creates a loop.
+            CheckDeflateStream();
+            ValidateBufferArguments(buffer, offset, count);
+            return TaskToAsyncResult.Begin(_deflateStream.WriteAsyncMemory(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask(), asyncCallback, asyncState);
+        }
 
         public override void EndWrite(IAsyncResult asyncResult) =>
             _deflateStream.EndWrite(asyncResult);
