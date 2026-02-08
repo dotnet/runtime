@@ -131,6 +131,8 @@ function Get-CodeflowPRHealth {
     $wasStaleness = $hasStaleness
 
     # If issues detected, check if they were resolved via Codeflow verification
+    # Codeflow verification SUCCESS reliably indicates conflict resolution,
+    # but staleness (code moved on) needs a newer commit after the warning
     if ($hasConflict -or $hasStaleness) {
         $checksJson = gh pr checks $PRNumber -R $Repo --json name,state 2>$null
         if ($LASTEXITCODE -eq 0 -and $checksJson) {
@@ -138,8 +140,24 @@ function Get-CodeflowPRHealth {
                 $checks = ($checksJson -join "`n") | ConvertFrom-Json
                 $codeflowCheck = $checks | Where-Object { $_.name -match 'Codeflow verification' }
                 if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
+                    # Codeflow verification passing means no merge conflict
                     $hasConflict = $false
-                    $hasStaleness = $false
+                    # For staleness, check if there are commits after the last staleness warning
+                    if ($hasStaleness) {
+                        $commitsJson = gh pr view $PRNumber -R $Repo --json commits --jq '.commits[-1].committedDate' 2>$null
+                        if ($LASTEXITCODE -eq 0 -and $commitsJson) {
+                            $lastCommitTime = ($commitsJson -join "").Trim()
+                            $lastWarnTime = $null
+                            foreach ($comment in $prDetail.comments) {
+                                if ($comment.author.login -match '^dotnet-maestro' -and $comment.body -match 'codeflow cannot continue|the source repository has received code changes') {
+                                    $lastWarnTime = $comment.createdAt
+                                }
+                            }
+                            if ($lastWarnTime -and $lastCommitTime -and $lastCommitTime -gt $lastWarnTime) {
+                                $hasStaleness = $false
+                            }
+                        }
+                    }
                 }
             } catch { }
         }
@@ -267,6 +285,48 @@ if ($CheckMissing) {
 
     Write-Section "Checking for missing backflow PRs in $Repository"
 
+    # dotnet/dotnet doesn't have backflow from itself — skip to forward flow + build freshness
+    if ($Repository -eq "dotnet/dotnet") {
+        Write-Host "  ℹ️  VMR (dotnet/dotnet) does not have backflow from itself" -ForegroundColor DarkGray
+
+        # Still show build freshness for the VMR
+        $vmrBranches = @{}
+        if ($Branch -eq "main" -or -not $Branch) { $vmrBranches["main"] = "main" }
+        if ($Branch -match 'release/' -or -not $Branch) {
+            # Try to detect release branches
+            $branchesJson = gh api "/repos/dotnet/dotnet/branches?per_page=30" --jq '.[].name' 2>$null
+            if ($LASTEXITCODE -eq 0 -and $branchesJson) {
+                foreach ($b in ($branchesJson -split "`n")) {
+                    if ($b -match '^release/') { $vmrBranches[$b] = $b }
+                }
+            }
+        }
+        if ($vmrBranches.Count -gt 0) {
+            Write-Section "Official Build Freshness (via aka.ms)"
+            $checkedChannels = @{}
+            $anyVeryStale = $false
+            foreach ($entry in $vmrBranches.GetEnumerator()) {
+                $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
+                if ($freshness -and -not $checkedChannels.ContainsKey($freshness.Channel)) {
+                    $checkedChannels[$freshness.Channel] = $freshness
+                    $ageDays = $freshness.Age.TotalDays
+                    $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
+                    $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
+                    $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
+                    Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
+                    if ($ageDays -gt 3) { $anyVeryStale = $true }
+                }
+            }
+            if ($anyVeryStale) {
+                Write-Host ""
+                Write-Host "  ⚠️  Official builds appear stale — VMR may be failing to build" -ForegroundColor Yellow
+                Write-Host "    Check https://dev.azure.com/dnceng-public/public/_build?definitionId=278 for public CI failures" -ForegroundColor DarkGray
+                Write-Host "    See also: https://github.com/dotnet/dotnet/issues?q=is:issue+is:open+%22Operational+Issue%22" -ForegroundColor DarkGray
+            }
+        }
+        return
+    }
+
     # Find open backflow PRs (to know which branches are already covered)
     $openPRsJson = gh search prs --repo $Repository --author "dotnet-maestro[bot]" --state open "Source code updates from dotnet/dotnet" --json number,title --limit 50 2>$null
     $openPRs = @()
@@ -343,6 +403,47 @@ if ($CheckMissing) {
     $upToDateCount = 0
     $vmrBranchesFound = @{}
 
+    # First pass: collect VMR branch mappings from merged PRs (needed for build freshness)
+    foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
+        if ($openBranches.ContainsKey($branchName)) { continue }
+        $lastPR = $branchLastMerged[$branchName]
+        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
+        if ($LASTEXITCODE -ne 0) { continue }
+        try { $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json } catch { continue }
+        $vmrBranchFromPR = $null
+        if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') { $vmrBranchFromPR = $Matches[1] }
+        if ($vmrBranchFromPR) { $vmrBranchesFound[$branchName] = $vmrBranchFromPR }
+    }
+
+    # --- Official build freshness check (shown first for context) ---
+    $buildsAreStale = $false
+    if ($vmrBranchesFound.Count -gt 0) {
+        Write-Section "Official Build Freshness (via aka.ms)"
+        $checkedChannels = @{}
+        foreach ($entry in $vmrBranchesFound.GetEnumerator()) {
+            $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
+            if ($freshness -and -not $checkedChannels.ContainsKey($freshness.Channel)) {
+                $checkedChannels[$freshness.Channel] = $freshness
+                $ageDays = $freshness.Age.TotalDays
+                $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
+                $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
+                $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
+                Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
+                if ($ageDays -gt 3) { $buildsAreStale = $true }
+            }
+        }
+        if ($buildsAreStale) {
+            Write-Host ""
+            Write-Host "  ⚠️  Official builds appear stale — VMR may be failing to build" -ForegroundColor Yellow
+            Write-Host "    Missing backflow PRs below are likely caused by this, not a Maestro issue" -ForegroundColor DarkGray
+            Write-Host "    Check https://dev.azure.com/dnceng-public/public/_build?definitionId=278 for public CI failures" -ForegroundColor DarkGray
+            Write-Host "    See also: https://github.com/dotnet/dotnet/issues?q=is:issue+is:open+%22Operational+Issue%22" -ForegroundColor DarkGray
+        }
+    }
+
+    # --- Per-branch backflow analysis ---
+    Write-Section "Backflow status ($Repository ← dotnet/dotnet)"
+
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
         $lastPR = $branchLastMerged[$branchName]
         Write-Host ""
@@ -355,7 +456,13 @@ if ($CheckMissing) {
             continue
         }
 
-        # Get the PR body to extract VMR commit and VMR branch
+        # Get the PR body to extract VMR commit (branch already collected above)
+        $vmrBranchFromPR = $vmrBranchesFound[$branchName]
+        if (-not $vmrBranchFromPR) {
+            Write-Host "    ⚠️  Could not determine VMR branch from last merged PR" -ForegroundColor Yellow
+            continue
+        }
+
         $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "    ⚠️  Could not fetch PR #$($lastPR.number) details" -ForegroundColor Yellow
@@ -370,20 +477,14 @@ if ($CheckMissing) {
         }
 
         $vmrCommitFromPR = $null
-        $vmrBranchFromPR = $null
         if ($prDetail.body -match '\*\*Commit\*\*:\s*\[([a-fA-F0-9]+)\]') {
             $vmrCommitFromPR = $Matches[1]
         }
-        if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') {
-            $vmrBranchFromPR = $Matches[1]
-        }
 
-        if (-not $vmrCommitFromPR -or -not $vmrBranchFromPR) {
-            Write-Host "    ⚠️  Could not parse VMR metadata from last merged PR #$($lastPR.number)" -ForegroundColor Yellow
+        if (-not $vmrCommitFromPR) {
+            Write-Host "    ⚠️  Could not parse VMR commit from last merged PR #$($lastPR.number)" -ForegroundColor Yellow
             continue
         }
-
-        $vmrBranchesFound[$branchName] = $vmrBranchFromPR
 
         Write-Host "    Last merged: PR #$($lastPR.number) on $($lastPR.closedAt)" -ForegroundColor DarkGray
         Write-Host "    VMR branch: $vmrBranchFromPR" -ForegroundColor DarkGray
@@ -418,7 +519,12 @@ if ($CheckMissing) {
             $mergedTime = [DateTimeOffset]::Parse($lastPR.closedAt).UtcDateTime
             $elapsed = [DateTime]::UtcNow - $mergedTime
             if ($elapsed.TotalHours -gt 6) {
-                Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
+                if ($buildsAreStale) {
+                    Write-Host "    ℹ️  No new official build available — backflow blocked upstream" -ForegroundColor DarkGray
+                }
+                else {
+                    Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
+                }
             }
             else {
                 Write-Host "    ℹ️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may still be processing" -ForegroundColor DarkGray
@@ -472,31 +578,6 @@ if ($CheckMissing) {
 
             Write-Host "  PR #$($fpr.number) [$fprBranch]: $($fwdHealth.Status)" -ForegroundColor $fwdHealth.Color
             Write-Host "    https://github.com/dotnet/dotnet/pull/$($fpr.number)" -ForegroundColor DarkGray
-        }
-    }
-
-    # --- Official build freshness check (when missing backflow detected) ---
-    if ($missingCount -gt 0 -and $vmrBranchesFound.Count -gt 0) {
-        Write-Section "Official Build Freshness (via aka.ms)"
-        $checkedChannels = @{}
-        $anyVeryStale = $false
-        foreach ($entry in $vmrBranchesFound.GetEnumerator()) {
-            $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
-            if ($freshness -and -not $checkedChannels.ContainsKey($freshness.Channel)) {
-                $checkedChannels[$freshness.Channel] = $freshness
-                $ageDays = $freshness.Age.TotalDays
-                $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
-                $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
-                $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
-                Write-Host "  $($freshness.Channel.PadRight(25)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
-                if ($ageDays -gt 3) { $anyVeryStale = $true }
-            }
-        }
-        if ($anyVeryStale) {
-            Write-Host ""
-            Write-Host "  ⚠️  Official builds appear stale — VMR may be failing to build" -ForegroundColor Yellow
-            Write-Host "    Check https://dev.azure.com/dnceng-public/public/_build?definitionId=278 for public CI failures" -ForegroundColor DarkGray
-            Write-Host "    See also: https://github.com/dotnet/dotnet/issues?q=is:issue+is:open+%22Operational+Issue%22" -ForegroundColor DarkGray
         }
     }
 
