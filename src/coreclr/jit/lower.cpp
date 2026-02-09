@@ -6050,11 +6050,6 @@ void Lowering::LowerReturnSuspend(GenTree* node)
         BlockRange().Remove(BlockRange().LastNode(), true);
     }
 
-    if (m_compiler->compMethodRequiresPInvokeFrame())
-    {
-        InsertPInvokeMethodEpilog(m_compiler->compCurBB DEBUGARG(node));
-    }
-
     BasicBlock* block = m_compiler->compCurBB;
     if (!block->KindIs(BBJ_RETURN))
     {
@@ -6080,6 +6075,11 @@ void Lowering::LowerReturnSuspend(GenTree* node)
         block->SetKindAndTargetEdge(BBJ_RETURN);
 
         m_compiler->fgInvalidateDfsTree();
+    }
+
+    if (m_compiler->compMethodRequiresPInvokeFrame())
+    {
+        InsertPInvokeMethodEpilog(m_compiler->compCurBB DEBUGARG(node));
     }
 }
 
