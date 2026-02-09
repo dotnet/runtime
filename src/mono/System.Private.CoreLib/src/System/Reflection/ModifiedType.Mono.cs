@@ -23,9 +23,11 @@ namespace System.Reflection
         /// </summary>
         internal readonly struct TypeSignature
         {
-            internal readonly RuntimeType? SignatureHolderType;
-            internal readonly object? SignatureHolderInfo;
-            internal readonly int ParameterIndex;
+            public readonly RuntimeType? SignatureHolderType;
+            public readonly object? SignatureHolderInfo;
+            // The index of the function pointer (starting from 1, 0 being the return type)
+            // or generic parameter for which we are retrieving modifiers.
+            public readonly int ParameterIndex;
 
             internal TypeSignature(RuntimeType signatureHolderType, int parameterIndex)
             {
@@ -91,15 +93,15 @@ namespace System.Reflection
             }
         }
 
-        internal static Type Create(Type sourceType, object sourceTypeInfo, int parameterIndex = 0)
+        internal static Type Create(Type sourceType, object sourceTypeInfo)
         {
             var unmodifiedType = (RuntimeType)sourceType;
             TypeSignature typeSignature;
 
             if (unmodifiedType.IsFunctionPointer)
-                typeSignature = new TypeSignature(unmodifiedType, sourceTypeInfo, parameterIndex);
+                typeSignature = new TypeSignature(unmodifiedType, sourceTypeInfo, -1);
             else
-                typeSignature = new TypeSignature(sourceTypeInfo, parameterIndex);
+                typeSignature = new TypeSignature(sourceTypeInfo, -1);
 
             return Create(unmodifiedType, typeSignature);
         }
