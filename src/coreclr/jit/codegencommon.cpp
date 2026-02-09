@@ -7416,8 +7416,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         ABIPassingInformation& abiInfo = arg.AbiInfo;
         GenTree*               argNode = arg.GetLateNode();
 
+#if FEATURE_MULTIREG_ARGS || defined(VECTORCALL_SUPPORT)
         // Deal with multi register passed struct args (e.g., vectorcall HVAs).
-        // Note: This is needed even when FEATURE_MULTIREG_ARGS=0 for vectorcall support.
         if (argNode->OperIs(GT_FIELD_LIST))
         {
             GenTreeFieldList::Use* use = argNode->AsFieldList()->Uses().begin().GetUse();
@@ -7448,6 +7448,7 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             assert(use == nullptr);
             continue;
         }
+#endif
 
         if (abiInfo.HasExactlyOneRegisterSegment())
         {

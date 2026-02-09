@@ -6063,9 +6063,13 @@ void CodeGen::genCall(GenTreeCall* call)
                 }
                 else
 #endif // TARGET_X86
+#if defined(TARGET_AMD64)
                     // Use varTypeUsesFloatReg to cover SIMD types as well as float/double.
                     // This is needed for vectorcall where SIMD types like TYP_SIMD16 return in XMM0.
                     if (varTypeUsesFloatReg(returnType))
+#else
+                if (varTypeIsFloating(returnType))
+#endif
                     {
                         returnReg = REG_FLOATRET;
                     }

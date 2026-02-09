@@ -207,14 +207,7 @@ public:
             // it will need additional support in `BuildStoreLoc`.
             case 16:
                 return TYP_SIMD16;
-#ifdef TARGET_XARCH
-            case 32:
-                return TYP_SIMD32;
-            // Note: 64-byte structs are not enregistered as TYP_SIMD64 by default
-            // because they are more commonly HVA4 (4x16) than single Vector512.
-            // HVAs need multi-register handling which requires TYP_UNDEF here.
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
+#endif
             default:
                 return TYP_UNDEF;
         }

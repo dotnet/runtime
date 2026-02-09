@@ -1599,7 +1599,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                     if (regType == TYP_UNDEF)
                     {
                         const unsigned retSize = m_compiler->info.compCompHnd->getClassSize(retClsHnd);
-                        regType = m_compiler->getVectorcallHvaType(retClsHnd, retSize);
+                        regType                = m_compiler->getVectorcallHvaType(retClsHnd, retSize);
                     }
 #endif // VECTORCALL_SUPPORT
                 }
@@ -3148,8 +3148,8 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
         // we assign it in gtNewPutArgReg during lowering, so we can get it
         // from there.
 
+#if FEATURE_MULTIREG_ARGS || defined(VECTORCALL_SUPPORT)
         // Handle FIELD_LIST for multi-register arguments (e.g., vectorcall HVAs).
-        // Note: This is needed even when FEATURE_MULTIREG_ARGS=0 for vectorcall support.
         if (argNode->OperIs(GT_FIELD_LIST))
         {
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
@@ -3161,6 +3161,7 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
 
             continue;
         }
+#endif
 
         // Each register argument corresponds to one source.
         if (argNode->OperIsPutArgReg())

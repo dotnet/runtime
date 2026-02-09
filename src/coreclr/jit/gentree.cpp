@@ -30882,9 +30882,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             // For vectorcall HVAs on Windows x64, GetHfaType returns TYP_UNDEF because
             // compFeatureHfa is false. Determine the actual SIMD element type by
             // inspecting the HVA fields.
-            if (hfaType == TYP_UNDEF &&
-                (callConv == CorInfoCallConvExtension::Vectorcall ||
-                 callConv == CorInfoCallConvExtension::VectorcallMemberFunction))
+            if (hfaType == TYP_UNDEF && (callConv == CorInfoCallConvExtension::Vectorcall ||
+                                         callConv == CorInfoCallConvExtension::VectorcallMemberFunction))
             {
                 hfaType = comp->getVectorcallHvaType(retClsHnd, structSize);
             }

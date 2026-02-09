@@ -399,10 +399,10 @@ public:
 // The register used depends on the argument's POSITION in the parameter list.
 class VectorcallX64Classifier
 {
-    unsigned m_argPosition  = 0;         // Current argument position (0-based)
-    unsigned m_stackArgSize = 32;        // Shadow space
-    unsigned m_usedXmmMask  = 0;         // Bitmask of XMM registers used by regular vector args
-    unsigned m_futureVectorPositions = 0; // Bitmask of positions that will be used by regular vectors
+    unsigned m_argPosition           = 0;  // Current argument position (0-based)
+    unsigned m_stackArgSize          = 32; // Shadow space
+    unsigned m_usedXmmMask           = 0;  // Bitmask of XMM registers used by regular vector args
+    unsigned m_futureVectorPositions = 0;  // Bitmask of positions that will be used by regular vectors
 
 public:
     VectorcallX64Classifier(const ClassifierInfo& info);

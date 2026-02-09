@@ -119,6 +119,7 @@ namespace ILCompiler
                 UnmanagedCallingConventions.Stdcall => new Utf8StringBuilder().Append('_').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
                 UnmanagedCallingConventions.Fastcall => new Utf8StringBuilder().Append('@').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
                 UnmanagedCallingConventions.Cdecl => Utf8String.Concat("_"u8, unmangledName.AsSpan()),
+                UnmanagedCallingConventions.Vectorcall => new Utf8StringBuilder().Append(unmangledName).Append("@@"u8).Append(signatureBytes).ToUtf8String(),
                 _ => throw new System.NotImplementedException()
             };
         }

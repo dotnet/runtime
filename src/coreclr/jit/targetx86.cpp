@@ -205,8 +205,7 @@ ABIPassingInformation VectorcallX86Classifier::Classify(Compiler*    comp,
         regNumber reg = m_floatRegs.Dequeue();
         segment       = ABIPassingSegment::InRegister(reg, 0, size);
     }
-    else if (!useFloatReg && (m_intRegs.Count() >= numSlots) &&
-             (wellKnownParam != WellKnownArg::X86TailCallSpecialArg))
+    else if (!useFloatReg && (m_intRegs.Count() >= numSlots) && (wellKnownParam != WellKnownArg::X86TailCallSpecialArg))
     {
         // Check if we can enregister integer types
         bool canEnreg = false;

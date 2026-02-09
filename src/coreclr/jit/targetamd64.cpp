@@ -270,7 +270,7 @@ static bool IsSimdVectorType(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd)
     }
 
     const char* namespaceName = nullptr;
-    const char* className = comp->info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
+    const char* className     = comp->info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
 
     if (namespaceName == nullptr || strcmp(namespaceName, "System.Runtime.Intrinsics") != 0)
     {
@@ -282,10 +282,8 @@ static bool IsSimdVectorType(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd)
         return false;
     }
 
-    return (strncmp(className, "Vector64", 8) == 0 ||
-            strncmp(className, "Vector128", 9) == 0 ||
-            strncmp(className, "Vector256", 9) == 0 ||
-            strncmp(className, "Vector512", 9) == 0);
+    return (strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
+            strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -359,9 +357,9 @@ static bool IsHvaByFieldInspection(Compiler* comp, CORINFO_CLASS_HANDLE clsHnd, 
 
     for (unsigned i = 0; i < fieldCount; i++)
     {
-        CORINFO_FIELD_HANDLE fieldHnd = comp->info.compCompHnd->getFieldInClass(clsHnd, i);
+        CORINFO_FIELD_HANDLE fieldHnd      = comp->info.compCompHnd->getFieldInClass(clsHnd, i);
         CORINFO_CLASS_HANDLE fieldClassHnd = nullptr;
-        CorInfoType fieldCorType = comp->info.compCompHnd->getFieldType(fieldHnd, &fieldClassHnd);
+        CorInfoType          fieldCorType  = comp->info.compCompHnd->getFieldType(fieldHnd, &fieldClassHnd);
 
         // Field must be a value type (struct)
         if (fieldCorType != CORINFO_TYPE_VALUECLASS)
@@ -439,13 +437,13 @@ void VectorcallX64Classifier::PreScanForVectorPositions(Compiler* comp, CallArgs
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
 
         // Check if this is a regular vector type (not an HVA)
-        bool isSimdType = varTypeIsSIMD(argSigType);
+        bool isSimdType             = varTypeIsSIMD(argSigType);
         bool isSimdCompatibleStruct = false;
-        bool isHva = false;
+        bool isHva                  = false;
 
         if (argSigType == TYP_STRUCT && argLayout != nullptr && !argLayout->HasGCPtr())
         {
-            unsigned size = argLayout->GetSize();
+            unsigned             size   = argLayout->GetSize();
             CORINFO_CLASS_HANDLE clsHnd = argLayout->GetClassHandle();
 
             // Check for intrinsic SIMD types (Vector64, Vector128, Vector256, Vector512)
@@ -458,24 +456,23 @@ void VectorcallX64Classifier::PreScanForVectorPositions(Compiler* comp, CallArgs
             // 8/12/16 bytes -> XMM, 32 bytes -> YMM, 64 bytes -> ZMM
             if (!isSimdCompatibleStruct)
             {
-                isSimdCompatibleStruct = (size == 8 || size == 12 || size == 16 ||
-                                          size == 32 || size == 64);
+                isSimdCompatibleStruct = (size == 8 || size == 12 || size == 16 || size == 32 || size == 64);
             }
 
             // Check if this is an HVA by inspecting field types
             // An HVA overrides the single-SIMD classification if all fields are vectors
-            if (isSimdCompatibleStruct && (size == 32 || size == 48 || size == 64 ||
-                                           size == 96 || size == 128 || size == 192 || size == 256))
+            if (isSimdCompatibleStruct &&
+                (size == 32 || size == 48 || size == 64 || size == 96 || size == 128 || size == 192 || size == 256))
             {
                 if (IsHvaByFieldInspection(comp, clsHnd, size))
                 {
                     isSimdCompatibleStruct = false;
-                    isHva = true;
+                    isHva                  = true;
                 }
             }
         }
 
-        bool isFloatType = varTypeUsesFloatArgReg(argSigType);
+        bool isFloatType     = varTypeUsesFloatArgReg(argSigType);
         bool isRegularVector = (isSimdType || isSimdCompatibleStruct || isFloatType) && !isHva;
 
         if (isHva)
@@ -562,7 +559,7 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
     bool isSimdCompatibleStruct = false;
     if (type == TYP_STRUCT && structLayout != nullptr && !structLayout->HasGCPtr())
     {
-        unsigned size = structLayout->GetSize();
+        unsigned             size   = structLayout->GetSize();
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
 
         // Check for intrinsic SIMD types (Vector64, Vector128, Vector256, Vector512)
@@ -575,8 +572,7 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
         // 8/12/16 bytes -> XMM, 32 bytes -> YMM, 64 bytes -> ZMM
         if (!isSimdCompatibleStruct)
         {
-            isSimdCompatibleStruct = (size == 8 || size == 12 || size == 16 ||
-                                      size == 32 || size == 64);
+            isSimdCompatibleStruct = (size == 8 || size == 12 || size == 16 || size == 32 || size == 64);
         }
 
         // For larger sizes that could be HVA, use field inspection to determine
@@ -594,10 +590,10 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
     // - Must have 2-4 fields
     if (type == TYP_STRUCT && structLayout != nullptr && !structLayout->HasGCPtr())
     {
-        var_types hvaElemType = TYP_UNDEF;
-        unsigned  hvaElemSize = 0;
-        unsigned  structSize = structLayout->GetSize();
-        CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+        var_types            hvaElemType = TYP_UNDEF;
+        unsigned             hvaElemSize = 0;
+        unsigned             structSize  = structLayout->GetSize();
+        CORINFO_CLASS_HANDLE clsHnd      = structLayout->GetClassHandle();
 
         // First try VM's HFA type detection
         var_types hvaType = comp->GetHfaType(clsHnd);
@@ -612,13 +608,21 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
         {
             // Determine element size from field count
             unsigned fieldCount = comp->info.compCompHnd->getClassNumInstanceFields(clsHnd);
-            hvaElemSize = structSize / fieldCount;
+            hvaElemSize         = structSize / fieldCount;
             switch (hvaElemSize)
             {
-                case 8:  hvaElemType = TYP_SIMD8; break;
-                case 16: hvaElemType = TYP_SIMD16; break;
-                case 32: hvaElemType = TYP_SIMD32; break;
-                case 64: hvaElemType = TYP_SIMD64; break;
+                case 8:
+                    hvaElemType = TYP_SIMD8;
+                    break;
+                case 16:
+                    hvaElemType = TYP_SIMD16;
+                    break;
+                case 32:
+                    hvaElemType = TYP_SIMD32;
+                    break;
+                case 64:
+                    hvaElemType = TYP_SIMD64;
+                    break;
             }
 
             // Since we confirmed it's an HVA, override isVectorType
@@ -660,7 +664,8 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
                             // This register is unused, allocate it to this HVA element
                             m_usedXmmMask |= (1 << regIdx);
                             regNumber reg = vectorcallFltArgRegs[regIdx];
-                            info.Segment(elemIdx) = ABIPassingSegment::InRegister(reg, elemIdx * hvaElemSize, hvaElemSize);
+                            info.Segment(elemIdx) =
+                                ABIPassingSegment::InRegister(reg, elemIdx * hvaElemSize, hvaElemSize);
                             elemIdx++;
                         }
                     }
@@ -678,8 +683,8 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
 
                     // HVAs consist of SIMD elements; align to 16 bytes,
                     // consistent with other SIMD stack arguments.
-                    m_stackArgSize = roundUp(m_stackArgSize, 16u);
-                    unsigned stackSize = roundUp(structLayout->GetSize(), 16u);
+                    m_stackArgSize              = roundUp(m_stackArgSize, 16u);
+                    unsigned          stackSize = roundUp(structLayout->GetSize(), 16u);
                     ABIPassingSegment segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, structLayout->GetSize());
                     m_stackArgSize += stackSize;
 
@@ -699,7 +704,7 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
         }
     }
 
-    unsigned          position    = m_argPosition++;
+    unsigned          position = m_argPosition++;
     ABIPassingSegment segment;
 
     // For vectorcall, use XMM/YMM registers for:
@@ -721,7 +726,7 @@ ABIPassingInformation VectorcallX64Classifier::Classify(Compiler*    comp,
         else
         {
             // Stack alignment: SIMD types need proper alignment
-            m_stackArgSize = roundUp(m_stackArgSize, 16);
+            m_stackArgSize     = roundUp(m_stackArgSize, 16);
             unsigned stackSize = max(typeSize, (unsigned)TARGET_POINTER_SIZE);
             segment            = ABIPassingSegment::OnStack(m_stackArgSize, 0, typeSize);
             m_stackArgSize += stackSize;

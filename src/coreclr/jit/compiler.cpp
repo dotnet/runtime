@@ -1021,7 +1021,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
          callConv == CorInfoCallConvExtension::VectorcallMemberFunction))
     {
         // Check if this is a SIMD-compatible struct (no GC pointers)
-        BYTE gcPtrs[8] = {0};
+        BYTE     gcPtrs[8] = {0};
         unsigned numGCPtrs = 0;
         if (structSize <= sizeof(gcPtrs) * TARGET_POINTER_SIZE)
         {
@@ -1042,15 +1042,13 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             if (isIntrinsicType(clsHnd))
             {
                 const char* namespaceName = nullptr;
-                const char* className = getClassNameFromMetadata(clsHnd, &namespaceName);
+                const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
 
                 if (namespaceName != nullptr && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
                 {
                     if ((className != nullptr) &&
-                        (strncmp(className, "Vector64", 8) == 0 ||
-                         strncmp(className, "Vector128", 9) == 0 ||
-                         strncmp(className, "Vector256", 9) == 0 ||
-                         strncmp(className, "Vector512", 9) == 0))
+                        (strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
+                         strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0))
                     {
                         isIntrinsicSimd = true;
                     }

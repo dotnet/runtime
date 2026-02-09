@@ -5658,8 +5658,8 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // x86 uses it only for long return type, not for structs.
             // Exception: Vectorcall can return SIMD types in XMM/YMM registers,
             // and HVA structs in multiple XMM registers.
-            CorInfoCallConvExtension callConv = call->GetUnmanagedCallConv();
-            bool isVectorcallSimdReturn = (callConv == CorInfoCallConvExtension::Vectorcall ||
+            CorInfoCallConvExtension callConv               = call->GetUnmanagedCallConv();
+            bool                     isVectorcallSimdReturn = (callConv == CorInfoCallConvExtension::Vectorcall ||
                                            callConv == CorInfoCallConvExtension::VectorcallMemberFunction) &&
                                           (layout->GetSize() == 8 || layout->GetSize() == 16 ||
                                            layout->GetSize() == 32 || layout->GetSize() == 64);
