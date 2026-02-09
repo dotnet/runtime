@@ -1379,7 +1379,8 @@ function Get-HelixWorkItemFiles {
 function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
 
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$WorkItemName"
+    $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem"
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson

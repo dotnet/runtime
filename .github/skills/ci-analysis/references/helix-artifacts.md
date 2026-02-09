@@ -49,7 +49,7 @@ Artifacts may be at the root level or nested in subdirectories like `xharness-ou
 
 > **Note:** The Helix work item Details API has a known bug ([dotnet/dnceng#6072](https://github.com/dotnet/dnceng/issues/6072)) where
 > file URIs for subdirectory files are incorrect, and unicode characters in filenames are rejected.
-> The script works around this by using the separate `ListFiles` endpoint (`GET .../workitems/{id}/files`)
+> The script works around this by using the separate `ListFiles` endpoint (`GET .../workitems/{workItemName}/files`)
 > which returns direct blob storage URIs that work for all filenames regardless of subdirectories or unicode.
 
 ## Binlog Files
