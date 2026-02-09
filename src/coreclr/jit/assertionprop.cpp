@@ -4415,13 +4415,19 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         {
             ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
             Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
-            if (castOpRng.IsConstantRange() &&
-                (castOpRng.LowerLimit().GetConstant() >= castToTypeRange.LowerLimit().GetConstant()) &&
-                (castOpRng.UpperLimit().GetConstant() <= castToTypeRange.UpperLimit().GetConstant()))
+            assert(castOpRng.IsConstantRange());
+
+            int castFromLo = castOpRng.LowerLimit().GetConstant();
+            int castFromHi = castOpRng.UpperLimit().GetConstant();
+            int castToLo   = castToTypeRange.LowerLimit().GetConstant();
+            int castToHi   = castToTypeRange.UpperLimit().GetConstant();
+
+            if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
             {
                 removeCast = true;
                 if (!lcl->OperIs(GT_LCL_VAR))
                 {
+                    // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
                     if (!cast->gtOverflow())
                     {
                         return nullptr;
@@ -5076,6 +5082,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         }
     }
 
+    // Let's see if we can remove the bounds check based on the ranges.
     if ((genActualType(vnStore->TypeOfVN(vnCurIdx)) == TYP_INT) &&
         (genActualType(vnStore->TypeOfVN(vnCurLen)) == TYP_INT))
     {
