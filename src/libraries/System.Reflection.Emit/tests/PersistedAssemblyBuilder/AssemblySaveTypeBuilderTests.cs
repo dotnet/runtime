@@ -915,7 +915,7 @@ namespace System.Reflection.Emit.Tests
             // public unsafe class Container
             // {
             //     public static delegate*<int, int, int> Method;
-            // 
+            //
             //     public static int Add(int a, int b) => a + b;
             //     public static void Init() => Method = &Add;
             // }
