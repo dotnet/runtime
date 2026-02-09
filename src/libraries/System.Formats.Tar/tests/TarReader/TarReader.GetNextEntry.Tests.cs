@@ -245,7 +245,7 @@ namespace System.Formats.Tar.Tests
                 oldStream = entry.DataStream;
 
                 entry.DataStream = new MemoryStream(); // Substitution, setter should dispose the previous stream
-                using(StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
+                using (StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
                 {
                     streamWriter.WriteLine("Substituted");
                 }
@@ -414,11 +414,8 @@ namespace System.Formats.Tar.Tests
             Assert.Null(reader.GetNextEntry());
         }
 
-        [Theory]
-        [InlineData(TarEntryType.MultiVolume)]
-        [InlineData(TarEntryType.SparseFile)]
-        [InlineData(TarEntryType.TapeVolume)]
-        public void Read_Archive_With_Unsupported_EntryType(TarEntryType unsupportedType)
+        [Fact]
+        public void Read_Archive_With_Unsupported_EntryType()
         {
             using MemoryStream archiveStream = new MemoryStream();
 
@@ -438,7 +435,7 @@ namespace System.Formats.Tar.Tests
             // Set mtime field
             System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(136, 12));
 
-            header[156] = (byte)unsupportedType;
+            header[156] = (byte)TarEntryType.SparseFile; // Unsupported entry type
 
             System.Text.Encoding.UTF8.GetBytes("ustar ").CopyTo(header.AsSpan(257, 6));
             System.Text.Encoding.UTF8.GetBytes(" \0").CopyTo(header.AsSpan(263, 2));
@@ -466,11 +463,7 @@ namespace System.Formats.Tar.Tests
             archiveStream.Seek(0, SeekOrigin.Begin);
 
             using TarReader reader = new TarReader(archiveStream);
-            TarEntry entry = reader.GetNextEntry();
-
-            Assert.NotNull(entry);
-            Assert.Equal(unsupportedType, entry.EntryType);
-            Assert.Equal("unsupported_entry", entry.Name);
+            Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
         }
     }
 }

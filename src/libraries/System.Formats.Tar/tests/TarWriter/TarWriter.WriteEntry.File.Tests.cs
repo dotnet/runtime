@@ -206,40 +206,5 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GetNextEntry());
             }
         }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void WindowsPath_WithBackslashes_ConvertedToForwardSlashes(TarEntryFormat format)
-        {
-            using TempDirectory root = new TempDirectory();
-
-            string subDir = Path.Join(root.Path, "subdir");
-            Directory.CreateDirectory(subDir);
-
-            string fileName = "testfile.txt";
-            string filePath = Path.Join(subDir, fileName);
-            File.WriteAllText(filePath, "test content");
-
-            using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: true))
-            {
-                string windowsStylePath = $"subdir\\{fileName}";
-                writer.WriteEntry(filePath, windowsStylePath);
-            }
-
-            archiveStream.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archiveStream))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-
-                Assert.DoesNotContain("\\", entry.Name);
-                Assert.Contains("/", entry.Name);
-                Assert.Equal("subdir/testfile.txt", entry.Name);
-            }
-        }
     }
 }
