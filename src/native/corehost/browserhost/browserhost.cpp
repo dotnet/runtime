@@ -124,13 +124,31 @@ extern "C" int BrowserHost_InitializeCoreCLR(int propertiesCount, const char** p
 
 extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
-    int ignore_exit_code = 0;
-    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&ignore_exit_code);
+    int exit_code = 0;
+    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&exit_code);
 
     if (retval < 0)
     {
         std::fprintf(stderr, "coreclr_execute_assembly failed - Error: 0x%08x\n", retval);
         return -1;
     }
-    return 0;
+    return exit_code;
+}
+
+extern "C" int BrowserHost_ShutdownCoreCLR(int exit_code)
+{
+    int latched_exit_code = 0;
+    int result = coreclr_shutdown_2(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
+    if (result < 0)
+    {
+        std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", result);
+        exit_code = -1;
+    }
+
+    if (exit_code != -1)
+    {
+        exit_code = latched_exit_code;
+    }
+
+    return exit_code;
 }

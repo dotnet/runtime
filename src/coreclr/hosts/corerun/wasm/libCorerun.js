@@ -9,7 +9,8 @@ function libCoreRunFactory() {
         "$FS",
         "$NODEFS",
         "$NODERAWFS",
-        "corerun_shutdown"
+        "corerun_shutdown",
+        "__funcs_on_exit",
     ];
     const mergeCoreRun = {
         $CORERUN: {
@@ -25,30 +26,21 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-                const originalExitJS = exitJS;
-                exitJS = (status, implicit) => {
-                    if (!implicit) {
-                        EXITSTATUS = status;
-                        ABORT = true;
+
+                Module.preInit = [() => {
+                    const orig_funcs_on_exit = ___funcs_on_exit;
+                    // it would be better to use addOnExit(), but it's called too late.
+                    ___funcs_on_exit = () => {
+                        // this will prevent more timers (like finalizer) to get scheduled during thread destructor
                         if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
                             dotnetBrowserUtilsExports.abortBackgroundTimers();
                         }
-                    }
-                    // WASM-TODO temporary workaround to get exit code from runtime tests
-                    if (DOTNET.lastScheduledFinalizationId) {
-                        globalThis.clearTimeout(DOTNET.lastScheduledFinalizationId);
-                        runtimeKeepalivePop();
-                        DOTNET.lastScheduledFinalizationId = undefined;
-                    }
-                    if (!keepRuntimeAlive()) {
-                        ABORT = true;
-                        var latched = _corerun_shutdown(EXITSTATUS || 0);
-                        if (EXITSTATUS === undefined) {
-                            EXITSTATUS = latched;
-                        }
-                    }
-                    return originalExitJS(EXITSTATUS, implicit);
-                };
+                        EXITSTATUS = _corerun_shutdown(EXITSTATUS || 0);
+                        orig_funcs_on_exit();
+                    };
+
+                }, ...(Module.preInit || [])];
+
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",

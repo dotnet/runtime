@@ -14,7 +14,7 @@ export function getExitStatus(): new (exitCode: number) => any {
 }
 
 export function runBackgroundTimers(): void {
-    if (_ems_.ABORT) {
+    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
         // runtime is shutting down
         return;
     }
@@ -32,6 +32,7 @@ export function runBackgroundTimers(): void {
 }
 
 export function abortBackgroundTimers(): void {
+    _ems_.DOTNET.isAborting = true;
     if (_ems_.DOTNET.lastScheduledTimerId) {
         globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
         _ems_.runtimeKeepalivePop();
@@ -53,6 +54,7 @@ export function abortPosix(exitCode: number, reason: any, nativeReady: boolean):
     try {
         _ems_.ABORT = true;
         _ems_.EXITSTATUS = exitCode;
+        _ems_.DOTNET.isAborting = true;
         if (exitCode === 0 && nativeReady) {
             _ems_._exit(0);
             return;
