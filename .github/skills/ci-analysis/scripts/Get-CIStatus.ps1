@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Retrieves test failures from Azure DevOps builds and Helix test runs.
 
@@ -65,26 +65,26 @@
     to find related build tests that do have binlogs for deeper analysis.
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327
+    .\Get-CIStatus.ps1 -BuildId 1276327
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+    .\Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
+    .\Get-CIStatus.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+    .\Get-CIStatus.ps1 -BuildId 1276327 -SearchMihuBot
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
     # Scans work items to find which ones contain MSBuild binlog files
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -ClearCache
+    .\Get-CIStatus.ps1 -ClearCache
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -152,7 +152,7 @@ $script:TempDir = Get-TempDirectory
 
 # Handle -ClearCache parameter
 if ($ClearCache) {
-    $cacheDir = Join-Path $script:TempDir "helix-failures-cache"
+    $cacheDir = Join-Path $script:TempDir "ci-analysis-cache"
     if (Test-Path $cacheDir) {
         $files = Get-ChildItem -Path $cacheDir -File
         $count = $files.Count
@@ -166,7 +166,7 @@ if ($ClearCache) {
 }
 
 # Setup caching
-$script:CacheDir = Join-Path $script:TempDir "helix-failures-cache"
+$script:CacheDir = Join-Path $script:TempDir "ci-analysis-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
 }
@@ -354,6 +354,11 @@ function Get-AzDOBuildIdFromPR {
 
     # Use gh cli to get the checks with splatted arguments
     $checksOutput = & gh pr checks $PR --repo $Repository 2>&1
+    $ghExitCode = $LASTEXITCODE
+
+    if ($ghExitCode -ne 0 -and -not ($checksOutput | Select-String -Pattern "buildId=")) {
+        throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
+    }
 
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
@@ -381,7 +386,7 @@ function Get-AzDOBuildIdFromPR {
                 }
             }
         }
-        throw "Could not find Azure DevOps build for PR #$PR in $Repository"
+        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
     }
 
     # Return all unique failing build IDs
@@ -1353,6 +1358,20 @@ function Get-HelixWorkItemDetails {
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+
+        # Workaround for https://github.com/dotnet/dnceng/issues/6072:
+        # Helix API returns incorrect file URIs for files in subdirectories
+        # (e.g., xharness-output/testResults.xml). Rebuild URI from FileName.
+        if ($response -and $response.Files) {
+            $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+            foreach ($file in $response.Files) {
+                if ($file.FileName -and $file.FileName -match '/') {
+                    $encodedFileName = ($file.FileName -split '/' | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
+                    $file.Uri = "https://helix.dot.net/api/jobs/$JobId/workitems/$encodedWorkItem/files/$encodedFileName?api-version=2019-06-17"
+                }
+            }
+        }
+
         return $response
     }
     catch {
@@ -2012,8 +2031,39 @@ try {
     $totalFailedJobs += $failedJobs.Count
     $totalLocalFailures += $localTestFailures.Count
 
+    # Compute job summary from timeline
+    $allJobs = @()
+    $succeededJobs = 0
+    $pendingJobs = 0
+    $canceledJobCount = 0
+    $skippedJobs = 0
+    $warningJobs = 0
+    if ($timeline -and $timeline.records) {
+        $allJobs = @($timeline.records | Where-Object { $_.type -eq "Job" })
+        $succeededJobs = @($allJobs | Where-Object { $_.result -eq "succeeded" }).Count
+        $warningJobs = @($allJobs | Where-Object { $_.result -eq "succeededWithIssues" }).Count
+        $pendingJobs = @($allJobs | Where-Object { -not $_.result -or $_.state -eq "pending" -or $_.state -eq "inProgress" }).Count
+        $canceledJobCount = @($allJobs | Where-Object { $_.result -eq "canceled" }).Count
+        $skippedJobs = @($allJobs | Where-Object { $_.result -eq "skipped" }).Count
+    }
+
     Write-Host "`n=== Build $currentBuildId Summary ===" -ForegroundColor Yellow
-    Write-Host "Failed jobs: $($failedJobs.Count)" -ForegroundColor Red
+    if ($allJobs.Count -gt 0) {
+        $parts = @()
+        if ($succeededJobs -gt 0) { $parts += "$succeededJobs passed" }
+        if ($warningJobs -gt 0) { $parts += "$warningJobs passed with warnings" }
+        if ($failedJobs.Count -gt 0) { $parts += "$($failedJobs.Count) failed" }
+        if ($canceledJobCount -gt 0) { $parts += "$canceledJobCount canceled" }
+        if ($skippedJobs -gt 0) { $parts += "$skippedJobs skipped" }
+        if ($pendingJobs -gt 0) { $parts += "$pendingJobs pending" }
+        $jobSummary = $parts -join ", "
+        $allSucceeded = ($failedJobs.Count -eq 0 -and $pendingJobs -eq 0 -and $canceledJobCount -eq 0 -and ($succeededJobs + $warningJobs + $skippedJobs) -eq $allJobs.Count)
+        $summaryColor = if ($allSucceeded) { "Green" } elseif ($failedJobs.Count -gt 0) { "Red" } else { "Cyan" }
+        Write-Host "Jobs: $($allJobs.Count) total ($jobSummary)" -ForegroundColor $summaryColor
+    }
+    else {
+        Write-Host "Failed jobs: $($failedJobs.Count)" -ForegroundColor Red
+    }
     if ($localTestFailures.Count -gt 0) {
         Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
     }

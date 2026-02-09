@@ -2807,6 +2807,13 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             std::swap(arg0VN, arg1VN);
         }
+
+        // ... unless one of them is a constant, in which case we want the constant to be arg1
+        // NOTE: we don't want to re-order "cns[H] binop cns"
+        if (IsVNConstantNonHandle(arg0VN))
+        {
+            std::swap(arg0VN, arg1VN);
+        }
     }
 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
@@ -7010,46 +7017,6 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     }
 }
 
-bool ValueNumStore::IsVNConstantBound(ValueNum vn)
-{
-    VNFuncApp funcApp;
-    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
-    {
-        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
-            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
-        {
-            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
-            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
-
-            // Technically, we can allow both to be constants,
-            // but such relops are expected to be constant folded anyway.
-            return op1IsConst != op2IsConst;
-        }
-    }
-    return false;
-}
-
-bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
-{
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
-    {
-        switch (funcApp.m_func)
-        {
-            case VNF_LT_UN:
-            case VNF_LE_UN:
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-                // Technically, we can allow both to be constants,
-                // but such relops are expected to be constant folded anyway.
-                return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
 //------------------------------------------------------------------------
 // IsVNPositiveInt32Constant: returns true iff vn is a known Int32 constant that is greater then 0
 //
@@ -7147,145 +7114,43 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
     return false;
 }
 
-bool ValueNumStore::IsVNCompareCheckedBound(ValueNum vn)
+//------------------------------------------------------------------------
+// IsVNCheckedBoundAddConst: Checks if the specified vn represents an expression
+//    of the form "checkedBndVN +/- cns" or its variations.
+//
+// Arguments:
+//   vn           - Value number to inspect
+//   checkedBndVN - [Out] checked bound VN in the expression
+//   addCns       - [Out] constant being added to/subtracted from the checked bound VN
+//
+// Returns:
+//   true if the specified vn represents an expression of the form "checkedBndVN +/- cns" or its variations, false
+//   otherwise.
+//
+bool ValueNumStore::IsVNCheckedBoundAddConst(ValueNum vn, ValueNum* checkedBndVN, int* addCns)
 {
-    // Do we have "var < len"?
-    if (vn == NoVN)
+    int       cns;
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && ((funcApp.m_func == VNF_ADD) || (funcApp.m_func == VNF_SUB)) &&
+        IsVNCheckedBound(funcApp.m_args[0]) && IsVNIntegralConstant(funcApp.m_args[1], &cns))
     {
-        return false;
+        // Normalize "checkedBndVN - cns" into "checkedBndVN + (-cns)" to make it easier for the caller to handle
+        // both cases.
+        if (funcApp.m_func == VNF_SUB)
+        {
+            if (cns == INT32_MIN)
+            {
+                // Avoid possible overflow from negating cns.
+                return false;
+            }
+            cns = -cns;
+        }
+
+        *checkedBndVN = funcApp.m_args[0];
+        *addCns       = cns;
+        return true;
     }
-
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE && funcAttr.m_func != (VNFunc)GT_LT &&
-        funcAttr.m_func != (VNFunc)GT_GT)
-    {
-        return false;
-    }
-    if (!IsVNCheckedBound(funcAttr.m_args[0]) && !IsVNCheckedBound(funcAttr.m_args[1]))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-void ValueNumStore::GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info)
-{
-    assert(IsVNCompareCheckedBound(vn));
-
-    // Do we have var < a.len?
-    VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
-
-    bool isOp1CheckedBound = IsVNCheckedBound(funcAttr.m_args[1]);
-    if (isOp1CheckedBound)
-    {
-        info->cmpOper = funcAttr.m_func;
-        info->cmpOp   = funcAttr.m_args[0];
-        info->vnBound = funcAttr.m_args[1];
-    }
-    else
-    {
-        info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
-        info->cmpOp   = funcAttr.m_args[1];
-        info->vnBound = funcAttr.m_args[0];
-    }
-}
-
-bool ValueNumStore::IsVNCheckedBoundArith(ValueNum vn)
-{
-    // Do we have "a.len +or- var"
-    if (vn == NoVN)
-    {
-        return false;
-    }
-
-    VNFuncApp funcAttr;
-
-    return GetVNFunc(vn, &funcAttr) &&                                                     // vn is a func.
-           (funcAttr.m_func == (VNFunc)GT_ADD || funcAttr.m_func == (VNFunc)GT_SUB) &&     // the func is +/-
-           (IsVNCheckedBound(funcAttr.m_args[0]) || IsVNCheckedBound(funcAttr.m_args[1])); // either op1 or op2 is a.len
-}
-
-void ValueNumStore::GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
-{
-    // Do we have a.len +/- var?
-    assert(IsVNCheckedBoundArith(vn));
-    VNFuncApp funcArith;
-    GetVNFunc(vn, &funcArith);
-
-    bool isOp1CheckedBound = IsVNCheckedBound(funcArith.m_args[1]);
-    if (isOp1CheckedBound)
-    {
-        info->arrOper  = funcArith.m_func;
-        info->arrOp    = funcArith.m_args[0];
-        info->vnBound  = funcArith.m_args[1];
-        info->arrOpLHS = true;
-    }
-    else
-    {
-        info->arrOper  = funcArith.m_func;
-        info->arrOp    = funcArith.m_args[1];
-        info->vnBound  = funcArith.m_args[0];
-        info->arrOpLHS = false;
-    }
-}
-
-bool ValueNumStore::IsVNCompareCheckedBoundArith(ValueNum vn)
-{
-    // Do we have: "var < a.len - var"
-    if (vn == NoVN)
-    {
-        return false;
-    }
-
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-
-    // Suitable comparator.
-    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE && funcAttr.m_func != (VNFunc)GT_LT &&
-        funcAttr.m_func != (VNFunc)GT_GT)
-    {
-        return false;
-    }
-
-    // Either the op0 or op1 is arr len arithmetic.
-    if (!IsVNCheckedBoundArith(funcAttr.m_args[0]) && !IsVNCheckedBoundArith(funcAttr.m_args[1]))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-void ValueNumStore::GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
-{
-    assert(IsVNCompareCheckedBoundArith(vn));
-
-    VNFuncApp funcAttr;
-    GetVNFunc(vn, &funcAttr);
-
-    // Check whether op0 or op1 is checked bound arithmetic.
-    bool isOp1CheckedBoundArith = IsVNCheckedBoundArith(funcAttr.m_args[1]);
-    if (isOp1CheckedBoundArith)
-    {
-        info->cmpOper = funcAttr.m_func;
-        info->cmpOp   = funcAttr.m_args[0];
-        GetCheckedBoundArithInfo(funcAttr.m_args[1], info);
-    }
-    else
-    {
-        info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
-        info->cmpOp   = funcAttr.m_args[1];
-        GetCheckedBoundArithInfo(funcAttr.m_args[0], info);
-    }
+    return false;
 }
 
 ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
@@ -10330,18 +10195,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             default:
                 unreached();
         }
-    }
-    else if (IsVNCompareCheckedBound(vn))
-    {
-        CompareCheckedBoundArithInfo info;
-        GetCompareCheckedBound(vn, &info);
-        info.dump(this);
-    }
-    else if (IsVNCompareCheckedBoundArith(vn))
-    {
-        CompareCheckedBoundArithInfo info;
-        GetCompareCheckedBoundArithInfo(vn, &info);
-        info.dump(this);
     }
     else if (IsVNFunc(vn))
     {
@@ -13692,7 +13545,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitNewLclArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetUserArgByIndex(1)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -13731,7 +13584,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewLclArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetUserArgByIndex(0)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -13791,6 +13644,18 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     }
 
     CallArg* curArg = args->Args().begin().GetArg();
+
+#if defined(TARGET_WASM)
+    if (curArg->GetWellKnownArg() == WellKnownArg::WasmShadowStackPointer)
+    {
+        // Ignore the Wasm shadow stack pointer argument.
+        //
+        // The Wasm shadow stack pointer is not counted in VNFuncArity
+        // so nArgs does not need adjusting.
+        curArg = curArg->GetNext();
+    }
+#endif // defined(TARGET_WASM)
+
     if (nArgs == 0)
     {
         if (generateUniqueVN)
@@ -13909,7 +13774,7 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             assert(GetRuntimeHandleUnderlyingType() == TYP_I_IMPL);
 
             VNFuncApp bitcastFuncApp;
-            ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            ValueNum  argVN = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
             if (!vnStore->GetVNFunc(argVN, &bitcastFuncApp) || (bitcastFuncApp.m_func != VNF_BitCast))
             {
                 break;
@@ -14061,7 +13926,7 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
             unreached();
     }
 
-    ValueNumPair argVNP  = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair;
+    ValueNumPair argVNP  = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair;
     ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
     call->SetVNs(castVNP);
@@ -14379,7 +14244,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         {
             // If RuntimeTypeHandle is just a wrapper around RuntimeType object, we can
             // just number it as BitCast<TYP_STRUCT>(nonGcRuntimeTypeObj);
-            const ValueNum argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            const ValueNum argVN = call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
             if ((GetRuntimeHandleUnderlyingType() == TYP_REF) && vnStore->IsVNTypeHandle(argVN))
             {
                 CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);

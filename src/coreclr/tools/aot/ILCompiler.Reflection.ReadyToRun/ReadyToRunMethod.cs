@@ -367,7 +367,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public int RuntimeFunctionCount { get; set; }
         public int ColdRuntimeFunctionCount { get; set; }
-        public string[] Modifiers { get; }
+        public string[] SignaturePrefixes { get; }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
@@ -380,7 +380,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningType,
             string constrainedType,
             string[] instanceArgs,
-            string[] modifiers,
+            string[] signaturePrefixes,
             int? fixupOffset)
         {
             InstanceArgs = (string[])instanceArgs?.Clone();
@@ -443,12 +443,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             StringBuilder sb = new StringBuilder();
-            if (modifiers != null)
+            if (signaturePrefixes is not null)
             {
-                Modifiers = modifiers;
-                foreach (var modifier in modifiers)
+                SignaturePrefixes = (string[])signaturePrefixes.Clone();
+                foreach (var prefix in SignaturePrefixes)
                 {
-                    sb.Append(modifier);
+                    sb.Append(prefix);
                     sb.Append(" ");
                 }
             }
