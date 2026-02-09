@@ -857,7 +857,6 @@ BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, Ge
 
     JITDUMP("  Creating tail suspension " FMT_BB "\n", suspendBB->bbNum);
 
-    // Allocate continuation
     GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
 
     if (suspendBB->KindIs(BBJ_RETURN))
