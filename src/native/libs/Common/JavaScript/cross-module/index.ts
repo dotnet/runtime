@@ -107,6 +107,7 @@ export function dotnetUpdateInternalsSubscriber() {
             cancelPromise: table[4],
             invokeJSFunction: table[5],
             forceDisposeProxies: table[6],
+            abortInteropTimers: table[7],
         };
         Object.assign(runtime, runtimerLocal);
     }
@@ -149,6 +150,7 @@ export function dotnetUpdateInternalsSubscriber() {
             loadIcuData: table[2],
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
+            instantiateWasm: table[5],
         };
         Object.assign(native, nativeLocal);
     }
@@ -191,9 +193,10 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8: table[4],
             zeroRegion: table[5],
             isSharedArrayBuffer: table[6],
-            abortTimers: table[7],
+            abortBackgroundTimers: table[7],
             abortPosix: table[8],
             getExitStatus: table[9],
+            runBackgroundTimers: table[10],
         };
         Object.assign(interop, interopLocal);
     }

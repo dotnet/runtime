@@ -52,6 +52,12 @@ extern "C" {
     int32_t GlobalizationNative_StartsWith (void *, void *, int32_t, void *, int32_t, int32_t, void *);
     int32_t GlobalizationNative_ToAscii (uint32_t, void *, int32_t, void *, int32_t);
     int32_t GlobalizationNative_ToUnicode (uint32_t, void *, int32_t, void *, int32_t);
+    void * SystemInteropJS_BindJSImportST (void *);
+    void SystemInteropJS_CancelPromise (void *);
+    void SystemInteropJS_InvokeJSFunction (void *, void *);
+    void SystemInteropJS_InvokeJSImportST (int32_t, void *);
+    void SystemInteropJS_ReleaseCSOwnedObject (void *);
+    void SystemInteropJS_ResolveOrRejectPromise (void *);
     void * SystemJS_GetLocaleInfo (void *, int32_t, void *, int32_t, void *, int32_t, void *);
     int32_t SystemNative_Access (void *, int32_t);
     void * SystemNative_AlignedAlloc (void *, void *);
@@ -84,7 +90,7 @@ extern "C" {
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    uint32_t SystemNative_GetFileSystemType (void *);
+    uint32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
@@ -232,7 +238,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetFileSystemType) // System.Private.CoreLib
+    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
@@ -305,6 +311,15 @@ static const Entry s_libSystem_Native_Browser [] = {
     DllImportEntry(SystemJS_GetLocaleInfo) // System.Private.CoreLib
 };
 
+static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
+    DllImportEntry(SystemInteropJS_BindJSImportST) // System.Runtime.InteropServices.JavaScript
+    DllImportEntry(SystemInteropJS_CancelPromise) // System.Runtime.InteropServices.JavaScript
+    DllImportEntry(SystemInteropJS_InvokeJSFunction) // System.Runtime.InteropServices.JavaScript
+    DllImportEntry(SystemInteropJS_InvokeJSImportST) // System.Runtime.InteropServices.JavaScript
+    DllImportEntry(SystemInteropJS_ReleaseCSOwnedObject) // System.Runtime.InteropServices.JavaScript
+    DllImportEntry(SystemInteropJS_ResolveOrRejectPromise) // System.Runtime.InteropServices.JavaScript
+};
+
 typedef struct PInvokeTable {
     const char* LibraryName;
     const Entry* Entries;
@@ -315,7 +330,8 @@ static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
     {"libSystem.Native", s_libSystem_Native, 98},
-    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1}
+    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
+    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
 const size_t s_PInvokeTablesCount = sizeof(s_PInvokeTables) / sizeof(s_PInvokeTables[0]);
 

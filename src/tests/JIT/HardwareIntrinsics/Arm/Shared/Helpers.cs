@@ -58,6 +58,48 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float[] CreateMaskForFirstActiveElement(float[] mask, float[] srcMask)
+        {
+            int count = srcMask.Length;
+            var maskBits = new int[count];
+            var srcMaskBits = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                srcMaskBits[i] = BitConverter.SingleToInt32Bits(srcMask[i]);
+            }
+
+            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
+            var result = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+
+            return result;
+        }
+
+        public static double[] CreateMaskForFirstActiveElement(double[] mask, double[] srcMask)
+        {
+            int count = srcMask.Length;
+            var maskBits = new long[count];
+            var srcMaskBits = new long[count];
+            for (int i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                srcMaskBits[i] = BitConverter.DoubleToInt64Bits(srcMask[i]);
+            }
+
+            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
+            var result = new double[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
+
+            return result;
+        }
+
         public static int LastActiveElement<T>(T[] v) where T : INumber<T>
         {
             for (int i = v.Length - 1; i >= 0; i--)
@@ -6351,12 +6393,12 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float getMaskSingle()
         {
-            return (float)(TestLibrary.Generator.GetUInt32() % 2);
+            return BitConverter.UInt32BitsToSingle((TestLibrary.Generator.GetUInt32() % 2));
         }
 
         public static double getMaskDouble()
         {
-            return (double)(TestLibrary.Generator.GetUInt64() % 2);
+            return BitConverter.UInt64BitsToDouble((TestLibrary.Generator.GetUInt64() % 2));
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
@@ -6838,6 +6880,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float[] CreateBreakAfterMask(float[] mask, float[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var opBits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                opBits[i] = BitConverter.SingleToInt32Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakAfterMask(maskBits, opBits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakAfterMask(double[] mask, double[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var opBits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                opBits[i] = BitConverter.DoubleToInt64Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakAfterMask(maskBits, opBits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
+            return result;
+        }
+
         public static T[] CreateBreakAfterPropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
             var count = mask.Length;
@@ -6861,6 +6943,50 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     result[i] = T.Zero;
                 }
+            }
+            return result;
+        }
+
+        public static float[] CreateBreakAfterPropagateMask(float[] mask, float[] op1, float[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakAfterPropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakAfterPropagateMask(double[] mask, double[] op1, double[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakAfterPropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
             return result;
         }
@@ -6893,6 +7019,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float[] CreateBreakBeforeMask(float[] mask, float[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var opBits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                opBits[i] = BitConverter.SingleToInt32Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakBeforeMask(maskBits, opBits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakBeforeMask(double[] mask, double[] op)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var opBits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                opBits[i] = BitConverter.DoubleToInt64Bits(op[i]);
+            }
+
+            var resultBits = CreateBreakBeforeMask(maskBits, opBits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
+            return result;
+        }
+
         public static T[] CreateBreakBeforePropagateMask<T>(T[] mask, T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
             var count = mask.Length;
@@ -6916,6 +7082,50 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     result[i] = T.Zero;
                 }
+            }
+            return result;
+        }
+
+        public static float[] CreateBreakBeforePropagateMask(float[] mask, float[] op1, float[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new int[count];
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakBeforePropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakBeforePropagateMask(double[] mask, double[] op1, double[] op2)
+        {
+            var count = mask.Length;
+            var maskBits = new long[count];
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakBeforePropagateMask(maskBits, op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
             return result;
         }
@@ -7394,6 +7604,46 @@ namespace JIT.HardwareIntrinsics.Arm
                 result = ConvertVectorToMask(op2);
             }
 
+            return result;
+        }
+
+        public static float[] CreateBreakPropagateMask(float[] op1, float[] op2)
+        {
+            var count = op1.Length;
+            var op1Bits = new int[count];
+            var op2Bits = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                op1Bits[i] = BitConverter.SingleToInt32Bits(op1[i]);
+                op2Bits[i] = BitConverter.SingleToInt32Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakPropagateMask(op1Bits, op2Bits);
+            var result = new float[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
+            }
+            return result;
+        }
+
+        public static double[] CreateBreakPropagateMask(double[] op1, double[] op2)
+        {
+            var count = op1.Length;
+            var op1Bits = new long[count];
+            var op2Bits = new long[count];
+            for (var i = 0; i < count; i++)
+            {
+                op1Bits[i] = BitConverter.DoubleToInt64Bits(op1[i]);
+                op2Bits[i] = BitConverter.DoubleToInt64Bits(op2[i]);
+            }
+
+            var resultBits = CreateBreakPropagateMask(op1Bits, op2Bits);
+            var result = new double[count];
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
+            }
             return result;
         }
 

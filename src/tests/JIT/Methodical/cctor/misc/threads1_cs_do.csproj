@@ -10,4 +10,7 @@
     <Compile Include="threads1.cs" />
     <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>
