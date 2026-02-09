@@ -881,7 +881,10 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     unsigned len = BitSetTraits::GetArrSize(env);
     assert(len > 1); // Or else would not require an array.
     BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
-    memset(res, 0, len * sizeof(size_t));
+    for (unsigned i = 0; i < len; i++)
+    {
+        res[i] = 0;
+    }
     return res;
 }
 
