@@ -1056,7 +1056,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     }
                 }
             }
-            else if ((normalLclVN == lenVN))
+            else if (normalLclVN == lenVN)
             {
                 if (comp->vnStore->IsVNInt32Constant(indexVN))
                 {
