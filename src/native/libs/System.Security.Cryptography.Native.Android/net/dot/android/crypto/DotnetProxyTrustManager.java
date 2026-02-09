@@ -16,14 +16,12 @@ import javax.net.ssl.X509TrustManager;
 public final class DotnetProxyTrustManager implements X509TrustManager {
     private final long sslStreamProxyHandle;
     private final X509TrustManager platformTrustManager;
-    private final X509TrustManagerExtensions trustManagerExtensions;
     private final String targetHost;
 
     public DotnetProxyTrustManager(long sslStreamProxyHandle, X509TrustManager platformTrustManager, String targetHost) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
         this.platformTrustManager = platformTrustManager;
         this.targetHost = targetHost;
-        this.trustManagerExtensions = new X509TrustManagerExtensions(platformTrustManager);
     }
 
     public void checkClientTrusted(X509Certificate[] chain, String authType)
@@ -47,7 +45,8 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
             if (targetHost != null) {
                 // X509TrustManagerExtensions.checkServerTrusted is available since API 17
                 // and our minimum supported API level is 21
-                trustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
+                X509TrustManagerExtensions extensions = new X509TrustManagerExtensions(platformTrustManager);
+                extensions.checkServerTrusted(chain, authType, targetHost);
             } else {
                 platformTrustManager.checkServerTrusted(chain, authType);
             }
