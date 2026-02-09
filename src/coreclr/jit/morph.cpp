@@ -5597,7 +5597,6 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         if (IsAot())
         {
-            GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
             return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pLookup->lookupKind, result);
         }
