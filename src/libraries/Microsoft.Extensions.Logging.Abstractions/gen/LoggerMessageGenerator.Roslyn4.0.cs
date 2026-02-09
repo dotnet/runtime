@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 if (item.LoggerClassSpec != null)
                 {
-                    hasStringCreate = item.HasStringCreate;
+                    hasStringCreate |= item.HasStringCreate;
 
                     // Build unique key including parent class chain to handle nested classes
                     string classKey = BuildClassKey(item.LoggerClassSpec);
