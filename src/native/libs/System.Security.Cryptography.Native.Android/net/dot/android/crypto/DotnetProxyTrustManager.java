@@ -43,8 +43,6 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
     private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
         try {
             if (targetHost != null) {
-                // X509TrustManagerExtensions.checkServerTrusted is available since API 17
-                // and our minimum supported API level is 21
                 X509TrustManagerExtensions extensions = new X509TrustManagerExtensions(platformTrustManager);
                 extensions.checkServerTrusted(chain, authType, targetHost);
             } else {

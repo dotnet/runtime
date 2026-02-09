@@ -684,6 +684,45 @@ cleanup:
     return ret;
 }
 
+// Sets the SNI server name on the SSLEngine so that the server name is included
+// in the TLS client hello message.
+ARGS_NON_NULL_ALL static int32_t SetSNIServerName(JNIEnv* env, SSLStream* sslStream, const char* peerHost)
+{
+    if (g_SNIHostName == NULL || g_SSLParametersSetServerNames == NULL)
+    {
+        // SNIHostName is only available since API 24
+        // on APIs 21-23 we use a workaround to force the SSLEngine to use SNI
+        return ApplyLegacyAndroidSNIWorkaround(env, sslStream);
+    }
+
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, hostStr, nameList, hostName, params);
+
+    loc[hostStr] = make_java_string(env, peerHost);
+    loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // SSLParameters params = sslEngine.getSSLParameters();
+    // params.setServerNames(nameList);
+    // sslEngine.setSSLParameters(params);
+    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
+}
+
 int32_t AndroidCryptoNative_SSLStreamInitialize(
     SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, char* peerHost)
 {
@@ -718,38 +757,7 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
 
     if (peerHost && !isServer)
     {
-        if (g_SNIHostName != NULL && g_SSLParametersSetServerNames != NULL)
-        {
-            jstring peerHostStr = make_java_string(env, peerHost);
-            jobject sniHostName = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, peerHostStr);
-            ReleaseLRef(env, peerHostStr);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            jobject serverNames = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, 1);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            (*env)->CallBooleanMethod(env, serverNames, g_ArrayListAdd, sniHostName);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            jobject sslParameters = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            (*env)->CallVoidMethod(env, sslParameters, g_SSLParametersSetServerNames, serverNames);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, sslParameters);
-            ON_EXCEPTION_PRINT_AND_GOTO(exit);
-
-            ReleaseLRef(env, sniHostName);
-            ReleaseLRef(env, serverNames);
-            ReleaseLRef(env, sslParameters);
-        }
-        else
-        {
-            // SNIHostName is only available since API 24
-            // on APIs 21-23 we use a workaround to force the SSLEngine to use SNI
-            ApplyLegacyAndroidSNIWorkaround(env, sslStream);
-        }
+        SetSNIServerName(env, sslStream, peerHost);
     }
 
     // SSLSession sslSession = sslEngine.getSession();

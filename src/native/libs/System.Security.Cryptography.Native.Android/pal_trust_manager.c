@@ -59,7 +59,11 @@ jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const 
     INIT_LOCALS(loc, platformTrustManager, dotnetProxyTrustManager);
 
     loc[platformTrustManager] = GetDefaultX509TrustManager(env);
-    abort_unless(loc[platformTrustManager] != NULL, "Failed to get default X509TrustManager");
+    if (loc[platformTrustManager] == NULL)
+    {
+        LOG_ERROR("Failed to get default X509TrustManager");
+        goto cleanup;
+    }
 
     jstring targetHostStr = targetHost != NULL ? make_java_string(env, targetHost) : NULL;
     loc[dotnetProxyTrustManager] = (*env)->NewObject(
@@ -73,6 +77,7 @@ jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const 
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     trustManagers = make_java_object_array(env, 1, g_TrustManager, loc[dotnetProxyTrustManager]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
 cleanup:
     RELEASE_LOCALS(loc, env);
