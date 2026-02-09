@@ -6054,6 +6054,33 @@ void Lowering::LowerReturnSuspend(GenTree* node)
     {
         InsertPInvokeMethodEpilog(m_compiler->compCurBB DEBUGARG(node));
     }
+
+    BasicBlock* block = m_compiler->compCurBB;
+    if (!block->KindIs(BBJ_RETURN))
+    {
+        bool profileInconsistent = false;
+        for (BasicBlock* const succBlock : block->Succs())
+        {
+            FlowEdge* const succEdge = m_compiler->fgRemoveAllRefPreds(succBlock, block);
+
+            if (block->hasProfileWeight() && succBlock->hasProfileWeight())
+            {
+                succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+                profileInconsistent |= (succBlock->NumSucc() > 0);
+            }
+        }
+
+        if (profileInconsistent)
+        {
+            JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                    m_compiler->fgPgoConsistent ? "is now" : "was already");
+            m_compiler->fgPgoConsistent = false;
+        }
+
+        block->SetKind(BBJ_RETURN);
+
+        m_compiler->fgInvalidateDfsTree();
+    }
 }
 
 //----------------------------------------------------------------------------------------------
