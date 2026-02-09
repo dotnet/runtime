@@ -9,6 +9,37 @@ namespace System.Diagnostics
     /// <summary>
     /// Provides version information for a physical file on disk.
     /// </summary>
+    /// <remarks>
+    /// <format type="text/markdown"><![CDATA[
+    /// ## Remarks
+    ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+    ///
+    /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+    ///
+    /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+    ///
+    /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+    ///
+    /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+    ///
+    ///  Use the <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> method of this class to get a <xref:System.Diagnostics.FileVersionInfo> containing information about a file, then look at the properties for information about the file. The <xref:System.Diagnostics.FileVersionInfo.FileVersion%2A> property provides version information about the file. The <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A>, <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A>, <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A>, <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A>, and <xref:System.Diagnostics.FileVersionInfo.ProductVersion%2A> properties provide version information for the product that the specified file is a part of. Call <xref:System.Diagnostics.FileVersionInfo.ToString%2A> to get a partial list of properties and their values for this file.
+    ///
+    ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+    ///
+    ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. For example the <xref:System.Diagnostics.FileVersionInfo.IsDebug%2A> property reflects the `VS_FF_DEBUG` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file.  For more information about specifying version resources in a Win32 resource file, see "About Resource Files" and "VERSIONINFO Resource" in the Platform SDK. For more information about specifying version resources in a .NET module, see the [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes) topic.
+    ///
+    /// > [!NOTE]
+    /// >  This class makes a link demand at the class level that applies to all members. A <xref:System.Security.SecurityException> is thrown when the immediate caller does not have full trust permission. For details about link demands, see [Link Demands](/dotnet/framework/misc/link-demands).
+    ///
+    ///
+    ///
+    /// ## Examples
+    ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the file description and version number to the console.
+    ///
+    ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/Overview/source.cs" id="Snippet1":::
+    ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/Overview/source.vb" id="Snippet1":::
+    /// ]]></format>
+    /// </remarks>
     public sealed partial class FileVersionInfo
     {
         private readonly string _fileName;
@@ -44,6 +75,20 @@ namespace System.Diagnostics
         /// Gets the comments associated with the file.
         /// </summary>
         /// <returns>The comments associated with the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  This property contains additional information that can be displayed for diagnostic purposes.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the comments in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/Comments/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/Comments/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? Comments
         {
             get { return _comments; }
@@ -53,6 +98,15 @@ namespace System.Diagnostics
         /// Gets the name of the company that produced the file.
         /// </summary>
         /// <returns>The name of the company that produced the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.CompanyName%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/CompanyName/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/CompanyName/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? CompanyName
         {
             get { return _companyName; }
@@ -62,6 +116,30 @@ namespace System.Diagnostics
         /// Gets the build number of the file.
         /// </summary>
         /// <returns>A value representing the build number of the file or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+        ///
+        ///  This property gets the third set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FileBuildPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FileBuildPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int FileBuildPart
         {
             get { return _fileBuild; }
