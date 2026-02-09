@@ -759,7 +759,7 @@ public:
     // This includes IL stubs (DynamicMethodDesc) and PInvoke methods (PInvokeMethodDesc).
     inline bool IsInteropStub()
     {
-        WRAPPER_NO_CONTRACT;
+        LIMITED_METHOD_DAC_CONTRACT;
         return IsILStub() || IsPInvoke();
     }
 

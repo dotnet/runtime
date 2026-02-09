@@ -7070,9 +7070,9 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     Thread *thread = GetThread();
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
-    // ControllerStackInfo doesn't report IL stubs, so if we are in an IL stub, we need
-    // to handle the single-step specially.  There are probably other problems when we stop
-    // in an IL stub.  We need to revisit this later.
+    // ControllerStackInfo doesn't report interop stubs (IL stubs and P/Invokes), so if we are
+    // in an interop stub, we need to handle the single-step specially.  There are probably other
+    // problems when we stop in an interop stub.  We need to revisit this later.
     bool fIsInteropStub = false;
     if ((context != NULL) &&
         g_pEEInterface->IsManagedNativeCode(reinterpret_cast<const BYTE *>(GetIP(context))))
@@ -7150,7 +7150,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
 
     if (fIsInteropStub)
     {
-        // Don't use the ControllerStackInfo if we are in an IL stub.
+        // Don't use the ControllerStackInfo if we are in an interop stub.
         m_fp = fp;
     }
     else
@@ -7170,7 +7170,7 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     //something else if we walk over it
     if (fIsInteropStub)
     {
-        LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an IL stub\n"));
+        LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an interop stub\n"));
 
         // Enable the right triggers if the user wants to step in.
         if (in)
@@ -7725,11 +7725,11 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     StackTraceTicket ticket(ip);
     info.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
 
-    // This is a special case where we return from a managed method back to an IL stub.  This can
+    // This is a special case where we return from a managed method back to an interop stub.  This can
     // only happen if there's no more managed method frames closer to the root and we want to perform
-    // a step out, or if we step-next off the end of a method called by an IL stub.  In either case,
-    // we'll get a single step in an IL stub, which we want to ignore.  We also want to enable trace
-    // call here, just in case this IL stub is about to call the managed target (in the reverse interop case).
+    // a step out, or if we step-next off the end of a method called by an interop stub.  In either case,
+    // we'll get a single step in an interop stub, which we want to ignore.  We also want to enable trace
+    // call here, just in case this stub is about to call the managed target (in the reverse interop case).
     if (fd->IsInteropStub())
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
