@@ -4131,7 +4131,8 @@ public:
     void lvaInitAsyncContinuation(unsigned* curVarNum);
 
 #if defined(TARGET_WASM)
-    void lvaInitWasmStackPtr(unsigned* curVarNum);
+    void lvaInitWasmStackPtrArg(unsigned* curVarNum);
+    void lvaAllocWasmStackPtr();
     void lvaInitWasmPortableEntryPtr(unsigned* curVarNum);
 #endif // defined(TARGET_WASM)
 
@@ -4214,6 +4215,7 @@ public:
 
     PhaseStatus lvaMarkLocalVars(); // Local variable ref-counting
     void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
+    void lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
@@ -5591,15 +5593,6 @@ public:
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 
-    bool backendRequiresLocalVarLifetimes()
-    {
-        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
-    }
-
-    void fgLocalVarLiveness();
-
-    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
-
     // Blocks: convenience methods for enabling range-based `for` iteration over the function's blocks, e.g.:
     // 1.   for (BasicBlock* const block : compiler->Blocks()) ...
     // 2.   for (BasicBlock* const block : compiler->Blocks(startBlock)) ...
@@ -6701,7 +6694,17 @@ public:
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
 
+    bool backendRequiresLocalVarLifetimes()
+    {
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
+    }
+
+    void fgSsaLiveness();
+    void fgAsyncLiveness();
+    void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+
+    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     //-------------------------------------------------------------------------
     //
@@ -7677,21 +7680,25 @@ public:
 
     enum optAssertionKind : uint8_t
     {
+        // TODO-Cleanup: Rename these to EQ,NE for consistency.
         OAK_EQUAL,
         OAK_NOT_EQUAL,
+
+        OAK_LT,
+        OAK_LT_UN,
+        OAK_LE,
+        OAK_LE_UN,
+        OAK_GT,
+        OAK_GT_UN,
+        OAK_GE,
+        OAK_GE_UN,
         OAK_SUBRANGE,
-        OAK_NO_THROW,
     };
 
     enum optOp1Kind : uint8_t
     {
         O1K_LCLVAR,
         O1K_VN,
-        O1K_ARR_BND,
-        O1K_BOUND_OPER_BND,
-        O1K_BOUND_LOOP_BND,
-        O1K_CONSTANT_LOOP_BND,
-        O1K_CONSTANT_LOOP_BND_UN,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE
         // NOTE: as of today, only LCLVAR is used by both Local and Global assertion prop
@@ -7704,6 +7711,11 @@ public:
         O2K_LCLVAR_COPY,
         O2K_CONST_INT,
         O2K_CONST_DOUBLE,
+
+        O2K_CHECKED_BOUND_ADD_CNS, // "checkedBndVN + cns" where op2.vn holds the "checkedBndVN"
+                                   // and op2.iconVal holds the "cns".
+                                   // "Checked bound" alone doesn't mean anything,
+                                   // nor it implies that it's never negative.
         O2K_ZEROOBJ,
         O2K_SUBRANGE
     };
@@ -7720,11 +7732,6 @@ public:
             {
                 ValueNum m_vn;
                 unsigned m_lclNum;
-                struct
-                {
-                    ValueNum m_vnIdx;
-                    ValueNum m_vnLen;
-                } m_bnd;
             };
 
         public:
@@ -7742,11 +7749,6 @@ public:
             ValueNum GetVN() const
             {
                 // TODO-Cleanup: O1K_LCLVAR should be Local-AP only.
-                // Today it's used by both Local and Global AP.
-                assert(KindIs(O1K_LCLVAR, O1K_VN, O1K_BOUND_OPER_BND, O1K_BOUND_LOOP_BND, O1K_CONSTANT_LOOP_BND,
-                              O1K_CONSTANT_LOOP_BND_UN, O1K_EXACT_TYPE, O1K_SUBTYPE));
-                // Basically, only O1K_ARR_BND doesn't use this property (it uses m_vnIdx and m_vnLen instead).
-
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
             }
@@ -7756,20 +7758,6 @@ public:
                 assert(m_lclNum != BAD_VAR_NUM);
                 assert(KindIs(O1K_LCLVAR));
                 return m_lclNum;
-            }
-
-            ValueNum GetArrBndIndex() const
-            {
-                assert(KindIs(O1K_ARR_BND));
-                assert(m_bnd.m_vnIdx != ValueNumStore::NoVN);
-                return m_bnd.m_vnIdx;
-            }
-
-            ValueNum GetArrBndLength() const
-            {
-                assert(KindIs(O1K_ARR_BND));
-                assert(m_bnd.m_vnLen != ValueNumStore::NoVN);
-                return m_bnd.m_vnLen;
             }
 
             optOp1Kind GetKind() const
@@ -7784,7 +7772,8 @@ public:
 
         private:
             optOp2Kind m_kind;
-            uint16_t   m_encodedIconFlags; // encoded icon gtFlags
+            bool       m_checkedBoundIsNeverNegative; // only meaningful for O2K_CHECKED_BOUND_ADD_CNS kind
+            uint16_t   m_encodedIconFlags;            // encoded icon gtFlags
             ValueNum   m_vn;
             union
             {
@@ -7846,6 +7835,29 @@ public:
                 assert(KindIs(O2K_CONST_INT, O2K_CONST_DOUBLE, O2K_ZEROOBJ));
                 assert(m_vn != ValueNumStore::NoVN);
                 return m_vn;
+            }
+
+            // For "checkedBndVN + cns" form, return the "cns" part.
+            int GetCheckedBoundConstant() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(FitsIn<int>(m_icon.m_iconVal));
+                return (int)m_icon.m_iconVal;
+            }
+
+            // For "checkedBndVN + cns" form, return the "checkedBndVN" part.
+            // We intentionally don't allow to use it via GetVN() to avoid confusion.
+            ValueNum GetCheckedBound() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                assert(m_vn != ValueNumStore::NoVN);
+                return m_vn;
+            }
+
+            bool IsCheckedBoundNeverNegative() const
+            {
+                assert(KindIs(O2K_CHECKED_BOUND_ADD_CNS));
+                return m_checkedBoundIsNeverNegative;
             }
 
             optOp2Kind GetKind() const
@@ -7917,37 +7929,9 @@ public:
             return m_op1;
         }
 
-        bool HasOp2() const
-        {
-            // For OAK_NO_THROW, m_op2 is not used.
-            return !KindIs(OAK_NO_THROW);
-        }
-
         const AssertionDscOp2& GetOp2() const
         {
-            assert(HasOp2());
             return m_op2;
-        }
-
-        bool IsCheckedBoundArithBound() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_OPER_BND));
-        }
-        bool IsCheckedBoundBound() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_BOUND_LOOP_BND));
-        }
-        bool IsConstantBound() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_CONSTANT_LOOP_BND));
-        }
-        bool IsConstantBoundUnsigned() const
-        {
-            return (CanPropEqualOrNotEqual() && GetOp1().KindIs(O1K_CONSTANT_LOOP_BND_UN));
-        }
-        bool IsBoundsCheckNoThrow() const
-        {
-            return (KindIs(OAK_NO_THROW) && GetOp1().KindIs(O1K_ARR_BND));
         }
 
         bool IsCopyAssertion() const
@@ -7977,7 +7961,7 @@ public:
 
         bool CanPropBndsCheck() const
         {
-            return GetOp1().KindIs(O1K_ARR_BND, O1K_VN);
+            return GetOp1().KindIs(O1K_VN);
         }
 
         bool CanPropSubRange() const
@@ -7990,26 +7974,144 @@ public:
             return false;
         }
 
-        AssertionDsc ReverseEquality() const
+        bool IsBoundsCheckNoThrow() const
         {
-            assert(CanPropEqualOrNotEqual());
+            // O1K_VN (idx) u< O2K_VN (len) where len is never negative.
+            // Effectively, it's "idx >= 0 && idx < len"
+            return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS) &&
+                   (GetOp2().GetCheckedBoundConstant() == 0) && GetOp2().IsCheckedBoundNeverNegative();
+        }
 
+        // Convert VNFunc to optAssertionKind
+        static optAssertionKind FromVNFunc(VNFunc func)
+        {
+            switch (func)
+            {
+                case VNF_EQ:
+                    return OAK_EQUAL;
+                case VNF_NE:
+                    return OAK_NOT_EQUAL;
+                case VNF_LT:
+                    return OAK_LT;
+                case VNF_LE:
+                    return OAK_LE;
+                case VNF_GT:
+                    return OAK_GT;
+                case VNF_GE:
+                    return OAK_GE;
+                case VNF_LT_UN:
+                    return OAK_LT_UN;
+                case VNF_LE_UN:
+                    return OAK_LE_UN;
+                case VNF_GT_UN:
+                    return OAK_GT_UN;
+                case VNF_GE_UN:
+                    return OAK_GE_UN;
+                default:
+                    unreached();
+            }
+        }
+
+        // Convert optAssertionKind to genTreeOps
+        static genTreeOps ToCompareOper(optAssertionKind kind, bool* isUnsigned)
+        {
+            *isUnsigned = false;
+            switch (kind)
+            {
+                case OAK_EQUAL:
+                    return GT_EQ;
+                case OAK_NOT_EQUAL:
+                    return GT_NE;
+                case OAK_LT:
+                    return GT_LT;
+                case OAK_LE:
+                    return GT_LE;
+                case OAK_GT:
+                    return GT_GT;
+                case OAK_GE:
+                    return GT_GE;
+                case OAK_LT_UN:
+                    *isUnsigned = true;
+                    return GT_LT;
+                case OAK_LE_UN:
+                    *isUnsigned = true;
+                    return GT_LE;
+                case OAK_GT_UN:
+                    *isUnsigned = true;
+                    return GT_GT;
+                case OAK_GE_UN:
+                    *isUnsigned = true;
+                    return GT_GE;
+                default:
+                    unreached();
+            }
+        }
+
+        // Reverse the kind of the assertion
+        static optAssertionKind ReverseKind(optAssertionKind kind)
+        {
+            switch (kind)
+            {
+                case OAK_EQUAL:
+                    return OAK_NOT_EQUAL;
+                case OAK_NOT_EQUAL:
+                    return OAK_EQUAL;
+                case OAK_LT:
+                    return OAK_GE;
+                case OAK_LT_UN:
+                    return OAK_GE_UN;
+                case OAK_LE:
+                    return OAK_GT;
+                case OAK_LE_UN:
+                    return OAK_GT_UN;
+                case OAK_GT:
+                    return OAK_LE;
+                case OAK_GT_UN:
+                    return OAK_LE_UN;
+                case OAK_GE:
+                    return OAK_LT;
+                case OAK_GE_UN:
+                    return OAK_LT_UN;
+                default:
+                    unreached();
+            }
+        }
+
+        static bool IsReversible(optAssertionKind kind)
+        {
+            // Only OAK_SUBRANGE is not reversible (its reverse is not defined).
+            return kind != OAK_SUBRANGE;
+        }
+
+        AssertionDsc Reverse() const
+        {
+            assert(IsReversible(GetKind()));
             AssertionDsc copy    = *this;
-            copy.m_assertionKind = KindIs(OAK_EQUAL) ? OAK_NOT_EQUAL : OAK_EQUAL;
+            copy.m_assertionKind = ReverseKind(GetKind());
             return copy;
+        }
+
+        bool IsRelop() const
+        {
+            switch (GetKind())
+            {
+                case OAK_LT:
+                case OAK_LT_UN:
+                case OAK_LE:
+                case OAK_LE_UN:
+                case OAK_GT:
+                case OAK_GT_UN:
+                case OAK_GE:
+                case OAK_GE_UN:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         static bool ComplementaryKind(optAssertionKind kind, optAssertionKind kind2)
         {
-            if (kind == OAK_EQUAL)
-            {
-                return kind2 == OAK_NOT_EQUAL;
-            }
-            else if (kind == OAK_NOT_EQUAL)
-            {
-                return kind2 == OAK_EQUAL;
-            }
-            return false;
+            return IsReversible(kind) && ReverseKind(kind) == kind2;
         }
 
         bool HasSameOp1(const AssertionDsc& that, bool vnBased) const
@@ -8017,12 +8119,6 @@ public:
             if (!GetOp1().KindIs(that.GetOp1().GetKind()))
             {
                 return false;
-            }
-            else if (GetOp1().KindIs(O1K_ARR_BND))
-            {
-                assert(vnBased);
-                return (GetOp1().GetArrBndIndex() == that.GetOp1().GetArrBndIndex()) &&
-                       (GetOp1().GetArrBndLength() == that.GetOp1().GetArrBndLength());
             }
             else if (GetOp1().KindIs(O1K_VN))
             {
@@ -8038,7 +8134,6 @@ public:
 
         bool HasSameOp2(const AssertionDsc& that, bool vnBased) const
         {
-            assert(HasOp2());
             if (!GetOp2().KindIs(that.GetOp2().GetKind()))
             {
                 return false;
@@ -8056,6 +8151,11 @@ public:
 
                 case O2K_ZEROOBJ:
                     return true;
+
+                case O2K_CHECKED_BOUND_ADD_CNS:
+                    return GetOp2().GetCheckedBound() == that.GetOp2().GetCheckedBound() &&
+                           GetOp2().GetCheckedBoundConstant() == that.GetOp2().GetCheckedBoundConstant() &&
+                           GetOp2().IsCheckedBoundNeverNegative() == that.GetOp2().IsCheckedBoundNeverNegative();
 
                 case O2K_LCLVAR_COPY:
                     return GetOp2().GetLclNum() == that.GetOp2().GetLclNum();
@@ -8080,7 +8180,7 @@ public:
 
         bool Equals(const AssertionDsc& that, bool vnBased) const
         {
-            return KindIs(that.GetKind()) && HasSameOp1(that, vnBased) && (!HasOp2() || HasSameOp2(that, vnBased));
+            return KindIs(that.GetKind()) && HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
         }
 
         //
@@ -8241,73 +8341,58 @@ public:
             return dsc;
         }
 
-        // Create a no-throw bounds check assertion: idxVN u< lenVN
-        static AssertionDsc CreateNoThrowArrBnd(const Compiler* comp, ValueNum idxVN, ValueNum lenVN)
+        // Create a no-throw bounds check assertion: idxVN u< lenVN where lenVN is never negative
+        // Effectively, this means "idxVN is in range [0, lenVN)".
+        static AssertionDsc CreateNoThrowArrBnd(ValueNum idxVN, ValueNum lenVN)
         {
             assert(idxVN != ValueNumStore::NoVN);
             assert(lenVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc        = {};
-            dsc.m_assertionKind     = OAK_NO_THROW;
-            dsc.m_op1.m_kind        = O1K_ARR_BND;
-            dsc.m_op1.m_bnd.m_vnIdx = idxVN;
-            dsc.m_op1.m_bnd.m_vnLen = lenVN;
-            dsc.m_op2.m_kind        = O2K_INVALID;
+            AssertionDsc dsc    = {};
+            dsc.m_assertionKind = OAK_LT_UN;
+            dsc.m_op1.m_kind    = O1K_VN;
+            dsc.m_op1.m_vn      = idxVN;
+            dsc.m_op2.m_kind    = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_vn      = lenVN;
+
+            // Normally, "Checked bound" doesn't mean it's never negative, but in this particular case we know it is.
+            dsc.m_op2.m_checkedBoundIsNeverNegative = true;
+            dsc.m_op2.m_icon.m_iconVal              = 0;
             return dsc;
         }
 
-        // Create "i < bnd +/- k != 0" or just "i < bnd != 0" assertion
-        static AssertionDsc CreateCompareCheckedBoundArith(const Compiler* comp, ValueNum relopVN, bool withArith)
+        // Create "i <relop> (bnd + cns)" assertion
+        static AssertionDsc CreateCompareCheckedBound(VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
         {
-            assert(relopVN != ValueNumStore::NoVN);
+            assert(op1VN != ValueNumStore::NoVN);
+            assert(checkedBndVN != ValueNumStore::NoVN);
 
-            if (withArith)
-            {
-                assert(comp->vnStore->IsVNCompareCheckedBoundArith(relopVN));
-            }
-            else
-            {
-                assert(comp->vnStore->IsVNCompareCheckedBound(relopVN));
-            }
-
-            AssertionDsc dsc    = {};
-            dsc.m_assertionKind = OAK_NOT_EQUAL;
-            // TODO-Cleanup: Rename O1K_BOUND_OPER_BND and O1K_BOUND_LOOP_BND to something more meaningful
-            // Also, consider removing O1K_BOUND_LOOP_BND entirely and use O1K_BOUND_OPER_BND for both cases.
-            // O1K_BOUND_LOOP_BND is basically "i < bnd +/- 0 != 0". Unless it regresses TP.
-            dsc.m_op1.m_kind           = withArith ? O1K_BOUND_OPER_BND : O1K_BOUND_LOOP_BND;
-            dsc.m_op1.m_vn             = relopVN;
-            dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.m_op2.m_icon.m_iconVal = 0;
+            AssertionDsc dsc           = {};
+            dsc.m_assertionKind        = FromVNFunc(relop);
+            dsc.m_op1.m_kind           = O1K_VN;
+            dsc.m_op1.m_vn             = op1VN;
+            dsc.m_op2.m_kind           = O2K_CHECKED_BOUND_ADD_CNS;
+            dsc.m_op2.m_vn             = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
 
         // Create "i < constant" or "i u< constant" assertion
-        // TODO-Cleanup: Rename it as it's not necessarily a loop bound
-        static AssertionDsc CreateConstantLoopBound(const Compiler* comp, ValueNum relopVN, bool isUnsigned)
+        static AssertionDsc CreateConstantBound(const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum cnsVN)
         {
-            assert(relopVN != ValueNumStore::NoVN);
-            if (isUnsigned)
-            {
-                assert(comp->vnStore->IsVNConstantBoundUnsigned(relopVN));
-            }
-            else
-            {
-                assert(comp->vnStore->IsVNConstantBound(relopVN));
-            }
+            assert(op1VN != ValueNumStore::NoVN);
 
-            // We can guess the signedness of the loop bound from the VN and remove
-            // O1K_CONSTANT_LOOP_BND_UN entirely. However, it improves the TP a bit since we don't
-            // have to call GetVNFunc for each assertion during assertion matching.
+            ssize_t cns;
+            bool    op2IsCns = comp->vnStore->IsVNIntegralConstant(cnsVN, &cns);
+            assert(op2IsCns);
 
             AssertionDsc dsc           = {};
-            dsc.m_assertionKind        = OAK_NOT_EQUAL;
-            dsc.m_op1.m_kind           = isUnsigned ? O1K_CONSTANT_LOOP_BND_UN : O1K_CONSTANT_LOOP_BND;
-            dsc.m_op1.m_vn             = relopVN;
+            dsc.m_assertionKind        = FromVNFunc(relop);
+            dsc.m_op1.m_kind           = O1K_VN;
+            dsc.m_op1.m_vn             = op1VN;
             dsc.m_op2.m_kind           = O2K_CONST_INT;
-            dsc.m_op2.m_vn             = comp->vnStore->VNZeroForType(TYP_INT);
-            dsc.m_op2.m_icon.m_iconVal = 0;
+            dsc.m_op2.m_vn             = cnsVN;
+            dsc.m_op2.m_icon.m_iconVal = cns;
             return dsc;
         }
     };
@@ -8386,7 +8471,7 @@ public:
 
     bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
-    void optCreateComplementaryAssertion(AssertionIndex assertionIndex, GenTree* op1, GenTree* op2);
+    void optCreateComplementaryAssertion(AssertionIndex assertionIndex);
 
     AssertionIndex optAddAssertion(const AssertionDsc& assertion);
 
@@ -8397,7 +8482,6 @@ public:
     bool           optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
-    AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
         optOp1Kind op1Kind, unsigned lclNum, optOp2Kind op2Kind, ssize_t cnsVal, ASSERT_VALARG_TP assertions);
 
@@ -8419,6 +8503,7 @@ public:
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt, BasicBlock* block);
+    GenTree* optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
@@ -10184,9 +10269,7 @@ public:
 
 #endif // DEBUG
 
-    bool fgLocalVarLivenessDone = false; // Note that this one is used outside of debug.
-    bool fgLocalVarLivenessChanged;
-    bool fgIsDoingEarlyLiveness         = false;
+    bool fgLocalVarLivenessDone         = false; // Note that this one is used outside of debug.
     bool fgDidEarlyLiveness             = false;
     bool compPostImportationCleanupDone = false;
     bool compRegAllocDone               = false;

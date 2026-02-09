@@ -84,7 +84,7 @@ usage()
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
-  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
@@ -165,6 +165,9 @@ bootstrapConfig='Debug'
 source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
+
+# Default to using Ninja for faster builds (can be overridden with --ninja false)
+useNinja=true
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -496,20 +499,17 @@ while [[ $# -gt 0 ]]; do
 
 
       -ninja)
-      if [ -z ${2+x} ]; then
-        arguments+=("/p:Ninja=true")
+      if [ -z ${2+x} ] || [[ "$2" == -* ]]; then
+        useNinja=true
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ "$ninja" = true ]; then
-          arguments+=("/p:Ninja=true")
-          shift 2
-        elif [ "$ninja" = false ]; then
+        shift 2
+        if [ "$ninja" = false ]; then
           arguments+=("/p:Ninja=false")
-          shift 2
+          useNinja=false
         else
-          arguments+=("/p:Ninja=true")
-          shift 1
+          useNinja=true
         fi
       fi
       ;;
@@ -581,6 +581,11 @@ fi
 arguments+=("-tl:false")
 # disable line wrapping so that C&P from the console works well
 arguments+=("-clp:ForceNoAlign")
+
+# Apply ninja setting
+if [[ "$useNinja" == true ]]; then
+  arguments+=("/p:Ninja=true")
+fi
 
 initDistroRid "$os" "$arch" "$crossBuild"
 

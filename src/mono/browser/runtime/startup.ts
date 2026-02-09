@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -218,18 +218,9 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
-            const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            try {
-                const wds = FS.stat(cwd);
-                if (!wds) {
-                    Module.FS_createPath("/", cwd, true, true);
-                } else {
-                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
-                }
-            } catch (e) {
-                Module.FS_createPath("/", cwd, true, true);
-            }
-            FS.chdir(cwd);
+            FS.createPath("/", browserVirtualAppBase, true, true);
+            FS.createPath("/", runtimeHelpers.config.virtualWorkingDirectory, true, true);
+            FS.chdir(runtimeHelpers.config.virtualWorkingDirectory);
         }
 
         if (runtimeHelpers.config.interpreterPgo)

@@ -365,19 +365,8 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     return false;
 }
 
-#ifdef TARGET_BROWSER
-bool is_node()
-{
-    return EM_ASM_INT({
-        if (typeof process !== 'undefined' &&
-            process.versions &&
-            process.versions.node) {
-            return 1;
-        }
-        return 0;
-    });
-}
-#endif // TARGET_BROWSER
+extern "C" int corerun_shutdown(int exit_code);
+static pal::mod_t coreclr_mod;
 
 static int run(const configuration& config)
 {
@@ -476,7 +465,6 @@ static int run(const configuration& config)
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
-    pal::mod_t coreclr_mod;
     if (!pal::try_load_coreclr(core_root, coreclr_mod))
     {
         return -1;
@@ -620,15 +608,27 @@ static int run(const configuration& config)
     }
 
 #ifdef TARGET_BROWSER
-    if (!is_node())
-    {
-        // In browser we don't shutdown the runtime here as we want to keep it alive
-        return 0;
-    }
+    // in NodeJS/Browser this is not really end of the process, JS keeps running.
+    // We want to keep the CoreCLR runtime alive to be able to process async work
+    // The NodeJS process is kept alive by pending async work via safeSetTimeout() -> runtimeKeepalivePush()
+    // The actual exit code would be set by SystemJS_ResolveMainPromise if the managed Main() is async.
+    // Or in Module.onExit handler when  managed Main() is synchronous.
+    return 0;
+#else // TARGET_BROWSER
+    return corerun_shutdown(exit_code);
 #endif // TARGET_BROWSER
+}
+
+extern "C" int corerun_shutdown(int exit_code)
+{
+    coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
+    if (!try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
+    {
+        return -1;
+    }
 
     int latched_exit_code = 0;
-    result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
+    int result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
     if (FAILED(result))
     {
         pal::fprintf(stderr, W("coreclr_shutdown_2 failed - Error: 0x%08x\n"), result);
