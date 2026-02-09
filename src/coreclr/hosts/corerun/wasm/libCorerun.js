@@ -31,6 +31,7 @@ function libCoreRunFactory() {
                         EXITSTATUS = status;
                         ABORT = true;
                     }
+                    // WASM-TODO temporary workaround to get exit code from runtime tests
                     if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
                         dotnetBrowserUtilsExports.abortBackgroundTimers();
                     }

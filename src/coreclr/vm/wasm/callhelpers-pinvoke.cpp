@@ -82,6 +82,7 @@ extern "C" {
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
+    int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeLibrary (void *);
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
@@ -90,7 +91,6 @@ extern "C" {
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    uint32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
@@ -230,6 +230,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives
@@ -238,7 +239,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
