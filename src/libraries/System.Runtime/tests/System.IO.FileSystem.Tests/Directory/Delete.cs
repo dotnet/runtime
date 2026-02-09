@@ -292,13 +292,11 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void RecursiveDelete_Issue84344()
         {
-            // Test the scenario described in the GitHub issue #84344 where the nesting depth of subdirectories is huge (14000).
-            // But this test will take a long time to run if we use 14000 as the depth, because the original depth number is too deep.
-            // Therefore we reduce the depth to 9000 for quick testing purpose but with a large enough number.
-            // See https://github.com/dotnet/runtime/issues/84344
-            // Although the scenario on the original issue is done on Windows,
-            // we should be able to run this test on all platforms to test the recursive Directory.Delete().
-            // Unfortunately, on Unix/Linux the max path length is limited to 4096, therefore this test is targeted to only runs on Windows.
+            // Test the scenario described in GitHub issue #84344 where the nesting depth of subdirectories is huge (14000).
+            // Using 14000 as the depth makes the test very slow, so we reduce the depth to 9000 for quicker execution while still
+            // exercising a very deep directory tree. See https://github.com/dotnet/runtime/issues/84344.
+            // The original scenario and this test are limited to Windows; on Unix-like systems the much shorter maximum path length
+            // (for example, 4096 characters) would cause failures due to path length limits rather than testing Directory.Delete recursion.
             DirectoryInfo testDir = new DirectoryInfo(GetTestFilePath());
             var depth = 9000;
 
