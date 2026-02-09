@@ -197,8 +197,8 @@ namespace System.Numerics.Tensors.Tests
 
         public static IEnumerable<object[]> TwoSpanInSpanOutDataWithTolerance()
         {
-            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2, 1e-5f };
-            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2Pi, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2Pi, 1e-5f };
+            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2, 1e-6f };
+            yield return new object[] { (PerformCalculationTwoSpanInSpanOut<float>)TensorPrimitives.Atan2Pi, (PerformTwoSpanInSpanOut<float>)Tensor.Atan2Pi, 1e-6f };
         }
 
         [Theory, MemberData(nameof(TwoSpanInSpanOutData))]
