@@ -277,16 +277,10 @@ namespace System.Diagnostics.Tracing
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
         [FeatureSwitchDefinition("System.Diagnostics.Tracing.EventSource.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
 
         [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsMeterSupported { get; } = InitializeIsMeterSupported();
-
-        private static bool InitializeIsMeterSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsMeterSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
 #if FEATURE_EVENTSOURCE_XPLAT
 #pragma warning disable CA1823 // field is used to keep listener alive
@@ -460,7 +454,7 @@ namespace System.Diagnostics.Tracing
         {
             if (!IsSupported)
             {
-                return Array.Empty<EventSource>();
+                return [];
             }
 
             var ret = new List<EventSource>();
@@ -5463,7 +5457,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return Array.Empty<ulong>();
+                return [];
             }
 
             // We create an array indexed by the channel id for fast look up.
@@ -5632,7 +5626,7 @@ namespace System.Diagnostics.Tracing
         public byte[] CreateManifest()
         {
             string str = CreateManifestString();
-            return (str != "") ? Encoding.UTF8.GetBytes(str) : Array.Empty<byte>();
+            return (str != "") ? Encoding.UTF8.GetBytes(str) : [];
         }
 
         public IList<string> Errors => errors;

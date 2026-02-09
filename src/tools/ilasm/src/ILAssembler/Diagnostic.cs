@@ -40,6 +40,17 @@ public static class DiagnosticIds
     public const string ArgumentNotFound = "ILA0018";
     public const string LocalNotFound = "ILA0019";
     public const string TypedefNotFound = "ILA0020";
+    public const string AbstractMethodNotInAbstractType = "ILA0021";
+    public const string InvalidPInvokeSignature = "ILA0022";
+    public const string MissingInstanceCallConv = "ILA0023";
+    public const string DeprecatedNativeType = "ILA0024";
+    public const string DeprecatedCustomMarshaller = "ILA0025";
+    public const string UnsupportedSecurityDeclaration = "ILA0026";
+    public const string GenericParameterIndexOutOfRange = "ILA0027";
+    public const string UnknownGenericParameter = "ILA0028";
+    public const string ParameterIndexOutOfRange = "ILA0029";
+    public const string DuplicateMethod = "ILA0030";
+    public const string MissingExportedTypeImplementation = "ILA0031";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -64,4 +75,15 @@ internal static class DiagnosticMessageTemplates
     public const string ArgumentNotFound = "Argument '{0}' not found";
     public const string LocalNotFound = "Local variable '{0}' not found";
     public const string TypedefNotFound = "Typedef '{0}' not found";
+    public const string AbstractMethodNotInAbstractType = "Abstract method '{0}' cannot be declared in a non-abstract type";
+    public const string InvalidPInvokeSignature = "Invalid P/Invoke signature: module name is required";
+    public const string MissingInstanceCallConv = "Instance call convention required for method reference";
+    public const string DeprecatedNativeType = "Native type '{0}' is deprecated";
+    public const string DeprecatedCustomMarshaller = "The 4-string form of custom marshaller is deprecated";
+    public const string UnsupportedSecurityDeclaration = "Individual SecurityAttribute permissions are not supported; use PermissionSet instead";
+    public const string GenericParameterIndexOutOfRange = "Generic parameter index {0} is out of range";
+    public const string UnknownGenericParameter = "Unknown generic parameter '{0}'";
+    public const string ParameterIndexOutOfRange = "Parameter index {0} is out of range";
+    public const string DuplicateMethod = "Duplicate method definition";
+    public const string MissingExportedTypeImplementation = "Undefined implementation in ExportedType '{0}' -- ExportedType not emitted";
 }

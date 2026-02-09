@@ -2912,7 +2912,7 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 /* static */
 Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
 {
-    return data->compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
+    return data->m_compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
 }
 
 //------------------------------------------------------------------------
