@@ -120,7 +120,9 @@ namespace ILCompiler.DependencyAnalysis
 
     /// <summary>
     /// Marker interface for nodes that should have their size emitted in the ReadyToRun header
-    /// using IMAGE_REL_SYMBOL_SIZE relocation.
+    /// using IMAGE_REL_SYMBOL_SIZE relocation. The object writer will resolve the symbol size
+    /// at link time. Only nodes that represent contiguous data regions with well-defined boundaries
+    /// should implement this interface.
     /// </summary>
     public interface INodeWithSize
     {
