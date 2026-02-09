@@ -677,28 +677,8 @@ PhaseStatus AsyncTransformation::Run()
 
     m_asyncInfo = m_compiler->eeGetAsyncInfo();
 
-#ifdef JIT32_GCENCODER
-    // Due to a hard cap on epilogs we need a shared return here.
-    m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
-    m_sharedReturnBB->bbSetRunRarely();
-    m_sharedReturnBB->clearTryIndex();
-    m_sharedReturnBB->clearHndIndex();
-
-    if (m_compiler->fgIsUsingProfileWeights())
-    {
-        // All suspension BBs are cold, so we do not need to propagate any
-        // weights, but we do need to propagate the flag.
-        m_sharedReturnBB->SetFlags(BBF_PROF_WEIGHT);
-    }
-
-    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
-    GenTree* ret          = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
-    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
-
-    JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
-
-    DISPRANGE(LIR::AsRange(m_sharedReturnBB));
-#endif
+    // Create the shared return BB now to put it in the right place in the block order.
+    GetSharedReturnBB();
 
     // Compute liveness to be used for determining what must be captured on
     // suspension.
@@ -839,6 +819,8 @@ void AsyncTransformation::TransformTailAwait(BasicBlock* block, GenTreeCall* cal
 //
 BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call)
 {
+    BasicBlock* sharedReturnBB = GetSharedReturnBB();
+
     if (m_lastSuspensionBB == nullptr)
     {
         m_lastSuspensionBB = m_compiler->fgLastBBInMainFunction();
@@ -850,9 +832,9 @@ BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, Ge
     suspendBB->inheritWeightPercentage(block, 0);
     m_lastSuspensionBB = suspendBB;
 
-    if (m_sharedReturnBB != nullptr)
+    if (sharedReturnBB != nullptr)
     {
-        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(sharedReturnBB, suspendBB));
     }
 
     JITDUMP("  Creating tail suspension " FMT_BB "\n", suspendBB->bbNum);
@@ -2355,9 +2337,7 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLa
 
 //------------------------------------------------------------------------
 // AsyncTransformation::GetReturnedContinuationVar:
-//   Create a new local to hold the base address of the incoming result from
-//   the continuation. This local can be validly used for the entire suspension
-//   point; the returned local may be used by multiple suspension points.
+//   Create a new local to hold the continuation returned by called async functions.
 //
 // Returns:
 //   Local number.
@@ -2375,9 +2355,8 @@ unsigned AsyncTransformation::GetReturnedContinuationVar()
 
 //------------------------------------------------------------------------
 // AsyncTransformation::GetNewContinuationVar:
-//   Create a new local to hold the base address of the incoming result from
-//   the continuation. This local can be validly used for the entire suspension
-//   point; the returned local may be used by multiple suspension points.
+//   Create a new local to hold the continuation for this function that will be
+//   returned.
 //
 // Returns:
 //   Local number.
@@ -2431,6 +2410,42 @@ unsigned AsyncTransformation::GetExceptionVar()
     }
 
     return m_exceptionVar;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::GetSharedReturnBB:
+//   Create the shared return BB, if one is needed.
+//
+// Returns:
+//   Basic block or nullptr.
+//
+BasicBlock* AsyncTransformation::GetSharedReturnBB()
+{
+#ifdef JIT32_GCENCODER
+    // Due to a hard cap on epilogs we need a shared return here.
+    m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
+    m_sharedReturnBB->bbSetRunRarely();
+    m_sharedReturnBB->clearTryIndex();
+    m_sharedReturnBB->clearHndIndex();
+
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        // All suspension BBs are cold, so we do not need to propagate any
+        // weights, but we do need to propagate the flag.
+        m_sharedReturnBB->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* ret          = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
+    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
+
+    JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
+
+    DISPRANGE(LIR::AsRange(m_sharedReturnBB));
+    return m_sharedReturnBB;
+#else
+    return nullptr;
+#endif
 }
 
 //------------------------------------------------------------------------
