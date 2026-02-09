@@ -504,7 +504,7 @@ namespace System.Numerics.Tensors
                     return linearOffset;
                 }
 
-                indexes[destinationRankIndex] = lengths[rankIndex];
+                indexes[destinationRankIndex] = destinationLengths[destinationRankIndex] - 1;
                 linearOffset += (stride * length);
             }
 
