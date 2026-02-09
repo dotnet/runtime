@@ -76,13 +76,17 @@ public:
         ILStubLinker* pStubLinker,
         BOOL isAsync = FALSE);
 
-    // Creates a DynamicMethodDesc that wraps pre-compiled R2R async resumption stub code.
+    // Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
     // Unlike regular IL stubs, this does not create a resolver or precode - it points
     // directly to the R2R native code.
-    static MethodDesc* CreateR2RBackedAsyncResumptionStub(
+    static MethodDesc* CreateR2RBackedILStub(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
         PCODE r2rEntryPoint,
+        DWORD stubType,         // DynamicMethodDesc::ILStubType
+        PCCOR_SIGNATURE pSig,
+        DWORD cbSig,
+        BOOL isAsync,
         AllocMemTracker* pamTracker);
 
     MethodTable * GetStubMethodTable()
