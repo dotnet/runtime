@@ -30,9 +30,9 @@ function libCoreRunFactory() {
                     if (!implicit) {
                         EXITSTATUS = status;
                         ABORT = true;
-                        if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                            dotnetBrowserUtilsExports.abortBackgroundTimers();
-                        }
+                    }
+                    if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                        dotnetBrowserUtilsExports.abortBackgroundTimers();
                     }
                     if (!keepRuntimeAlive()) {
                         ABORT = true;
