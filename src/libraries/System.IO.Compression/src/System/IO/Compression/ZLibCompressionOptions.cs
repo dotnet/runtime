@@ -10,6 +10,7 @@ namespace System.IO.Compression
     {
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
+        private int _windowLog = DeflateEncoder.DefaultWindowLog;
 
         /// <summary>
         /// Gets or sets the compression level for a compression stream.
@@ -43,6 +44,26 @@ namespace System.IO.Compression
                 ArgumentOutOfRangeException.ThrowIfGreaterThan((int)value, (int)ZLibCompressionStrategy.Fixed, nameof(value));
 
                 _strategy = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the base-2 logarithm of the window size for a compression stream.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The value is less than 8 or greater than 15.</exception>
+        /// <remarks>
+        /// Can accept any value between 8 and 15 (inclusive). Larger values result in better compression at the expense of memory usage.
+        /// The default value is 15 (32KB window).
+        /// </remarks>
+        public int WindowLog
+        {
+            get => _windowLog;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, DeflateEncoder.MinWindowLog);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, DeflateEncoder.MaxWindowLog);
+
+                _windowLog = value;
             }
         }
     }

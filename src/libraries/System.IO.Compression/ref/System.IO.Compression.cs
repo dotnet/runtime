@@ -191,6 +191,7 @@ namespace System.IO.Compression
         public ZLibCompressionOptions() { }
         public int CompressionLevel { get { throw null; } set { } }
         public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
+        public int WindowLog { get { throw null; } set { } }
     }
     public enum ZLibCompressionStrategy
     {

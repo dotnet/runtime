@@ -126,12 +126,14 @@ namespace System.IO.Compression
             _zlibCompressionLevel = (ZLibNative.CompressionLevel)options.CompressionLevel;
             _strategy = options.CompressionStrategy;
 
-            // Compute windowBits based on the compression format using default window log:
+            int windowLog = options.WindowLog;
+
+            // Compute windowBits based on the compression format:
             int windowBits = format switch
             {
-                CompressionFormat.Deflate => -DefaultWindowLog,
-                CompressionFormat.ZLib => DefaultWindowLog,
-                CompressionFormat.GZip => DefaultWindowLog + 16,
+                CompressionFormat.Deflate => -windowLog,
+                CompressionFormat.ZLib => windowLog,
+                CompressionFormat.GZip => windowLog + 16,
                 _ => throw new ArgumentOutOfRangeException(nameof(format))
             };
 
