@@ -21,34 +21,27 @@ namespace System.IO.Compression
         private readonly ZLibCompressionStrategy _strategy;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the default compression level.
+        /// The default quality value (optimal compression).
+        /// </summary>
+        internal const int DefaultQuality = 6;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the default quality.
         /// </summary>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder()
-            : this(CompressionLevel.Optimal, ZLibCompressionStrategy.Default)
+            : this(DefaultQuality)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified compression level.
+        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified quality.
         /// </summary>
-        /// <param name="compressionLevel">The compression level to use.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
-        public DeflateEncoder(CompressionLevel compressionLevel)
-            : this(compressionLevel, ZLibCompressionStrategy.Default)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified compression level and strategy.
-        /// </summary>
-        /// <param name="compressionLevel">The compression level to use.</param>
-        /// <param name="strategy">The compression strategy to use.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
-        /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
-        public DeflateEncoder(CompressionLevel compressionLevel, ZLibCompressionStrategy strategy)
-            : this(compressionLevel, strategy, ZLibNative.Deflate_DefaultWindowBits)
+        public DeflateEncoder(int quality)
+            : this(quality, DefaultWindowLog)
         {
         }
 
@@ -59,21 +52,60 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder(ZLibCompressionOptions options)
-            : this(options, ZLibNative.Deflate_DefaultWindowBits)
+            : this(options, CompressionFormat.Deflate)
         {
         }
 
         /// <summary>
-        /// Internal constructor to specify windowBits for different compression formats.
+        /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the specified quality and window size.
         /// </summary>
-        internal DeflateEncoder(CompressionLevel compressionLevel, ZLibCompressionStrategy strategy, int windowBits)
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
+        /// <param name="windowLog">The base-2 logarithm of the window size (8-15). Larger values result in better compression at the expense of memory usage.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9), or <paramref name="windowLog"/> is not in the valid range (8-15).</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
+        public DeflateEncoder(int quality, int windowLog)
+            : this(quality, windowLog, CompressionFormat.Deflate)
         {
-            ValidateCompressionLevel(compressionLevel);
+        }
+
+        /// <summary>
+        /// Specifies the compression format for zlib-based encoders.
+        /// </summary>
+        internal enum CompressionFormat
+        {
+            /// <summary>Raw deflate format (no header/trailer).</summary>
+            Deflate,
+            /// <summary>ZLib format (zlib header/trailer).</summary>
+            ZLib,
+            /// <summary>GZip format (gzip header/trailer).</summary>
+            GZip
+        }
+
+        /// <summary>
+        /// Internal constructor that accepts quality, windowLog (8-15), and format.
+        /// Validates both parameters and transforms windowLog to windowBits based on format.
+        /// </summary>
+        internal DeflateEncoder(int quality, int windowLog, CompressionFormat format)
+        {
+            ValidateQuality(quality);
+            ValidateWindowLog(windowLog);
 
             _disposed = false;
             _finished = false;
-            _zlibCompressionLevel = GetZLibNativeCompressionLevel(compressionLevel);
-            _strategy = strategy;
+            _zlibCompressionLevel = (ZLibNative.CompressionLevel)quality;
+            _strategy = ZLibCompressionStrategy.Default;
+
+            // Compute windowBits based on the compression format:
+            // - Deflate: negative windowLog produces raw deflate (no header/trailer)
+            // - ZLib: positive windowLog produces zlib format
+            // - GZip: windowLog + 16 produces gzip format
+            int windowBits = format switch
+            {
+                CompressionFormat.Deflate => -windowLog,
+                CompressionFormat.ZLib => windowLog,
+                CompressionFormat.GZip => windowLog + 16,
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
 
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
                 _zlibCompressionLevel,
@@ -83,9 +115,9 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Internal constructor to specify windowBits with options.
+        /// Internal constructor that accepts ZLibCompressionOptions and format.
         /// </summary>
-        internal DeflateEncoder(ZLibCompressionOptions options, int windowBits)
+        internal DeflateEncoder(ZLibCompressionOptions options, CompressionFormat format)
         {
             ArgumentNullException.ThrowIfNull(options);
 
@@ -94,6 +126,15 @@ namespace System.IO.Compression
             _zlibCompressionLevel = (ZLibNative.CompressionLevel)options.CompressionLevel;
             _strategy = options.CompressionStrategy;
 
+            // Compute windowBits based on the compression format using default window log:
+            int windowBits = format switch
+            {
+                CompressionFormat.Deflate => -DefaultWindowLog,
+                CompressionFormat.ZLib => DefaultWindowLog,
+                CompressionFormat.GZip => DefaultWindowLog + 16,
+                _ => throw new ArgumentOutOfRangeException(nameof(format))
+            };
+
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
                 _zlibCompressionLevel,
                 windowBits,
@@ -101,23 +142,44 @@ namespace System.IO.Compression
                 (ZLibNative.CompressionStrategy)_strategy);
         }
 
-        private static void ValidateCompressionLevel(CompressionLevel compressionLevel)
+
+        /// <summary>
+        /// The minimum quality value for compression (no compression).
+        /// </summary>
+        internal const int MinQuality = 0;
+
+        /// <summary>
+        /// The maximum quality value for compression (best compression).
+        /// </summary>
+        internal const int MaxQuality = 9;
+
+        /// <summary>
+        /// The minimum window log value (256 bytes window).
+        /// </summary>
+        internal const int MinWindowLog = 8;
+
+        /// <summary>
+        /// The maximum window log value (32KB window).
+        /// </summary>
+        internal const int MaxWindowLog = 15;
+
+        /// <summary>
+        /// The default window log value (32KB window).
+        /// </summary>
+        internal const int DefaultWindowLog = MaxWindowLog;
+
+
+        private static void ValidateQuality(int quality)
         {
-            if (compressionLevel < CompressionLevel.Optimal || compressionLevel > CompressionLevel.SmallestSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(compressionLevel));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(quality, MinQuality, nameof(quality));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, MaxQuality, nameof(quality));
         }
 
-        private static ZLibNative.CompressionLevel GetZLibNativeCompressionLevel(CompressionLevel compressionLevel) =>
-            compressionLevel switch
-            {
-                CompressionLevel.Optimal => ZLibNative.CompressionLevel.DefaultCompression,
-                CompressionLevel.Fastest => ZLibNative.CompressionLevel.BestSpeed,
-                CompressionLevel.NoCompression => ZLibNative.CompressionLevel.NoCompression,
-                CompressionLevel.SmallestSize => ZLibNative.CompressionLevel.BestCompression,
-                _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel)),
-            };
+        private static void ValidateWindowLog(int windowLog)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, MinWindowLog, nameof(windowLog));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, MaxWindowLog, nameof(windowLog));
+        }
 
         /// <summary>
         /// Frees and disposes unmanaged resources.
@@ -146,14 +208,14 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets the maximum expected compressed length for the provided input size.
         /// </summary>
-        /// <param name="inputSize">The input size to get the maximum expected compressed length from.</param>
+        /// <param name="inputLength">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is negative.</exception>
-        public static long GetMaxCompressedLength(long inputSize)
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative.</exception>
+        public static long GetMaxCompressedLength(long inputLength)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
+            ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
 
-            return (long)Interop.ZLib.compressBound((uint)inputSize);
+            return (long)Interop.ZLib.compressBound((uint)inputLength);
         }
 
         /// <summary>
@@ -197,7 +259,7 @@ namespace System.IO.Compression
 
                     OperationStatus status = errorCode switch
                     {
-                        ZLibNative.ErrorCode.Ok => _state.AvailIn == 0 && _state.AvailOut > 0
+                        ZLibNative.ErrorCode.Ok => _state.AvailIn == 0
                             ? OperationStatus.Done
                             : _state.AvailOut == 0
                                 ? OperationStatus.DestinationTooSmall
@@ -205,7 +267,9 @@ namespace System.IO.Compression
                         ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
                         ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
                             ? OperationStatus.DestinationTooSmall
-                            : OperationStatus.NeedMoreData,
+                            : _state.AvailIn == 0
+                                ? OperationStatus.Done
+                                : OperationStatus.NeedMoreData,
                         ZLibNative.ErrorCode.DataError => OperationStatus.InvalidData,
                         _ => OperationStatus.InvalidData
                     };
@@ -229,34 +293,77 @@ namespace System.IO.Compression
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         public OperationStatus Flush(Span<byte> destination, out int bytesWritten)
         {
-            return Compress(ReadOnlySpan<byte>.Empty, destination, out _, out bytesWritten, isFinalBlock: false);
+            EnsureInitialized();
+            Debug.Assert(_state is not null);
+
+            bytesWritten = 0;
+
+            if (_finished)
+            {
+                return OperationStatus.Done;
+            }
+
+            unsafe
+            {
+                fixed (byte* outputPtr = &MemoryMarshal.GetReference(destination))
+                {
+                    _state.NextIn = IntPtr.Zero;
+                    _state.AvailIn = 0;
+                    _state.NextOut = (IntPtr)outputPtr;
+                    _state.AvailOut = (uint)destination.Length;
+
+                    ZLibNative.ErrorCode errorCode = _state.Deflate(ZLibNative.FlushCode.SyncFlush);
+
+                    bytesWritten = destination.Length - (int)_state.AvailOut;
+
+                    return errorCode switch
+                    {
+                        ZLibNative.ErrorCode.Ok => OperationStatus.Done,
+                        ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
+                        ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
+                            ? OperationStatus.DestinationTooSmall
+                            : OperationStatus.Done,
+                        _ => OperationStatus.InvalidData
+                    };
+                }
+            }
         }
 
         /// <summary>
-        /// Tries to compress a source byte span into a destination span using the default compression level.
+        /// Tries to compress a source byte span into a destination span using the default quality.
         /// </summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-        {
-            return TryCompress(source, destination, out bytesWritten, CompressionLevel.Optimal);
-        }
+            => TryCompress(source, destination, out bytesWritten, DefaultQuality, DefaultWindowLog);
 
         /// <summary>
-        /// Tries to compress a source byte span into a destination span using the specified compression level.
+        /// Tries to compress a source byte span into a destination span using the specified quality.
         /// </summary>
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
-        /// <param name="compressionLevel">The compression level to use.</param>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, CompressionLevel compressionLevel)
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
         {
-            ValidateCompressionLevel(compressionLevel);
+            return TryCompress(source, destination, out bytesWritten, quality, DefaultWindowLog);
+        }
 
-            using var encoder = new DeflateEncoder(compressionLevel);
+        /// <summary>
+        /// Tries to compress a source byte span into a destination span using the specified quality and window size.
+        /// </summary>
+        /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
+        /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
+        /// <param name="windowLog">The base-2 logarithm of the window size (8-15). Larger values result in better compression at the expense of memory usage.</param>
+        /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
+        {
+            using var encoder = new DeflateEncoder(quality, windowLog);
             OperationStatus status = encoder.Compress(source, destination, out int consumed, out bytesWritten, isFinalBlock: true);
 
             return status == OperationStatus.Done && consumed == source.Length;
