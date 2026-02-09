@@ -1041,24 +1041,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 var sig = DecodeMethodSignature(ref mdReader, ref decoder);
 
-                List<string> modifiers = [];
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
-                {
-                    modifiers.Add("[Async]");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-                {
-                    modifiers.Add("[Resume]");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
-                {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
-                {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
-                }
-
                 int runtimeFunctionId;
                 int? fixupOffset;
                 GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
@@ -1137,24 +1119,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
                 var sig = DecodeMethodSignature(ref mdReader, ref decoder);
-
-                List<string> modifiers = [];
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncVariant) != 0)
-                {
-                    modifiers.Add("[Async]");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-                {
-                    modifiers.Add("[Resume]");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
-                {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Instantiating stubs.");
-                }
-                if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
-                {
-                    throw new NotImplementedException("Crossgen2 should not emit code for Unboxing stubs.");
-                }
 
                 GetPgoOffsetAndVersion(decoder.Offset, out int pgoFormatVersion, out int pgoOffset);
 

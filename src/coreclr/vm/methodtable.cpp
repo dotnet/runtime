@@ -1762,7 +1762,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 
     if (pCurrentMethodTable == pMT)
         return true;
-
+        
     if (pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pCurrentMethodTable->HasSameTypeDefAs(pMT))
     {
         // Any matches need to use the special marker type logic
@@ -1779,7 +1779,7 @@ bool MethodTable::InterfaceMapIterator::CurrentInterfaceEquivalentTo(MethodTable
 #ifndef DACCESS_COMPILE
                 if (pMT->IsFullyLoaded())
                     SetInterface(pMT);
-#endif
+#endif 
                 return true;
             }
             else
@@ -4354,7 +4354,7 @@ VOID DoAccessibilityCheckForConstraintSignature(Module *pModule, SigPointer *pSi
         case ELEMENT_TYPE_TYPEDBYREF:
             // Primitive types and such. Nothing to check
             break;
-
+        
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
         {
@@ -4780,7 +4780,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
             for (DWORD i = 0; i < formalParams.GetNumArgs(); i++)
             {
-                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked
+                // This call to Bounded/DoAccessibilityCheckForConstraints will also cause constraint Variance rules to be checked 
                 // via the call to GetConstraints which will eventually call EEClass::CheckVarianceInSig
                 BOOL Bounded(TypeVarTypeDesc *tyvar, DWORD depth);
 
@@ -8007,25 +8007,6 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
     }
     CONTRACTL_END;
 
-    if (asyncVariantLookup == AsyncVariantLookup::AsyncResumptionStub)
-    {
-        mdMethodDef tkMethod = pDefMD->GetMemberDef();
-        Module* mod = pDefMD->GetModule();
-        bool isAsyncVariantMethod = pDefMD->IsAsyncVariantMethod();
-
-        MethodTable::IntroducedMethodIterator it(this);
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc* pMD = it.GetMethodDesc();
-            if (pMD->GetMemberDef() == tkMethod
-                && pMD->GetModule() == mod
-                && pMD->IsAsyncVariantMethod() != isAsyncVariantMethod)
-            {
-                return pMD;
-            }
-        }
-        return NULL;
-    }
     if (asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
     {
 #ifdef FEATURE_METADATA_UPDATER
