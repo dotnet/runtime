@@ -448,8 +448,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (method.Method is AsyncResumptionStub)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub;
+                // For AsyncResumptionStubs, we want to encode the signature of the async variant method, not the resumption stub itself,
+                // so that they will share the same hash and be placed in the same bucket at runtime
+                method = new MethodWithToken(((AsyncResumptionStub)method.Method).TargetMethod, method.Token, method.ConstrainedType, method.Unboxing, method.Method);
             }
-
 
             EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
@@ -620,7 +622,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }
-                
+
                 EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
                 return new SignatureContext(targetModule, outerContext.Resolver);
             }
