@@ -4365,7 +4365,7 @@ struct AsyncCallInfo
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
     // Tail awaits do not generate suspension points and the JIT instead
-    // directly returns teh callee's continuation to the caller.
+    // directly returns the callee's continuation to the caller.
     bool IsTailAwait = false;
 };
 
