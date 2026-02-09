@@ -196,15 +196,14 @@ az account show --query "{name:name, user:user.name}" -o table 2>$null
 #   az login                              # Interactive browser login
 #   az login --use-device-code            # Device code flow (for remote/headless)
 
-# Set defaults for dotnet's internal AzDO org
-az devops configure --defaults organization=https://dev.azure.com/dnceng project=internal
-
 # Get an AzDO PAT for direct REST API calls
 $token = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
 $headers = @{ "Authorization" = "Bearer $token" }
 ```
 
 > ⚠️ If `az` is not installed, use `winget install -e --id Microsoft.AzureCLI` (Windows) then `az extension add --name azure-devops`. Ask the user to authenticate if needed.
+
+> ⚠️ **Do NOT use `az devops configure --defaults`** — it writes to a global config file and will cause conflicts if multiple agents are running concurrently. Always pass `--org` and `--project` (or `-p`) explicitly on each command.
 
 ### Querying Pipeline Definitions and Builds
 
@@ -213,20 +212,23 @@ When investigating build failures, it's often useful to look at the pipeline def
 **Use `az` CLI commands first** — they're simpler and handle auth automatically:
 
 ```powershell
+$org = "https://dev.azure.com/dnceng"
+$project = "internal"
+
 # Find a pipeline definition by name
-az pipelines list --name "dotnet-unified-build" --query "[].{id:id, name:name, path:path}" -o table
+az pipelines list --name "dotnet-unified-build" --org $org -p $project --query "[].{id:id, name:name, path:path}" -o table
 
 # Get pipeline definition details (shows YAML path, triggers, etc.)
-az pipelines show --id 1330 --query "{id:id, name:name, yamlPath:process.yamlFilename, repo:repository.name}" -o table
+az pipelines show --id 1330 --org $org -p $project --query "{id:id, name:name, yamlPath:process.yamlFilename, repo:repository.name}" -o table
 
 # List recent builds for a pipeline (with filtering)
-az pipelines runs list --pipeline-ids 1330 --branch "refs/heads/main" --top 5 --query "[].{id:id, result:result, finish:finishTime}" -o table
+az pipelines runs list --pipeline-ids 1330 --branch "refs/heads/main" --top 5 --org $org -p $project --query "[].{id:id, result:result, finish:finishTime}" -o table
 
 # Get a specific build's details
-az pipelines runs show --id $buildId --query "{id:id, result:result, sourceBranch:sourceBranch}" -o table
+az pipelines runs show --id $buildId --org $org -p $project --query "{id:id, result:result, sourceBranch:sourceBranch}" -o table
 
 # List build artifacts
-az pipelines runs artifact list --run-id $buildId --query "[].{name:name, type:resource.type}" -o table
+az pipelines runs artifact list --run-id $buildId --org $org -p $project --query "[].{name:name, type:resource.type}" -o table
 ```
 
 **Fall back to REST API** only when the CLI doesn't expose what you need (e.g., build timelines, artifact downloads):
