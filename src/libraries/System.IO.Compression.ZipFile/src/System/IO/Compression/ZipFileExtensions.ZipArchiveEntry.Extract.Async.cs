@@ -112,7 +112,7 @@ public static partial class ZipFileExtensions
             if (tempPath is not null && File.Exists(tempPath))
             {
                 // Ignore exceptions during cleanup; the original exception is more important
-                try { File.Delete(tempPath); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+                try { File.Delete(tempPath); } catch { }
             }
             throw;
         }
