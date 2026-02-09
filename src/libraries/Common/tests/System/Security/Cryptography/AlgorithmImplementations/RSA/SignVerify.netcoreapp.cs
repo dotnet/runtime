@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public class SignVerify_AllocatingSpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class SignVerify_AllocatingSpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(new ReadOnlySpan<byte>(data), hashAlgorithm, padding);
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             rsa.VerifyHash(new ReadOnlySpan<byte>(hash), (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
     }
 
-    public class SignVerify_Span<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class SignVerify_Span<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             WithOutputArray(dest => rsa.SignData(data, dest, hashAlgorithm, padding));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
-    public class SignVerify_TrySpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class SignVerify_TrySpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             TryWithOutputArray(dest => rsa.TrySignData(data, dest, hashAlgorithm, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));

@@ -6,7 +6,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class KeyGeneration<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class KeyGeneration<TProvider> where TProvider : IRSAProvider, new()
     {
         private static readonly TProvider s_provider = new TProvider();
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]

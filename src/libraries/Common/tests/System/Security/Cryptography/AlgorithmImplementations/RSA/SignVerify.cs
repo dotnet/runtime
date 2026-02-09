@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class SignVerify_Array<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class SignVerify_Array<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(data, hashAlgorithm, padding);

@@ -7,7 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class EncryptDecrypt_Span<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class EncryptDecrypt_Span<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             WithOutputArray(dest => rsa.Encrypt(data, dest, padding));
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class EncryptDecrypt_AllocatingSpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class EncryptDecrypt_AllocatingSpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             rsa.Encrypt(new ReadOnlySpan<byte>(data), padding);
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class EncryptDecrypt_TrySpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
+    public abstract class EncryptDecrypt_TrySpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             TryWithOutputArray(dest => rsa.TryEncrypt(data, dest, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));

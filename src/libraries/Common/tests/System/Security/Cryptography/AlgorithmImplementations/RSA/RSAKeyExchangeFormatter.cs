@@ -8,7 +8,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class RSAKeyExchangeFormatterTests<TProvider> where TProvider : IRSAProvider, new()
+    public abstract partial class RSAKeyExchangeFormatterTests<TProvider> where TProvider : IRSAProvider, new()
     {
         private static readonly TProvider s_provider = new TProvider();
 
