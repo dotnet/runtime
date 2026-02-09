@@ -40,6 +40,9 @@ static mdcxt_t* allocate_full_context(mdcxt_t* cxt)
     size_t col_mem = align_to(total_col_size, sizeof(void*));
 
     size_t total_mem = cxt_mem + tables_mem + col_mem;
+    // Validate that we don't have an overflow in our size calculations.
+    assert(safe_add_size(cxt_mem, tables_mem, &total_mem) && safe_add_size(total_mem, col_mem, &total_mem));
+
     uint8_t* mem = (uint8_t*)malloc(total_mem);
     if (mem == NULL)
         return NULL;
@@ -736,7 +739,10 @@ mdcxt_t* extract_mdcxt(mdhandle_t md)
 void* alloc_mdmem(mdcxt_t* cxt, size_t length)
 {
     assert(cxt != NULL);
-    mdmem_t* m = (mdmem_t*)malloc(sizeof(mdmem_t) + length);
+    size_t alloc_size;
+    if (!safe_add_size(sizeof(mdmem_t), length, &alloc_size))
+        return NULL;
+    mdmem_t* m = (mdmem_t*)malloc(alloc_size);
     if (m != NULL)
     {
         m->next = cxt->mem;

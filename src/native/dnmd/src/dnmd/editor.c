@@ -92,7 +92,12 @@ bool create_and_fill_indirect_table(mdcxt_t* cxt, mdtable_id_t original_table, m
 
     // If we're allocating an indirection table, then we're about to add new rows to the original table.
     // Allocate more space than we need for the rows we're copying over to be able to handle adding new rows.
-    size_t allocation_space = target_table->row_size_bytes * editor->tables[original_table].table->row_count * 2;
+    size_t allocation_space;
+    if (!safe_mul_size(target_table->row_size_bytes, editor->tables[original_table].table->row_count, &allocation_space)
+        || !safe_mul_size(allocation_space, 2, &allocation_space))
+    {
+        return false;
+    }
     void* mem = alloc_mdmem(editor->cxt, allocation_space);
     if (mem == NULL)
         return false;
@@ -280,7 +285,9 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
     if (new_row_size == table->row_size_bytes)
         return true;
 
-    size_t new_allocation_size = max_original_rows_in_size * new_row_size;
+    size_t new_allocation_size;
+    if (!safe_mul_size(max_original_rows_in_size, new_row_size, &new_allocation_size))
+        return false;
 
     void* mem = alloc_mdmem(editor->cxt, new_allocation_size);
     if (mem == NULL)
@@ -492,7 +499,7 @@ bool update_referenced_type_system_table_row_count(mdcxt_t* cxt, mdtable_id_t up
         if (!set_column_size_for_max_row_count(editor, table, updated_table, mdtc_none, new_max_row_count))
             return false;
     }
-    
+
     size_t pdb_heap_size = cxt->pdb.size;
     if (!(pdb.referenced_type_system_tables & (1ULL << updated_table)))
     {
@@ -514,11 +521,11 @@ bool update_referenced_type_system_table_row_count(mdcxt_t* cxt, mdtable_id_t up
     // We can skip over the PDB ID and the entrypoint token.
     if (!advance_output_stream(&pdb_heap_data, &pdb_heap_data_length, ARRAY_SIZE(pdb.pdb_id) + sizeof(mdToken)))
         return false;
-    
+
     // Write the bitset of referenced type system tables.
     if (!write_u64(&pdb_heap_data, &pdb_heap_data_length, pdb.referenced_type_system_tables))
         return false;
-    
+
     // Now write the row counts for each referenced type system table.
     size_t n = count_set_bits(pdb.referenced_type_system_tables);
     uint8_t const* pdb_end = pdb_heap_data + (n * sizeof(uint32_t));
@@ -628,7 +635,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
 
 uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str)
 {
-    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0). 
+    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0).
     // II.24.2.2 -  Streams need not be there if they are empty.
     // We can avoid allocating the heap if the only entry is the empty string.
     // Columns that point to the string heap can be 0 if there is no #String heap.
@@ -654,7 +661,7 @@ uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str)
 
 uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length)
 {
-    // II.24.2.4 - When the #Blob heap is present, the first entry is always the empty blob. 
+    // II.24.2.4 - When the #Blob heap is present, the first entry is always the empty blob.
     // II.24.2.2 -  Streams need not be there if they are empty.
     // We can avoid allocating the heap if the only entry is the empty blob.
     // Columns that point to the blob heap can be 0 if there is no #Blob heap.
@@ -726,7 +733,7 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
         }
     }
 
-    // II.24.2.4 - When the #US heap is present, the first entry is always the empty blob. 
+    // II.24.2.4 - When the #US heap is present, the first entry is always the empty blob.
     // II.24.2.2 -  Streams need not be there if they are empty.
     // We can avoid allocating the heap if the only entry is the empty blob.
     // Indices into the #US heap can be 0 if there is no #US heap.
@@ -739,13 +746,13 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
         return 0;
 
     // TODO: Deduplicate heap
-    
+
     // II.24.2.4
     // Strings in the #US (user string) heap are encoded using 16-bit Unicode encodings.
     // The count on each string is the number of bytes (not characters) in the string.
     // Furthermore, there is an additional terminal byte (so all byte counts are odd, not even).
     size_t us_blob_bytes = str_len * sizeof(char16_t) + 1;
-    
+
     // The string is too long to represent in the heap.
     if (us_blob_bytes > INT32_MAX)
         return 0;
@@ -789,8 +796,8 @@ uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid)
     }
 
     memcpy(editor->guid_heap.heap.ptr + heap_offset, &guid, sizeof(mdguid_t));
-    // II.22 -  The Guid heap is an array of GUIDs, each 16 bytes wide.  Its 
-    //    first element is numbered 1, its second 2, and so on. 
+    // II.22 -  The Guid heap is an array of GUIDs, each 16 bytes wide.  Its
+    //    first element is numbered 1, its second 2, and so on.
     // So, we need to make the offset 1-based and at the scale of the GUID size.
     return (heap_offset / sizeof(mdguid_t)) + 1;
 }

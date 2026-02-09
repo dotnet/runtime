@@ -940,7 +940,10 @@ bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t co
     if (count == 1)
         return true;
 
-    void* cursor_order_buffer = malloc((sizeof(mdcursor_t) + sizeof(int32_t)) * count);
+    size_t alloc_size;
+    if (!safe_mul_size(sizeof(mdcursor_t) + sizeof(int32_t), count, &alloc_size))
+        return false;
+    void* cursor_order_buffer = malloc(alloc_size);
     if (cursor_order_buffer == NULL)
         return false;
 

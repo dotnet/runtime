@@ -163,7 +163,13 @@ md_blob_parse_result_t md_parse_sequence_points(
     if (num_records == UINT32_MAX)
         return mdbpr_InvalidBlob;
 
-    size_t required_size = sizeof(md_sequence_points_t) + num_records * sizeof(sequence_points->records[0]);
+    size_t records_size;
+    size_t required_size;
+    if (!safe_mul_size(num_records, sizeof(sequence_points->records[0]), &records_size)
+        || !safe_add_size(sizeof(md_sequence_points_t), records_size, &required_size))
+    {
+        return mdbpr_InvalidBlob;
+    }
     if (sequence_points == NULL || *buffer_len < required_size)
     {
         *buffer_len = required_size;
@@ -313,7 +319,13 @@ md_blob_parse_result_t md_parse_local_constant_sig(mdhandle_t handle, uint8_t co
             return mdbpr_InvalidBlob;
     }
 
-    size_t required_size = sizeof(md_local_constant_sig_t) + num_custom_modifiers * sizeof(local_constant_sig->custom_modifiers[0]);
+    size_t modifiers_size;
+    size_t required_size;
+    if (!safe_mul_size(num_custom_modifiers, sizeof(local_constant_sig->custom_modifiers[0]), &modifiers_size)
+        || !safe_add_size(sizeof(md_local_constant_sig_t), modifiers_size, &required_size))
+    {
+        return mdbpr_InvalidBlob;
+    }
     if (local_constant_sig == NULL || *buffer_len < required_size)
     {
         *buffer_len = required_size;
@@ -574,7 +586,13 @@ md_blob_parse_result_t md_parse_imports(mdhandle_t handle, uint8_t const* blob, 
     if (num_imports == UINT32_MAX)
         return mdbpr_InvalidBlob;
 
-    size_t required_size = sizeof(md_imports_t) + num_imports * sizeof(imports->imports[0]);
+    size_t imports_size;
+    size_t required_size;
+    if (!safe_mul_size(num_imports, sizeof(imports->imports[0]), &imports_size)
+        || !safe_add_size(sizeof(md_imports_t), imports_size, &required_size))
+    {
+        return mdbpr_InvalidBlob;
+    }
     if (imports == NULL || *buffer_len < required_size)
     {
         *buffer_len = required_size;

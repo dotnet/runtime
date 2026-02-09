@@ -3,3 +3,4 @@ artifacts/
 .idea/
 *~
 TestResults/
+.DS_Store

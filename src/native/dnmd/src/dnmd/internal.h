@@ -20,6 +20,23 @@ typedef size_t rsize_t;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 
+// Safe arithmetic to prevent size_t overflow in allocations.
+static inline bool safe_add_size(size_t a, size_t b, size_t* result)
+{
+    if (a > SIZE_MAX - b)
+        return false;
+    *result = a + b;
+    return true;
+}
+
+static inline bool safe_mul_size(size_t a, size_t b, size_t* result)
+{
+    if (a != 0 && b > SIZE_MAX / a)
+        return false;
+    *result = a * b;
+    return true;
+}
+
 #ifndef NDEBUG
 #define ASSERT_ASSUME(x) assert(x)
 #elif defined(_MSC_VER)
