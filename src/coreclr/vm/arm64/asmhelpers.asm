@@ -3148,9 +3148,11 @@ CopyLoop
 ;;     bool isFilter               ; x4
 ;; );
 ;; ------------------------------------------------------------------
+    IMPORT CallInterpreterFuncletWorker
+
     NESTED_ENTRY CallInterpreterFunclet
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloats
 
         ; Pass TransitionBlock* as last (6th) argument
         ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
@@ -3164,6 +3166,33 @@ CopyLoop
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
     NESTED_END CallInterpreterFunclet
+
+;; ------------------------------------------------------------------
+;; Resume an interpreter continuation after an async await.
+;; The worker function will restore callee-saved registers from the
+;; TransitionBlock.
+;;
+;; extern "C" void AsyncHelpers_ResumeInterpreterContinuation(
+;;     QCall::ObjectHandleOnStack cont,  ; x0
+;;     uint8_t* resultStorage             ; x1
+;; );
+;; ------------------------------------------------------------------
+    IMPORT AsyncHelpers_ResumeInterpreterContinuationWorker
+
+    NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation
+
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloats
+
+        ; Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+        ; x0, x1 remain unchanged
+
+        add     x2, sp, #__PWTB_TransitionBlock     ; TransitionBlock* as 3rd param (x2)
+
+        bl      AsyncHelpers_ResumeInterpreterContinuationWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END AsyncHelpers_ResumeInterpreterContinuation
 
 
 #endif // FEATURE_INTERPRETER
