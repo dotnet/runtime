@@ -8971,7 +8971,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         CORINFO_RESOLVED_TOKEN* lookupToken =
             (pDerivedResolvedToken->tokenScope != nullptr) ? pDerivedResolvedToken : pResolvedToken;
         GenTree* instParam =
-            impLookupToTree(lookupToken, &dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
+            getLookupTree(lookupToken, &dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
 
         if (instParam == nullptr)
         {

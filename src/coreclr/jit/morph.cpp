@@ -5582,17 +5582,28 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
+    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
-                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
-                                                compileTimeHandle);
-    }
+#ifdef FEATURE_READYTORUN
+        if (pRuntimeLookup->indirections == CORINFO_USENULL)
+        {
+            return gtNewIconNode(0, TYP_I_IMPL);
+        }
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+        if (IsAot())
+        {
+            GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
+            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
+                                             &pLookup->lookupKind, result);
+        }
+#endif
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, result, compileTimeHandle);
+    }
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
