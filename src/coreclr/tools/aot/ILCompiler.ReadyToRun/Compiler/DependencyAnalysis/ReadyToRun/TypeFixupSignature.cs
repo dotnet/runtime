@@ -120,7 +120,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Encode the GC pointer map
                 GCPointerMap gcMap = GCPointerMap.FromInstanceLayout(defType);
 
-                byte[] encodedGCRefMap = new byte[((size + 7) / pointerSize + 7) / 8];
+                byte[] encodedGCRefMap = new byte[((size + (pointerSize - 1)) / pointerSize + 7) / 8];
                 int bitIndex = 0;
                 foreach (bool bit in gcMap)
                 {
