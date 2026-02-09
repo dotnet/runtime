@@ -48,8 +48,10 @@ public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
 
-    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute
-    bool HasUnmanagedCallersOnlyAttribute();
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
+    // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
+    // already done.
+    bool EnsureCodeForUnmanagedCallersOnly();
 
     // Query methods for entry point state.
     bool HasInterpreterCode() const

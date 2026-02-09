@@ -1374,7 +1374,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed partial class SourceFile
     {
         [GeneratedRegex(@"([:/])")]
-        private static partial Regex RegexForEscapeFileName();
+        private static partial Regex RegexForEscapeFileName { get; }
 
         private readonly Dictionary<int, MethodInfo> methods;
         private readonly AssemblyInfo assembly;
@@ -1476,7 +1476,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in RegexForEscapeFileName().Split(path))
+            foreach (var part in RegexForEscapeFileName.Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);

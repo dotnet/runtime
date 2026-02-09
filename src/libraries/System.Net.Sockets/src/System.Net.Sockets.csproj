@@ -19,6 +19,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <!-- All configurations -->
+    <Compile Include="System\Net\Sockets\ConnectAlgorithm.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketsTelemetry.cs" />

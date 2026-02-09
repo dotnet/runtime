@@ -1,170 +1,122 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
-import { } from "./cross-linked"; // ensure ambient symbols are declared
+import type { CharPtrPtr, VoidPtr } from "./types";
+import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import { browserVirtualAppBase } from "./per-module";
 
-const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
-
-export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
-    const sp = Module.stackSave();
-    try {
-        const sizeOfPtr = 4;
-        const ptrPtr = Module.stackAlloc(sizeOfPtr);
-        if (Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
-            throw new Error("posix_memalign failed");
-        }
-
-        const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
-        Module.HEAPU8.set(bytes, ptr >>> 0);
-        loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
-        if (!asset.virtualPath.startsWith("/")) {
-            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
-        }
-    } finally {
-        Module.stackRestore(sp);
-    }
-}
-
-export function loadIcuData(bytes: Uint8Array) {
-    const sp = Module.stackSave();
-    try {
-        const sizeOfPtr = 4;
-        const ptrPtr = Module.stackAlloc(sizeOfPtr);
-        if (Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
-            throw new Error("posix_memalign failed for ICU data");
-        }
-
-        const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
-        Module.HEAPU8.set(bytes, ptr >>> 0);
-
-        const result = _wasm_load_icu_data(ptr as unknown as VoidPtr);
-        if (!result) {
-            throw new Error("Failed to initialize ICU data");
-        }
-    } finally {
-        Module.stackRestore(sp);
-    }
-}
-
-export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
-    const virtualName: string = typeof (asset.virtualPath) === "string"
-        ? asset.virtualPath
-        : asset.name;
-    const lastSlash = virtualName.lastIndexOf("/");
-    let parentDirectory = (lastSlash > 0)
-        ? virtualName.substring(0, lastSlash)
-        : null;
-    let fileName = (lastSlash > 0)
-        ? virtualName.substring(lastSlash + 1)
-        : virtualName;
-    if (fileName.startsWith("/"))
-        fileName = fileName.substring(1);
-    if (parentDirectory) {
-        if (!parentDirectory.startsWith("/"))
-            parentDirectory = "/" + parentDirectory;
-
-        if (parentDirectory.startsWith("/managed")) {
-            throw new Error("Cannot create files under /managed virtual directory as it is reserved for NodeFS mounting");
-        }
-
-        dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
-
-        Module.FS_createPath(
-            "/", parentDirectory, true, true // fixme: should canWrite be false?
-        );
-    } else {
-        parentDirectory = "/";
-    }
-
-    dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
-
-    Module.FS_createDataFile(
-        parentDirectory, fileName,
-        bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-    );
-}
+const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
+const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
+const HOST_PROPERTY_ENTRY_ASSEMBLY_NAME = "ENTRY_ASSEMBLY_NAME";
+const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
+const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
+const APP_CONTEXT_BASE_DIRECTORY = "APP_CONTEXT_BASE_DIRECTORY";
+const RUNTIME_IDENTIFIER = "RUNTIME_IDENTIFIER";
 
 export function initializeCoreCLR(): number {
-    return _BrowserHost_InitializeCoreCLR();
-}
-
-// bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
-    const path = Module.UTF8ToString(pathPtr);
-    const assembly = loadedAssemblies.get(path);
-    if (assembly) {
-        Module.HEAPU32[outDataStartPtr as any >>> 2] = assembly.ptr;
-        // int64_t target
-        Module.HEAPU32[outSize as any >>> 2] = assembly.length;
-        Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
-        return true;
+    const loaderConfig = _ems_.dotnetApi.getConfig();
+    const hostContractPtr = _ems_._BrowserHost_CreateHostContract();
+    const runtimeConfigProperties = new Map<string, string>();
+    if (loaderConfig.runtimeConfig?.runtimeOptions?.configProperties) {
+        for (const [key, value] of Object.entries(loaderConfig.runtimeConfig?.runtimeOptions?.configProperties)) {
+            runtimeConfigProperties.set(key, "" + value);
+        }
     }
-    dotnetLogger.debug(`Assembly not found: '${path}'`);
-    Module.HEAPU32[outDataStartPtr as any >>> 2] = 0;
-    Module.HEAPU32[outSize as any >>> 2] = 0;
-    Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
-    return false;
+
+    const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath);
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath);
+    const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+    runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
+    runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);
+    runtimeConfigProperties.set(HOST_PROPERTY_APP_PATHS, loaderConfig.virtualWorkingDirectory!);
+    runtimeConfigProperties.set(HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, loaderConfig.mainAssemblyName!);
+    runtimeConfigProperties.set(APP_CONTEXT_BASE_DIRECTORY, browserVirtualAppBase);
+    runtimeConfigProperties.set(RUNTIME_IDENTIFIER, "browser-wasm");
+    runtimeConfigProperties.set(HOST_PROPERTY_RUNTIME_CONTRACT, `0x${(hostContractPtr as unknown as number).toString(16)}`);
+
+    const buffers: VoidPtr[] = [];
+    const appctx_keys = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+    const appctx_values = _ems_._malloc(4 * runtimeConfigProperties.size) as any as CharPtrPtr;
+    buffers.push(appctx_keys as any);
+    buffers.push(appctx_values as any);
+
+    let propertyCount = 0;
+    for (const [key, value] of runtimeConfigProperties.entries()) {
+        const keyPtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(key);
+        const valuePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(value);
+        _ems_.dotnetApi.setHeapU32((appctx_keys as any) + (propertyCount * 4), keyPtr);
+        _ems_.dotnetApi.setHeapU32((appctx_values as any) + (propertyCount * 4), valuePtr);
+        propertyCount++;
+        buffers.push(keyPtr as any);
+        buffers.push(valuePtr as any);
+    }
+
+    const res = _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    for (const buf of buffers) {
+        _ems_._free(buf as any);
+    }
+    return res;
 }
 
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
     try {
-        const config = dotnetApi.getConfig();
+        const config = _ems_.dotnetApi.getConfig();
         if (!mainAssemblyName) {
             mainAssemblyName = config.mainAssemblyName!;
         }
         if (!mainAssemblyName.endsWith(".dll")) {
             mainAssemblyName += ".dll";
         }
-        const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
+        const mainAssemblyNamePtr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
         args ??= [];
 
-        const sp = Module.stackSave();
-        const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
+        const sp = _ems_.stackSave();
+        const argsvPtr: number = _ems_.stackAlloc((args.length + 1) * 4) as any;
         const ptrs: VoidPtr[] = [];
         try {
 
             for (let i = 0; i < args.length; i++) {
-                const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
+                const ptr = _ems_.dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
                 ptrs.push(ptr);
-                Module.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
+                _ems_.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
             }
-            const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
+            const res = _ems_._BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
             for (const ptr of ptrs) {
-                Module._free(ptr);
+                _ems_._free(ptr);
             }
 
             if (res != 0) {
                 const reason = new Error("Failed to execute assembly");
-                dotnetApi.exit(res, reason);
+                _ems_.dotnetApi.exit(res, reason);
                 throw reason;
             }
 
-            return dotnetLoaderExports.getRunMainPromise();
+            return _ems_.dotnetLoaderExports.getRunMainPromise();
         } finally {
-            Module.stackRestore(sp);
+            _ems_.stackRestore(sp);
         }
     } catch (error: any) {
-        // if the error is an ExitStatus, use its status code
-        if (error && typeof error.status === "number") {
-            return error.status;
+        // do not propagate ExitStatus exception
+        if (!error || typeof error.status !== "number") {
+            _ems_.dotnetApi.exit(1, error);
+            throw error;
         }
-        dotnetApi.exit(1, error);
-        throw error;
+        return error.status;
     }
 }
 
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
     const res = await runMain(mainAssemblyName, args);
     try {
-        dotnetApi.exit(0, null);
+        _ems_.dotnetApi.exit(0, null);
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (error.status === undefined) {
-            dotnetApi.exit(1, error);
+        if (!error || typeof error.status !== "number") {
+            _ems_.dotnetApi.exit(1, error);
             throw error;
         }
+        return error.status;
     }
     return res;
 }

@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Instantiate all runtime dependencies for the found generic specialization
                 foreach (var n in _runtimeDependencies)
                 {
-                    foreach (var d in n.InstantiateDependencies(factory, method.OwningType.Instantiation, method.Instantiation))
+                    foreach (var d in n.InstantiateDependencies(factory, method.OwningType.Instantiation, method.Instantiation, isConcreteInstantiation: !method.IsSharedByGenericInstantiations))
                     {
                         yield return new CombinedDependencyListEntry(d.Node, null, d.Reason);
                     }

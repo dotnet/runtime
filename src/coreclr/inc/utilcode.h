@@ -496,7 +496,14 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-#include "ostype.h"
+#ifdef HOST_64BIT
+inline BOOL RunningInWow64()
+{
+    return FALSE;
+}
+#else
+BOOL RunningInWow64();
+#endif
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
@@ -507,11 +514,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
-
-//
-// Allocate free memory with specific alignment
-//
-LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
 
 #ifdef HOST_WINDOWS
 
@@ -716,9 +718,9 @@ public:
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ 0 }
-        , m_iSize{ 0 }
-        , m_pTable{ NULL}
+        : m_iCount{ other.m_iCount }
+        , m_iSize{ other.m_iSize }
+        , m_pTable{ other.m_pTable }
     {
         LIMITED_METHOD_CONTRACT;
         other.m_iCount = 0;
@@ -2762,70 +2764,6 @@ private:
 
 private:
     DWORD  m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigString
-{
-public:
-    inline LPWSTR val(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-        return m_value;
-    }
-
-    bool isInitialized()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        return m_inited == 1;
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    LPWSTR m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigMethodSet
-{
-public:
-    bool isEmpty()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_inited == 1);
-        return m_list.IsEmpty();
-    }
-
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
-
-    inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    MethodNamesListBase m_list;
-
     BYTE m_inited;
 };
 

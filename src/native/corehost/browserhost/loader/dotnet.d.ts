@@ -1,6 +1,6 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
-//! This is generated file, see src/native/libs/Browser/rollup.config.defines.js
+//! This is generated file, see src/native/rollup.config.js
 
 //! This is not considered public API with backward compatibility guarantees. 
 
@@ -36,26 +36,11 @@ interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
     lengthBytesUTF8(str: string): number;
-    FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
-    FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    instantiateWasm?: InstantiateWasmCallBack;
-    preInit?: (() => any)[] | (() => any);
-    preRun?: (() => any)[] | (() => any);
-    onRuntimeInitialized?: () => any;
-    postRun?: (() => any)[] | (() => any);
-    onAbort?: {
-        (error: any): void;
-    };
-    onExit?: {
-        (code: number): void;
-    };
+    safeSetTimeout(func: Function, delay: number): number;
 }
-type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
-type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 interface DotnetHostBuilder {
@@ -142,10 +127,6 @@ interface DotnetHostBuilder {
     runMainAndExit(): Promise<number>;
 }
 type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
@@ -379,10 +360,6 @@ interface AssetEntry {
      * Culture code
      */
     culture?: string;
-    /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
     /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */

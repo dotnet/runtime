@@ -165,6 +165,15 @@ public:
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
+    HRESULT ParseContinuation(CORDB_ADDRESS continuationAddress,
+                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pNextContinuation,
+                                              OUT UINT32 *pState);
+    void GetAsyncLocals(VMPTR_MethodDesc vmMethod,
+                        CORDB_ADDRESS codeAddr,
+                        UINT32 state,
+                        DacDbiArrayList<AsyncLocalData> * pAsyncLocals);
+    HRESULT GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -234,10 +243,13 @@ public:
     //    its method desc
     //    whether it's an instantiated generic
     //    its EnC version number
-    //    hot and cold region information.
-    void GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
-                                  CORDB_ADDRESS            hotCodeStartAddr,
-                                  NativeCodeFunctionData * pCodeInfo);
+    //    hot and cold region information
+    //    its module
+    //    its metadata token.
+    void GetNativeCodeInfoForAddr(CORDB_ADDRESS            codeAddress,
+                                  NativeCodeFunctionData * pCodeInfo,
+                                  VMPTR_Module *           pVmModule,
+                                  mdToken *                pFunctionToken);
 
 private:
     // Get start addresses and sizes for hot and cold regions for a native code blob
@@ -903,8 +915,8 @@ public:
                                             DebuggerREGDISPLAY * pOutDRD,
                                             BOOL fActive);
 
-    // Check if the given method is an IL stub or an LCD method.
-    DynamicMethodType IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
+    // Check if the given method is a DiagnosticHidden or an LCG method.
+    DynamicMethodType IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
 
     // Return a TargetBuffer for the raw vararg signature.
     TargetBuffer GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
