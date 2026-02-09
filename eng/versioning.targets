@@ -145,6 +145,69 @@
     </ItemGroup>
   </Target>
 
+  <!--
+    Override the Arcade-generated native version files to use a fixed version string.
+    This prevents cache invalidation in CI when OfficialBuildId changes between builds.
+  -->
+  <Target Name="HardcodeNativeVersionFile"
+          AfterTargets="GenerateNativeVersionFile">
+    <PropertyGroup>
+      <_FixedNativeVersionC>
+<![CDATA[
+static char sccsid[] __attribute__((used)) = "@(#)Version 42.42.42.42424"%3B
+ ]]>
+      </_FixedNativeVersionC>
+
+      <_FixedNativeVersionH>
+<![CDATA[
+#ifndef VER_COMPANYNAME_STR
+#define VER_COMPANYNAME_STR         "Microsoft Corporation"
+#endif
+#ifndef VER_FILEDESCRIPTION_STR
+#define VER_FILEDESCRIPTION_STR     "$(AssemblyName)"
+#endif
+#ifndef VER_INTERNALNAME_STR
+#define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR
+#endif
+#ifndef VER_ORIGINALFILENAME_STR
+#define VER_ORIGINALFILENAME_STR    VER_FILEDESCRIPTION_STR
+#endif
+#ifndef VER_PRODUCTNAME_STR
+#define VER_PRODUCTNAME_STR         ".NET"
+#endif
+#undef VER_PRODUCTVERSION
+#define VER_PRODUCTVERSION          42,42,42,42424
+#undef VER_PRODUCTVERSION_STR
+#define VER_PRODUCTVERSION_STR      "42.42.42.42424"
+#undef VER_FILEVERSION
+#define VER_FILEVERSION             42,42,42,42424
+#undef VER_FILEVERSION_STR
+#define VER_FILEVERSION_STR         "42,42,42,42424"
+#ifndef VER_LEGALCOPYRIGHT_STR
+#define VER_LEGALCOPYRIGHT_STR      "\xa9 Microsoft Corporation. All rights reserved."
+#endif
+#ifndef VER_DEBUG
+#define VER_DEBUG                   0
+#endif
+ ]]>
+      </_FixedNativeVersionH>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      Condition="'$(NativeVersionFile)' != '' and '$(NativeVersionFile.EndsWith(`.c`))' == 'true'"
+      File="$(NativeVersionFile)"
+      Lines="$(_FixedNativeVersionC)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+
+    <WriteLinesToFile
+      Condition="'$(NativeVersionFile)' != '' and '$(NativeVersionFile.EndsWith(`.h`))' == 'true'"
+      File="$(NativeVersionFile)"
+      Lines="$(_FixedNativeVersionH)"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
+  </Target>
+
   <Target Name="GenerateRuntimeVersionFile"
           DependsOnTargets="GenerateNativeVersionFile">
     <PropertyGroup>
@@ -152,19 +215,19 @@
 
       <_RuntimeVersionFileContents>
 <![CDATA[
-#define RuntimeAssemblyMajorVersion $(MajorVersion)
-#define RuntimeAssemblyMinorVersion $(MinorVersion)
+#define RuntimeAssemblyMajorVersion 42
+#define RuntimeAssemblyMinorVersion 42
 
-#define RuntimeFileMajorVersion $(FileVersion.Split('.')[0])
-#define RuntimeFileMinorVersion $(FileVersion.Split('.')[1])
-#define RuntimeFileBuildVersion $(FileVersion.Split('.')[2])
-#define RuntimeFileRevisionVersion $(FileVersion.Split('.')[3])
+#define RuntimeFileMajorVersion 42
+#define RuntimeFileMinorVersion 42
+#define RuntimeFileBuildVersion 42
+#define RuntimeFileRevisionVersion 42424
 
-#define RuntimeProductMajorVersion $(Version.Split(".-")[0])
-#define RuntimeProductMinorVersion $(Version.Split(".-")[1])
-#define RuntimeProductPatchVersion $(Version.Split(".-")[2])
+#define RuntimeProductMajorVersion 42
+#define RuntimeProductMinorVersion 42
+#define RuntimeProductPatchVersion 42
 
-#define RuntimeProductVersion $(Version)
+#define RuntimeProductVersion 42.42.42
  ]]>
       </_RuntimeVersionFileContents>
     </PropertyGroup>
