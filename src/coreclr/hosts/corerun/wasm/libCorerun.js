@@ -30,10 +30,15 @@ function libCoreRunFactory() {
                     if (!implicit) {
                         EXITSTATUS = status;
                         ABORT = true;
+                        if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                            dotnetBrowserUtilsExports.abortBackgroundTimers();
+                        }
                     }
                     // WASM-TODO temporary workaround to get exit code from runtime tests
-                    if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                        dotnetBrowserUtilsExports.abortBackgroundTimers();
+                    if (DOTNET.lastScheduledFinalizationId) {
+                        globalThis.clearTimeout(DOTNET.lastScheduledFinalizationId);
+                        runtimeKeepalivePop();
+                        DOTNET.lastScheduledFinalizationId = undefined;
                     }
                     if (!keepRuntimeAlive()) {
                         ABORT = true;
