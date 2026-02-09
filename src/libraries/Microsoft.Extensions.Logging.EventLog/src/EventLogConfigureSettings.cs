@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Configures a EventLogSettings object from an IConfiguration.
+    /// Configures an EventLogSettings object from an IConfiguration.
     /// </summary>
     /// <remarks>
     /// Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
