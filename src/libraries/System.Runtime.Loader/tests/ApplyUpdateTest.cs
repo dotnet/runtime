@@ -1170,8 +1170,10 @@ namespace System.Reflection.Metadata
             {
                 Assert.False(MetadataUpdater.IsSupported);
                 var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+                var metadataDelta = new byte[20];
+                var ilDelta = new byte[20];
                 Assert.Throws<InvalidOperationException>(() =>
-                    MetadataUpdater.ApplyUpdate(assm, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty));
+                    MetadataUpdater.ApplyUpdate(assm, metadataDelta, ilDelta, ReadOnlySpan<byte>.Empty));
             }, options).Dispose();
         }
     }
