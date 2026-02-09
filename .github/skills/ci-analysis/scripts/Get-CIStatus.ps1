@@ -1351,6 +1351,31 @@ function Get-HelixWorkItems {
     }
 }
 
+function Get-HelixWorkItemFiles {
+    <#
+    .SYNOPSIS
+        Fetches work item files via the ListFiles endpoint which returns direct blob storage URIs.
+    .DESCRIPTION
+        Workaround for https://github.com/dotnet/dnceng/issues/6072:
+        The Details endpoint returns incorrect permalink URIs for files in subdirectories
+        and rejects unicode characters in filenames. The ListFiles endpoint returns direct
+        blob storage URIs that always work, regardless of subdirectory depth or unicode.
+    #>
+    param([string]$JobId, [string]$WorkItemName)
+
+    $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem/files"
+
+    try {
+        $files = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+        return $files
+    }
+    catch {
+        Write-Warning "Failed to fetch files for work item ${WorkItemName}: $_"
+        return $null
+    }
+}
+
 function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
 
@@ -1359,17 +1384,18 @@ function Get-HelixWorkItemDetails {
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
 
-        # Workaround for https://github.com/dotnet/dnceng/issues/6072:
-        # Helix API returns incorrect file URIs for files in subdirectories
-        # (e.g., xharness-output/testResults.xml). Rebuild URI from FileName.
-        if ($response -and $response.Files) {
-            $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
-            foreach ($file in $response.Files) {
-                if ($file.FileName -and $file.FileName -match '/') {
-                    $encodedFileName = ($file.FileName -split '/' | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
-                    $file.Uri = "https://helix.dot.net/api/jobs/$JobId/workitems/$encodedWorkItem/files/$encodedFileName?api-version=2019-06-17"
+        # Replace Files from the Details endpoint with results from ListFiles.
+        # The Details endpoint has broken URIs for subdirectory and unicode filenames
+        # (https://github.com/dotnet/dnceng/issues/6072). ListFiles returns direct
+        # blob storage URIs that always work.
+        $listFiles = Get-HelixWorkItemFiles -JobId $JobId -WorkItemName $WorkItemName
+        if ($listFiles) {
+            $response.Files = @($listFiles | ForEach-Object {
+                [PSCustomObject]@{
+                    FileName = $_.Name
+                    Uri = $_.Link
                 }
-            }
+            })
         }
 
         return $response
