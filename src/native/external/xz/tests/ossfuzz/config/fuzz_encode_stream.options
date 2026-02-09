@@ -1,4 +1,0 @@
-# SPDX-License-Identifier: 0BSD
-
-[libfuzzer]
-max_len = 4096
