@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     {
         internal static IConfiguration GetFormatterOptionsSection(this ILoggerProviderConfiguration<EventLogLoggerProvider> providerConfiguration)
         {
-            return providerConfiguration.Configuration.GetSection("FormatterOptions");
+            return providerConfiguration.Configuration;
         }
     }
 }
