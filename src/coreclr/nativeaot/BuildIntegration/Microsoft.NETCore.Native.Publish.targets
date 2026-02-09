@@ -30,6 +30,7 @@
     <ItemGroup>
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(NativeBinary)" />
+      <IntermediateSatelliteAssembliesWithTargetPath Remove="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 

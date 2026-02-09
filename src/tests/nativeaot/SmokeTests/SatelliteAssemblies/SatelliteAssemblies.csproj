@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Strings.resx" />
+    <EmbeddedResource Include="Strings.es.resx" />
+    <Compile Include="Strings.Designer.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>
