@@ -174,7 +174,7 @@ Canceled jobs (typically from timeouts) often still have useful artifacts. The H
 
 ## Deep Investigation with Azure CLI
 
-When the script and GitHub APIs aren't enough (e.g., investigating internal pipeline definitions, downloading build artifacts, querying build timelines directly), you can use the Azure CLI with the `azure-devops` extension.
+When the script and GitHub APIs aren't enough (e.g., investigating internal pipeline definitions or downloading build artifacts), you can use the Azure CLI with the `azure-devops` extension.
 
 > 💡 **Prefer `az pipelines` / `az devops` commands over raw REST API calls.** The CLI handles authentication, pagination, and JSON output formatting. Only fall back to manual `Invoke-RestMethod` calls when the CLI doesn't expose the endpoint you need (e.g., artifact download URLs, specialized timeline queries). The CLI's `--query` (JMESPath) and `-o table` flags are powerful for filtering without extra scripting.
 
@@ -196,9 +196,9 @@ az account show --query "{name:name, user:user.name}" -o table 2>$null
 #   az login                              # Interactive browser login
 #   az login --use-device-code            # Device code flow (for remote/headless)
 
-# Get an AzDO PAT for direct REST API calls
-$token = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
-$headers = @{ "Authorization" = "Bearer $token" }
+# Get an AAD access token for AzDO REST API calls
+$accessToken = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
+$headers = @{ "Authorization" = "Bearer $accessToken" }
 ```
 
 > ⚠️ If `az` is not installed, use `winget install -e --id Microsoft.AzureCLI` (Windows) then `az extension add --name azure-devops`. Ask the user to authenticate if needed.
@@ -235,8 +235,8 @@ az pipelines runs artifact list --run-id $buildId --org $org -p $project --query
 
 ```powershell
 # Get build timeline (stages, jobs, tasks with results and durations) — no CLI equivalent
-$token = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
-$headers = @{ "Authorization" = "Bearer $token" }
+$accessToken = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
+$headers = @{ "Authorization" = "Bearer $accessToken" }
 $timelineUrl = "https://dev.azure.com/dnceng/internal/_apis/build/builds/$buildId/timeline?api-version=7.1"
 $timeline = (Invoke-RestMethod -Uri $timelineUrl -Headers $headers)
 $timeline.records | Where-Object { $_.result -eq "failed" -and $_.type -eq "Job" }
