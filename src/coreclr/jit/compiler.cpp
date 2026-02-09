@@ -1058,9 +1058,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                     }
                     else if (strcmp(namespaceName, "System.Numerics") == 0)
                     {
-                        isIntrinsicSimd =
-                            strcmp(className, "Vector2") == 0 || strcmp(className, "Vector3") == 0 ||
-                            strcmp(className, "Vector4") == 0;
+                        isIntrinsicSimd = strcmp(className, "Vector2") == 0 || strcmp(className, "Vector3") == 0 ||
+                                          strcmp(className, "Vector4") == 0;
                     }
                 }
             }
