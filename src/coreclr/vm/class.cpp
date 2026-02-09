@@ -1366,6 +1366,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
             }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+
+            // Skip validation for async variant methods, as they have different signatures by design
+            // to support the async calling convention
+            if (pMD->IsAsyncVariantMethod())
+                continue;
+
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
 
             if (pMD == pParentMD)
