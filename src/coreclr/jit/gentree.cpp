@@ -4878,6 +4878,13 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
 {
     assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
 
+#if defined(TARGET_WASM)
+    // TODO-WASM-CQ: we might want to allow reversal here but will need to handle it in lower
+    // by spilling the out of normal order computation to a temp.
+    *allowReversal = false;
+    return;
+#endif
+
     GenTree* addr  = store->Addr();
     GenTree* data  = store->Data();
     *allowReversal = true;
@@ -6078,8 +6085,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
 
                     default:
+
+#if defined(TARGET_WASM)
+                        // For WASM if we can't swap the operands or swap the operator, don't swap.
+#else
                         // Mark the operand's evaluation order to be swapped.
                         tree->gtFlags ^= GTF_REVERSE_OPS;
+#endif
                         break;
                 }
             }
@@ -6429,8 +6441,13 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
                 }
                 else
                 {
+
+#if defined(TARGET_WASM)
+                    // For WASM if we can't swap the operands or swap the operator, don't swap.
+#else
                     // Mark the operand's evaluation order to be swapped.
                     tree->gtFlags ^= GTF_REVERSE_OPS;
+#endif
                 }
             }
         }
