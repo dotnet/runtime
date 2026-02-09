@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly string _blobName;
         private readonly NodeFactory _nodeFactory;

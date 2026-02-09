@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all generic type templates used by the TypeLoader at runtime
     /// </summary>
-    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericTypesTemplateMap : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
 

@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Native layout info blob.
     /// </summary>
-    public sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _staticsReferences;

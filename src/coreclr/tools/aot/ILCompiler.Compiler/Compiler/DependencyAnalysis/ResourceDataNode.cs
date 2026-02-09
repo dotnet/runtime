@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Resources are simply copied from the inputs and concatenated into this blob.
     /// All format information is provided by <see cref="ResourceIndexNode"/>
     /// </summary>
-    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode
     {
 
         /// <summary>

@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable with information about all statics regions for all compiled generic types.
     /// </summary>
-    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class StaticsInfoHashtableNode : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _nativeStaticsReferences;

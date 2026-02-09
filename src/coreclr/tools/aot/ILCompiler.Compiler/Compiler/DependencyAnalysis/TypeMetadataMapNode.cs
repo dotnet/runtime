@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between EETypes and metadata records within the <see cref="MetadataNode"/>.
     /// </summary>
-    public sealed class TypeMetadataMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class TypeMetadataMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
 

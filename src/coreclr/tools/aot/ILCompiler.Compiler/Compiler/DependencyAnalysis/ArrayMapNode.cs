@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of array types generated into the image.
     /// </summary>
-    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
 

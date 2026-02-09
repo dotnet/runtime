@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of ByRef types generated into the image.
     /// </summary>
-    internal sealed class ByRefTypeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ByRefTypeMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
 

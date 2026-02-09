@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
     {
         private ResourceDataNode _resourceDataNode;
 

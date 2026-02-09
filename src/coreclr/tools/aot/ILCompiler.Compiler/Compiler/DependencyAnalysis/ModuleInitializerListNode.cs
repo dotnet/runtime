@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode
     {
 
 

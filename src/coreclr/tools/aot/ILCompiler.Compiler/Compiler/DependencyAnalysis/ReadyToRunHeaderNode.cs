@@ -89,23 +89,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 builder.EmitInt((int)item.Id);
 
-                ModuleInfoFlags flags = 0;
-                if (item.Node is INodeWithSize)
-                {
-                    flags |= ModuleInfoFlags.HasEndPointer;
-                }
+                ModuleInfoFlags flags = ModuleInfoFlags.HasEndPointer;
                 builder.EmitInt((int)flags);
 
                 builder.EmitPointerReloc((ISymbolNode)item.Node);
 
-                if (item.Node is INodeWithSize)
-                {
-                    builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
-                }
-                else
-                {
-                    builder.EmitZeroPointer();
-                }
+                builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
                 count++;
             }
@@ -116,15 +105,5 @@ namespace ILCompiler.DependencyAnalysis
 
         protected internal override int Phase => (int)ObjectNodePhase.Late;
         public override int ClassCode => 0x7db08464;
-    }
-
-    /// <summary>
-    /// Marker interface for nodes that should have their size emitted in the ReadyToRun header
-    /// using IMAGE_REL_SYMBOL_SIZE relocation. The object writer will resolve the symbol size
-    /// at link time. Only nodes that represent contiguous data regions with well-defined boundaries
-    /// should implement this interface.
-    /// </summary>
-    public interface INodeWithSize
-    {
     }
 }

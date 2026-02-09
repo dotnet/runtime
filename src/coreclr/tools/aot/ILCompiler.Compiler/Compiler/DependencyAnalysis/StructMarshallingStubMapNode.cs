@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of struct marshalling stub types generated into the image.
     /// </summary>
-    internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly InteropStateManager _interopStateManager;

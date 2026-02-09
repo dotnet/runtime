@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

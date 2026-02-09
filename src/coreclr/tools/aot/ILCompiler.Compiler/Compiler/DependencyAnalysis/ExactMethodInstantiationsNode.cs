@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Hashtable of all exact (non-canonical) generic method instantiations compiled in the module.
     /// </summary>
-    public sealed class ExactMethodInstantiationsNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class ExactMethodInstantiationsNode : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
 

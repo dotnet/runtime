@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
     /// sorted using provided comparer), followed by ending symbol.
     /// </summary>
-    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode, INodeWithSize
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode
         where TEmbedded : EmbeddedObjectNode
     {
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();

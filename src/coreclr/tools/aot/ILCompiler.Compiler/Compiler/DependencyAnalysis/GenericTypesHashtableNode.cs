@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable of all compiled generic type instantiations
     /// </summary>
-    public sealed class GenericTypesHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericTypesHashtableNode : ObjectNode, ISymbolDefinitionNode
     {
         private ExternalReferencesTableNode _externalReferences;
 

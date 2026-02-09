@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of function pointer types generated into the image.
     /// </summary>
-    internal sealed class FunctionPointerMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class FunctionPointerMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
 

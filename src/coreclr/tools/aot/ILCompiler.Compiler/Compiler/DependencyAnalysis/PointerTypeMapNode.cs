@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of pointer types generated into the image.
     /// </summary>
-    internal sealed class PointerTypeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class PointerTypeMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
 

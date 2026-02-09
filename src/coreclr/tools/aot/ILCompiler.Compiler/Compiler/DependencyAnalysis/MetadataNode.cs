@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

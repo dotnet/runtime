@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Contains information about source files in this compilation.
     /// </summary>
-    public sealed class StackTraceDocumentsNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class StackTraceDocumentsNode : ObjectNode, ISymbolDefinitionNode
     {
         private Dictionary<string, int> _documentToIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         private List<string> _documents = new List<string>();

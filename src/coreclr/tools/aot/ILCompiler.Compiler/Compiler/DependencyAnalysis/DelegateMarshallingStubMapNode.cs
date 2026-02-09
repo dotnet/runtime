@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of delegate marshalling stub types generated into the image.
     /// </summary>
-    internal sealed class DelegateMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class DelegateMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly InteropStateManager _interopStateManager;

@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
     /// * Generate N bytes of zeros.
     /// * Generate a relocation to Nth entry in the lookup table that supplements the dehydrated stream.
     /// </remarks>
-    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode
     {
 
         public override bool IsShareable => false;

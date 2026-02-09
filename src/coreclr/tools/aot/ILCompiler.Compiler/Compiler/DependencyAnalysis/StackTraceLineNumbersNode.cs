@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Contains information about mapping native code offsets to line numbers.
     /// </summary>
-    public sealed class StackTraceLineNumbersNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class StackTraceLineNumbersNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly StackTraceDocumentsNode _documents;
