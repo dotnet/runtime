@@ -88,7 +88,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif()
 
         if (NOT CLR_CMAKE_USE_SYSTEM_XZ)
-            target_link_libraries(System.IO.Compression.Native PRIVATE liblzma::liblzma)
+            target_link_libraries(System.IO.Compression.Native PRIVATE liblzma)
             target_include_directories(System.IO.Compression.Native PRIVATE ${LZMA_INCLUDE_DIRS})
         endif()
 
