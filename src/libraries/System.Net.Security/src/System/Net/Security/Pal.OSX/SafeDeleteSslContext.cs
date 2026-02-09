@@ -368,7 +368,12 @@ namespace System.Net
         {
             Debug.Assert(sslContext != null);
 
-            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
+            const int StackallocThreshold = 128;
+
+            int certCount = context!.IntermediateCertificates.Count + 1;
+            Span<IntPtr> ptrs = certCount <= StackallocThreshold ?
+                stackalloc IntPtr[certCount] :
+                new IntPtr[certCount];
 
             for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {

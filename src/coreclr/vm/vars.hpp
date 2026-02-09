@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.hpp
 //
 // Global variables
 //
-
 
 #ifndef _VARS_HPP
 #define _VARS_HPP
@@ -365,11 +365,9 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
-#ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);

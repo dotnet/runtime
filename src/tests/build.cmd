@@ -44,8 +44,6 @@ set __BuildLogRootName=TestBuild
 
 set __SkipRestorePackages=0
 set __SkipManaged=
-set __SkipTestWrappers=
-set __BuildTestWrappersOnly=
 set __SkipNative=
 set __CompositeBuildMode=
 set __TestBuildMode=
@@ -104,12 +102,10 @@ if /i "%arg%" == "Rebuild"               (set __RebuildTests=1&set processedArgs
 if /i "%arg%" == "SkipRestorePackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipManaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipNative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "SkipTestWrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipGenerateLayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "BuildTestWrappersOnly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "MSBuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -169,8 +165,6 @@ if defined __TestArgParsing (
     echo.__BuildLogRootName=%__BuildLogRootName%
     echo.__SkipRestorePackages=%__SkipRestorePackages%
     echo.__SkipManaged=%__SkipManaged%
-    echo.__SkipTestWrappers=%__SkipTestWrappers%
-    echo.__BuildTestWrappersOnly=%__BuildTestWrappersOnly%
     echo.__SkipNative=%__SkipNative%
     echo.__CompositeBuildMode=%__CompositeBuildMode%
     echo.__TestBuildMode=%__TestBuildMode%
@@ -260,25 +254,12 @@ REM ===
 REM =========================================================================================
 
 if "%__SkipNative%" == "1" goto skipnative
-if "%__BuildTestWrappersOnly%" == "1" goto skipnative
 if "%__GenerateLayoutOnly%" == "1" goto skipnative
 if "%__CopyNativeTestBinaries%" == "1" goto skipnative
 
 echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
 
 REM Set the environment for the native build
-
-REM NumberOfCores is an WMI property providing number of physical cores on machine
-REM processor(s). It is used to set optimal level of CL parallelism during native build step
-if not defined NumberOfCores (
-    REM Determine number of physical processor cores available on machine
-    set TotalNumberOfCores=0
-    for /f "tokens=*" %%I in (
-        'wmic cpu get NumberOfCores /value ^| find "=" 2^>NUL'
-    ) do set %%I & set /a TotalNumberOfCores=TotalNumberOfCores+NumberOfCores
-    set NumberOfCores=!TotalNumberOfCores!
-)
-echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 
 @if defined _echo @echo on
 
@@ -386,12 +367,10 @@ echo -Rebuild: Clean up all test artifacts prior to building tests.
 echo -SkipRestorePackages: Skip package restore.
 echo -SkipManaged: Skip the managed tests build.
 echo -SkipNative: Skip the native tests build.
-echo -SkipTestWrappers: Skip generating test wrappers.
 echo -SkipGenerateLayout: Skip generating the Core_Root layout.
 echo.
 echo -CopyNativeOnly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo -GenerateLayoutOnly: Only generate the Core_Root layout without building managed or native test components.
-echo -BuildTestWrappersOnly: Only generate test wrappers without building managed or native test components or generating layouts.
 echo -MSBuild: Use MSBuild instead of Ninja.
 echo -Crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.
 echo -Composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).

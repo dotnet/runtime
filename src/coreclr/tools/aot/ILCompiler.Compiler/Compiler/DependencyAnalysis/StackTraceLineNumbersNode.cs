@@ -103,14 +103,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (NativeSequencePoint sequencePoint in debugInfoNode.GetNativeSequencePoints())
                 {
-                    if (currentLineNumber == sequencePoint.LineNumber && currentDocument == sequencePoint.FileName)
-                        continue;
-
                     // Make sure a zero native offset delta is not possible because we use it below
                     // to indicate an update to the current document.
-                    if (currentDocument != null && currentNativeOffset == sequencePoint.NativeOffset)
-                        continue;
-
+                    Debug.Assert(currentDocument == null || currentNativeOffset != sequencePoint.NativeOffset);
                     if (currentDocument != sequencePoint.FileName)
                     {
                         // We start with currentDocument == null, so the reader knows the first byte of the output

@@ -883,11 +883,9 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-            return writer is SyncTextWriter ? writer : new SyncTextWriter(writer);
-#else
-            return writer;
-#endif
+            return Thread.IsSingleThreaded || writer is SyncTextWriter
+                    ? writer
+                    : new SyncTextWriter(writer);
         }
 
         internal sealed class SyncTextWriter : TextWriter, IDisposable

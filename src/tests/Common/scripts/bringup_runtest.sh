@@ -424,14 +424,6 @@ function create_core_overlay {
     fi
     cp -f -v "$testDependenciesDir/"xunit* "$coreOverlayDir/" 2>/dev/null
     cp -n -v "$testDependenciesDir/"* "$coreOverlayDir/" 2>/dev/null
-    if [ -f "$coreOverlayDir/mscorlib.ni.dll" ]; then
-        # Test dependencies come from a Windows build, and mscorlib.ni.dll would be the one from Windows
-        rm -f "$coreOverlayDir/mscorlib.ni.dll"
-    fi
-    if [ -f "$coreOverlayDir/System.Private.CoreLib.ni.dll" ]; then
-        # Test dependencies come from a Windows build, and System.Private.CoreLib.ni.dll would be the one from Windows
-        rm -f "$coreOverlayDir/System.Private.CoreLib.ni.dll"
-    fi
     copy_test_native_bin_to_test_root $coreOverlayDir
 }
 
@@ -452,7 +444,7 @@ function precompile_overlay_assemblies {
     if [[ "$doCrossgen" == 1 ]]; then
         local overlayDir=$CORE_ROOT
 
-        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -type f )
+        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -type f )
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}

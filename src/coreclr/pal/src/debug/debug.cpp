@@ -65,6 +65,10 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #endif
 #endif // __APPLE__
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/heap.h>
+#endif // __EMSCRIPTEN__
+
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -751,6 +755,13 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
+#if defined(__EMSCRIPTEN__)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
+    {
+        return TRUE;
+    }
+    return FALSE;
+#else // __EMSCRIPTEN__
     int fds[2];
     int flags;
 
@@ -807,6 +818,7 @@ PAL_ProbeMemory(
     close(fds[1]);
 
     return result;
+#endif // __EMSCRIPTEN__
 }
 
 } // extern "C"

@@ -32,8 +32,9 @@
 
   <PropertyGroup>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-ST-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MT-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">$(Scenario)-CLR-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-MONO-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MONO-MT-</WorkItemPrefix>
 
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
                                       '$(Scenario)' == 'WasmTestOnChrome' or 

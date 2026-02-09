@@ -64,7 +64,7 @@ namespace System.Text.Json.Nodes
                 return CreateFromElement(ref element, options);
             }
 
-            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            var jsonTypeInfo = JsonSerializerOptions.Default.GetTypeInfo<T>();
             return CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
 

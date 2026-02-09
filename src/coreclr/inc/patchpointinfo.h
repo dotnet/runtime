@@ -145,6 +145,37 @@ struct PatchpointInfo
         m_monitorAcquiredOffset = offset;
     }
 
+    // Original method FP relative offset for async contexts
+    int32_t AsyncExecutionContextOffset() const
+    {
+        return m_asyncExecutionContextOffset;
+    }
+
+    bool HasAsyncExecutionContextOffset() const
+    {
+        return m_asyncExecutionContextOffset != -1;
+    }
+
+    void SetAsyncExecutionContextOffset(int32_t offset)
+    {
+        m_asyncExecutionContextOffset = offset;
+    }
+
+    int32_t AsyncSynchronizationContextOffset() const
+    {
+        return m_asyncSynchronizationContextOffset;
+    }
+
+    bool HasAsyncSynchronizationContextOffset() const
+    {
+        return m_asyncSynchronizationContextOffset != -1;
+    }
+
+    void SetAsyncSynchronizationContextOffset(int32_t offset)
+    {
+        m_asyncSynchronizationContextOffset = offset;
+    }
+
     // True if this local was address exposed in the original method
     bool IsExposed(uint32_t localNum) const
     {
@@ -200,6 +231,8 @@ private:
     int32_t      m_keptAliveThisOffset;
     int32_t      m_securityCookieOffset;
     int32_t      m_monitorAcquiredOffset;
+    int32_t      m_asyncExecutionContextOffset;
+    int32_t      m_asyncSynchronizationContextOffset;
     int32_t      m_offsetAndExposureData[];
 };
 

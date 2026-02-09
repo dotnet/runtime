@@ -241,6 +241,8 @@ struct InterfaceDispatchCell
     }
 };
 
+#define IDC_CACHE_POINTER_MASK (InterfaceDispatchCell::Flags::IDC_CachePointerMask)
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef TARGET_ARM
@@ -521,8 +523,8 @@ struct PInvokeTransitionFrame
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #elif defined(TARGET_X86)
-// RBX, RSI, RDI, RAX, RSP
-#define PInvokeTransitionFrame_SaveRegs_count 5
+// RBX, RSI, RDI, RSP, RAX, RCX
+#define PInvokeTransitionFrame_SaveRegs_count 6
 #elif defined(TARGET_ARM)
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9

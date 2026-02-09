@@ -42,7 +42,7 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };

@@ -1,24 +1,24 @@
-import type { LoaderConfig } from "./types";
+import { loaderConfig } from "./config";
 import { GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
-export function getIcuResourceName(config: LoaderConfig): string | null {
-    if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
-        const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
-        if (!config.applicationCulture) {
-            config.applicationCulture = culture;
+export function getIcuResourceName(): string | null {
+    if (loaderConfig.resources?.icu && loaderConfig.globalizationMode !== GlobalizationMode.Invariant) {
+        const culture = loaderConfig.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
+        if (!loaderConfig.applicationCulture) {
+            loaderConfig.applicationCulture = culture;
         }
 
-        const icuFiles = config.resources.icu;
+        const icuFiles = loaderConfig.resources.icu;
         let icuFile = null;
-        if (config.globalizationMode === GlobalizationMode.Custom) {
+        if (loaderConfig.globalizationMode === GlobalizationMode.Custom) {
             // custom ICU file is saved in the resources with fingerprinting and does not require mapping
             if (icuFiles.length >= 1) {
                 return icuFiles[0].name;
             }
-        } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
+        } else if (!culture || loaderConfig.globalizationMode === GlobalizationMode.All) {
             icuFile = "icudt.dat";
-        } else if (config.globalizationMode === GlobalizationMode.Sharded) {
+        } else if (loaderConfig.globalizationMode === GlobalizationMode.Sharded) {
             icuFile = getShardedIcuResourceName(culture);
         }
 
@@ -32,8 +32,8 @@ export function getIcuResourceName(config: LoaderConfig): string | null {
         }
     }
 
-    config.globalizationMode = GlobalizationMode.Invariant;
-    config.environmentVariables!["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
+    loaderConfig.globalizationMode = GlobalizationMode.Invariant;
+    loaderConfig.environmentVariables!["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
     return null;
 }
 

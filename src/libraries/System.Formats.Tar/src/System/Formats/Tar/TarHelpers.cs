@@ -268,7 +268,7 @@ namespace System.Formats.Tar
 
         [DoesNotReturn]
         private static void ThrowInvalidNumber() =>
-            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+            throw new InvalidDataException(SR.TarInvalidNumber);
 
         // Returns the null-terminated UTF8 string contained in the specified buffer.
         internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)

@@ -23,6 +23,11 @@ namespace Internal.IL
 
             Debug.Assert(method.IsRuntimeImplemented);
 
+            if (method.IsAsync)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
+
             TypeDesc owningType = method.OwningType;
 
             if (owningType.IsDelegate)

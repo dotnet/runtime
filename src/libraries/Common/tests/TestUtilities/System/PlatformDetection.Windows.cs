@@ -20,9 +20,7 @@ namespace System
         public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         public static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
-        public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
-        public static bool IsWindows8xOrLater => IsWindowsVersionOrLater(6, 2);
         public static bool IsWindows10OrLater => IsWindowsVersionOrLater(10, 0);
         public static bool IsWindowsServer2019 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 17763;
         public static bool IsWindowsServer2022 => IsWindows && IsNotWindowsNanoServer && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildVersion() == 20348;
@@ -30,7 +28,6 @@ namespace System
         public static bool IsWindowsNanoServer => IsWindows && (IsNotWindowsIoTCore && GetWindowsInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
         public static bool IsWindowsServerCore => IsWindows && GetWindowsInstallationType().Equals("Server Core", StringComparison.OrdinalIgnoreCase);
         public static int WindowsVersion => IsWindows ? (int)GetWindowsVersion() : -1;
-        public static bool IsNotWindows7 => !IsWindows7;
         public static bool IsNotWindows8x => !IsWindows8x;
         public static bool IsNotWindowsNanoServer => !IsWindowsNanoServer;
         public static bool IsNotWindowsServerCore => !IsWindowsServerCore;
@@ -203,7 +200,7 @@ namespace System
                 if (s_isInAppContainer != -1)
                     return s_isInAppContainer == 1;
 
-                if (!IsWindows || IsWindows7)
+                if (!IsWindows)
                 {
                     s_isInAppContainer = 0;
                     return false;

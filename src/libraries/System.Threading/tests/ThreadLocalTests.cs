@@ -315,6 +315,7 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => values = tl.Values);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114096", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void RunThreadLocalTest8_Values_NegativeCases()
         {

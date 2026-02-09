@@ -46,6 +46,12 @@
     <NestedBuildProperty Include="WasmEnableWebcil" />
     <NestedBuildProperty Include="EnableAggressiveTrimming" />
     <NestedBuildProperty Include="TrimMode" />
+    <NestedBuildProperty Include="WasmTestSupport" />
+    <NestedBuildProperty Include="WasmTestExitOnUnhandledError" />
+    <NestedBuildProperty Include="WasmTestAppendElementOnExit" />
+    <NestedBuildProperty Include="WasmTestLogExitCode" />
+    <NestedBuildProperty Include="WasmTestAsyncFlushOnExit" />
+    <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
   <Target Name="BuildSampleInTree"
@@ -88,7 +94,7 @@
   </Target>
 
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
-    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="bin/publish/wwwroot" Command="v8 --module $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/publish/wwwroot" Command="node $(_WasmMainJSFileName) $(Args)" IgnoreExitCode="true" />

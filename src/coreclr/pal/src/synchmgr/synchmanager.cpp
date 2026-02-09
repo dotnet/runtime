@@ -386,7 +386,7 @@ namespace CorUnix
         if (dwTimeout != INFINITE)
         {
             // Calculate absolute timeout
-            palErr = GetAbsoluteTimeout(dwTimeout, &tsAbsTmo, /*fPreferMonotonicClock*/ TRUE);
+            palErr = GetAbsoluteTimeout(dwTimeout, &tsAbsTmo);
             if (NO_ERROR != palErr)
             {
                 ERROR("Failed to convert timeout to absolute timeout\n");
@@ -1051,7 +1051,7 @@ namespace CorUnix
         ptnwdWorkerThreadNativeData =
             &pSynchManager->m_pthrWorker->synchronizationInfo.m_tnwdNativeData;
 
-        palErr = GetAbsoluteTimeout(WorkerThreadTerminationTimeout, &tsAbsTmo, /*fPreferMonotonicClock*/ TRUE);
+        palErr = GetAbsoluteTimeout(WorkerThreadTerminationTimeout, &tsAbsTmo);
         if (NO_ERROR != palErr)
         {
             ERROR("Failed to convert timeout to absolute timeout\n");
@@ -2671,7 +2671,7 @@ namespace CorUnix
         VolatileStore<DWORD>(pdwWaitState, TWS_ACTIVE);
         m_tsThreadState = TS_STARTING;
 
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
         attrsPtr = &attrs;
         iRet = pthread_condattr_init(&attrs);
         if (0 != iRet)
@@ -2699,7 +2699,7 @@ namespace CorUnix
             pthread_condattr_destroy(&attrs);
             goto IPrC_exit;
         }
-#endif // HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
 
         iEagains = 0;
     Mutex_retry:
@@ -2990,31 +2990,25 @@ namespace CorUnix
 
     Converts a relative timeout to an absolute one.
     --*/
-    PAL_ERROR CPalSynchronizationManager::GetAbsoluteTimeout(DWORD dwTimeout, struct timespec * ptsAbsTmo, BOOL fPreferMonotonicClock)
+    PAL_ERROR CPalSynchronizationManager::GetAbsoluteTimeout(DWORD dwTimeout, struct timespec * ptsAbsTmo)
     {
         PAL_ERROR palErr = NO_ERROR;
         int iRet;
 
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
-        if (fPreferMonotonicClock)
-        {
-            iRet = clock_gettime(CLOCK_MONOTONIC, ptsAbsTmo);
-        }
-        else
-        {
-#endif
-#if HAVE_WORKING_CLOCK_GETTIME
-            // Not every platform implements a (working) clock_gettime
-            iRet = clock_gettime(CLOCK_REALTIME, ptsAbsTmo);
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
+        iRet = clock_gettime(CLOCK_MONOTONIC, ptsAbsTmo);
+#elif HAVE_WORKING_CLOCK_GETTIME
+        // Not every platform implements a (working) clock_gettime
+        iRet = clock_gettime(CLOCK_REALTIME, ptsAbsTmo);
 #elif HAVE_WORKING_GETTIMEOFDAY
-            // Not every platform implements a (working) gettimeofday
-            struct timeval tv;
-            iRet = gettimeofday(&tv, NULL);
-            if (0 == iRet)
-            {
-                ptsAbsTmo->tv_sec  = tv.tv_sec;
-                ptsAbsTmo->tv_nsec = tv.tv_usec * tccMicroSecondsToNanoSeconds;
-            }
+        // Not every platform implements a (working) gettimeofday
+        struct timeval tv;
+        iRet = gettimeofday(&tv, NULL);
+        if (0 == iRet)
+        {
+            ptsAbsTmo->tv_sec  = tv.tv_sec;
+            ptsAbsTmo->tv_nsec = tv.tv_usec * tccMicroSecondsToNanoSeconds;
+        }
 #else
 #ifdef DBI_COMPONENT_MONO
     return ERROR_INTERNAL_ERROR;
@@ -3022,9 +3016,6 @@ namespace CorUnix
     #error "Don't know how to get hi-res current time on this platform"
 #endif
 #endif // HAVE_WORKING_CLOCK_GETTIME, HAVE_WORKING_GETTIMEOFDAY
-#if HAVE_CLOCK_MONOTONIC && HAVE_PTHREAD_CONDATTR_SETCLOCK
-        }
-#endif
         if (0 == iRet)
         {
             ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;

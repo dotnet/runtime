@@ -68,6 +68,7 @@
       System.IO.Compression;
       System.IO.Compression.Brotli;
       System.IO.Compression.ZipFile;
+      System.IO.Compression.Zstandard;
       System.IO.FileSystem;
       System.IO.FileSystem.AccessControl;
       System.IO.FileSystem.DriveInfo;
@@ -181,7 +182,6 @@
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
       ComInterfaceGenerator;
-      EventSourceGenerator;
       LibraryImportGenerator;
       JSImportGenerator;
       Microsoft.Interop.SourceGeneration;

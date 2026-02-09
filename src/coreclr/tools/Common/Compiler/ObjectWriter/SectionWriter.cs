@@ -10,25 +10,56 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
+    internal enum LengthEncodeFormat
+    {
+        ULEB128,
+        None,
+    }
+
     internal struct SectionWriter
     {
         private readonly ObjectWriter _objectWriter;
         private readonly SectionData _sectionData;
 
+        private readonly Params _params;
+
         public int SectionIndex { get; init; }
+        public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
+
+        public struct Params
+        {
+            public LengthEncodeFormat LengthEncodeFormat;
+        }
 
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
-            SectionData sectionData)
+            SectionData sectionData,
+            Params ps)
         {
             _objectWriter = objectWriter;
             SectionIndex = sectionIndex;
             _sectionData = sectionData;
+            _params = ps;
+        }
+
+        private readonly void EmitLengthPrefix(ulong length)
+        {
+            switch (_params.LengthEncodeFormat)
+            {
+                case LengthEncodeFormat.ULEB128:
+                    WriteULEB128(length);
+                    break;
+                case LengthEncodeFormat.None:
+                    break;
+                default:
+                    throw new InvalidOperationException("Length prefix encoding not specified");
+            }
         }
 
         public readonly void EmitData(ReadOnlyMemory<byte> data)
         {
+            EmitLengthPrefix((ulong)data.Length);
             _sectionData.AppendData(data);
         }
 
@@ -143,6 +174,12 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = bufferWriter.GetSpan(size);
             Encoding.UTF8.GetBytes(value, buffer);
             bufferWriter.Advance(size);
+        }
+
+        public readonly void WriteUtf8WithLength(string value)
+        {
+            WriteULEB128((ulong)Encoding.UTF8.GetByteCount(value));
+            WriteUtf8StringNoNull(value);
         }
 
         public readonly void WritePadding(int size) => _sectionData.AppendPadding(size);

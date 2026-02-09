@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime;
+using TestLibrary;
 using Xunit;
 
 // This regression test tracks the issue where variant static interface dispatch crashes the runtime, and behaves incorrectly
@@ -13,6 +14,7 @@ namespace VariantStaticInterfaceDispatchRegressionTest
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/88689", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88690", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         public static void TestEntryPoint()
         {
             Console.WriteLine("Test cases");

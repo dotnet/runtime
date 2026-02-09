@@ -26,6 +26,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -49,6 +50,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -70,6 +72,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static T Await<T>(Task<T> task)
         {
             TaskAwaiter<T> awaiter = task.GetAwaiter();
@@ -89,6 +92,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void Await(Task task)
         {
             TaskAwaiter awaiter = task.GetAwaiter();
@@ -109,6 +113,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
             ValueTaskAwaiter<T> awaiter = task.GetAwaiter();
@@ -128,6 +133,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void Await(ValueTask task)
         {
             ValueTaskAwaiter awaiter = task.GetAwaiter();
@@ -147,6 +153,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
             ConfiguredTaskAwaitable.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
@@ -166,6 +173,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
         {
             ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
@@ -186,6 +194,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
         {
             ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();
@@ -206,6 +215,7 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
         [RequiresPreviewFeatures]
+        [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
         {
             ConfiguredValueTaskAwaitable<T>.ConfiguredValueTaskAwaiter awaiter = configuredAwaitable.GetAwaiter();

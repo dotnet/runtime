@@ -3,5 +3,6 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function invokeLibraryInitializers(functionName: string, args: any[]): Promise<void> {
+    // functionName: "onRuntimeReady", "onRuntimeConfigLoaded"
     throw new Error("Not implemented");
 }

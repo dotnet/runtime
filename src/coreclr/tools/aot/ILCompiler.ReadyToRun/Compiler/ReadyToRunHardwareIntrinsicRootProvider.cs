@@ -19,30 +19,13 @@ namespace ILCompiler
             InstructionSetSupport specifiedInstructionSet = context.InstructionSetSupport;
             TargetArchitecture targetArch = context.Target.Architecture;
 
-            // Hardware intrinsics can only live in the system module.
-            foreach (MetadataType type in context.SystemModule.GetAllTypes())
+            foreach (InstructionSet instructionSet in specifiedInstructionSet.SupportedFlags)
             {
-                InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(targetArch, type);
-
-                if (instructionSet == InstructionSet.ILLEGAL)
+                foreach (MetadataType hardwareIntrinsicType in InstructionSetParser.LookupPlatformIntrinsicTypes(context, instructionSet))
                 {
-                    // Not a HardwareIntrinsics type for our platform.
-                    continue;
-                }
-
-                if (specifiedInstructionSet.IsInstructionSetSupported(instructionSet))
-                {
-                    foreach (MethodDesc method in type.GetMethods())
+                    foreach (MethodDesc method in hardwareIntrinsicType.GetMethods())
                     {
-                        rootProvider.AddCompilationRoot(method, rootMinimalDependencies: false, "Hardware intrinsic method fallback implementation");
-                    }
-                }
-                else
-                {
-                    MethodDesc isSupportedMethod = type.GetMethod("get_IsSupported"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Boolean), []));
-                    if (isSupportedMethod is not null)
-                    {
-                        rootProvider.AddCompilationRoot(isSupportedMethod, rootMinimalDependencies: false, "IsSupported getter for unsupported hardware intrinsic");
+                        rootProvider.AddCompilationRoot(method, rootMinimalDependencies: false, "Supported hardware intrinsic method");
                     }
                 }
             }

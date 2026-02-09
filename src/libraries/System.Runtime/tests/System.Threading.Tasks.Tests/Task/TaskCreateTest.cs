@@ -935,7 +935,7 @@ namespace System.Threading.Tasks.Tests
                     _cts.Cancel();
 
                     if (!_task.IsCanceled || _task.Status != TaskStatus.Canceled)
-                        Assert.Fail(string.Format("Task Token doesn't matched TokenSource's Token"));
+                        Assert.Fail("Task Token doesn't matched TokenSource's Token");
                 }
             }
 
@@ -1246,7 +1246,7 @@ namespace System.Threading.Tasks.Tests
                         {
                             TaskCompletionSource<double> f = new TaskCompletionSource<double>();
                             f.Task.Start();
-                            Assert.Fail(string.Format("Able to Start a Promise, when expecting exception"));
+                            Assert.Fail("Able to Start a Promise, when expecting exception");
                         }
                         catch (System.InvalidOperationException)
                         {
@@ -1260,7 +1260,7 @@ namespace System.Threading.Tasks.Tests
                         {
                             Task t = CreateTaskHelper().ContinueWith(delegate { Work(); });
                             t.Start();
-                            Assert.Fail(string.Format("Able to start task manually on ContinueWith Task, when expecting exception"));
+                            Assert.Fail("Able to start task manually on ContinueWith Task, when expecting exception");
                         }
                         catch (InvalidOperationException)
                         {

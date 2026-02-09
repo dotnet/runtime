@@ -261,11 +261,11 @@ namespace System.Threading.Tasks.Tests.Status
             //
             if (_task != null && _task.Status == TaskStatus.Canceled && _task.IsCanceled != true)
             {
-                Assert.Fail(string.Format("Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail("Task final Status is Canceled, expecting IsCanceled property to be True as well");
             }
             if (_childTask != null && _childTask.Status == TaskStatus.Canceled && _childTask.IsCanceled != true)
             {
-                Assert.Fail(string.Format("Child Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail("Child Task final Status is Canceled, expecting IsCanceled property to be True as well");
             }
 
             //
@@ -280,7 +280,7 @@ namespace System.Threading.Tasks.Tests.Status
                 AggregateException exp = _promise.Task.Exception;
                 if (!_promise.Task.IsFaulted || exp == null)
                 {
-                    Assert.Fail(string.Format("No Exception found on promise"));
+                    Assert.Fail("No Exception found on promise");
                 }
                 else if (exp.Flatten().InnerException.GetType() == typeof(StatusTestException))
                 {

@@ -3248,12 +3248,12 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
         key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
 
     Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue                = returnValue;
-    result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
-    result.isInstantiatingStub        = info->isInstantiatingStub;
-    result.exactContext               = CastHandle(info->exactContext);
-    result.detail                     = (DWORD) info->detail;
-    result.wasArrayInterfaceDevirt    = info->wasArrayInterfaceDevirt;
+    result.returnValue         = returnValue;
+    result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
+    result.isInstantiatingStub = info->isInstantiatingStub;
+    result.exactContext        = CastHandle(info->exactContext);
+    result.detail              = (DWORD)info->detail;
+    result.needsMethodContext  = info->needsMethodContext;
 
     if (returnValue)
     {
@@ -3278,11 +3278,11 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, wasArrayInterfaceDevirt-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, needsMethodContext-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
         result.isInstantiatingStub ? "true" : "false",
-        result.wasArrayInterfaceDevirt ? "true" : "false",
+        result.needsMethodContext ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
@@ -3307,7 +3307,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->isInstantiatingStub = result.isInstantiatingStub;
-    info->wasArrayInterfaceDevirt = result.wasArrayInterfaceDevirt;
+    info->needsMethodContext  = result.needsMethodContext;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     if (result.returnValue)
@@ -4153,6 +4153,7 @@ CORINFO_MODULE_HANDLE MethodContext::repEmbedModuleHandle(CORINFO_MODULE_HANDLE 
     return (CORINFO_MODULE_HANDLE)value.B;
 }
 
+const DWORDLONG CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE = (DWORDLONG)0x12345678beef0000;
 void MethodContext::recEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection, CORINFO_CLASS_HANDLE result)
 {
     if (EmbedClassHandle == nullptr)
@@ -4176,12 +4177,25 @@ void MethodContext::dmpEmbedClassHandle(DWORDLONG key, DLDL value)
 CORINFO_CLASS_HANDLE MethodContext::repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection)
 {
     DWORDLONG key = CastHandle(handle);
+    if (key == CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE)
+    {
+        if ((EmbedClassHandle->GetCount() > 0) && (EmbedClassHandle->GetItem(0).A != 0))
+        {
+            // Some other embedded handle required an indirection, so do the same for the pseudo handle
+            // (avoids spurious improvements in R2R scenarios)
+            *ppIndirection = (void*)CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE;
+            return nullptr;
+        }
+
+        *ppIndirection = nullptr;
+        return handle;
+    }
+
     DLDL value = LookupByKeyOrMiss(EmbedClassHandle, key, ": key %016" PRIX64 "", key);
 
     DEBUG_REP(dmpEmbedClassHandle(key, value));
 
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
+    *ppIndirection = (void*)value.A;
     return (CORINFO_CLASS_HANDLE)value.B;
 }
 
@@ -6958,17 +6972,26 @@ CORINFO_CLASS_HANDLE MethodContext::repGetContinuationType(size_t dataSize,
 {
     AssertMapExistsNoMessage(GetContinuationType);
 
-    int objRefsBuffer = GetContinuationType->Contains((unsigned char*)objRefs, (unsigned)objRefsSize);
-    if (objRefsBuffer == -1)
-        LogException(EXCEPTIONCODE_MC, "SuperPMI assertion failed (missing obj refs buffer)", "");
-
     Agnostic_GetContinuationTypeIn key;
     ZeroMemory(&key, sizeof(key));
     key.dataSize = (DWORDLONG)dataSize;
-    key.objRefs = objRefsBuffer;
+    key.objRefs = (DWORD)GetContinuationType->Contains((unsigned char*)objRefs, (unsigned)objRefsSize);
     key.objRefsSize = (DWORD)objRefsSize;
 
-    DWORDLONG value = LookupByKeyOrMiss(GetContinuationType, key, ": dataSize %016" PRIX64 ", objRefs %u", key.dataSize, key.objRefs);
+    DWORDLONG value;
+    int index = GetContinuationType->GetIndex(key);
+    if (index == -1)
+    {
+        // This handle is more or less opaque, we can tolerate a miss here and
+        // just fake up handle. Otherwise SPMI will be useless for
+        // any async change that results in changes in live state.
+        value = CONTINUATION_TYPE_PSEUDO_CLASS_HANDLE;
+    }
+    else
+    {
+        value = GetContinuationType->GetItem(index);
+    }
+
     DEBUG_REP(dmpGetContinuationType(key, value));
 
     return (CORINFO_CLASS_HANDLE)value;

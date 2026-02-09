@@ -3,6 +3,8 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
+#include <algorithm>
+
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
 int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
@@ -14,14 +16,10 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
 
     size_t align = INTERP_STACK_SLOT_SIZE;
 
-    if (size > INTERP_STACK_SLOT_SIZE)
+    if (size > (int32_t)INTERP_STACK_SLOT_SIZE)
     {
         assert(m_pVars[var].interpType == InterpTypeVT);
-        align = m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd);
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-        if (align > INTERP_STACK_ALIGNMENT)
-            align = INTERP_STACK_ALIGNMENT;
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {

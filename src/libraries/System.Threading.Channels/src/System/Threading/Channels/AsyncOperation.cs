@@ -54,7 +54,7 @@ namespace System.Threading.Channels
 
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile
-#if NET9_0_OR_GREATER
+#if NET
             bool
 #else
             int
@@ -179,7 +179,7 @@ namespace System.Threading.Channels
         /// </remarks>
         public bool TryReserveCompletionIfCancelable() =>
             !CancellationToken.CanBeCanceled ||
-#if NET9_0_OR_GREATER
+#if NET
             !Interlocked.Exchange(ref _completionReserved, true);
 #else
             Interlocked.Exchange(ref _completionReserved, 1) == 0;
@@ -190,7 +190,7 @@ namespace System.Threading.Channels
         {
             Debug.Assert(
                 !CancellationToken.CanBeCanceled ||
-#if NET9_0_OR_GREATER
+#if NET
                 _completionReserved);
 #else
                 _completionReserved == 1);

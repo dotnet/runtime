@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 
 internal class baseclass
@@ -42,6 +43,7 @@ public class Program
     private volatile static int s_a = 5;
     private volatile static int s_b = 0;
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/183", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

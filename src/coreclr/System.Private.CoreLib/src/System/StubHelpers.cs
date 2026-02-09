@@ -831,6 +831,19 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
+        [UnmanagedCallersOnly]
+        internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ConvertContentsToNative(*pMarshaler, in *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -841,6 +854,19 @@ namespace System.StubHelpers
             }
 
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ConvertContentsToManaged(*pMarshaler, ref *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
@@ -855,8 +881,20 @@ namespace System.StubHelpers
             pManagedHome = marshaler.MarshalNativeToManaged(*pNativeHome);
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
-        internal static void ClearNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        [UnmanagedCallersOnly]
+        internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ClearNative(*pMarshaler, ref *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
             if (*pNativeHome == IntPtr.Zero)
@@ -874,7 +912,20 @@ namespace System.StubHelpers
             }
         }
 
-        internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
+        [UnmanagedCallersOnly]
+        internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ClearManaged(*pMarshaler, in *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
             if (pManagedHome is null)
@@ -884,7 +935,6 @@ namespace System.StubHelpers
 
             marshaler.CleanUpManagedData(pManagedHome);
         }
-#pragma warning restore IDE0060
     }  // class MngdRefCustomMarshaler
 
     internal struct AsAnyMarshaler

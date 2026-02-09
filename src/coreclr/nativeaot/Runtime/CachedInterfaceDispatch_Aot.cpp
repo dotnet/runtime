@@ -7,15 +7,11 @@
 #include "CachedInterfaceDispatch.h"
 
 // The base memory allocator.
-static AllocHeap * g_pAllocHeap = NULL;
+static AllocHeap g_allocHeap;
 
 bool InterfaceDispatch_InitializePal()
 {
-    g_pAllocHeap = new (nothrow) AllocHeap();
-    if (g_pAllocHeap == NULL)
-        return false;
-
-    if (!g_pAllocHeap->Init())
+    if (!g_allocHeap.Init())
         return false;
 
     return true;
@@ -24,14 +20,14 @@ bool InterfaceDispatch_InitializePal()
 // Allocate memory aligned at sizeof(void*)*2 boundaries
 void *InterfaceDispatch_AllocDoublePointerAligned(size_t size)
 {
-    return g_pAllocHeap->AllocAligned(size, sizeof(void*) * 2);
+    return g_allocHeap.AllocAligned(size, sizeof(void*) * 2);
 }
 
 // Allocate memory aligned at sizeof(void*) boundaries
 
 void *InterfaceDispatch_AllocPointerAligned(size_t size)
 {
-    return g_pAllocHeap->AllocAligned(size, sizeof(void*));
+    return g_allocHeap.AllocAligned(size, sizeof(void*));
 }
 
 FCIMPL4(PCODE, RhpUpdateDispatchCellCache, InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo)

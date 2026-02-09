@@ -27,7 +27,7 @@ namespace System.Collections
         // increased to _defaultCapacity, and then increased in multiples of two as required.
         public ArrayList()
         {
-            _items = Array.Empty<object>();
+            _items = [];
         }
 
         // Constructs a ArrayList with a given initial capacity. The list is
@@ -39,7 +39,7 @@ namespace System.Collections
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(capacity)));
 
             if (capacity == 0)
-                _items = Array.Empty<object>();
+                _items = [];
             else
                 _items = new object[capacity];
         }
@@ -55,7 +55,7 @@ namespace System.Collections
             int count = c.Count;
             if (count == 0)
             {
-                _items = Array.Empty<object>();
+                _items = [];
             }
             else
             {
@@ -665,7 +665,7 @@ namespace System.Collections
         public virtual object?[] ToArray()
         {
             if (_size == 0)
-                return Array.Empty<object>();
+                return [];
 
             object?[] array = new object[_size];
             Array.Copy(_items, array, _size);
@@ -1049,7 +1049,7 @@ namespace System.Collections
             public override object?[] ToArray()
             {
                 if (Count == 0)
-                    return Array.Empty<object?>();
+                    return [];
 
                 object?[] array = new object[Count];
                 _list.CopyTo(array, 0);
@@ -2523,7 +2523,7 @@ namespace System.Collections
             {
                 InternalUpdateRange();
                 if (_baseSize == 0)
-                    return Array.Empty<object?>();
+                    return [];
                 object[] array = new object[_baseSize];
                 _baseList.CopyTo(_baseIndex, array, 0, _baseSize);
                 return array;

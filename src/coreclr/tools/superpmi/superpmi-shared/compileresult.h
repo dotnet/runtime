@@ -95,17 +95,15 @@ public:
                      ULONG              coldCodeSize,
                      ULONG              roDataSize,
                      ULONG              xcptnsCount,
-                     CorJitAllocMemFlag flag,
-                     void**             hotCodeBlock,
-                     void**             coldCodeBlock,
-                     void**             roDataBlock);
+                     void*              hotCodeBlock,
+                     void*              coldCodeBlock,
+                     void*              roDataBlock);
     void recAllocMemCapture();
     void dmpAllocMem(DWORD key, const Agnostic_AllocMemDetails& value);
     void repAllocMem(ULONG*              hotCodeSize,
                      ULONG*              coldCodeSize,
                      ULONG*              roDataSize,
                      ULONG*              xcptnsCount,
-                     CorJitAllocMemFlag* flag,
                      unsigned char**     hotCodeBlock,
                      unsigned char**     coldCodeBlock,
                      unsigned char**     roDataBlock,

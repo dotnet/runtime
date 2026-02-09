@@ -204,20 +204,20 @@ namespace System.Threading.Tasks.Tests
 
             if (c1b.Status != TaskStatus.Canceled)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Continuation task w/NotOnCanceled should have been canceled when antecedent was canceled."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Continuation task w/NotOnCanceled should have been canceled when antecedent was canceled.");
             }
             if (c1c.Status != TaskStatus.RanToCompletion)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Continuation task w/ canceled antecedent should have run to completion."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Continuation task w/ canceled antecedent should have run to completion.");
             }
             if (c2b.Status != TaskStatus.Canceled)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Continuation task w/NotOnRanToCompletion should have been canceled when antecedent completed."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Continuation task w/NotOnRanToCompletion should have been canceled when antecedent completed.");
             }
             c2c.Wait();
             if (c2c.Status != TaskStatus.RanToCompletion)
             {
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Continuation task w/ completed antecedent should have run to completion."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Continuation task w/ completed antecedent should have run to completion.");
             }
         }
 
@@ -229,14 +229,14 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 Task t2 = t1.ContinueWith((ooo) => { }, (TaskContinuationOptions)0x1000000);
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Should have seen exception from illegal continuation options."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Should have seen exception from illegal continuation options.");
             }
             catch { }
 
             try
             {
                 Task t2 = t1.ContinueWith((ooo) => { }, TaskContinuationOptions.LongRunning | TaskContinuationOptions.ExecuteSynchronously);
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Should have seen exception when combining LongRunning and ExecuteSynchronously"));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Should have seen exception when combining LongRunning and ExecuteSynchronously");
             }
             catch { }
 
@@ -246,7 +246,7 @@ namespace System.Threading.Tasks.Tests
                             TaskContinuationOptions.NotOnRanToCompletion |
                             TaskContinuationOptions.NotOnFaulted |
                             TaskContinuationOptions.NotOnCanceled);
-                Assert.Fail(string.Format("RunContinueWithParamsTest: > FAILED.  Should have seen exception from illegal NotOnAny continuation options."));
+                Assert.Fail("RunContinueWithParamsTest: > FAILED.  Should have seen exception from illegal NotOnAny continuation options.");
             }
             catch (Exception)
             { }
@@ -269,7 +269,7 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource ctsForT2 = new CancellationTokenSource();
             Task t2 = t1.ContinueWith((ContinuedTask) =>
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
+                Assert.Fail("RunContinuationCancelTest: > Failed!  t2 should not have run.");
             }, ctsForT2.Token);
 
             Task t3 = t2.ContinueWith((ContinuedTask) =>
@@ -297,12 +297,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t1Ran)
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest: > Failed!  t1 should have run."));
+                Assert.Fail("RunContinuationCancelTest: > Failed!  t1 should have run.");
             }
 
             if (!t3Ran)
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest: > Failed!  t3 should have run."));
+                Assert.Fail("RunContinuationCancelTest: > Failed!  t3 should have run.");
             }
         }
 
@@ -753,7 +753,7 @@ namespace System.Threading.Tasks.Tests
             //try
             //{
             //    hanging1.Wait();
-            //    Assert.Fail(string.Format("    > FAILED. Expected an exception."));
+            //    Assert.Fail("    > FAILED. Expected an exception.");
             //    return false;
             //}
             //catch (Exception e) { }
@@ -778,7 +778,7 @@ namespace System.Threading.Tasks.Tests
             //try
             //{
             //    hanging2.Wait();
-            //    Assert.Fail(string.Format("    > FAILED. Expected an exception."));
+            //    Assert.Fail("    > FAILED. Expected an exception.");
             //    return false;
             //}
             //catch (Exception e) {  }
@@ -871,7 +871,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c.Wait();
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Monadic continuation w/ excepted children failed to throw an exception."));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Monadic continuation w/ excepted children failed to throw an exception.");
             }
             catch (AggregateException ae)
             {
@@ -949,7 +949,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c1.Wait();
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task->Task<int>."));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task->Task<int>.");
             }
             catch { }
             TaskStatus ts = c1.Status;
@@ -962,7 +962,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c2.Wait();
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task<int>->Task<int>."));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task<int>->Task<int>.");
             }
             catch { }
             ts = c2.Status;
@@ -975,7 +975,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c5.Wait();
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task->Task."));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task->Task.");
             }
             catch { }
             ts = c5.Status;
@@ -988,7 +988,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 c6.Wait();
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task<int>->Task."));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Expected Wait() to throw after cancellation of Task<int>->Task.");
             }
             catch { }
             ts = c6.Status;
@@ -1015,22 +1015,22 @@ namespace System.Threading.Tasks.Tests
 
             if (c1val != 0)
             {
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Cancellation of Task->Task<int> failed to stop internal continuation"));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Cancellation of Task->Task<int> failed to stop internal continuation");
             }
 
             if (c2val != 0)
             {
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Cancellation of Task<int>->Task<int> failed to stop internal continuation"));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Cancellation of Task<int>->Task<int> failed to stop internal continuation");
             }
 
             if (c5val != 0)
             {
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Cancellation of Task->Task failed to stop internal continuation"));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Cancellation of Task->Task failed to stop internal continuation");
             }
 
             if (c6val != 0)
             {
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Cancellation of Task<int>->Task failed to stop internal continuation"));
+                Assert.Fail("RunUnwrapTests: > FAILED.  Cancellation of Task<int>->Task failed to stop internal continuation");
             }
         }
 
@@ -1046,7 +1046,7 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource ctsForT2 = new CancellationTokenSource();
             Task t2 = t1.ContinueWith((ContinuedTask, obj) =>
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest_State    > Failed!  t2 should not have run."));
+                Assert.Fail("RunContinuationCancelTest_State    > Failed!  t2 should not have run.");
             }, stateParam, ctsForT2.Token);
 
 
@@ -1066,12 +1066,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t1Ran)
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest_State    > Failed!  t1 should have run."));
+                Assert.Fail("RunContinuationCancelTest_State    > Failed!  t1 should have run.");
             }
 
             if (!t3Ran)
             {
-                Assert.Fail(string.Format("RunContinuationCancelTest_State    > Failed!  t3 should have run."));
+                Assert.Fail("RunContinuationCancelTest_State    > Failed!  t3 should have run.");
             }
         }
 

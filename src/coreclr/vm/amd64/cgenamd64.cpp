@@ -43,6 +43,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 #undef CALLEE_SAVED_REGISTER
 }
 
+#ifdef TARGET_WINDOWS
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    pContext->Rcx = pRegs->RCX;
+    pContext->Rdx = pRegs->RDX;
+    pContext->R8 = pRegs->R8;
+    pContext->R9 = pRegs->R9;
+
+    KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->Rcx = (PULONG64)&pRegs->RCX;
+    pContextPointers->Rdx = (PULONG64)&pRegs->RDX;
+    pContextPointers->R8 = (PULONG64)&pRegs->R8;
+    pContextPointers->R9 = (PULONG64)&pRegs->R9;
+}
+#endif
+
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -87,6 +106,37 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->Rip = GetReturnAddress();
+    pRD->pCurrentContext->Rsp = GetSP();
+
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {

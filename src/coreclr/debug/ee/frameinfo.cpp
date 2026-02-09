@@ -16,9 +16,7 @@
 #include "COMToClrCall.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif // FEATURE_EH_FUNCLETS
 
 // Get a frame pointer from a RegDisplay.
 // This is mostly used for chains and stub frames (i.e. internal frames), where we don't need an exact
@@ -104,12 +102,10 @@ struct DebuggerFrameData
         this->info.frame     = NULL;
         this->needParentInfo = false;
 
-#ifdef FEATURE_EH_FUNCLETS
         this->fpParent        = LEAF_MOST_FRAME;
         this->info.fIsLeaf    = true;
         this->info.fIsFunclet = false;
         this->info.fIsFilter  = false;
-#endif // FEATURE_EH_FUNCLETS
 
         this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
@@ -129,10 +125,9 @@ struct DebuggerFrameData
     REGDISPLAY              regDisplay;
 
 
-#ifdef FEATURE_EH_FUNCLETS
     // This is used to skip funclets in a stackwalk.  It marks the frame pointer to which we should skip.
     FramePointer            fpParent;
-#endif // FEATURE_EH_FUNCLETS
+
 #if defined(_DEBUG)
     // For debugging, track the previous FramePointer so we can assert that we're
     // making progress through the stack.
@@ -697,7 +692,6 @@ void FrameInfo::InitForUMChain(FramePointer fpRoot, REGDISPLAY * pRDSrc)
 
 void FrameInfo::InitForScratchFrameInfo()
 {
-#ifdef FEATURE_EH_FUNCLETS
     // The following flags cannot be trashed when we are calling this function on the curret FrameInfo
     // (the one we keep track of across multiple stackwalker callbacks).  Thus, make sure you do not call
     // this function from InitForDynamicMethod().  In all other cases, we can call this method after we
@@ -705,7 +699,6 @@ void FrameInfo::InitForScratchFrameInfo()
     this->fIsLeaf    = false;
     this->fIsFunclet = false;
     this->fIsFilter  = false;
-#endif // FEATURE_EH_FUNCLETS
 }
 
 
@@ -1306,8 +1299,6 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
     return fpResult;
 }
 
-
-#ifdef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
 //
 // This function is called to determine if we should start skipping funclets.  If we should, then we return the
@@ -1361,7 +1352,6 @@ inline FramePointer CheckForParentFP(FramePointer fpCurrentParentMarker, CrawlFr
         return fpCurrentParentMarker;
     }
 }
-#endif // FEATURE_EH_FUNCLETS
 
 
 //-----------------------------------------------------------------------------
@@ -1391,7 +1381,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
     if (pCF->IsNativeMarker())
     {
-#ifdef FEATURE_EH_FUNCLETS
         // The tricky part here is that we want to skip all frames between a funclet method frame
         // and the parent method frame UNLESS the funclet is a filter.  Moreover, we should never
         // let a native marker execute the rest of this method, so we just short-circuit it here.
@@ -1399,7 +1388,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
             return SWA_CONTINUE;
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // This REGDISPLAY is for the native method immediately following the managed method for which
         // we have received the previous callback, i.e. the native caller of the last managed method
@@ -1461,14 +1449,11 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     } // if (d->needParentInfo)
 
-
-#ifdef FEATURE_EH_FUNCLETS
     // The tricky part here is that we want to skip all frames between a funclet method frame
     // and the parent method frame UNLESS the funclet is a filter.  We only have to check for fpParent
     // here (instead of checking d->info.fIsFunclet and d->info.fIsFilter as well, as in the beginning of
     // this method) is because at this point, fpParent is already set by the code above.
     if (d->fpParent == LEAF_MOST_FRAME)
-#endif // FEATURE_EH_FUNCLETS
     {
         // Track the UM chain after we flush any managed goo from the last iteration.
         if (TrackUMChain(pCF, d) == SWA_ABORT)
@@ -1489,7 +1474,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     // register display we passed in - assert it to be sure
     _ASSERTE(pCF->GetRegisterSet() == &d->regDisplay);
 
-#ifdef FEATURE_EH_FUNCLETS
     Frame* pPrevFrame = d->info.frame;
 
     // Here we need to determine if we are in a non-leaf frame, in which case we want to adjust the relative offset.
@@ -1538,8 +1522,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
     }
 
-#endif // FEATURE_EH_FUNCLETS
-
     d->info.frame = frame;
     d->info.ambientSP = (TADDR)NULL;
 
@@ -1550,7 +1532,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     //  Grab all the info from CrawlFrame that we need to
     //  check for "Am I in an exception code blob?" now.
 
-#ifdef FEATURE_EH_FUNCLETS
     // We are still searching for the parent of the last funclet we encounter.
     if (d->fpParent != LEAF_MOST_FRAME)
     {
@@ -1558,7 +1539,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Skipping to parent method frame at 0x%p.\n", d->fpParent.GetSPValue()));
     }
     else
-#endif // FEATURE_EH_FUNCLETS
     // We ignore most IL stubs with no frames in our stackwalking. As exceptions
     // we will always report multicast stubs and the tailcall call target stubs
     // since we treat them specially in the debugger.
@@ -1832,9 +1812,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Setting needParentInfo\n"));
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     d->fpParent = CheckForParentFP(d->fpParent, pCF, d->info.IsNonFilterFuncletFrame());
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // The stackwalker doesn't update the register set for the
@@ -2077,13 +2055,6 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 #endif
             memset((void *)&data, 0, sizeof(data));
 
-#if !defined(FEATURE_EH_FUNCLETS)
-            // @todo - this seems pointless. context->Eip will be 0; and when we copy it over to the DebuggerRD,
-            // the context will be completely null.
-            data.regDisplay.ControlPC = context->Eip;
-            data.regDisplay.PCTAddr = (TADDR)&(context->Eip);
-
-#else
             //
             // @TODO: this should be the code for all platforms now that it uses FillRegDisplay,
             // which encapsulates the platform variances.  This could all be avoided if we used
@@ -2094,7 +2065,6 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
             FillRegDisplay(&data.regDisplay, context);
 
             ::SetSP(data.regDisplay.pCallerContext, 0);
-#endif
     }
 
     data.Init(thread, targetFP, fIgnoreNonmethodFrames, pCallback, pData);

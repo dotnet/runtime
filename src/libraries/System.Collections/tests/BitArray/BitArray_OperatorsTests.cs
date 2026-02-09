@@ -372,5 +372,20 @@ namespace System.Collections.Tests
         }
 
         #endregion
+
+        public static IEnumerable<object[]> PopCount_TestData()
+        {
+            yield return new object[] { new BitArray(0), 0 };
+            yield return new object[] { new BitArray(33), 0 };
+            yield return new object[] { new BitArray(25, true), 25 };
+            yield return new object[] { new BitArray([0xC0C0, 0, 0x0C0C]), 8 };
+        }
+
+        [Theory]
+        [MemberData(nameof(PopCount_TestData))]
+        public static void PopCount(BitArray array, int expected)
+        {
+            Assert.Equal(expected, array.PopCount());
+        }
     }
 }

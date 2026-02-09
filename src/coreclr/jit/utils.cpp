@@ -1843,6 +1843,13 @@ void HelperCallProperties::init()
                 exceptions  = ExceptionSetFlags::NullReferenceException;
                 break;
 
+            case CORINFO_HELP_ALLOC_CONTINUATION:
+            case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+            case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                mutatesHeap = true;
+                isAllocator = true;
+                break;
+
             default:
                 // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;

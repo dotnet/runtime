@@ -326,22 +326,27 @@ namespace Internal.JitInterface
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemChunk
+    {
+        // Alignment of the chunk. Must be a power of two with the following restrictions:
+        // - For the hot code chunk the max supported alignment is 32.
+        // - For the cold code chunk the value must always be 1.
+        // - For read-only data chunks the max supported alignment is 64.
+        public uint alignment;
+        public uint size;
+        public CorJitAllocMemFlag flags;
+
+        // out
+        public byte* block;
+        public byte* blockRW;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemArgs
     {
-        // Input arguments
-        public uint hotCodeSize;
-        public uint coldCodeSize;
-        public uint roDataSize;
+        public AllocMemChunk* chunks;
+        public uint chunksCount;
         public uint xcptnsCount;
-        public CorJitAllocMemFlag flag;
-
-        // Output arguments
-        public void* hotCodeBlock;
-        public void* hotCodeBlockRW;
-        public void* coldCodeBlock;
-        public void* coldCodeBlockRW;
-        public void* roDataBlock;
-        public void* roDataBlockRW;
     }
 
     // Flags computed by a runtime compiler
@@ -666,6 +671,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one.
+        CORINFO_EH_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -780,12 +786,10 @@ namespace Internal.JitInterface
     // to guide the memory allocation for the code, readonly data, and read-write data
     public enum CorJitAllocMemFlag
     {
-        CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
-        CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
+        CORJIT_ALLOCMEM_HOT_CODE = 1,
+        CORJIT_ALLOCMEM_COLD_CODE = 2,
+        CORJIT_ALLOCMEM_READONLY_DATA = 4,
+        CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
     }
 
     public enum CorJitFuncKind
@@ -1122,7 +1126,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
         CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
         CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1158,7 +1162,7 @@ namespace Internal.JitInterface
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
         // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
-        // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+        // - needsMethodContext is set TRUE if the devirtualized method may require a method context
         //     (in which case the method handle and context will be a generic method)
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
@@ -1168,8 +1172,8 @@ namespace Internal.JitInterface
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
         public byte _isInstantiatingStub;
         public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
-        public byte _wasArrayInterfaceDevirt;
-        public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
+        public byte _needsMethodContext;
+        public bool needsMethodContext { get { return _needsMethodContext != 0; } set { _needsMethodContext = value ? (byte)1 : (byte)0; } }
     }
 
     //----------------------------------------------------------------------------
@@ -1462,6 +1466,7 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004),
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
         CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
+        CORJIT_R2R_UNSUPPORTED = unchecked((int)0x80000007),
     };
 
     public enum TypeCompareState

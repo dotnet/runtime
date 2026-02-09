@@ -7,13 +7,14 @@ namespace Wasm.Build.Tests;
 
 public class WasmBrowserRunMainOnly(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : WasmTemplateTestsBase(output, buildContext)
 {
-    [Fact, TestCategory("coreclr")]
-    public async Task RunMainOnly()
+    [TestCategory("coreclr")]
+    [Theory]
+    [BuildAndRun(config: Configuration.Release)]
+    [BuildAndRun(config: Configuration.Debug)]
+    public async Task RunMainOnly(Configuration config, bool aot)
     {
-        Configuration config = Configuration.Debug;
-
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBrowserRunMainOnly, $"WasmBrowserRunMainOnly");
-        var (_, buildOutput) = PublishProject(info, config);
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBrowserRunMainOnly, $"WasmBrowserRunMainOnly");
+        var (_, buildOutput) = PublishProject(info, config, new PublishOptions(AssertAppBundle: false, EnableDiagnostics: true));
 
         // ** MicrosoftNetCoreAppRuntimePackDir : '....microsoft.netcore.app.runtime.browser-wasm\11.0.0-dev'
         Assert.Contains("microsoft.netcore.app.runtime.browser-wasm", buildOutput);

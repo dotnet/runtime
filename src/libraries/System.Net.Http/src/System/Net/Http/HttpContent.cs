@@ -67,6 +67,15 @@ namespace System.Net.Http
 
         public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
+        internal void SetHeaders(HttpContentHeaders headers)
+        {
+            Debug.Assert(_headers is null);
+            Debug.Assert(headers is not null);
+
+            headers._parent = this;
+            _headers = headers;
+        }
+
         [MemberNotNullWhen(true, nameof(_bufferedContent))]
         private bool IsBuffered => _bufferedContent is not null;
 

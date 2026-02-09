@@ -223,7 +223,7 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work_dir: Path, core_root_path: Path, config_path: Path, dryrun: bool, *extra_args: str):
+def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work_dir: Path, core_root_path: Path, config_path: Path, dryrun: bool, env_vars: dict, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
@@ -238,9 +238,17 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--config", str(config_path),
         "--profile", "Localhost",
         "--scenario", scenario_name,
-        "--application.framework", framework,
-        "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
-        "--application.noGlobalJson", "false",
+        
+        # "--application.framework", framework,
+        # "--application.Channel", "edge",
+        # "--application.noGlobalJson", "false",
+
+        # TODO: unpin once it's working again.
+        "--application.framework", "net10.0",
+        "--application.aspNetCoreVersion", "10.0.0-rtm.25513.102",
+        "--application.runtimeVersion", "10.0.0-rtm.25513.102",
+        "--application.sdkVersion", "10.0.100-rtm.25513.102",
+
         "--application.collectDependencies", "false",
         "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
@@ -260,6 +268,12 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
             "--application.options.outputFiles", str(core_root_path / clrjit),
             "--application.options.outputFiles", str(core_root_path / coreclr),
             "--application.options.outputFiles", str(core_root_path / spcorelib),
+        ])
+    
+    # Add custom environment variables for this run
+    for var_name, var_value in env_vars.items():
+        cmd.extend([
+            "--application.environmentVariables", f"DOTNET_{var_name}={var_value}"
         ])
     
     # Append any extra scenario-specific arguments
@@ -344,19 +358,31 @@ def main():
                 "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
         ]
 
+        # Define the environment variable sets to run for each scenario
+        env_var_sets = [
+            {"Dummy": "0"},
+            {"TieredPGO": "1", "ReadyToRun": "0"},
+            {"TieredCompilation": "0", "ReadyToRun": "0"},
+            {"TC_PartialCompilation": "1"},
+        ]
+
         for entry in scenarios:
             scenario_name, *extra = entry
-            print(f"### Running {scenario_name} benchmark... ###")
-            run_crank_scenario(
-                crank_app_path,
-                scenario_name,
-                args.tfm,
-                work_dir_base,
-                core_root_path,
-                config_path,
-                args.dryrun,
-                *extra,
-            )
+            # Run each scenario with all environment variable sets
+            for idx, env_vars in enumerate(env_var_sets, 1):
+                env_vars_str = ", ".join(f"{k}={v}" for k, v in env_vars.items())
+                print(f"### Running {scenario_name} benchmark (set {idx}/{len(env_var_sets)}: {env_vars_str})... ###")
+                run_crank_scenario(
+                    crank_app_path,
+                    scenario_name,
+                    args.tfm,
+                    work_dir_base,
+                    core_root_path,
+                    config_path,
+                    args.dryrun,
+                    env_vars,
+                    *extra,
+                )
 
         print("Finished running benchmarks.")
 

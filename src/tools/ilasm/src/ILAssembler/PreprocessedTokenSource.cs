@@ -80,9 +80,8 @@ namespace ILAssembler
                     ReportPreprocessorSyntaxError(nextToken);
                     return pathToken;
                 }
-                var path = pathToken.Text;
-                // TODO: Parse out escape sequences and quotes in path.
-                _includeSourceStack.Push((_loadIncludedDocument(path.Substring(1, path.Length - 2)), 0));
+                var path = StringHelpers.ParseQuotedString(pathToken.Text);
+                _includeSourceStack.Push((_loadIncludedDocument(path), 0));
                 return NextToken();
             }
             else if (nextToken.Type == CILLexer.PP_DEFINE)
@@ -96,8 +95,7 @@ namespace ILAssembler
                 IToken valueMaybe = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
                 if (valueMaybe.Type == CILLexer.QSTRING)
                 {
-                    // TODO: Parse out escape sequences and quotes in path.
-                    _definedVars.Add(identifier.Text, valueMaybe.Text.Substring(1, valueMaybe.Text.Length - 2));
+                    _definedVars.Add(identifier.Text, StringHelpers.ParseQuotedString(valueMaybe.Text));
                     return NextToken();
                 }
                 else

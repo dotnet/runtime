@@ -51,6 +51,6 @@ public class FilesToIncludeInFileSystemTests : WasmTemplateTestsBase
 
         Assert.Contains(result.TestOutput, m => m.Contains("'/myfiles/Vfs1.txt' exists 'True' with content 'Vfs1.txt'"));
         Assert.Contains(result.TestOutput, m => m.Contains("'/myfiles/Vfs2.txt' exists 'True' with content 'Vfs2.txt'"));
-        Assert.Contains(result.TestOutput, m => m.Contains("'/subdir/subsubdir/Vfs3.txt' exists 'True' with content 'Vfs3.txt'"));
+        Assert.Contains(result.TestOutput, m => m.Contains("'subdir/subsubdir/Vfs3.txt' exists 'True' with content 'Vfs3.txt'"));
     }
 }

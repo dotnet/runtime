@@ -1,19 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</GCStressIncompatible>
-    <!-- NOTE: this test simply takes too long to complete under heap verify. It is not fundamentally incompatible. -->
-    <HeapVerifyIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</HeapVerifyIncompatible>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <PropertyGroup>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="hijacking.il" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

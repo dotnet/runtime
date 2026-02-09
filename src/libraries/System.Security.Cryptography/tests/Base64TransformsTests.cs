@@ -389,5 +389,55 @@ namespace System.Security.Cryptography.Tests
             string outputString = Text.Encoding.ASCII.GetString(outputBytes, 0, written);
             Assert.Equal(expected, outputString);
         }
+
+        [Fact]
+        public void TransformBlock_PartialBlockFollowedByPowerOfTwoInput_DoesNotThrow()
+        {
+            using FromBase64Transform transform = new();
+            byte[] dest = new byte[2048];
+
+            byte[] partialBlock = "AAA"u8.ToArray();
+            int written = transform.TransformBlock(partialBlock, 0, partialBlock.Length, dest, 0);
+
+            // Nothing should be written because it is a partial block the transform will hold on to.
+            Assert.Equal(0, written);
+
+            // Transform a buffer that is exactly a power of two, meaning the ArrayPool (CryptoPool) will not be oversized.
+            byte[] completeBlock = new byte[1024];
+            completeBlock.AsSpan().Fill((byte)'A');
+
+            written = transform.TransformBlock(completeBlock, 0, completeBlock.Length, dest, written);
+            Assert.NotEqual(0, written);
+        }
+
+        [Fact]
+        public void TransformFinalBlock_PartialBlockFollowedByPowerOfTwoInput_DoesNotThrow()
+        {
+            using FromBase64Transform transform = new();
+            byte[] dest = new byte[2048];
+
+            byte[] partialBlock = "AAA"u8.ToArray();
+            int written = transform.TransformBlock(partialBlock, 0, partialBlock.Length, dest, 0);
+
+            // Nothing should be written because it is a partial block the transform will hold on to.
+            Assert.Equal(0, written);
+
+            // Transform a buffer that is exactly a power of two via TransformFinalBlock
+            byte[] completeBlock = new byte[1024];
+            completeBlock.AsSpan().Fill((byte)'A');
+
+            byte[] result = transform.TransformFinalBlock(completeBlock, 0, completeBlock.Length);
+            Assert.NotEqual(0, result.Length);
+        }
+
+        [Fact]
+        public void TransformBlock_OutputBufferTooSmall_ThrowsArgumentOutOfRangeException()
+        {
+            using FromBase64Transform transform = new();
+            byte[] destination = new byte[0];
+            byte[] block = "AAAA"u8.ToArray();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("outputBuffer",
+                () => transform.TransformBlock(block, 0, block.Length, destination, 0));
+        }
     }
 }

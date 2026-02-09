@@ -778,7 +778,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = JsonSerializer.Serialize(value, options);
                 Assert.Equal(expectedJson, json);
 
-                JsonTypeInfo<T> jsonTypeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+                JsonTypeInfo<T> jsonTypeInfo = options.GetTypeInfo<T>();
                 json = JsonSerializer.Serialize(value, jsonTypeInfo);
                 Assert.Equal(expectedJson, json);
             }

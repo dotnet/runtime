@@ -187,9 +187,11 @@ static ULONG WINAPI KickOffThread(void* pass)
     return 0;
 }
 
-extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName)
+extern "C" BOOL QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName, QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
+
+    BOOL result = TRUE;
 
     BEGIN_QCALL;
 
@@ -266,10 +268,13 @@ extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
     {
         GCX_COOP();
 
-        pNewThread->HandleThreadStartupFailure();
+        result = FALSE;
+        exception.Set(pNewThread->GetExceptionDuringStartup());
     }
 
     END_QCALL;
+
+    return result;
 }
 
 extern "C" void QCALLTYPE ThreadNative_SetPriority(QCall::ObjectHandleOnStack thread, INT32 iPriority)

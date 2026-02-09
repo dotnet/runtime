@@ -147,10 +147,15 @@ public sealed class ConditionalTest : ITestInfo
 
         _innerTest = innerTest;
         _condition = condition;
-   }
+    }
 
     public ConditionalTest(ITestInfo innerTest, Xunit.TestPlatforms platform)
         : this(innerTest, GetPlatformConditionFromTestPlatform(platform))
+    {
+    }
+
+    public ConditionalTest(ITestInfo innerTest, string condition, Xunit.TestPlatforms platform)
+        : this(innerTest, $"{(condition.Length == 0 ? "true" : condition)} && ({GetPlatformConditionFromTestPlatform(platform)})")
     {
     }
 
@@ -206,6 +211,16 @@ public sealed class ConditionalTest : ITestInfo
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
     {
         List<string> platformCheckConditions = new();
+
+        if (platform == Xunit.TestPlatforms.Any)
+        {
+            return "true";
+        }
+
+        if (platform == 0)
+        {
+            return "false";
+        }
 
         if (platform.HasFlag(Xunit.TestPlatforms.Windows))
         {

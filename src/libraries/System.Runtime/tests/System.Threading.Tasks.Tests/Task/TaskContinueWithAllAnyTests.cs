@@ -350,7 +350,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
             // check continuation is non-blocking, i.e., it does not block until all/one tasks finish
             if (_continuation.Status != TaskStatus.WaitingForActivation)
-                Assert.Fail(string.Format("continuation task should be created when none task finish"));
+                Assert.Fail("continuation task should be created when none task finish");
 
             // allow continuation to kick off later
             foreach (Task t in _tasks)
@@ -448,7 +448,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         private void VerifyAny(Task inputTask)
         {
             if (!inputTask.IsCompleted)
-                Assert.Fail(string.Format("ContinueWhenAny contract is broken -- none task has completed"));
+                Assert.Fail("ContinueWhenAny contract is broken -- none task has completed");
 
             // do the sanity check against the input task
 
@@ -464,7 +464,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (!found)
-                Assert.Fail(string.Format("input task do not exist in the expected original tasks"));
+                Assert.Fail("input task do not exist in the expected original tasks");
 
             Verify();
         }
@@ -473,7 +473,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         private void VerifyAnyT(Task<double> inputTask)
         {
             if (!inputTask.IsCompleted)
-                Assert.Fail(string.Format("ContinueWhenAny contract is broken -- none task has completed"));
+                Assert.Fail("ContinueWhenAny contract is broken -- none task has completed");
 
             // do the sanity check against the input task
 
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (!found)
-                Assert.Fail(string.Format("input task do not exist in the expected original tasks"));
+                Assert.Fail("input task do not exist in the expected original tasks");
 
             Verify();
         }
@@ -568,7 +568,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
                     //else if (ti.Thread == null && result != -1)
                     //{
-                    //    Assert.Fail(string.Format("Result must remain uninitialized for unstarted task"));
+                    //    Assert.Fail("Result must remain uninitialized for unstarted task");
                     //}
                 }
             }
