@@ -3,40 +3,73 @@
 
 package net.dot.android.crypto;
 
+import android.net.http.X509TrustManagerExtensions;
+import android.os.Build;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 /**
- * This class is meant to replace the built-in X509TrustManager.
- * Its sole responsibility is to invoke the C# code in the SslStream
- * class during TLS handshakes to perform the validation of the remote
- * peer's certificate.
+ * This class wraps the platform's default X509TrustManager to first consult
+ * Android's trust infrastructure (which respects network-security-config.xml),
+ * then delegates to the managed SslStream code for final validation.
  */
 public final class DotnetProxyTrustManager implements X509TrustManager {
     private final long sslStreamProxyHandle;
+    private final X509TrustManager platformTrustManager;
+    private final X509TrustManagerExtensions trustManagerExtensions;
+    private final String targetHost;
 
-    public DotnetProxyTrustManager(long sslStreamProxyHandle) {
+    public DotnetProxyTrustManager(long sslStreamProxyHandle, X509TrustManager platformTrustManager, String targetHost) {
         this.sslStreamProxyHandle = sslStreamProxyHandle;
+        this.platformTrustManager = platformTrustManager;
+        this.targetHost = targetHost;
+        this.trustManagerExtensions = new X509TrustManagerExtensions(platformTrustManager);
     }
 
     public void checkClientTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
+        boolean platformTrusted = isClientTrustedByPlatformTrustManager(chain, authType);
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, platformTrusted)) {
             throw new CertificateException();
         }
     }
 
     public void checkServerTrusted(X509Certificate[] chain, String authType)
             throws CertificateException {
-        if (!verifyRemoteCertificate(sslStreamProxyHandle)) {
+        boolean platformTrusted = isServerTrustedByPlatformTrustManager(chain, authType);
+        if (!verifyRemoteCertificate(sslStreamProxyHandle, platformTrusted)) {
             throw new CertificateException();
         }
     }
 
-    public X509Certificate[] getAcceptedIssuers() {
-        return new X509Certificate[0];
+    private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
+        try {
+            if (targetHost != null && Build.VERSION.SDK_INT >= 24) {
+                // Use hostname-aware validation (API 24+) for server certificates
+                trustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
+            } else {
+                // Fallback for API 21-23: use basic validation without hostname
+                platformTrustManager.checkServerTrusted(chain, authType);
+            }
+            return true;
+        } catch (CertificateException e) {
+            return false;
+        }
     }
 
-    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle);
+    private boolean isClientTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
+        try {
+            platformTrustManager.checkClientTrusted(chain, authType);
+            return true;
+        } catch (CertificateException e) {
+            return false;
+        }
+    }
+
+    public X509Certificate[] getAcceptedIssuers() {
+        return platformTrustManager.getAcceptedIssuers();
+    }
+
+    static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, boolean chainTrustedByPlatform);
 }

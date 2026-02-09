@@ -463,7 +463,7 @@ cleanup:
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle, char* targetHost)
 {
     abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
 
@@ -476,7 +476,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle)
     if (!loc[sslContext])
         goto cleanup;
 
-    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle);
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle, targetHost);
     if (!loc[trustManagers])
         goto cleanup;
 
@@ -557,6 +557,7 @@ cleanup:
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStreamProxyHandle,
+                                                               char* targetHost,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -598,7 +599,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStrea
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // TrustManager[] trustManagers = GetTrustManagers(sslStreamProxyHandle);
-    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle);
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle, targetHost);
     if (!loc[trustManagers])
         goto cleanup;
 
@@ -615,7 +616,10 @@ cleanup:
     return sslStream;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(intptr_t sslStreamProxyHandle, jobject privateKeyEntry)
+SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(
+    intptr_t sslStreamProxyHandle,
+    char* targetHost,
+    jobject privateKeyEntry)
 {
     abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
 
@@ -635,7 +639,7 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(intptr
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // TrustManager[] trustManagers = GetTrustManagers(sslStreamProxyHandle);
-    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle);
+    loc[trustManagers] = GetTrustManagers(env, sslStreamProxyHandle, targetHost);
     if (!loc[trustManagers])
         goto cleanup;
 
@@ -650,6 +654,34 @@ SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(intptr
 cleanup:
     RELEASE_LOCALS(loc, env);
     return sslStream;
+}
+
+// This method calls internal Android APIs that are specific to Android API 21-23 and it won't work
+// on newer API levels. By calling the sslEngine.sslParameters.useSni(true) method, the SSLEngine
+// will include the peerHost that was passed in to the SSLEngine factory method in the client hello
+// message.
+ARGS_NON_NULL_ALL static int32_t ApplyLegacyAndroidSNIWorkaround(JNIEnv* env, SSLStream* sslStream)
+{
+    if (g_ConscryptOpenSSLEngineImplClass == NULL || !(*env)->IsInstanceOf(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplClass))
+        return FAIL;
+
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, sslParameters);
+
+    loc[sslParameters] = (*env)->GetObjectField(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplSslParametersField);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (!loc[sslParameters])
+        goto cleanup;
+
+    (*env)->CallVoidMethod(env, loc[sslParameters], g_ConscryptSSLParametersImplSetUseSni, true);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_SSLStreamInitialize(
@@ -684,6 +716,42 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetUseClientMode, !isServer);
     ON_EXCEPTION_PRINT_AND_GOTO(exit);
 
+    if (peerHost && !isServer)
+    {
+        if (g_SNIHostName != NULL && g_SSLParametersSetServerNames != NULL)
+        {
+            jstring peerHostStr = make_java_string(env, peerHost);
+            jobject sniHostName = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, peerHostStr);
+            ReleaseLRef(env, peerHostStr);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            jobject serverNames = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, 1);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            (*env)->CallBooleanMethod(env, serverNames, g_ArrayListAdd, sniHostName);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            jobject sslParameters = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            (*env)->CallVoidMethod(env, sslParameters, g_SSLParametersSetServerNames, serverNames);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, sslParameters);
+            ON_EXCEPTION_PRINT_AND_GOTO(exit);
+
+            ReleaseLRef(env, sniHostName);
+            ReleaseLRef(env, serverNames);
+            ReleaseLRef(env, sslParameters);
+        }
+        else
+        {
+            // SNIHostName is only available since API 24
+            // on APIs 21-23 we use a workaround to force the SSLEngine to use SNI
+            ApplyLegacyAndroidSNIWorkaround(env, sslStream);
+        }
+    }
+
     // SSLSession sslSession = sslEngine.getSession();
     sslStream->sslSession = ToGRef(env, (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSession));
 
@@ -714,77 +782,6 @@ int32_t AndroidCryptoNative_SSLStreamInitialize(
     ret = SUCCESS;
 
 exit:
-    return ret;
-}
-
-// This method calls internal Android APIs that are specific to Android API 21-23 and it won't work
-// on newer API levels. By calling the sslEngine.sslParameters.useSni(true) method, the SSLEngine
-// will include the peerHost that was passed in to the SSLEngine factory method in the client hello
-// message.
-ARGS_NON_NULL_ALL static int32_t ApplyLegacyAndroidSNIWorkaround(JNIEnv* env, SSLStream* sslStream)
-{
-    if (g_ConscryptOpenSSLEngineImplClass == NULL || !(*env)->IsInstanceOf(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplClass))
-        return FAIL;
-
-    int32_t ret = FAIL;
-    INIT_LOCALS(loc, sslParameters);
-
-    loc[sslParameters] = (*env)->GetObjectField(env, sslStream->sslEngine, g_ConscryptOpenSSLEngineImplSslParametersField);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    if (!loc[sslParameters])
-        goto cleanup;
-
-    (*env)->CallVoidMethod(env, loc[sslParameters], g_ConscryptSSLParametersImplSetUseSni, true);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    ret = SUCCESS;
-
-cleanup:
-    RELEASE_LOCALS(loc, env);
-    return ret;
-}
-
-int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, char* targetHost)
-{
-    abort_if_invalid_pointer_argument (sslStream);
-    abort_if_invalid_pointer_argument (targetHost);
-
-    JNIEnv* env = GetJNIEnv();
-
-    if (g_SNIHostName == NULL || g_SSLParametersSetServerNames == NULL)
-    {
-        // SNIHostName is only available since API 24
-        // on APIs 21-23 we use a workaround to force the SSLEngine to use SNI
-        return ApplyLegacyAndroidSNIWorkaround(env, sslStream);
-    }
-
-    int32_t ret = FAIL;
-    INIT_LOCALS(loc, hostStr, nameList, hostName, params);
-
-    // ArrayList<SNIServerName> nameList = new ArrayList<SNIServerName>();
-    // SNIHostName hostName = new SNIHostName(targetHost);
-    // nameList.add(hostName);
-    loc[hostStr] = make_java_string(env, targetHost);
-    loc[nameList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    loc[hostName] = (*env)->NewObject(env, g_SNIHostName, g_SNIHostNameCtor, loc[hostStr]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallBooleanMethod(env, loc[nameList], g_ArrayListAdd, loc[hostName]);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-    // SSLParameters params = sslEngine.getSSLParameters();
-    // params.setServerNames(nameList);
-    // sslEngine.setSSLParameters(params);
-    loc[params] = (*env)->CallObjectMethod(env, sslStream->sslEngine, g_SSLEngineGetSSLParameters);
-    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    (*env)->CallVoidMethod(env, loc[params], g_SSLParametersSetServerNames, loc[nameList]);
-    (*env)->CallVoidMethod(env, sslStream->sslEngine, g_SSLEngineSetSSLParameters, loc[params]);
-
-    ret = SUCCESS;
-
-cleanup:
-    RELEASE_LOCALS(loc, env);
     return ret;
 }
 

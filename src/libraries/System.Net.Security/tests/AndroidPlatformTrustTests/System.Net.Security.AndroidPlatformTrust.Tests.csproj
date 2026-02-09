@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This test project is Android-only and uses network_security_config.xml -->
+    <TargetFrameworks>$(NetCoreAppCurrent)-android</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AndroidPlatformTrustTests.cs" />
+
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
+             Link="Common\System\Net\Configuration.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.cs"
+             Link="Common\System\Net\Configuration.Certificates.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+  </ItemGroup>
+
+  <!-- Android network security config setup -->
+  <PropertyGroup>
+    <_NetworkSecurityConfigDir>$(IntermediateOutputPath)network-security-config</_NetworkSecurityConfigDir>
+  </PropertyGroup>
+
+  <Target Name="_PrepareNetworkSecurityConfig"
+          BeforeTargets="_AndroidGenerateAppBundle"
+          DependsOnTargets="Publish">
+    <PropertyGroup>
+      <!-- Extract root CA from PKCS#7 bundle (contains root) -->
+      <_CaCertP7bPath>$(OutputPath)TestData/contoso.com.p7b</_CaCertP7bPath>
+      <_CaCertDerPath>$(_NetworkSecurityConfigDir)/res/raw/test_ca.der</_CaCertDerPath>
+      <_FinalNetworkSecurityConfigPath>$(_NetworkSecurityConfigDir)/network_security_config.xml</_FinalNetworkSecurityConfigPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_NetworkSecurityConfigDir)/res/raw" />
+
+    <!-- Extract root CA from PKCS#7 bundle and convert to DER -->
+    <Exec Condition="'$(OS)' == 'Windows_NT'"
+          Command="powershell -NoProfile -Command &quot;$$tmp = Join-Path '$(_NetworkSecurityConfigDir)' 'contoso-root.pem'; $$p7b = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection; $$p7b.Import('$(_CaCertP7bPath)'); $$root = $$p7b | Where-Object { $_.Subject -eq $_.Issuer } | Select-Object -First 1; if (-not $$root) { throw 'Root CA not found in contoso.com.p7b'; } [System.IO.File]::WriteAllBytes('$(_CaCertDerPath)', $$root.RawData)&quot;" />
+
+    <Exec Condition="'$(OS)' != 'Windows_NT'"
+          Command="openssl pkcs7 -inform DER -in '$(_CaCertP7bPath)' -print_certs | awk 'BEGIN{emit=0} /^subject=CN=NDX Test Root CA/{emit=1} emit{print}' | openssl x509 -outform DER -out '$(_CaCertDerPath)'" />
+
+    <!-- Copy network_security_config.xml to the intermediate directory -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)network_security_config.xml"
+          DestinationFiles="$(_FinalNetworkSecurityConfigPath)" />
+
+    <Message Importance="High" Text="Prepared network security config at $(_FinalNetworkSecurityConfigPath)" />
+  </Target>
+
+  <PropertyGroup>
+    <NetworkSecurityConfig>$(IntermediateOutputPath)network-security-config/network_security_config.xml</NetworkSecurityConfig>
+    <NetworkSecurityConfigResourcesDir>$(IntermediateOutputPath)network-security-config/res</NetworkSecurityConfigResourcesDir>
+  </PropertyGroup>
+
+</Project>

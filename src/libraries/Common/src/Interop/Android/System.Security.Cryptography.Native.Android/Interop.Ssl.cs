@@ -17,8 +17,6 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        private const int UNSUPPORTED_API_LEVEL = 2;
-
         internal enum PAL_SSLStreamStatus
         {
             OK = 0,
@@ -29,13 +27,16 @@ internal static partial class Interop
         };
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreate")]
-        private static partial SafeSslHandle SSLStreamCreate(IntPtr sslStreamProxyHandle);
-        internal static SafeSslHandle SSLStreamCreate(SslStream.JavaProxy sslStreamProxy)
-            => SSLStreamCreate(sslStreamProxy.Handle);
+        private static partial SafeSslHandle SSLStreamCreate(
+            IntPtr sslStreamProxyHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? targetHost);
+        internal static SafeSslHandle SSLStreamCreate(SslStream.JavaProxy sslStreamProxy, string? targetHost)
+            => SSLStreamCreate(sslStreamProxy.Handle, targetHost);
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithCertificates")]
         private static partial SafeSslHandle SSLStreamCreateWithCertificates(
             IntPtr sslStreamProxyHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? targetHost,
             ref byte pkcs8PrivateKey,
             int pkcs8PrivateKeyLen,
             PAL_KeyAlgorithm algorithm,
@@ -43,12 +44,14 @@ internal static partial class Interop
             int certsLen);
         internal static SafeSslHandle SSLStreamCreateWithCertificates(
             SslStream.JavaProxy sslStreamProxy,
+            string? targetHost,
             ReadOnlySpan<byte> pkcs8PrivateKey,
             PAL_KeyAlgorithm algorithm,
             IntPtr[] certificates)
         {
             return SSLStreamCreateWithCertificates(
                 sslStreamProxy.Handle,
+                targetHost,
                 ref MemoryMarshal.GetReference(pkcs8PrivateKey),
                 pkcs8PrivateKey.Length,
                 algorithm,
@@ -59,17 +62,19 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry")]
         private static partial SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
             IntPtr sslStreamProxyHandle,
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string? targetHost,
             IntPtr keyStorePrivateKeyEntryHandle);
         internal static SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
             SslStream.JavaProxy sslStreamProxy,
+            string? targetHost,
             IntPtr keyStorePrivateKeyEntryHandle)
         {
-            return SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy.Handle, keyStorePrivateKeyEntryHandle);
+            return SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy.Handle, targetHost, keyStorePrivateKeyEntryHandle);
         }
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterRemoteCertificateValidationCallback")]
         internal static unsafe partial void RegisterRemoteCertificateValidationCallback(
-            delegate* unmanaged<IntPtr, bool> verifyRemoteCertificate);
+            delegate* unmanaged<IntPtr, int, bool> verifyRemoteCertificate);
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamInitialize")]
         private static unsafe partial int SSLStreamInitializeImpl(
@@ -93,21 +98,6 @@ internal static partial class Interop
         {
             int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, managedContextCleanup, appBufferSize, peerHost);
             if (ret != SUCCESS)
-                throw new SslException();
-        }
-
-        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetTargetHost")]
-        private static partial int SSLStreamSetTargetHostImpl(
-            SafeSslHandle sslHandle,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string targetHost);
-        internal static void SSLStreamSetTargetHost(
-            SafeSslHandle sslHandle,
-            string targetHost)
-        {
-            int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
-            if (ret == UNSUPPORTED_API_LEVEL)
-                throw new PlatformNotSupportedException(SR.net_android_ssl_api_level_unsupported);
-            else if (ret != SUCCESS)
                 throw new SslException();
         }
 

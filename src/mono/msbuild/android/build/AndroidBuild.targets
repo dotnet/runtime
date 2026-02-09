@@ -261,6 +261,8 @@
         MainLibraryFileName="$(MainLibraryFileName)"
         RuntimeHeaders="@(RuntimeHeaders)"
         NativeDependencies="@(_NativeDependencies)"
+        NetworkSecurityConfig="$(NetworkSecurityConfig)"
+        NetworkSecurityConfigResourcesDir="$(NetworkSecurityConfigResourcesDir)"
         OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AppName)"
         RuntimeComponents="@(RuntimeComponents)"

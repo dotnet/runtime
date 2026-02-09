@@ -501,6 +501,16 @@ extern jmethodID g_KeyAgreementGenerateSecret;
 // javax/net/ssl/TrustManager
 extern jclass g_TrustManager;
 
+// javax/net/ssl/TrustManagerFactory
+extern jclass    g_TrustManagerFactory;
+extern jmethodID g_TrustManagerFactoryGetInstance;
+extern jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+extern jmethodID g_TrustManagerFactoryInit;
+extern jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+extern jclass g_X509TrustManager;
+
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;

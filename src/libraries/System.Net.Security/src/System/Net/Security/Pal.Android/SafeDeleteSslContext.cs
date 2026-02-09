@@ -209,9 +209,10 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
+            string? targetHost = GetTargetHostIfAvailable(authOptions);
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
+                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy, targetHost);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -220,7 +221,7 @@ namespace System.Net
 
             if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(cert.Handle))
             {
-                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, cert.Handle);
+                return Interop.AndroidCrypto.SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy, targetHost, cert.Handle);
             }
 
             PAL_KeyAlgorithm algorithm;
@@ -236,7 +237,15 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, targetHost, keyBytes, algorithm, ptrs);
+
+            static string? GetTargetHostIfAvailable(SslAuthenticationOptions authOptions)
+                => !authOptions.IsServer && IsValidTargetHost(authOptions.TargetHost)
+                    ? authOptions.TargetHost
+                    : null;
+
+            static bool IsValidTargetHost(string? targetHost)
+                => !string.IsNullOrEmpty(targetHost) && !IPAddress.IsValid(targetHost);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)
@@ -288,7 +297,9 @@ namespace System.Net
             // Make sure the class instance is associated to the session and is provided in the Read/Write callback connection parameter
             // Additionally, all calls should be synchronous so there's no risk of the managed object being collected while native code is executing.
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
-            string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
+            string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost)
+                ? authOptions.TargetHost
+                : null;
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, &CleanupManagedContext, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
@@ -313,11 +324,6 @@ namespace System.Net
             if (isServer && authOptions.RemoteCertRequired)
             {
                 Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
-            }
-
-            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost))
-            {
-                Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }
         }
     }

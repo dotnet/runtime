@@ -1,26 +1,57 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate()
+        private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
+            // If the platform's trust manager rejected the certificate chain,
+            // report RemoteCertificateChainErrors so the callback can handle it.
+            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform
+                ? SslPolicyErrors.None
+                : SslPolicyErrors.RemoteCertificateChainErrors;
+
             ProtocolToken alertToken = default;
+
+            RemoteCertificateValidationCallback? userCallback = _sslAuthenticationOptions.CertValidationDelegate;
+            RemoteCertificateValidationCallback? effectiveCallback = userCallback;
+
+            if (chainTrustedByPlatform)
+            {
+                // The platform's trust manager (which respects network-security-config.xml)
+                // already validated the certificate chain. The managed X509 chain builder may
+                // report RemoteCertificateChainErrors because the root CA trusted by the platform
+                // is not in the managed certificate store (e.g. PartialChain or UntrustedRoot).
+                // Strip chain errors — the platform's assessment is authoritative for chain trust.
+                //
+                // We wrap (or provide) the callback so that:
+                // 1. User callbacks see errors without spurious RemoteCertificateChainErrors.
+                // 2. When no user callback is set, the default "accept if no errors" logic
+                //    doesn't reject connections that the platform already accepted.
+                effectiveCallback = userCallback is not null
+                    ? (sender, certificate, chain, errors) =>
+                        userCallback(sender, certificate, chain, errors & ~SslPolicyErrors.RemoteCertificateChainErrors)
+                    : (sender, certificate, chain, errors) =>
+                        (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) == SslPolicyErrors.None;
+            }
+
             var isValid = VerifyRemoteCertificate(
-                _sslAuthenticationOptions.CertValidationDelegate,
+                effectiveCallback,
                 _sslAuthenticationOptions.CertificateContext?.Trust,
                 ref alertToken,
-                out SslPolicyErrors sslPolicyErrors,
+                ref sslPolicyErrors,
                 out X509ChainStatusFlags chainStatus);
+
+            if (chainTrustedByPlatform)
+            {
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
+            }
 
             return new()
             {
@@ -80,7 +111,7 @@ namespace System.Net.Security
             }
 
             [UnmanagedCallersOnly]
-            private static unsafe bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle)
+            private static unsafe bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, int chainTrustedByPlatform)
             {
                 var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
                 Debug.Assert(proxy is not null);
@@ -88,7 +119,7 @@ namespace System.Net.Security
 
                 try
                 {
-                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate();
+                    proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(chainTrustedByPlatform != 0);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
