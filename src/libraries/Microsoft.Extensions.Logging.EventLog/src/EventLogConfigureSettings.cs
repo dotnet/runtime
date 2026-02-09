@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Logging
         [UnsupportedOSPlatform("browser")]
         public EventLogConfigureSettings(ILoggerProviderConfiguration<EventLogLoggerProvider> providerConfiguration)
         {
-            _configuration = providerConfiguration.GetFormatterOptionsSection();
+            _configuration = providerConfiguration.Configuration;
         }
 
         public void Configure(EventLogSettings options) => options.Configure(_configuration);
