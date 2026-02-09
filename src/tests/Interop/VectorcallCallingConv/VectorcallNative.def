@@ -25,3 +25,14 @@ EXPORTS
     MulVector256_Vectorcall = MulVector256_Vectorcall@@64
     Vector256MixedInt_Vectorcall = Vector256MixedInt_Vectorcall@@40
     HVA2_256_Vectorcall = HVA2_256_Vectorcall@@64
+    IdentityVector128_Vectorcall = IdentityVector128_Vectorcall@@16
+    NegateVector128_Vectorcall = NegateVector128_Vectorcall@@16
+    HsumVector128_Vectorcall = HsumVector128_Vectorcall@@16
+    ScaleVector128_Vectorcall = ScaleVector128_Vectorcall@@24
+    FmaVector128_Vectorcall = FmaVector128_Vectorcall@@48
+    ConstVector128_Vectorcall = ConstVector128_Vectorcall@@0
+    ManyIntsOneVector_Vectorcall = ManyIntsOneVector_Vectorcall@@48
+    IdentityVector256_Vectorcall = IdentityVector256_Vectorcall@@32
+    NegateVector256_Vectorcall = NegateVector256_Vectorcall@@32
+    IdentityVector2_Vectorcall = IdentityVector2_Vectorcall@@8
+    AddVector2_Vectorcall = AddVector2_Vectorcall@@16

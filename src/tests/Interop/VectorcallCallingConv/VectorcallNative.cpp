@@ -231,6 +231,89 @@ extern "C" DLL_EXPORT __m256 __vectorcall HVA2_256_Vectorcall(HVA2_256 hva)
     return _mm256_add_ps(hva.v0, hva.v1);
 }
 
+// --- Additional test functions for Vector64/128/256/512 edge cases ---
+
+// Identity round-trip: pass a vector through and return it unchanged.
+// Verifies basic argument passing and return without any computation.
+extern "C" DLL_EXPORT __m128 __vectorcall IdentityVector128_Vectorcall(__m128 a)
+{
+    return a;
+}
+
+// Negate all elements of a Vector128.
+extern "C" DLL_EXPORT __m128 __vectorcall NegateVector128_Vectorcall(__m128 a)
+{
+    return _mm_sub_ps(_mm_setzero_ps(), a);
+}
+
+// Horizontal sum: reduce a Vector128 to a single float (vector -> scalar).
+extern "C" DLL_EXPORT float __vectorcall HsumVector128_Vectorcall(__m128 a)
+{
+    // SSE3 horizontal add: a = (a0+a1, a2+a3, a0+a1, a2+a3)
+    __m128 shuf = _mm_movehdup_ps(a);    // (a1, a1, a3, a3)
+    __m128 sums = _mm_add_ps(a, shuf);   // (a0+a1, *, a2+a3, *)
+    shuf = _mm_movehl_ps(shuf, sums);    // (a2+a3, *, *, *)
+    sums = _mm_add_ss(sums, shuf);       // (a0+a1+a2+a3, *, *, *)
+    return _mm_cvtss_f32(sums);
+}
+
+// Scale a vector by a float scalar. Tests mixed scalar+vector.
+extern "C" DLL_EXPORT __m128 __vectorcall ScaleVector128_Vectorcall(float scalar, __m128 v)
+{
+    return _mm_mul_ps(_mm_set1_ps(scalar), v);
+}
+
+// Chain two operations: (a + b) * c. Tests using a vectorcall result as input.
+extern "C" DLL_EXPORT __m128 __vectorcall FmaVector128_Vectorcall(__m128 a, __m128 b, __m128 c)
+{
+    return _mm_mul_ps(_mm_add_ps(a, b), c);
+}
+
+// Return a constant vector. Tests returning a value not derived from arguments.
+extern "C" DLL_EXPORT __m128 __vectorcall ConstVector128_Vectorcall()
+{
+    return _mm_set_ps(4.0f, 3.0f, 2.0f, 1.0f);
+}
+
+// Many integer args + one vector at the end. Tests that vector register
+// allocation works when integer positions are exhausted.
+extern "C" DLL_EXPORT __m128 __vectorcall ManyIntsOneVector_Vectorcall(int a, int b, int c, int d, __m128 v)
+{
+    __m128 sum = _mm_set1_ps((float)(a + b + c + d));
+    return _mm_add_ps(v, sum);
+}
+
+// Identity for Vector256.
+extern "C" DLL_EXPORT __m256 __vectorcall IdentityVector256_Vectorcall(__m256 a)
+{
+    return a;
+}
+
+// Negate all elements of a Vector256.
+extern "C" DLL_EXPORT __m256 __vectorcall NegateVector256_Vectorcall(__m256 a)
+{
+    return _mm256_sub_ps(_mm256_setzero_ps(), a);
+}
+
+// Vector2 tests — 8-byte struct matching System.Numerics.Vector2 layout.
+// On x64 vectorcall, 8-byte structs are passed in integer registers normally,
+// but the JIT treats Vector2 as TYP_SIMD8 and passes it in XMM.
+// Use a struct to match the managed Vector2 layout for these tests.
+struct Vec2 { float x; float y; };
+
+extern "C" DLL_EXPORT Vec2 __vectorcall IdentityVector2_Vectorcall(Vec2 a)
+{
+    return a;
+}
+
+extern "C" DLL_EXPORT Vec2 __vectorcall AddVector2_Vectorcall(Vec2 a, Vec2 b)
+{
+    Vec2 result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    return result;
+}
+
 #endif // TARGET_AMD64
 
 // Callback test - calls back into managed code using vectorcall

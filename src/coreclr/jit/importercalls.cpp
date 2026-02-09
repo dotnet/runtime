@@ -6788,11 +6788,6 @@ void Compiler::impCheckForPInvokeCall(
         return;
     }
 
-    // Always store the unmanaged calling convention on the call node.
-    // This is needed for proper return type handling (e.g., vectorcall returns SIMD types in XMM registers)
-    // even when we don't inline the PInvoke.
-    call->unmgdCallConv = unmanagedCallConv;
-
     optNativeCallCount++;
 
     if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
@@ -6849,6 +6844,7 @@ void Compiler::impCheckForPInvokeCall(
     JITLOG((LL_INFO1000000, "\nInline a PINVOKE call from method %s\n", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
+    call->unmgdCallConv = unmanagedCallConv;
     if (!call->IsSuppressGCTransition())
     {
         info.compUnmanagedCallCountWithGCTransition++;

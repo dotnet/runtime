@@ -1037,20 +1037,30 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
         if (numGCPtrs == 0)
         {
-            // Check if this is a known intrinsic SIMD type (Vector64, Vector128, Vector256, Vector512)
+            // Check if this is a known intrinsic SIMD type.
+            // These types are treated as vectorcall vector types and passed/returned in XMM/YMM/ZMM:
+            // - System.Runtime.Intrinsics: Vector64<T>, Vector128<T>, Vector256<T>, Vector512<T>
+            // - System.Numerics: Vector2, Vector3, Vector4
+            // Plain user-defined structs of the same size follow the default calling convention.
             bool isIntrinsicSimd = false;
             if (isIntrinsicType(clsHnd))
             {
                 const char* namespaceName = nullptr;
                 const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
 
-                if (namespaceName != nullptr && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+                if (namespaceName != nullptr && className != nullptr)
                 {
-                    if ((className != nullptr) &&
-                        (strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
-                         strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0))
+                    if (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
                     {
-                        isIntrinsicSimd = true;
+                        isIntrinsicSimd =
+                            strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
+                            strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0;
+                    }
+                    else if (strcmp(namespaceName, "System.Numerics") == 0)
+                    {
+                        isIntrinsicSimd =
+                            strcmp(className, "Vector2") == 0 || strcmp(className, "Vector3") == 0 ||
+                            strcmp(className, "Vector4") == 0;
                     }
                 }
             }
@@ -1064,17 +1074,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 isHva = isHvaByFieldInspectionForVectorcall(clsHnd, structSize);
             }
 
-            // Check for single-vector returns
-            // - 8/16 bytes: always single-vector (XMM0)
-            // - 32/64 bytes: single-vector if intrinsic SIMD OR not an HVA (user-defined struct like Vec256)
-            if (structSize == 8 || structSize == 16 ||
-                ((structSize == 32 || structSize == 64) && (isIntrinsicSimd || !isHva)))
+            // Check for single-vector returns (intrinsic SIMD types only).
+            // Per vectorcall ABI, only actual vector types (Vector64/128/256/512) are
+            // returned in XMM/YMM/ZMM. Plain structs of the same size follow the default convention.
+            // For 32/64 bytes: single-vector if intrinsic SIMD, otherwise check for HVA below.
+            if (isIntrinsicSimd)
             {
                 // Return single-vector SIMD struct in XMM/YMM/ZMM register
                 switch (structSize)
                 {
                     case 8:
-                        useType = TYP_DOUBLE; // 8-byte vector type
+                        useType = TYP_SIMD8; // Vector64
                         break;
                     case 16:
                         useType = TYP_SIMD16; // __m128 / Vector128
