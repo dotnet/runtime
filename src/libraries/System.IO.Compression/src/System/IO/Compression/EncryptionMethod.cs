@@ -6,7 +6,7 @@ namespace System.IO.Compression
     /// <summary>
     /// Specifies the encryption method used to encrypt an entry in a zip archive.
     /// </summary>
-    public enum EncryptionMethod : byte
+    public enum EncryptionMethod
     {
         /// <summary>
         /// No Encryption is applied to the entry.

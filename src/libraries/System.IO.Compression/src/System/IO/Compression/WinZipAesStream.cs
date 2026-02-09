@@ -838,11 +838,11 @@ namespace System.IO.Compression
                 }
             }
 
-            // Finally flush base stream to ensure encrypted data is written
-            if (_baseStream.CanWrite)
-            {
-                await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
+            //// Finally flush base stream to ensure encrypted data is written
+            //if (_baseStream.CanWrite)
+            //{
+            //    await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            //}
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();

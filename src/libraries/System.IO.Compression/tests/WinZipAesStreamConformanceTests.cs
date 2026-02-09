@@ -4,6 +4,7 @@
 using System.IO.Compression;
 using System.IO.Tests;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream (AES-128).
     /// </summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+    [UnsupportedOSPlatform("browser")]
     public sealed class WinZipAes128StreamConformanceTests : WinZipAesStreamConformanceTests
     {
         protected override int KeySizeBits => 128;
@@ -21,7 +22,7 @@ namespace System.IO.Compression.Tests
     /// <summary>
     /// Conformance tests for WinZipAesStream (AES-256).
     /// </summary>
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+    [UnsupportedOSPlatform("browser")]
     public sealed class WinZipAes256StreamConformanceTests : WinZipAesStreamConformanceTests
     {
         protected override int KeySizeBits => 256;

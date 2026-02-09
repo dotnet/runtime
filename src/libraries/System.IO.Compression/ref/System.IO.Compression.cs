@@ -54,13 +54,13 @@ namespace System.IO.Compression
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
-    public enum EncryptionMethod : byte
+    public enum EncryptionMethod
     {
-        None = (byte)0,
-        ZipCrypto = (byte)1,
-        Aes128 = (byte)2,
-        Aes192 = (byte)3,
-        Aes256 = (byte)4,
+        None = 0,
+        ZipCrypto = 1,
+        Aes128 = 2,
+        Aes192 = 3,
+        Aes256 = 4,
     }
     public partial class GZipStream : System.IO.Stream
     {

@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.IO.Compression
 {
@@ -125,7 +126,7 @@ namespace System.IO.Compression
             uint key2 = 878082192;
 
             // ZipCrypto uses raw bytes; ASCII is the most interoperable
-            var bytes = password.Span.ToArray();
+            var bytes = Encoding.ASCII.GetBytes(password.ToArray());
             foreach (byte b in bytes)
             {
                 UpdateKeys(ref key0, ref key1, ref key2, b);
@@ -373,6 +374,8 @@ namespace System.IO.Compression
             {
                 await _base.DisposeAsync().ConfigureAwait(false);
             }
+
+            GC.SuppressFinalize(this);
 
             // Don't call base.DisposeAsync() as it would call Dispose() synchronously,
             // which could fail on async-only streams. We've already handled all cleanup.

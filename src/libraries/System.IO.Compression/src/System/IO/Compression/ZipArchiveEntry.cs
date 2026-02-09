@@ -419,6 +419,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
         public Stream Open(string password)
         {
             ThrowIfInvalidArchive();
@@ -431,7 +432,7 @@ namespace System.IO.Compression
                     }
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
                 case ZipArchiveMode.Create:
-                    throw new Exception(SR.EntriesInCreateMode);
+                    throw new InvalidOperationException(SR.EntriesInCreateMode);
                 case ZipArchiveMode.Update:
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
@@ -456,7 +457,7 @@ namespace System.IO.Compression
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
-                    throw new Exception(SR.EncryptionReadMode);
+                    throw new InvalidOperationException(SR.EncryptionReadMode);
                 case ZipArchiveMode.Create:
                     return OpenInWriteMode(password, encryptionMethod);
                 case ZipArchiveMode.Update:
