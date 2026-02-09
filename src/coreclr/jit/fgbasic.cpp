@@ -3464,7 +3464,14 @@ void Compiler::fgFindBasicBlocks()
             // Verify we can expand the EH table as needed to incorporate the callee's EH clauses.
             // Failing here should be extremely rare.
             //
-            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, info.compXcptnsCount, /* deferAdding */ true);
+            unsigned numEHEntries = info.compXcptnsCount;
+            // We will introduce another EH clause in the inlinee to restore async contexts
+            if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+            {
+                numEHEntries++;
+            }
+
+            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, numEHEntries, /* deferAdding */ true);
             if (dsc == nullptr)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLSITE_EH_TABLE_FULL);
