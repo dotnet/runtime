@@ -193,7 +193,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     {
         GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
         GenTree* null         = gtNewNull();
-        resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
@@ -243,9 +243,9 @@ PhaseStatus Compiler::SaveAsyncContexts()
             {
                 GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
                 Statement* insertAfter = retStmt;
-                GenTree*   storeRetVal =
-                    gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
-                Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
+                GenTree*   storeRetVal = gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter,
+                                                        retStmt->GetDebugInfo(), block);
+                Statement* storeStmt   = fgNewStmtFromTree(storeRetVal);
                 fgInsertStmtAtEnd(block, storeStmt);
                 JITDUMP("Inserted store to common return local\n");
                 DISPSTMT(storeStmt);
@@ -359,7 +359,7 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     {
         GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
         GenTree* null         = gtNewNull();
-        resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
