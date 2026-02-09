@@ -77,7 +77,7 @@ extends:
           - linux_x64
           jobParameters:
             nameSuffix: CoreCLR_Libraries
-            buildArgs: -s clr+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s clr -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
