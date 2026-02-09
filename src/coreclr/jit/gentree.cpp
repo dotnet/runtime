@@ -4879,8 +4879,6 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
     assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
 
 #if defined(TARGET_WASM)
-    // TODO-WASM-CQ: we might want to allow reversal here but will need to handle it in lower
-    // by spilling the out of normal order computation to a temp.
     *allowReversal = false;
     return;
 #endif
@@ -6696,6 +6694,10 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
 #ifdef DEBUG
 bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 {
+#if defined(TARGET_WASM)
+    return false;
+#endif
+
     if (OperIsBinary())
     {
         if ((AsOp()->gtGetOp1() == nullptr) || (AsOp()->gtGetOp2() == nullptr))
