@@ -696,7 +696,8 @@ namespace System.Reflection.Emit
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
                 if (type.HasElementType || type.IsGenericParameter ||
-                    (type.IsGenericType && !type.IsGenericTypeDefinition))
+                    (type.IsGenericType && !type.IsGenericTypeDefinition)
+                    || type.IsFunctionPointer)
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
@@ -1101,6 +1102,19 @@ namespace System.Reflection.Emit
             {
                 Type elementType = type.GetElementType()!;
                 return (elementType is TypeBuilderImpl tbi && Equals(tbi.Module)) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            if (type.IsFunctionPointer)
+            {
+                Type ret = type.GetFunctionPointerReturnType();
+                if (ret is TypeBuilderImpl tb && Equals(tb.Module) || IsConstructedFromTypeBuilder(ret))
+                    return true;
+
+                foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+                {
+                    if (paramType is TypeBuilderImpl _tb && Equals(_tb.Module) || IsConstructedFromTypeBuilder(paramType))
+                        return true;
+                }
             }
 
             return false;
