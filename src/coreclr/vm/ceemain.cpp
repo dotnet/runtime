@@ -825,7 +825,7 @@ void EEStartupHelper()
         ExecutionManager::Init();
 
 #ifdef FEATURE_PERFMAP
-        PerfMap::SignalSendExistingReady();
+        PerfMap::SignalDependenciesReady();
 #endif
 
         JitHost::Init();

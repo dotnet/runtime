@@ -107,8 +107,8 @@ public:
     // Close the map and flush any remaining data.
     static void Disable();
 
-    // Signal that all dependencies are ready for sendExisting to work.
-    static void SignalSendExistingReady();
+    // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+    static void SignalDependenciesReady();
 
     static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };

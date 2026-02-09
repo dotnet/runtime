@@ -221,8 +221,8 @@ void PerfMap::Disable()
 }
 
 // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
-// Called from EEStartup after ExecutionManager::Init.
-void PerfMap::SignalSendExistingReady()
+// This method must be called before any code is JITed or restored from R2R image.
+void PerfMap::SignalDependenciesReady()
 {
     LIMITED_METHOD_CONTRACT;
 
