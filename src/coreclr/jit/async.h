@@ -139,11 +139,12 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void     CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
-    unsigned GetReturnedContinuationVar();
-    unsigned GetNewContinuationVar();
-    unsigned GetResultBaseVar();
-    unsigned GetExceptionVar();
+    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
+    unsigned    GetReturnedContinuationVar();
+    unsigned    GetNewContinuationVar();
+    unsigned    GetResultBaseVar();
+    unsigned    GetExceptionVar();
+    BasicBlock* GetSharedReturnBB();
 
     void CreateResumptionSwitch();
 
