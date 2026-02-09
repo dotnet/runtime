@@ -6077,7 +6077,7 @@ void Lowering::LowerReturnSuspend(GenTree* node)
             m_compiler->fgPgoConsistent = false;
         }
 
-        block->SetKind(BBJ_RETURN);
+        block->SetKindAndTargetEdge(BBJ_RETURN);
 
         m_compiler->fgInvalidateDfsTree();
     }
