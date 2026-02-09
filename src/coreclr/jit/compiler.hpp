@@ -3148,7 +3148,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3207,7 +3207,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtpoVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3247,7 +3247,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = preVisitor;
     walkData.wtpoVisitorFn = postVisitor;
     walkData.pCallbackData = callBackData;
@@ -3300,59 +3300,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
 inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 {
-    if (!fgRngChkThrowAdded)
-    {
-        return false;
-    }
-
-    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
-    {
-        return false;
-    }
-
-    if (!block->IsLIR() && (block->lastStmt() == nullptr))
-    {
-        return false;
-    }
-
-    // Special check blocks will always end in a throw helper call.
-    //
-    GenTree* const call = block->lastNode();
-
-    if ((call == nullptr) || !call->OperIs(GT_CALL))
-    {
-        return false;
-    }
-
-    if (!((call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_FAIL_FAST)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTEXCEPTION)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
-    {
-        return false;
-    }
-
-    // We can get to this point for blocks that we didn't create as throw helper blocks
-    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeDscMap
-    // for the final determination.
-
-    if (fgHasAddCodeDscMap())
-    {
-        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
-        {
-            if (block == add->acdDstBlk)
-            {
-                return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO ||
-                       add->acdKind == SCK_OVERFLOW || add->acdKind == SCK_ARG_EXCPN ||
-                       add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
-            }
-        }
-    }
-
-    // We couldn't find it in the fgAddCodeDscMap
-    return false;
+    return block->HasFlag(BBF_THROW_HELPER);
 }
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -3484,7 +3432,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void RegSet::tmpEnd()
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && (tmpCount > 0))
+    if (m_compiler->verbose && (tmpCount > 0))
     {
         printf("%d tmps used\n", tmpCount);
     }
@@ -3840,21 +3788,19 @@ inline void Compiler::optAssertionReset()
         AssertionIndex      index        = optAssertionCount;
         const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion.op1.lclNum;
+        unsigned lclNum = curAssertion.GetOp1().GetLclNum();
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion.IsCopyAssertion())
         {
-            assert(curAssertion.op1.kind == O1K_LCLVAR);
-
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion.op2.lclNum;
+            lclNum = curAssertion.GetOp2().GetLclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }

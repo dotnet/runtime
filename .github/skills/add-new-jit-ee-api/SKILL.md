@@ -1,21 +1,16 @@
 ---
-agent: 'agent'
-tools: ['web/fetch', 'search/codebase', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search/usages', 'search', 'edit/editFiles', 'think']
-description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
+name: add-new-jit-ee-api
+description: Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.
 ---
+
+# JIT-EE Interface extension
 
 #### 1 — Goal
 
 Implement **one** new JIT-VM (also known as JIT-EE) API and all supporting glue.
 The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
 
-#### 2 — Prerequisites for the model
-
-* You have full repo access
-* You may run scripts (e.g., `.sh` or `.bat`)
-* Ask **clarifying questions** before the first code change if anything (signature, types, platform constraints) is unclear.
-
-#### 3 — Required user inputs
+#### 2 — Required user inputs
 
 Ask the user for a C-like signature of the new API if it's not provided.
 Suggest `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference. Example:
@@ -24,7 +19,7 @@ Suggest `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkI
 CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
 
-#### 4 — Implementation steps (must be completed in order)
+#### 3 — Implementation steps (must be completed in order)
 
 1. Update the `ThunkInput.txt` file with the new API definition. Example:
 
@@ -52,11 +47,13 @@ Use the correct directory for the script to run.
 ```diff
 +    private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
 +    {
-+        // Hint for the developer: Use CorInfoImpl.RyuJit.cs and CorInfoImpl.ReadyToRun.cs if the implementation
++        // Use CorInfoImpl.RyuJit.cs and CorInfoImpl.ReadyToRun.cs if the implementation
 +        // is not shared for NativeAOT and R2R.
 +        throw new NotImplementedException();
 +    }
 ```
+
+Implement the API if asked, leave the NotImplementedException() otherwise.
 
 5. Open `<repo_root>/src/coreclr/vm/jitinterface.cpp` and add a dummy implementation at the file's end. Example:
 
@@ -82,6 +79,8 @@ Use the correct directory for the script to run.
 +   return result;
 +}
 ```
+
+Implement the API if asked, leave the UNREACHABLE() otherwise.
 
 6. Now implement the most complex part - SuperPMI. SuperPMI acts as a (de)serializer for JIT-VM queries in order
 to then replay them without the actual VM to speed up jit-diffs and other scenarios. All parameters and return
@@ -210,7 +209,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 +}
 ```
 
-#### 5 — Definition of Done (self-check list)
+#### 4 — Definition of Done (self-check list)
 
 * [ ] New API present in **all** layers.
 * [ ] Each source file changed exactly once; no unrelated edits. The following files must be changed:
@@ -218,12 +217,10 @@ Consider other similar methods in the file for reference. Do not change implemen
    * `<repo_root>/src/coreclr/inc/corinfo.h`
    * `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs`
    * `<repo_root>/src/coreclr/vm/jitinterface.cpp`
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
-   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h` [optional]
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h` [optional - only if new types are needed]
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp`
    * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp`
 * [ ] All TODO/UNREACHABLE markers remain for future functional implementation.

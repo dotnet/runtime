@@ -17,8 +17,11 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.footer.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.footer.js"
 
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/assets.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/host.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/per-module.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/types.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/assets.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/bootstrap.ts"
