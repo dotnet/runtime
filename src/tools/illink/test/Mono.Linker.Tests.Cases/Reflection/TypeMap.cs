@@ -58,8 +58,10 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 // TypeMapAssemblyTarget is kept regardless of which type map the program needs (External or Proxy)
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedProxyTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedExternalTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMapUniverse>))]
 [assembly: TypeMapAssemblyTarget<UsedProxyTypeMap>("library")]
 [assembly: TypeMapAssemblyTarget<UsedExternalTypeMap>("library")]
+[assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
 
 namespace Mono.Linker.Tests.Cases.Reflection
