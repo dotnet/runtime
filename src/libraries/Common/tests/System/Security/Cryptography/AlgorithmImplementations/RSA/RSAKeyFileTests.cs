@@ -22,13 +22,15 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public static bool Supports384BitPrivateKeyAndRC2 { get; } = s_provider.Supports384PrivateKey && RC2Factory.IsSupported;
         public static bool SupportsLargeExponent { get; } = s_provider.SupportsLargeExponent;
+        public static bool Supports16384 => ImportExport<TProvider>.Supports16384;
+        public static bool RC2IsSupported => RC2Factory.IsSupported;
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public static void UseAfterDispose(bool importKey)
         {
-            RSA rsa = importKey ? CreateRSA(TestData.RSA2048Params) : CreateRSA(1024);
+            RSA rsa = importKey ? CreateRSA(TestData.RSA2048Params) : s_provider.Create(1024);
             byte[] pkcs1Public;
             byte[] pkcs1Private;
             byte[] pkcs8Private;
@@ -131,7 +133,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(ImportExport<TProvider>.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWritePublicPkcs1()
         {
             ReadWriteBase64PublicPkcs1(
@@ -207,7 +209,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(ImportExport<TProvider>.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -259,7 +261,7 @@ rAigcwt6noH/hX5ZO5X869SV1WvLOvhCt4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(nameof(ImportExport<TProvider>.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWrite16384Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -534,7 +536,7 @@ rBZc";
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(nameof(ImportExport<TProvider>.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadEncryptedRsa16384()
         {
             // PBES2: PBKDF2 + des (single DES, not 3DES).
@@ -745,7 +747,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(nameof(RC2IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -771,7 +773,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(nameof(RC2IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128

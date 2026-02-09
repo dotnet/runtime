@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class SignVerify_Array<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
+    public class SignVerify_Array<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(data, hashAlgorithm, padding);
@@ -691,7 +691,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSASignaturePadding padding = RSASignaturePadding.Pkcs1;
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data152 = new byte[152 / 8];
                 byte[] data168 = new byte[168 / 8];
@@ -1355,7 +1355,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSASignaturePadding padding = RSASignaturePadding.Pss;
             byte[] data = TestData.HelloBytes;
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] signature = SignData(rsa, data, HashAlgorithmName.SHA256, padding);
                 Assert.False(VerifyData(rsa, data, signature, HashAlgorithmName.SHA384, padding));
@@ -1379,7 +1379,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 "56E2AF4213FDCA6BF801C06AF6381DAC61288C13B08806A323B3E956A13BCB29" +
                 "680F62CCA9880A8A1FD1A2CA61DCFE008AC7FC55E98ACCE9B7BE010E5BCB836A").HexToByteArray();
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 Assert.False(VerifyHash(rsa, hash, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
             }
@@ -1391,7 +1391,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSASignaturePadding padding = RSASignaturePadding.Pss;
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data152 = new byte[152 / 8];
                 byte[] data168 = new byte[168 / 8];
@@ -1416,7 +1416,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] dataCopy = (byte[])TestData.HelloBytes.Clone();
             HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] signature = SignData(rsa, dataCopy, hashAlgorithmName, padding);
                 dataCopy[0] ^= 0xFF;
@@ -1431,7 +1431,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] data = TestData.HelloBytes;
             HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
 
-            using (RSA rsa = s_provider.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] signature = SignData(rsa, data, hashAlgorithmName, padding);
 

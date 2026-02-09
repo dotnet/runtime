@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public sealed class EncryptDecrypt_Array<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
+    public class EncryptDecrypt_Array<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             rsa.Encrypt(data, padding);

@@ -30,6 +30,14 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     // Concrete test classes for RSAOpenSslProvider
     public class RSAOpenSslImportExport : ImportExport<RSAOpenSslProvider> { }
+    public class RSAOpenSslEncryptDecrypt_Array : EncryptDecrypt_Array<RSAOpenSslProvider> { }
+    public class RSAOpenSslEncryptDecrypt_Span : EncryptDecrypt_Span<RSAOpenSslProvider> { }
+    public class RSAOpenSslEncryptDecrypt_AllocatingSpan : EncryptDecrypt_AllocatingSpan<RSAOpenSslProvider> { }
+    public class RSAOpenSslEncryptDecrypt_TrySpan : EncryptDecrypt_TrySpan<RSAOpenSslProvider> { }
+    public class RSAOpenSslSignVerify_Array : SignVerify_Array<RSAOpenSslProvider> { }
+    public class RSAOpenSslSignVerify_AllocatingSpan : SignVerify_AllocatingSpan<RSAOpenSslProvider> { }
+    public class RSAOpenSslSignVerify_Span : SignVerify_Span<RSAOpenSslProvider> { }
+    public class RSAOpenSslSignVerify_TrySpan : SignVerify_TrySpan<RSAOpenSslProvider> { }
     public class RSAOpenSslKeyGeneration : KeyGeneration<RSAOpenSslProvider> { }
     public class RSAOpenSslXml : RSAXml<RSAOpenSslProvider> { }
     public class RSAOpenSslSignatureFormatterTests : RSASignatureFormatterTests<RSAOpenSslProvider> { }

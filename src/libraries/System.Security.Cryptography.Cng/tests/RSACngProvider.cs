@@ -29,6 +29,14 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     // Concrete test classes for RSACngProvider
     public class RSACngImportExport : ImportExport<RSACngProvider> { }
+    public class RSACngEncryptDecrypt_Array : EncryptDecrypt_Array<RSACngProvider> { }
+    public class RSACngEncryptDecrypt_Span : EncryptDecrypt_Span<RSACngProvider> { }
+    public class RSACngEncryptDecrypt_AllocatingSpan : EncryptDecrypt_AllocatingSpan<RSACngProvider> { }
+    public class RSACngEncryptDecrypt_TrySpan : EncryptDecrypt_TrySpan<RSACngProvider> { }
+    public class RSACngSignVerify_Array : SignVerify_Array<RSACngProvider> { }
+    public class RSACngSignVerify_AllocatingSpan : SignVerify_AllocatingSpan<RSACngProvider> { }
+    public class RSACngSignVerify_Span : SignVerify_Span<RSACngProvider> { }
+    public class RSACngSignVerify_TrySpan : SignVerify_TrySpan<RSACngProvider> { }
     public class RSACngKeyGeneration : KeyGeneration<RSACngProvider> { }
     public class RSACngXml : RSAXml<RSACngProvider> { }
     public class RSACngSignatureFormatterTests : RSASignatureFormatterTests<RSACngProvider> { }

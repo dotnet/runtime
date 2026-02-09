@@ -9,19 +9,19 @@ namespace System.Security.Cryptography.Rsa.Tests
     public class KeyGeneration<TProvider> where TProvider : IRSAProvider, new()
     {
         private static readonly TProvider s_provider = new TProvider();
-        [ConditionalFact(nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
         public static void GenerateMinKey()
         {
             GenerateKey(rsa => GetMin(rsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(TestEnvironment.IsStressModeEnabled))]
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public static void GenerateMaxKey()
         {
             GenerateKey(rsa => GetMax(rsa.LegalKeySizes));
