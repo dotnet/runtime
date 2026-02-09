@@ -431,7 +431,7 @@
       <_ExpectedApkPath>$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/bin/$(_MergedApkName).apk</_ExpectedApkPath>
     </PropertyGroup>
 
-    <!-- Skip markers that don't have a corresponding APK (e.g., SharedLibrary projects) -->
+    <!-- Skip markers that don't have a corresponding APK (SharedLibrary projects) -->
     <ItemGroup Condition="Exists('$(_ExpectedApkPath)')">
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
