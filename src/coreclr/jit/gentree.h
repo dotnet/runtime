@@ -4363,6 +4363,10 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Tail awaits do not generate suspension points and the JIT instead
+    // directly returns teh callee's continuation to the caller.
+    bool IsTailAwait = false;
 };
 
 // Return type descriptor of a GT_CALL node.

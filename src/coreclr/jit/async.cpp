@@ -633,21 +633,33 @@ PhaseStatus Compiler::TransformAsync()
 //
 PhaseStatus AsyncTransformation::Run()
 {
+    PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
     ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
 
     // First find all basic blocks with awaits in them. We'll have to track
     // liveness in these basic blocks, so it does not help to record the calls
     // ahead of time.
-    for (BasicBlock* block : m_compiler->Blocks())
+    BasicBlock* nextBlock;
+    for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
+        nextBlock = block->Next();
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
             {
-                JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
-                worklist.Push(block);
+                continue;
+            }
+
+            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
+            {
+                TransformTailAwait(block, tree->AsCall(), &nextBlock);
+                result = PhaseStatus::MODIFIED_EVERYTHING;
                 break;
             }
+
+            JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
+            worklist.Push(block);
+            break;
         }
     }
 
@@ -655,18 +667,13 @@ PhaseStatus AsyncTransformation::Run()
 
     if (worklist.Height() <= 0)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        return result;
     }
 
     m_compiler->compSuspensionPoints = new (m_compiler, CMK_Async)
         jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_compiler->getAllocator(CMK_Async));
     m_compiler->compAsyncVars = new (m_compiler, CMK_Async)
         jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_compiler->getAllocator(CMK_Async));
-
-    m_returnedContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("returned continuation"));
-    m_compiler->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
-    m_newContinuationVar                                 = m_compiler->lvaGrabTemp(false DEBUGARG("new continuation"));
-    m_compiler->lvaGetDesc(m_newContinuationVar)->lvType = TYP_REF;
 
     m_asyncInfo = m_compiler->eeGetAsyncInfo();
 
@@ -684,7 +691,7 @@ PhaseStatus AsyncTransformation::Run()
         m_sharedReturnBB->SetFlags(BBF_PROF_WEIGHT);
     }
 
-    GenTree* continuation = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
     GenTree* ret          = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
     LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
 
@@ -799,6 +806,75 @@ PhaseStatus AsyncTransformation::Run()
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::TransformTailAwait:
+//   Transform an await that was marked as a tail await.
+//
+// Parameters:
+//   block     - The block containing the async call
+//   call      - The async call
+//   nextBlock - [out] The next block to process
+//
+void AsyncTransformation::TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** nextBlock)
+{
+    JITDUMP("Transforming tail await [%06u] in " FMT_BB "\n", Compiler::dspTreeID(call), block->bbNum);
+
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, nullptr);
+
+    BasicBlock* suspension = CreateTailAwaitSuspension(block, call);
+
+    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspension, nextBlock);
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateTailAwaitSuspension:
+//   Create the basic block that when branched to suspends execution after the
+//   specified async call marked as a tail await.
+//
+// Parameters:
+//   block    - The block containing the async call
+//   call     - The async call
+//
+// Returns:
+//   The new basic block that was created.
+//
+BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call)
+{
+    if (m_lastSuspensionBB == nullptr)
+    {
+        m_lastSuspensionBB = m_compiler->fgLastBBInMainFunction();
+    }
+
+    BasicBlock* suspendBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
+    suspendBB->clearTryIndex();
+    suspendBB->clearHndIndex();
+    suspendBB->inheritWeightPercentage(block, 0);
+    m_lastSuspensionBB = suspendBB;
+
+    if (m_sharedReturnBB != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
+    }
+
+    JITDUMP("  Creating tail suspension " FMT_BB "\n", suspendBB->bbNum);
+
+    // Allocate continuation
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+
+    if (suspendBB->KindIs(BBJ_RETURN))
+    {
+        GenTree* ret = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, returnedContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(returnedContinuation, ret);
+    }
+    else
+    {
+        GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), returnedContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(returnedContinuation, storeNewContinuation);
+    }
+
+    return suspendBB;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::Transform:
 //   Transform a single async call in the specified block.
 //
@@ -839,14 +915,14 @@ void AsyncTransformation::Transform(
 
     ContinuationLayout layout = LayOutContinuation(block, call, ContinuationNeedsKeepAlive(life), liveLocals);
 
-    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, life);
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &life);
 
     unsigned stateNum = (unsigned)m_resumptionBBs.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
     BasicBlock* suspendBB = CreateSuspension(block, call, stateNum, life, layout);
 
-    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, life, suspendBB, remainder);
+    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspendBB, remainder);
 
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
@@ -1339,7 +1415,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 //
 CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*    block,
                                                                    GenTreeCall*   call,
-                                                                   AsyncLiveness& life)
+                                                                   AsyncLiveness* life)
 {
     CallDefinitionInfo callDefInfo;
 
@@ -1347,7 +1423,10 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 
     CallArg* retbufArg = call->gtArgs.GetRetBufferArg();
 
-    life.Update(call);
+    if (life != nullptr)
+    {
+        life->Update(call);
+    }
 
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
     {
@@ -1396,8 +1475,11 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         }
         else
         {
-            // We will split after the store, but we still have to update liveness for it.
-            life.Update(call->gtNext);
+            if (life != nullptr)
+            {
+                // We will split after the store, but we still have to update liveness for it.
+                life->Update(call->gtNext);
+            }
         }
 
         assert(call->gtNext->OperIsLocalStore() && (call->gtNext->Data() == call));
@@ -1465,7 +1547,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
 
     // Allocate continuation
-    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
 
     GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, layout);
 
@@ -1474,11 +1556,11 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
     // Fill in 'ResumeInfo'
-    GenTree* newContinuation  = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
     GenTree* resumeInfoAddr =
         new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
@@ -1486,7 +1568,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
     unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
@@ -1506,7 +1588,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
     unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
@@ -1521,7 +1603,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
@@ -1591,7 +1673,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         // OSR IL offset needs to be at offset 0 because OSR and tier0 methods
         // need to agree on that.
         assert(layout.OSRILOffset == 0);
-        GenTree* newContinuation       = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
         GenTree* storePatchpointOffset = StoreAtOffset(newContinuation, offset, ilOffsetToStore, TYP_INT);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storePatchpointOffset));
@@ -1604,7 +1686,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
 
         LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
 
-        GenTree* newContinuation = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset          = OFFSETOF__CORINFO_Continuation__data + inf.Offset;
 
         GenTree* value;
@@ -1660,7 +1742,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contContextElementPlaceholder, &use);
         assert(gotUse);
 
-        GenTree* newContinuation   = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned contContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationContextOffset;
         GenTree* contContextElementOffset =
             m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
@@ -1675,7 +1757,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
         assert(gotUse);
 
-        newContinuation      = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
         GenTree* flagsOffsetNode =
             m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
@@ -1694,7 +1776,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         m_compiler->compCurBB = suspendBB;
         m_compiler->fgMorphTree(captureExecContext);
 
-        GenTree* newContinuation = m_compiler->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset          = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
         GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
@@ -1808,25 +1890,23 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 //   block       - The block containing the async call
 //   call        - The async call
 //   callDefInfo - Information about the async call's definition
-//   life        - Liveness information about live locals
 //   suspendBB   - Basic block to add IR to
 //   remainder   - [out] The remainder block containing the IR that was after the async call.
 //
 void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                          GenTreeCall*              call,
                                                          const CallDefinitionInfo& callDefInfo,
-                                                         AsyncLiveness&            life,
                                                          BasicBlock*               suspendBB,
                                                          BasicBlock**              remainder)
 {
     GenTree* continuationArg = new (m_compiler, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
     continuationArg->SetHasOrderingSideEffect();
 
-    GenTree* storeContinuation = m_compiler->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationArg);
+    GenTree* storeContinuation = m_compiler->gtNewStoreLclVarNode(GetReturnedContinuationVar(), continuationArg);
     LIR::AsRange(block).InsertAfter(callDefInfo.InsertAfter, continuationArg, storeContinuation);
 
     GenTree* null                 = m_compiler->gtNewNull();
-    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
     GenTree* neNull               = m_compiler->gtNewOperNode(GT_NE, TYP_INT, returnedContinuation, null);
     GenTree* jtrue                = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
 
@@ -2274,6 +2354,47 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLa
     m_compiler->compSuspensionPoints->push_back(suspensionPoint);
 }
 
+//------------------------------------------------------------------------
+// AsyncTransformation::GetReturnedContinuationVar:
+//   Create a new local to hold the base address of the incoming result from
+//   the continuation. This local can be validly used for the entire suspension
+//   point; the returned local may be used by multiple suspension points.
+//
+// Returns:
+//   Local number.
+//
+unsigned AsyncTransformation::GetReturnedContinuationVar()
+{
+    if (m_returnedContinuationVar == BAD_VAR_NUM)
+    {
+        m_returnedContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("returned continuation"));
+        m_compiler->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
+    }
+
+    return m_returnedContinuationVar;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::GetNewContinuationVar:
+//   Create a new local to hold the base address of the incoming result from
+//   the continuation. This local can be validly used for the entire suspension
+//   point; the returned local may be used by multiple suspension points.
+//
+// Returns:
+//   Local number.
+//
+unsigned AsyncTransformation::GetNewContinuationVar()
+{
+    if (m_newContinuationVar == BAD_VAR_NUM)
+    {
+        m_newContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("new continuation"));
+        m_compiler->lvaGetDesc(m_newContinuationVar)->lvType = TYP_REF;
+    }
+
+    return m_newContinuationVar;
+}
+
+//------------------------------------------------------------------------
 // AsyncTransformation::GetResultBaseVar:
 //   Create a new local to hold the base address of the incoming result from
 //   the continuation. This local can be validly used for the entire suspension
