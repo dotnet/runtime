@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
@@ -53,5 +54,7 @@ namespace Microsoft.Extensions.Logging.EventLog
 
             return new WindowsEventLog(logName, machineName, sourceName) { DefaultEventId = defaultEventId };
         }
+
+        internal void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

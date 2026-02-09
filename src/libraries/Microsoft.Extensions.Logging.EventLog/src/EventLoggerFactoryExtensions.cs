@@ -6,6 +6,7 @@ using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.EventLog;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -58,6 +59,7 @@ namespace Microsoft.Extensions.Logging
             ArgumentNullException.ThrowIfNull(builder);
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, EventLogLoggerProvider>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<EventLogSettings>, EventLogConfigureSettings>());
 
             return builder;
         }
@@ -74,6 +76,7 @@ namespace Microsoft.Extensions.Logging
             ArgumentNullException.ThrowIfNull(settings);
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider>(new EventLogLoggerProvider(settings)));
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<EventLogSettings>, EventLogConfigureSettings>());
 
             return builder;
         }
