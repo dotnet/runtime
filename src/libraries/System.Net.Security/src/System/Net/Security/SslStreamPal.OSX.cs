@@ -70,7 +70,7 @@ namespace System.Net.Security
                         break;
                     }
                     ReadOnlySpan<byte> protocol = protocols.Slice(1, length);
-                    if (protocol.SequenceCompareTo<byte>(applicationProtocol.Protocol.Span) == 0)
+                    if (protocol.SequenceEqual(applicationProtocol.Protocol.Span))
                     {
                         int osStatus = Interop.AppleCrypto.SslCtxSetAlpnProtocol(context.SslContext, applicationProtocol);
                         if (osStatus == 0)

@@ -7,49 +7,48 @@
  */
 
 /* eslint-disable no-undef */
-/* eslint-disable space-before-function-paren */
-(function () {
-    function libFactory() {
-        // this executes the function at link time in order to capture exports
-        // this is what Emscripten does for linking JS libraries
-        // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
-        // it would execute the code at link time and call .toString() on functions to move it to the final output
-        // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
-        // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
-        const exports = {};
-        libInteropJavaScriptNative(exports);
+function libDotnetInteropFactory() {
+    // this executes the function at link time in order to capture exports
+    // this is what Emscripten does for linking JS libraries
+    // https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html#javascript-limits-in-library-files
+    // it would execute the code at link time and call .toString() on functions to move it to the final output
+    // this process would loose any closure references, unless they are passed to `__deps` and also explicitly given to the linker
+    // JS name mangling and minification also applies, see src\native\rollup.config.defines.js and `reserved` there
+    const exports = {};
+    libInteropJavaScriptNative(exports);
 
-        let commonDeps = ["$DOTNET",
-            "SystemInteropJS_GetManagedStackTrace",
-            "SystemInteropJS_CallDelegate",
-            "SystemInteropJS_CompleteTask",
-            "SystemInteropJS_ReleaseJSOwnedObjectByGCHandle",
-            "SystemInteropJS_BindAssemblyExports",
-            "SystemInteropJS_CallJSExport"
-        ];
-        const lib = {
-            $DOTNET_INTEROP: {
-                selfInitialize: () => {
-                    if (typeof dotnetInternals !== "undefined") {
-                        DOTNET_INTEROP.dotnetInternals = dotnetInternals;
-                        DOTNET_INTEROP.dotnetInitializeModule(dotnetInternals);
-                    }
-                },
-                dotnetInitializeModule: exports.dotnetInitializeModule,
-                gitHash: exports.gitHash,
+    let commonDeps = [
+        "$DOTNET",
+        "SystemInteropJS_GetManagedStackTrace",
+        "SystemInteropJS_CallDelegate",
+        "SystemInteropJS_CompleteTask",
+        "SystemInteropJS_ReleaseJSOwnedObjectByGCHandle",
+        "SystemInteropJS_BindAssemblyExports",
+        "SystemInteropJS_CallJSExport"
+    ];
+    const mergeDotnetInterop = {
+        $DOTNET_INTEROP: {
+            selfInitialize: () => {
+                if (typeof dotnetInternals !== "undefined") {
+                    DOTNET_INTEROP.dotnetInternals = dotnetInternals;
+                    DOTNET_INTEROP.dotnetInitializeModule(dotnetInternals);
+                }
             },
-            $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
-            $DOTNET_INTEROP__deps: commonDeps,
-        };
+            dotnetInitializeModule: exports.dotnetInitializeModule,
+            gitHash: exports.gitHash,
+        },
+        $DOTNET_INTEROP__postset: "DOTNET_INTEROP.selfInitialize()",
+        $DOTNET_INTEROP__deps: commonDeps,
+    };
 
-        for (const exportName of Reflect.ownKeys(exports)) {
-            const name = String(exportName);
-            if (name === "dotnetInitializeModule" || name === "gitHash") continue;
-            lib[name] = exports[name];
-        }
-
-        autoAddDeps(lib, "$DOTNET_INTEROP");
-        addToLibrary(lib);
+    for (const exportName of Reflect.ownKeys(exports)) {
+        const name = String(exportName);
+        if (name === "dotnetInitializeModule" || name === "gitHash") continue;
+        mergeDotnetInterop[name] = exports[name];
     }
-    libFactory();
-})();
+
+    autoAddDeps(mergeDotnetInterop, "$DOTNET_INTEROP");
+    addToLibrary(mergeDotnetInterop);
+}
+
+libDotnetInteropFactory();

@@ -3148,7 +3148,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3207,7 +3207,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtpoVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3247,7 +3247,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = preVisitor;
     walkData.wtpoVisitorFn = postVisitor;
     walkData.pCallbackData = callBackData;
@@ -3432,7 +3432,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void RegSet::tmpEnd()
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && (tmpCount > 0))
+    if (m_compiler->verbose && (tmpCount > 0))
     {
         printf("%d tmps used\n", tmpCount);
     }
@@ -3788,21 +3788,19 @@ inline void Compiler::optAssertionReset()
         AssertionIndex      index        = optAssertionCount;
         const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion.op1.lclNum;
+        unsigned lclNum = curAssertion.GetOp1().GetLclNum();
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion.IsCopyAssertion())
         {
-            assert(curAssertion.op1.kind == O1K_LCLVAR);
-
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion.op2.lclNum;
+            lclNum = curAssertion.GetOp2().GetLclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }

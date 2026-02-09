@@ -3935,13 +3935,13 @@ static const UINT16 tokenHashBits[32] =
 #endif // HOST_64BIT
 };
 
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-/*static*/ UINT16 DispatchCache::HashToken(size_t token)
+UINT16 DispatchToken::GetHash() const
 {
     LIMITED_METHOD_CONTRACT;
 
     UINT16 hash  = 0;
     int    index = 0;
+    size_t token = m_token;
 
     // Note if you change the number of bits in CALL_STUB_CACHE_NUM_BITS
     // then we have to recompute the hash function
@@ -3958,6 +3958,13 @@ static const UINT16 tokenHashBits[32] =
     }
     _ASSERTE((hash & ~CALL_STUB_CACHE_MASK) == 0);
     return hash;
+}
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+/*static*/ UINT16 DispatchCache::HashToken(size_t token)
+{
+    WRAPPER_NO_CONTRACT;
+    return DispatchToken::From_SIZE_T(token).GetHash();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
