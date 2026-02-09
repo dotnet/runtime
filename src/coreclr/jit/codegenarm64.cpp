@@ -2459,7 +2459,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
         instruction ins = isUnsigned ? INS_umull : INS_smull;
 
-        regNumber r = emit->emitInsTernary(ins, EA_4BYTE, treeNode, op1, op2);
+        regNumber r = emit->emitInsTernary(ins, EA_8BYTE, treeNode, op1, op2);
 
         emit->emitIns_R_R_I(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
     }
