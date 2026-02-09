@@ -2466,22 +2466,41 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             JITDUMP("Accepted for unrolling!\nOld tree:\n")
             DISPTREE(call);
 
-            GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            GenTree*      dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree*      srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            GenTreeIndir* srcBlk;
+            GenTreeBlk*   storeBlk;
+            ClassLayout*  layout = m_compiler->typGetBlkLayout(static_cast<unsigned>(cnsSize));
 
-            // TODO-CQ: Try to create an addressing mode
-            GenTreeIndir* srcBlk = m_compiler->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->SetContained();
+            // CORINFO_HELP_MEMCPY           -> normal storeBlk (memcpy)
+            // NI_System_SpanHelpers_Memmove -> special storeBlk with memmove semantics (overlapping src/dst)
+            if (call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY))
+            {
+                // (unsigned)cnsSize cannot overflow as checked above
+                srcBlk   = m_compiler->gtNewBlkIndir(layout, srcAddr, GTF_IND_UNALIGNED);
+                storeBlk = m_compiler->gtNewStoreBlkNode(layout, dstAddr, srcBlk, GTF_IND_UNALIGNED);
 
-            GenTreeBlk* storeBlk = new (m_compiler, GT_STORE_BLK)
-                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, m_compiler->typGetBlkLayout((unsigned)cnsSize));
-            storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+                // Lower the newly created nodes next.
+                *next = srcBlk;
+            }
+            else
+            {
+                // TODO-CQ: Try to create an addressing mode
+                srcBlk = m_compiler->gtNewIndir(TYP_STRUCT, srcAddr);
+                srcBlk->SetContained();
 
-            // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
-            // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY)
-                                        ? GenTreeBlk::BlkOpKindUnroll
-                                        : GenTreeBlk::BlkOpKindUnrollMemmove;
+                storeBlk = new (m_compiler, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, layout);
+                storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+
+                // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
+                // unroll this memmove as memcpy - it doesn't require lots of temp registers
+                storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
+
+                // We intentionally skip Lower for srcBlk and storeBlk as we've just lowered them by hands.
+                // That was needed to preserve BlkOpKindUnrollMemmove behavior and avoid unexpected optimizations
+                // or unsupported (by the codegen side of memmove) addressing modes.
+                *next = storeBlk->gtNext;
+            }
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
@@ -2499,8 +2518,6 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // TODO: This skips lowering srcBlk and storeBlk.
-            *next = storeBlk->gtNext;
             return true;
         }
         else
