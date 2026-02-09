@@ -605,7 +605,9 @@ Initialize(
         }
 
         TRACE("First-time PAL initialization complete.\n");
-        init_count++;
+        // Incrementing the init_count here serves as a synchronization point,
+        // since it is a Volatile<T> variable, and modifying it will have release semantics.
+        init_count = init_count + 1;
 
         /* Set LastError to a non-good value - functions within the
            PAL startup may set lasterror to a nonzero value. */
@@ -614,7 +616,7 @@ Initialize(
     }
     else
     {
-        init_count++;
+        init_count = init_count + 1;
 
         TRACE("Initialization count increases to %d\n", init_count.Load());
 
