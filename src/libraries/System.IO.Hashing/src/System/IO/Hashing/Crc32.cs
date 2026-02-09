@@ -295,7 +295,7 @@ namespace System.IO.Hashing
             return ~Update(Crc32ParameterSet.Crc32.InitialValue, source);
         }
 
-        /// <summary>Computes the CRC-32 hash of the provided data, using the ITU-T V.42 / IEEE 802.3 parameters.</summary>
+        /// <summary>Computes the CRC-32 hash of the provided data, using specified parameters.</summary>
         /// <param name="parameterSet">The parameters to use for the CRC computation.</param>
         /// <param name="source">The data to hash.</param>
         /// <returns>The computed CRC-32 hash.</returns>

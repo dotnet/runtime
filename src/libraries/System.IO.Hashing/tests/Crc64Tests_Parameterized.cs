@@ -190,7 +190,7 @@ namespace System.IO.Hashing.Tests
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void VerifyHashToUInt32(TestCase testCase)
+        public void VerifyHashToUInt64(TestCase testCase)
         {
             var alg = new Crc64(s_parameterSet);
             alg.Append(testCase.Input);

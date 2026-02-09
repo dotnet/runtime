@@ -32,7 +32,7 @@ namespace System.IO.Hashing
         private static Crc32ParameterSet MakeCrc32CParameterSet()
         {
 #if NET
-            if (System.Runtime.Intrinsics.X86.Sse.IsSupported || System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
+            if (System.Runtime.Intrinsics.X86.Sse42.IsSupported || System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
             {
                 return new Crc32CParameterSet();
             }
@@ -117,7 +117,7 @@ namespace System.IO.Hashing
 
                     foreach (byte value in remainingBytes)
                     {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(crc, value);
+                        crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(crc, value);
                     }
                 }
 
