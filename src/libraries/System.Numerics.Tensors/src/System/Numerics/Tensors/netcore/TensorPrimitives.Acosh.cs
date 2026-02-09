@@ -30,11 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AcoshOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // acosh(x) = log(x + sqrt(x^2 - 1))
-            // Domain: x >= 1
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));

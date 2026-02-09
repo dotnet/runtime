@@ -3085,26 +3085,23 @@ namespace System.Runtime.Intrinsics
             // Constant for reconstructing asin(±1)
             const double PIBY2 = 1.5707963267948965e+00;
 
-            TVectorDouble half = TVectorDouble.Create(0.5);
-            TVectorDouble one = TVectorDouble.One;
-
             // Get sign and absolute value
             TVectorDouble sign = x & TVectorDouble.Create(-0.0);
-            TVectorDouble y = TVectorDouble.Abs(x);
+            TVectorDouble ax = TVectorDouble.Abs(x);
 
             // Check for transform region (|x| > 0.5)
-            TVectorDouble transformMask = TVectorDouble.GreaterThan(y, half);
+            TVectorDouble transformMask = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
 
-            // For |x| > 0.5: r = 0.5 * (1.0 - y), s = sqrt(r), y = s
-            TVectorDouble r_transform = half * (one - y);
+            // For |x| > 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r), ax = s
+            TVectorDouble r_transform = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
             TVectorDouble s = TVectorDouble.Sqrt(r_transform);
 
-            // For |x| <= 0.5: r = y * y
-            TVectorDouble r_normal = y * y;
+            // For |x| <= 0.5: r = ax * ax
+            TVectorDouble r_normal = ax * ax;
 
-            // Select r and y based on transform
+            // Select r and ax based on transform
             TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, r_transform, r_normal);
-            y = TVectorDouble.ConditionalSelect(transformMask, s, y);
+            ax = TVectorDouble.ConditionalSelect(transformMask, s, ax);
 
             // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
             TVectorDouble poly_num = TVectorDouble.Create(C6);
@@ -3132,11 +3129,11 @@ namespace System.Runtime.Intrinsics
             // v_transform = HPIBY2_HEAD - (p - q)
 
             // For simplicity, use a simpler (slightly less accurate) reconstruction:
-            // v_transform = PIBY2 - 2*(s + s*u)
-            TVectorDouble v_transform = TVectorDouble.Create(PIBY2) - TVectorDouble.Create(2.0) * (y + y * u);
+            // v_transform = PIBY2 - 2*(ax + ax*u)
+            TVectorDouble v_transform = TVectorDouble.Create(PIBY2) - TVectorDouble.Create(2.0) * (ax + ax * u);
 
-            // For normal region: v = y + y*u
-            TVectorDouble v_normal = y + y * u;
+            // For normal region: v = ax + ax*u
+            TVectorDouble v_normal = ax + ax * u;
 
             // Select result based on transform
             TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, v_transform, v_normal);
@@ -3145,12 +3142,11 @@ namespace System.Runtime.Intrinsics
             v |= sign;
 
             // Handle special cases: |x| > 1 returns NaN, |x| = 1 returns ±π/2
-            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), one);
-            TVectorDouble nan = TVectorDouble.Create(double.NaN);
-            v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, nan, v);
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
+            v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), v);
 
             // Handle x = ±1 exactly
-            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), one);
+            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.One);
             TVectorDouble piby2Result = TVectorDouble.Create(PIBY2) | sign;
             v = TVectorDouble.ConditionalSelect(absXEqualsOne, piby2Result, v);
 
@@ -3215,32 +3211,29 @@ namespace System.Runtime.Intrinsics
             double HALF, double PIBY2)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            TVectorDouble half = TVectorDouble.Create(HALF);
-            TVectorDouble one = TVectorDouble.One;
-
             // sign = (x < 0) ? -1 : 1
             TVectorDouble sign = TVectorDouble.Create(1.0);
             TVectorDouble negMask = TVectorDouble.LessThan(dx, TVectorDouble.Zero);
             sign = TVectorDouble.ConditionalSelect(negMask, TVectorDouble.Create(-1.0), sign);
 
             // Y = abs(x)
-            TVectorDouble y = TVectorDouble.Abs(dx);
+            TVectorDouble ax = TVectorDouble.Abs(dx);
 
             // Return NaN for |x| > 1
-            TVectorDouble outOfRange = TVectorDouble.GreaterThan(y, one);
+            TVectorDouble outOfRange = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
 
-            // Check if y > 0.5
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(y, half);
+            // Check if ax > 0.5
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
 
-            // For y > 0.5: G = 0.5*(1-Y), Y = -2*sqrt(G)
-            TVectorDouble g_hi = half * (one - y);
+            // For ax > 0.5: G = 0.5*(1-Y), Y = -2*sqrt(G)
+            TVectorDouble g_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g_hi);
 
-            // For y <= 0.5: G = Y*Y
-            TVectorDouble g_lo = y * y;
+            // For ax <= 0.5: G = Y*Y
+            TVectorDouble g_lo = ax * ax;
 
             TVectorDouble g = TVectorDouble.ConditionalSelect(gtHalf, g_hi, g_lo);
-            y = TVectorDouble.ConditionalSelect(gtHalf, y_hi, y);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
 
             // poly = POLY_EVAL_9_0(G, C1..C9) = C1 + G*(C2 + G*(C3 + ... G*C9))
             TVectorDouble poly = TVectorDouble.Create(C9);
@@ -3253,10 +3246,10 @@ namespace System.Runtime.Intrinsics
             poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C2));
             poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C1));
 
-            // For y > 0.5: result = A[1] + (Y + Y*G*poly) = pi/2 + (Y + Y*G*poly)
+            // For ax > 0.5: result = A[1] + (Y + Y*G*poly) = pi/2 + (Y + Y*G*poly)
             //   (since Y is already negative, this gives pi/2 - 2*sqrt(g)*(1 + g*poly))
-            // For y <= 0.5: result = Y + Y*G*poly
-            TVectorDouble yPoly = y + y * g * poly;
+            // For ax <= 0.5: result = Y + Y*G*poly
+            TVectorDouble yPoly = ax + ax * g * poly;
             TVectorDouble result_hi = TVectorDouble.Create(PIBY2) + yPoly;
             TVectorDouble result_lo = yPoly;
 
@@ -3719,8 +3712,7 @@ namespace System.Runtime.Intrinsics
             // For |x| >= 0.5: atanh(x) = sign(x) * 0.5 * log1p(2|x|/(1-|x|))
             // For negative x: r = (-2*dx)/(1+dx), then -0.5*log1p(r)
             // For positive x: r = (2*dx)/(1-dx), then 0.5*log1p(r)
-            TVectorDouble two = TVectorDouble.Create(2.0);
-            TVectorDouble r_pos = (two * ax) / (TVectorDouble.One - ax);
+            TVectorDouble r_pos = (TVectorDouble.Create(2.0) * ax) / (TVectorDouble.One - ax);
             TVectorDouble largeResult = TVectorDouble.Create(HALF) * LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble.One + r_pos);
             largeResult |= sign;
 
@@ -3772,26 +3764,23 @@ namespace System.Runtime.Intrinsics
             const double B0 = 1.5707963267948966;     // pi/2
             const double B1 = 0.7853981633974483;     // pi/4
 
-            TVectorDouble half = TVectorDouble.Create(HALF);
-            TVectorDouble one = TVectorDouble.One;
-
             // Get sign and absolute value of x
             TVectorDouble xneg = TVectorDouble.LessThan(x, TVectorDouble.Zero);
-            TVectorDouble y = TVectorDouble.Abs(x);
+            TVectorDouble ax = TVectorDouble.Abs(x);
 
             // Check which region we're in
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(y, half);
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
 
-            // For |x| > 0.5: z = 0.5*(1-y), y = -2*sqrt(z)
-            TVectorDouble z_hi = half * (one - y);
+            // For |x| > 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z)
+            TVectorDouble z_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
 
-            // For |x| <= 0.5: z = y*y (use n=1 reconstruction)
-            TVectorDouble z_lo = y * y;
+            // For |x| <= 0.5: z = ax*ax (use n=1 reconstruction)
+            TVectorDouble z_lo = ax * ax;
 
-            // Select z and y based on region
+            // Select z and ax based on region
             TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
-            y = TVectorDouble.ConditionalSelect(gtHalf, y_hi, y);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
 
             // Polynomial: C1 + z*(C2 + z*(C3 + ... + z*C12))
             TVectorDouble poly = TVectorDouble.Create(C12);
@@ -3807,13 +3796,13 @@ namespace System.Runtime.Intrinsics
             poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
             poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
 
-            // poly = y + y * z * poly
-            poly = y + y * z * poly;
+            // poly = ax + ax * z * poly
+            poly = ax + ax * z * poly;
 
             // Reconstruct result based on sign and region
             // if (xneg): result = (B[n] + poly) + B[n]
             // else:      result = (A[n] - poly) + A[n]
-            // where n=0 if y > 0.5, n=1 if y <= 0.5
+            // where n=0 if ax > 0.5, n=1 if ax <= 0.5
 
             // For n=0 (|x| > 0.5): A[0]=0, B[0]=pi/2
             // For n=1 (|x| <= 0.5): A[1]=pi/4, B[1]=pi/4
@@ -3827,10 +3816,10 @@ namespace System.Runtime.Intrinsics
             TVectorDouble result = TVectorDouble.ConditionalSelect(xneg, result_neg, result_pos);
 
             // Handle special cases: |x| > 1 returns NaN, x = ±1 returns 0 or π
-            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), one);
+            TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
             result = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), result);
 
-            TVectorDouble xEqualsOne = TVectorDouble.Equals(x, one);
+            TVectorDouble xEqualsOne = TVectorDouble.Equals(x, TVectorDouble.One);
             result = TVectorDouble.ConditionalSelect(xEqualsOne, TVectorDouble.Zero, result);
 
             TVectorDouble xEqualsNegOne = TVectorDouble.Equals(x, TVectorDouble.Create(-1.0));
@@ -3901,25 +3890,22 @@ namespace System.Runtime.Intrinsics
             double HALF, double A0, double A1, double B0, double B1, double PI)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            TVectorDouble half = TVectorDouble.Create(HALF);
-            TVectorDouble one = TVectorDouble.One;
-
             // Handle sign and absolute value
             TVectorDouble xneg = TVectorDouble.LessThan(dx, TVectorDouble.Zero);
-            TVectorDouble y = TVectorDouble.Abs(dx);
+            TVectorDouble ax = TVectorDouble.Abs(dx);
 
             // Check which region we're in
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(y, half);
+            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
 
-            // For |x| > 0.5: z = 0.5*(1-y), y = -2*sqrt(z), n=0
-            TVectorDouble z_hi = half * (one - y);
+            // For |x| > 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z), n=0
+            TVectorDouble z_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
 
-            // For |x| <= 0.5: z = y*y, n=1
-            TVectorDouble z_lo = y * y;
+            // For |x| <= 0.5: z = ax*ax, n=1
+            TVectorDouble z_lo = ax * ax;
 
             TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
-            y = TVectorDouble.ConditionalSelect(gtHalf, y_hi, y);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
 
             // poly = POLY_EVAL_5(z, C1..C5) = C1 + z*(C2 + z*(C3 + z*(C4 + z*C5)))
             TVectorDouble poly = TVectorDouble.Create(C5);
@@ -3928,8 +3914,8 @@ namespace System.Runtime.Intrinsics
             poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C2));
             poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C1));
 
-            // poly = y + y * z * poly
-            poly = y + y * z * poly;
+            // poly = ax + ax * z * poly
+            poly = ax + ax * z * poly;
 
             // Reconstruct: if (xneg) result = (B[n] + poly) + B[n]; else result = (A[n] - poly) + A[n]
             TVectorDouble a = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(A0), TVectorDouble.Create(A1));
@@ -3941,11 +3927,11 @@ namespace System.Runtime.Intrinsics
             TVectorDouble result = TVectorDouble.ConditionalSelect(xneg, result_neg, result_pos);
 
             // Handle special cases: |x| > 1 returns NaN
-            TVectorDouble outOfRange = TVectorDouble.GreaterThan(TVectorDouble.Abs(dx), one);
+            TVectorDouble outOfRange = TVectorDouble.GreaterThan(TVectorDouble.Abs(dx), TVectorDouble.One);
             result = TVectorDouble.ConditionalSelect(outOfRange, TVectorDouble.Create(double.NaN), result);
 
             // x = 1 returns 0, x = -1 returns pi
-            TVectorDouble xEqualsOne = TVectorDouble.Equals(dx, one);
+            TVectorDouble xEqualsOne = TVectorDouble.Equals(dx, TVectorDouble.One);
             result = TVectorDouble.ConditionalSelect(xEqualsOne, TVectorDouble.Zero, result);
             TVectorDouble xEqualsNegOne = TVectorDouble.Equals(dx, TVectorDouble.Create(-1.0));
             result = TVectorDouble.ConditionalSelect(xEqualsNegOne, TVectorDouble.Create(PI), result);
@@ -4006,8 +3992,7 @@ namespace System.Runtime.Intrinsics
             const double Q3 = 0.424602594203847109e0;
             const double Q4 = 0.389525873944742195e-1;
 
-            TVectorDouble signMask = TVectorDouble.Create(-0.0);
-            TVectorDouble sign = x & signMask;
+            TVectorDouble sign = x & TVectorDouble.Create(-0.0);
             TVectorDouble v = TVectorDouble.Abs(x);
 
             // Determine which region each element falls into
@@ -4017,21 +4002,18 @@ namespace System.Runtime.Intrinsics
             TVectorDouble gtR7_16 = TVectorDouble.GreaterThan(v, TVectorDouble.Create(R7_16));
 
             // Compute reduced argument for each region
-            TVectorDouble one = TVectorDouble.One;
-            TVectorDouble two = TVectorDouble.Create(2.0);
-            TVectorDouble oneHalf = TVectorDouble.Create(1.5);
 
             // Region 5: x > 39/16: reduced = -1/v
-            TVectorDouble reduced5 = -one / v;
+            TVectorDouble reduced5 = -TVectorDouble.One / v;
 
             // Region 4: 19/16 < x <= 39/16: reduced = (v-1.5)/(1+1.5*v)
-            TVectorDouble reduced4 = (v - oneHalf) / (one + oneHalf * v);
+            TVectorDouble reduced4 = (v - TVectorDouble.Create(1.5)) / (TVectorDouble.One + TVectorDouble.Create(1.5) * v);
 
             // Region 3: 11/16 < x <= 19/16: reduced = (v-1)/(1+v)
-            TVectorDouble reduced3 = (v - one) / (one + v);
+            TVectorDouble reduced3 = (v - TVectorDouble.One) / (TVectorDouble.One + v);
 
             // Region 2: 7/16 < x <= 11/16: reduced = (2*v-1)/(2+v)
-            TVectorDouble reduced2 = (two * v - one) / (two + v);
+            TVectorDouble reduced2 = (TVectorDouble.Create(2.0) * v - TVectorDouble.One) / (TVectorDouble.Create(2.0) + v);
 
             // Region 1: x <= 7/16: reduced = v
             TVectorDouble reduced1 = v;
@@ -4162,9 +4144,6 @@ namespace System.Runtime.Intrinsics
             double VALUE0, double VALUE1, double VALUE2, double VALUE3, double VALUE4)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            TVectorDouble one = TVectorDouble.One;
-            TVectorDouble two = TVectorDouble.Create(2.0);
-
             // Handle NaN
             TVectorDouble nanMask = ~TVectorDouble.Equals(dx, dx);
 
@@ -4189,21 +4168,21 @@ namespace System.Runtime.Intrinsics
             TVectorDouble r5 = TVectorDouble.LessThan(ax, TVectorDouble.Create(RANGE5));
 
             // Start with region 5 (largest range) and work backwards
-            TVectorDouble reduced = -one / ax;
+            TVectorDouble reduced = -TVectorDouble.One / ax;
             TVectorDouble c = TVectorDouble.Create(VALUE4);
 
             // Region 4: x < 39/16 => x=(x-1.5)/(1+1.5*x), c=atan(1.5)
-            TVectorDouble x4 = (ax - TVectorDouble.Create(1.5)) / (one + TVectorDouble.Create(1.5) * ax);
+            TVectorDouble x4 = (ax - TVectorDouble.Create(1.5)) / (TVectorDouble.One + TVectorDouble.Create(1.5) * ax);
             reduced = TVectorDouble.ConditionalSelect(r4, x4, reduced);
             c = TVectorDouble.ConditionalSelect(r4, TVectorDouble.Create(VALUE3), c);
 
             // Region 3: x < 19/16 => x=(x-1)/(1+x), c=atan(1)
-            TVectorDouble x3 = (ax - one) / (one + ax);
+            TVectorDouble x3 = (ax - TVectorDouble.One) / (TVectorDouble.One + ax);
             reduced = TVectorDouble.ConditionalSelect(r3, x3, reduced);
             c = TVectorDouble.ConditionalSelect(r3, TVectorDouble.Create(VALUE2), c);
 
             // Region 2: x < 11/16 => x=(2x-1)/(2+x), c=atan(0.5)
-            TVectorDouble x2 = (two * ax - one) / (two + ax);
+            TVectorDouble x2 = (TVectorDouble.Create(2.0) * ax - TVectorDouble.One) / (TVectorDouble.Create(2.0) + ax);
             reduced = TVectorDouble.ConditionalSelect(r2, x2, reduced);
             c = TVectorDouble.ConditionalSelect(r2, TVectorDouble.Create(VALUE1), c);
 
@@ -4306,8 +4285,7 @@ namespace System.Runtime.Intrinsics
             // Special case: when both y = ±0 and x = ±0
             // atan2(±0, +0) = ±0
             // atan2(±0, -0) = ±π
-            TVectorDouble negativeZero = TVectorDouble.Create(-0.0);
-            TVectorDouble zeroResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, negativeZero, TVectorDouble.Zero);
+            TVectorDouble zeroResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-0.0), TVectorDouble.Zero);
             TVectorDouble piResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, TVectorDouble.Create(-PI), TVectorDouble.Create(PI));
 
             TVectorDouble bothZero = xIsZero & yIsZero;
@@ -4319,9 +4297,8 @@ namespace System.Runtime.Intrinsics
             // atan2(±∞, -∞) = ±3π/4
             const double PI_OVER_4 = 0.78539816339744830961;   // 0x1.921fb54442d18p-1
             const double THREE_PI_OVER_4 = 2.3561944901923449; // 0x1.2d97c7f3321d2p+1
-            TVectorDouble inf = TVectorDouble.Create(double.PositiveInfinity);
-            TVectorDouble xIsInf = TVectorDouble.Equals(TVectorDouble.Abs(x), inf);
-            TVectorDouble yIsInf = TVectorDouble.Equals(TVectorDouble.Abs(y), inf);
+            TVectorDouble xIsInf = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.Create(double.PositiveInfinity));
+            TVectorDouble yIsInf = TVectorDouble.Equals(TVectorDouble.Abs(y), TVectorDouble.Create(double.PositiveInfinity));
             TVectorDouble bothInf = xIsInf & yIsInf;
             TVectorDouble infBaseAngle = TVectorDouble.ConditionalSelect(xIsNegativeOrNegZero, TVectorDouble.Create(THREE_PI_OVER_4), TVectorDouble.Create(PI_OVER_4));
             TVectorDouble infResult = TVectorDouble.ConditionalSelect(yIsNegativeOrNegZero, -infBaseAngle, infBaseAngle);

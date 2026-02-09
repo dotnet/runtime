@@ -30,10 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AtanhOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // atanh(x) = 0.5 * log((1 + x) / (1 - x))
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));

@@ -30,14 +30,6 @@ namespace System.Numerics.Tensors
         private readonly struct AcosOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // The input domain should be in the [-1, +1] else a domain error is displayed
-            //
-            // acos(x) = pi/2 - asin(x)             when |x| <= 0.5
-            // acos(x) = 2*asin(sqrt((1-x)/2))      when x > 0.5
-            // acos(x) = pi - 2*asin(sqrt((1+x)/2)) when x < -0.5
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));

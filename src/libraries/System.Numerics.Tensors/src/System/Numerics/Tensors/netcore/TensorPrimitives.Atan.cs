@@ -30,19 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AtanOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // sign = sign(x)
-            // x = abs(x)
-            //
-            // Argument Reduction for every x into the interval [-(2-sqrt(3)),+(2-sqrt(3))]
-            // Use the following identities
-            // atan(x) = pi/2 - atan(1/x)                when x > 1
-            //         = pi/6 + atan(f)                  when f > (2-sqrt(3))
-            // where f = (sqrt(3)*x-1)/(x+sqrt(3))
-            //
-            // All elements are approximated by using polynomial
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));

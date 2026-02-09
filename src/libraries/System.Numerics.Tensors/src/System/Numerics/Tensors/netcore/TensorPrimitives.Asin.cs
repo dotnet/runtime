@@ -30,18 +30,6 @@ namespace System.Numerics.Tensors
         private readonly struct AsinOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // The input domain should be in the [-1, +1] else a domain error is displayed
-            //
-            // asin(-x) = -asin(x)
-            // asin(x) = pi/2-2*asin(sqrt(1/2*(1-x)))  when x > 1/2
-            //
-            // y = abs(x)
-            // asin(y) = asin(g)  when y <= 0.5,  where g = y*y
-            //         = pi/2-asin(g)  when y > 0.5, where g = 1/2*(1-y), y = -2*sqrt(g)
-            // The term asin(f) is approximated by using a polynomial
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));

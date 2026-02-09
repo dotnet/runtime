@@ -30,10 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AsinhOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            // Implementation Notes
-            // --------------------
-            // asinh(x) = sign(x) * log(|x| + sqrt(x^2 + 1))
-
 #if NET11_0_OR_GREATER
             public static bool Vectorizable => (typeof(T) == typeof(float))
                                             || (typeof(T) == typeof(double));
