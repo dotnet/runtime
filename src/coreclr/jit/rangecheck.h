@@ -356,15 +356,28 @@ struct RangeOps
 
     static Range Multiply(const Range& r1, const Range& r2)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            // For Mul we require both operands to be constant to produce a constant result.
-            if (b.IsConstant() && a.IsConstant() &&
-                !CheckedOps::MulOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() * b.GetConstant());
-            }
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
             return Limit(Limit::keUnknown);
-        });
+        }
+
+        int r1lo = r1.LowerLimit().GetConstant();
+        int r1hi = r1.UpperLimit().GetConstant();
+        int r2lo = r2.LowerLimit().GetConstant();
+        int r2hi = r2.UpperLimit().GetConstant();
+
+        if (CheckedOps::MulOverflows(r1lo, r2lo, CheckedOps::Signed) ||
+            CheckedOps::MulOverflows(r1lo, r2hi, CheckedOps::Signed) ||
+            CheckedOps::MulOverflows(r1hi, r2lo, CheckedOps::Signed) ||
+            CheckedOps::MulOverflows(r1hi, r2hi, CheckedOps::Signed))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        int lo = min(min(r1lo * r2lo, r1lo * r2hi), min(r1hi * r2lo, r1hi * r2hi));
+        int hi = max(max(r1lo * r2lo, r1lo * r2hi), max(r1hi * r2lo, r1hi * r2hi));
+        assert(hi >= lo);
+        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)

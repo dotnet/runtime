@@ -24,6 +24,7 @@ export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnet
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 export const isFirefox = !!(ENVIRONMENT_IS_WEB && navigator.userAgent.includes("Firefox"));
 export const isChromium = !!(ENVIRONMENT_IS_WEB && navigator.userAgentData && navigator.userAgentData.brands.some(b => b.brand === "Google Chrome" || b.brand === "Microsoft Edge" || b.brand === "Chromium"));
 
@@ -111,7 +112,7 @@ function initRunArgs(runArgs) {
     // set defaults
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.profilers = runArgs.profilers === undefined ? [] : runArgs.profilers;
-    runArgs.workingDirectory = runArgs.workingDirectory === undefined ? '/' : runArgs.workingDirectory;
+    runArgs.workingDirectory = runArgs.workingDirectory === undefined ? browserVirtualAppBase : runArgs.workingDirectory;
     runArgs.environmentVariables = runArgs.environmentVariables === undefined ? {} : runArgs.environmentVariables;
     runArgs.runtimeArgs = runArgs.runtimeArgs === undefined ? [] : runArgs.runtimeArgs;
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
