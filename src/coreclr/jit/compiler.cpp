@@ -4754,7 +4754,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             else
             {
                 // At least do local var liveness; lowering depends on this.
-                fgLocalVarLiveness();
+                fgSsaLiveness();
             }
 
             if (doEarlyProp)
