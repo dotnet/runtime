@@ -628,7 +628,6 @@ namespace System.Diagnostics.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/123979", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124015", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124044", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

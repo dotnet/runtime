@@ -6367,6 +6367,15 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     return result;
 }
 
+//----------------------------------------------------------------------------------------------
+// LowerDelegateInvoke: lower a delegate invoke, accessing fields of the delegate
+//
+// Arguments:
+//     call - call representing a delegate invoke.
+//
+// Return Value:
+//    Control expr for the delegate invoke call, for further lowering.
+//
 GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 {
     noway_assert(call->gtCallType == CT_USER_FUNC);
@@ -6374,19 +6383,29 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     assert((m_compiler->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
             (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL)) == (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL));
 
-    GenTree* thisArgNode;
+    CallArg* thisArg = nullptr;
+
     if (call->IsTailCallViaJitHelper())
     {
-        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
+        thisArg = call->gtArgs.GetArgByIndex(0);
     }
     else
     {
-        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
+        thisArg = call->gtArgs.GetThisArg();
     }
 
+    assert(thisArg != nullptr);
+    GenTree* thisArgNode = thisArg->GetNode();
     assert(thisArgNode != nullptr);
+
+#if HAS_FIXED_REGISTER_SET
     assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
+    LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
+#else
+    GenTree* thisExpr = thisArgNode;
+    LIR::Use thisExprUse(BlockRange(), &thisArg->NodeRef(), call);
+#endif
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
@@ -6405,9 +6424,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         unsigned delegateInvokeTmp = m_compiler->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
         base                       = m_compiler->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
-        LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
-
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
     }
 
@@ -6423,9 +6440,15 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // behavior (the NRE that would logically happen inside Delegate.Invoke
     // should happen after all args are evaluated). We must also move the
     // PUTARG_REG node ahead.
+#if HAS_FIXED_REGISTER_SET
     thisArgNode->AsOp()->gtOp1 = newThis;
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
+#else
+    thisExprUse.ReplaceWith(newThis);
+    BlockRange().Remove(thisExpr);
+    BlockRange().InsertBefore(call, thisExpr, newThisAddr, newThis);
+#endif
 
     ContainCheckIndir(newThis->AsIndir());
 
