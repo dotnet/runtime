@@ -1178,13 +1178,10 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_BITCAST));
     genConsumeOperands(tree);
-    assert(tree->TypeGet() == genActualType(tree));
 
     var_types toType   = tree->TypeGet();
-    var_types fromType = tree->gtGetOp1()->TypeGet();
-
+    var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
     assert(toType == genActualType(tree));
-    assert(fromType == genActualType(tree->gtGetOp1()));
 
     instruction ins = INS_none;
     switch (PackTypes(toType, fromType))
