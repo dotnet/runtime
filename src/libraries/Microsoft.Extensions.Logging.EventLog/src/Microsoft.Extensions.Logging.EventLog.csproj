@@ -7,6 +7,7 @@
     <PackageDescription>Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <!-- TODO: reinstate pragma suppressions for config binding diagnostics: https://github.com/dotnet/runtime/issues/92509. -->
     <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
