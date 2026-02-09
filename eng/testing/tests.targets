@@ -2,12 +2,17 @@
   <!-- Enable runtime async for all .NET 11+ test projects. -->
   <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
     and '$(TestNativeAot)' != 'true'
-    and '$(TestReadyToRun)' != 'true'
     and '$(UseNativeAOTRuntime)' != 'true'
     and '$(TargetOS)' != 'browser'
     and '$(TargetOS)' != 'wasi'
     and '$(RuntimeFlavor)' != 'Mono'
     and '$(UseRuntimeAsync)' != 'false'">
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
+  <!-- Allow explicitly enabling runtime async for test projects via TestRuntimeAsync. -->
+  <PropertyGroup Condition="'$(TestRuntimeAsync)' == 'true'">
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
