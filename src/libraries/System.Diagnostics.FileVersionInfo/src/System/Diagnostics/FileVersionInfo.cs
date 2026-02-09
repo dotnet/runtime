@@ -506,6 +506,20 @@ namespace System.Diagnostics
         /// Gets information about a private version of the file.
         /// </summary>
         /// <returns>Information about a private version of the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  This information is present when <xref:System.Diagnostics.FileVersionInfo.IsPrivateBuild%2A> is `true`.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the private build information in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/PrivateBuild/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/PrivateBuild/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? PrivateBuild
         {
             get { return _privateBuild; }
@@ -515,6 +529,30 @@ namespace System.Diagnostics
         /// Gets the build number of the product this file is associated with.
         /// </summary>
         /// <returns>A value representing the build number of the product this file is associated with or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A product version number is a 64-bit number that holds the version number as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A> number.
+        ///
+        ///  This property gets the third set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductBuildPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductBuildPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int ProductBuildPart
         {
             get { return _productBuild; }
@@ -524,6 +562,30 @@ namespace System.Diagnostics
         /// Gets the major part of the version number for the product this file is associated with.
         /// </summary>
         /// <returns>A value representing the major part of the product version number or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A product version number is a 64-bit number that holds the version number as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A> number.
+        ///
+        ///  This property gets the first set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductMajorPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductMajorPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int ProductMajorPart
         {
             get { return _productMajor; }
@@ -533,6 +595,30 @@ namespace System.Diagnostics
         /// Gets the minor part of the version number for the product the file is associated with.
         /// </summary>
         /// <returns>A value representing the minor part of the product version number or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A product version number is a 64-bit number that holds the version number as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A> number.
+        ///
+        ///  This property gets the second set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductMinorPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductMinorPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int ProductMinorPart
         {
             get { return _productMinor; }
@@ -542,6 +628,15 @@ namespace System.Diagnostics
         /// Gets the name of the product this file is distributed with.
         /// </summary>
         /// <returns>The name of the product this file is distributed with or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the name of the product in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductName/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductName/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? ProductName
         {
             get { return _productName; }
@@ -551,6 +646,30 @@ namespace System.Diagnostics
         /// Gets the private part number of the product this file is associated with.
         /// </summary>
         /// <returns>A value representing the private part number of the product this file is associated with or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A product version number is a 64-bit number that holds the version number as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A> number.
+        ///
+        ///  This property gets the last set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.ProductPrivatePart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductPrivatePart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductPrivatePart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int ProductPrivatePart
         {
             get { return _productPrivate; }
@@ -560,6 +679,15 @@ namespace System.Diagnostics
         /// Gets the version of the product this file is distributed with.
         /// </summary>
         /// <returns>The version of the product this file is distributed with or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.ProductVersion%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ProductVersion/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ProductVersion/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? ProductVersion
         {
             get { return _productVersion; }
@@ -569,6 +697,20 @@ namespace System.Diagnostics
         /// Gets the special build information for the file.
         /// </summary>
         /// <returns>The special build information for the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  This information is present when <xref:System.Diagnostics.FileVersionInfo.IsSpecialBuild%2A> is `true`.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the special build information in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/SpecialBuild/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/SpecialBuild/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? SpecialBuild
         {
             get { return _specialBuild; }
@@ -580,6 +722,15 @@ namespace System.Diagnostics
         /// <param name="fileName">The fully qualified path and name of the file to retrieve the version information for.</param>
         /// <exception cref="FileNotFoundException">The file specified cannot be found.</exception>
         /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for Notepad and  displays the file description and version number in the console window.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/Overview/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/Overview/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
             // Check if fileName is a full path. Relative paths can cause confusion if the local file has the .dll extension,
@@ -607,6 +758,15 @@ namespace System.Diagnostics
         /// <see cref="Language" />.
         ///
         /// If the file did not contain version information, this list will contain only the name of the requested file. Boolean values will be <see langword="false" />, and all other entries will be <see langword="null" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it calls <xref:System.Diagnostics.FileVersionInfo.ToString%2A> to print a list of the file version information in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/ToString/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/ToString/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public override string ToString()
         {
             // An initial capacity of 512 was chosen because it is large enough to cover
