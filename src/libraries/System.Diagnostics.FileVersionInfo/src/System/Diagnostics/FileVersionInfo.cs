@@ -149,6 +149,15 @@ namespace System.Diagnostics
         /// Gets the description of the file.
         /// </summary>
         /// <returns>The description of the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FileDescription%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FileDescription/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FileDescription/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? FileDescription
         {
             get { return _fileDescription; }
@@ -158,6 +167,30 @@ namespace System.Diagnostics
         /// Gets the major part of the version number.
         /// </summary>
         /// <returns>A value representing the major part of the version number or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+        ///
+        ///  This property gets the first set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FileMajorPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FileMajorPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int FileMajorPart
         {
             get { return _fileMajor; }
@@ -167,6 +200,30 @@ namespace System.Diagnostics
         /// Gets the minor part of the version number of the file.
         /// </summary>
         /// <returns>A value representing the minor part of the version number of the file or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+        ///
+        ///  This property gets the second set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FileMinorPart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FileMinorPart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int FileMinorPart
         {
             get { return _fileMinor; }
@@ -176,6 +233,15 @@ namespace System.Diagnostics
         /// Gets the name of the file that this instance of <see cref="FileVersionInfo" /> describes.
         /// </summary>
         /// <returns>The name of the file described by this instance of <see cref="FileVersionInfo" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FileName%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FileName/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FileName/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string FileName
         {
             get { return _fileName; }
@@ -185,6 +251,30 @@ namespace System.Diagnostics
         /// Gets the file private part number.
         /// </summary>
         /// <returns>A value representing the file private part number or 0 (zero) if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+        ///
+        ///  This property gets the last set of 16 bits.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/FilePrivatePart/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/FilePrivatePart/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public int FilePrivatePart
         {
             get { return _filePrivate; }
@@ -194,6 +284,28 @@ namespace System.Diagnostics
         /// Gets the file version number.
         /// </summary>
         /// <returns>The version number of the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  Typically, a version number is displayed as "major number.minor number.build number.private part number". A file version number is a 64-bit number that holds the version number for a file as follows:
+        ///
+        /// - The first 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMajorPart%2A> number.
+        ///
+        /// - The next 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileMinorPart%2A> number.
+        ///
+        /// - The third set of 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FileBuildPart%2A> number.
+        ///
+        /// - The last 16 bits are the <xref:System.Diagnostics.FileVersionInfo.FilePrivatePart%2A> number.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the file description and version number in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/Overview/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/Overview/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? FileVersion
         {
             get { return _fileVersion; }
