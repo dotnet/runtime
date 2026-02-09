@@ -2472,6 +2472,15 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
             GenTreeBlk*   storeBlk;
             ClassLayout*  layout = m_compiler->typGetBlkLayout(static_cast<unsigned>(cnsSize));
 
+            // Remove all non-user args (e.g. r2r cell)
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.IsArgAddedLate())
+                {
+                    arg.GetNode()->SetUnusedValue();
+                }
+            }
+
             // CORINFO_HELP_MEMCPY           -> normal storeBlk (memcpy)
             // NI_System_SpanHelpers_Memmove -> special storeBlk with memmove semantics (overlapping src/dst)
             if (call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY))
@@ -2480,6 +2489,10 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
                 srcBlk   = m_compiler->gtNewBlkIndir(layout, srcAddr, GTF_IND_UNALIGNED);
                 storeBlk = m_compiler->gtNewStoreBlkNode(layout, dstAddr, srcBlk, GTF_IND_UNALIGNED);
 
+                BlockRange().InsertBefore(call, srcBlk);
+                BlockRange().InsertBefore(call, storeBlk);
+                BlockRange().Remove(lengthArg);
+                BlockRange().Remove(call);
                 // Lower the newly created nodes next.
                 *next = srcBlk;
             }
@@ -2496,24 +2509,15 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
                 // unroll this memmove as memcpy - it doesn't require lots of temp registers
                 storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
 
+                BlockRange().InsertBefore(call, srcBlk);
+                BlockRange().InsertBefore(call, storeBlk);
+                BlockRange().Remove(lengthArg);
+                BlockRange().Remove(call);
+
                 // We intentionally skip Lower for srcBlk and storeBlk as we've just lowered them by hands.
                 // That was needed to preserve BlkOpKindUnrollMemmove behavior and avoid unexpected optimizations
                 // or unsupported (by the codegen side of memmove) addressing modes.
                 *next = storeBlk->gtNext;
-            }
-
-            BlockRange().InsertBefore(call, srcBlk);
-            BlockRange().InsertBefore(call, storeBlk);
-            BlockRange().Remove(lengthArg);
-            BlockRange().Remove(call);
-
-            // Remove all non-user args (e.g. r2r cell)
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.IsArgAddedLate())
-                {
-                    arg.GetNode()->SetUnusedValue();
-                }
             }
 
             JITDUMP("\nNew tree:\n")
