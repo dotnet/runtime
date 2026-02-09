@@ -4,7 +4,9 @@ include(FetchContent)
 
 FetchContent_Declare(
     xz
-    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/xz)
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/xz
+    EXCLUDE_FROM_ALL
+)
 
 # turn off multithreading support to lower the binary size
 set(XZ_THREADS no)
@@ -33,7 +35,6 @@ FetchContent_MakeAvailable(xz)
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
 set(LZMA_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/xz/src/liblzma/api)
-
 
 #
 # silence the warnings for now, we will need to fix these in code and upstream the fixes
