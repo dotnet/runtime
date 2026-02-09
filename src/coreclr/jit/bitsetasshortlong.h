@@ -693,10 +693,7 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
 {
     assert(!IsShort(env));
     unsigned len = BitSetTraits::GetArrSize(env);
-    for (unsigned i = 0; i < len; i++)
-    {
-        lhs[i] = rhs[i];
-    }
+    memmove(lhs, rhs, len * sizeof(size_t));
 }
 
 template <typename Env, typename BitSetTraits>
@@ -721,10 +718,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     assert(!IsShort(env));
     BitSetShortLongRep res = MakeUninitArrayBits(env);
     unsigned           len = BitSetTraits::GetArrSize(env);
-    for (unsigned i = 0; i < len; i++)
-    {
-        res[i] = bs[i];
-    }
+    memcpy(res, bs, len * sizeof(size_t));
     return res;
 }
 
@@ -887,10 +881,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     unsigned len = BitSetTraits::GetArrSize(env);
     assert(len > 1); // Or else would not require an array.
     BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
-    for (unsigned i = 0; i < len; i++)
-    {
-        res[i] = 0;
-    }
+    memset(res, 0, len * sizeof(size_t));
     return res;
 }
 
