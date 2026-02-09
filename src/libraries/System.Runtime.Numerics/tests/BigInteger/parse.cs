@@ -1335,21 +1335,26 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ParseWithNBSPAsGroupSeparator()
         {
-            // Create a custom culture with NBSP as NumberGroupSeparator
-            // This tests the bidirectional space equivalence fix without depending on
-            // specific culture data that may vary across systems/ICU versions
-            CultureInfo ci = new CultureInfo("en-US");
-            ci.NumberFormat.NumberGroupSeparator = "\u00A0";
+            // Culture has NBSP as group separator; input has regular spaces.
+            // Exercises MatchChars path: cp=='\u0020' && IsSpaceReplacingChar(val=='\u00A0')
+            CultureInfo nbspCulture = new CultureInfo("en-US");
+            nbspCulture.NumberFormat.NumberGroupSeparator = "\u00A0";
 
-            // Test that regular space is accepted as equivalent to NBSP when culture uses NBSP
-            string testWithSpace = "1 234 567";  // Regular spaces used as thousands separators
-            BigInteger result = BigInteger.Parse(testWithSpace, NumberStyles.AllowThousands, ci);
-            Assert.Equal(BigInteger.Parse("1234567"), result);
+            BigInteger result = BigInteger.Parse("1 234 567", NumberStyles.AllowThousands, nbspCulture);
+            Assert.Equal((BigInteger)1234567, result);
 
-            // Test with trailing space
-            string testWithTrailingSpace = "123 ";
-            result = BigInteger.Parse(testWithTrailingSpace, NumberStyles.AllowTrailingWhite, ci);
-            Assert.Equal(BigInteger.Parse("123"), result);
+            // Culture has regular space as group separator; input has NBSP.
+            // Exercises MatchChars path: val=='\u0020' && IsSpaceReplacingChar(cp=='\u00A0')
+            CultureInfo spaceCulture = new CultureInfo("en-US");
+            spaceCulture.NumberFormat.NumberGroupSeparator = " ";
+
+            result = BigInteger.Parse("1\u00A0234\u00A0567", NumberStyles.AllowThousands, spaceCulture);
+            Assert.Equal((BigInteger)1234567, result);
+
+            // Culture has regular space as group separator; input has narrow NBSP (U+202F).
+            // Exercises IsSpaceReplacingChar matching U+202F against U+0020
+            result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
+            Assert.Equal((BigInteger)1234567, result);
         }
     }
 
