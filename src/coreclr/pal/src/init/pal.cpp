@@ -685,7 +685,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
-#ifndef TARGET_WASM // we don't use shared libraries on wasm
+#ifndef TARGET_WASM // we don't use shared libraries on wasm and don't support dbg mini dump
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -693,13 +693,12 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
-#endif // !TARGET_WASM
-
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
+#endif // !TARGET_WASM
 
     return ERROR_SUCCESS;
 }

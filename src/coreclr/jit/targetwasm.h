@@ -46,6 +46,7 @@
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
+#define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
 #define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
 #define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
 

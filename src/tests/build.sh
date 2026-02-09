@@ -347,7 +347,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __Priority=0

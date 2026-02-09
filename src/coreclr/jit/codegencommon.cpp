@@ -201,6 +201,9 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 #endif // HAS_FIXED_REGISTER_SET
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
+#ifdef TARGET_WASM
+    , WasmLocalsDecls(theCompiler->getAllocator(CMK_Codegen))
+#endif
 {
 }
 
@@ -2516,6 +2519,7 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
     return false;
 #endif
 }
+#endif // !TARGET_WASM
 
 //----------------------------------------------------------------------
 // genWriteBarrierHelperForWriteBarrierForm: Given a write barrier form
@@ -2551,6 +2555,8 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
             unreached();
     }
 }
+
+#if !defined(TARGET_WASM)
 
 // -----------------------------------------------------------------------------
 // genGetGSCookieTempRegs:
@@ -2599,6 +2605,8 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
     return RBM_GSCOOKIE_TMP;
 #endif
 }
+
+#endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------
 // genGCWriteBarrier: Generate a write barrier for a node.
@@ -2684,6 +2692,8 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
                       0,           // argSize
                       EA_PTRSIZE); // retSize
 }
+
+#ifndef TARGET_WASM
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
