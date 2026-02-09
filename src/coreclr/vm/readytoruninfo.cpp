@@ -1468,44 +1468,40 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     {
         uint stubRuntimeFunctionIndex = 0;
         PCODE stubEntryPoint = LookupResumptionStubEntryPoint(pMD, pConfig, fFixups, &stubRuntimeFunctionIndex);
-        if (stubEntryPoint == (PCODE)NULL)
+        if (stubEntryPoint != (PCODE)NULL)
         {
-            // Resumption stub not found - do not use R2R code for this async variant
-            pEntryPoint = (PCODE)NULL;
-            goto done;
+            // Create a DynamicMethodDesc wrapper for the R2R resumption stub
+            AllocMemTracker amTracker;
+            MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
+
+            // Build the resumption stub signature: object(object, ref byte)
+            // This matches BuildResumptionStubSignature in jitinterface.cpp
+            SigBuilder sigBuilder;
+            sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+            sigBuilder.AppendData(2);                           // 2 arguments
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object (continuation)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
+
+            DWORD cbStubSig;
+            PVOID pStubSig = sigBuilder.GetSignature(&cbStubSig);
+
+            MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
+                pMD->GetLoaderAllocator(),
+                pStubMT,
+                stubEntryPoint,
+                DynamicMethodDesc::StubAsyncResume,
+                (PCCOR_SIGNATURE)pStubSig,
+                cbStubSig,
+                FALSE,
+                &amTracker);
+
+            amTracker.SuppressRelease();
+
+            // Register the stub's entry point so GC can find it during stack walks
+            m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
         }
-
-        // Create a DynamicMethodDesc wrapper for the R2R resumption stub
-        AllocMemTracker amTracker;
-        MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
-
-        // Build the resumption stub signature: object(object, ref byte)
-        // This matches BuildResumptionStubSignature in jitinterface.cpp
-        SigBuilder sigBuilder;
-        sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-        sigBuilder.AppendData(2);                           // 2 arguments
-        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object (continuation)
-        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
-        sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
-        sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
-
-        DWORD cbStubSig;
-        PVOID pStubSig = sigBuilder.GetSignature(&cbStubSig);
-
-        MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
-            pMD->GetLoaderAllocator(),
-            pStubMT,
-            stubEntryPoint,
-            DynamicMethodDesc::StubAsyncResume,
-            (PCCOR_SIGNATURE)pStubSig,
-            cbStubSig,
-            FALSE,
-            &amTracker);
-
-        amTracker.SuppressRelease();
-
-        // Register the stub's entry point so GC can find it during stack walks
-        m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
     }
 
 #ifdef PROFILING_SUPPORTED
