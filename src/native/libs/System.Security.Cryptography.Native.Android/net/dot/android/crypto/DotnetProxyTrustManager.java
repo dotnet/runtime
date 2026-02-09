@@ -4,7 +4,6 @@
 package net.dot.android.crypto;
 
 import android.net.http.X509TrustManagerExtensions;
-import android.os.Build;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
@@ -45,11 +44,11 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
 
     private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
         try {
-            if (targetHost != null && Build.VERSION.SDK_INT >= 24) {
-                // Use hostname-aware validation (API 24+) for server certificates
+            if (targetHost != null) {
+                // X509TrustManagerExtensions.checkServerTrusted is available since API 17
+                // and our minimum supported API level is 21
                 trustManagerExtensions.checkServerTrusted(chain, authType, targetHost);
             } else {
-                // Fallback for API 21-23: use basic validation without hostname
                 platformTrustManager.checkServerTrusted(chain, authType);
             }
             return true;
