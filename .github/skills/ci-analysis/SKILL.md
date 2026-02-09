@@ -201,7 +201,7 @@ $accessToken = (az account get-access-token --resource 499b84ac-1321-427f-aa17-2
 $headers = @{ "Authorization" = "Bearer $accessToken" }
 ```
 
-> ⚠️ If `az` is not installed, use `winget install -e --id Microsoft.AzureCLI` (Windows) then `az extension add --name azure-devops`. Ask the user to authenticate if needed.
+> ⚠️ If `az` is not installed, use `winget install -e --id Microsoft.AzureCLI` (Windows). The `azure-devops` extension is also required — install or verify it with `az extension add --name azure-devops` (safe to run if already installed). Ask the user to authenticate if needed.
 
 > ⚠️ **Do NOT use `az devops configure --defaults`** — it writes to a global config file and will cause conflicts if multiple agents are running concurrently. Always pass `--org` and `--project` (or `-p`) explicitly on each command.
 
@@ -209,7 +209,7 @@ $headers = @{ "Authorization" = "Bearer $accessToken" }
 
 When investigating build failures, it's often useful to look at the pipeline definition itself to understand what stages, jobs, and templates are involved.
 
-**Use `az` CLI commands first** — they're simpler and handle auth automatically:
+**Use `az` CLI commands first** — they're simpler and handle auth automatically. Set `$buildId` from a runs list or from the AzDO URL:
 
 ```powershell
 $org = "https://dev.azure.com/dnceng"
@@ -253,7 +253,7 @@ All dotnet repos that use arcade put their pipeline definitions under `eng/pipel
 
 ```powershell
 # Find the YAML path for a pipeline
-az pipelines show --id 1330 --query "{yamlPath:process.yamlFilename, repo:repository.name}" -o table
+az pipelines show --id 1330 --org $org -p $project --query "{yamlPath:process.yamlFilename, repo:repository.name}" -o table
 
 # Fetch the YAML from the repo (example: dotnet/runtime's runtime-official pipeline)
 #   github-mcp-server-get_file_contents owner:dotnet repo:runtime path:eng/pipelines/runtime-official.yml
