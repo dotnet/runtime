@@ -614,12 +614,6 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(cls);
 
-            if (opcode.Equals(OpCodes.Calli) && cls.IsFunctionPointer)
-            {
-                EmitCalli(cls);
-                return;
-            }
-
             EmitOpcode(opcode);
             WriteOrReserveToken(_moduleBuilder.TryGetTypeHandle(cls), cls);
         }
