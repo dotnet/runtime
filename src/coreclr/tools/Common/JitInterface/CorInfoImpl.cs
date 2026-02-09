@@ -1505,10 +1505,10 @@ namespace Internal.JitInterface
                     ref info->instParamLookup);
 #endif
 
-                if (info->instParamLookup.lookupKind.needsRuntimeLookup &&
-                    info->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED)
+                if (info->instParamLookup.lookupKind.needsRuntimeLookup)
                 {
-                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    // TODO: We can't handle runtime lookups for devirtualized generic methods in AOT yet
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
                 }
             }
