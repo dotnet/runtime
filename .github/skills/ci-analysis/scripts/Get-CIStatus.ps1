@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Retrieves test failures from Azure DevOps builds and Helix test runs.
 
@@ -65,26 +65,26 @@
     to find related build tests that do have binlogs for deeper analysis.
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327
+    .\Get-CIStatus.ps1 -BuildId 1276327
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+    .\Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
+    .\Get-CIStatus.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+    .\Get-CIStatus.ps1 -BuildId 1276327 -SearchMihuBot
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
     # Scans work items to find which ones contain MSBuild binlog files
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -ClearCache
+    .\Get-CIStatus.ps1 -ClearCache
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -152,7 +152,7 @@ $script:TempDir = Get-TempDirectory
 
 # Handle -ClearCache parameter
 if ($ClearCache) {
-    $cacheDir = Join-Path $script:TempDir "helix-failures-cache"
+    $cacheDir = Join-Path $script:TempDir "ci-analysis-cache"
     if (Test-Path $cacheDir) {
         $files = Get-ChildItem -Path $cacheDir -File
         $count = $files.Count
@@ -166,7 +166,7 @@ if ($ClearCache) {
 }
 
 # Setup caching
-$script:CacheDir = Join-Path $script:TempDir "helix-failures-cache"
+$script:CacheDir = Join-Path $script:TempDir "ci-analysis-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
 }
@@ -357,7 +357,7 @@ function Get-AzDOBuildIdFromPR {
     $ghExitCode = $LASTEXITCODE
 
     if ($ghExitCode -ne 0 -and -not ($checksOutput | Select-String -Pattern "buildId=")) {
-        throw "Failed to fetch CI status for PR #$PR in $Repository — check PR number and permissions"
+        throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
     }
 
     # Find ALL failing Azure DevOps builds
@@ -386,7 +386,7 @@ function Get-AzDOBuildIdFromPR {
                 }
             }
         }
-        throw "No CI build found for PR #$PR in $Repository — the CI pipeline has not been triggered yet"
+        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
     }
 
     # Return all unique failing build IDs
