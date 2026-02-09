@@ -3572,30 +3572,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
-        // if treeVN has a bound-check assertion where it's an index, then
-        // it means it's not negative, example:
-        //
-        //   array[idx] = 42; // creates 'BoundsCheckNoThrow' assertion
-        //   return idx % 8;  // idx is known to be never negative here, hence, MOD->UMOD
-        //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp1().GetVN() == treeVN))
-        {
-            *isKnownNonNegative = true;
-            continue;
-        }
-
-        // Same for Length, example:
-        //
-        //  array[idx] = 42;
-        //  array.Length is known to be non-negative and non-zero here
-        //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetCheckedBound() == treeVN))
-        {
-            *isKnownNonNegative = true;
-            *isKnownNonZero     = true;
-            return; // both properties are known, no need to check other assertions
-        }
-
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion.IsConstantInt32Assertion() && (curAssertion.GetOp1().GetVN() == treeVN))
         {
@@ -3637,14 +3613,15 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if MergeEdgeAssertions can help us:
-    if (tree->TypeIs(TYP_INT))
+    if (genActualType(tree) == TYP_INT)
     {
         Range rng = RangeCheck::GetRangeFromAssertions(this, treeVN, assertions);
+        assert(rng.IsConstantRange());
         if (rng.LowerLimit().GetConstant() >= 0)
         {
             *isKnownNonNegative = true;
         }
-        if (rng.LowerLimit().GetConstant() > 0)
+        if ((rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0))
         {
             *isKnownNonZero = true;
         }
@@ -4430,21 +4407,41 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         }
     }
 
-    // If we don't have a cast of a LCL_VAR then bail.
-    if (!lcl->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
-    }
-
+    bool removeCast = false;
     if (!optLocalAssertionProp)
     {
-        // optAssertionIsSubrange is only for local assertion prop.
-        return nullptr;
+        Range castToTypeRange = RangeCheck::GetRangeFromType(cast->CastToType());
+        if (castToTypeRange.IsConstantRange() && (genActualType(cast->CastOp()) == TYP_INT))
+        {
+            ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
+            Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
+            if (castOpRng.IsConstantRange() &&
+                (castOpRng.LowerLimit().GetConstant() >= castToTypeRange.LowerLimit().GetConstant()) &&
+                (castOpRng.UpperLimit().GetConstant() <= castToTypeRange.UpperLimit().GetConstant()))
+            {
+                removeCast = true;
+                if (!lcl->OperIs(GT_LCL_VAR))
+                {
+                    if (!cast->gtOverflow())
+                    {
+                        return nullptr;
+                    }
+
+                    // Just clear the overflow flag then.
+                    JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
+                    cast->ClearOverflow();
+                    return optAssertionProp_Update(cast, cast, stmt);
+                }
+            }
+        }
+    }
+    else
+    {
+        removeCast = lcl->OperIs(GT_LCL_VAR) &&
+                     optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX;
     }
 
-    IntegralRange  range = IntegralRange::ForCastInput(cast);
-    AssertionIndex index = optAssertionIsSubrange(lcl, range, assertions);
-    if (index != NO_ASSERTION_INDEX)
+    if (removeCast)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
 
@@ -4456,13 +4453,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
             {
                 return nullptr;
             }
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                DISPNODE(cast);
-            }
-#endif
+
+            JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
             cast->ClearOverflow();
             return optAssertionProp_Update(cast, cast, stmt);
         }
@@ -4481,13 +4473,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
             op1->ChangeType(varDsc->TypeGet());
         }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            DISPNODE(cast);
-        }
-#endif
+        JITDUMP("Removing cast %06u as redundant based on assertions.\n", dspTreeID(cast));
         return optAssertionProp_Update(op1, cast, stmt);
     }
 
@@ -5087,6 +5073,22 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             // i.e.  a[i+1] followed by a[i]  by using the VN(i+1) >= VN(i)
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
+        }
+    }
+
+    if ((genActualType(vnStore->TypeOfVN(vnCurIdx)) == TYP_INT) &&
+        (genActualType(vnStore->TypeOfVN(vnCurLen)) == TYP_INT))
+    {
+        Range idxRng = RangeCheck::GetRangeFromAssertions(this, vnCurIdx, assertions);
+        Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+        if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
+        {
+            // idx.lo >= 0 && idx.hi < len.lo --> drop bounds check
+            if (idxRng.LowerLimit().GetConstant() >= 0 &&
+                idxRng.UpperLimit().GetConstant() < lenRng.LowerLimit().GetConstant())
+            {
+                return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
+            }
         }
     }
 
