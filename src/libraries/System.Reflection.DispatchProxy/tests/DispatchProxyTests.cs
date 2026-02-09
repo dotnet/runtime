@@ -245,6 +245,7 @@ namespace DispatchProxyTests
             Assert.NotNull(CreateHelper<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>(useGenericCreate));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

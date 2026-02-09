@@ -1008,6 +1008,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.MinBy(keySelector, comparer));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(MinBy_Generic_TestData))]
         public static void MinBy_Generic_RunOnce_HasExpectedOutput<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer, TSource? expected)

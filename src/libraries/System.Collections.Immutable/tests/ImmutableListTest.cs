@@ -24,7 +24,6 @@ namespace System.Collections.Immutable.Tests
             Last,
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void RandomOperationsTest()
         {
@@ -97,6 +96,7 @@ namespace System.Collections.Immutable.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EmptyTest()
         {
@@ -311,6 +311,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.InsertRange(-1, nonEmptyList));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void NullHandlingTest()
         {

@@ -919,6 +919,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.NoSetter, actual.NoSetter);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public static void Xml_TestTypeWithListPropertiesWithoutPublicSetters()
     {
