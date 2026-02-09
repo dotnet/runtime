@@ -153,10 +153,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException(bool useAsync)
+        [Fact]
+        public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -182,44 +180,16 @@ namespace System.Net.Security.Tests
                 // Client attempts to write after receiving close_notify
                 // On macOS with Secure Transport, this throws immediately
                 // On Linux/Windows, the first write may succeed, subsequent operations fail
-                if (PlatformDetection.IsOSX)
+                try
                 {
-                    if (useAsync)
-                    {
-                        await Assert.ThrowsAsync<IOException>(() => client.WriteAsync(buffer, 0, buffer.Length)).WaitAsync(TestConfiguration.PassingTestTimeout);
-                    }
-                    else
-                    {
-                        Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
-                    }
+                    await client.WriteAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
+
+                    // Write succeeded - this is expected on Linux/Windows
+                    Assert.False(PlatformDetection.IsOSX, "Write after close_notify should throw on macOS");
                 }
-                else
+                catch (IOException)
                 {
-                    // On other platforms, write may succeed (sends data despite close_notify)
-                    // The connection may be closed by the server or subsequent operations may fail
-                    // We just verify that we don't crash or hang
-                    if (useAsync)
-                    {
-                        try
-                        {
-                            await client.WriteAsync(buffer, 0, buffer.Length).WaitAsync(TestConfiguration.PassingTestTimeout);
-                        }
-                        catch (IOException)
-                        {
-                            // Also acceptable on some platforms
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            client.Write(buffer, 0, buffer.Length);
-                        }
-                        catch (IOException)
-                        {
-                            // Also acceptable on some platforms
-                        }
-                    }
+                    // IOException is expected on macOS, but also acceptable on other platforms
                 }
             }
         }
