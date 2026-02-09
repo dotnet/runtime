@@ -494,7 +494,7 @@ namespace System.Numerics.Tensors
                 // which case we still need to keep incrementing the index but without
                 // adjusting the linearOffset
 
-                if (index >= 0)//destinationLengths[destinationRankIndex])
+                if (index >= 0)
                 {
                     if (index >= length)
                     {

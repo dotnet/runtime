@@ -939,9 +939,11 @@ namespace System.Numerics.Tensors.Tests
             // Helper: verify Reverse correctness for any shape
             static void AssertReverseCorrect(nint[] shape)
             {
-                int totalLength = 1;
+                nint totalLengthNative = 1;
                 foreach (var s in shape)
-                    totalLength *= (int)s;
+                    totalLengthNative = checked(totalLengthNative * s);
+
+                int totalLength = checked((int)totalLengthNative);
 
                 // Use 1-based values so 0 (default) is never a valid value - makes bugs obvious
                 int[] data = new int[totalLength];
