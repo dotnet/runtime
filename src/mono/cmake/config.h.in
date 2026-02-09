@@ -260,8 +260,6 @@
 /* Define to 1 if you have the `sigaction' function. */
 #cmakedefine HAVE_SIGACTION 1
 
-/* CLOCK_MONOTONIC */
-#cmakedefine HAVE_CLOCK_MONOTONIC 1
 
 /* clockid_t */
 #cmakedefine HAVE_CLOCKID_T 1

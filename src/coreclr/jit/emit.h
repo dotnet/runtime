@@ -638,8 +638,9 @@ protected:
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock; // Target block for branches
+
 #ifdef TARGET_WASM
-        int lclOffset; // Base index of the WASM locals being declared
+        int lclBaseIndex; // Base index of the WASM locals being declared
 #endif
     };
 
