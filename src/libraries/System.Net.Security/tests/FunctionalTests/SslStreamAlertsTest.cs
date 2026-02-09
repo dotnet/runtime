@@ -154,7 +154,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task SslStream_WriteAfterRemoteCloseNotify_ThrowsIOException()
+        public async Task SslStream_WriteAfterRemoteCloseNotify_MayThrowIOException()
         {
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -163,9 +163,23 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
+                string targetHost = certificate.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = certificate,
+                    EnabledSslProtocols = SslProtocols.Tls12
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = targetHost,
+                    EnabledSslProtocols = SslProtocols.Tls12
+                };
+
                 await Task.WhenAll(
-                    server.AuthenticateAsServerAsync(certificate),
-                    client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false))
+                    server.AuthenticateAsServerAsync(serverOptions),
+                    client.AuthenticateAsClientAsync(clientOptions)
                 ).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 var buffer = new byte[1024];
