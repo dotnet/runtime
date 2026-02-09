@@ -30,12 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AtanOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            // This code is based on `vrs4_atanf` and `vrd2_atan` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2023 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
             // Implementation Notes
             // --------------------
             // sign = sign(x)

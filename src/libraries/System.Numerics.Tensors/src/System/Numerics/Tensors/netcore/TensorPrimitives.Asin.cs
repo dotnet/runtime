@@ -30,12 +30,6 @@ namespace System.Numerics.Tensors
         private readonly struct AsinOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            // This code is based on `vrs4_asinf` and `asinf` from amd/aocl-libm-ose
-            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
             // Implementation Notes
             // --------------------
             // The input domain should be in the [-1, +1] else a domain error is displayed

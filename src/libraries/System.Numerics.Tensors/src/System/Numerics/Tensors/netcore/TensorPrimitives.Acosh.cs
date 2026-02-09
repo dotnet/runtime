@@ -30,12 +30,6 @@ namespace System.Numerics.Tensors
         internal readonly struct AcoshOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            // This code is based on `acoshf` from amd/aocl-libm-ose
-            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
-            //
-            // Licensed under the BSD 3-Clause "New" or "Revised" License
-            // See THIRD-PARTY-NOTICES.TXT for the full license text
-
             // Implementation Notes
             // --------------------
             // acosh(x) = log(x + sqrt(x^2 - 1))
