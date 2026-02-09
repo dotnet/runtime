@@ -290,7 +290,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void RecursiveDelete_issue84344()
+        public void RecursiveDelete_Issue84344()
         {
             // Test the scenario described in the GitHub issue #84344 where the nesting depth of subdirectories is huge (14000).
             // But this test will take a long time to run if we use 14000 as the depth, because the original depth number is too deep.
