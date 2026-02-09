@@ -24,8 +24,8 @@ class PerfMap
 private:
     static Volatile<bool> s_enabled;
 
-    // Set to true after all dependencies for sendExisting are initialized.
-    static Volatile<bool> s_sendExistingReady;
+    // Set to true after all dependencies (AppDomain, ExecutionManager) are initialized.
+    static Volatile<bool> s_dependenciesReady;
 
     // The one and only PerfMap for the process.
     static PerfMap * s_Current;

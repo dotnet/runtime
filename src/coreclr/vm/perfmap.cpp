@@ -28,7 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
-Volatile<bool> PerfMap::s_sendExistingReady = false;
+Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -124,11 +124,11 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
         // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
-        // may not exist yet. We use s_sendExistingReady (a Volatile<bool>) to guard against
+        // may not exist yet. We use s_dependenciesReady (a Volatile<bool>) to guard against
         // this, rather than null-checking individual pointers which would have race conditions
         // due to non-Volatile statics like m_pEEJitManager.
         // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
-        if (!s_sendExistingReady)
+        if (!s_dependenciesReady)
         {
             return;
         }
@@ -226,7 +226,7 @@ void PerfMap::SignalDependenciesReady()
 {
     LIMITED_METHOD_CONTRACT;
 
-    s_sendExistingReady = true;
+    s_dependenciesReady = true;
 }
 
 // Construct a new map for the process.
