@@ -5182,11 +5182,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
+        {
             // Traditional virtual call. In theory we could optimize this to using the vtable
             AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            // Reserved slots for caching DispatchToken and its hash
+            m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+            int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+            assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             break;
-
+        }
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
             if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(m_compHnd->getMethodClass(callInfo.hMethod)) & CORINFO_FLG_SHAREDINST))
             {
@@ -5217,6 +5224,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+                m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+                int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+                assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             }
             break;
 
