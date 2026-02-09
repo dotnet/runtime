@@ -14,7 +14,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class NativeLayoutInfoNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private ExternalReferencesTableNode _staticsReferences;
 
@@ -42,7 +41,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__nativelayoutinfo"u8);
         }
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -83,7 +81,6 @@ namespace ILCompiler.DependencyAnalysis
 
             SaveNativeLayoutInfoWriter(factory);
 
-            _size = _writerSavedBytes.Length;
 
             return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

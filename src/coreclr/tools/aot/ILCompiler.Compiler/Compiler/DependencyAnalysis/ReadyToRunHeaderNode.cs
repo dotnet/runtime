@@ -98,9 +98,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 builder.EmitPointerReloc((ISymbolNode)item.Node);
 
-                if (!relocsOnly && item.Node is INodeWithSize nodeWithSize)
+                if (item.Node is INodeWithSize)
                 {
-                    builder.EmitPointerReloc((ISymbolNode)item.Node, nodeWithSize.Size);
+                    builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
                 }
                 else
                 {
@@ -118,8 +118,11 @@ namespace ILCompiler.DependencyAnalysis
         public override int ClassCode => 0x7db08464;
     }
 
+    /// <summary>
+    /// Marker interface for nodes that should have their size emitted in the ReadyToRun header
+    /// using IMAGE_REL_SYMBOL_SIZE relocation.
+    /// </summary>
     public interface INodeWithSize
     {
-        public int Size { get; }
     }
 }

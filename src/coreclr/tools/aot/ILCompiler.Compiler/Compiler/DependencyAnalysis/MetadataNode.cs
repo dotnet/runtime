@@ -13,10 +13,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
-
-        int INodeWithSize.Size => _size.Value;
-
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata"u8);
@@ -37,7 +33,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
-            _size = blob.Length;
 
             return new ObjectData(
                 blob,

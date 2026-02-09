@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </remarks>
     internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
 
         public override bool IsShareable => false;
 
@@ -43,7 +42,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
 
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -309,7 +307,6 @@ namespace ILCompiler.DependencyAnalysis
                 dehydratedSegmentPosition += o.Data.Length;
             }
 
-            _size = builder.CountBytes;
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)

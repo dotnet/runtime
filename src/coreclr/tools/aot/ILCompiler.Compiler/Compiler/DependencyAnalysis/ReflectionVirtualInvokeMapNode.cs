@@ -19,7 +19,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionVirtualInvokeMapNode(ExternalReferencesTableNode externalReferences)
@@ -32,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -206,7 +204,6 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

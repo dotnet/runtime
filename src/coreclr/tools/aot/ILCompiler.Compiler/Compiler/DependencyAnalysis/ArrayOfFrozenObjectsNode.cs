@@ -12,8 +12,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart"u8);
@@ -57,7 +55,6 @@ namespace ILCompiler.DependencyAnalysis
             AlignNextObject(ref builder, factory);
             builder.EmitZeroPointer();
 
-            _size = builder.CountBytes;
 
             return builder.ToObjectData();
         }

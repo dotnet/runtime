@@ -23,9 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             _resourceDataNode = resourceDataNode;
         }
 
-        private int? _size;
 
-        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -104,7 +102,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] blob = nativeWriter.Save();
-            _size = blob.Length;
             return blob;
         }
 

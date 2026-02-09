@@ -13,7 +13,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ClassConstructorContextMap : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ClassConstructorContextMap(ExternalReferencesTableNode externalReferences)
@@ -21,7 +20,6 @@ namespace ILCompiler.DependencyAnalysis
             _externalReferences = externalReferences;
         }
 
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -73,7 +71,6 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

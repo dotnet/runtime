@@ -15,7 +15,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
         private readonly string _blobName;
         private readonly NodeFactory _nodeFactory;
 
@@ -28,7 +27,6 @@ namespace ILCompiler.DependencyAnalysis
             _nodeFactory = nodeFactory;
         }
 
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -102,7 +100,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            _size = builder.CountBytes;
 
             builder.AddSymbol(this);
 

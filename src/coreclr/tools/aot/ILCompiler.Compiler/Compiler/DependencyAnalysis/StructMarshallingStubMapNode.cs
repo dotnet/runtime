@@ -16,7 +16,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
         private readonly ExternalReferencesTableNode _externalReferences;
         private readonly InteropStateManager _interopStateManager;
 
@@ -26,7 +25,6 @@ namespace ILCompiler.DependencyAnalysis
             _interopStateManager = interopStateManager;
         }
 
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -123,7 +121,6 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

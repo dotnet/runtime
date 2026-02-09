@@ -20,7 +20,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private int? _size;
 
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
@@ -28,7 +27,6 @@ namespace ILCompiler.DependencyAnalysis
         private List<ResourceIndexData> _indexData;
         private int _totalLength;
 
-        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -135,7 +133,6 @@ namespace ILCompiler.DependencyAnalysis
                 currentPos += resourceData.Length;
             }
 
-            _size = resourceBlob.Length;
             return resourceBlob;
         }
 
