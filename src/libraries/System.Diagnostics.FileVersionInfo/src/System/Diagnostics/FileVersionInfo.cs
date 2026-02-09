@@ -315,6 +315,15 @@ namespace System.Diagnostics
         /// Gets the internal name of the file, if one exists.
         /// </summary>
         /// <returns>The internal name of the file. If none exists, this property will contain the original name of the file without the extension.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.InternalName%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/InternalName/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/InternalName/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? InternalName
         {
             get { return _internalName; }
@@ -324,6 +333,16 @@ namespace System.Diagnostics
         /// Gets a value that specifies whether the file contains debugging information or is compiled with debugging features enabled.
         /// </summary>
         /// <returns><see langword="true" /> if the file contains debugging information or is compiled with debugging features enabled; otherwise, <see langword="false" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+        ///
+        ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. The <xref:System.Diagnostics.FileVersionInfo.IsDebug%2A> property reflects the `VS_FF_DEBUG` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file.
+        ///
+        ///  For more information about specifying version resources, see [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes).
+        /// ]]></format>
+        /// </remarks>
         public bool IsDebug
         {
             get { return _isDebug; }
@@ -333,6 +352,16 @@ namespace System.Diagnostics
         /// Gets a value that specifies whether the file has been modified and is not identical to the original shipping file of the same version number.
         /// </summary>
         /// <returns><see langword="true" /> if the file is patched; otherwise, <see langword="false" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+        ///
+        ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. The <xref:System.Diagnostics.FileVersionInfo.IsPatched%2A> property reflects the `VS_FF_PATCHED` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file.
+        ///
+        ///  For more information about specifying version resources, see [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes).
+        /// ]]></format>
+        /// </remarks>
         public bool IsPatched
         {
             get { return _isPatched; }
@@ -342,6 +371,16 @@ namespace System.Diagnostics
         /// Gets a value that specifies whether the file was built using standard release procedures.
         /// </summary>
         /// <returns><see langword="true" /> if the file is a private build; <see langword="false" /> if the file was built using standard release procedures or if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+        ///
+        ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. The <xref:System.Diagnostics.FileVersionInfo.IsPrivateBuild%2A> property reflects the `VS_FF_PRIVATEBUILD` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file. If this flag is set, the <xref:System.Diagnostics.FileVersionInfo.PrivateBuild%2A> property contains additional information.
+        ///
+        ///  For more information about specifying version resources, see [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes).
+        /// ]]></format>
+        /// </remarks>
         public bool IsPrivateBuild
         {
             get { return _isPrivateBuild; }
@@ -351,6 +390,16 @@ namespace System.Diagnostics
         /// Gets a value that specifies whether the file is a development version, rather than a commercially released product.
         /// </summary>
         /// <returns><see langword="true" /> if the file is prerelease; otherwise, <see langword="false" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+        ///
+        ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. The <xref:System.Diagnostics.FileVersionInfo.IsPreRelease%2A> property reflects the `VS_FF_PRERELEASE` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file.
+        ///
+        ///  For more information about specifying version resources, see [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes).
+        /// ]]></format>
+        /// </remarks>
         public bool IsPreRelease
         {
             get { return _isPreRelease; }
@@ -360,6 +409,16 @@ namespace System.Diagnostics
         /// Gets a value that specifies whether the file is a special build.
         /// </summary>
         /// <returns><see langword="true" /> if the file is a special build; otherwise, <see langword="false" />.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The <xref:System.Diagnostics.FileVersionInfo> properties are based on version resource information built into the file. Version resources are often built into binary files such as .exe or .dll files; text files do not have version resource information.
+        ///
+        ///  Version resources are typically specified in a Win32 resource file, or in assembly attributes. The <xref:System.Diagnostics.FileVersionInfo.IsSpecialBuild%2A> property reflects the `VS_FF_SPECIALBUILD` flag value in the file's `VS_FIXEDFILEINFO` block, which is built from the `VERSIONINFO` resource in a Win32 resource file. If this flag is set, the <xref:System.Diagnostics.FileVersionInfo.SpecialBuild%2A> property contains additional information.
+        ///
+        ///  For more information about specifying version resources, see [Setting Assembly Attributes](/dotnet/standard/assembly/set-attributes).
+        /// ]]></format>
+        /// </remarks>
         public bool IsSpecialBuild
         {
             get { return _isSpecialBuild; }
@@ -378,6 +437,20 @@ namespace System.Diagnostics
         /// Gets all copyright notices that apply to the specified file.
         /// </summary>
         /// <returns>The copyright notices that apply to the specified file.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  This should include the full text of all notices, legal symbols, copyright dates, and so on or `null` if the file did not contain version information.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.LegalCopyright%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/LegalCopyright/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/LegalCopyright/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? LegalCopyright
         {
             get { return _legalCopyright; }
@@ -387,6 +460,20 @@ namespace System.Diagnostics
         /// Gets the trademarks and registered trademarks that apply to the file.
         /// </summary>
         /// <returns>The trademarks and registered trademarks that apply to the file or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  The legal trademarks include the full text of all notices, legal symbols, and trademark numbers.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.LegalTrademarks%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/LegalTrademarks/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/LegalTrademarks/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? LegalTrademarks
         {
             get { return _legalTrademarks; }
@@ -396,6 +483,20 @@ namespace System.Diagnostics
         /// Gets the name the file was created with.
         /// </summary>
         /// <returns>The name the file was created with or <see langword="null" /> if the file did not contain version information.</returns>
+        /// <remarks>
+        /// <format type="text/markdown"><![CDATA[
+        /// ## Remarks
+        ///  This property enables an application to determine whether a file has been renamed.
+        ///
+        ///
+        ///
+        /// ## Examples
+        ///  The following example calls <xref:System.Diagnostics.FileVersionInfo.GetVersionInfo%2A> to get the <xref:System.Diagnostics.FileVersionInfo> for the Notepad. Then it prints the <xref:System.Diagnostics.FileVersionInfo.OriginalFilename%2A> in a text box. This code assumes `textBox1` has been instantiated.
+        ///
+        ///  :::code language="csharp" source="~/snippets/csharp/System.Diagnostics/FileVersionInfo/OriginalFilename/source.cs" id="Snippet1":::
+        ///  :::code language="vb" source="~/snippets/visualbasic/System.Diagnostics/FileVersionInfo/OriginalFilename/source.vb" id="Snippet1":::
+        /// ]]></format>
+        /// </remarks>
         public string? OriginalFilename
         {
             get { return _originalFilename; }
