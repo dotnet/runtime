@@ -328,7 +328,15 @@ namespace ILCompiler
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;
 
-                CodeViewDebugDirectoryData debugDirectoryData = peReader.ReadCodeViewDebugDirectoryData(debugEntry);
+                CodeViewDebugDirectoryData debugDirectoryData;
+                try
+                {
+                    debugDirectoryData = peReader.ReadCodeViewDebugDirectoryData(debugEntry);
+                }
+                catch (BadImageFormatException)
+                {
+                    continue;
+                }
 
                 string candidatePath  = debugDirectoryData.Path;
                 if (!Path.IsPathRooted(candidatePath) || !File.Exists(candidatePath))
