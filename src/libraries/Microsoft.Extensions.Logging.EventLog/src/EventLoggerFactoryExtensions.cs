@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Logging
             ArgumentNullException.ThrowIfNull(settings);
 
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider>(new EventLogLoggerProvider(settings)));
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<EventLogSettings>, EventLogConfigureSettings>());
+
 
             return builder;
         }
