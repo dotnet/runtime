@@ -540,7 +540,7 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    const bool SIGNED = true;
+    const bool SIGNED   = true;
     const bool UNSIGNED = false;
 
     BYTE*       dst    = *dp;
