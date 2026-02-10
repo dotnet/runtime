@@ -3141,17 +3141,16 @@ namespace System.Runtime.Intrinsics
             // Select result based on transform
             TVectorDouble v = TVectorDouble.ConditionalSelect(transformMask, v_transform, v_normal);
 
-            // Apply sign
-            v |= sign;
+            // Toggle sign (XOR preserves sign inversion from original AMD AOCL)
+            v ^= sign;
 
-            // Handle special cases: |x| > 1 returns NaN, |x| = 1 returns ±π/2
+            // Handle x = ±1 exactly: asin(±1) = ±π/2
+            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.One);
+            v = TVectorDouble.ConditionalSelect(absXEqualsOne, TVectorDouble.Create(PIBY2) ^ sign, v);
+
+            // Handle |x| > 1: returns NaN
             TVectorDouble absXGreaterThanOne = TVectorDouble.GreaterThan(TVectorDouble.Abs(x), TVectorDouble.One);
             v = TVectorDouble.ConditionalSelect(absXGreaterThanOne, TVectorDouble.Create(double.NaN), v);
-
-            // Handle x = ±1 exactly
-            TVectorDouble absXEqualsOne = TVectorDouble.Equals(TVectorDouble.Abs(x), TVectorDouble.One);
-            TVectorDouble piby2Result = TVectorDouble.Create(PIBY2) | sign;
-            v = TVectorDouble.ConditionalSelect(absXEqualsOne, piby2Result, v);
 
             return v;
         }
