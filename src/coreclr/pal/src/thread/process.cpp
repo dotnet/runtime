@@ -2748,11 +2748,8 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
 
     if (LogCallstackForAndroidNativeCrash != nullptr)
     {
-        minipal_log_write_fatal("\n=================================================================\n");
-        minipal_log_write_fatal("\tManaged Stacktrace:\n");
-        minipal_log_write_fatal("=================================================================\n");
+        minipal_log_write_fatal(".NET runtime crash report\n");
         LogCallstackForAndroidNativeCrash();
-        minipal_log_write_fatal("=================================================================\n");
     }
 
     // TODO: Dump stress log into logcat and/or file when enabled?
