@@ -749,6 +749,10 @@ namespace System.Security.Cryptography.X509Certificates
                         catch
                         {
                             // Eat any exception so we don't terminate the finalizer thread.
+#if DEBUG
+                            // Except in DEBUG, as we really shouldn't be hitting any exceptions here.
+                            throw;
+#endif                            
                         }
                     }
                 }
