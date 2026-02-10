@@ -626,7 +626,7 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     return
 }
 
-$prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits
+$prJson = gh pr view $PRNumber -R $Repository --json body,title,state,author,headRefName,baseRefName,createdAt,updatedAt,url,comments,commits,additions,deletions,changedFiles
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Could not fetch PR #$PRNumber from $Repository. Ensure you are authenticated (gh auth login)."
     return
@@ -655,6 +655,36 @@ if ($isForwardFlow) {
 }
 elseif ($isBackflow) {
     Write-Status "Flow" "Backflow (dotnet/dotnet → $Repository)" "Cyan"
+}
+
+# Check for empty diff (0 changed files)
+$isEmptyDiff = ($pr.changedFiles -eq 0 -and $pr.additions -eq 0 -and $pr.deletions -eq 0)
+if ($isEmptyDiff) {
+    Write-Host ""
+    Write-Host "  📭 Empty diff: 0 changed files, 0 additions, 0 deletions" -ForegroundColor Yellow
+}
+
+# Check PR timeline for force pushes
+$forcePushEvents = @()
+$owner, $repo = $Repository -split '/'
+$timelineJson = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --jq '[.[] | select(.event == "head_ref_force_pushed")]' 2>$null
+if ($LASTEXITCODE -eq 0 -and $timelineJson) {
+    $forcePushEvents = @(($timelineJson -join "`n") | ConvertFrom-Json)
+}
+
+if ($forcePushEvents.Count -gt 0) {
+    Write-Host ""
+    foreach ($fp in $forcePushEvents) {
+        $fpActor = if ($fp.actor) { $fp.actor.login } else { "unknown" }
+        $fpTime = $fp.created_at
+        $fpSha = if ($fp.commit_id) { Get-ShortSha $fp.commit_id } else { "unknown" }
+        Write-Host "  🔄 Force push by @$fpActor at $fpTime (→ $fpSha)" -ForegroundColor Cyan
+    }
+    $lastForcePush = $forcePushEvents[-1]
+    $lastForcePushTime = if ($lastForcePush.created_at) {
+        [DateTimeOffset]::Parse($lastForcePush.created_at).UtcDateTime
+    } else { $null }
+    $lastForcePushActor = if ($lastForcePush.actor) { $lastForcePush.actor.login } else { "unknown" }
 }
 
 # --- Step 2: Parse PR body metadata ---
@@ -1081,6 +1111,33 @@ else {
     Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
 }
 
+# Cross-reference force push against conflict/staleness warnings
+$conflictMayBeResolved = $false
+$stalenessMayBeResolved = $false
+if ($lastForcePushTime) {
+    if ($conflictWarnings.Count -gt 0 -and $lastConflictComment) {
+        $lastConflictTime = [DateTimeOffset]::Parse($lastConflictComment.createdAt).UtcDateTime
+        if ($lastForcePushTime -gt $lastConflictTime) {
+            $conflictMayBeResolved = $true
+            Write-Host ""
+            Write-Host "  ℹ️  Force push by @$lastForcePushActor at $($lastForcePush.created_at) is AFTER the last conflict warning" -ForegroundColor Cyan
+            Write-Host "     Conflict may have been resolved via darc vmr resolve-conflict" -ForegroundColor DarkGray
+        }
+    }
+    if ($stalenessWarnings.Count -gt 0 -and $lastStalenessComment) {
+        $lastWarnTime2 = [DateTimeOffset]::Parse($lastStalenessComment.createdAt).UtcDateTime
+        if ($lastForcePushTime -gt $lastWarnTime2) {
+            $stalenessMayBeResolved = $true
+            Write-Host "  ℹ️  Force push is AFTER the staleness warning — someone may have acted on it" -ForegroundColor Cyan
+        }
+    }
+    if ($isEmptyDiff -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
+        Write-Host ""
+        Write-Host "  📭 PR has empty diff after force push — codeflow changes may already be in target branch" -ForegroundColor Yellow
+        Write-Host "     This PR is likely a no-op. Consider merging to clear state or closing it." -ForegroundColor DarkGray
+    }
+}
+
 # --- Step 5: Analyze PR branch commits (using commits from gh pr view) ---
 Write-Section "PR Branch Analysis"
 
@@ -1288,13 +1345,33 @@ Write-Section "Recommendations"
 $issues = @()
 
 # Summarize issues
-if ($conflictWarnings.Count -gt 0) {
-    $fileHint = if ($conflictFiles -and $conflictFiles.Count -gt 0) { " in $($conflictFiles -join ', ')" } else { "" }
-    $issues += "Conflict detected$fileHint — manual resolution required"
+if ($isEmptyDiff -and $lastForcePushTime -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
+    # Special case: empty diff after force push that post-dates warnings
+    $issues += "PR is a no-op (empty diff after force push by @$lastForcePushActor)"
 }
+else {
+    if ($conflictWarnings.Count -gt 0) {
+        $fileHint = if ($conflictFiles -and $conflictFiles.Count -gt 0) { " in $($conflictFiles -join ', ')" } else { "" }
+        if ($conflictMayBeResolved) {
+            $issues += "Conflict$fileHint was reported but may be resolved (force push after warning)"
+        }
+        else {
+            $issues += "Conflict detected$fileHint — manual resolution required"
+        }
+    }
 
-if ($stalenessWarnings.Count -gt 0) {
-    $issues += "Staleness warning active — codeflow is blocked"
+    if ($stalenessWarnings.Count -gt 0) {
+        if ($stalenessMayBeResolved) {
+            $issues += "Staleness warning was active but may be addressed (force push after warning)"
+        }
+        else {
+            $issues += "Staleness warning active — codeflow is blocked"
+        }
+    }
+
+    if ($isEmptyDiff) {
+        $issues += "PR has empty diff (0 changed files) — may be a no-op"
+    }
 }
 
 if ($vmrCommit -and $sourceHeadSha -and $vmrCommit -ne $sourceHeadSha -and $compareStatus -ne 'identical') {
@@ -1325,7 +1402,15 @@ else {
     Write-Host ""
     Write-Host "  Options:" -ForegroundColor White
 
-    if ($conflictWarnings.Count -gt 0) {
+    if ($isEmptyDiff -and $lastForcePushTime -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
+        Write-Host "    1. Merge empty PR — clears codeflow state so Maestro creates a fresh PR" -ForegroundColor White
+        Write-Host "    2. Close PR — Maestro will create a new one with current VMR content" -ForegroundColor White
+        if ($subscriptionId) {
+            Write-Host "    3. Force trigger — push fresh codeflow content into this PR" -ForegroundColor White
+            Write-Host "       darc trigger-subscriptions --id $subscriptionId --force" -ForegroundColor DarkGray
+        }
+    }
+    elseif ($conflictWarnings.Count -gt 0 -and -not $conflictMayBeResolved) {
         Write-Host "    1. Resolve conflicts — follow the darc vmr resolve-conflict instructions above" -ForegroundColor White
         if ($subscriptionId) {
             Write-Host "       darc vmr resolve-conflict --subscription $subscriptionId" -ForegroundColor DarkGray

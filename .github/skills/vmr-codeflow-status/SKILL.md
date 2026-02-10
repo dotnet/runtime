@@ -105,6 +105,10 @@ Use this skill when:
 - **⚠️ Staleness warning**: A forward flow merged while this backflow PR was open. Maestro blocked further updates.
 - **🔴 Conflict detected**: Maestro found merge conflicts. Shows conflicting files and `darc vmr resolve-conflict` command.
 
+### Force Push & Empty Diff Detection
+- **🔄 Force push detected**: Shows who force-pushed and when. Cross-references against conflict/staleness warnings to determine if someone already acted (e.g., ran `darc vmr resolve-conflict`).
+- **📭 Empty diff**: PR has 0 changed files. If this follows a force push after warnings, the PR is likely a no-op — its changes already landed in the target branch via other paths. Recommendations shift to merge-empty/close/force-trigger.
+
 ### Manual Commits
 Manual commits on the PR branch are at risk if the PR is closed or force-triggered. The script lists them so you can decide whether to preserve them.
 
@@ -136,6 +140,29 @@ darc vmr resolve-conflict --subscription <subscription-id>
 ```
 
 Install darc via `eng\common\darc-init.ps1` in any arcade-enabled repository.
+
+### When the script reports "Maestro may be stuck"
+
+When the script shows a missing backflow PR with "Maestro may be stuck" (builds are fresh but no PR was created), follow these diagnostic steps:
+
+1. **Check the subscription** to find when it last consumed a build:
+   ```bash
+   darc get-subscriptions --target-repo <repo> --source-repo dotnet/dotnet
+   ```
+   Look at the `Last Build` field — if it's weeks old while the channel has newer builds, the subscription is stuck.
+
+2. **Compare against the latest channel build** to confirm the gap:
+   ```bash
+   darc get-latest-build --repo dotnet/dotnet --channel "<channel-name>"
+   ```
+   Channel names follow patterns like `.NET 11.0.1xx SDK`, `.NET 10.0.1xx SDK`, `.NET 11.0.1xx SDK Preview 1`.
+
+3. **Trigger the subscription manually** to unstick it:
+   ```bash
+   darc trigger-subscriptions --id <subscription-id>
+   ```
+
+4. **If triggering doesn't produce a PR within a few minutes**, the issue may be deeper — check Maestro health or open an issue on `dotnet/arcade`.
 
 ## References
 
