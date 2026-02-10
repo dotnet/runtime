@@ -9,7 +9,7 @@ Guide to finding and analyzing artifacts from Helix test runs.
 Query a specific work item to see its artifacts:
 
 ```powershell
-./scripts/Get-HelixFailures.ps1 -HelixJob "4b24b2c2-..." -WorkItem "Microsoft.NET.Sdk.Tests.dll.1" -ShowLogs
+./scripts/Get-CIStatus.ps1 -HelixJob "4b24b2c2-..." -WorkItem "Microsoft.NET.Sdk.Tests.dll.1" -ShowLogs
 ```
 
 ### Via API
@@ -47,9 +47,10 @@ Always query the specific work item to see what's available rather than assuming
 
 Artifacts may be at the root level or nested in subdirectories like `xharness-output/logs/`.
 
-> **Note:** The Helix API has a known bug ([dotnet/dnceng#6072](https://github.com/dotnet/dnceng/issues/6072)) where
-> file URIs for subdirectory files are incorrect. The script works around this by rebuilding URIs from the `FileName`
-> field, but raw API responses may return broken links for files like `xharness-output/wasm-console.log`.
+> **Note:** The Helix work item Details API has a known bug ([dotnet/dnceng#6072](https://github.com/dotnet/dnceng/issues/6072)) where
+> file URIs for subdirectory files are incorrect, and unicode characters in filenames are rejected.
+> The script works around this by using the separate `ListFiles` endpoint (`GET .../workitems/{workItemName}/files`)
+> which returns direct blob storage URIs that work for all filenames regardless of subdirectories or unicode.
 
 ## Binlog Files
 

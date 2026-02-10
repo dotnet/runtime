@@ -324,9 +324,9 @@ struct RangeOps
         return result;
     }
 
-    static Range Add(const Range& r1, const Range& r2)
+    static Range Add(const Range& r1, const Range& r2, bool unsignedAdd = false)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+        return ApplyRangeOp(r1, r2, [unsignedAdd](const Limit& a, const Limit& b) {
             // For Add we support:
             //   keConstant + keConstant  => keConstant
             //   keBinOpArray + keConstant => keBinOpArray
@@ -339,7 +339,8 @@ struct RangeOps
                     return Limit(Limit::keUnknown);
                 }
 
-                if (!IntAddOverflows(a.GetConstant(), b.GetConstant()))
+                static_assert(CheckedOps::Unsigned == true);
+                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd))
                 {
                     if (a.IsConstant() && b.IsConstant())
                     {
@@ -354,17 +355,40 @@ struct RangeOps
         });
     }
 
-    static Range Multiply(const Range& r1, const Range& r2)
+    static Range Subtract(const Range& r1, const Range& r2, bool unsignedSub = false)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            // For Mul we require both operands to be constant to produce a constant result.
-            if (b.IsConstant() && a.IsConstant() &&
-                !CheckedOps::MulOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() * b.GetConstant());
-            }
+        if (unsignedSub)
+        {
+            return Limit(Limit::keUnknown); // Give up on unsigned subtraction for now
+        }
+
+        // Delegate to Add after negating the second operand. Possible overflows will be handled there.
+        return Add(r1, Negate(r2));
+    }
+
+    static Range Multiply(const Range& r1, const Range& r2, bool unsignedMul = false)
+    {
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
             return Limit(Limit::keUnknown);
-        });
+        }
+
+        int r1lo = r1.LowerLimit().GetConstant();
+        int r1hi = r1.UpperLimit().GetConstant();
+        int r2lo = r2.LowerLimit().GetConstant();
+        int r2hi = r2.UpperLimit().GetConstant();
+
+        static_assert(CheckedOps::Unsigned == true);
+        if (CheckedOps::MulOverflows(r1lo, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsignedMul) ||
+            CheckedOps::MulOverflows(r1hi, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsignedMul))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        int lo = min(min(r1lo * r2lo, r1lo * r2hi), min(r1hi * r2lo, r1hi * r2hi));
+        int hi = max(max(r1lo * r2lo, r1lo * r2hi), max(r1hi * r2lo, r1hi * r2hi));
+        assert(hi >= lo);
+        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
