@@ -3050,8 +3050,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        public static TVectorDouble AsinDouble<TVectorDouble>(TVectorDouble x)
+        public static TVectorDouble AsinDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {
             // This code is based on `asin` from amd/aocl-libm-ose
             // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
@@ -3082,8 +3083,10 @@ namespace System.Runtime.Intrinsics
             const double D4 = -0.943639137032492685763471240072;
             const double D5 = 0.105869422087204370341222318533;
 
-            // Constant for reconstructing asin(±1)
-            const double PIBY2 = 1.5707963267948965e+00;
+            // Constants for high-precision reconstruction
+            const double PIBY2_TAIL = 6.1232339957367660e-17;   // 0x3c91a62633145c07
+            const double HPIBY2_HEAD = 7.8539816339744831e-01;  // 0x3fe921fb54442d18
+            const double PIBY2 = 1.5707963267948965e+00;        // 0x3ff921fb54442d18
 
             // Get sign and absolute value
             TVectorDouble sign = x & TVectorDouble.Create(-0.0);
@@ -3092,16 +3095,15 @@ namespace System.Runtime.Intrinsics
             // Check for transform region (|x| >= 0.5)
             TVectorDouble transformMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
 
-            // For |x| >= 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r), ax = s
+            // For |x| >= 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r)
             TVectorDouble r_transform = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
             TVectorDouble s = TVectorDouble.Sqrt(r_transform);
 
             // For |x| < 0.5: r = ax * ax
             TVectorDouble r_normal = ax * ax;
 
-            // Select r and ax based on transform
+            // Select r based on transform
             TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, r_transform, r_normal);
-            ax = TVectorDouble.ConditionalSelect(transformMask, s, ax);
 
             // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
             TVectorDouble poly_num = TVectorDouble.Create(C6);
@@ -3127,10 +3129,11 @@ namespace System.Runtime.Intrinsics
             // p = 2*s*u - (PIBY2_TAIL - 2*c)
             // q = HPIBY2_HEAD - 2*s1
             // v_transform = HPIBY2_HEAD - (p - q)
-
-            // For simplicity, use a simpler (slightly less accurate) reconstruction:
-            // v_transform = PIBY2 - 2*(ax + ax*u)
-            TVectorDouble v_transform = TVectorDouble.Create(PIBY2) - TVectorDouble.Create(2.0) * (ax + ax * u);
+            TVectorDouble s1 = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(s) & TVectorUInt64.Create(0xFFFFFFFF00000000));
+            TVectorDouble c = (r - s1 * s1) / (s + s1);
+            TVectorDouble p = TVectorDouble.Create(2.0) * s * u - (TVectorDouble.Create(PIBY2_TAIL) - TVectorDouble.Create(2.0) * c);
+            TVectorDouble q = TVectorDouble.Create(HPIBY2_HEAD) - TVectorDouble.Create(2.0) * s1;
+            TVectorDouble v_transform = TVectorDouble.Create(HPIBY2_HEAD) - (p - q);
 
             // For normal region: v = ax + ax*u
             TVectorDouble v_normal = ax + ax * u;

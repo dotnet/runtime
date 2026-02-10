@@ -729,7 +729,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.AsinDouble<Vector512<double>>(vector);
+                return VectorMath.AsinDouble<Vector512<double>, Vector512<ulong>>(vector);
             }
             else
             {

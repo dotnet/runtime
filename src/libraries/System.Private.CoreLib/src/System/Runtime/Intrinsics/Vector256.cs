@@ -819,7 +819,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.AsinDouble<Vector256<double>>(vector);
+                return VectorMath.AsinDouble<Vector256<double>, Vector256<ulong>>(vector);
             }
             else
             {
