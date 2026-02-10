@@ -59,8 +59,3 @@ target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4057>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4996>)
-
-# I am not sure why but libgnu target is also created even if we don't build the
-# tools, we should investigate before merging
-target_compile_options(libgnu PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4701>)
-target_compile_options(libgnu PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4996>)
