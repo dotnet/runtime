@@ -871,17 +871,16 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 
 //------------------------------------------------------------------------
 // TightenLimit: Given two limits for the same variable, return a tighter limit
+//    Example: l1: 10 and l2: 20. For lower limit, we can tighten to 20. For upper limit, we can tighten to 10.
 //
 // Arguments:
-//    l1             - the first limit to compare
-//    l2             - the second limit to compare
-//    preferredBound - when one of the limits is based on this preferredBound, we will choose it over the other
-//                     limit if it is not worse. This is used to prefer BinOpArray limits based on the array length
-//                     variable that we are checking bounds for.
+//    l1             - The first limit
+//    l2             - The second limit
+//    preferredBound - We might prefer this VN limit over the other.
 //    isLower        - true if the limits are lower limits, false if the limits are upper limits.
 //
 // Return Value:
-//    The tighter limit
+//    The more tightened limit between l1 and l2.
 //
 Limit RangeCheck::TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower)
 {
