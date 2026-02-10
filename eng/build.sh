@@ -599,6 +599,10 @@ if [[ "${USE_SCCACHE:-}" != "true" && "$os" == "linux" && "$arch" == "x64" && -f
 
     sccache --stop-server || true
 
+    # Disable idle timeout so the server stays alive across long managed-build
+    # phases that separate native-compilation steps (e.g. clr then libs).
+    export SCCACHE_IDLE_TIMEOUT=0
+
     # Write sccache logs to the AzDO artifact staging directory so they get published.
     # Fall back to the local artifacts/log directory if not running in CI.
     if [[ -n "${BUILD_ARTIFACTSTAGINGDIRECTORY:-}" ]]; then
