@@ -17,7 +17,7 @@ namespace Internal.JitInterface
 
         public static TypeDesc LowerTypeForWasm(TypeDesc type)
         {
-            if (!(type.IsValueType && !type.IsPrimitiveNumeric))
+            if (!(type.IsValueType && !type.IsPrimitive))
             {
                 Debug.Fail("Non-struct types should be passed directly in Wasm.");
                 return null;
@@ -58,13 +58,13 @@ namespace Internal.JitInterface
 
                 type = firstFieldElementType;
 
-                if (type.IsValueType && !type.IsPrimitiveNumeric)
+                if (type.IsValueType && !type.IsPrimitive)
                 {
                     continue;
                 }
 
                 return type;
-           }
+            }
         }
 
         // This looks a lot like WasmAbiContext.LowerType....

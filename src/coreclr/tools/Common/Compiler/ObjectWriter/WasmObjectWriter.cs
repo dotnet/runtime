@@ -391,7 +391,7 @@ namespace ILCompiler.ObjectWriter
         {
             WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
 
-            if (type.IsValueType && !type.IsPrimitiveNumeric)
+            if (type.IsValueType && !type.IsPrimitive)
             {
                 type = Internal.JitInterface.WasmLowering.LowerTypeForWasm(type);
 
