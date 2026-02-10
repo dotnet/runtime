@@ -23,13 +23,17 @@ namespace System
                 // We've not yet computed whether to emit codes or not. We may race with
                 // other threads, and that's ok; this is idempotent unless someone is currently changing
                 // the value of the relevant environment variables, in which case behavior here is undefined.
-
-                // FORCE_COLOR (per https://force-color.org/) always overrides other settings
-                string? forceColor = Environment.GetEnvironmentVariable("FORCE_COLOR");
-                if (!string.IsNullOrEmpty(forceColor))
+                
+                // FORCE_COLOR (per https://force-color.org/) always overrides other settings.
+                // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is a legacy alias for the same behavior.
+                ReadOnlySpan<string> forceColorNames = ["FORCE_COLOR", "DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION"];
+                foreach (string forceColorName in forceColorNames)
                 {
-                    s_emitAnsiColorCodes = 1;
-                    return true;
+                    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(forceColorName)))
+                    {
+                        s_emitAnsiColorCodes = 1;
+                        return true;
+                    }
                 }
 
                 // By default, we emit ANSI color codes if output isn't redirected, and suppress them if output is redirected.
@@ -40,14 +44,6 @@ namespace System
                     // We subscribe to the informal standard from https://no-color.org/. If we'd otherwise emit
                     // ANSI color codes but the NO_COLOR environment variable is set, disable emitting them.
                     enabled = Environment.GetEnvironmentVariable("NO_COLOR") is null;
-                }
-                else
-                {
-                    // We also support overriding in the other direction. If we'd otherwise avoid emitting color
-                    // codes but the DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION environment variable is
-                    // set to 1 or true, enable color.
-                    string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-                    enabled = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
                 }
 
                 // Store and return the computed answer.
