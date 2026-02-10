@@ -1,6 +1,6 @@
 ---
 name: ci-analysis
-description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", or "is CI green".
+description: Analyze CI build and test status from Azure DevOps and Helix for dotnet repository PRs. Use when checking CI status, investigating failures, determining if a PR is ready to merge, or given URLs containing dev.azure.com or helix.dot.net. Also use when asked "why is CI red", "test failures", "retry CI", "rerun tests", "is CI green", "build failed", "checks failing", or "flaky tests".
 ---
 
 # Azure DevOps and Helix CI Analysis
@@ -8,6 +8,8 @@ description: Analyze CI build and test status from Azure DevOps and Helix for do
 Analyze CI build status and test failures in Azure DevOps and Helix for dotnet repositories (runtime, sdk, aspnetcore, roslyn, and more).
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
+
+**Workflow**: Run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
 
 ## When to Use This Skill
 
@@ -81,11 +83,13 @@ The script operates in three distinct modes depending on what information you ha
 6. Fetches console logs (with `-ShowLogs`)
 7. Searches for known issues with "Known Build Error" label
 8. Correlates failures with PR file changes
-9. **Provides smart retry recommendations**
+9. **Emits structured summary** — `[CI_ANALYSIS_SUMMARY]` JSON block with all key facts for the agent to reason over
+
+> **After the script runs**, you (the agent) generate recommendations. The script collects data; you synthesize the advice. See [Generating Recommendations](#generating-recommendations) below.
 
 ### Build ID Mode (`-BuildId`)
 1. Fetches the build timeline directly (skips PR discovery)
-2. Performs steps 3–7 and 9 from PR Analysis Mode, but does **not** fetch Build Analysis known issues or correlate failures with PR file changes (those require a PR number)
+2. Performs steps 3–7 from PR Analysis Mode, but does **not** fetch Build Analysis known issues or correlate failures with PR file changes (those require a PR number). Still emits `[CI_ANALYSIS_SUMMARY]` JSON.
 
 ### Helix Job Mode (`-HelixJob` [and optional `-WorkItem`])
 1. With `-HelixJob` alone: enumerates work items for the job and summarizes their status
@@ -116,16 +120,40 @@ The script operates in three distinct modes depending on what information you ha
 
 > ❌ **Missing packages on flow PRs are NOT always infrastructure failures.** When a codeflow or dependency-update PR fails with "package not found" or "version not available", don't assume it's a feed propagation delay. Flow PRs bring in behavioral changes from upstream repos that can cause the build to request *different* packages than before. Example: an SDK flow changed runtime pack resolution logic, causing builds to look for `Microsoft.NETCore.App.Runtime.browser-wasm` (CoreCLR — doesn't exist) instead of `Microsoft.NETCore.App.Runtime.Mono.browser-wasm` (what had always been used). The fix was in the flowed code, not in feed infrastructure. Always check *which* package is missing and *why* it's being requested before diagnosing as infrastructure.
 
-## Retry Recommendations
+## Generating Recommendations
 
-The script provides a recommendation at the end:
+After the script outputs the `[CI_ANALYSIS_SUMMARY]` JSON block, **you** synthesize recommendations. Do not parrot the JSON — reason over it.
 
-| Recommendation | Meaning |
-|----------------|---------|
-| **KNOWN ISSUES DETECTED** | Tracked issues found that may correlate with failures. Review details. |
-| **LIKELY PR-RELATED** | Failures correlate with PR changes. Fix issues first. |
-| **POSSIBLY TRANSIENT** | No clear cause - check main branch, search for issues. |
-| **REVIEW REQUIRED** | Could not auto-determine cause. Manual review needed. |
+### Decision logic
+
+Read `recommendationHint` as a starting point, then layer in context:
+
+| Hint | Action |
+|------|--------|
+| `BUILD_SUCCESSFUL` | No failures. Confirm CI is green. |
+| `KNOWN_ISSUES_DETECTED` | Known tracked issues found. Recommend retry if failures match known issues. Link the issues. |
+| `LIKELY_PR_RELATED` | Failures correlate with PR changes. Lead with "fix these before retrying" and list `correlatedFiles`. |
+| `POSSIBLY_TRANSIENT` | No correlation with PR changes, no known issues. Suggest checking main branch, searching for issues, or retrying. |
+| `REVIEW_REQUIRED` | Could not auto-determine cause. Review failures manually. |
+
+Then layer in nuance the heuristic can't capture:
+
+- **Mixed signals**: Some failures match known issues AND some correlate with PR changes → separate them. Known issues = safe to retry; correlated = fix first.
+- **Canceled jobs with recoverable results**: If `canceledJobNames` is non-empty, mention that canceled jobs may have passing Helix results (see "Recovering Results from Canceled Jobs").
+- **Build still in progress**: If `lastBuildJobSummary.pending > 0`, note that more failures may appear.
+- **Multiple builds**: If `builds` has >1 entry, `lastBuildJobSummary` reflects only the last build — use `totalFailedJobs` for the aggregate count.
+- **BuildId mode**: `knownIssues` and `prCorrelation` will be empty (those require a PR number). Don't say "no known issues" — say "Build Analysis not available in BuildId mode."
+- **Infrastructure vs code**: Don't label failures as "infrastructure" unless Build Analysis flagged them or the same test passes on main. See the anti-patterns in "Interpreting Results" above.
+
+### How to Retry
+
+- **AzDO builds**: Comment `/azp run {pipeline-name}` on the PR (e.g., `/azp run dotnet-sdk-public`)
+- **All pipelines**: Comment `/azp run` to retry all failing pipelines
+- **Helix work items**: Cannot be individually retried — must re-run the entire AzDO build
+
+### Tone
+
+Be direct. Lead with the most important finding. Use 2-4 bullet points, not long paragraphs. Distinguish what's known vs. uncertain.
 
 ## Analysis Workflow
 
@@ -133,7 +161,8 @@ The script provides a recommendation at the end:
 2. **Run the script** with `-ShowLogs` for detailed failure info
 3. **Check Build Analysis** - Known issues are safe to retry
 4. **Correlate with PR changes** - Same files failing = likely PR-related
-5. **Interpret patterns** (but don't jump to conclusions):
+5. **Compare with baseline** - If a test passes on main but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
+6. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue
    - Build Analysis flags a known issue → Safe to retry
    - Failure is **not** in Build Analysis → Investigate further before assuming transient
@@ -142,19 +171,21 @@ The script provides a recommendation at the end:
 
 ## Presenting Results
 
-The script provides a recommendation at the end, but this is based on heuristics and may be incomplete. Before presenting conclusions to the user:
+The script outputs both human-readable failure details and a `[CI_ANALYSIS_SUMMARY]` JSON block. Use both:
 
-> ❌ **Don't blindly trust the script's recommendation.** The heuristic can misclassify failures. If the recommendation says "POSSIBLY TRANSIENT" but you see the same test failing 5 times on the same code path the PR touched — it's PR-related.
-
-1. Review the detailed failure information, not just the summary
-2. Look for patterns the script may have missed (e.g., related failures across jobs)
-3. Consider the PR context (what files changed, what the PR is trying to do)
-4. Present findings with appropriate caveats - state what is known vs. uncertain
-5. If the script's recommendation seems inconsistent with the details, trust the details
+1. Read the JSON summary for structured facts (failed jobs, known issues, PR correlation, recommendation hint)
+2. Read the human-readable output for failure details, console logs, and error messages
+3. Reason over both to produce contextual recommendations — the `recommendationHint` is a starting point, not the final answer
+4. Look for patterns the heuristic may have missed (e.g., same failure across multiple jobs, related failures in different builds)
+5. Consider the PR context (what files changed, what the PR is trying to do)
+6. Present findings with appropriate caveats — state what is known vs. uncertain
 
 ## References
 
 - **Helix artifacts & binlogs**: See [references/helix-artifacts.md](references/helix-artifacts.md)
+- **Binlog comparison (passing vs failing)**: See [references/binlog-comparison.md](references/binlog-comparison.md)
+- **Subagent delegation patterns**: See [references/delegation-patterns.md](references/delegation-patterns.md)
+- **Azure CLI deep investigation**: See [references/azure-cli.md](references/azure-cli.md)
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
 - **AzDO/Helix details**: See [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
@@ -164,9 +195,9 @@ Canceled jobs (typically from timeouts) often still have useful artifacts. The H
 
 **To investigate canceled jobs:**
 
-1. **Download build artifacts**: Use the AzDO artifacts API to get `Logs_Build_*` pipeline artifacts for the canceled job. These contain binlogs even for canceled jobs.
-2. **Extract Helix job IDs**: Use the MSBuild MCP server to load the `SendToHelix.binlog` and search for `"Sent Helix Job"` messages. Each contains a Helix job ID.
-3. **Query Helix directly**: For each job ID, query `https://helix.dot.net/api/2019-06-17/jobs/{jobId}/workitems` to get actual pass/fail results.
+1. **Download build artifacts**: Use `az pipelines runs artifact download` (see [references/azure-cli.md](references/azure-cli.md)) to get pipeline artifacts for the canceled job. These contain binlogs even for canceled jobs.
+2. **Extract Helix job IDs**: Use the MSBuild MCP server to load the `SendToHelix.binlog` and search for `"Sent Helix Job"` messages. Each contains a Helix job ID. See [references/binlog-comparison.md](references/binlog-comparison.md) for the full "binlogs to find binlogs" workflow.
+3. **Query Helix directly**: For each job ID, use the CI script: `./scripts/Get-CIStatus.ps1 -HelixJob "{GUID}" -FindBinlogs`
 
 **Example**: A `browser-wasm windows WasmBuildTests` job was canceled after 3 hours. The binlog (truncated) still contained 12 Helix job IDs. Querying them revealed all 226 work items passed — the "failure" was purely a timeout in the AzDO wrapper.
 
@@ -278,5 +309,5 @@ This is especially useful when:
 4. Use `-SearchMihuBot` for semantic search of related issues
 5. Binlogs in artifacts help diagnose MSB4018 task failures
 6. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
-7. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** — `state` contains `SUCCESS`/`FAILURE` directly
+7. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** in current `gh` versions — `state` contains `SUCCESS`/`FAILURE` directly
 8. When investigating internal AzDO pipelines, check `az account show` first to verify authentication before making REST API calls

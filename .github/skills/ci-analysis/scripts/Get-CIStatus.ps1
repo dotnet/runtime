@@ -1757,6 +1757,9 @@ try {
     $totalFailedJobs = 0
     $totalLocalFailures = 0
     $allFailuresForCorrelation = @()
+    $allFailedJobNames = @()
+    $allCanceledJobNames = @()
+    $lastBuildJobSummary = $null
 
     foreach ($currentBuildId in $buildIds) {
         Write-Host "`n=== Azure DevOps Build $currentBuildId ===" -ForegroundColor Yellow
@@ -1800,7 +1803,37 @@ try {
         # Also check for local test failures (non-Helix)
         $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $currentBuildId
 
-        if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
+        # Accumulate totals and compute job summary BEFORE any continue branches
+        $totalFailedJobs += $failedJobs.Count
+        $totalLocalFailures += $localTestFailures.Count
+        $allFailedJobNames += @($failedJobs | ForEach-Object { $_.name })
+        $allCanceledJobNames += @($canceledJobs | ForEach-Object { $_.name })
+
+        $allJobs = @()
+        $succeededJobs = 0
+        $pendingJobs = 0
+        $canceledJobCount = 0
+        $skippedJobs = 0
+        $warningJobs = 0
+        if ($timeline -and $timeline.records) {
+            $allJobs = @($timeline.records | Where-Object { $_.type -eq "Job" })
+            $succeededJobs = @($allJobs | Where-Object { $_.result -eq "succeeded" }).Count
+            $warningJobs = @($allJobs | Where-Object { $_.result -eq "succeededWithIssues" }).Count
+            $pendingJobs = @($allJobs | Where-Object { -not $_.result -or $_.state -eq "pending" -or $_.state -eq "inProgress" }).Count
+            $canceledJobCount = @($allJobs | Where-Object { $_.result -eq "canceled" }).Count
+            $skippedJobs = @($allJobs | Where-Object { $_.result -eq "skipped" }).Count
+        }
+        $lastBuildJobSummary = [ordered]@{
+            total = $allJobs.Count
+            succeeded = $succeededJobs
+            failed = if ($failedJobs) { $failedJobs.Count } else { 0 }
+            canceled = $canceledJobCount
+            pending = $pendingJobs
+            warnings = $warningJobs
+            skipped = $skippedJobs
+        }
+
+        if((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
             if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
                 Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
                 Write-Host "Run again later to check for failures, or use -NoCache to get fresh data" -ForegroundColor Gray
@@ -1885,7 +1918,6 @@ try {
             Write-Host "`n=== Summary ===" -ForegroundColor Yellow
             Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
             Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Cyan
-            $totalLocalFailures += $localTestFailures.Count
             continue
         }
 
@@ -2055,25 +2087,6 @@ try {
         }
     }
 
-    $totalFailedJobs += $failedJobs.Count
-    $totalLocalFailures += $localTestFailures.Count
-
-    # Compute job summary from timeline
-    $allJobs = @()
-    $succeededJobs = 0
-    $pendingJobs = 0
-    $canceledJobCount = 0
-    $skippedJobs = 0
-    $warningJobs = 0
-    if ($timeline -and $timeline.records) {
-        $allJobs = @($timeline.records | Where-Object { $_.type -eq "Job" })
-        $succeededJobs = @($allJobs | Where-Object { $_.result -eq "succeeded" }).Count
-        $warningJobs = @($allJobs | Where-Object { $_.result -eq "succeededWithIssues" }).Count
-        $pendingJobs = @($allJobs | Where-Object { -not $_.result -or $_.state -eq "pending" -or $_.state -eq "inProgress" }).Count
-        $canceledJobCount = @($allJobs | Where-Object { $_.result -eq "canceled" }).Count
-        $skippedJobs = @($allJobs | Where-Object { $_.result -eq "skipped" }).Count
-    }
-
     Write-Host "`n=== Build $currentBuildId Summary ===" -ForegroundColor Yellow
     if ($allJobs.Count -gt 0) {
         $parts = @()
@@ -2121,53 +2134,69 @@ if ($buildIds.Count -gt 1) {
     }
 }
 
-# Smart retry recommendation
-Write-Host "`n=== Recommendation ===" -ForegroundColor Magenta
+# Build structured summary and emit as JSON
+$summary = [ordered]@{
+    mode = $PSCmdlet.ParameterSetName
+    repository = $Repository
+    prNumber = if ($PSCmdlet.ParameterSetName -eq 'PRNumber') { $PRNumber } else { $null }
+    builds = @($buildIds | ForEach-Object {
+        [ordered]@{
+            buildId = $_
+            url = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$_"
+        }
+    })
+    totalFailedJobs = $totalFailedJobs
+    totalLocalFailures = $totalLocalFailures
+    lastBuildJobSummary = if ($lastBuildJobSummary) { $lastBuildJobSummary } else { [ordered]@{
+        total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
+    } }
+    failedJobNames = @($allFailedJobNames)
+    canceledJobNames = @($allCanceledJobNames)
+    knownIssues = @($knownIssuesFromBuildAnalysis | ForEach-Object {
+        [ordered]@{ number = $_.Number; title = $_.Title; url = $_.Url }
+    })
+    prCorrelation = [ordered]@{
+        changedFileCount = $prChangedFiles.Count
+        hasCorrelation = $false
+        correlatedFiles = @()
+    }
+    recommendationHint = ""
+}
 
-if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
-    $knownIssueCount = $knownIssuesFromBuildAnalysis.Count
-    Write-Host "KNOWN ISSUES DETECTED" -ForegroundColor Yellow
-    Write-Host "$knownIssueCount tracked issue(s) found that may correlate with failures above." -ForegroundColor White
-    Write-Host "Review the failure details and linked issues to determine if retry is needed." -ForegroundColor Gray
-}
-elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
-    Write-Host "BUILD SUCCESSFUL" -ForegroundColor Green
-    Write-Host "No failures detected." -ForegroundColor White
-}
-elseif ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
-    # Check if failures correlate with PR changes
-    $hasCorrelation = $false
+# Compute PR correlation
+if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
+    $correlatedFiles = @()
     foreach ($failure in $allFailuresForCorrelation) {
         $failureText = ($failure.Errors + $failure.HelixLogs + $failure.FailedTests) -join " "
         foreach ($file in $prChangedFiles) {
             $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
             if ($failureText -match [regex]::Escape($fileName)) {
-                $hasCorrelation = $true
-                break
+                $correlatedFiles += $file
             }
         }
-        if ($hasCorrelation) { break }
     }
-    
-    if ($hasCorrelation) {
-        Write-Host "LIKELY PR-RELATED" -ForegroundColor Red
-        Write-Host "Failures appear to correlate with files changed in this PR." -ForegroundColor White
-        Write-Host "Review the 'PR Change Correlation' section above and fix the issues before retrying." -ForegroundColor Gray
-    }
-    else {
-        Write-Host "POSSIBLY TRANSIENT" -ForegroundColor Yellow
-        Write-Host "No known issues matched, but failures don't clearly correlate with PR changes." -ForegroundColor White
-        Write-Host "Consider:" -ForegroundColor Gray
-        Write-Host "  1. Check if same tests are failing on main branch" -ForegroundColor Gray
-        Write-Host "  2. Search for existing issues: gh issue list --label 'Known Build Error' --search '<test name>'" -ForegroundColor Gray
-        Write-Host "  3. If infrastructure-related (device not found, network errors), retry may help" -ForegroundColor Gray
-    }
+    $correlatedFiles = @($correlatedFiles | Select-Object -Unique)
+    $summary.prCorrelation.hasCorrelation = $correlatedFiles.Count -gt 0
+    $summary.prCorrelation.correlatedFiles = $correlatedFiles
 }
-else {
-    Write-Host "REVIEW REQUIRED" -ForegroundColor Yellow
-    Write-Host "Could not automatically determine failure cause." -ForegroundColor White
-    Write-Host "Review the failures above to determine if they are PR-related or infrastructure issues." -ForegroundColor Gray
+
+# Compute recommendation hint
+if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
+    $summary.recommendationHint = "KNOWN_ISSUES_DETECTED"
+} elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
+    $summary.recommendationHint = "BUILD_SUCCESSFUL"
+} elseif ($summary.prCorrelation.hasCorrelation) {
+    $summary.recommendationHint = "LIKELY_PR_RELATED"
+} elseif ($prChangedFiles.Count -gt 0) {
+    $summary.recommendationHint = "POSSIBLY_TRANSIENT"
+} else {
+    $summary.recommendationHint = "REVIEW_REQUIRED"
 }
+
+Write-Host ""
+Write-Host "[CI_ANALYSIS_SUMMARY]"
+Write-Host ($summary | ConvertTo-Json -Depth 5)
+Write-Host "[/CI_ANALYSIS_SUMMARY]"
 
 }
 catch {
