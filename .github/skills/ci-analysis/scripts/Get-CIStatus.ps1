@@ -2187,7 +2187,7 @@ if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
     $summary.recommendationHint = "BUILD_SUCCESSFUL"
 } elseif ($summary.prCorrelation.hasCorrelation) {
     $summary.recommendationHint = "LIKELY_PR_RELATED"
-} elseif ($prChangedFiles.Count -gt 0) {
+} elseif ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
     $summary.recommendationHint = "POSSIBLY_TRANSIENT"
 } else {
     $summary.recommendationHint = "REVIEW_REQUIRED"
