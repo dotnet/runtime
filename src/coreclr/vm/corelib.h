@@ -453,6 +453,9 @@ DEFINE_METHOD(OBJCMARSHAL,   AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION, AvailableUn
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_Exception_Obj_RefIntPtr_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
+DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
+DEFINE_FIELD_U(_currAssembly, CallbackContext, _currAssembly)
+
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)
