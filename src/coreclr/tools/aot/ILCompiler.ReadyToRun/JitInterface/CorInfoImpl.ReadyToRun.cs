@@ -23,6 +23,7 @@ using Internal.ReadyToRunConstants;
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using ILCompiler.DependencyAnalysis.Wasm;
 using System.Text;
 using System.Runtime.CompilerServices;
 using ILCompiler.ReadyToRun.TypeSystem;
@@ -3428,6 +3429,13 @@ namespace Internal.JitInterface
             // If ftn isn't within the current version bubble we can't rely on methodInfo being
             // stable e.g. mark calls as no-return if their IL has no rets.
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
+        }
+
+        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
+        {
+            CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
+            WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
+            return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
         }
 
 #pragma warning disable CA1822 // Mark members as static

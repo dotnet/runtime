@@ -3652,6 +3652,55 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_AddMulSub: Optimizes MUL/ADD/SUB via assertions
+//    1) Clears overflow flag if both operands are proven to be in a range that cannot overflow
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the MUL/ADD/SUB node to optimize
+//    stmt       - statement containing MUL/ADD/SUB
+//
+// Returns:
+//    Updated MUL/ADD/SUB node, or nullptr
+//
+GenTree* Compiler::optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    assert(tree->OperIs(GT_MUL, GT_ADD, GT_SUB));
+
+    if (!optLocalAssertionProp && tree->TypeIs(TYP_INT) && tree->gtOverflow())
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+
+        Range op1Rng = RangeCheck::GetRangeFromAssertions(this, optConservativeNormalVN(op1), assertions);
+        Range op2Rng = RangeCheck::GetRangeFromAssertions(this, optConservativeNormalVN(op2), assertions);
+        Range result = Limit(Limit::keUnknown);
+        if (tree->OperIs(GT_MUL))
+        {
+            result = RangeOps::Multiply(op1Rng, op2Rng, tree->IsUnsigned());
+        }
+        else if (tree->OperIs(GT_ADD))
+        {
+            result = RangeOps::Add(op1Rng, op2Rng, tree->IsUnsigned());
+        }
+        else
+        {
+            assert(tree->OperIs(GT_SUB));
+            result = RangeOps::Subtract(op1Rng, op2Rng, tree->IsUnsigned());
+        }
+
+        // If it produced a constant range for the result, we know the operation
+        // cannot overflow for any values consistent with the current assertions.
+        if (result.IsConstantRange())
+        {
+            tree->ClearOverflow();
+            return optAssertionProp_Update(tree, tree, stmt);
+        }
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
@@ -5157,6 +5206,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_RETURN:
         case GT_SWIFT_ERROR_RET:
             return optAssertionProp_Return(assertions, tree->AsOp(), stmt);
+
+        case GT_SUB:
+        case GT_MUL:
+        case GT_ADD:
+            return optAssertionProp_AddMulSub(assertions, tree->AsOp(), stmt);
 
         case GT_MOD:
         case GT_DIV:

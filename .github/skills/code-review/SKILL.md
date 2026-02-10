@@ -17,6 +17,22 @@ Use this skill when:
 
 ## Review Process
 
+### Step 0: Gather Context
+
+Before analyzing anything, collect as much relevant context as you can. **Do not review from the diff alone.** The items below are the minimum — go beyond them whenever additional context would improve the review. More context leads to better reviews; err on the side of gathering too much rather than too little.
+
+1. **PR metadata**: Fetch the PR description, labels, linked issues, and author. Read linked issues in full — they often contain the repro, root cause analysis, and constraints the fix must satisfy.
+2. **Diff and file list**: Fetch the full diff and the list of changed files.
+3. **Full source files**: For every changed file, read the **entire source file** (not just the diff hunks). You need the surrounding code to understand invariants, locking protocols, call patterns, and data flow. Diff-only review is the #1 cause of false positives and missed issues.
+4. **Consumers and callers**: If the change modifies a public/internal API, a type that others depend on, or a virtual/interface method, search for how consumers use the functionality. Grep for callers, usages, and test sites. Understanding how the code is consumed reveals whether the change could break existing behavior or violate caller assumptions.
+5. **Sibling types and related code**: If the change fixes a bug or adds a pattern in one type, check whether sibling types (e.g., other abstraction implementations, other collection types, platform-specific variants) have the same issue or need the same fix. Fetch and read those files too.
+6. **Key utility/helper files**: If the diff calls into shared utilities, read those to understand the contracts (thread-safety, idempotency, etc.).
+7. **Git history**: Check recent commits to the changed files (`git log --oneline -20 -- <file>`). Look for related recent changes, reverts, or prior attempts to fix the same problem. This reveals whether the area is actively churning, whether a similar fix was tried and reverted, or whether the current change conflicts with recent work.
+8. **Related issues**: Search for other open issues in the same area (same labels, same component). This can reveal known problems the PR should also address, or constraints the author may not be aware of.
+9. **Existing review comments**: Check if there are already review comments on the PR to avoid duplicating feedback.
+
+### Step 1: Analyze
+
 1. **Assess the PR holistically first.** Before reviewing individual lines, evaluate whether the PR is justified, takes the right approach, and will be a net positive. See the [Holistic PR Assessment](#holistic-pr-assessment) section below.
 2. **Focus on what matters.** Prioritize bugs, performance regressions, safety issues, race conditions, resource management problems, incorrect assumptions about data or state, and API design problems. Do not comment on trivial style issues unless they violate an explicit rule below.
 3. **Consider collateral damage.** For every changed code path, actively brainstorm: what other scenarios, callers, or inputs flow through this code? Could any of them break or behave differently after this change? If you identify any plausible risk — even one you can't fully confirm — surface it so the author can evaluate. Do not dismiss behavioral changes because you believe the fix justifies them. The tradeoff is the author's decision — your job is to make it visible.
@@ -42,10 +58,64 @@ Use this skill when:
 When the environment supports launching sub-agents with different models (e.g., the `task` tool with a `model` parameter), run the review in parallel across multiple model families to get diverse perspectives. Different models catch different classes of issues. If the environment does not support this, proceed with a single-model review.
 
 **How to execute (when supported):**
-1. Inspect the available model list and select the top-tier model from each available model family/lineage (e.g., Anthropic, Google, OpenAI). Use at least 2 and at most 4 models. Choose the most capable model from each — typically the largest non-"mini" variant. Skip fast/cheap tiers; prefer premium or standard tiers.
+1. Inspect the available model list and select one model from each distinct model family (e.g., one Anthropic Claude, one Google Gemini, one OpenAI GPT). Use at least 2 and at most 4 models. **Model selection rules:**
+   - Pick only from models explicitly listed as available in the environment. Do not guess or assume model names.
+   - From each family, pick the model with the highest capability tier (prefer "premium" or "standard" over "fast/cheap").
+   - Never pick models labeled "mini", "fast", or "cheap" for code review.
+   - If multiple standard-tier models exist in the same family (e.g., `gpt-5` and `gpt-5.1`), pick the one with the highest version number.
+   - Do not select the same model that is already running the primary review (i.e., your own model). The goal is diverse perspectives from different model families.
 2. Launch a sub-agent for each selected model in parallel, giving each the same review prompt: the PR diff, the review rules from this skill, and instructions to produce findings in the severity format defined above.
-3. Wait for all agents to complete, then synthesize: deduplicate findings that appear across models, elevate issues flagged by multiple models (higher confidence), and include unique findings from individual models that meet the confidence bar.
+3. Wait for all agents to complete, then synthesize: deduplicate findings that appear across models, elevate issues flagged by multiple models (higher confidence), and include unique findings from individual models that meet the confidence bar. **Timeout handling:** If a sub-agent has not completed after 10 minutes and you have results from other agents, proceed with the results you have. Do not block the review indefinitely waiting for a single slow model. Note in the output which models contributed.
 4. Present a single unified review to the user, noting when an issue was flagged by multiple models.
+
+---
+
+## Review Output Format
+
+When presenting the final review (whether as a PR comment or as output to the user), use the following structure. This ensures consistency across reviews and makes the output easy to scan.
+
+### Structure
+
+```
+## 🤖 Copilot Code Review — PR #<number>
+
+### Holistic Assessment
+
+**Motivation**: <1-2 sentences on whether the PR is justified and the problem is real>
+
+**Approach**: <1-2 sentences on whether the fix/change takes the right approach>
+
+**Net positive/negative**: <1 sentence verdict on whether this is a net positive or negative for the codebase>
+
+---
+
+### Detailed Findings
+
+#### ✅/⚠️/❌ <Category Name> — <Brief description>
+
+<Explanation with specifics. Reference code, line numbers, interleavings, etc.>
+
+(Repeat for each finding category. Group related findings under a single heading.)
+
+---
+
+### Summary
+
+**<LGTM / Needs Changes / Reject>.** <2-3 sentence summary of the overall verdict and key points.>
+```
+
+### Guidelines
+
+- **Holistic Assessment** comes first and covers Motivation, Approach, and Net impact.
+- **Detailed Findings** uses emoji-prefixed category headers:
+  - ✅ for things that are correct / look good (use to confirm important aspects were verified)
+  - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
+  - ❌ for errors (must fix before merge)
+  - 💡 for minor suggestions or observations (nice-to-have)
+- **Cross-cutting analysis** should be included when relevant: check whether related code (sibling types, callers, other platforms) is affected by the same issue or needs a similar fix.
+- **Test quality** should be assessed as its own finding when tests are part of the PR.
+- **Summary** gives a clear verdict: LGTM (no blocking issues), Needs Changes (with blocking issues listed), or Reject (explaining why this should be closed outright).
+- Keep the review concise but thorough. Every claim should be backed by evidence from the code.
 
 ---
 
@@ -144,6 +214,9 @@ Before reviewing individual lines of code, evaluate the PR as a whole. Consider 
 
 - **Use `ThrowIf` helpers over manual checks.** Use `ArgumentOutOfRangeException.ThrowIfNegative`, `ObjectDisposedException.ThrowIf`, etc. instead of manual if-then-throw patterns.
   > "This if condition should not be necessary, as it's going to be checked by ThrowIfNegative." — stephentoub
+
+- **Challenge exception swallowing that masks unexpected errors.** When a PR adds try/catch blocks that silently discard exceptions (`catch { continue; }`, `catch { return null; }`), question whether the exception represents a truly expected, recoverable condition or an unexpected error signaling a deeper problem (race conditions, memory corruption, build environment issues). Silently catching exceptions that "shouldn't happen" hides root causes and makes debugging harder. The default disposition should be to let unexpected exceptions propagate or fail fast so the real issue gets investigated.
+  > "Why do we want to mask this error? ... Our general strategy in AOT compilers is to fail the compilation when the input is malformed. It is expected that the malformed input can and will cause the compiler to crash or fail." — jkotas
 
 ### Thread Safety
 
