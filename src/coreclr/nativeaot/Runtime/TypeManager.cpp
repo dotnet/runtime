@@ -79,21 +79,9 @@ void * TypeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     return m_pClasslibFunctions[id];
 }
 
-bool TypeManager::ModuleInfoRow::HasEndPointer()
-{
-    return Flags & (int32_t)ModuleInfoFlags::HasEndPointer;
-}
-
 int TypeManager::ModuleInfoRow::GetLength()
 {
-    if (HasEndPointer())
-    {
-        return (int)((uint8_t*)End - (uint8_t*)Start);
-    }
-    else
-    {
-        return sizeof(void*);
-    }
+    return Length;
 }
 
 HANDLE TypeManager::GetOsModuleHandle()

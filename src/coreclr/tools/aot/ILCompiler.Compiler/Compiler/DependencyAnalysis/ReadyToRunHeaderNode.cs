@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis
             var sectionCountReservation = builder.ReserveShort();
 
             // ReadyToRunHeader.EntrySize
-            builder.EmitByte((byte)(8 + 2 * factory.Target.PointerSize));
+            builder.EmitByte((byte)(8 + factory.Target.PointerSize));
 
             // ReadyToRunHeader.EntryType
             builder.EmitByte(1);
@@ -87,14 +87,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (!relocsOnly && item.Node.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
+                builder.RequireInitialPointerAlignment();
+
                 builder.EmitInt((int)item.Id);
 
-                ModuleInfoFlags flags = ModuleInfoFlags.HasEndPointer;
-                builder.EmitInt((int)flags);
+                builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
                 builder.EmitPointerReloc((ISymbolNode)item.Node);
-
-                builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
                 count++;
             }
