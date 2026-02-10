@@ -116,9 +116,9 @@
       </ResolvedFileToPublish>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(MainLibraryFileName)' != ''">
+    <ItemGroup>
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <IntermediateAssembly Include="$(OriginalPublishDir)$(MainLibraryFileName)" />
+      <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
 
     <Message Importance="High" Text="Preparing R2R compilation for @(_R2RPublishAssembly->Count()) assemblies on Helix..." />
