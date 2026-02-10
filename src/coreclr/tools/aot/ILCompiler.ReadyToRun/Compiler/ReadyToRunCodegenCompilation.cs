@@ -982,7 +982,6 @@ namespace ILCompiler
 
             // Keep in sync with CorInfoImpl.getAsyncInfo()
             DefType continuation = TypeSystemContext.ContinuationType;
-            var runtimeHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
             var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
             // AsyncHelpers should already be referenced in the module for the call to Await()
             Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
