@@ -715,6 +715,34 @@ namespace System.Numerics.Tensors.Tests
         //}
 
         [Fact]
+        public static void TensorSequenceEqualNonDenseTests()
+        {
+            int[] d1 = [10, 20, 99, 99, 30, 40, 99, 99];
+            int[] d2 = [10, 20, 77, 77, 30, 40, 77, 77];
+
+            var ts1 = new ReadOnlyTensorSpan<int>(d1, [2, 2], [4, 1]);
+            var ts2 = new ReadOnlyTensorSpan<int>(d2, [2, 2], [4, 1]);
+
+            Assert.False(ts1.IsDense);
+            Assert.False(ts2.IsDense);
+            Assert.True(ts1.SequenceEqual(ts2));
+
+            int[] d3 = [10, 20, 99, 99, 30, 41, 99, 99];
+            var ts3 = new ReadOnlyTensorSpan<int>(d3, [2, 2], [4, 1]);
+            Assert.False(ts1.SequenceEqual(ts3));
+
+            int[] d4 = [10, 20, 30, 40];
+            var ts4 = new ReadOnlyTensorSpan<int>(d4, [2, 2], [2, 1]);
+            Assert.True(ts4.IsDense);
+            Assert.True(ts1.SequenceEqual(ts4));
+            Assert.True(ts4.SequenceEqual(ts1));
+
+            var tspan1 = new TensorSpan<int>(d1, [2, 2], [4, 1]);
+            var tspan2 = new ReadOnlyTensorSpan<int>(d2, [2, 2], [4, 1]);
+            Assert.True(tspan1.SequenceEqual(tspan2));
+        }
+
+        [Fact]
         public static void TensorMultiplyTests()
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3).ToArray());

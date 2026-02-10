@@ -1684,10 +1684,7 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            return ((ReadOnlyTensorSpan<T>)tensor).SequenceEqual(other);
         }
 
         /// <summary>
@@ -1696,10 +1693,32 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            if (tensor.FlattenedLength != other.FlattenedLength
+                || !tensor.Lengths.SequenceEqual(other.Lengths))
+            {
+                return false;
+            }
+
+            if (tensor.IsDense && other.IsDense)
+            {
+                return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            }
+
+            ReadOnlyTensorSpan<T>.Enumerator enumerator1 = tensor.GetEnumerator();
+            ReadOnlyTensorSpan<T>.Enumerator enumerator2 = other.GetEnumerator();
+
+            while (enumerator1.MoveNext())
+            {
+                bool moved = enumerator2.MoveNext();
+                Debug.Assert(moved);
+
+                if (!EqualityComparer<T>.Default.Equals(enumerator1.Current, enumerator2.Current))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
         #endregion
 
