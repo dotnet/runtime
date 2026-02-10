@@ -20,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -362,7 +363,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmTypeNodes = new(key =>
             {
-                return new WasmTypeNode(key.Types);
+                return new WasmTypeNode(key.Type);
             });
         }
 
@@ -1081,24 +1082,25 @@ namespace ILCompiler.DependencyAnalysis
 
         private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
         {
-            public readonly CorInfoWasmType[] Types;
+            public readonly WasmFuncType Type;
 
-            public WasmTypeNodeKey(CorInfoWasmType[] types)
+            public WasmTypeNodeKey(WasmFuncType type)
             {
-                Types = types;
+                Type = type;
             }
 
-            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
+            public bool Equals(WasmTypeNodeKey other) => Type.Equals(other.Type);
             public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
             public override int GetHashCode()
-                => Types.Length; // TODO-WASM: Hash all the types
+                => Type.GetHashCode(); // TODO-WASM: Hash all the types
         }
 
         private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
-            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
+            WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(funcType));
         }
     }
 }
