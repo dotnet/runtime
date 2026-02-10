@@ -117,6 +117,7 @@ HRESULT EEConfig::Init()
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -453,10 +454,6 @@ HRESULT EEConfig::sync()
             else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
             {
                 modifiableAssemblies = MODIFIABLE_ASSM_NONE;
-            }
-            else
-            {
-                modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
             }
         }
     }
