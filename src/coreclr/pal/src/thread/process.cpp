@@ -2722,6 +2722,29 @@ static void DoNotOptimize(const void* p)
     (void)p;
 }
 
+#ifdef HOST_ANDROID
+#include <minipal/log.h>
+extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
+#endif // HOST_ANDROID
+
+VOID
+PROCCreateCrashReportAndDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
+{
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
+#ifdef HOST_ANDROID
+    // Android CoreCLR currently does not support CreateDump, so log a crash report until then.
+    if (LogCallstackForAndroidNativeCrash != nullptr)
+    {
+        minipal_log_write_fatal(".NET runtime crash report\n");
+        LogCallstackForAndroidNativeCrash();
+    }
+#endif //HOST_ANDROID
+
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, serialize);
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2738,19 +2761,11 @@ Parameters:
 (no return value)
 --*/
 #ifdef HOST_ANDROID
-#include <minipal/log.h>
-extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
-
-    if (LogCallstackForAndroidNativeCrash != nullptr)
-    {
-        minipal_log_write_fatal(".NET runtime crash report\n");
-        LogCallstackForAndroidNativeCrash();
-    }
 
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");

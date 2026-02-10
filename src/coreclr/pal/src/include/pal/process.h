@@ -190,6 +190,23 @@ Parameters:
 --*/
 VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
 
+/*++
+Function:
+  PROCCreateCrashReportAndDumpIfEnabled
+
+  Creates crash report and dump of the process if enabled.
+  Should be called from crash handling code paths.
+
+Parameters:
+  signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
+  serialize - allow only one thread to generate core dump
+
+(no return value)
+--*/
+VOID PROCCreateCrashReportAndDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
