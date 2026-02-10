@@ -29,8 +29,6 @@ private:
         int32_t SectionId;
         int32_t Length;
         void * Start;
-
-        int GetLength();
     };
 };
 
