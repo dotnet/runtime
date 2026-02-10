@@ -23,7 +23,7 @@ namespace System
                 // We've not yet computed whether to emit codes or not. We may race with
                 // other threads, and that's ok; this is idempotent unless someone is currently changing
                 // the value of the relevant environment variables, in which case behavior here is undefined.
-                
+
                 // FORCE_COLOR (per https://force-color.org/) always overrides other settings.
                 // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is a legacy alias for the same behavior.
                 ReadOnlySpan<string> forceColorNames = ["FORCE_COLOR", "DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION"];
