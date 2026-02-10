@@ -250,15 +250,64 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         }
     }
 
-    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    // For OSR, we must also restore Tier0's callee saves and adjust the SP to remove the Tier0 frame.
     //
     if (m_compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-        const int             fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d\n", tier0FrameSize,
-                fpLrSaveOffset);
+        PatchpointInfo* const patchpointInfo       = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize       = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset       = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset   = patchpointInfo->CalleeSaveSpOffset();
+        const int             calleeSaveSpDelta    = patchpointInfo->CalleeSaveSpDelta();
+        const int             tier0FrameType       = patchpointInfo->FrameType();
+        regMaskTP             tier0CalleeSaves     = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d, callee saves at offset %d (delta %d), frame type %d\n",
+                tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset, calleeSaveSpDelta, tier0FrameType);
+        JITDUMP("    Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+        JITDUMP("\n");
+
+        // Restore Tier0's callee-saved registers (excluding FP/LR which are restored separately).
+        // These are the registers that Tier0 saved and the OSR method must restore when returning.
+        //
+        regMaskTP regsToRestoreMask = tier0CalleeSaves & ~(RBM_FP | RBM_LR);
+        if (regsToRestoreMask != RBM_NONE)
+        {
+            // Restore the callee saves from the Tier0 frame.
+            // We don't adjust SP here (spDelta = 0) since we'll do that after restoring FP/LR.
+            //
+            // At this point, SP is at the top of Tier0's frame (lowest address).
+            // We need to compute the offset from current SP to where callee-saves are stored.
+            //
+            // The callee-save area layout (from low to high address) is: [floats][ints][FP/LR for type 4/5]
+            //
+            // The meaning of calleeSaveSpOffset varies by frame type:
+            // - Frame type 1/2: calleeSaveSpOffset is already the offset from final SP to callee-saves.
+            // - Frame type 3/4/5: calleeSaveSpOffset is the alignment padding within the callee-save area.
+            //   The callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from
+            //   current SP.
+            //
+            // For frame type 4/5, FP/LR are at the END (highest address) of the callee-save area, but
+            // genRestoreCalleeSavedRegistersHelp will naturally skip them since they're not in the mask.
+            // The base offset should point to where floats/ints start, NOT adjusted for FP/LR.
+            //
+            int osrCalleeSaveSpOffset;
+            if (tier0FrameType >= 3)
+            {
+                // Frame type 3/4/5: compute offset from current SP to callee-saves
+                osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
+                JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n",
+                        tier0FrameType, tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
+            }
+            else
+            {
+                // Frame type 1/2: calleeSaveSpOffset is directly usable
+                osrCalleeSaveSpOffset = calleeSaveSpOffset;
+            }
+
+            genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
+        }
 
         // Restore FP/LR from Tier0's frame since we jumped (not called) to OSR method.
         // FP/LR are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).

@@ -6678,14 +6678,29 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
     m_compiler->unwindAllocStack(remainingSPSize);
 
-    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    // For OSR, we must also restore Tier0's callee saves and adjust the SP to remove the Tier0 frame.
     if (m_compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-        const int             fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d\n", tier0FrameSize,
-                fpLrSaveOffset);
+        PatchpointInfo* const patchpointInfo       = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize       = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset       = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset   = patchpointInfo->CalleeSaveSpOffset();
+        regMaskTP             tier0CalleeSaves     = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d, callee saves at offset %d\n",
+                tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset);
+        JITDUMP("    Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+        JITDUMP("\n");
+
+        // Restore Tier0's callee-saved registers (excluding FP/RA which are restored separately).
+        // These are the registers that Tier0 saved and the OSR method must restore when returning.
+        //
+        regMaskTP regsToRestoreMask = tier0CalleeSaves & RBM_CALLEE_SAVED;
+        if (regsToRestoreMask != RBM_NONE)
+        {
+            genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset);
+        }
 
         // Restore FP/RA from Tier0's frame since we jumped (not called) to OSR method.
         // FP/RA are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).

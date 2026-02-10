@@ -4870,9 +4870,14 @@ void CodeGen::genFnProlog()
     {
         PatchpointInfo* patchpointInfo = m_compiler->info.compPatchpointInfo;
         const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
+        const int       fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
 
         // SP is tier0 method's SP.
         m_compiler->unwindAllocStack(tier0FrameSize);
+
+        // Record where FP/LR were saved by Tier0.
+        // This is needed so the unwinder/GC can find them during stack walking.
+        m_compiler->unwindSaveRegPair(REG_FP, REG_LR, fpLrSaveOffset);
     }
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 

@@ -5683,7 +5683,6 @@ void Compiler::generatePatchpointInfo()
 
 #if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
@@ -5691,6 +5690,40 @@ void Compiler::generatePatchpointInfo()
     JITDUMP("--OSR-- Tier0 callee saves: ");
     JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
     JITDUMP("\n");
+#elif defined(TARGET_ARM64)
+    // Record callee save registers and their location in the frame.
+    // OSR methods need to restore these when returning.
+    //
+    {
+        regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+        rsPushRegs |= RBM_FP;
+        rsPushRegs |= RBM_LR;
+        patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+        patchpointInfo->SetCalleeSaveSpOffset(compFrameInfo.calleeSaveSpOffset);
+        patchpointInfo->SetCalleeSaveSpDelta(compFrameInfo.calleeSaveSpDelta);
+        patchpointInfo->SetFrameType(compFrameInfo.frameType);
+        JITDUMP("--OSR-- Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+        JITDUMP("\n");
+        JITDUMP("--OSR-- Tier0 callee save SP offset: %d, SP delta: %d\n", patchpointInfo->CalleeSaveSpOffset(), patchpointInfo->CalleeSaveSpDelta());
+        JITDUMP("--OSR-- Tier0 frame type: %d\n", patchpointInfo->FrameType());
+    }
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Record callee save registers and their location in the frame.
+    // OSR methods need to restore these when returning.
+    // On LoongArch64/RISC-V, callee saves are stored at fpLrSaveOffset + 16 (above FP/RA).
+    //
+    {
+        regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+        rsPushRegs |= RBM_FP;
+        rsPushRegs |= RBM_RA;
+        patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+        patchpointInfo->SetCalleeSaveSpOffset(fpLrSaveOffset + 2 * REGSIZE_BYTES);
+        JITDUMP("--OSR-- Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+        JITDUMP("\n");
+        JITDUMP("--OSR-- Tier0 callee save SP offset: %d\n", patchpointInfo->CalleeSaveSpOffset());
+    }
 #endif
 
     // Register this with the runtime.
