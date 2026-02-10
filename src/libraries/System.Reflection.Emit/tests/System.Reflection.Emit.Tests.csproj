@@ -132,7 +132,6 @@
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
   </ItemGroup>
 
   <ItemGroup>

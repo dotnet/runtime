@@ -10,7 +10,6 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -630,7 +629,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void SaveInterfaceOverrideWithCustomModifier()
         {
-            using (TempDirectory dir = new())
+            using (TempFile file = TempFile.Create())
             {
                 AssemblyName name = new("TestAssembly");
                 PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(name);
@@ -654,20 +653,13 @@ namespace System.Reflection.Emit.Tests
                 pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
                 m.GetILGenerator().Emit(OpCodes.Ret);
                 tb.CreateType();
-                string assemblyPath = Path.Combine(dir.Path, $"{name.Name}.dll");
-                assemblyBuilder.Save(assemblyPath);
+                assemblyBuilder.Save(file.Path);
 
-                AssemblyLoadContext alc = new(nameof(SaveInterfaceOverrideWithCustomModifier), isCollectible: true);
-                try
-                {
-                    // Load the assembly and check that loading the type does not throw.
-                    Assembly loadedAsm = alc.LoadFromAssemblyPath(assemblyPath);
-                    _ = loadedAsm.GetType(tb.Name, throwOnError: true);
-                }
-                finally
-                {
-                    alc.Unload();
-                }
+                TestAssemblyLoadContext context = new();
+                // Load the assembly and check that loading the type does not throw.
+                Assembly loadedAsm = context.LoadFromAssemblyPath(file.Path);
+                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                context.Unload();
             }
         }
 
