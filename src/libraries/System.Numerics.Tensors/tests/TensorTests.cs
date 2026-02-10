@@ -743,6 +743,149 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorFillGaussianNormalDistributionNonDenseTests()
+        {
+            double[] data = new double[8];
+            var ts = new TensorSpan<double>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillGaussianNormalDistribution(ts, new Random(42));
+
+            foreach (double val in ts)
+            {
+                Assert.NotEqual(0.0, val);
+            }
+
+            Assert.Equal(0.0, data[2]);
+            Assert.Equal(0.0, data[3]);
+            Assert.Equal(0.0, data[6]);
+            Assert.Equal(0.0, data[7]);
+        }
+
+        [Fact]
+        public static void TensorFillUniformDistributionNonDenseTests()
+        {
+            double[] data = new double[8];
+            var ts = new TensorSpan<double>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillUniformDistribution(ts, new Random(42));
+
+            foreach (double val in ts)
+            {
+                Assert.InRange(val, 0.0, 1.0);
+                Assert.NotEqual(0.0, val);
+            }
+
+            Assert.Equal(0.0, data[2]);
+            Assert.Equal(0.0, data[3]);
+            Assert.Equal(0.0, data[6]);
+            Assert.Equal(0.0, data[7]);
+        }
+
+        [Fact]
+        public static void TensorIndexOfMaxNonDenseTests()
+        {
+            int[] data = [1, 50, 99, 99, 3, 2, 99, 99];
+            var ts = new ReadOnlyTensorSpan<int>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMax(ts);
+            Assert.Equal(1, idx);
+        }
+
+        [Fact]
+        public static void TensorIndexOfMinNonDenseTests()
+        {
+            int[] data = [5, 50, 99, 99, 1, 2, 99, 99];
+            var ts = new ReadOnlyTensorSpan<int>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMin(ts);
+            Assert.Equal(2, idx);
+        }
+
+        [Fact]
+        public static void TensorIndexOfMaxMagnitudeNonDenseTests()
+        {
+            int[] data = [1, -50, 99, 99, 3, 2, 99, 99];
+            var ts = new ReadOnlyTensorSpan<int>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMaxMagnitude(ts);
+            Assert.Equal(1, idx);
+        }
+
+        [Fact]
+        public static void TensorIndexOfMinMagnitudeNonDenseTests()
+        {
+            int[] data = [5, 50, 99, 99, 1, -2, 99, 99];
+            var ts = new ReadOnlyTensorSpan<int>(data, [2, 2], [4, 1]);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMinMagnitude(ts);
+            Assert.Equal(2, idx);
+        }
+
+        [Fact]
+        public static void TensorResizeToNonDenseSourceTests()
+        {
+            int[] srcData = [10, 20, 99, 99, 30, 40, 99, 99];
+            var src = new ReadOnlyTensorSpan<int>(srcData, [2, 2], [4, 1]);
+            Assert.False(src.IsDense);
+
+            int[] dstData = new int[6];
+            var dst = new TensorSpan<int>(dstData, [6], [1]);
+            Assert.True(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            Assert.Equal(10, dstData[0]);
+            Assert.Equal(20, dstData[1]);
+            Assert.Equal(30, dstData[2]);
+            Assert.Equal(40, dstData[3]);
+            Assert.Equal(0, dstData[4]);
+            Assert.Equal(0, dstData[5]);
+        }
+
+        [Fact]
+        public static void TensorResizeToNonDenseDestinationTests()
+        {
+            int[] srcData = [10, 20, 30, 40, 50, 60];
+            var src = new ReadOnlyTensorSpan<int>(srcData, [6], [1]);
+            Assert.True(src.IsDense);
+
+            int[] dstData = new int[8];
+            var dst = new TensorSpan<int>(dstData, [2, 2], [4, 1]);
+            Assert.False(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            Assert.Equal(10, dstData[0]);
+            Assert.Equal(20, dstData[1]);
+            Assert.Equal(0, dstData[2]);
+            Assert.Equal(0, dstData[3]);
+            Assert.Equal(30, dstData[4]);
+            Assert.Equal(40, dstData[5]);
+            Assert.Equal(0, dstData[6]);
+            Assert.Equal(0, dstData[7]);
+        }
+
+        [Fact]
+        public static void TensorResizeNonDenseTests()
+        {
+            Tensor<int> tensor = Tensor.Create([10, 20, 30, 40, 50, 60], [2, 3]);
+            Tensor<int> sliced = tensor.Slice(0..2, 0..2);
+            Assert.False(sliced.IsDense);
+
+            Tensor<int> resized = Tensor.Resize(sliced, [3]);
+            Assert.Equal(3, resized.FlattenedLength);
+            Assert.Equal(10, resized[0]);
+            Assert.Equal(20, resized[1]);
+            Assert.Equal(40, resized[2]);
+        }
+
+        [Fact]
         public static void TensorMultiplyTests()
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3).ToArray());
