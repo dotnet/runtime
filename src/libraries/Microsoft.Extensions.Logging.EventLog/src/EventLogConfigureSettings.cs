@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     /// Configures an EventLogSettings object from an IConfiguration.
     /// </summary>
     /// <remarks>
-    /// Doesn't use ConfigurationBinder in order to allow ConfigurationBinder, and all its dependencies,
+    /// Uses source-generated configuration binding to allow ConfigurationBinder, and all its dependencies,
     /// to be trimmed. This improves app size and startup.
     /// </remarks>
     internal sealed class EventLogConfigureSettings : IConfigureOptions<EventLogSettings>
@@ -26,6 +26,6 @@ namespace Microsoft.Extensions.Logging
             _configuration = providerConfiguration.Configuration;
         }
 
-        public void Configure(EventLogSettings options) => options.Configure(_configuration);
+        public void Configure(EventLogSettings options) => _configuration.Bind(options);
     }
 }
