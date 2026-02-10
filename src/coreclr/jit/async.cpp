@@ -642,7 +642,8 @@ PhaseStatus AsyncTransformation::Run()
     BasicBlock* nextBlock;
     for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
-        nextBlock = block->Next();
+        bool hasAwait = false;
+        nextBlock     = block->Next();
         for (GenTree* tree : LIR::AsRange(block))
         {
             if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
@@ -658,8 +659,12 @@ PhaseStatus AsyncTransformation::Run()
             }
 
             JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
+            hasAwait = true;
+        }
+
+        if (hasAwait)
+        {
             worklist.Push(block);
-            break;
         }
     }
 
@@ -2422,6 +2427,11 @@ unsigned AsyncTransformation::GetExceptionVar()
 BasicBlock* AsyncTransformation::GetSharedReturnBB()
 {
 #ifdef JIT32_GCENCODER
+    if (m_sharedReturnBB != nullptr)
+    {
+        return m_sharedReturnBB;
+    }
+
     // Due to a hard cap on epilogs we need a shared return here.
     m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
     m_sharedReturnBB->bbSetRunRarely();
