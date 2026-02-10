@@ -450,6 +450,9 @@ namespace System.Reflection.Emit
         /// Returns a string representation of the dynamic method.
         /// </summary>
         /// <returns>A string representation of the dynamic method, showing the return type, name, and parameter types.</returns>
+        /// <remarks>
+        /// The signature includes only types and the method name, if any. Parameter names are not included.
+        /// </remarks>
         public override string ToString()
         {
             var sbName = new ValueStringBuilder(MethodNameBufferSize);
@@ -469,24 +472,36 @@ namespace System.Reflection.Emit
         /// Gets the name of the dynamic method.
         /// </summary>
         /// <value>The name of the dynamic method.</value>
+        /// <remarks>
+        /// <note type="note">It is not necessary to name dynamic methods.</note>
+        /// </remarks>
         public override string Name => _name;
 
         /// <summary>
         /// Gets the type that declares the dynamic method.
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
+        /// <remarks>
+        /// This property always returns <see langword="null" /> for dynamic methods. Even when a dynamic method is logically associated with a type, it is not declared by the type.
+        /// </remarks>
         public override Type? DeclaringType => null;
 
         /// <summary>
         /// Gets the class object that was used to obtain the instance of the dynamic method.
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
+        /// <remarks>
+        /// This property always returns <see langword="null" /> for dynamic methods.
+        /// </remarks>
         public override Type? ReflectedType => null;
 
         /// <summary>
         /// Gets the module associated with the dynamic method.
         /// </summary>
         /// <value>The <see cref="System.Reflection.Module" /> associated with the dynamic method.</value>
+        /// <remarks>
+        /// If a module was specified when the dynamic method was created, this property returns that module. If a type was specified as the owner when the dynamic method was created, this property returns the module that contains that type.
+        /// </remarks>
         public override Module Module => _module;
 
         // we cannot return a MethodHandle because we cannot track it via GC so this method is off limits
@@ -501,24 +516,36 @@ namespace System.Reflection.Emit
         /// Gets the attributes specified when the dynamic method was created.
         /// </summary>
         /// <value>A bitwise combination of the <see cref="MethodAttributes" /> values representing the attributes for the method.</value>
+        /// <remarks>
+        /// Currently, the method attributes for a dynamic method are always <see cref="MethodAttributes.Public" /> and <see cref="MethodAttributes.Static" />.
+        /// </remarks>
         public override MethodAttributes Attributes => _attributes;
 
         /// <summary>
         /// Gets the calling convention specified when the dynamic method was created.
         /// </summary>
         /// <value>One of the <see cref="CallingConventions" /> values that indicates the calling convention of the method.</value>
+        /// <remarks>
+        /// Currently, the calling convention for a dynamic method is always <see cref="CallingConventions.Standard" />.
+        /// </remarks>
         public override CallingConventions CallingConvention => _callingConvention;
 
         /// <summary>
         /// Returns the base definition for the dynamic method.
         /// </summary>
         /// <returns>Always returns this dynamic method.</returns>
+        /// <remarks>
+        /// This method always returns the current <see cref="DynamicMethod" /> object.
+        /// </remarks>
         public override MethodInfo GetBaseDefinition() => this;
 
         /// <summary>
         /// Returns an array of <see cref="ParameterInfo" /> objects representing the parameters of the dynamic method.
         /// </summary>
         /// <returns>An array of <see cref="ParameterInfo" /> objects representing the parameters of the dynamic method, or an empty array if the method has no parameters.</returns>
+        /// <remarks>
+        /// The <see cref="ParameterInfo" /> objects returned by this method are for information only. Use the <see cref="DefineParameter" /> method to set or change the characteristics of the parameters.
+        /// </remarks>
         public override ParameterInfo[] GetParameters() =>
             GetParametersAsSpan().ToArray();
 
@@ -528,28 +555,46 @@ namespace System.Reflection.Emit
         /// Returns the implementation flags for the method.
         /// </summary>
         /// <returns>A bitwise combination of <see cref="MethodImplAttributes" /> values representing the implementation flags for the method.</returns>
+        /// <remarks>
+        /// Currently, method implementation attributes for dynamic methods are always <see cref="MethodImplAttributes.IL" /> and <see cref="MethodImplAttributes.NoInlining" />.
+        /// </remarks>
         public override MethodImplAttributes GetMethodImplementationFlags() =>
             MethodImplAttributes.IL | MethodImplAttributes.NoInlining;
 
         /// <summary>
         /// Gets a value that indicates whether the dynamic method is security-critical.
         /// </summary>
-        /// <value><see langword="true" /> for all dynamic methods.</value>
+        /// <value>
+        /// .NET (Core): <see langword="true" /> for all dynamic methods.
+        /// .NET Framework: <see langword="true" /> if the current dynamic method is security-critical or security-safe-critical; <see langword="false" /> if it is transparent.
+        /// </value>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-issecuritycritical.md">Supplemental API remarks for DynamicMethod.IsSecurityCritical</see>.
         /// </remarks>
         public override bool IsSecurityCritical => true;
 
         /// <summary>
         /// Gets a value that indicates whether the dynamic method is security-safe-critical.
         /// </summary>
-        /// <value><see langword="false" /> for all dynamic methods.</value>
+        /// <value>
+        /// .NET (Core): <see langword="false" /> for all dynamic methods.
+        /// .NET Framework: <see langword="true" /> if the dynamic method is safe-critical; <see langword="false" /> if it is critical or transparent.
+        /// </value>
+        /// <remarks>
+        /// <note type="note">For .NET Framework remarks about security transparency, see the <see cref="IsSecurityCritical" /> property.</note>
+        /// </remarks>
         public override bool IsSecuritySafeCritical => false;
 
         /// <summary>
         /// Gets a value that indicates whether the dynamic method is security-transparent.
         /// </summary>
-        /// <value><see langword="false" /> for all dynamic methods.</value>
+        /// <value>
+        /// .NET (Core): <see langword="false" /> for all dynamic methods.
+        /// .NET Framework: <see langword="true" /> if the dynamic method is transparent; otherwise, <see langword="false" />.
+        /// </value>
+        /// <remarks>
+        /// <note type="note">For .NET Framework remarks about security transparency, see the <see cref="IsSecurityCritical" /> property.</note>
+        /// </remarks>
         public override bool IsSecurityTransparent => false;
 
         /// <summary>
@@ -560,6 +605,10 @@ namespace System.Reflection.Emit
         /// <returns>An array of custom attributes defined on the dynamic method. If no attributes of the specified type are defined, an empty array is returned.</returns>
         /// <exception cref="ArgumentException"><paramref name="attributeType" /> is not a <see cref="RuntimeType" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="attributeType" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// For dynamic methods, specifying <see langword="true" /> for <paramref name="inherit" /> has no effect, because the method is not declared in a type.
+        /// <note type="note">Custom attributes are not currently supported on dynamic methods. The only attribute returned is <see cref="System.Runtime.CompilerServices.MethodImplAttribute" />; you can get the method implementation flags more easily using the <see cref="GetMethodImplementationFlags" /> method.</note>
+        /// </remarks>
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
@@ -581,6 +630,10 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <param name="inherit">This parameter is ignored for dynamic methods, because they do not support inheritance.</param>
         /// <returns>An array of all custom attributes defined on the dynamic method.</returns>
+        /// <remarks>
+        /// For dynamic methods, specifying <see langword="true" /> for <paramref name="inherit" /> has no effect, because the method is not declared in a type.
+        /// <note type="note">Custom attributes are not currently supported on dynamic methods. The only attribute returned is <see cref="System.Runtime.CompilerServices.MethodImplAttribute" />; you can get the method implementation flags more easily using the <see cref="GetMethodImplementationFlags" /> method.</note>
+        /// </remarks>
         public override object[] GetCustomAttributes(bool inherit)
         {
             // support for MethodImplAttribute PCA
@@ -594,6 +647,10 @@ namespace System.Reflection.Emit
         /// <param name="inherit">This parameter is ignored for dynamic methods, because they do not support inheritance.</param>
         /// <returns><see langword="true" /> if one or more instances of <paramref name="attributeType" /> or any of its derived types is applied to this method; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="attributeType" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// For dynamic methods, specifying <see langword="true" /> for <paramref name="inherit" /> has no effect. Dynamic methods have no inheritance chain.
+        /// <note type="note">Custom attributes are not currently supported on dynamic methods.</note>
+        /// </remarks>
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
@@ -605,18 +662,27 @@ namespace System.Reflection.Emit
         /// Gets the return type of the dynamic method.
         /// </summary>
         /// <value>A <see cref="Type" /> representing the return type of the dynamic method; or <see cref="void" /> if the method has no return type.</value>
+        /// <remarks>
+        /// If <see langword="null" /> was specified for the return type when the dynamic method was created, this property returns <see cref="void" />.
+        /// </remarks>
         public override Type ReturnType => _returnType;
 
         /// <summary>
         /// Gets the return parameter of the dynamic method.
         /// </summary>
         /// <value>A <see cref="ParameterInfo" /> object that represents the return parameter of the dynamic method.</value>
+        /// <remarks>
+        /// This property always returns <see langword="null" /> for dynamic methods.
+        /// </remarks>
         public override ParameterInfo ReturnParameter => new RuntimeParameterInfo(this, null, _returnType, -1);
 
         /// <summary>
         /// Gets the custom attributes of the return type for the dynamic method.
         /// </summary>
         /// <value>An <see cref="ICustomAttributeProvider" /> representing the custom attributes of the return type for the dynamic method.</value>
+        /// <remarks>
+        /// Custom attributes are not supported on the return type of a dynamic method, so the array of custom attributes returned by the <see cref="ICustomAttributeProvider.GetCustomAttributes(bool)" /> method is always empty.
+        /// </remarks>
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         //
@@ -635,6 +701,10 @@ namespace System.Reflection.Emit
         /// <paramref name="position" /> is less than 0.
         /// -or-
         /// <paramref name="position" /> is greater than the number of parameters of the dynamic method.</exception>
+        /// <remarks>
+        /// If <paramref name="position" /> is 0, the <see cref="DefineParameter" /> method refers to the return value. Setting parameter information has no effect on the return value.
+        /// <para>If the dynamic method has already been completed, by calling the <see cref="CreateDelegate(Type)" /> or <see cref="Invoke" /> method, the <see cref="DefineParameter" /> method has no effect. No exception is thrown.</para>
+        /// </remarks>
         public ParameterBuilder? DefineParameter(int position, ParameterAttributes attributes, string? parameterName)
         {
             if (position < 0 || position > _parameterTypes.Length)
@@ -655,7 +725,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>An <see cref="ILGenerator" /> object for the method.</returns>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
         /// </remarks>
         public ILGenerator GetILGenerator()
         {
@@ -666,6 +736,9 @@ namespace System.Reflection.Emit
         /// Gets or sets a value indicating whether the local variables in the method are zero-initialized.
         /// </summary>
         /// <value><see langword="true" /> if the local variables in the method are zero-initialized; otherwise, <see langword="false" />. The default is <see langword="true" />.</value>
+        /// <remarks>
+        /// If this property is set to <see langword="true" />, the emitted Microsoft intermediate language (MSIL) includes initialization of local variables. If it is set to <see langword="false" />, local variables are not initialized and the generated code is unverifiable.
+        /// </remarks>
         public bool InitLocals
         {
             get => _initLocals;
