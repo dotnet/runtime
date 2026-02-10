@@ -49,15 +49,26 @@ LEAF_END RhpVTableOffsetDispatch, _TEXT
 //  [rsp+0] m_ReturnAddress: contains the return address of caller to stub
 NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 384
+
+        // r11 holds indirection cell from the caller. Save before clobbering.
+        mov             r10, r11
+
+        SAVE_UPPER_VECTOR_REGISTERS 0x00
 
         lea             rdi, [rsp + __PWTB_TransitionBlock]         // pTransitionBlock
-        mov             rsi, r11                                    // indirection cell
+        mov             rsi, r10                                    // indirection cell
 
         call            C_FUNC(CID_ResolveWorker)
+        mov             r10, rax
 
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        TAILJMP_RAX
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_UPPER_VECTOR_REGISTERS 0x00
+
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        jmp             r10
 
 NESTED_END RhpInterfaceDispatchSlow, _TEXT
 
@@ -65,15 +76,26 @@ NESTED_END RhpInterfaceDispatchSlow, _TEXT
 //    r11                    contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)
 NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 384
+
+        // r11 holds indirection cell from the caller. Save before clobbering.
+        mov             r10, r11
+
+        SAVE_UPPER_VECTOR_REGISTERS 0x00
 
         lea             rdi, [rsp + __PWTB_TransitionBlock]         // pTransitionBlock
-        mov             rsi, r11                                    // indirection cell
+        mov             rsi, r10                                    // indirection cell
 
         call            C_FUNC(CID_VirtualOpenDelegateDispatchWorker)
+        mov             r10, rax
 
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        TAILJMP_RAX
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_UPPER_VECTOR_REGISTERS 0x00
+
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        jmp             r10
 
 NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
 
