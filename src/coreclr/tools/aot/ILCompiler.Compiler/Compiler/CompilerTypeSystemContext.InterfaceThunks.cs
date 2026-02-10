@@ -144,6 +144,22 @@ namespace ILCompiler
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
 
         /// <summary>
+        /// Does a method represent a default interface method specialization thunk?
+        /// </summary>
+        public bool IsDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return method is DefaultInterfaceMethodImplementationInstantiationThunk;
+        }
+
+        /// <summary>
+        /// Convert from a default interface method specialization thunk to the actual target method.
+        /// </summary>
+        public MethodDesc GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return ((DefaultInterfaceMethodImplementationInstantiationThunk)method).TargetMethod;
+        }
+
+        /// <summary>
         /// Represents a thunk to call shared instance method on generic interfaces.
         /// </summary>
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
@@ -238,6 +254,11 @@ namespace ILCompiler
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
+                }
+
+                if (_targetMethod.IsAsyncCall())
+                {
+                    codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 }
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));
