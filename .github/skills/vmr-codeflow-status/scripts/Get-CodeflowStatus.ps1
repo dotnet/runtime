@@ -618,7 +618,7 @@ if (-not $PRNumber) {
     return
 }
 
-# --- Step 1: Get PR details (single call for PR + comments + commits) ---
+# --- Step 1: PR Overview ---
 Write-Section "Codeflow PR #$PRNumber in $Repository"
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
@@ -657,10 +657,12 @@ elseif ($isBackflow) {
     Write-Status "Flow" "Backflow (dotnet/dotnet → $Repository)" "Cyan"
 }
 
+# --- Step 2: Current State (independent assessment from primary signals) ---
+Write-Section "Current State"
+
 # Check for empty diff (0 changed files)
 $isEmptyDiff = ($pr.changedFiles -eq 0 -and $pr.additions -eq 0 -and $pr.deletions -eq 0)
 if ($isEmptyDiff) {
-    Write-Host ""
     Write-Host "  📭 Empty diff: 0 changed files, 0 additions, 0 deletions" -ForegroundColor Yellow
 }
 
@@ -673,7 +675,6 @@ if ($LASTEXITCODE -eq 0 -and $timelineJson) {
 }
 
 if ($forcePushEvents.Count -gt 0) {
-    Write-Host ""
     foreach ($fp in $forcePushEvents) {
         $fpActor = if ($fp.actor) { $fp.actor.login } else { "unknown" }
         $fpTime = $fp.created_at
@@ -687,7 +688,28 @@ if ($forcePushEvents.Count -gt 0) {
     $lastForcePushActor = if ($lastForcePush.actor) { $lastForcePush.actor.login } else { "unknown" }
 }
 
-# --- Step 2: Parse PR body metadata ---
+# Synthesize current state assessment
+$prUpdatedTime = if ($pr.updatedAt) { [DateTimeOffset]::Parse($pr.updatedAt).UtcDateTime } else { $null }
+$prAgeDays = if ($prUpdatedTime) { ([DateTime]::UtcNow - $prUpdatedTime).TotalDays } else { 0 }
+$currentState = if ($isEmptyDiff -and $forcePushEvents.Count -gt 0) {
+    "NO-OP"
+} elseif ($forcePushEvents.Count -gt 0 -and $lastForcePushTime -and ([DateTime]::UtcNow - $lastForcePushTime).TotalHours -lt 24) {
+    "IN_PROGRESS"
+} elseif ($prAgeDays -gt 3) {
+    "STALE"
+} else {
+    "ACTIVE"
+}
+
+Write-Host ""
+switch ($currentState) {
+    "NO-OP"       { Write-Host "  📭 NO-OP — empty diff, likely already resolved" -ForegroundColor Yellow }
+    "IN_PROGRESS" { Write-Host "  🔄 IN PROGRESS — recent force push, awaiting update" -ForegroundColor Cyan }
+    "STALE"       { Write-Host "  ⏳ STALE — no recent activity" -ForegroundColor Yellow }
+    "ACTIVE"      { Write-Host "  ✅ ACTIVE — PR has content" -ForegroundColor Green }
+}
+
+# --- Step 3: Codeflow Metadata ---
 Write-Section "Codeflow Metadata"
 
 $body = $pr.body
@@ -772,7 +794,7 @@ $freshnessRepoLabel = if ($isForwardFlow) { $sourceRepo } else { "VMR" }
 # Pre-load PR commits for use in validation and later analysis
 $prCommits = $pr.commits
 
-# --- Step 2b: Determine actual VMR snapshot on the PR branch ---
+# --- Step 4: Determine actual VMR snapshot on the PR branch ---
 # Priority: 1) Version.Details.xml (ground truth), 2) commit messages, 3) PR body
 $branchVmrCommit = $null
 $commitMsgVmrCommit = $null
@@ -871,7 +893,7 @@ if ($branchVmrCommit -or $vmrCommit) {
     }
 }
 
-# --- Step 3: Check source freshness ---
+# --- Step 5: Check source freshness ---
 $freshnessLabel = if ($isForwardFlow) { "Source Freshness" } else { "VMR Freshness" }
 Write-Section $freshnessLabel
 
@@ -1022,9 +1044,7 @@ else {
     Write-Warning "Cannot check freshness without source commit and branch info"
 }
 
-# --- Step 4: Check staleness and conflict warnings (using comments from gh pr view) ---
-Write-Section "Staleness & Conflict Check"
-
+# Collect Maestro comment data (needed by PR Branch Analysis and Codeflow History)
 $stalenessWarnings = @()
 $lastStalenessComment = $null
 
@@ -1055,63 +1075,16 @@ if ($pr.comments) {
     }
 }
 
-if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
-    if ($conflictWarnings.Count -gt 0) {
-        Write-Host "  🔴 Conflict detected ($($conflictWarnings.Count) conflict warning(s))" -ForegroundColor Red
-        Write-Status "Latest conflict" $lastConflictComment.createdAt
-
-        # Extract conflicting files
-        $conflictFiles = @()
-        $fileMatches = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\r?\n')
-        foreach ($fm in $fileMatches) {
-            $conflictFiles += $fm.Groups[1].Value
-        }
-        if ($conflictFiles.Count -gt 0) {
-            Write-Host "  Conflicting files:" -ForegroundColor Yellow
-            foreach ($f in $conflictFiles) {
-                Write-Host "    - $f" -ForegroundColor Yellow
-            }
-        }
-
-        # Extract VMR commit from the conflict comment
-        if ($lastConflictComment.body -match 'sources from \[`([a-fA-F0-9]+)`\]') {
-            Write-Host "  Conflicting VMR commit: $($Matches[1])" -ForegroundColor DarkGray
-        }
-
-        # Extract resolve command
-        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-fA-F0-9-]+(?:\s+--build [a-fA-F0-9-]+)?)') {
-            Write-Host ""
-            Write-Host "  Resolve command:" -ForegroundColor White
-            Write-Host "    $($Matches[1])" -ForegroundColor DarkGray
-        }
-    }
-
-    if ($stalenessWarnings.Count -gt 0) {
-        if ($conflictWarnings.Count -gt 0) { Write-Host "" }
-        Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
-        Write-Status "Latest warning" $lastStalenessComment.createdAt
-        $oppositeFlow = if ($isForwardFlow) { "backflow from VMR merged into $sourceRepo" } else { "forward flow merged into VMR" }
-        Write-Host "  Opposite codeflow ($oppositeFlow) while this PR was open." -ForegroundColor Yellow
-        Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
-
-        # Extract darc commands from the warning
-        if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-fA-F0-9-]+)(?:\s+--force)?') {
-            Write-Host ""
-            Write-Host "  Suggested commands from Maestro:" -ForegroundColor White
-            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+)\s*\r?\n') {
-                Write-Host "    Normal trigger: $($Matches[1])"
-            }
-            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+ --force)') {
-                Write-Host "    Force trigger:  $($Matches[1])"
-            }
-        }
+# Extract conflicting files (used in History and Recommendations)
+$conflictFiles = @()
+if ($lastConflictComment) {
+    $fileMatches = [regex]::Matches($lastConflictComment.body, '-\s+`([^`]+)`\s*\r?\n')
+    foreach ($fm in $fileMatches) {
+        $conflictFiles += $fm.Groups[1].Value
     }
 }
-else {
-    Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
-}
 
-# Cross-reference force push against conflict/staleness warnings
+# Cross-reference force push against conflict/staleness warnings (data only)
 $conflictMayBeResolved = $false
 $stalenessMayBeResolved = $false
 if ($lastForcePushTime) {
@@ -1119,26 +1092,17 @@ if ($lastForcePushTime) {
         $lastConflictTime = [DateTimeOffset]::Parse($lastConflictComment.createdAt).UtcDateTime
         if ($lastForcePushTime -gt $lastConflictTime) {
             $conflictMayBeResolved = $true
-            Write-Host ""
-            Write-Host "  ℹ️  Force push by @$lastForcePushActor at $($lastForcePush.created_at) is AFTER the last conflict warning" -ForegroundColor Cyan
-            Write-Host "     Conflict may have been resolved via darc vmr resolve-conflict" -ForegroundColor DarkGray
         }
     }
     if ($stalenessWarnings.Count -gt 0 -and $lastStalenessComment) {
         $lastWarnTime2 = [DateTimeOffset]::Parse($lastStalenessComment.createdAt).UtcDateTime
         if ($lastForcePushTime -gt $lastWarnTime2) {
             $stalenessMayBeResolved = $true
-            Write-Host "  ℹ️  Force push is AFTER the staleness warning — someone may have acted on it" -ForegroundColor Cyan
         }
-    }
-    if ($isEmptyDiff -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
-        Write-Host ""
-        Write-Host "  📭 PR has empty diff after force push — codeflow changes may already be in target branch" -ForegroundColor Yellow
-        Write-Host "     This PR is likely a no-op. Consider merging to clear state or closing it." -ForegroundColor DarkGray
     }
 }
 
-# --- Step 5: Analyze PR branch commits (using commits from gh pr view) ---
+# --- Step 6: PR Branch Analysis ---
 Write-Section "PR Branch Analysis"
 
 if ($prCommits) {
@@ -1203,7 +1167,78 @@ if ($prCommits) {
     }
 }
 
-# --- Step 6: Trace a specific fix (optional) ---
+# --- Step 7: Codeflow History (Maestro comments as historical context) ---
+Write-Section "Codeflow History"
+Write-Host "  Maestro warnings (historical — see Current State for present status):" -ForegroundColor DarkGray
+
+if ($stalenessWarnings.Count -gt 0 -or $conflictWarnings.Count -gt 0) {
+    if ($conflictWarnings.Count -gt 0) {
+        Write-Host "  🔴 Conflict detected ($($conflictWarnings.Count) conflict warning(s))" -ForegroundColor Red
+        Write-Status "Latest conflict" $lastConflictComment.createdAt
+
+        if ($conflictFiles.Count -gt 0) {
+            Write-Host "  Conflicting files:" -ForegroundColor Yellow
+            foreach ($f in $conflictFiles) {
+                Write-Host "    - $f" -ForegroundColor Yellow
+            }
+        }
+
+        # Extract VMR commit from the conflict comment
+        if ($lastConflictComment.body -match 'sources from \[`([a-fA-F0-9]+)`\]') {
+            Write-Host "  Conflicting VMR commit: $($Matches[1])" -ForegroundColor DarkGray
+        }
+
+        # Extract resolve command
+        if ($lastConflictComment.body -match '(darc vmr resolve-conflict --subscription [a-fA-F0-9-]+(?:\s+--build [a-fA-F0-9-]+)?)') {
+            Write-Host ""
+            Write-Host "  Resolve command:" -ForegroundColor White
+            Write-Host "    $($Matches[1])" -ForegroundColor DarkGray
+        }
+    }
+
+    if ($stalenessWarnings.Count -gt 0) {
+        if ($conflictWarnings.Count -gt 0) { Write-Host "" }
+        Write-Host "  ⚠️  Staleness warning detected ($($stalenessWarnings.Count) warning(s))" -ForegroundColor Yellow
+        Write-Status "Latest warning" $lastStalenessComment.createdAt
+        $oppositeFlow = if ($isForwardFlow) { "backflow from VMR merged into $sourceRepo" } else { "forward flow merged into VMR" }
+        Write-Host "  Opposite codeflow ($oppositeFlow) while this PR was open." -ForegroundColor Yellow
+        Write-Host "  Maestro has blocked further codeflow updates to this PR." -ForegroundColor Yellow
+
+        # Extract darc commands from the warning
+        if ($lastStalenessComment.body -match 'darc trigger-subscriptions --id ([a-fA-F0-9-]+)(?:\s+--force)?') {
+            Write-Host ""
+            Write-Host "  Suggested commands from Maestro:" -ForegroundColor White
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+)\s*\r?\n') {
+                Write-Host "    Normal trigger: $($Matches[1])"
+            }
+            if ($lastStalenessComment.body -match '(darc trigger-subscriptions --id [a-fA-F0-9-]+ --force)') {
+                Write-Host "    Force trigger:  $($Matches[1])"
+            }
+        }
+    }
+}
+else {
+    Write-Host "  ✅ No staleness or conflict warnings found" -ForegroundColor Green
+}
+
+# Cross-reference force push against conflict/staleness warnings (historical context)
+if ($lastForcePushTime) {
+    if ($conflictMayBeResolved) {
+        Write-Host ""
+        Write-Host "  ℹ️  Force push by @$lastForcePushActor at $($lastForcePush.created_at) is AFTER the last conflict warning" -ForegroundColor Cyan
+        Write-Host "     Conflict may have been resolved via darc vmr resolve-conflict" -ForegroundColor DarkGray
+    }
+    if ($stalenessMayBeResolved) {
+        Write-Host "  ℹ️  Force push is AFTER the staleness warning — someone may have acted on it" -ForegroundColor Cyan
+    }
+    if ($isEmptyDiff -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
+        Write-Host ""
+        Write-Host "  📭 PR has empty diff after force push — codeflow changes may already be in target branch" -ForegroundColor Yellow
+        Write-Host "     This PR is likely a no-op. Consider merging to clear state or closing it." -ForegroundColor DarkGray
+    }
+}
+
+# --- Step 8: Trace a specific fix (optional) ---
 if ($TraceFix) {
     Write-Section "Tracing Fix: $TraceFix"
 
@@ -1339,8 +1374,15 @@ if ($TraceFix) {
     }
 }
 
-# --- Step 7: Recommendations ---
+# --- Step 9: Recommendations ---
 Write-Section "Recommendations"
+
+# Lead with current state assessment if NO-OP
+if ($currentState -eq "NO-OP") {
+    Write-Host "  📭 Current state: NO-OP — empty diff with force push activity" -ForegroundColor Yellow
+    Write-Host "     This PR likely has no meaningful changes left to merge." -ForegroundColor DarkGray
+    Write-Host ""
+}
 
 $issues = @()
 

@@ -69,14 +69,18 @@ Use this skill when:
 ## What the Script Does
 
 ### PR Analysis Mode (default)
-1. **Parses PR metadata** — Extracts VMR commit, subscription ID, build info from PR body
-2. **Validates snapshot** — Cross-references PR body commit against branch commit messages to detect stale metadata
-3. **Checks VMR freshness** — Compares PR's VMR snapshot against current VMR branch HEAD
-4. **Shows pending forward flow** — For behind backflow PRs, finds open forward flow PRs that would close part of the gap
-5. **Detects staleness & conflicts** — Finds Maestro "codeflow cannot continue" warnings and "Conflict detected" messages with file lists and resolve commands
-6. **Analyzes PR commits** — Categorizes as auto-updates vs manual commits
-7. **Traces fixes** (with `-TraceFix`) — Checks if a specific fix has flowed through VMR → codeflow PR
-8. **Recommends actions** — Suggests force trigger, close/reopen, merge as-is, resolve conflicts, or wait
+
+> **Design principle**: Assess current state from primary signals first, then use Maestro comments as historical context — not the other way around. Comments tell you the history, not the present.
+
+1. **PR Overview** — Basic PR info, flow direction (backflow vs forward flow)
+2. **Current State** — Independent assessment from primary signals: empty diff, force pushes, merge status. Produces a one-line verdict (NO-OP / IN PROGRESS / STALE / ACTIVE) before reading any comments
+3. **Codeflow Metadata** — Extracts VMR commit, subscription ID, build info from PR body
+4. **Snapshot Validation** — Cross-references PR body commit against Version.Details.xml and branch commits to detect stale metadata
+5. **Source Freshness** — Compares PR's VMR snapshot against current VMR branch HEAD; shows pending forward flow PRs
+6. **PR Branch Analysis** — Categorizes commits as auto-updates vs manual; detects codeflow-like manual commits
+7. **Codeflow History** — Maestro comments as historical context (conflict/staleness warnings), cross-referenced against force push timestamps to determine if issues were already addressed
+8. **Traces fixes** (with `-TraceFix`) — Checks if a specific fix has flowed through VMR → codeflow PR
+9. **Recommends actions** — Driven by current state assessment, informed by history
 
 ### Flow Health Mode (`-CheckMissing`)
 1. **Checks official build freshness** — Queries `aka.ms` shortlinks for latest published VMR build dates per channel
@@ -90,6 +94,12 @@ Use this skill when:
 
 ## Interpreting Results
 
+### Current State (assessed first, from primary signals)
+- **📭 NO-OP**: Empty diff with force push — PR likely already resolved, changes landed via other paths
+- **🔄 IN PROGRESS**: Recent force push within 24h — someone is actively working on it
+- **⏳ STALE**: No activity for >3 days — may need attention
+- **✅ ACTIVE**: PR has content and recent activity
+
 ### Freshness
 - **✅ Up to date**: PR has the latest VMR snapshot
 - **⚠️ VMR is N commits ahead**: The PR is missing updates. Check if the missing commits contain the fix you need.
@@ -100,14 +110,11 @@ Use this skill when:
 - **⚠️ Mismatch**: PR body is stale — the script automatically uses the branch-derived commit for freshness checks
 - **ℹ️ Initial commit only**: PR body can't be verified yet (no "Backflow from" commit exists)
 
-### Staleness & Conflicts
+### Codeflow History (Maestro comments as context)
 - **✅ No warnings**: Maestro can freely update the PR
 - **⚠️ Staleness warning**: A forward flow merged while this backflow PR was open. Maestro blocked further updates.
 - **🔴 Conflict detected**: Maestro found merge conflicts. Shows conflicting files and `darc vmr resolve-conflict` command.
-
-### Force Push & Empty Diff Detection
-- **🔄 Force push detected**: Shows who force-pushed and when. Cross-references against conflict/staleness warnings to determine if someone already acted (e.g., ran `darc vmr resolve-conflict`).
-- **📭 Empty diff**: PR has 0 changed files. If this follows a force push after warnings, the PR is likely a no-op — its changes already landed in the target branch via other paths. Recommendations shift to merge-empty/close/force-trigger.
+- **ℹ️ Force push after warning**: When a force push post-dates a conflict/staleness warning, the issue may already be resolved. The script cross-references timestamps automatically.
 
 ### Manual Commits
 Manual commits on the PR branch are at risk if the PR is closed or force-triggered. The script lists them so you can decide whether to preserve them.
