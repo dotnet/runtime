@@ -1442,7 +1442,7 @@ void EEJitManager::SetCpuInfo()
             CPUCompileFlags.Set(InstructionSet_Sve);
 
 #ifdef _DEBUG
-            if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitUseScalableVectorT))
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitUseScalableVectorT))
             {
                 // Vector<T> will use SVE instead of NEON.
                 CPUCompileFlags.Clear(InstructionSet_VectorT128);
