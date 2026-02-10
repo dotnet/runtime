@@ -6031,7 +6031,7 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
         assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) ||
                (indSize.IsExact() && (genTypeSize(indType) == indSize.GetExact())));
 
-        value = VNForBitCast(value, indType, indSize.GetExact());
+        value = VNForBitCast(value, indType, indSize);
 
         JITDUMP("    VNForLoadStoreBitcast returns ");
         JITDUMPEXEC(m_compiler->vnPrint(value, 1));
@@ -6193,7 +6193,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             {
                 JITDUMP("Tree [%06u] performs store to variable-sized local\n", dspTreeID(storeNode), defLclNum);
                 // We don't know the bounds of this store at compile time, so it's given a unique number.
-                newLclValue = vnStore->VNPairForExpr(compCurBB, storeNode->TypeGet());
+                newLclValue = vnStore->VNPairForExpr(compCurBB, defVarDsc->TypeGet());
             }
             else
             {
@@ -6207,7 +6207,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             // Any out-of-bounds stores should have made the local address-exposed.
             assert(newLclValue.BothDefined());
 
-            if (normalize && lclSize.IsExact())
+            if (normalize)
             {
                 // We normalize types stored in local locations because things outside VN itself look at them.
                 newLclValue = vnStore->VNPairForLoadStoreBitCast(newLclValue, defVarDsc->TypeGet(), lclSize);
@@ -13605,8 +13605,9 @@ void Compiler::fgValueNumberBitCast(GenTree* tree)
     ValueNumPair srcExcVNPair;
     vnStore->VNPUnpackExc(srcVNPair, &srcNormVNPair, &srcExcVNPair);
 
-    ValueNumPair resultNormVNPair = vnStore->VNPairForBitCast(srcNormVNPair, castToType, genTypeSize(castToType));
-    ValueNumPair resultExcVNPair  = srcExcVNPair;
+    ValueNumPair resultNormVNPair =
+        vnStore->VNPairForBitCast(srcNormVNPair, castToType, ValueSize::FromJitType(castToType));
+    ValueNumPair resultExcVNPair = srcExcVNPair;
 
     tree->gtVNPair = vnStore->VNPWithExc(resultNormVNPair, resultExcVNPair);
 }
@@ -13627,16 +13628,24 @@ void Compiler::fgValueNumberBitCast(GenTree* tree)
 // Return Value:
 //    Value number representing the target type.
 //
-ValueNum ValueNumStore::EncodeBitCastType(var_types castToType, unsigned size)
+ValueNum ValueNumStore::EncodeBitCastType(var_types castToType, ValueSize size)
 {
-    if (castToType != TYP_STRUCT)
+    if (!size.IsExact())
     {
-        assert(size == genTypeSize(castToType));
+        assert(varTypeHasUnknownSize(castToType));
         return VNForIntCon(castToType);
     }
 
-    assert(size != 0);
-    return VNForIntCon(TYP_COUNT + size);
+    unsigned exactSize = size.GetExact();
+
+    if (castToType != TYP_STRUCT)
+    {
+        assert(exactSize == genTypeSize(castToType));
+        return VNForIntCon(castToType);
+    }
+
+    assert(exactSize != 0);
+    return VNForIntCon(TYP_COUNT + exactSize);
 }
 
 //------------------------------------------------------------------------
@@ -13686,7 +13695,7 @@ var_types ValueNumStore::DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSiz
 //    process, and "VNF_BitCast" is that function. See also the notes for
 //    "VNForLoadStoreBitCast".
 //
-ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size)
+ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, ValueSize size)
 {
     // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
     // This ensures we do not end up with pathologically long chains of
@@ -13721,7 +13730,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsig
 //------------------------------------------------------------------------
 // VNPairForBitCast: VNForBitCast applied to a ValueNumPair.
 //
-ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size)
+ValueNumPair ValueNumStore::VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, ValueSize size)
 {
     ValueNum srcLibVN = srcVNPair.GetLiberal();
     ValueNum srcConVN = srcVNPair.GetConservative();
@@ -14457,7 +14466,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 if (typeObj != nullptr)
                 {
                     ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-                    call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
+                    call->gtVNPair.SetBoth(
+                        vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, ValueSize::FromJitType(TYP_REF)));
                     return false;
                 }
             }
