@@ -154,9 +154,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         case EC_FUNC_TOKEN:
             ins = params.isJump ? INS_return_call : INS_call;
-            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: function index reloc */);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, 0 /* FIXME-WASM: function index reloc */);
             id->idIns(ins);
-            id->idInsFmt(IF_ULEB128);
+            id->idInsFmt(IF_CALL);
             break;
         case EC_INDIR_R:
         {
@@ -399,6 +399,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size             = SizeOfULEB128(emitGetLclVarDeclCount(this)) + sizeof(typeCode);
             break;
         }
+        case IF_CALL:
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
@@ -514,10 +515,13 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination, bool isSigned)
     return PADDED_RELOC_SIZE;
 }
 
-size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned)
+size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
 {
     if (id->idIsCnsReloc())
+    {
+        emitRecordRelocation(destination, (void *)emitGetInsSC(id), relocType);
         return emitOutputPaddedReloc(destination, isSigned);
+    }
     else if (isSigned)
         return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
     else
@@ -545,20 +549,28 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         case IF_ULEB128:
         {
+            assert(!id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, false);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
             break;
         }
         case IF_SLEB128:
         {
+            assert(!id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, true);
+            dst += emitOutputSLEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_CALL:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_FUNCTION_INDEX_LEB);
             break;
         }
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputConstant(dst, id, false);
+            dst += emitOutputConstant(dst, id, false, CorInfoReloc::R_WASM_TYPE_INDEX_LEB);
             dst += emitOutputULEB128(dst, 0);
             break;
         }
@@ -735,6 +747,7 @@ void emitter::emitDispIns(
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
+        case IF_CALL:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
