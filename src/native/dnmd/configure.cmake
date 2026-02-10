@@ -62,3 +62,12 @@ option(DNMD_ENABLE_PROFILING OFF)
 if (DNMD_ENABLE_PROFILING AND MSVC)
     add_link_options(/PROFILE)
 endif()
+
+option(DNMD_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+
+if (DNMD_ENABLE_SANITIZERS AND NOT MSVC)
+    # -fno-omit-frame-pointer is recommended by the Clang ASan docs for nicer stack traces.
+    # https://clang.llvm.org/docs/AddressSanitizer.html#usage
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
+endif()

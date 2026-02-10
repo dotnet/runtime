@@ -1609,6 +1609,7 @@ namespace
                 EXPECT_HRESULT_SUCCEEDED(import->ResetEnum(hcorenum, 0));
                 ReadInMembers(import, hcorenum, tk, tokens);
             }
+            import->CloseEnum(hcorenum);
         }
         catch (...)
         {
@@ -1773,7 +1774,7 @@ TEST_P(MetadataImportTest, ImportAPIs)
     // Load metadata
     dncp::com_ptr<IMetaDataImport2> baselineImport;
     ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
-    
+
     dncp::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
     dncp::com_ptr<IMetaDataImport2> currentImport;

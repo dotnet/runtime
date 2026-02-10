@@ -57,3 +57,27 @@ jobs:
     #   with:
     #     name: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
     #     path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    name: Build (Sanitizers)
+    env:
+      ASAN_OPTIONS: detect_odr_violation=0
+      LSAN_OPTIONS: suppressions=${{ github.workspace }}/test/sanitizers/lsan.supp
+      UBSAN_OPTIONS: suppressions=${{ github.workspace }}/test/sanitizers/ubsan.supp
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Build
+      run: |
+        cmake -S . -B artifacts -DCMAKE_BUILD_TYPE=Debug -DDNMD_ENABLE_SANITIZERS=ON
+        cmake --build artifacts --config Debug --target install
+
+    - name: Run Tests
+      run: ctest --test-dir artifacts --output-on-failure -C Debug
