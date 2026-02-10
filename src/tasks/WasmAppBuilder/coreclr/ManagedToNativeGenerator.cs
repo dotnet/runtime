@@ -93,6 +93,8 @@ public class ManagedToNativeGenerator : Task
                         "il",
                         "inn",
                         "lii",
+                        "ld",
+                        "lf",
                         "ll",
                         "lli",
                         "n",

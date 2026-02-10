@@ -72,7 +72,6 @@ extern "C" {
     int32_t SystemNative_ConvertErrorPalToPlatform (int32_t);
     int32_t SystemNative_ConvertErrorPlatformToPal (int32_t);
     int32_t SystemNative_CopyFile (void *, void *, int64_t);
-    void * SystemNative_Dup (void *);
     int32_t SystemNative_FAllocate (void *, int64_t, int64_t);
     int32_t SystemNative_FChMod (void *, int32_t);
     int32_t SystemNative_FChflags (void *, uint32_t);
@@ -220,7 +219,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Dup) // System.Console
     DllImportEntry(SystemNative_FAllocate) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
@@ -329,7 +327,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 98},
+    {"libSystem.Native", s_libSystem_Native, 97},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
