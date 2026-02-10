@@ -152,12 +152,6 @@
   <Target Name="HardcodeNativeVersionFile"
           AfterTargets="GenerateNativeVersionFile">
     <PropertyGroup>
-      <_FixedNativeVersionC>
-<![CDATA[
-static char sccsid[] __attribute__((used)) = "@(#)Version 42.42.42.42424"%3B
- ]]>
-      </_FixedNativeVersionC>
-
       <_FixedNativeVersionH>
 <![CDATA[
 #ifndef VER_COMPANYNAME_STR
@@ -192,13 +186,6 @@ static char sccsid[] __attribute__((used)) = "@(#)Version 42.42.42.42424"%3B
  ]]>
       </_FixedNativeVersionH>
     </PropertyGroup>
-
-    <WriteLinesToFile
-      Condition="'$(NativeVersionFile)' != '' and '$(NativeVersionFile.EndsWith(`.c`))' == 'true'"
-      File="$(NativeVersionFile)"
-      Lines="$(_FixedNativeVersionC)"
-      Overwrite="true"
-      WriteOnlyWhenDifferent="true" />
 
     <WriteLinesToFile
       Condition="'$(NativeVersionFile)' != '' and '$(NativeVersionFile.EndsWith(`.h`))' == 'true'"
