@@ -60,7 +60,7 @@ void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * leng
         ModuleInfoRow * pCurrent = pModuleInfoRows + i;
         if ((int32_t)sectionId == pCurrent->SectionId)
         {
-            *length = pCurrent->GetLength();
+            *length = pCurrent->Length;
             return pCurrent->Start;
         }
     }
@@ -77,11 +77,6 @@ void * TypeManager::GetClasslibFunction(ClasslibFunctionId functionId)
         return nullptr;
 
     return m_pClasslibFunctions[id];
-}
-
-int TypeManager::ModuleInfoRow::GetLength()
-{
-    return Length;
 }
 
 HANDLE TypeManager::GetOsModuleHandle()
