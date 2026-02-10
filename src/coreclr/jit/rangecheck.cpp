@@ -951,7 +951,7 @@ Limit RangeCheck::TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool
         return isLower ? l2 : l1;
     }
     unreached();
-};
+}
 
 //------------------------------------------------------------------------
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
@@ -1275,8 +1275,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 assertedRange.ToString(comp));
 
         Range copy  = *pRange;
-        copy.lLimit = tightenLimit(assertedRange.lLimit, copy.lLimit, preferredBoundVN, true);
-        copy.uLimit = tightenLimit(assertedRange.uLimit, copy.uLimit, preferredBoundVN, false);
+        copy.lLimit = TightenLimit(assertedRange.lLimit, copy.lLimit, preferredBoundVN, true);
+        copy.uLimit = TightenLimit(assertedRange.uLimit, copy.uLimit, preferredBoundVN, false);
 
         JITDUMP("[%s]\n", copy.ToString(comp));
         if (copy.IsValid())
