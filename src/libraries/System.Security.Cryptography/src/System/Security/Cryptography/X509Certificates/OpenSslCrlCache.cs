@@ -534,7 +534,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                     else
                     {
-                        Node node = new Node(key, value);
+                        Node node = new Node(hashCode, key, value);
                         node.Next = _head;
 
                         if (_count < MaxItems)
@@ -583,9 +583,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal bool TryGetValueAndUpRef(string key, [NotNullWhen(true)] out CachedCrlEntry? value)
             {
+                int hashCode = key.GetHashCode();
+
                 lock (_lock)
                 {
-                    if (TryGetNode(key.GetHashCode(), key, out Node? node))
+                    if (TryGetNode(hashCode, key, out Node? node))
                     {
                         bool ignore = false;
                         node.Value.CrlHandle.DangerousAddRef(ref ignore);
@@ -640,11 +642,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             private void PruneForGC()
             {
-                if (GC.GetGeneration(this) != GC.MaxGeneration)
-                {
-                    return;
-                }
-
                 // The general flow:
                 // * The current head is where we expire next time.
                 // * Under the lock: If there is an expire node, determine the new count by walking to it,
@@ -713,10 +710,12 @@ namespace System.Security.Cryptography.X509Certificates
                 internal CachedCrlEntry Value { get; set; }
                 internal Node? Next { get; set; }
 
-                internal Node(string key, CachedCrlEntry value)
+                internal Node(int hashCode, string key, CachedCrlEntry value)
                 {
+                    Debug.Assert(key.GetHashCode() == hashCode);
+
                     Key = key;
-                    _keyHashCode = key.GetHashCode();
+                    _keyHashCode = hashCode;
                     Value = value;
                 }
 
@@ -738,7 +737,11 @@ namespace System.Security.Cryptography.X509Certificates
                 ~GCWatcher()
                 {
                     GC.ReRegisterForFinalize(this);
-                    _owner.PruneForGC();
+
+                    if (GC.GetGeneration(this) == GC.MaxGeneration)
+                    {
+                        _owner.PruneForGC();
+                    }
                 }
             }
         }
