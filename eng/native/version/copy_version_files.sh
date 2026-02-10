@@ -4,7 +4,7 @@ __VersionFolder="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRoot="$(cd "$(dirname "$__VersionFolder")/../../"; pwd -P)"
 
 for path in "${__VersionFolder}/"*{.h,.c}; do
-   if [[ "$(basename $path)" == _version.c ]]; then
+    if [[ "$(basename $path)" == _version.c ]]; then
         # For _version.c, update the commit ID if it has changed from the last build.
         # Set IFS to nothing to prevent the shell from combining all of the piped output into a single line in the script below
         IFS=
@@ -30,4 +30,5 @@ for path in "${__VersionFolder}/"*{.h,.c}; do
         fi
     elif [[ ! -e "$__RepoRoot/artifacts/obj/$(basename "$path")" ]]; then
         cp "$path" "$__RepoRoot/artifacts/obj/"
+    fi
 done
