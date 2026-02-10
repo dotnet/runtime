@@ -1390,140 +1390,67 @@ if ($TraceFix) {
     }
 }
 
-# --- Step 9: Recommendations ---
-Write-Section "Recommendations"
+# --- Step 9: Structured Summary ---
+# Emit a JSON summary for the agent to reason over when generating recommendations.
+# The agent should use SKILL.md guidance to synthesize contextual recommendations.
 
-# Handle terminal states first
-if ($currentState -eq "MERGED") {
-    Write-Host "  ✅ PR is merged — no action needed" -ForegroundColor Green
-    Write-Host "  Maestro will create a new codeflow PR if the VMR has newer content."
-}
-elseif ($currentState -eq "CLOSED") {
-    Write-Host "  ✖️  PR was closed without merging" -ForegroundColor DarkGray
-    Write-Host "  Maestro should create a new codeflow PR automatically."
-    if ($subscriptionId) {
-        Write-Host "  To force a new PR: darc trigger-subscriptions --id $subscriptionId" -ForegroundColor DarkGray
-    }
-}
-else {
-
-# Lead with current state assessment if NO-OP
-if ($currentState -eq "NO-OP") {
-    Write-Host "  📭 Current state: NO-OP — empty diff, likely already resolved" -ForegroundColor Yellow
-    Write-Host "     This PR likely has no meaningful changes left to merge." -ForegroundColor DarkGray
-    Write-Host ""
+$summary = [ordered]@{
+    prNumber        = $PRNumber
+    repository      = $Repository
+    prState         = $pr.state
+    currentState    = $currentState
+    flowDirection   = if ($isForwardFlow) { "forward" } elseif ($isBackflow) { "backflow" } else { "unknown" }
+    isEmptyDiff     = $isEmptyDiff
+    changedFiles    = [int]$pr.changedFiles
+    additions       = [int]$pr.additions
+    deletions       = [int]$pr.deletions
+    subscriptionId  = $subscriptionId
+    vmrCommit       = if ($vmrCommit) { Get-ShortSha $vmrCommit } else { $null }
+    vmrBranch       = $vmrBranch
 }
 
-$issues = @()
-
-# Summarize issues
-if ($isEmptyDiff -and $lastForcePushTime -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
-    # Special case: empty diff after force push that post-dates warnings
-    $issues += "PR is a no-op (empty diff after force push by @$lastForcePushActor)"
-}
-else {
-    if ($conflictWarnings.Count -gt 0) {
-        $fileHint = if ($conflictFiles -and $conflictFiles.Count -gt 0) { " in $($conflictFiles -join ', ')" } else { "" }
-        if ($conflictMayBeResolved) {
-            $issues += "Conflict$fileHint was reported but may be resolved (force push after warning)"
-        }
-        else {
-            $issues += "Conflict detected$fileHint — manual resolution required"
-        }
-    }
-
-    if ($stalenessWarnings.Count -gt 0) {
-        if ($stalenessMayBeResolved) {
-            $issues += "Staleness warning was active but may be addressed (force push after warning)"
-        }
-        else {
-            $issues += "Staleness warning active — codeflow is blocked"
-        }
-    }
-
-    if ($isEmptyDiff) {
-        $issues += "PR has empty diff (0 changed files) — may be a no-op"
-    }
+# Freshness
+$summary.freshness = [ordered]@{
+    sourceHeadSha   = if ($sourceHeadSha) { Get-ShortSha $sourceHeadSha } else { $null }
+    compareStatus   = $compareStatus
+    aheadBy         = $aheadBy
+    behindBy        = $behindBy
+    isUpToDate      = ($vmrCommit -and $sourceHeadSha -and ($vmrCommit -eq $sourceHeadSha -or $compareStatus -eq 'identical'))
 }
 
-if ($vmrCommit -and $sourceHeadSha -and $vmrCommit -ne $sourceHeadSha -and $compareStatus -ne 'identical') {
-    switch ($compareStatus) {
-        'ahead'    { $issues += "$freshnessRepoLabel is $aheadBy commit(s) ahead of PR snapshot" }
-        'behind'   { $issues += "$freshnessRepoLabel is $behindBy commit(s) behind PR snapshot" }
-        'diverged' { $issues += "$freshnessRepoLabel and PR snapshot diverged ($aheadBy ahead, $behindBy behind)" }
-        default    { $issues += "$freshnessRepoLabel and PR snapshot differ" }
-    }
+# Force pushes
+$summary.forcePushes = [ordered]@{
+    count           = $forcePushEvents.Count
+    lastActor       = if ($lastForcePushActor) { $lastForcePushActor } else { $null }
+    lastTime        = if ($lastForcePushTime) { $lastForcePushTime.ToString("o") } else { $null }
 }
 
-if ($manualCommits -and $manualCommits.Count -gt 0) {
-    $issues += "$($manualCommits.Count) manual commit(s) on PR branch"
+# Warnings
+$summary.warnings = [ordered]@{
+    conflictCount           = $conflictWarnings.Count
+    conflictFiles           = $conflictFiles
+    conflictMayBeResolved   = $conflictMayBeResolved
+    stalenessCount          = $stalenessWarnings.Count
+    stalenessMayBeResolved  = $stalenessMayBeResolved
 }
 
-if ($issues.Count -eq 0) {
-    Write-Host "  ✅ CODEFLOW HEALTHY" -ForegroundColor Green
-    Write-Host "  The PR appears to be up to date with no issues detected."
+# Commits
+$manualCommitCount = if ($manualCommits) { $manualCommits.Count } else { 0 }
+$codeflowLikeCount = if ($codeflowLikeManualCommits) { $codeflowLikeManualCommits.Count } else { 0 }
+$summary.commits = [ordered]@{
+    total                   = if ($prCommits) { $prCommits.Count } else { 0 }
+    manual                  = $manualCommitCount
+    codeflowLikeManual      = $codeflowLikeCount
 }
-else {
-    Write-Host "  ⚠️  CODEFLOW NEEDS ATTENTION" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "  Issues:" -ForegroundColor White
-    foreach ($issue in $issues) {
-        Write-Host "    • $issue" -ForegroundColor Yellow
-    }
 
-    Write-Host ""
-    Write-Host "  Options:" -ForegroundColor White
-
-    if ($isEmptyDiff -and $lastForcePushTime -and ($conflictMayBeResolved -or $stalenessMayBeResolved)) {
-        Write-Host "    1. Merge empty PR — clears codeflow state so Maestro creates a fresh PR" -ForegroundColor White
-        Write-Host "    2. Close PR — Maestro will create a new one with current VMR content" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "    3. Force trigger — push fresh codeflow content into this PR" -ForegroundColor White
-            Write-Host "       darc trigger-subscriptions --id $subscriptionId --force" -ForegroundColor DarkGray
-        }
-    }
-    elseif ($conflictWarnings.Count -gt 0 -and -not $conflictMayBeResolved) {
-        Write-Host "    1. Resolve conflicts — follow the darc vmr resolve-conflict instructions above" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "       darc vmr resolve-conflict --subscription $subscriptionId" -ForegroundColor DarkGray
-        }
-        Write-Host "    2. Close & reopen — abandon this PR and let Maestro create a fresh one" -ForegroundColor White
-    }
-    elseif ($stalenessWarnings.Count -gt 0 -and $manualCommits.Count -gt 0) {
-        if ($codeflowLikeManualCommits -and $codeflowLikeManualCommits.Count -gt 0) {
-            Write-Host "    ℹ️  Note: Some manual commits appear to contain codeflow-like changes —" -ForegroundColor DarkGray
-            Write-Host "       the reported freshness gap may already be partially addressed" -ForegroundColor DarkGray
-            Write-Host ""
-        }
-        Write-Host "    1. Merge as-is — keep manual commits, get remaining changes in next codeflow PR" -ForegroundColor White
-        Write-Host "    2. Force trigger — updates codeflow but may revert manual commits" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "       darc trigger-subscriptions --id $subscriptionId --force" -ForegroundColor DarkGray
-        }
-        Write-Host "    3. Close & reopen — loses manual commits, gets fresh codeflow" -ForegroundColor White
-    }
-    elseif ($stalenessWarnings.Count -gt 0) {
-        Write-Host "    1. Merge as-is — get remaining changes in next codeflow PR" -ForegroundColor White
-        Write-Host "    2. Close & reopen — gets fresh codeflow with all updates" -ForegroundColor White
-        Write-Host "    3. Force trigger — forces codeflow update into this PR" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "       darc trigger-subscriptions --id $subscriptionId --force" -ForegroundColor DarkGray
-        }
-    }
-    elseif ($manualCommits.Count -gt 0) {
-        Write-Host "    1. Wait — Maestro should auto-update (if not stale)" -ForegroundColor White
-        Write-Host "    2. Trigger manually — if auto-updates seem delayed" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "       darc trigger-subscriptions --id $subscriptionId" -ForegroundColor DarkGray
-        }
-    }
-    else {
-        Write-Host "    1. Wait — Maestro should auto-update the PR" -ForegroundColor White
-        Write-Host "    2. Trigger manually — if auto-updates seem delayed" -ForegroundColor White
-        if ($subscriptionId) {
-            Write-Host "       darc trigger-subscriptions --id $subscriptionId" -ForegroundColor DarkGray
-        }
-    }
-
-} # end of else (non-terminal state)
+# PR age
+$summary.age = [ordered]@{
+    daysSinceUpdate = [math]::Round($prAgeDays, 1)
+    createdAt       = $pr.createdAt
+    updatedAt       = $pr.updatedAt
 }
+
+Write-Host ""
+Write-Host "[CODEFLOW_SUMMARY]"
+Write-Host ($summary | ConvertTo-Json -Depth 4 -Compress)
+Write-Host "[/CODEFLOW_SUMMARY]"

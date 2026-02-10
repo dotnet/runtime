@@ -11,6 +11,8 @@ Analyze the health of VMR codeflow PRs in both directions:
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
+**Workflow**: Run the script → read the human-readable output + `[CODEFLOW_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
+
 ## Prerequisites
 
 - **GitHub CLI (`gh`)** — must be installed and authenticated (`gh auth login`)
@@ -80,7 +82,9 @@ Use this skill when:
 6. **PR Branch Analysis** — Categorizes commits as auto-updates vs manual; detects codeflow-like manual commits
 7. **Codeflow History** — Maestro comments as historical context (conflict/staleness warnings), cross-referenced against force push timestamps to determine if issues were already addressed
 8. **Traces fixes** (with `-TraceFix`) — Checks if a specific fix has flowed through VMR → codeflow PR
-9. **Recommends actions** — Driven by current state assessment, informed by history
+9. **Emits structured summary** — `[CODEFLOW_SUMMARY]` JSON block with all key facts for the agent to reason over
+
+> **After the script runs**, you (the agent) generate recommendations. The script collects data; you synthesize the advice. See [Generating Recommendations](#generating-recommendations) below.
 
 ### Flow Health Mode (`-CheckMissing`)
 1. **Checks official build freshness** — Queries `aka.ms` shortlinks for latest published VMR build dates per channel
@@ -126,6 +130,45 @@ When using `-TraceFix`:
 - **✅ Fix is in VMR manifest**: The fix has flowed to the VMR
 - **✅ Fix is in PR snapshot**: The codeflow PR already includes this fix
 - **❌ Fix is NOT in PR snapshot**: The PR needs a codeflow update to get this fix
+
+## Generating Recommendations
+
+After the script outputs the `[CODEFLOW_SUMMARY]` JSON block, **you** synthesize recommendations. Do not parrot the JSON — reason over it.
+
+### Decision logic
+
+Read `currentState` first:
+
+| State | Action |
+|-------|--------|
+| `MERGED` | No action needed. Mention Maestro will create a new PR if VMR has newer content. |
+| `CLOSED` | Suggest triggering a new PR if `subscriptionId` is available. |
+| `NO-OP` | PR has no meaningful changes. Recommend closing or merging to clear state. If `subscriptionId` is available, offer force-trigger as a third option. |
+| `IN_PROGRESS` | Someone is actively working. Recommend waiting, then checking back. |
+| `STALE` | Needs attention — see warnings below for what's blocking. |
+| `ACTIVE` | PR is healthy — check freshness and warnings for nuance. |
+
+Then layer in context from `warnings`, `freshness`, and `commits`:
+
+- **Unresolved conflict** (`warnings.conflictCount > 0`, `conflictMayBeResolved = false`): Lead with "resolve conflicts" using `darc vmr resolve-conflict --subscription <id>`. Offer "close & reopen" as alternative.
+- **Conflict may be resolved** (`conflictMayBeResolved = true`): Note the force push post-dates the conflict warning. Suggest verifying, then merging.
+- **Staleness warning active** (`stalenessCount > 0`, `stalenessMayBeResolved = false`): Codeflow is blocked. Options: merge as-is, force trigger, or close & reopen.
+- **Manual commits present** (`commits.manual > 0`): Warn that force-trigger or close will lose them. If `commits.codeflowLikeManual > 0`, note the freshness gap may be partially covered.
+- **Behind on freshness** (`freshness.aheadBy > 0`): Mention the PR is missing updates. If staleness is blocking, a force trigger is needed. Otherwise, Maestro should auto-update.
+
+### Darc commands to include
+
+When recommending actions, include the relevant `darc` command with the actual `subscriptionId` from the summary:
+
+```
+darc trigger-subscriptions --id <subscriptionId>           # normal trigger
+darc trigger-subscriptions --id <subscriptionId> --force   # force trigger (overwrites PR)
+darc vmr resolve-conflict --subscription <subscriptionId>  # resolve conflicts locally
+```
+
+### Tone
+
+Be direct. Lead with the most important action. Use 2-4 bullet points, not long paragraphs. Include the darc command inline so the user can copy-paste.
 
 ## Darc Commands for Remediation
 
