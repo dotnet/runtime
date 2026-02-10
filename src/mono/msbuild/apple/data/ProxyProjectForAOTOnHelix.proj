@@ -7,7 +7,7 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;_RunR2RCompilationOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
@@ -95,6 +95,37 @@
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
   </Target>
+
+  <Target Name="_RunR2RCompilationOnHelix"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+          DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages" />
+
+  <Target Name="_PrepareR2RItemsOnHelix">
+    <PropertyGroup>
+      <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+      <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_R2RPublishAssembly Include="$(OriginalPublishDir)*.dll" Exclude="$(OriginalPublishDir)*.resources.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ResolvedFileToPublish Include="@(_R2RPublishAssembly)" PostprocessAssembly="true">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(MainLibraryFileName)' != ''">
+      <IntermediateAssembly Include="$(OriginalPublishDir)$(MainLibraryFileName)" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Preparing R2R compilation for @(_R2RPublishAssembly->Count()) assemblies on Helix..." />
+  </Target>
+
+  <!-- Override _ComputeAssembliesToPostprocessOnPublish and _ComputeManagedRuntimePackAssemblies to be a no-op, already populated. -->
+  <Target Name="_ComputeAssembliesToPostprocessOnPublish" />
+  <Target Name="_ComputeManagedRuntimePackAssemblies" />
 
   <Target Name="_PublishRuntimePack"
           Condition="'$(UsePortableRuntimePack)' == 'true'">
