@@ -4185,6 +4185,16 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_CALL_PLT => RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT,
                 CorInfoReloc.RISCV64_PCREL_I => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I,
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
+                CorInfoReloc.R_WASM_FUNCTION_INDEX_LEB => RelocType.IMAGE_REL_WASM_FUNCTION_INDEX_LEB,
+                CorInfoReloc.R_WASM_TABLE_INDEX_SLEB => RelocType.IMAGE_REL_WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.R_WASM_TABLE_INDEX_I32 => RelocType.IMAGE_REL_WASM_TABLE_INDEX_I32,
+                CorInfoReloc.R_WASM_MEMORY_ADDR_LEB => RelocType.IMAGE_REL_WASM_MEMORY_ADDR_LEB,
+                CorInfoReloc.R_WASM_MEMORY_ADDR_SLEB => RelocType.IMAGE_REL_WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.R_WASM_MEMORY_ADDR_I32 => RelocType.IMAGE_REL_WASM_MEMORY_ADDR_I32,
+                CorInfoReloc.R_WASM_TYPE_INDEX_LEB => RelocType.IMAGE_REL_WASM_TYPE_INDEX_LEB,
+                CorInfoReloc.R_WASM_GLOBAL_INDEX_LEB => RelocType.IMAGE_REL_WASM_GLOBAL_INDEX_LEB,
+                CorInfoReloc.R_WASM_EVENT_INDEX_LEB => RelocType.IMAGE_REL_WASM_EVENT_INDEX_LEB,
+                CorInfoReloc.R_WASM_TABLE_NUMBER_LEB => RelocType.IMAGE_REL_WASM_TABLE_NUMBER_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
