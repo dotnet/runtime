@@ -453,21 +453,6 @@ public:
     // expects a normal pointer.
     //
     inline constexpr T volatile * operator&() {return this->GetPointer();}
-    inline constexpr T volatile const * operator&() const {return this->GetPointer();}
-
-    //
-    // Comparison operators
-    //
-    template<typename TOther>
-    inline bool operator==(const TOther& other) const {return this->Load() == other;}
-
-    template<typename TOther>
-    inline bool operator!=(const TOther& other) const {return this->Load() != other;}
-
-    //
-    // Miscellaneous operators.  Add more as necessary.
-    //
-    inline bool operator!() const { STATIC_CONTRACT_SUPPORTS_DAC; return !this->Load();}
 };
 
 //
