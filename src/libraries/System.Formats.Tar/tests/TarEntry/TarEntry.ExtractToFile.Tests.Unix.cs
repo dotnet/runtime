@@ -147,9 +147,10 @@ namespace System.Formats.Tar.Tests
             }
 
             UnixFileMode extractedMode = File.GetUnixFileMode(extractedFilePath);
-            Assert.True((extractedMode & UnixFileMode.UserExecute) != 0, "User execute bit should be set");
-            Assert.True((extractedMode & UnixFileMode.GroupExecute) != 0, "Group execute bit should be set");
-            Assert.True((extractedMode & UnixFileMode.OtherExecute) != 0, "Other execute bit should be set");
+            UnixFileMode executeBitsMask = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+            UnixFileMode expectedExecutableBits = executableMode & ~UMask & executeBitsMask;
+            UnixFileMode actualExecutableBits = extractedMode & executeBitsMask;
+            Assert.Equal(expectedExecutableBits, actualExecutableBits);
         }
     }
 }
