@@ -16,12 +16,12 @@ namespace Microsoft.Extensions.Logging
     /// Uses source-generated configuration binding to allow ConfigurationBinder, and all its dependencies,
     /// to be trimmed. This improves app size and startup.
     /// </remarks>
-    internal sealed class EventLogConfigureSettings : IConfigureOptions<EventLogSettings>
+    internal sealed class EventLogConfigureOptions : IConfigureOptions<EventLogSettings>
     {
         private readonly IConfiguration _configuration;
 
         [UnsupportedOSPlatform("browser")]
-        public EventLogConfigureSettings(ILoggerProviderConfiguration<EventLogLoggerProvider> providerConfiguration)
+        public EventLogConfigureOptions(ILoggerProviderConfiguration<EventLogLoggerProvider> providerConfiguration)
         {
             _configuration = providerConfiguration.Configuration;
         }

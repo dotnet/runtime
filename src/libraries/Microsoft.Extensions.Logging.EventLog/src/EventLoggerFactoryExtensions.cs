@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Logging
 
             builder.AddConfiguration();
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, EventLogLoggerProvider>());
-            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<EventLogSettings>, EventLogConfigureSettings>());
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<EventLogSettings>, EventLogConfigureOptions>());
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOptionsChangeTokenSource<EventLogSettings>, LoggerProviderOptionsChangeTokenSource<EventLogSettings, EventLogLoggerProvider>>());
 
             return builder;
