@@ -913,9 +913,34 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
 
+        // o1: (normalLclVN + CNS1) - OAK_LT_UN - o2: (checkedBndVN + 0)
+        // We can deduce normalLclVN is [-CNS1..checkedBndVN - CNS1]
+        // Example: (uint)(i + 2) < (uint)span.Length. i is within [-2..span.Length - 2] range
+        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN) &&
+            curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS) &&
+            (curAssertion.GetOp2().GetCheckedBoundConstant() == 0) &&
+            (curAssertion.GetOp2().GetCheckedBound() == preferredBoundVN) &&
+            (curAssertion.GetOp1().GetVN() != normalLclVN))
+        {
+            ValueNum addOpVN;
+            int      addOpCns;
+            if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
+                (addOpVN == normalLclVN) && (addOpCns >= 0))
+            {
+                // We can deduce normalLclVN is [-CNS1..checkedBndVN - CNS1]
+                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(), -addOpCns);
+                assert(cmpOper == GT_LT);
+                assert(isUnsigned);
+            }
+            else
+            {
+                continue;
+            }
+        }
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
-        if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
-            curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS))
+        else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS))
         {
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
             {
