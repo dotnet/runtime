@@ -931,7 +931,14 @@ namespace Internal.JitInterface
                             var methodIL = HandleToObject(helperArgToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref helperArgToken), constrainedType, unboxing: false, context: sharedMethod);
+                            if (helperArgToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+                            {
+                                helperArg = ComputeMethodWithToken(HandleToObject(pResolvedToken.hMethod), ref helperArgToken, constrainedType, false);
+                            }
+                            else
+                            {
+                                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref helperArgToken), constrainedType, unboxing: false, context: sharedMethod);
+                            }
                         }
                         else if (helperArg is FieldDesc fieldDesc)
                         {
