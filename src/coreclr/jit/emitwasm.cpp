@@ -168,9 +168,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // TODO-WASM: Generate actual list of types and generate reloc
             // This is here to exercise the new JIT-EE API
             CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID};
-            codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
+            CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle = codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
 
-            id = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void *)typeHandle);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
@@ -368,14 +368,14 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
-unsigned emitter::instrDesc::idCodeSize() const
-{
 #ifdef TARGET_WASM32
-    static const unsigned PADDED_RELOC_SIZE = 5;
+static const unsigned PADDED_RELOC_SIZE = 5;
 #else
 #error WASM64
 #endif
 
+unsigned emitter::instrDesc::idCodeSize() const
+{
     unsigned int opcode = GetInsOpcode(idIns());
 
     // Currently, all our instructions have 1 or 2 byte opcodes.
@@ -407,7 +407,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_CALL_INDIRECT:
         {
-            size += SizeOfULEB128(emitGetInsSC(this));
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += SizeOfULEB128(0);
             break;
         }
@@ -506,6 +506,24 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
     return sz;
 }
 
+size_t emitter::emitOutputPaddedReloc(uint8_t* destination, bool isSigned)
+{
+    // FIXME: Write fill pattern
+    if (destination)
+        memset(destination + writeableOffset, 0, PADDED_RELOC_SIZE);
+    return PADDED_RELOC_SIZE;
+}
+
+size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned)
+{
+    if (id->idIsCnsReloc())
+        return emitOutputPaddedReloc(destination, isSigned);
+    else if (isSigned)
+        return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
+    else
+        return emitOutputULEB128(destination, (uint64_t)emitGetInsSC(id));
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
@@ -528,21 +546,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_ULEB128:
         {
             dst += emitOutputOpcode(dst, ins);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            dst += emitOutputConstant(dst, id, false);
             break;
         }
         case IF_SLEB128:
         {
             dst += emitOutputOpcode(dst, ins);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputSLEB128(dst, (int64_t)constant);
+            dst += emitOutputConstant(dst, id, true);
             break;
         }
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            dst += emitOutputConstant(dst, id, false);
             dst += emitOutputULEB128(dst, 0);
             break;
         }
