@@ -2684,6 +2684,7 @@ Return:
     FALSE failed
 --*/
 BOOL
+PALAPI
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
@@ -2738,6 +2739,7 @@ Abstract:
   This prevents duplicate stack traces from being logged (e.g. unhandled exception)
 --*/
 VOID
+PALAPI
 PAL_MarkCrashReportAlreadyLogged()
 {
     s_crashReportAlreadyLogged = true;
