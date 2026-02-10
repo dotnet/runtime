@@ -18,7 +18,7 @@ namespace System.Threading.Tasks.Tests
                 static async Task Func()
                 {
                     await Task.Delay(1);
-                    return 1;
+                    await Task.Delay(1);
                 }
 
                 // NOTE: This depends on private implementation details generally only used by the debugger.
