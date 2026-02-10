@@ -125,7 +125,9 @@ namespace System.Formats.Tar
             }
 
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
-            if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+            // Only apply to link entries to avoid setting _linkName on non-link entry types.
+            if (_typeFlag is TarEntryType.HardLink or TarEntryType.SymbolicLink &&
+                ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;
             }
@@ -176,7 +178,7 @@ namespace System.Formats.Tar
             if (ExtendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
             {
                 _uName = paxEaUName;
-                if (_uName.Length <= FieldLengths.UName)
+                if (GetUtf8TextLength(_uName) <= FieldLengths.UName)
                 {
                     ExtendedAttributes.Remove(PaxEaUName);
                 }
@@ -186,7 +188,7 @@ namespace System.Formats.Tar
             if (ExtendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
             {
                 _gName = paxEaGName;
-                if (_gName.Length <= FieldLengths.GName)
+                if (GetUtf8TextLength(_gName) <= FieldLengths.GName)
                 {
                     ExtendedAttributes.Remove(PaxEaGName);
                 }

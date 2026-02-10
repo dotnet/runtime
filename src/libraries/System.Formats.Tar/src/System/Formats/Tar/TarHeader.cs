@@ -155,11 +155,11 @@ namespace System.Formats.Tar
 
         // Synchronizes the extended attributes dictionary with the value of a property.
         // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
-        internal void SyncStringExtendedAttribute(string key, string? value, int maxNonextendedLength = 0)
+        internal void SyncStringExtendedAttribute(string key, string? value, int maxUtf8ByteLength = 0)
         {
             if (_format == TarEntryFormat.Pax && _ea is not null)
             {
-                if (!string.IsNullOrEmpty(value) && value.Length > maxNonextendedLength)
+                if (!string.IsNullOrEmpty(value) && GetUtf8TextLength(value) > maxUtf8ByteLength)
                 {
                     _ea[key] = value;
                 }
