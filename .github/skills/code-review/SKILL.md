@@ -119,7 +119,7 @@ When presenting the final review (whether as a PR comment or as output to the us
 
 ### Guidelines
 
-- **Holistic Assessment** comes first and covers Motivation, Approach, and Net impact.
+- **Holistic Assessment** comes first and covers Motivation, Approach, and Summary.
 - **Detailed Findings** uses emoji-prefixed category headers:
   - ✅ for things that are correct / look good (use to confirm important aspects were verified)
   - ⚠️ for warnings or impactful suggestions (should fix, or follow-up)
