@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
+using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -12,13 +15,13 @@ namespace System.Threading.Tasks.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
-            RemoteExecutor.Invoke(() =>
+            RemoteExecutor.Invoke(async () =>
             {
                 [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
                 static async Task Func()
                 {
                     await Task.Delay(1);
-                    await Task.Delay(1);
+                    await Task.Yield();
                 }
 
                 // NOTE: This depends on private implementation details generally only used by the debugger.
