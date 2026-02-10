@@ -669,9 +669,15 @@ if ($isEmptyDiff) {
 # Check PR timeline for force pushes
 $forcePushEvents = @()
 $owner, $repo = $Repository -split '/'
-$timelineJson = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --jq '[.[] | select(.event == "head_ref_force_pushed")]' 2>$null
-if ($LASTEXITCODE -eq 0 -and $timelineJson) {
-    $forcePushEvents = @(($timelineJson -join "`n") | ConvertFrom-Json)
+try {
+    $timelineJson = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --slurp --jq 'map(.[] | select(.event == "head_ref_force_pushed"))' 2>$null
+    if ($LASTEXITCODE -eq 0 -and $timelineJson) {
+        $forcePushEvents = @($timelineJson | ConvertFrom-Json)
+    }
+}
+catch {
+    Write-Verbose "Failed to parse timeline JSON for force push events: $($_.Exception.Message)"
+    $forcePushEvents = @()
 }
 
 if ($forcePushEvents.Count -gt 0) {
