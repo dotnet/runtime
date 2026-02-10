@@ -635,12 +635,17 @@ namespace ILCompiler.DependencyAnalysis
 
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_TABLE_INDEX_SLEB  :
-                case RelocType.WASM_MEMORY_ADDR_LEB   :
-                case RelocType.WASM_MEMORY_ADDR_SLEB  :
                 case RelocType.WASM_TYPE_INDEX_LEB    :
                 case RelocType.WASM_GLOBAL_INDEX_LEB  :
-                    // TODO-WASM: Should we do anything here?
-                    break;
+                    // These wasm relocs do not have offsets, just targets
+                    return;
+
+                case RelocType.WASM_MEMORY_ADDR_LEB :
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                    // FIXME-WASM: We don't have access to LEB encoding or decoding helpers in this assembly
+                    // HACK-WASM: Just stash the raw offset as a 32-bit value since the relocs are padded to 5 bytes
+                    *(int*)location = checked((int)value);
+                    return;
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -732,12 +737,15 @@ namespace ILCompiler.DependencyAnalysis
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_TABLE_INDEX_SLEB  :
-                case RelocType.WASM_MEMORY_ADDR_LEB   :
-                case RelocType.WASM_MEMORY_ADDR_SLEB  :
                 case RelocType.WASM_TYPE_INDEX_LEB    :
                 case RelocType.WASM_GLOBAL_INDEX_LEB  :
-                    // Wasm relocs do not have offsets, just targets
+                    // These wasm relocs do not have offsets, just targets
                     return 0;
+                case RelocType.WASM_MEMORY_ADDR_LEB   :
+                case RelocType.WASM_MEMORY_ADDR_SLEB  :
+                    // FIXME-WASM: We don't have access to LEB encoding or decoding helpers in this assembly
+                    // HACK-WASM: We stashed the offset as a 32-bit integer inside the 5 bytes of the padded reloc
+                    return *(int*)location;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
