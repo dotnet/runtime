@@ -85,9 +85,11 @@ jobs:
       - $(helix_macos_x64)
 
     # Android
-    - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
+    # Always use the Ubuntu-based Android queue for internal validation as there is no internal equivalent of
+    # the Windows.11.Amd64.Android.Open queue.
+    - ${{ if or(eq(variables['System.TeamProject'], 'internal'), in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64')) }}:
       - Ubuntu.2204.Amd64.Android.29.Open
-    - ${{ if in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64') }}:
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm', 'linux_bionic_arm64')) }}:
       - Windows.11.Amd64.Android.Open
 
     # iOS Simulator/Mac Catalyst arm64

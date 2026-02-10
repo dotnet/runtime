@@ -120,7 +120,7 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     // For integer types (TYP_INT and TYP_LONG), NEG(x) ==> SUB(0, x)
     //
     GenTree* x    = node->gtGetOp1();
-    GenTree* zero = comp->gtNewZeroConNode(node->TypeGet());
+    GenTree* zero = m_compiler->gtNewZeroConNode(node->TypeGet());
     BlockRange().InsertBefore(x, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);
