@@ -96,8 +96,6 @@ The script operates in three distinct modes depending on what information you ha
 2. With `-HelixJob` and `-WorkItem`: queries the specific work item for status and artifacts
 3. Fetches console logs and file listings, displays detailed failure information
 
-> ⚠️ **Canceled ≠ Failed.** Canceled jobs often have completed Helix work items — the AzDO wrapper timed out but tests may have passed. See "Recovering Results from Canceled Jobs" below.
-
 ## Interpreting Results
 
 **Known Issues section**: Failures matching existing GitHub issues - these are tracked and being investigated.
@@ -240,115 +238,9 @@ Specific next steps: retry, fix specific files, investigate further. Include `/a
 
 ## Recovering Results from Canceled Jobs
 
-Canceled jobs (typically from timeouts) often still have useful artifacts. The Helix work items may have completed successfully even though the AzDO job was killed while waiting to collect results.
-
-**To investigate canceled jobs:**
-
-1. **Download build artifacts**: Use `az pipelines runs artifact download` (see [references/azure-cli.md](references/azure-cli.md)) to get pipeline artifacts for the canceled job. These contain binlogs even for canceled jobs.
-2. **Extract Helix job IDs**: Use the MSBuild MCP server to load the `SendToHelix.binlog` and search for `"Sent Helix Job"` messages. Each contains a Helix job ID. See [references/binlog-comparison.md](references/binlog-comparison.md) for the full "binlogs to find binlogs" workflow.
-3. **Query Helix directly**: For each job ID, use the CI script: `./scripts/Get-CIStatus.ps1 -HelixJob "{GUID}" -FindBinlogs`
-
-**Example**: A `browser-wasm windows WasmBuildTests` job was canceled after 3 hours. The binlog (truncated) still contained 12 Helix job IDs. Querying them revealed all 226 work items passed — the "failure" was purely a timeout in the AzDO wrapper.
+Canceled jobs (typically from timeouts) often still have useful Helix results. See [references/azure-cli.md](references/azure-cli.md) for artifact download steps and [references/binlog-comparison.md](references/binlog-comparison.md) for the "binlogs to find binlogs" workflow.
 
 **Key insight**: "Canceled" ≠ "Failed". Always check artifacts before concluding results are lost.
-
-## Deep Investigation with Azure CLI
-
-When the script and GitHub APIs aren't enough (e.g., investigating internal pipeline definitions or downloading build artifacts), you can use the Azure CLI with the `azure-devops` extension.
-
-> 💡 **Prefer `az pipelines` / `az devops` commands over raw REST API calls.** The CLI handles authentication, pagination, and JSON output formatting. Only fall back to manual `Invoke-RestMethod` calls when the CLI doesn't expose the endpoint you need (e.g., artifact download URLs, specialized timeline queries). The CLI's `--query` (JMESPath) and `-o table` flags are powerful for filtering without extra scripting.
-
-### Checking Azure CLI Authentication
-
-Before making direct AzDO API calls, verify the CLI is installed and authenticated:
-
-```powershell
-# Ensure az is on PATH (Windows may need a refresh after install)
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-# Check if az CLI is available
-az --version 2>$null | Select-Object -First 1
-
-# Check if logged in and get current account
-az account show --query "{name:name, user:user.name}" -o table 2>$null
-
-# If not logged in, prompt the user to authenticate:
-#   az login                              # Interactive browser login
-#   az login --use-device-code            # Device code flow (for remote/headless)
-
-# Get an AAD access token for AzDO REST API calls
-$accessToken = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
-$headers = @{ "Authorization" = "Bearer $accessToken" }
-```
-
-> ⚠️ If `az` is not installed, use `winget install -e --id Microsoft.AzureCLI` (Windows). The `azure-devops` extension is also required — install or verify it with `az extension add --name azure-devops` (safe to run if already installed). Ask the user to authenticate if needed.
-
-> ⚠️ **Do NOT use `az devops configure --defaults`** — it writes to a global config file and will cause conflicts if multiple agents are running concurrently. Always pass `--org` and `--project` (or `-p`) explicitly on each command.
-
-### Querying Pipeline Definitions and Builds
-
-When investigating build failures, it's often useful to look at the pipeline definition itself to understand what stages, jobs, and templates are involved.
-
-**Use `az` CLI commands first** — they're simpler and handle auth automatically. Set `$buildId` from a runs list or from the AzDO URL:
-
-```powershell
-$org = "https://dev.azure.com/dnceng"
-$project = "internal"
-
-# Find a pipeline definition by name
-az pipelines list --name "dotnet-unified-build" --org $org -p $project --query "[].{id:id, name:name, path:path}" -o table
-
-# Get pipeline definition details (shows YAML path, triggers, etc.)
-az pipelines show --id 1330 --org $org -p $project --query "{id:id, name:name, yamlPath:process.yamlFilename, repo:repository.name}" -o table
-
-# List recent builds for a pipeline (with filtering)
-az pipelines runs list --pipeline-ids 1330 --branch "refs/heads/main" --top 5 --org $org -p $project --query "[].{id:id, result:result, finish:finishTime}" -o table
-
-# Get a specific build's details
-az pipelines runs show --id $buildId --org $org -p $project --query "{id:id, result:result, sourceBranch:sourceBranch}" -o table
-
-# List build artifacts
-az pipelines runs artifact list --run-id $buildId --org $org -p $project --query "[].{name:name, type:resource.type}" -o table
-```
-
-**Fall back to REST API** only when the CLI doesn't expose what you need (e.g., build timelines, artifact downloads):
-
-```powershell
-# Get build timeline (stages, jobs, tasks with results and durations) — no CLI equivalent
-$accessToken = (az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv)
-$headers = @{ "Authorization" = "Bearer $accessToken" }
-$timelineUrl = "https://dev.azure.com/dnceng/internal/_apis/build/builds/$buildId/timeline?api-version=7.1"
-$timeline = (Invoke-RestMethod -Uri $timelineUrl -Headers $headers)
-$timeline.records | Where-Object { $_.result -eq "failed" -and $_.type -eq "Job" }
-
-# Download a specific artifact (e.g., build logs with binlogs) — no CLI equivalent for zip download
-$artifactName = "Windows_Workloads_x64_BuildPass2_BuildLogs_Attempt1"
-$downloadUrl = "https://dev.azure.com/dnceng/internal/_apis/build/builds/$buildId/artifacts?artifactName=$artifactName&api-version=7.1&`$format=zip"
-Invoke-WebRequest -Uri $downloadUrl -Headers $headers -OutFile "$env:TEMP\artifact.zip"
-```
-
-### Examining Pipeline YAML
-
-All dotnet repos that use arcade put their pipeline definitions under `eng/pipelines/`. Use `az pipelines show` to find the YAML file path, then fetch it:
-
-```powershell
-# Find the YAML path for a pipeline
-az pipelines show --id 1330 --org $org -p $project --query "{yamlPath:process.yamlFilename, repo:repository.name}" -o table
-
-# Fetch the YAML from the repo (example: dotnet/runtime's runtime-official pipeline)
-#   github-mcp-server-get_file_contents owner:dotnet repo:runtime path:eng/pipelines/runtime-official.yml
-
-# For VMR unified builds, the YAML is in dotnet/dotnet:
-#   github-mcp-server-get_file_contents owner:dotnet repo:dotnet path:eng/pipelines/unified-build.yml
-
-# Templates are usually in eng/pipelines/common/ or eng/pipelines/templates/
-```
-
-This is especially useful when:
-- A job name doesn't clearly indicate what it builds
-- You need to understand stage dependencies (why a job was canceled)
-- You want to find which template defines a specific step
-- Investigating whether a pipeline change caused new failures
 
 ## Tips
 
@@ -358,4 +250,4 @@ This is especially useful when:
 4. Binlogs in artifacts help diagnose MSB4018 task failures
 5. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
 6. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** in current `gh` versions — `state` contains `SUCCESS`/`FAILURE` directly
-7. When investigating internal AzDO pipelines, check `az account show` first to verify authentication before making REST API calls
+7. When investigating internal AzDO pipelines, use the Azure CLI — see [references/azure-cli.md](references/azure-cli.md). Check `az account show` first to verify authentication
