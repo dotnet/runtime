@@ -803,6 +803,8 @@ private:
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
+    static Limit TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower);
+
     // Inspect the assertions about the current ValueNum to refine pRange
     static void MergeEdgeAssertions(Compiler*        comp,
                                     ValueNum         num,

@@ -870,6 +870,91 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
 }
 
 //------------------------------------------------------------------------
+// TightenLimit: Given two limits for the same variable, return a tighter limit
+//
+// Arguments:
+//    l1             - the first limit to compare
+//    l2             - the second limit to compare
+//    preferredBound - when one of the limits is based on this preferredBound, we will choose it over the other
+//                     limit if it is not worse. This is used to prefer BinOpArray limits based on the array length
+//                     variable that we are checking bounds for.
+//    isLower        - true if the limits are lower limits, false if the limits are upper limits.
+//
+// Return Value:
+//    The tighter limit
+//
+Limit RangeCheck::TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower)
+{
+    // 1) One of the limits is undef, unknown or dependent
+    if (l1.IsUndef() || l2.IsUndef())
+    {
+        // Anything is better than undef.
+        return l1.IsUndef() ? l2 : l1;
+    }
+    if (l1.IsUnknown() || l2.IsUnknown())
+    {
+        // Anything is better than unknown.
+        return l1.IsUnknown() ? l2 : l1;
+    }
+    if (l1.IsDependent() || l2.IsDependent())
+    {
+        // Anything is better than dependent.
+        return l1.IsDependent() ? l2 : l1;
+    }
+
+    // 2) Both limits are constants
+    if (l1.IsConstant() && l2.IsConstant())
+    {
+        //  isLower: whatever is higher is better.
+        // !isLower: whatever is lower is better.
+        return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+    }
+
+    // 3) Both limits are BinOpArray (which is "arrLen + cns")
+    if (l1.IsBinOpArray() && l2.IsBinOpArray())
+    {
+        assert((l1.vn != ValueNumStore::NoVN) && (l2.vn != ValueNumStore::NoVN));
+
+        // If one of them is preferredBound and the other is not, use the preferredBound.
+        if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
+        {
+            return l1;
+        }
+        if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
+        {
+            return l2;
+        }
+
+        // Otherwise, just use the one with the higher/lower constant.
+        // even if they use different arrLen.
+        return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
+    }
+
+    // 4) One of the limits is a constant and the other is BinOpArray
+    if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
+    {
+        // l1 - BinOpArray, l2 - constant
+        if (l1.IsConstant())
+        {
+            std::swap(l1, l2);
+        }
+
+        assert(l1.vn != ValueNumStore::NoVN);
+        if (l1.vn != preferredBound)
+        {
+            // if we don't have a preferred bound,
+            // or it doesn't match l1.vn, use the constant (l2).
+            return l2;
+        }
+
+        // Otherwise, prefer the BinOpArray(preferredBound) over the constant for the upper bound
+        // and the constant for the lower bound.
+        return isLower ? l2 : l1;
+    }
+    unreached();
+};
+
+//------------------------------------------------------------------------
 // MergeEdgeAssertions: Merge assertions on the edge flowing into the block about a variable
 //
 // Arguments:
@@ -928,10 +1013,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
                 (addOpVN == normalLclVN) && (addOpCns >= 0))
             {
-                // Report normalLclVN as [ ..preferredBoundVN - CNS]
                 cmpOper    = GT_LT;
-                isUnsigned = false;
                 limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
+                isUnsigned = false;
+                // The difference between signed and unsigned is that for unsigned the lower bound can also be
+                // deduced to be -cns instead of INT32_MIN, but we only report the upper bound here.
             }
             else
             {
@@ -1179,78 +1265,6 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 // All other 'cmpOper' kinds leave lLimit/uLimit unchanged
                 break;
         }
-
-        // We have two ranges - we need to merge (tighten) them.
-
-        auto tightenLimit = [](Limit l1, Limit l2, ValueNum preferredBound, bool isLower) -> Limit {
-            // 1) One of the limits is undef, unknown or dependent
-            if (l1.IsUndef() || l2.IsUndef())
-            {
-                // Anything is better than undef.
-                return l1.IsUndef() ? l2 : l1;
-            }
-            if (l1.IsUnknown() || l2.IsUnknown())
-            {
-                // Anything is better than unknown.
-                return l1.IsUnknown() ? l2 : l1;
-            }
-            if (l1.IsDependent() || l2.IsDependent())
-            {
-                // Anything is better than dependent.
-                return l1.IsDependent() ? l2 : l1;
-            }
-
-            // 2) Both limits are constants
-            if (l1.IsConstant() && l2.IsConstant())
-            {
-                //  isLower: whatever is higher is better.
-                // !isLower: whatever is lower is better.
-                return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
-            }
-
-            // 3) Both limits are BinOpArray (which is "arrLen + cns")
-            if (l1.IsBinOpArray() && l2.IsBinOpArray())
-            {
-                assert((l1.vn != ValueNumStore::NoVN) && (l2.vn != ValueNumStore::NoVN));
-
-                // If one of them is preferredBound and the other is not, use the preferredBound.
-                if ((l1.vn == preferredBound) && (l2.vn != preferredBound))
-                {
-                    return l1;
-                }
-                if ((l2.vn == preferredBound) && (l1.vn != preferredBound))
-                {
-                    return l2;
-                }
-
-                // Otherwise, just use the one with the higher/lower constant.
-                // even if they use different arrLen.
-                return isLower ? (l1.cns > l2.cns ? l1 : l2) : (l1.cns < l2.cns ? l1 : l2);
-            }
-
-            // 4) One of the limits is a constant and the other is BinOpArray
-            if ((l1.IsConstant() && l2.IsBinOpArray()) || (l2.IsConstant() && l1.IsBinOpArray()))
-            {
-                // l1 - BinOpArray, l2 - constant
-                if (l1.IsConstant())
-                {
-                    std::swap(l1, l2);
-                }
-
-                assert(l1.vn != ValueNumStore::NoVN);
-                if (l1.vn != preferredBound)
-                {
-                    // if we don't have a preferred bound,
-                    // or it doesn't match l1.vn, use the constant (l2).
-                    return l2;
-                }
-
-                // Otherwise, prefer the BinOpArray(preferredBound) over the constant for the upper bound
-                // and the constant for the lower bound.
-                return isLower ? l2 : l1;
-            }
-            unreached();
-        };
 
         if (!assertedRange.IsValid())
         {
