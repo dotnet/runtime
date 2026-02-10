@@ -14,9 +14,7 @@ namespace System.Formats.Tar
     {
         private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
         private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
-        private Dictionary<FileId, string>? _hardLinkTargets;
-
-        private record struct FileId(long Dev, long Ino);
+        private Dictionary<(long Dev, long Ino), string>? _hardLinkTargets;
 
         // Creates an entry for writing using the specified path and entryName. If this is being called from an async method, FileOptions should contain Asynchronous.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
@@ -35,9 +33,9 @@ namespace System.Formats.Tar
             string? hardLinkTarget = null;
             if ((fileType == Interop.Sys.FileTypes.S_IFREG) && status.HardLinkCount > 1)
             {
-                _hardLinkTargets ??= new Dictionary<FileId, string>();
-                var inodeKey = new FileId(status.Dev, status.Ino);
+                _hardLinkTargets ??= new Dictionary<(long, long), string>();
 
+                (long, long) inodeKey = (status.Dev, status.Ino);
                 if (!_hardLinkTargets.TryGetValue(inodeKey, out hardLinkTarget))
                 {
                     _hardLinkTargets.Add(inodeKey, entryName);

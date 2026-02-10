@@ -17,9 +17,7 @@ namespace System.Formats.Tar
         // Windows files don't have a mode. Use a mode of 755 for directories and files.
         private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
-        private Dictionary<FileId, string>? _hardLinkTargets;
-
-        private record struct FileId(uint VolumeSerialNumber, ulong FileIndex);
+        private Dictionary<(uint, ulong), string>? _hardLinkTargets;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
@@ -50,10 +48,10 @@ namespace System.Formats.Tar
             string? hardLinkTarget = null;
             if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 && fileInfo.nNumberOfLinks > 1)
             {
-                _hardLinkTargets ??= new Dictionary<FileId, string>();
-                ulong fileIndex = ((ulong)fileInfo.nFileIndexHigh << 32) | fileInfo.nFileIndexLow;
-                FileId fileId = new(fileInfo.dwVolumeSerialNumber, fileIndex);
+                _hardLinkTargets ??= new Dictionary<(uint, ulong), string>();
 
+                ulong fileIndex = ((ulong)fileInfo.nFileIndexHigh << 32) | fileInfo.nFileIndexLow;
+                (uint, ulong) fileId = (fileInfo.dwVolumeSerialNumber, fileIndex);
                 if (!_hardLinkTargets.TryGetValue(fileId, out hardLinkTarget))
                 {
                     _hardLinkTargets.Add(fileId, entryName);
