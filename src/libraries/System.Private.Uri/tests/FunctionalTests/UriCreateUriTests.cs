@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Tests
+namespace System.PrivateUri.Tests
 {
     public class UriCreateUriTests
     {
