@@ -3638,10 +3638,23 @@ namespace Internal.JitInterface
             }
         }
 
-        private CorInfoType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
+        private CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
         {
-            uint size = getClassSize(structHnd);
-            return WasmLowering.LowerTypeForWasm(HandleToObject(structHnd), size);
+            // Call getClassSize to make sure we record the proper dependence
+            _ = getClassSize(structHnd);
+
+            TypeDesc type = HandleToObject(structHnd);
+            CorInfoType corType = asCorInfoType(type);
+            Debug.Assert(corType == CorInfoType.CORINFO_TYPE_VALUECLASS);
+            TypeDesc abiType = WasmLowering.LowerTypeForWasm(type);
+
+            if (abiType == null)
+            {
+                // Indicate type should be passed by-ref.
+                return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
+            }
+
+            return WasmLowering.WasmTypeClassification(abiType);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

@@ -16,33 +16,17 @@ namespace Internal.JitInterface
         //
         // Analyze the type and determine if it should be passed
         // as a primitive, and if so, which type. If not, return
-        // CORINFO_TYPE_UNDEF.
+        // null.
 
-        public static CorInfoType LowerTypeForWasm(TypeDesc type, uint size)
+        public static TypeDesc LowerTypeForWasm(TypeDesc type)
         {
-            if (!type.IsValueType)
+            if (!(type.IsValueType && !type.IsPrimitiveNumeric))
             {
-                Debug.Fail("Non-struct types should passed directly in Wasm.");
-                return CorInfoType.CORINFO_TYPE_UNDEF;
+                Debug.Fail("Non-struct types should be passed directly in Wasm.");
+                return null;
             }
 
-            MetadataType mdType = type as MetadataType;
-            if (mdType.HasImpliedRepeatedFields())
-            {
-                return CorInfoType.CORINFO_TYPE_UNDEF;
-            }
-
-            switch (size)
-            {
-                case 1:
-                case 2:
-                case 4:
-                case 8:
-                    break;
-
-                default:
-                    return CorInfoType.CORINFO_TYPE_UNDEF;
-            }
+            int size = type.GetElementSize().AsInt;
 
             while (true)
             {
@@ -55,31 +39,40 @@ namespace Internal.JitInterface
                         firstField ??= field;
                         numIntroducedFields++;
                     }
-                    
-                    if (numIntroducedFields > 1) 
+
+                    if (numIntroducedFields > 1)
                     {
                         break;
                     }
                 }
-                
+
                 if (numIntroducedFields != 1)
                 {
-                    return CorInfoType.CORINFO_TYPE_UNDEF;
+                    return null;
                 }
-                
+
                 TypeDesc firstFieldElementType = firstField.FieldType;
 
-                if (firstFieldElementType.IsValueType)
+                if (firstFieldElementType.GetElementSize().AsInt != size)
                 {
-                    type = firstFieldElementType;
+                    // One-field struct with padding.
+                    return null;
+                }
+
+                type = firstFieldElementType;
+
+                if (type.IsValueType && !type.IsPrimitiveNumeric)
+                {
                     continue;
                 }
 
-                return WasmTypeClassification(firstFieldElementType, size);
-            }
+                return type;
+           }
         }
 
-        private static CorInfoType WasmTypeClassification(TypeDesc typeDesc, uint size)
+        // This looks a lot like WasmAbiContext.LowerType....
+        //
+        public static CorInfoWasmType WasmTypeClassification(TypeDesc typeDesc)
         {
             switch (typeDesc.Category)
             {
@@ -91,19 +84,19 @@ namespace Internal.JitInterface
                 case TypeFlags.UInt16:
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
-                    return (size > 4) ? CorInfoType.CORINFO_TYPE_LONG : CorInfoType.CORINFO_TYPE_INT;
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32;
                     
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
-                    return CorInfoType.CORINFO_TYPE_LONG;
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I64;
 
                 case TypeFlags.Single:
-                    return (size > 4) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
                 case TypeFlags.Double:
-                    return CorInfoType.CORINFO_TYPE_DOUBLE;
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
 
                 case TypeFlags.Enum:
-                    return WasmTypeClassification(typeDesc.UnderlyingType, size);
+                    return WasmTypeClassification(typeDesc.UnderlyingType);
 
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
@@ -114,10 +107,10 @@ namespace Internal.JitInterface
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
-                    return CorInfoType.CORINFO_TYPE_NATIVEINT;
+                    return (typeDesc.Context.Target.PointerSize == 4) ? CorInfoWasmType.CORINFO_WASM_TYPE_I32 :  CorInfoWasmType.CORINFO_WASM_TYPE_I64;
 
                 default:
-                    return CorInfoType.CORINFO_TYPE_UNDEF;
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
             }
         }
     }

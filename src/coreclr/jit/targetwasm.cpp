@@ -28,6 +28,32 @@ WasmClassifier::WasmClassifier(const ClassifierInfo& info)
 }
 
 //-----------------------------------------------------------------------------
+// ToJitType: tranlate CorInfoWasmType to var_types
+//
+// Parameters:
+//   wasmType -- wasm type to translate
+//
+var_types WasmClassifier::ToJitType(CorInfoWasmType wasmType)
+{
+    switch (wasmType)
+    {
+        case CORINFO_WASM_TYPE_I32:
+            return TYP_INT;
+        case CORINFO_WASM_TYPE_I64:
+            return TYP_LONG;
+        case CORINFO_WASM_TYPE_F32:
+            return TYP_FLOAT;
+        case CORINFO_WASM_TYPE_F64:
+            return TYP_DOUBLE;
+        case CORINFO_WASM_TYPE_V128:
+            // TODO-WASM: Simd support
+            unreached();
+        default:
+            unreached();
+    }
+}
+
+//-----------------------------------------------------------------------------
 // Classify:
 //   Classify a parameter for the Wasm ABI.
 //
@@ -50,18 +76,22 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
     {
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
         assert(clsHnd != NO_CLASS_HANDLE);
-        CorInfoType abiType   = comp->info.compCompHnd->getWasmLowering(clsHnd);
-        bool        passByRef = false;
+        CorInfoWasmType abiType   = comp->info.compCompHnd->getWasmLowering(clsHnd);
+        bool            passByRef = false;
+        var_types       type      = TYP_UNDEF;
 
-        if (abiType == CORINFO_TYPE_UNDEF)
+        if (abiType == CORINFO_WASM_TYPE_VOID)
         {
-            abiType   = CORINFO_TYPE_NATIVEINT;
+            type      = TYP_I_IMPL;
             passByRef = true;
         }
+        else
+        {
+            type = ToJitType(abiType);
+        }
 
-        var_types         type = JITtype2varType(abiType);
-        regNumber         reg  = MakeWasmReg(m_localIndex++, genActualType(type));
-        ABIPassingSegment seg  = ABIPassingSegment::InRegister(reg, 0, genTypeSize(type));
+        regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(type));
         return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 

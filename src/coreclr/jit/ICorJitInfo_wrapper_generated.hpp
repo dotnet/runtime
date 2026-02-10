@@ -1262,11 +1262,11 @@ void WrapICorJitInfo::getFpStructLowering(
     API_LEAVE(getFpStructLowering);
 }
 
-CorInfoType WrapICorJitInfo::getWasmLowering(
+CorInfoWasmType WrapICorJitInfo::getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd)
 {
     API_ENTER(getWasmLowering);
-    CorInfoType temp = wrapHnd->getWasmLowering(structHnd);
+    CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
     API_LEAVE(getWasmLowering);
     return temp;
 }

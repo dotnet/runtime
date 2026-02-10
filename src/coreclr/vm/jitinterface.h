@@ -346,9 +346,8 @@ public:
         CORINFO_CLASS_HANDLE elemType
         );
 
-    CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
-    CorInfoType getWasmLoweringHelper(MethodTable* pMT, unsigned originalSize);
+    CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
 protected:
     void freeArrayInternal(void* array);

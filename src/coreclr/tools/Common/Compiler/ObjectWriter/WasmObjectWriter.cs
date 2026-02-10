@@ -385,15 +385,21 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    // TODO-WASM: The logic here isn't comprehensive yet. It should cover primitive types and references,
-    // but by-value structs + nullable types aren't handled yet.
     public static class WasmAbiContext
     {
         private static WasmValueType LowerType(TypeDesc type)
         {
-            if ((type.IsValueType && !type.IsPrimitive) || type.IsNullable)
+            WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+
+            if (type.IsValueType && !type.IsPrimitiveNumeric)
             {
-                throw new NotImplementedException($"By-value struct types are not yet supported: {type}");
+                type = Internal.JitInterface.WasmLowering.LowerTypeForWasm(type);
+
+                if (type == null)
+                {
+                    // pass by-ref
+                    return pointerType;
+                }
             }
 
             switch (type.UnderlyingType.Category)
@@ -428,7 +434,7 @@ namespace ILCompiler.ObjectWriter
                 case TypeFlags.ByRef:
                 case TypeFlags.Pointer:
                 case TypeFlags.FunctionPointer:
-                    return WasmValueType.I32;
+                    return pointerType;
 
                 default:
                     throw new NotSupportedException($"Unknown wasm mapping for type: {type.UnderlyingType.Category}");
@@ -449,11 +455,10 @@ namespace ILCompiler.ObjectWriter
         public static WasmFuncType GetSignature(MethodDesc method)
         {
             // TODO-WASM: handle struct by-value return (extra parameter pointing to buffer must be in signature)
-            // TODO-WASM: handle seemingly by-value struct arguments that are actually passed implicitly by reference
 
             MethodSignature signature = method.Signature;
             TypeDesc returnType = signature.ReturnType;
-            Span<WasmValueType> wasmParameters, lowered;
+
             if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
             {
                 wasmParameters = new WasmValueType[signature.Length];

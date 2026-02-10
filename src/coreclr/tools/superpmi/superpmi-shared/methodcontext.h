@@ -786,9 +786,9 @@ public:
     void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
     void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
-    void recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoType infoType);
+    void recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType wasmType);
     void dmpGetWasmLowering(DWORDLONG key, DWORD value);
-    CorInfoType repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+    CorInfoWasmType repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd);
 
     void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
@@ -1218,6 +1218,7 @@ enum mcPackets
     Packet_GetHelperFtn = 233,
     Packet_GetContinuationType = 234,
     Packet_GetWasmTypeSymbol = 235,
+    Packet_GetWasmLowering = 236,
 };
 
 void SetDebugDumpVariables();

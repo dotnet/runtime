@@ -757,9 +757,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     assert(structSize > 0);
 
 #if defined(TARGET_WASM)
-    CorInfoType abiType = info.compCompHnd->getWasmLowering(clsHnd);
+    CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
-    if (abiType == CORINFO_TYPE_UNDEF)
+    if (abiType == CORINFO_WASM_TYPE_VOID)
     {
         howToReturnStruct = SPK_ByReference;
         useType           = TYP_UNKNOWN;
@@ -767,7 +767,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     else
     {
         howToReturnStruct = SPK_ByValue;
-        useType           = JITtype2varType(abiType);
+        useType           = WasmClassifier::ToJitType(abiType);
     }
 
     if (wbReturnStruct != nullptr)
@@ -778,8 +778,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     return useType;
 #else
 #ifdef DEBUG
-    // Extra query to facilitate wasm replay
-    if (JitConfig.EnableExtraSuperPmiQueries())
+    // Extra query to facilitate wasm replay of native collections.
+    // TODO-WASM: delete once we can get a wasm collection.
+    //
+    if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
         info.compCompHnd->getWasmLowering(clsHnd);
     }

@@ -329,7 +329,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte> getSystemVAmd64PassStructInRegisterDescriptor;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType> getWasmLowering;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -2276,7 +2276,7 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CorInfoType _getWasmLowering(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        private static CorInfoWasmType _getWasmLowering(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
         {
             var _this = GetThis(thisHandle);
             try

@@ -2543,121 +2543,12 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     EE_TO_JIT_TRANSITION();
 }
 
-CorInfoType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
 {
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoType wasmAbiType = CORINFO_TYPE_UNDEF;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle th(structHnd);
-
-    bool useNativeLayout = false;
-    MethodTable* pMT = nullptr;
-    if (!th.IsTypeDesc())
-    {
-        pMT = th.AsMethodTable();
-    }
-    else
-    {
-        _ASSERTE(th.IsNativeValueType());
-
-        useNativeLayout = true;
-        pMT = th.AsNativeValueType();
-    }
-
-    unsigned size = th.GetSize();
-
-    switch (size)
-    {
-        case 1:
-        case 2:
-        case 4:
-        case 8:
-            wasmAbiType = getWasmLoweringHelper(pMT, size);
-            break;
-        default:
-            break;
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return wasmAbiType;
-}
-
-CorInfoType CEEInfo::getWasmLoweringHelper(MethodTable* pMT, unsigned originalSize)
-{
-    _ASSERTE(pMT->IsValueType());
-
-    if ((pMT->GetNumInstanceFields() != 1) || pMT->GetClass()->IsInlineArray())
-    {
-        return CORINFO_TYPE_UNDEF;
-    }
-
-    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
-    FieldDesc *pFD = fieldIterator.Next();
-
-    if (pFD->GetOffset() != 0)
-    {
-        return CORINFO_TYPE_UNDEF;
-    }
-
-    CorElementType fieldType = pFD->GetFieldType();
-
-    if (fieldType == ELEMENT_TYPE_VALUETYPE)
-    {
-        return getWasmLoweringHelper(pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable(), originalSize);
-    }
-
-    CorInfoType jitType = CEEInfo::asCorInfoType(fieldType);
-
-    switch (jitType)
-    {
-        case CORINFO_TYPE_BOOL:
-        case CORINFO_TYPE_CHAR:
-        case CORINFO_TYPE_BYTE:
-        case CORINFO_TYPE_UBYTE:
-        case CORINFO_TYPE_SHORT:
-        case CORINFO_TYPE_USHORT:
-        case CORINFO_TYPE_INT:
-        case CORINFO_TYPE_UINT:
-            jitType = originalSize > 4 ? CORINFO_TYPE_LONG : CORINFO_TYPE_INT;
-            break;
-
-        case CORINFO_TYPE_LONG:
-        case CORINFO_TYPE_ULONG:
-            jitType = CORINFO_TYPE_LONG;
-            break;
-
-        case CORINFO_TYPE_FLOAT:
-            // ???
-            jitType = originalSize > 4 ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
-            break;
-
-        case CORINFO_TYPE_DOUBLE:
-            jitType = CORINFO_TYPE_DOUBLE;
-            break;
-
-        case CORINFO_TYPE_NATIVEINT:
-        case CORINFO_TYPE_NATIVEUINT:
-        case CORINFO_TYPE_PTR:
-        case CORINFO_TYPE_BYREF:
-        case CORINFO_TYPE_CLASS:
-            // native int on 32 bit platform in 64 bit struct?
-            jitType = CORINFO_TYPE_NATIVEINT;
-            break;
-
-        default:
-            jitType = CORINFO_TYPE_UNDEF;
-            break;
-    }
-
-    return jitType;
+    LIMITED_METHOD_CONTRACT;
+    // Only needed for a Wasm Jit.
+    UNREACHABLE();
+    return CORINFO_WASM_TYPE_VOID;
 }
 
 /*********************************************************************/
