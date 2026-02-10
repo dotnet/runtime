@@ -42,16 +42,14 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_WASM_FUNCTION_INDEX_LEB    = 0x200,  // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         IMAGE_REL_WASM_TABLE_INDEX_SLEB      = 0x201,  // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                        //  i32.const instruction, e.g. taking the address of a function.
-        IMAGE_REL_WASM_TABLE_INDEX_I32       = 0x202,  // Wasm: a function table index encoded as a uint32, e.g. taking the address of a function in a static data initializer.
-        IMAGE_REL_WASM_MEMORY_ADDR_LEB       = 0x203,  // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
+        IMAGE_REL_WASM_MEMORY_ADDR_LEB       = 0x202,  // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                        //  e.g. directly loading from or storing to a C++ global.
-        IMAGE_REL_WASM_MEMORY_ADDR_SLEB      = 0x204,  // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
+        IMAGE_REL_WASM_MEMORY_ADDR_SLEB      = 0x203,  // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                                        //  e.g. taking the address of a C++ global.
-        IMAGE_REL_WASM_MEMORY_ADDR_I32       = 0x205,  // Wasm: a linear memory index encoded as a uint32, e.g. taking the address of a C++ global in a static data initializer.
-        IMAGE_REL_WASM_TYPE_INDEX_LEB        = 0x206,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
-        IMAGE_REL_WASM_GLOBAL_INDEX_LEB      = 0x207,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
-        IMAGE_REL_WASM_EVENT_INDEX_LEB       = 0x208,  // Wasm: an event index encoded as a 5-byte varuint32. Used for the immediate argument of a throw and if_except instruction.
-        IMAGE_REL_WASM_TABLE_NUMBER_LEB      = 0x209,  // Wasm: a table number encoded as a 5-byte varuint32. Used for the table immediate argument in the table.* instructions.
+        IMAGE_REL_WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
+        IMAGE_REL_WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
+        IMAGE_REL_WASM_EVENT_INDEX_LEB       = 0x206,  // Wasm: an event index encoded as a 5-byte varuint32. Used for the immediate argument of a throw and if_except instruction.
+        IMAGE_REL_WASM_TABLE_NUMBER_LEB      = 0x207,  // Wasm: a table number encoded as a 5-byte varuint32. Used for the table immediate argument in the table.* instructions.
 
         //
         // Relocation operators related to TLS access
@@ -639,10 +637,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 case RelocType.IMAGE_REL_WASM_FUNCTION_INDEX_LEB:
                 case RelocType.IMAGE_REL_WASM_TABLE_INDEX_SLEB  :
-                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_I32   :
                 case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_LEB   :
                 case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_SLEB  :
-                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_I32   :
                 case RelocType.IMAGE_REL_WASM_TYPE_INDEX_LEB    :
                 case RelocType.IMAGE_REL_WASM_GLOBAL_INDEX_LEB  :
                 case RelocType.IMAGE_REL_WASM_EVENT_INDEX_LEB   :
@@ -740,10 +736,8 @@ namespace ILCompiler.DependencyAnalysis
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.IMAGE_REL_WASM_FUNCTION_INDEX_LEB:
                 case RelocType.IMAGE_REL_WASM_TABLE_INDEX_SLEB  :
-                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_I32   :
                 case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_LEB   :
                 case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_SLEB  :
-                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_I32   :
                 case RelocType.IMAGE_REL_WASM_TYPE_INDEX_LEB    :
                 case RelocType.IMAGE_REL_WASM_GLOBAL_INDEX_LEB  :
                 case RelocType.IMAGE_REL_WASM_EVENT_INDEX_LEB   :

@@ -514,12 +514,10 @@ namespace Internal.JitInterface
         WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                //  i32.const instruction, e.g. taking the address of a function.
-        WASM_TABLE_INDEX_I32,                // Wasm: a function table index encoded as a uint32, e.g. taking the address of a function in a static data initializer.
         WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
                                                //  e.g. taking the address of a C++ global.
-        WASM_MEMORY_ADDR_I32,                // Wasm: a linear memory index encoded as a uint32, e.g. taking the address of a C++ global in a static data initializer.
         WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
         WASM_EVENT_INDEX_LEB,                // Wasm: an event index encoded as a 5-byte varuint32. Used for the immediate argument of a throw and if_except instruction.
