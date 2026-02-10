@@ -75,7 +75,7 @@ namespace Microsoft.Interop
                 .Select(
                     static (data, ct) => GenerateSource(data.Left, data.Right)
                 )
-                .WithComparer(Comparers.GeneratedSyntax)
+                .WithComparer(SyntaxEquivalentComparer.Instance)
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub, "LibraryImports.g.cs");
@@ -337,7 +337,6 @@ namespace Microsoft.Interop
         {
             LibraryImportData pinvokeData = stub.LibraryImportData with { EntryPoint = stub.LibraryImportData.EntryPoint ?? userDeclaredMethod.Identifier.ValueText };
 
-            // Note: Diagnostics for forwarder issues are now reported by the analyzer
             if (pinvokeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling)
                 && pinvokeData.StringMarshalling != StringMarshalling.Utf16)
             {
