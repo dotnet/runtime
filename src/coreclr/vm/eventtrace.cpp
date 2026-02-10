@@ -60,7 +60,7 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Cont
 #ifdef FEATURE_NATIVEAOT
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 #else // FEATURE_NATIVEAOT
-Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber = 0;
+Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber(0);
 #endif // FEATURE_NATIVEAOT
 
 #ifndef FEATURE_NATIVEAOT

@@ -4,5 +4,5 @@
 #include "common.h"
 #include "gceventstatus.h"
 
-Volatile<GCEventLevel> GCEventStatus::enabledLevels[2] = {GCEventLevel_None, GCEventLevel_None};
-Volatile<GCEventKeyword> GCEventStatus::enabledKeywords[2] = {GCEventKeyword_None, GCEventKeyword_None};
+Volatile<GCEventLevel> GCEventStatus::enabledLevels[2] = {Volatile<GCEventLevel>(GCEventLevel_None), Volatile<GCEventLevel>(GCEventLevel_None)};
+Volatile<GCEventKeyword> GCEventStatus::enabledKeywords[2] = {Volatile<GCEventKeyword>(GCEventKeyword_None), Volatile<GCEventKeyword>(GCEventKeyword_None)};

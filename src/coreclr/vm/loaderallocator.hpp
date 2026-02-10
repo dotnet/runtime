@@ -863,7 +863,7 @@ public:
     void ResetComCallWrapperCache()
     {
         LIMITED_METHOD_CONTRACT;
-        m_pComCallWrapperCache = NULL;
+        m_pComCallWrapperCache = nullptr;
     }
 
 #ifndef DACCESS_COMPILE

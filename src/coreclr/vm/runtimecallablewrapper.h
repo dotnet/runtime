@@ -596,7 +596,7 @@ inline RCW::CreationFlags operator|=(RCW::CreationFlags & lhs, RCW::CreationFlag
 // In order to save vtablePtr in minidumps, we put it on the stack as a volatile local
 // (so it's not optimized away by the compiler). Most places where we call out to COM
 // can absorb the cost of one stack slot and one instruction to improve debuggability.
-#define RCW_VTABLEPTR(pRCW) Volatile<LPVOID> __vtablePtr = (pRCW)->m_vtablePtr
+#define RCW_VTABLEPTR(pRCW) Volatile<LPVOID> __vtablePtr((pRCW)->m_vtablePtr)
 
 // 04 CLASS_IS_HINT                   04 ITF_MARSHAL_CLASS_IS_HINT
 // 08 UNIQUE_OBJECT                                                   08 CF_NeedUniqueObject

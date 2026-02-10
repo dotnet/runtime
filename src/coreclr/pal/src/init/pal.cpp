@@ -96,9 +96,9 @@ extern bool g_running_in_exe;
 bool g_arm64_atomics_present = false;
 #endif
 
-Volatile<INT> init_count = 0;
-Volatile<BOOL> shutdown_intent = 0;
-Volatile<LONG> g_coreclrInitialized = 0;
+Volatile<INT> init_count(0);
+Volatile<BOOL> shutdown_intent(0);
+Volatile<LONG> g_coreclrInitialized(0);
 static BOOL g_fThreadDataAvailable = FALSE;
 static pthread_mutex_t init_critsec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -588,7 +588,9 @@ Initialize(
         }
 
         TRACE("First-time PAL initialization complete.\n");
-        init_count++;
+        // Incrementing the init_count here serves as a synchronization point,
+        // since it is a Volatile<T> variable, and modifying it will have release semantics.
+        init_count = init_count + 1;
 
         /* Set LastError to a non-good value - functions within the
            PAL startup may set lasterror to a nonzero value. */
@@ -597,7 +599,7 @@ Initialize(
     }
     else
     {
-        init_count++;
+        init_count = init_count + 1;
 
         TRACE("Initialization count increases to %d\n", init_count.Load());
 

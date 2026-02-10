@@ -1757,7 +1757,7 @@ HRESULT GetFileVersion(                     // S_OK or error
 }
 #endif // !TARGET_UNIX
 
-Volatile<double> NormalizedTimer::s_frequency = -1.0;
+Volatile<double> NormalizedTimer::s_frequency(-1.0);
 
 void FillStubCodePage(BYTE* pageBase, const void* code, SIZE_T codeSize, SIZE_T pageSize)
 {

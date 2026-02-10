@@ -204,7 +204,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-        this->m_pVolatileBucketTable = NULL;
+        this->m_pVolatileBucketTable = nullptr;
 #endif
         this->m_dwNumEntries = 0;
         this->m_bGrowing = 0;

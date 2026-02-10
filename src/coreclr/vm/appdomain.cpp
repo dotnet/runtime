@@ -1637,7 +1637,7 @@ AppDomain::AppDomain()
 #endif // FEATURE_COMWRAPPERS
     , m_ForceTrivialWaitOperations{false}
 #ifdef FEATURE_TYPEEQUIVALENCE
-    , m_pTypeEquivalenceTable{NULL}
+    , m_pTypeEquivalenceTable{nullptr}
 #endif // FEATURE_TYPEEQUIVALENCE
 {
     // initialize fields so the appdomain can be safely destructed

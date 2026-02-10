@@ -68,7 +68,7 @@ BOOL __SwitchToThread(DWORD dwSleepMSec, DWORD dwSwitchCount)
     return SwitchToThread();
 }
 
-Volatile<BOOL> g_fInitializedGlobalSystemInfo = FALSE;
+Volatile<BOOL> g_fInitializedGlobalSystemInfo(FALSE);
 
 // Global System Information
 SYSTEM_INFO g_SystemInfo;

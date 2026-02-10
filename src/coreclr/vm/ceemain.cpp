@@ -235,7 +235,7 @@ HRESULT g_EEStartupStatus = S_OK;
 // Flag indicating if the EE has been started.  This is set prior to initializing the default AppDomain, and so does not indicate that
 // the EE is fully able to execute arbitrary managed code.  To ensure the EE is fully started, call EnsureEEStarted rather than just
 // checking this flag.
-Volatile<BOOL> g_fEEStarted = FALSE;
+Volatile<BOOL> g_fEEStarted(FALSE);
 
 // The OS thread ID of the thread currently performing EE startup, or 0 if there is no such thread.
 DWORD   g_dwStartupThreadId = 0;
@@ -503,7 +503,7 @@ void InitGSCookie()
     }
 }
 
-Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
+Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized(FALSE);
 
 void SetGarbageCollectorFullyInitialized()
 {
@@ -1229,7 +1229,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         }
 
         // Indicate the EE is the shut down phase.
-        g_fEEShutDown |= ShutDown_Start;
+        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Start);
 
         if (!IsAtProcessExit() && !g_fFastExitProcess)
         {
@@ -1354,7 +1354,7 @@ part2:
             // lock -- after the OS has stopped all other threads.
             if (fIsDllUnloading && (g_fEEShutDown & ShutDown_Phase2) == 0)
             {
-                g_fEEShutDown |= ShutDown_Phase2;
+                InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
 
                 if (!g_fFastExitProcess)
                 {
@@ -1588,7 +1588,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 {
                     if (GCHeapUtilities::IsGCInProgress())
                     {
-                        g_fEEShutDown |= ShutDown_Phase2;
+                        InterlockedOr((LONG*)&g_fEEShutDown, ShutDown_Phase2);
                         break;
                     }
 

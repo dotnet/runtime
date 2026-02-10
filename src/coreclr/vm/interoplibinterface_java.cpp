@@ -17,7 +17,7 @@ namespace
 {
     CrossreferenceHandleCallback g_MarkCrossReferences = NULL;
 
-    Volatile<bool> g_GCBridgeActive = false;
+    Volatile<bool> g_GCBridgeActive(false);
     CLREvent* g_bridgeFinished = nullptr;
 
     void ReleaseGCBridgeArgumentsWorker(

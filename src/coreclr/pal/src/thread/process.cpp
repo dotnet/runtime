@@ -146,10 +146,10 @@ LPWSTR g_lpwstrCmdLine = NULL;
 LPWSTR g_lpwstrAppDir = NULL;
 
 // Thread ID of thread that has started the ExitProcess process
-Volatile<LONG> terminator = 0;
+Volatile<LONG> terminator(0);
 
 // Id of thread generating a core dump
-Volatile<LONG> g_crashingThreadId = 0;
+Volatile<LONG> g_crashingThreadId(0);
 
 // Process and session ID of this process.
 DWORD gPID = (DWORD) -1;
@@ -178,10 +178,10 @@ int gApplicationGroupIdLength = 0;
 static_assert(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
-Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
+Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback(nullptr);
 
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
-Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
+Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback(nullptr);
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32

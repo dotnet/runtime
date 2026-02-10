@@ -54,14 +54,14 @@ inline bool getInlinePInvokeCheckEnabled()
 // Enforce float narrowing for buggy compilers (notably preWhidbey VC)
 inline float forceCastToFloat(double d)
 {
-    Volatile<float> f = (float)d;
+    Volatile<float> f((float)d);
     return f;
 }
 
 // Enforce UInt32 narrowing for buggy compilers (notably Whidbey Beta 2 LKG)
 inline UINT32 forceCastToUInt32(double d)
 {
-    Volatile<UINT32> u = (UINT32)d;
+    Volatile<UINT32> u((UINT32)d);
     return u;
 }
 

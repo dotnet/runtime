@@ -1680,7 +1680,7 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 #endif
 }
 
-static VOLATILE(int32_t) uCount = 0;
+static VOLATILE(int32_t) uCount VOLATILE_INIT(0);
 
 // NOTE: Please: if you update this function, update the very similar profiling function immediately below!!!
 void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)

@@ -25,8 +25,8 @@ volatile int32_t g_TrapReturningThreads;
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
 // that does not allow g_TrapReturningThreads to creep up unchecked.
-Volatile<LONG>       g_trtChgStamp = 0;
-Volatile<LONG>       g_trtChgInFlight = 0;
+Volatile<LONG>       g_trtChgStamp(0);
+Volatile<LONG>       g_trtChgInFlight(0);
 
 const char *         g_ExceptionFile;   // Source of the last thrown exception (COMPLUSThrow())
 DWORD                g_ExceptionLine;   // ... ditto ...

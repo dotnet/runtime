@@ -668,6 +668,12 @@ public:
     BOOL stress_induced;
 #endif // STRESS_HEAP
 
+    gc_mechanisms() = default;
+    gc_mechanisms(const gc_mechanisms& other)
+    {
+        *this = other;
+    }
+
     // These are opportunistically set
     uint32_t entry_memory_load;
     uint64_t entry_available_physical_mem;
