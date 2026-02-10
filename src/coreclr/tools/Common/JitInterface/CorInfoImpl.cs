@@ -1498,25 +1498,9 @@ namespace Internal.JitInterface
                 bool requiresRuntimeLookup = IsCanonicalSubtypeInstantiation(originalImpl.Instantiation);
                 if (requiresRuntimeLookup)
                 {
-                    if (info->pResolvedTokenVirtualMethod == null)
-                    {
-                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                        return false;
-                    }
-
-#if READYTORUN
-                    ComputeRuntimeLookupForSharedGenericToken(
-                        Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
-                        ref info->resolvedTokenDevirtualizedMethod,
-                        null,
-                        originalImpl,
-                        MethodBeingCompiled,
-                        ref info->instParamLookup);
-#else
-                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
+                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT and R2R
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
                     return false;
-#endif
                 }
             }
 
