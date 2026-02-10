@@ -91,7 +91,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._gid = value;
-                _header.SyncNumericExtendedAttribute("gid", value);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaGid, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -110,7 +110,7 @@ namespace System.Formats.Tar
                     ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
                 }
                 _header._mTime = value;
-                _header.SyncTimestampExtendedAttribute("mtime", value);
+                _header.SyncTimestampExtendedAttribute(TarHeader.PaxEaMTime, value);
             }
         }
 
@@ -170,7 +170,7 @@ namespace System.Formats.Tar
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _header._name = value;
-                _header.SyncStringExtendedAttribute("path", value);
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaName, value);
             }
         }
 
@@ -184,7 +184,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._uid = value;
-                _header.SyncNumericExtendedAttribute("uid", value);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaUid, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -602,10 +602,10 @@ namespace System.Formats.Tar
 
             if (!OperatingSystem.IsWindows())
             {
-                 const UnixFileMode OwnershipPermissions =
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                const UnixFileMode OwnershipPermissions =
+                   UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                   UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                   UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
                 // Restore permissions.
                 // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).
