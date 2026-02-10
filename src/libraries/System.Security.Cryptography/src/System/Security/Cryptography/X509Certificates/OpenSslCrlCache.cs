@@ -565,6 +565,11 @@ namespace System.Security.Cryptography.X509Certificates
                             previous.Next = null;
                             toDispose = cur.Value.CrlHandle;
                             fullMemberKey = cur.Key;
+                            
+                            if (cur == _expire)
+                            {
+                                _expire = null;
+                            }
                         }
 
                         _head = node;
