@@ -31,7 +31,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
-    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(IsServicingBuild)' == 'true'">$(ProductVersion)</InformationalVersion>
     <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
     <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
     <NoWarn>$(NoWarn),0419,0649,AD0001</NoWarn>

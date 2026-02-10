@@ -12,6 +12,8 @@
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>
     </PreReleaseVersionIteration>
+    <IsServicingBuild>false</IsServicingBuild>
+    <IsServicingBuild Condition="'$(PreReleaseVersionLabel)' == 'servicing' or '$(PreReleaseVersionLabel)' == 'hotfix'">true</IsServicingBuild>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">true</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -226,7 +228,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-rc.1.23406.6</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.25515.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.25614.2</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
     <MicrosoftDotNetILCompilerVersion>8.0.0-rc.1.23406.6</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
@@ -252,7 +254,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>8.0.22</MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>8.0.23</MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
