@@ -111,7 +111,7 @@ function Get-CodeflowPRHealth {
 
     $result = @{ Status = "⚠️  Unknown"; Color = "Yellow"; HasConflict = $false; HasStaleness = $false; WasResolved = $false; Details = @() }
 
-    $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt 2>$null
+    $prJson = gh pr view $PRNumber -R $Repo --json body,comments,updatedAt,mergeable 2>$null
     if ($LASTEXITCODE -ne 0 -or -not $prJson) { return $result }
 
     try { $prDetail = ($prJson -join "`n") | ConvertFrom-Json } catch { return $result }
@@ -134,17 +134,26 @@ function Get-CodeflowPRHealth {
     $wasConflict = $hasConflict
     $wasStaleness = $hasStaleness
 
-    # If issues detected, check if they were resolved via Codeflow verification
-    # Codeflow verification SUCCESS reliably indicates conflict resolution,
-    # but staleness (code moved on) needs a newer commit after the warning
+    # If issues detected, check if they were resolved
+    # Two signals: (1) PR is mergeable (no git conflict), (2) Codeflow verification SUCCESS
+    # Either one clears the conflict flag. Staleness needs a newer commit after the warning.
     if ($hasConflict -or $hasStaleness) {
+        # Check mergeable status — if PR has no git conflicts, clear the conflict flag
+        $isMergeable = $false
+        if ($prDetail.PSObject.Properties.Name -contains 'mergeable' -and $prDetail.mergeable -eq 'MERGEABLE') {
+            $isMergeable = $true
+        }
+        if ($isMergeable -and $hasConflict) {
+            $hasConflict = $false
+        }
+
         $checksJson = gh pr checks $PRNumber -R $Repo --json name,state 2>$null
         if ($LASTEXITCODE -eq 0 -and $checksJson) {
             try {
                 $checks = ($checksJson -join "`n") | ConvertFrom-Json
                 $codeflowCheck = @($checks | Where-Object { $_.name -match 'Codeflow verification' }) | Select-Object -First 1
-                if ($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') {
-                    # Codeflow verification passing means no merge conflict
+                if (($codeflowCheck -and $codeflowCheck.state -eq 'SUCCESS') -or $isMergeable) {
+                    # No merge conflict — either Codeflow verification passes or PR is mergeable
                     $hasConflict = $false
                     # For staleness, check if there are commits after the last staleness warning
                     if ($hasStaleness) {
