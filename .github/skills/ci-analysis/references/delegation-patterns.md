@@ -19,7 +19,7 @@ Job: {JOB_ID_2}
   Work items: dotnet.Tests.dll.19
 
 For each, use:
-  C:\Users\lewing\.copilot\skills\ci-analysis\scripts\Get-CIStatus.ps1 -HelixJob "{JOB}" -WorkItem "{ITEM}"
+  ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB}" -WorkItem "{ITEM}"
 
 From the console output, extract lines matching xUnit failure format:
   [xUnit.net HH:MM:SS.ss] TestNamespace.TestClass.TestMethod [FAIL]

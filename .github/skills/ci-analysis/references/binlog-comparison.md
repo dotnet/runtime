@@ -1,6 +1,6 @@
 # Deep Investigation: Binlog Comparison
 
-When a test **passes on main but fails on a PR**, comparing MSBuild binlogs from both runs reveals the exact difference in task parameters without guessing.
+When a test **passes on the target branch but fails on a PR**, comparing MSBuild binlogs from both runs reveals the exact difference in task parameters without guessing.
 
 ## When to Use This Pattern
 
@@ -14,7 +14,7 @@ When a test **passes on main but fails on a PR**, comparing MSBuild binlogs from
 
 ### Step 1: Identify the two work items to compare
 
-Use `Get-CIStatus.ps1` to find the failing Helix job + work item, then find a corresponding passing build (recent PR merged to main, or a main CI run).
+Use `Get-CIStatus.ps1` to find the failing Helix job + work item, then find a corresponding passing build (recent PR merged to the target branch, or a CI run on that branch).
 
 **Finding Helix job IDs from build artifacts (binlogs to find binlogs):**
 When the failing work item's Helix job ID isn't visible (e.g., canceled jobs, or finding a matching job from a passing build), the IDs are inside the build's `SendToHelix.binlog`:
@@ -48,7 +48,7 @@ Launch two `task` subagents (can run in parallel), each with a prompt like:
 ```
 Download the msbuild.binlog from Helix job {JOB_ID} work item {WORK_ITEM}.
 Use the CI skill script to get the artifact URL:
-  C:\Users\lewing\.copilot\skills\ci-analysis\scripts\Get-CIStatus.ps1 -HelixJob "{JOB_ID}" -WorkItem "{WORK_ITEM}"
+  ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB_ID}" -WorkItem "{WORK_ITEM}"
 Download the binlog URL to $env:TEMP\{label}.binlog.
 Load it with the binlog MCP server (binlog-load_binlog).
 Search for the {TASK_NAME} task (binlog-search_tasks_by_name).

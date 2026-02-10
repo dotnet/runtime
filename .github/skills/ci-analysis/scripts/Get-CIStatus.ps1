@@ -1833,7 +1833,7 @@ try {
             skipped = $skippedJobs
         }
 
-        if((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
+        if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
             if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
                 Write-Host "`nNo failures yet - build still in progress" -ForegroundColor Cyan
                 Write-Host "Run again later to check for failures, or use -NoCache to get fresh data" -ForegroundColor Gray

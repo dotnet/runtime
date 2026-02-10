@@ -66,7 +66,7 @@ The script operates in three distinct modes depending on what information you ha
 
 | You have... | Use | What you get |
 |-------------|-----|-------------|
-| A GitHub PR number | `-PRNumber 12345` | Full analysis: all builds, failures, known issues, retry recommendation |
+| A GitHub PR number | `-PRNumber 12345` | Full analysis: all builds, failures, known issues, structured JSON summary |
 | An AzDO build ID | `-BuildId 1276327` | Single build analysis: timeline, failures, Helix results |
 | A Helix job ID (optionally a specific work item) | `-HelixJob "..." [-WorkItem "..."]` | Deep dive: list work items for the job, or with `-WorkItem`, focus on a single work item's console logs, artifacts, and test results |
 
