@@ -565,7 +565,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_CALL:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_FUNCTION_INDEX_LEB);
+            dst += emitOutputConstant(dst, id, false, CorInfoReloc::R_WASM_FUNCTION_INDEX_LEB);
             break;
         }
         case IF_CALL_INDIRECT:
