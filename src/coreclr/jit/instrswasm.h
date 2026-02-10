@@ -72,10 +72,14 @@ INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 
 // 5.4.7 Numeric Instructions
 // Constants
-INST(i32_const,   "i32.const",   0, IF_SLEB128, 0x41)
-INST(i64_const,   "i64.const",   0, IF_SLEB128, 0x42)
-INST(f32_const,   "f32.const",   0, IF_F32,     0x43)
-INST(f64_const,   "f64.const",   0, IF_F64,     0x44)
+INST(i32_const,         "i32.const",         0, IF_SLEB128, 0x41)
+// Pseudo-instructions for relocations
+INST(i32_const_address, "i32.const_address", 0, IF_MEMADDR, 0x41)
+INST(i32_const_funcptr, "i32.const_funcptr", 0, IF_FUNCPTR, 0x41)
+// Constants, continued
+INST(i64_const,         "i64.const",         0, IF_SLEB128, 0x42)
+INST(f32_const,         "f32.const",         0, IF_F32,     0x43)
+INST(f64_const,         "f64.const",         0, IF_F64,     0x44)
 // Integer comparisons
 INST(i32_eqz,     "i32.eqz",     0, IF_OPCODE,  0x45)
 INST(i32_eq,      "i32.eq",      0, IF_OPCODE,  0x46)
@@ -222,10 +226,6 @@ INST(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0x04FC)
 INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
 INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
 INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
-
-// Pseudo-instructions for relocations
-INST(i32_const_address,   "i32.const_address",   0, IF_MEMADDR, 0x41)
-INST(i32_const_funcptr,   "i32.const_funcptr",   0, IF_FUNCPTR, 0x41)
 
 // clang-format on
 
