@@ -691,7 +691,15 @@ if ($forcePushEvents.Count -gt 0) {
 # Synthesize current state assessment
 $prUpdatedTime = if ($pr.updatedAt) { [DateTimeOffset]::Parse($pr.updatedAt).UtcDateTime } else { $null }
 $prAgeDays = if ($prUpdatedTime) { ([DateTime]::UtcNow - $prUpdatedTime).TotalDays } else { 0 }
-$currentState = if ($isEmptyDiff -and $forcePushEvents.Count -gt 0) {
+$isClosed = $pr.state -eq "CLOSED"
+$isMerged = $pr.state -eq "MERGED"
+$currentState = if ($isMerged) {
+    "MERGED"
+} elseif ($isClosed) {
+    "CLOSED"
+} elseif ($isEmptyDiff -and $forcePushEvents.Count -gt 0) {
+    "NO-OP"
+} elseif ($isEmptyDiff) {
     "NO-OP"
 } elseif ($forcePushEvents.Count -gt 0 -and $lastForcePushTime -and ([DateTime]::UtcNow - $lastForcePushTime).TotalHours -lt 24) {
     "IN_PROGRESS"
@@ -703,6 +711,8 @@ $currentState = if ($isEmptyDiff -and $forcePushEvents.Count -gt 0) {
 
 Write-Host ""
 switch ($currentState) {
+    "MERGED"      { Write-Host "  ✅ MERGED — PR has been merged" -ForegroundColor Green }
+    "CLOSED"      { Write-Host "  ✖️  CLOSED — PR was closed without merging" -ForegroundColor DarkGray }
     "NO-OP"       { Write-Host "  📭 NO-OP — empty diff, likely already resolved" -ForegroundColor Yellow }
     "IN_PROGRESS" { Write-Host "  🔄 IN PROGRESS — recent force push, awaiting update" -ForegroundColor Cyan }
     "STALE"       { Write-Host "  ⏳ STALE — no recent activity" -ForegroundColor Yellow }
@@ -1377,9 +1387,23 @@ if ($TraceFix) {
 # --- Step 9: Recommendations ---
 Write-Section "Recommendations"
 
+# Handle terminal states first
+if ($currentState -eq "MERGED") {
+    Write-Host "  ✅ PR is merged — no action needed" -ForegroundColor Green
+    Write-Host "  Maestro will create a new codeflow PR if the VMR has newer content."
+}
+elseif ($currentState -eq "CLOSED") {
+    Write-Host "  ✖️  PR was closed without merging" -ForegroundColor DarkGray
+    Write-Host "  Maestro should create a new codeflow PR automatically."
+    if ($subscriptionId) {
+        Write-Host "  To force a new PR: darc trigger-subscriptions --id $subscriptionId" -ForegroundColor DarkGray
+    }
+}
+else {
+
 # Lead with current state assessment if NO-OP
 if ($currentState -eq "NO-OP") {
-    Write-Host "  📭 Current state: NO-OP — empty diff with force push activity" -ForegroundColor Yellow
+    Write-Host "  📭 Current state: NO-OP — empty diff, likely already resolved" -ForegroundColor Yellow
     Write-Host "     This PR likely has no meaningful changes left to merge." -ForegroundColor DarkGray
     Write-Host ""
 }
@@ -1494,4 +1518,6 @@ else {
             Write-Host "       darc trigger-subscriptions --id $subscriptionId" -ForegroundColor DarkGray
         }
     }
+
+} # end of else (non-terminal state)
 }

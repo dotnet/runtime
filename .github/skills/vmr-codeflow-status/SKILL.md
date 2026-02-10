@@ -95,7 +95,9 @@ Use this skill when:
 ## Interpreting Results
 
 ### Current State (assessed first, from primary signals)
-- **📭 NO-OP**: Empty diff with force push — PR likely already resolved, changes landed via other paths
+- **✅ MERGED**: PR has been merged — no action needed
+- **✖️ CLOSED**: PR was closed without merging — Maestro should create a replacement
+- **📭 NO-OP**: Empty diff — PR likely already resolved, changes landed via other paths
 - **🔄 IN PROGRESS**: Recent force push within 24h — someone is actively working on it
 - **⏳ STALE**: No activity for >3 days — may need attention
 - **✅ ACTIVE**: PR has content and recent activity
