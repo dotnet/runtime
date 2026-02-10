@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
+import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports, dotnetLoaderExports } from "./cross-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalThisAny } from "./per-module";
 
 export const runtimeState = {
-    runtimeReady: false,
+    creatingRuntime: false,
+    nativeReady: false,
+    dotnetReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
     originalOnAbort: undefined as ((reason: any, extraJson?: string) => void) | undefined,
@@ -19,7 +21,7 @@ export function isExited() {
 }
 
 export function isRuntimeRunning() {
-    return runtimeState.runtimeReady && !isExited();
+    return runtimeState.dotnetReady && !isExited();
 }
 
 export function addOnExitListener(cb: OnExitListener) {
@@ -114,8 +116,9 @@ export function exit(exitCode: number, reason: any): void {
             }
             unregisterExit();
             if (!alreadySilent) {
-                if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
-                    dotnetLogger.error(`Exiting during runtime startup: ${message} ${stack}`);
+                if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
+                    dotnetLogger.error(`Exiting during runtime startup: ${message}`);
+                    dotnetLogger.debug(() => stack);
                 }
                 for (const listener of runtimeState.onExitListeners) {
                     try {
@@ -127,7 +130,7 @@ export function exit(exitCode: number, reason: any): void {
                     }
                 }
             }
-            if (!runtimeState.runtimeReady) {
+            if (!runtimeState.dotnetReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }
@@ -148,13 +151,16 @@ export function exit(exitCode: number, reason: any): void {
 }
 
 export function quitNow(exitCode: number, reason?: any): void {
-    if (runtimeState.runtimeReady) {
+    if (runtimeState.dotnetReady) {
         Module.runtimeKeepalivePop();
         if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortPosix) {
-            dotnetBrowserUtilsExports.abortPosix(exitCode);
+            dotnetBrowserUtilsExports.abortPosix(exitCode, reason, runtimeState.dotnetReady);
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {
+        if (ENVIRONMENT_IS_SHELL && typeof globalThisAny.quit === "function") {
+            globalThisAny.quit(exitCode);
+        }
         if (ENVIRONMENT_IS_NODE && globalThis.process && typeof globalThis.process.exit === "function") {
             globalThis.process.exitCode = exitCode;
             globalThis.process.exit(exitCode);

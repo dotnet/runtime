@@ -105,6 +105,13 @@ public:
         _dataItems = dataItems;
     }
 
+    // Allocates a slot in the data items that is not shared with other opcodes
+    // Typically used for caching data at runtime.
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return _dataItems->Add(data);
+    }
+
     int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
     {
         const size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
@@ -686,6 +693,10 @@ private:
     int32_t GetDataItemIndex(const InterpGenericLookup& data)
     {
         return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return m_genericLookupToDataItemIndex.GetNewDataItemIndex(data);
     }
 
     void* GetDataItemAtIndex(int32_t index);
