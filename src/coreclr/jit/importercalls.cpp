@@ -7507,8 +7507,12 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 //
 bool Compiler::impDevirtualizedCallHasConstInstParam(const CORINFO_DEVIRTUALIZATION_INFO& dvInfo)
 {
-    return !dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
-           ((dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
+    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        return false;
+    }
+
+    return ((dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
              dvInfo.instParamLookup.constLookup.handle != nullptr) ||
             (dvInfo.instParamLookup.constLookup.accessType == IAT_PVALUE &&
              dvInfo.instParamLookup.constLookup.addr != nullptr));
@@ -8862,18 +8866,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                 JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
                 return;
             }
-        }
 
-        // Devirtualization can return an instantiating stub. If so, switch to the wrapped
-        // entrypoint and capture the stub as the instantiation argument source.
-        CORINFO_CLASS_HANDLE  ignore = NO_CLASS_HANDLE;
-        CORINFO_METHOD_HANDLE wrappedMethod =
-            info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignore);
-
-        assert(ignore == NO_CLASS_HANDLE);
-        if (wrappedMethod != NO_METHOD_HANDLE)
-        {
-            derivedMethod = wrappedMethod;
+            instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
 
         assert(!needsCompileTimeLookup || (instantiatingStub != NO_METHOD_HANDLE));

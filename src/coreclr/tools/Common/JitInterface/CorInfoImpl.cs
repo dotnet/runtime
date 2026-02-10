@@ -1339,6 +1339,20 @@ namespace Internal.JitInterface
             return ObjectToHandle(m.OwningType);
         }
 
+        private static bool IsCanonicalSubtypeInstantiation(Instantiation instantiation)
+        {
+            foreach (TypeDesc type in instantiation)
+            {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
         private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
         {
             // Initialize OUT fields
@@ -1479,38 +1493,55 @@ namespace Internal.JitInterface
             bool isArrayInterfaceDevirtualization = objType.IsArray && decl.OwningType.IsInterface;
             bool isGenericVirtual = decl.HasInstantiation;
 
-            if (isGenericVirtual && impl.IsSharedByGenericInstantiations)
+            if (isGenericVirtual)
             {
-                if (info->pResolvedTokenVirtualMethod == null)
+                bool requiresRuntimeLookup = IsCanonicalSubtypeInstantiation(originalImpl.Instantiation);
+                if (requiresRuntimeLookup)
                 {
-                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                    return false;
-                }
+                    if (info->pResolvedTokenVirtualMethod == null)
+                    {
+                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                        return false;
+                    }
 
 #if READYTORUN
-                ComputeRuntimeLookupForSharedGenericToken(
-                    Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
-                    ref info->resolvedTokenDevirtualizedMethod,
-                    pConstrainedResolvedToken: null,
-                    impl,
-                    MethodBeingCompiled,
-                    ref info->instParamLookup);
+                    ComputeRuntimeLookupForSharedGenericToken(
+                        Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
+                        ref info->resolvedTokenDevirtualizedMethod,
+                        pConstrainedResolvedToken: null,
+                        originalImpl,
+                        MethodBeingCompiled,
+                        ref info->instParamLookup);
 #else
-                object runtimeDeterminedMethod = GetRuntimeDeterminedObjectForToken(ref info->resolvedTokenDevirtualizedMethod);
-                ComputeLookup(
-                    ref info->resolvedTokenDevirtualizedMethod,
-                    runtimeDeterminedMethod,
-                    ReadyToRunHelperId.MethodHandle,
-                    MethodBeingCompiled,
-                    ref info->instParamLookup);
+                    ComputeLookup(
+                        ref info->resolvedTokenDevirtualizedMethod,
+                        originalImpl,
+                        ReadyToRunHelperId.MethodHandle,
+                        HandleToObject(MethodBeingCompiled),
+                        ref info->instParamLookup);
 #endif
-
-                if (info->instParamLookup.lookupKind.needsRuntimeLookup)
-                {
-                    // TODO: We can't handle runtime lookups for devirtualized generic methods in AOT yet
-                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                    return false;
                 }
+            }
+
+            if (!info->instParamLookup.lookupKind.needsRuntimeLookup &&
+                (isArrayInterfaceDevirtualization || isGenericVirtual) &&
+                impl.IsCanonicalMethod(CanonicalFormKind.Specific))
+            {
+#if READYTORUN
+                MethodWithToken originalImplWithToken = new MethodWithToken(
+                    originalImpl,
+                    methodWithTokenImpl.Token,
+                    constrainedType: null,
+                    unboxing: false,
+                    context: null,
+                    devirtualizedMethodOwner: originalImpl.OwningType);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodHandle,
+                        originalImplWithToken));
+#else
+                Debug.Assert(false); // TODO: NYI, and currently we should never hit this in NativeAOT
+#endif
             }
 
 #if READYTORUN
@@ -1527,7 +1558,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->exactContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(impl) : contextFromType(owningType);
+            info->exactContext = (isArrayInterfaceDevirtualization || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 

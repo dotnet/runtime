@@ -3010,22 +3010,9 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     MethodDesc* pContextMD = pCallerMD;
     MethodTable* pContextMT = pContextMD->GetMethodTable();
 
-    // There is a pathological case where invalid IL references __Canon type directly, but there is no
-    // dictionary available to store the lookup.
-    // DevirtualizedMethodDescSlot is an exception only when the caller can provide generic context via `this`.
+    // There is a pathological case where invalid IL references __Canon type directly, but there is no dictionary available to store the lookup.
     if (!pContextMD->IsSharedByGenericInstantiations())
-    {
-        if (entryKind != DevirtualizedMethodDescSlot)
-        {
-            COMPlusThrow(kInvalidProgramException);
-        }
-
-        if (!pContextMD->AcquiresInstMethodTableFromThis())
-        {
-            pResultLookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_NOT_SUPPORTED;
-            return;
-        }
-    }
+        COMPlusThrow(kInvalidProgramException);
 
     if (pContextMD->RequiresInstMethodDescArg())
     {
@@ -8850,9 +8837,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
-            const bool requiresRuntimeLookup = pDevirtMD->IsWrapperStub() &&
-                (pExactMT->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation()));
-
+            const bool requiresRuntimeLookup = pDevirtMD->IsWrapperStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
             if (requiresRuntimeLookup)
             {
                 if (info->pResolvedTokenVirtualMethod == nullptr)
@@ -8867,37 +8852,25 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                                                           pDevirtMD,
                                                           m_pMethodBeingCompiled,
                                                           &info->instParamLookup);
-
-                if (info->instParamLookup.lookupKind.runtimeLookupKind == CORINFO_LOOKUP_NOT_SUPPORTED)
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
             }
         }
 
         isGenericVirtual = true;
     }
 
-    // For non-shared cases we pass the instantiating stub MethodDesc as a constant.
+    info->exactContext = isArray || isGenericVirtual
+        ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD)
+        : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+
     if (!info->instParamLookup.lookupKind.needsRuntimeLookup && (isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
     {
-        info->instParamLookup.lookupKind.needsRuntimeLookup = false;
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
+        pDevirtMD = pDevirtMD->GetWrappedMethodDesc();
     }
 
     // Success! Pass back the results.
     //
-    if (isArray || isGenericVirtual)
-    {
-        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-    }
-    else
-    {
-        info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-    }
-
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
