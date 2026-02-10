@@ -752,7 +752,7 @@ namespace System.Security.Cryptography.X509Certificates
 #if DEBUG
                             // Except in DEBUG, as we really shouldn't be hitting any exceptions here.
                             throw;
-#endif                            
+#endif
                         }
                     }
                 }
