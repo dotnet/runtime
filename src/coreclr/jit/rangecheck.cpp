@@ -913,12 +913,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
 
-        // o1: (normalLclVN + CNS1) - OAK_LT_UN - o2: (checkedBndVN + 0)
-        // We can deduce normalLclVN is [-CNS1..checkedBndVN - CNS1]
-        // Example: (uint)(i + 2) < (uint)span.Length. i is within [-2..span.Length - 2] range
-        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN) &&
+        // o1: (normalLclVN + CNS1) - OAK_LT[_UN] - o2: (preferredBoundVN + 0)
+        // We can deduce normalLclVN's upper bound to be preferredBoundVN - CNS1
+        // Example: "(uint)(i + 2) < (uint)span.Length" or just "i + 2 < span.Length"
+        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN, Compiler::OAK_LT) &&
             curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS) &&
             (curAssertion.GetOp2().GetCheckedBoundConstant() == 0) &&
+            curAssertion.GetOp2().IsCheckedBoundNeverNegative() &&
             (curAssertion.GetOp2().GetCheckedBound() == preferredBoundVN) &&
             (curAssertion.GetOp1().GetVN() != normalLclVN))
         {
@@ -927,9 +928,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
                 (addOpVN == normalLclVN) && (addOpCns >= 0))
             {
-                // normalLclVN is [-CNS..preferredBoundVN - CNS]
+                // Report normalLclVN as [ ..preferredBoundVN - CNS]
                 cmpOper    = GT_LT;
-                isUnsigned = true;
+                isUnsigned = false;
                 limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
             }
             else
