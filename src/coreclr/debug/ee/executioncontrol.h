@@ -16,13 +16,6 @@ struct DebuggerControllerPatch;
 
 #ifdef FEATURE_INTERPRETER
 
-// Result of GetBreakpointInfo - combines opcode and step-out flag
-struct BreakpointInfo
-{
-    InterpOpcode originalOpcode;
-    bool isStepOut;
-};
-
 class IExecutionControl
 {
 public:
@@ -30,6 +23,7 @@ public:
 
     virtual bool ApplyPatch(DebuggerControllerPatch* patch) = 0;
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) = 0;
+    virtual void BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx) = 0;
 };
 
 // Interpreter execution control using bytecode patching
@@ -44,8 +38,10 @@ public:
     // Remove a breakpoint patch and restore original instruction
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) override;
 
-    // Get breakpoint info (original opcode and step-out flag)
-    BreakpointInfo GetBreakpointInfo(const void* address) const;
+    // Set bypass on the InterpMethodContextFrame so the interpreter executes
+    // the original opcode instead of re-hitting the breakpoint.
+    virtual void BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx) override;
+
 private:
     InterpreterExecutionControl() = default;
 };

@@ -51,8 +51,8 @@ int32_t InterpreterWalker::ResolveOpcode(const int32_t* ip) const
     _ASSERTE(ip != NULL);
     int32_t opcode = *ip;
 
-    // If this is a breakpoint or single-step patch, get the original opcode from the patch table
-    if (opcode == INTOP_BREAKPOINT || opcode == INTOP_SINGLESTEP)
+    // If this is a breakpoint patch, get the original opcode from the patch table
+    if (opcode == INTOP_BREAKPOINT)
     {
         DebuggerController::ControllerLockHolder lockController;
         DebuggerPatchTable* patchTable = DebuggerController::GetPatchTable();
@@ -61,7 +61,7 @@ int32_t InterpreterWalker::ResolveOpcode(const int32_t* ip) const
             DebuggerControllerPatch* patch = patchTable->GetPatch((CORDB_ADDRESS_TYPE*)ip);
             if (patch != NULL && patch->IsActivated())
             {
-                opcode = patch->opcode;
+                opcode = (int32_t)patch->opcode;
             }
         }
     }

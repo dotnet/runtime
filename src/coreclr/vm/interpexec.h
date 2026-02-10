@@ -36,6 +36,14 @@ struct InterpMethodContextFrame
     const int32_t *ip; // This ip is updated only when execution can leave the frame
     PTR_InterpMethodContextFrame pNext;
 
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+    // Breakpoint bypass state. When the debugger wants the interpreter to skip
+    // a breakpoint and execute the original opcode, it sets these fields.
+    // Per-context (not per-thread) so funceval and SetIP don't require save/restore.
+    const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
+    int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+
 #ifndef DACCESS_COMPILE
     void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
     {
@@ -44,7 +52,38 @@ struct InterpMethodContextFrame
         this->pRetVal = pRetVal;
         this->pStack = pStack;
         this->ip = NULL;
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+        this->m_bypassAddress = NULL;
+        this->m_bypassOpcode = 0;
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
     }
+
+    // Breakpoint bypass accessors
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+    void SetBypass(const int32_t* address, int32_t opcode)
+    {
+        _ASSERTE(m_bypassAddress == NULL);
+        m_bypassAddress = address;
+        m_bypassOpcode = opcode;
+    }
+
+    void ClearBypass()
+    {
+        m_bypassAddress = NULL;
+        m_bypassOpcode = 0;
+    }
+
+    bool HasBypass(const int32_t* address, int32_t* pOpcode) const
+    {
+        if (m_bypassAddress == address)
+        {
+            if (pOpcode != NULL)
+                *pOpcode = m_bypassOpcode;
+            return true;
+        }
+        return false;
+    }
+#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 #endif // DACCESS_COMPILE
 };
 

@@ -440,6 +440,12 @@ struct DebuggerControllerPatch
     TraceDestination        trace;
     MethodDesc*             pMethodDescFilter; // used for IL Primary patches that should only bind to jitted
                                                // code versions for a single generic instantiation
+#ifdef FEATURE_INTERPRETER
+    // Interpreter opcodes can have value 0 (e.g., INTOP_RET), so we need a separate flag
+    // to track activation state since PRDIsEmpty() returns true for opcode 0.
+    // TODO: We should consider using the activated flag for all patches and stop using opcode == 0 as a special case for "not active".
+    bool                    m_interpActivated;
+#endif // FEATURE_INTERPRETER
 private:
     DebuggerPatchKind       kind;
     int                     refCount;
@@ -539,6 +545,15 @@ public:
 
     bool IsActivated()
     {
+#ifdef FEATURE_INTERPRETER
+        // m_interpActivated is set only by InterpreterExecutionControl::ApplyPatch
+        if (m_interpActivated)
+        {
+            _ASSERTE(address != NULL);
+            return TRUE;
+        }
+#endif // FEATURE_INTERPRETER
+
         // Patch is activate if we've stored a non-zero opcode
         // Note: this might be a problem as opcode 0 may be a valid opcode (see issue 366221).
         if( PRDIsEmpty(opcode) ) {
@@ -1654,6 +1669,9 @@ protected:
                       TraceDestination *pTD);
 
     bool TrapStep(ControllerStackInfo *info, bool in);
+#ifdef FEATURE_INTERPRETER
+    bool TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji);
+#endif
 
     // @todo - must remove that fForceTraditional flag. Need a way for a JMC stepper
     // to do a Trad step out.
@@ -1848,6 +1866,73 @@ protected:
 private:
 
 };
+
+
+#ifdef FEATURE_INTERPRETER
+/* ------------------------------------------------------------------------- *
+ * InterpreterStepHelper
+ * ------------------------------------------------------------------------- */
+// InterpreterStepHelper: Implements stepping through interpreter code using
+// control flow prediction and breakpoint patches.
+//
+// The interpreter runtime doesn't support single-stepping, nor do we emulate
+// it in a general-purpose way (cf. FEATURE_EMULATE_SINGLESTEP for ARM).
+// Instead we've implemented alternate solutions for debugger scenarios that
+// traditionally rely upon it:
+//
+//   - For breakpoint skipping the interpreter allows executing an alternate
+//     opcode on a per-thread basis (see BypassPatch in ActivatePatchSkip).
+//   - For stepping we primarily use control flow prediction + breakpoints:
+//     we analyze the current bytecode instruction and place breakpoint patches
+//     at all possible next instruction locations.
+//   - For indirect call instructions (INTOP_CALLVIRT, INTOP_CALLI,
+//     INTOP_CALLDELEGATE) whose target can't be resolved statically we rely on
+//     JMC method-enter backstops rather than predicting the target, avoiding
+//     races with concurrent target updates.
+//
+// Usage:
+//   1. Create helper for current instruction context
+//   2. Call SetupStep() to analyze instruction and set breakpoints
+//   3. Patches are cleaned up automatically via DebuggerController
+//
+class InterpreterStepHelper
+{
+public:
+    // Result of SetupStep operation
+    enum StepSetupResult
+    {
+        SSR_Success,            // Breakpoints placed, step can proceed
+        SSR_NeedStepIn,         // Caller should handle step-in (call target available)
+        SSR_NeedStepOut,        // Caller should invoke TrapStepOut (return/throw)
+        SSR_Failed              // Could not set up step
+    };
+
+    InterpreterStepHelper(DebuggerStepper* pStepper,
+                           ControllerStackInfo* pInfo,
+                           DebuggerJitInfo* pJitInfo);
+
+    // Analyze instruction at current IP and set up breakpoints for stepping.
+    // Returns result indicating how caller should proceed.
+    // For step-in on calls, ppCallTarget is set if target can be determined.
+    StepSetupResult SetupStep(bool stepIn, 
+                               MethodDesc** ppCallTarget,
+                               const BYTE** ppSkipIP);
+
+    // Get the walk type of the current instruction (for logging/debugging)
+    WALK_TYPE GetWalkType() const { return m_walkType; }
+
+private:
+    // Add a breakpoint patch at the given interpreter bytecode address
+    void AddInterpreterPatch(const int32_t* pIP);
+
+    DebuggerStepper*        m_pStepper;
+    ControllerStackInfo*    m_pInfo;
+    DebuggerJitInfo*        m_pJitInfo;
+    PCODE                   m_currentPC;
+    InterpMethod*           m_pInterpMethod;
+    WALK_TYPE               m_walkType;
+};
+#endif // FEATURE_INTERPRETER
 
 
 /* ------------------------------------------------------------------------- *

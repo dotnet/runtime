@@ -736,6 +736,9 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForMethodDef(DebuggerContro
 
     //initialize the patch data structure.
     InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+    patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
     patch->controller = controller;
     patch->key.module = module;
     patch->key.md = md;
@@ -842,6 +845,9 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForAddress(DebuggerControll
 
     // initialize the patch data structure
     InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+    patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
     patch->controller = controller;
 
     if (fd == NULL)
@@ -2011,6 +2017,9 @@ void DebuggerController::DeactivatePatch(DebuggerControllerPatch *patch)
             p->LogInstance();
             fUnapply = false;
             InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+            patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
             break;
         }
     }
@@ -2823,13 +2832,21 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
     if (patch != NULL && patch->IsNativePatch())
     {
 #ifdef FEATURE_INTERPRETER
-        // Interpreter patches don't need DebuggerPatchSkip - the interpreter
-        // uses GetOriginalOpcode() to read the saved opcode from the patch table
-        // and executes it directly without modifying the bytecode stream.
+        // Interpreter patches don't need DebuggerPatchSkip - instead we set
+        // bypass on the interpreter context. When interpreter hits
+        // INTOP_BREAKPOINT, it checks these fields and executes the
+        // original opcode instead of notifying the debugger again.
         EECodeInfo codeInfo((PCODE)PC);
         if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {
-            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - no skip needed\n", PC));
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+
+            CONTEXT *filterCtx = GetManagedStoppedCtx(thread);
+            _ASSERTE(filterCtx != NULL);
+
+            pExecControl->BypassPatch(patch, filterCtx);
+            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - bypass via ExecutionControl with opcode 0x%x\n", PC, patch->opcode));
             return NULL;
         }
 #endif // FEATURE_INTERPRETER
@@ -3541,16 +3558,16 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     _ASSERTE(context != NULL);
 
 #ifdef FEATURE_INTERPRETER
-    // Check if the current IP is in interpreter code
+    // Check if the current IP is in interpreter code.
+    // For interpreter, single-stepping is emulated using breakpoints - 
+    // the stepper places breakpoints at predicted next instructions.
+    // We don't need any special flag here since ApplyTraceFlag is called
+    // as part of enabling stepping, and the stepper will set up breakpoints.
     PCODE ip = GetIP(context);
     EECodeInfo codeInfo(ip);
     if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
     {
-        // For interpreter code, set the interpreter single-step flag.
-        // The actual single-step behavior is handled by INTOP_SINGLESTEP patches
-        // placed at the next instruction by the stepper.
-        thread->MarkInterpreterSingleStep(true);
-        LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag set interpreter single-step flag for interpreted code at IP %p\n", ip));
+        LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag: interpreter code at IP %p - using breakpoint emulation\n", ip));
         return;
     }
 #endif // FEATURE_INTERPRETER
@@ -3571,16 +3588,6 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
 {
     LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag thread:0x%p\n", thread));
 
-#ifdef FEATURE_INTERPRETER
-    // Always clear interpreter single-step flag if it was set.
-    // This is safe even if the thread wasn't in interpreter code.
-    if (thread->IsInterpreterSingleStepEnabled())
-    {
-        thread->MarkInterpreterSingleStep(false);
-        LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag cleared interpreter single-step flag\n"));
-    }
-#endif // FEATURE_INTERPRETER
-
     // Either this is the helper thread, or we're manipulating our own context.
     _ASSERTE(
         ThisIsHelperThreadWorker() ||
@@ -3588,6 +3595,21 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     );
 
     CONTEXT *context = GetManagedStoppedCtx(thread);
+
+#ifdef FEATURE_INTERPRETER
+    // For interpreter code, single-stepping is emulated using breakpoints
+    // which are managed by the stepper, so no cleanup needed here.
+    if (context != NULL)
+    {
+        PCODE ip = GetIP(context);
+        EECodeInfo codeInfo(ip);
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        {
+            LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag: interpreter code at IP %p - no hardware flag to clear\n", ip));
+            return;
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
     // If there's no context available, then the thread shouldn't have the single-step flag
     // enabled and there's nothing for us to do.
@@ -5305,6 +5327,270 @@ bool DebuggerBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
     return false;
 }
 
+#ifdef FEATURE_INTERPRETER
+//* -------------------------------------------------------------------------
+// * InterpreterStepHelper routines
+// * -------------------------------------------------------------------------
+// Implements stepping through interpreter code using control flow prediction
+// and breakpoint patches.
+
+InterpreterStepHelper::InterpreterStepHelper(
+    DebuggerStepper* pStepper,
+    ControllerStackInfo* pInfo,
+    DebuggerJitInfo* pJitInfo)
+    : m_pStepper(pStepper),
+      m_pInfo(pInfo),
+      m_pJitInfo(pJitInfo),
+      m_currentPC(0),
+      m_pInterpMethod(NULL),
+      m_walkType(WALK_UNKNOWN)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    m_currentPC = GetControlPC(&pInfo->m_activeFrame.registers);
+
+    // Get InterpMethod for data items lookup (needed for resolving call targets)
+    MethodDesc* pMD = pInfo->m_activeFrame.md;
+    if (pMD != NULL)
+    {
+        PTR_InterpByteCodeStart pByteCodeStart = pMD->GetInterpreterCode();
+        if (pByteCodeStart != NULL)
+        {
+            m_pInterpMethod = pByteCodeStart->Method;
+        }
+    }
+}
+
+void InterpreterStepHelper::AddInterpreterPatch(const int32_t* pIP)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_pJitInfo != NULL);
+    _ASSERTE(pIP != NULL);
+    _ASSERTE((BYTE*)pIP >= (BYTE*)m_pJitInfo->m_addrOfCode);
+
+    SIZE_T offset = (SIZE_T)((BYTE*)pIP - (BYTE*)m_pJitInfo->m_addrOfCode);
+    _ASSERTE(offset < m_pJitInfo->m_sizeOfCode);
+
+    m_pStepper->AddBindAndActivateNativeManagedPatch(
+        m_pInfo->m_activeFrame.md,
+        m_pJitInfo,
+        offset,
+        m_pInfo->m_activeFrame.fp,
+        NULL);
+
+    LOG((LF_CORDB, LL_INFO10000, "ISH::AIP: Added interpreter patch at %p (offset 0x%x)\n", pIP, offset));
+}
+
+InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
+    bool stepIn,
+    MethodDesc** ppCallTarget,
+    const BYTE** ppSkipIP)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(ppCallTarget != NULL);
+    _ASSERTE(ppSkipIP != NULL);
+    *ppCallTarget = NULL;
+    *ppSkipIP = NULL;
+
+    if (m_pJitInfo == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No JitInfo, cannot set up step\n"));
+        return SSR_Failed;
+    }
+
+    // Initialize the InterpreterWalker at the current IP
+    InterpreterWalker interpWalker;
+    interpWalker.Init((const int32_t*)m_currentPC, m_pInterpMethod);
+
+    m_walkType = interpWalker.GetOpcodeWalkType();
+    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Decoded opcode=0x%x, walkType=%d, stepIn=%d\n",
+         interpWalker.GetOpcode(), m_walkType, stepIn));
+
+    switch (m_walkType)
+    {
+        case WALK_RETURN:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_RETURN - caller should handle TrapStepOut\n"));
+            return SSR_NeedStepOut;
+        }
+
+        case WALK_THROW:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_THROW - caller should handle exception\n"));
+            return SSR_NeedStepOut;
+        }
+
+        case WALK_CALL:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_CALL\n"));
+
+            const int32_t* skipIP = interpWalker.GetSkipIP();
+            *ppSkipIP = (const BYTE*)skipIP;
+
+            if (stepIn)
+            {
+                MethodDesc* pCallTarget = interpWalker.GetCallTarget();
+                if (pCallTarget != NULL)
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Direct call target found: %p\n", pCallTarget));
+                    *ppCallTarget = pCallTarget;
+                    return SSR_NeedStepIn;
+                }
+                else
+                {
+                    // Indirect call - cannot determine target statically
+                    // We can only set up the step-over patch as fallback
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Indirect call, setting step-over patch as fallback\n"));
+                    if (skipIP != NULL)
+                    {
+                        AddInterpreterPatch(skipIP);
+                    }
+                    else
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Indirect call with no skip IP!\n"));
+                        return SSR_Failed;
+                    }
+                    return SSR_NeedStepIn; // Caller should enable JMC backstop
+                }
+            }
+            else
+            {
+                // Step-over: patch at instruction after the call
+                if (skipIP != NULL)
+                {
+                    AddInterpreterPatch(skipIP);
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Step-over, patched at %p\n", skipIP));
+                    return SSR_Success;
+                }
+                else
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for call instruction during step-over!\n"));
+                    return SSR_Failed;
+                }
+            }
+            break;
+        }
+
+        case WALK_BRANCH:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_BRANCH\n"));
+
+            const int32_t* nextIP = interpWalker.GetNextIP();
+            if (nextIP != NULL)
+            {
+                AddInterpreterPatch(nextIP);
+                return SSR_Success;
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No next IP for branch instruction!\n"));
+                return SSR_Failed;
+            }
+            break;
+        }
+
+        case WALK_COND_BRANCH:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_COND_BRANCH\n"));
+
+            // Check if this is a switch instruction
+            if (interpWalker.GetOpcode() == INTOP_SWITCH)
+            {
+                int32_t caseCount = interpWalker.GetSwitchCaseCount();
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: INTOP_SWITCH with %d cases\n", caseCount));
+
+                for (int32_t i = 0; i <= caseCount; i++)
+                {
+                    const int32_t* target = interpWalker.GetSwitchTarget(i);
+                    if (target != NULL)
+                    {
+                        AddInterpreterPatch(target);
+                    }
+                    else
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No target IP for switch case %d!\n", i));
+                        return SSR_Failed;
+                    }
+                }
+                return SSR_Success;
+            }
+            else
+            {
+                // Conditional branch - patch both target and fallthrough
+                const int32_t* nextIP = interpWalker.GetNextIP();
+                const int32_t* skipIP = interpWalker.GetSkipIP();
+
+                if (nextIP != NULL)
+                {
+                    AddInterpreterPatch(nextIP);
+                }
+                else
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No next IP for conditional branch!\n"));
+                    return SSR_Failed;
+                }
+
+                if (skipIP != NULL && skipIP != nextIP)
+                {
+                    AddInterpreterPatch(skipIP);
+                }
+                else if (skipIP == nextIP)
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: skipIP == nextIP, only one patch needed\n"));
+                }
+                else
+                {                
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for conditional branch!\n"));
+                    return SSR_Failed;
+                }
+
+                return SSR_Success;
+            }
+        }
+
+        case WALK_BREAK:
+        case WALK_NEXT:
+        default:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_NEXT/default\n"));
+
+            const int32_t* skipIP = interpWalker.GetSkipIP();
+            if (skipIP != NULL)
+            {
+                AddInterpreterPatch(skipIP);
+                return SSR_Success;
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for next instruction!\n"));
+                return SSR_Failed;
+            }
+            break;
+        }
+    }
+
+    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Failed to set up step\n"));
+    return SSR_Failed;
+}
+#endif // FEATURE_INTERPRETER
+
 //* -------------------------------------------------------------------------
 // * DebuggerStepper routines
 // * -------------------------------------------------------------------------
@@ -6011,6 +6297,71 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     return retAddr == tailCallAwareRetAddr;
 }
 
+#ifdef FEATURE_INTERPRETER
+// bool DebuggerStepper::TrapInterpreterCodeStep()
+// Handles stepping for interpreter code using InterpreterStepHelper.
+// Returns true if patch was successfully placed, false if caller should invoke TrapStepOut.
+bool DebuggerStepper::TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji)
+{
+    PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
+    LOG((LF_CORDB,LL_INFO10000,"DS::TICS: In interpreter code at %p (in=%d)\n", currentPC, in));
+
+    InterpreterStepHelper helper(this, info, ji);
+    MethodDesc* pCallTarget = NULL;
+    const BYTE* pSkipIP = NULL;
+
+    InterpreterStepHelper::StepSetupResult result = helper.SetupStep(in, &pCallTarget, &pSkipIP);
+
+    switch (result)
+    {
+        case InterpreterStepHelper::SSR_Success:
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Patches placed successfully\n"));
+            return true;
+
+        case InterpreterStepHelper::SSR_NeedStepIn:
+            // Handle step-in for calls
+            if (pCallTarget != NULL)
+            {
+                LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-in to %p\n", pCallTarget));
+
+                // Get call target address for TrapStepInHelper
+                PCODE targetAddr = pCallTarget->GetCodeForInterpreterOrJitted();
+                if (targetAddr == (PCODE)NULL)
+                {
+                    targetAddr = pCallTarget->GetMethodEntryPoint();
+                    LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Using entry point (prestub) %p\n", targetAddr));
+                }
+
+                if (targetAddr != (PCODE)NULL && 
+                    TrapStepInHelper(info, (const BYTE*)targetAddr, pSkipIP, false, false))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                // Indirect call - enable JMC backstop
+                LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Indirect call, enabling MethodEnter backstop\n"));
+                EnableJMCBackStop(info->m_activeFrame.md);
+                return true;
+            }
+            break;
+
+        case InterpreterStepHelper::SSR_NeedStepOut:
+            // Return/throw - let caller invoke TrapStepOut
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-out handling needed\n"));
+            return false;
+
+        case InterpreterStepHelper::SSR_Failed:
+        default:
+            _ASSERTE(!"InterpreterStepHelper failed to set up step");
+            break;
+    }
+
+    return false;
+}
+#endif // FEATURE_INTERPRETER
+
 // bool DebuggerStepper::TrapStep()   TrapStep attepts to set a
 // patch at the next IL instruction to be executed.  If we're stepping in &
 // the next IL instruction is a call, then this'll set a breakpoint inside
@@ -6123,224 +6474,14 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
     }
 
 #ifdef FEATURE_INTERPRETER
-    // Check if we're in interpreter code - if so, use interpreter-specific stepping
-    PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
-    EECodeInfo codeInfo(currentPC);
-    if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+    // Check if we're in interpreter code - delegate to TrapInterpreterCodeStep
     {
-        LOG((LF_CORDB,LL_INFO10000,"DS::TS: In interpreter code at %p, using InterpreterWalker (in=%d)\n", currentPC, in));
-
-        // Get InterpMethod for data items lookup (needed for resolving call targets)
-        InterpMethod* pInterpMethod = NULL;
-        MethodDesc* pMD = info->m_activeFrame.md;
-        if (pMD != NULL)
+        PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
+        EECodeInfo codeInfo(currentPC);
+        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {
-            PTR_InterpByteCodeStart pByteCodeStart = pMD->GetInterpreterCode();
-            if (pByteCodeStart != NULL)
-            {
-                pInterpMethod = pByteCodeStart->Method;
-            }
+            return TrapInterpreterCodeStep(info, in, ji);
         }
-
-        // Initialize the InterpreterWalker at the current IP
-        InterpreterWalker interpWalker;
-        interpWalker.Init((const int32_t*)currentPC, pInterpMethod);
-
-        WALK_TYPE wt = interpWalker.GetOpcodeWalkType();
-        LOG((LF_CORDB,LL_INFO10000,"DS::TS: InterpreterWalker decoded opcode=0x%x, walkType=%d\n",
-             interpWalker.GetOpcode(), wt));
-
-        switch (wt)
-        {
-            case WALK_RETURN:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_RETURN - enable single-step, let TrapStepOut handle\n"));
-                // For returns (including tail calls), enable single-step and let the caller
-                // invoke TrapStepOut to set up the return patch
-                EnableSingleStep();
-                return false;
-            }
-
-            case WALK_CALL:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_CALL\n"));
-
-                // For step-in on direct calls, try to step into the target
-                if (in)
-                {
-                    MethodDesc* pCallTarget = interpWalker.GetCallTarget();
-                    if (pCallTarget != NULL)
-                    {
-                        LOG((LF_CORDB,LL_INFO10000,"DS::TS: Direct call to %p, attempting step-in\n", pCallTarget));
-
-                        // Get the call target address for TrapStepInHelper
-                        // First try compiled code, then fall back to entry point (prestub)
-                        // which TrapStepInHelper can trace through
-                        PCODE targetAddr = pCallTarget->GetCodeForInterpreterOrJitted();
-                        if (targetAddr == (PCODE)NULL)
-                        {
-                            // Method not compiled yet - get entry point (prestub) instead
-                            targetAddr = pCallTarget->GetMethodEntryPoint();
-                            LOG((LF_CORDB,LL_INFO10000,"DS::TS: Using entry point (prestub) %p\n", targetAddr));
-                        }
-
-                        _ASSERTE(targetAddr != (PCODE)NULL);
-   
-                        const int32_t* skipIP = interpWalker.GetSkipIP();
-                        if (TrapStepInHelper(info, (const BYTE*)targetAddr, (const BYTE*)skipIP, false, false))
-                        {
-                            return true;
-                        }                        
-                    }
-                    else
-                    {
-                        // Indirect call (CALLVIRT, CALLI, CALLDELEGATE) - cannot determine target statically
-                        // Use JMC backstop to catch method entry
-                        // TODO: Could we do better? Why we can't use StubManagers to trace indirect calls?
-                        LOG((LF_CORDB,LL_INFO10000,"DS::TS: Indirect call, enabling MethodEnter backstop\n"));
-                        EnableJMCBackStop(info->m_activeFrame.md);
-
-                        // Also patch the skip address so step-over still works if step-in fails
-                        const int32_t* skipIP = interpWalker.GetSkipIP();
-                        if (skipIP != NULL)
-                        {
-                            AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                                  ji,
-                                                                  (SIZE_T)((BYTE*)skipIP - (BYTE*)ji->m_addrOfCode),
-                                                                  info->m_activeFrame.fp,
-                                                                  NULL);
-                            LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added fallback step-over patch at %p\n", skipIP));
-                        }
-                        return true;
-                    }
-                }
-                // Step-over: patch at the instruction after the call
-                const int32_t* skipIP = interpWalker.GetSkipIP();
-                if (skipIP != NULL)
-                {
-                    EnableSingleStep();
-                    AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                          ji,
-                                                          (SIZE_T)((BYTE*)skipIP - (BYTE*)ji->m_addrOfCode),
-                                                          info->m_activeFrame.fp,
-                                                          NULL);
-                    LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added step-over patch at %p\n", skipIP));
-                    return true;
-                }
-                break;
-            }
-
-            case WALK_BRANCH:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_BRANCH\n"));
-
-                // Unconditional branch - patch at the branch target
-                const int32_t* nextIP = interpWalker.GetNextIP();
-                if (nextIP != NULL)
-                {
-                    EnableSingleStep();
-                    AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                          ji,
-                                                          (SIZE_T)((BYTE*)nextIP - (BYTE*)ji->m_addrOfCode),
-                                                          info->m_activeFrame.fp,
-                                                          NULL);
-                    LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added branch patch at %p\n", nextIP));
-                    return true;
-                }
-                break;
-            }
-
-            case WALK_COND_BRANCH:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_COND_BRANCH\n"));
-
-                // Check if this is a switch instruction
-                if (interpWalker.GetOpcode() == INTOP_SWITCH)
-                {
-                    // Switch instruction - patch all case targets plus fallthrough
-                    int32_t caseCount = interpWalker.GetSwitchCaseCount();
-                    LOG((LF_CORDB,LL_INFO10000,"DS::TS: INTOP_SWITCH with %d cases\n", caseCount));
-
-                    EnableSingleStep();
-
-                    for (int32_t i = 0; i <= caseCount; i++)
-                    {
-                        const int32_t* target = interpWalker.GetSwitchTarget(i);
-                        if (target != NULL)
-                        {
-                            AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                                  ji,
-                                                                  (SIZE_T)((BYTE*)target - (BYTE*)ji->m_addrOfCode),
-                                                                  info->m_activeFrame.fp,
-                                                                  NULL);
-                            LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added switch target patch at %p (case %d)\n", target, i));
-                        }
-                    }
-                    return true;
-                }
-                else
-                {
-                    // Conditional branch - patch both branch target and fallthrough
-                    const int32_t* nextIP = interpWalker.GetNextIP();    // branch target
-                    const int32_t* skipIP = interpWalker.GetSkipIP();    // fallthrough
-
-                    EnableSingleStep();
-
-                    if (nextIP != NULL)
-                    {
-                        AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                              ji,
-                                                              (SIZE_T)((BYTE*)nextIP - (BYTE*)ji->m_addrOfCode),
-                                                              info->m_activeFrame.fp,
-                                                              NULL);
-                        LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added cond branch target patch at %p\n", nextIP));
-                    }
-
-                    if (skipIP != NULL && skipIP != nextIP)
-                    {
-                        AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                              ji,
-                                                              (SIZE_T)((BYTE*)skipIP - (BYTE*)ji->m_addrOfCode),
-                                                              info->m_activeFrame.fp,
-                                                              NULL);
-                        LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added cond branch fallthrough patch at %p\n", skipIP));
-                    }
-                    return true;
-                }
-            }
-
-            case WALK_THROW:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_THROW - enable single-step\n"));
-                // For throw, enable single-step and let exception handling take over
-                EnableSingleStep();
-                return false;
-            }
-
-            case WALK_BREAK:
-            case WALK_NEXT:
-            default:
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TS: WALK_NEXT/default\n"));
-
-                // Normal sequential execution - patch at next instruction
-                const int32_t* skipIP = interpWalker.GetSkipIP();
-                if (skipIP != NULL)
-                {
-                    EnableSingleStep();
-                    AddBindAndActivateNativeManagedPatch(info->m_activeFrame.md,
-                                                          ji,
-                                                          (SIZE_T)((BYTE*)skipIP - (BYTE*)ji->m_addrOfCode),
-                                                          info->m_activeFrame.fp,
-                                                          NULL);
-                    LOG((LF_CORDB,LL_INFO10000,"DS::TS: Added next instruction patch at %p\n", skipIP));
-                    return true;
-                }
-                break;
-            }
-        }
-
-        _ASSERTE(!"InterpreterWalker could not place patch, aborting!");
     }
 #endif // FEATURE_INTERPRETER
 

@@ -491,7 +491,7 @@ static void InterpHalt()
 #endif // DEBUG
 
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode, bool isStepOut)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode)
 {
     Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
@@ -511,41 +511,18 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         SetIP(&ctx, (DWORD64)ip);
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
-        LOG((LF_CORDB, LL_INFO10000, "InterpBreakpoint: Thread %p, Ctx %p, IP %p, SP %p, FP %p, isStepOut %d\n",
+        LOG((LF_CORDB, LL_INFO10000, "InterpBreakpoint: Thread %p, Ctx %p, IP %p, SP %p, FP %p\n",
             pThread,
             &ctx,
             (void*)GetIP(&ctx),
             (void*)GetSP(&ctx),
-            (void*)GetFP(&ctx),
-            isStepOut));
+            (void*)GetFP(&ctx)));
 
-        // Check if this is a step-out breakpoint (from Debugger.Break() via TrapStepOut).
-        // Step-out breakpoints need FaultingExceptionFrame to trigger AdjustIPAfterException,
-        // which adjusts the IP backward to show the correct source line.
-        // IDE breakpoints don't need this adjustment since the IP already points to the correct location.
-        if (isStepOut)
-        {
-            // Step-out breakpoint: use FaultingExceptionFrame to trigger AdjustIPAfterException
-            FaultingExceptionFrame fef;
-            fef.InitAndLink(&ctx);
-
-            g_pDebugInterface->FirstChanceNativeException(
-                &exceptionRecord,
-                &ctx,
-                exceptionCode,
-                pThread);
-
-            fef.Pop();
-        }
-        else
-        {
-            // IDE breakpoint: don't use FaultingExceptionFrame, IP is already correct
-            g_pDebugInterface->FirstChanceNativeException(
-                &exceptionRecord,
-                &ctx,
-                exceptionCode,
-                pThread);
-        }
+        g_pDebugInterface->FirstChanceNativeException(
+            &exceptionRecord,
+            &ctx,
+            exceptionCode,
+            pThread);
     }
 }
 #endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
@@ -1019,10 +996,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
     uint32_t opcode;
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
-    InterpreterExecutionControl *execControl = InterpreterExecutionControl::GetInstance();
-    BreakpointInfo bpInfo;
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
 
     SAVE_THE_LOWEST_SP;
 
@@ -1054,46 +1027,23 @@ SWITCH_OPCODE:
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
                 case INTOP_BREAKPOINT:
                 {
-                    Thread* pThread = GetThread();
-                    bpInfo = execControl->GetBreakpointInfo(ip);
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT);
 
-                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p, original opcode %u, isStepOut=%d\n", ip, bpInfo.originalOpcode, bpInfo.isStepOut));
-
-                    if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
+                    int32_t bypassOpcode = 0;
+                    
+                    // After debugger callback, check if bypass was set on this frame
+                    if (pFrame->HasBypass(ip, &bypassOpcode))
                     {
-                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: We hit a breakpoint while single-stepping for thread %d\n", pThread->GetThreadId()));
-                        bpInfo.isStepOut = false;
-                    }
-
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT, bpInfo.isStepOut);
-                    if (!bpInfo.isStepOut)
-                    {
-                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Resuming execution of original opcode %u at IP %p\n", bpInfo.originalOpcode, ip));
-                        opcode = bpInfo.originalOpcode;
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Post-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
+                        pFrame->ClearBypass();
+                        opcode = bypassOpcode;
                         goto SWITCH_OPCODE;
                     }
-                    else 
-                    {
-                        break;
-                    }
-                }
-                case INTOP_SINGLESTEP:
-                {
-                    // Single-step uses thread flag to determine if this thread should stop.
-                    // The patch stores original opcode, but no thread ID - we check the flag instead.
-                    Thread* pThread = GetThread();
-                    bpInfo = execControl->GetBreakpointInfo(ip);
-                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit single-step at IP %p, original opcode %u\n", ip, bpInfo.originalOpcode));
-  
-                    if (pThread != NULL && pThread->IsInterpreterSingleStepEnabled())
-                    {
-                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Single-step triggered for thread %d at IP %p\n", pThread->GetThreadId(), ip));
-                        InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP, false /* not step-out */);
-                    }
-                    
-                    // Execute the original opcode (for all threads)
-                    opcode = bpInfo.originalOpcode;
-                    goto SWITCH_OPCODE;
+
+                    // No bypass
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
+                    break;
                 }
 #endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
                 case INTOP_NOP:

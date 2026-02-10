@@ -1048,6 +1048,7 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
                     uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
                     if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != (uint32_t)ins->ilOffset))
                     {
+                        assert(m_ILToNativeMapSize < m_ILCodeSize);
                         m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ins->ilOffset;
                         m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
                         m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
