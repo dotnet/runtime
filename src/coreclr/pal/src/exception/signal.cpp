@@ -433,7 +433,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             // Shutdown and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-            PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+            PROCCreateCrashReportAndDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
@@ -462,7 +462,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
+    PROCCreateCrashReportAndDumpIfEnabled(code, siginfo, context, true);
 }
 
 /*++
@@ -851,7 +851,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code, siginfo, context, false);
+            PROCCreateCrashReportAndDumpIfEnabled(code, siginfo, context, false);
         }
     }
 
