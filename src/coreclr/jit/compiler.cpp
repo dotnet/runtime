@@ -5705,7 +5705,8 @@ void Compiler::generatePatchpointInfo()
         JITDUMP("--OSR-- Tier0 callee saves: ");
         JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
         JITDUMP("\n");
-        JITDUMP("--OSR-- Tier0 callee save SP offset: %d, SP delta: %d\n", patchpointInfo->CalleeSaveSpOffset(), patchpointInfo->CalleeSaveSpDelta());
+        JITDUMP("--OSR-- Tier0 callee save SP offset: %d, SP delta: %d\n", patchpointInfo->CalleeSaveSpOffset(),
+                patchpointInfo->CalleeSaveSpDelta());
         JITDUMP("--OSR-- Tier0 frame type: %d\n", patchpointInfo->FrameType());
     }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

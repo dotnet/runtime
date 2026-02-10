@@ -7008,14 +7008,15 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     // For OSR, we must also restore Tier0's callee saves and adjust the SP to remove the Tier0 frame.
     if (m_compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo       = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize       = patchpointInfo->TotalFrameSize();
-        const int             fpLrSaveOffset       = patchpointInfo->FpLrSaveOffset();
-        const int             calleeSaveSpOffset   = patchpointInfo->CalleeSaveSpOffset();
-        regMaskTP             tier0CalleeSaves     = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+        PatchpointInfo* const patchpointInfo     = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize     = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset     = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset = patchpointInfo->CalleeSaveSpOffset();
+        regMaskTP             tier0CalleeSaves   = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
 
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d, callee saves at offset %d\n",
-                tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset);
+        JITDUMP(
+            "Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d, callee saves at offset %d\n",
+            tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset);
         JITDUMP("    Tier0 callee saves: ");
         JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
         JITDUMP("\n");

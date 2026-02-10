@@ -254,16 +254,17 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     //
     if (m_compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo       = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize       = patchpointInfo->TotalFrameSize();
-        const int             fpLrSaveOffset       = patchpointInfo->FpLrSaveOffset();
-        const int             calleeSaveSpOffset   = patchpointInfo->CalleeSaveSpOffset();
-        const int             calleeSaveSpDelta    = patchpointInfo->CalleeSaveSpDelta();
-        const int             tier0FrameType       = patchpointInfo->FrameType();
-        regMaskTP             tier0CalleeSaves     = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+        PatchpointInfo* const patchpointInfo     = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize     = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset     = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset = patchpointInfo->CalleeSaveSpOffset();
+        const int             calleeSaveSpDelta  = patchpointInfo->CalleeSaveSpDelta();
+        const int             tier0FrameType     = patchpointInfo->FrameType();
+        regMaskTP             tier0CalleeSaves   = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
 
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d, callee saves at offset %d (delta %d), frame type %d\n",
-                tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset, calleeSaveSpDelta, tier0FrameType);
+        JITDUMP(
+            "Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d, callee saves at offset %d (delta %d), frame type %d\n",
+            tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset, calleeSaveSpDelta, tier0FrameType);
         JITDUMP("    Tier0 callee saves: ");
         JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
         JITDUMP("\n");
@@ -297,8 +298,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             {
                 // Frame type 3/4/5: compute offset from current SP to callee-saves
                 osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
-                JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n",
-                        tier0FrameType, tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
+                JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n", tier0FrameType,
+                        tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
             }
             else
             {
