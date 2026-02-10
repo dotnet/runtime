@@ -567,25 +567,25 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMADDR:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_MEMORY_ADDR_SLEB);
+            dst += emitOutputConstant(dst, id, true, CorInfoReloc::WASM_MEMORY_ADDR_SLEB);
             break;
         }
         case IF_FUNCPTR:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_TABLE_INDEX_SLEB);
+            dst += emitOutputConstant(dst, id, true, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
         case IF_CALL:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstant(dst, id, false, CorInfoReloc::R_WASM_FUNCTION_INDEX_LEB);
+            dst += emitOutputConstant(dst, id, false, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
             break;
         }
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputConstant(dst, id, false, CorInfoReloc::R_WASM_TYPE_INDEX_LEB);
+            dst += emitOutputConstant(dst, id, false, CorInfoReloc::WASM_TYPE_INDEX_LEB);
             dst += emitOutputULEB128(dst, 0);
             break;
         }
