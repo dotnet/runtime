@@ -104,20 +104,10 @@ namespace ILCompiler
         {
             get
             {
-#if FEATURE_NO_DYNAMIC_CODEGEN
-                return false;
-#else
-                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
-                {
-                    return false;
-                }
-
-                if (Target.Architecture is TargetArchitecture.Wasm32)
-                {
-                    return false;
-                }
-
+#if FEATURE_DYNAMIC_CODE_COMPILED
                 return true;
+#else
+                return false;
 #endif
             }
         }
