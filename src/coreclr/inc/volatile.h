@@ -454,45 +454,6 @@ public:
     // expects a normal pointer.
     //
     inline constexpr T volatile * operator&() {return this->GetPointer();}
-    inline constexpr T volatile const * operator&() const {return this->GetPointer();}
-
-    //
-    // Comparison operators
-    //
-    template<typename TOther>
-    inline bool operator==(const TOther& other) const {return this->Load() == other;}
-
-    template<typename TOther>
-    inline bool operator!=(const TOther& other) const {return this->Load() != other;}
-
-    //
-    // Miscellaneous operators.  Add more as necessary.
-    //
-	inline Volatile<T>& operator+=(T val) {Store(this->Load() + val); return *this;}
-	inline Volatile<T>& operator-=(T val) {Store(this->Load() - val); return *this;}
-    inline Volatile<T>& operator|=(T val) {Store(this->Load() | val); return *this;}
-    inline Volatile<T>& operator&=(T val) {Store(this->Load() & val); return *this;}
-    inline bool operator!() const { STATIC_CONTRACT_SUPPORTS_DAC; return !this->Load();}
-
-    //
-    // Prefix increment
-    //
-    inline Volatile& operator++() {this->Store(this->Load()+1); return *this;}
-
-    //
-    // Postfix increment
-    //
-    inline T operator++(int) {T val = this->Load(); this->Store(val+1); return val;}
-
-    //
-    // Prefix decrement
-    //
-    inline Volatile& operator--() {this->Store(this->Load()-1); return *this;}
-
-    //
-    // Postfix decrement
-    //
-    inline T operator--(int) {T val = this->Load(); this->Store(val-1); return val;}
 };
 
 //
