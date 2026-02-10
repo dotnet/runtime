@@ -4885,9 +4885,13 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         m_compiler->unwindAllocStack(tier0FrameSize);
 
-        // Record where FP/LR were saved by Tier0.
+        // Record where FP/LR (or FP/RA) were saved by Tier0.
         // This is needed so the unwinder/GC can find them during stack walking.
+#if defined(TARGET_ARM64)
         m_compiler->unwindSaveRegPair(REG_FP, REG_LR, fpLrSaveOffset);
+#else
+        m_compiler->unwindSaveRegPair(REG_FP, REG_RA, fpLrSaveOffset);
+#endif
     }
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
