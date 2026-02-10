@@ -137,7 +137,7 @@ namespace System.Formats.Tar
                 }
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _header._linkName = value;
-                _header.SyncStringExtendedAttribute("linkpath", value);
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaLinkName, value);
             }
         }
 
