@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include "minipal/utils.h"
 
 #include "jitshared.h"
 #include "arenaallocator.h"
@@ -43,6 +44,7 @@ public:
     {
     }
 #else
+    FORCEINLINE_ATTRIBUTE
     CompAllocatorT(Arena* arena, MemKind kind)
         : m_arena(arena)
     {
@@ -53,6 +55,7 @@ public:
     // Allocate a block of memory suitable to store `count` objects of type `T`.
     // Zero-length allocations are not allowed.
     template <typename T>
+    FORCEINLINE_ATTRIBUTE
     T* allocate(size_t count)
     {
         // Ensure that count * sizeof(T) does not overflow.
@@ -96,7 +99,7 @@ public:
 // Global operator new overloads that work with CompAllocatorT
 
 template <typename TMemKindTraits>
-inline void* operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
+FORCEINLINE_ATTRIBUTE inline void* operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
     return alloc.template allocate<char>(n);
 }

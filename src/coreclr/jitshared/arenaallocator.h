@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include "minipal/utils.h"
 
 #include "jitshared.h"
 #include "memstats.h"
@@ -138,7 +139,7 @@ public:
 
     void destroy();
 
-    void* allocateMemory(size_t sz);
+    FORCEINLINE_ATTRIBUTE inline void* allocateMemory(size_t sz);
 
     size_t getTotalBytesAllocated();
     size_t getTotalBytesUsed();
@@ -182,7 +183,7 @@ public:
 //    use-before-init problems.
 //
 template <typename TMemKindTraits>
-inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
+FORCEINLINE_ATTRIBUTE inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
 {
     assert(size != 0);
 

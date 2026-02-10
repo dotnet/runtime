@@ -4733,7 +4733,7 @@ inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
  *  not zero-initialized and can contain data from a prior allocation lifetime.
  */
 
-inline void* operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
+FORCEINLINE_ATTRIBUTE inline void* operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
 }
