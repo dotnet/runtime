@@ -190,6 +190,11 @@ Run with `-ShowLogs` for detailed failure info.
    - Failure is **not** in Build Analysis → Investigate further before assuming transient
    - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against the target branch first
    - Test timeout but tests passed → Executor issue, not test failure
+5. **Check for mismatch with user's question** — The script only reports builds for the current head SHA. If the user asks about a job, error, or cancellation that doesn't appear in the results, **ask** if they're referring to a prior build. Common triggers:
+   - User mentions a canceled job but `canceledJobNames` is empty
+   - User says "CI is failing" but the latest build is green
+   - User references a specific job name not in the current results
+   Offer to re-run with `-BuildId` if the user can provide the earlier build ID from AzDO.
 
 ### Step 3: Verify before claiming
 
