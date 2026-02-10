@@ -1397,7 +1397,8 @@ $summary = [ordered]@{
     repository      = $Repository
     prState         = $pr.state
     currentState    = $currentState
-    isCodeflowPR    = ($isMaestroPR -or $isBackflow -or $isForwardFlow)
+    isCodeflowPR    = ($isBackflow -or $isForwardFlow)
+    isMaestroAuthored = $isMaestroPR
     flowDirection   = if ($isForwardFlow) { "forward" } elseif ($isBackflow) { "backflow" } else { "unknown" }
     isEmptyDiff     = $isEmptyDiff
     changedFiles    = [int]$pr.changedFiles
@@ -1409,13 +1410,13 @@ $summary = [ordered]@{
 }
 
 # Freshness
-$hasFresnessData = ($null -ne $vmrCommit -and $null -ne $sourceHeadSha)
+$hasFreshnessData = ($null -ne $vmrCommit -and $null -ne $sourceHeadSha)
 $summary.freshness = [ordered]@{
     sourceHeadSha   = if ($sourceHeadSha) { Get-ShortSha $sourceHeadSha } else { $null }
     compareStatus   = $compareStatus
     aheadBy         = $aheadBy
     behindBy        = $behindBy
-    isUpToDate      = if ($hasFresnessData) { ($vmrCommit -eq $sourceHeadSha -or $compareStatus -eq 'identical') } else { $null }
+    isUpToDate      = if ($hasFreshnessData) { ($vmrCommit -eq $sourceHeadSha -or $compareStatus -eq 'identical') } else { $null }
 }
 
 # Force pushes

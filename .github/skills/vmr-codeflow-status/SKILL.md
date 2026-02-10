@@ -75,7 +75,7 @@ Use this skill when:
 > **Design principle**: Assess current state from primary signals first, then use Maestro comments as historical context — not the other way around. Comments tell you the history, not the present.
 
 1. **PR Overview** — Basic PR info, flow direction (backflow vs forward flow)
-2. **Current State** — Independent assessment from primary signals: empty diff, force pushes, merge status. Produces a one-line verdict (NO-OP / IN PROGRESS / STALE / ACTIVE) before reading any comments
+2. **Current State** — Independent assessment from primary signals: empty diff, force pushes, merge status. Produces a one-line verdict (NO-OP / IN PROGRESS / STALE / ACTIVE / MERGED / CLOSED) before reading any comments
 3. **Codeflow Metadata** — Extracts VMR commit, subscription ID, build info from PR body
 4. **Snapshot Validation** — Cross-references PR body commit against Version.Details.xml and branch commits to detect stale metadata
 5. **Source Freshness** — Compares PR's VMR snapshot against current VMR branch HEAD; shows pending forward flow PRs
