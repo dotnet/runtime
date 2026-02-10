@@ -984,7 +984,7 @@ namespace ILCompiler
             DefType continuation = TypeSystemContext.ContinuationType;
             var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
             // AsyncHelpers should already be referenced in the module for the call to Await()
-            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull);
             TypeDesc[] requiredTypes = [continuation];
             FieldDesc[] requiredFields =
             [
