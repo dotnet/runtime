@@ -3061,9 +3061,9 @@ namespace System.Runtime.Intrinsics
 
             // Implementation Notes
             // --------------------
-            // For abs(x) <= 0.5 use arcsin(x) = x + x^3*R(x^2)
+            // For abs(x) < 0.5 use arcsin(x) = x + x^3*R(x^2)
             // where R(x^2) is a rational minimax approximation to (arcsin(x) - x)/x^3.
-            // For abs(x) > 0.5 exploit the identity:
+            // For abs(x) >= 0.5 exploit the identity:
             // arcsin(x) = pi/2 - 2*arcsin(sqrt(1-x)/2)
             // together with the above rational approximation.
 
@@ -3089,14 +3089,14 @@ namespace System.Runtime.Intrinsics
             TVectorDouble sign = x & TVectorDouble.Create(-0.0);
             TVectorDouble ax = TVectorDouble.Abs(x);
 
-            // Check for transform region (|x| > 0.5)
-            TVectorDouble transformMask = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(0.5));
+            // Check for transform region (|x| >= 0.5)
+            TVectorDouble transformMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
 
-            // For |x| > 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r), ax = s
+            // For |x| >= 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r), ax = s
             TVectorDouble r_transform = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
             TVectorDouble s = TVectorDouble.Sqrt(r_transform);
 
-            // For |x| <= 0.5: r = ax * ax
+            // For |x| < 0.5: r = ax * ax
             TVectorDouble r_normal = ax * ax;
 
             // Select r and ax based on transform
@@ -3222,14 +3222,14 @@ namespace System.Runtime.Intrinsics
             // Return NaN for |x| > 1
             TVectorDouble outOfRange = TVectorDouble.GreaterThan(ax, TVectorDouble.One);
 
-            // Check if ax > 0.5
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
+            // Check if ax >= 0.5
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(HALF));
 
-            // For ax > 0.5: G = 0.5*(1-Y), Y = -2*sqrt(G)
+            // For ax >= 0.5: G = 0.5*(1-Y), Y = -2*sqrt(G)
             TVectorDouble g_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g_hi);
 
-            // For ax <= 0.5: G = Y*Y
+            // For ax < 0.5: G = Y*Y
             TVectorDouble g_lo = ax * ax;
 
             TVectorDouble g = TVectorDouble.ConditionalSelect(gtHalf, g_hi, g_lo);
@@ -3769,13 +3769,13 @@ namespace System.Runtime.Intrinsics
             TVectorDouble ax = TVectorDouble.Abs(x);
 
             // Check which region we're in
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(HALF));
 
-            // For |x| > 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z)
+            // For |x| >= 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z)
             TVectorDouble z_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
 
-            // For |x| <= 0.5: z = ax*ax (use n=1 reconstruction)
+            // For |x| < 0.5: z = ax*ax (use n=1 reconstruction)
             TVectorDouble z_lo = ax * ax;
 
             // Select z and ax based on region
@@ -3895,13 +3895,13 @@ namespace System.Runtime.Intrinsics
             TVectorDouble ax = TVectorDouble.Abs(dx);
 
             // Check which region we're in
-            TVectorDouble gtHalf = TVectorDouble.GreaterThan(ax, TVectorDouble.Create(HALF));
+            TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(HALF));
 
-            // For |x| > 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z), n=0
+            // For |x| >= 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z), n=0
             TVectorDouble z_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
             TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
 
-            // For |x| <= 0.5: z = ax*ax, n=1
+            // For |x| < 0.5: z = ax*ax, n=1
             TVectorDouble z_lo = ax * ax;
 
             TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
