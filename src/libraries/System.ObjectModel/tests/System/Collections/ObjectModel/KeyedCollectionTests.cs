@@ -231,6 +231,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { StringComparer.OrdinalIgnoreCase, 2, "FIRST" };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(InsertItem_AddSameKey_TestData))]
         public void InsertItem_AddSameKey_ThrowsArgumentException(IEqualityComparer<string> comparer, int dictionaryCreationThreshold, string key)
@@ -251,6 +252,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { StringComparer.OrdinalIgnoreCase, "NoSuchKey", false };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(Contains_TestData))]
         public void Contains_Invoke_ReturnsExpected(IEqualityComparer<string> comparer, string key, bool expected)
@@ -315,6 +317,7 @@ namespace System.Collections.ObjectModel.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", () => collection.Contains(null));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void Item_GetWithComparer_Success()
         {
@@ -334,6 +337,7 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Equal("first", collection["FIRST_KEY"]);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void Item_GetNoSuchItem_ThrowsKeyNotFoundException()
         {
@@ -504,6 +508,7 @@ namespace System.Collections.ObjectModel.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", () => collection.Remove(null));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void RemoveItem_InvokeWithoutDictionary_Success()
         {
@@ -671,6 +676,7 @@ namespace System.Collections.ObjectModel.Tests
             Assert.Empty(collection.Dictionary);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void ClearItems_WithoutDictionary_Success()
         {
@@ -722,6 +728,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { StringComparer.OrdinalIgnoreCase, 3, "first", "first_key", null };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ChangeItemKey_TestData))]
         public void ChangeItemKey_Invoke_Success(IEqualityComparer<string> comparer, int dictionaryCreationThreshold, string item, string newKey, Dictionary<string, string> expectedDictionary)
@@ -901,6 +908,7 @@ namespace System.Collections.ObjectModel.Tests
             yield return new object[] { StringComparer.OrdinalIgnoreCase, 4, "other", null };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(SetItem_TestData))]
         public void SetItem_SameValue_Success(IEqualityComparer<string> comparer, int dictionaryCreationThreshold, string value, Dictionary<string, string> expectedDictionary)

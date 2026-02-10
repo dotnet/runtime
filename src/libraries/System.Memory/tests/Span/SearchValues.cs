@@ -214,6 +214,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(Values_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // SLOW
         public static void SearchValues_Contains(string needle, byte[] byteNeedle)
         {
             Test(needle, SearchValues.Create(needle));
