@@ -183,7 +183,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: started = (continuation == null)
+    // First argument: resumed = (continuation != null)
     GenTree* resumed;
     if (compIsForInlining())
     {
