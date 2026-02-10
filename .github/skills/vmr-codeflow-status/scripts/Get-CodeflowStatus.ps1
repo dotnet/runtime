@@ -703,8 +703,6 @@ $currentState = if ($isMerged) {
     "MERGED"
 } elseif ($isClosed) {
     "CLOSED"
-} elseif ($isEmptyDiff -and $forcePushEvents.Count -gt 0) {
-    "NO-OP"
 } elseif ($isEmptyDiff) {
     "NO-OP"
 } elseif ($forcePushEvents.Count -gt 0 -and $lastForcePushTime -and ([DateTime]::UtcNow - $lastForcePushTime).TotalHours -lt 24) {
@@ -1111,8 +1109,8 @@ if ($lastForcePushTime) {
         }
     }
     if ($stalenessWarnings.Count -gt 0 -and $lastStalenessComment) {
-        $lastWarnTime2 = [DateTimeOffset]::Parse($lastStalenessComment.createdAt).UtcDateTime
-        if ($lastForcePushTime -gt $lastWarnTime2) {
+        $lastStalenessTime = [DateTimeOffset]::Parse($lastStalenessComment.createdAt).UtcDateTime
+        if ($lastForcePushTime -gt $lastStalenessTime) {
             $stalenessMayBeResolved = $true
         }
     }
