@@ -320,6 +320,9 @@ namespace System
         private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint NormalizeSpaceReplacingChar(uint c) => IsSpaceReplacingChar(c) ? '\u0020' : c;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe TChar* MatchNegativeSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -354,7 +357,7 @@ namespace System
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(((cp == '\u0020') && IsSpaceReplacingChar(val)) || ((val == '\u0020') && IsSpaceReplacingChar(cp))))
+                        if (NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                         {
                             break;
                         }
