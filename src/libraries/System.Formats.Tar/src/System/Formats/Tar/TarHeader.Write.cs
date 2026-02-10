@@ -938,10 +938,8 @@ namespace System.Formats.Tar
             }
         }
 
-
         // Some fields that have a reserved spot in the header, may not fit in such field anymore, but they can fit in the
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
-
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
             CollectExtendedAttributesFromStandardFieldsIfNeeded(_ea ??= new Dictionary<string, string>());

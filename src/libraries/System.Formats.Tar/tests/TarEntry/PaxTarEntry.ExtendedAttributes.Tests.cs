@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -18,19 +17,10 @@ namespace System.Formats.Tar.Tests
         {
             yield return new object[] { "gname", "OldGroup", new string('a', 33), TarEntryType.RegularFile, Accessors(e => e.GroupName, (e, v) => e.GroupName = v) };
             yield return new object[] { "uname", "OldUser", new string('a', 33), TarEntryType.RegularFile, Accessors(e => e.UserName, (e, v) => e.UserName = v) };
-
-            // yield return new object[] { "linkpath", "./path", "./newpath", TarEntryType.SymbolicLink, Accessors(e => e.LinkName, (e, v) => e.LinkName = v) };
-
             yield return new object[] { "uid", 10, 3000000, TarEntryType.RegularFile, Accessors(e => e.Uid, (e, v) => e.Uid = v) };
             yield return new object[] { "gid", 10, 3000000, TarEntryType.RegularFile, Accessors(e => e.Gid, (e, v) => e.Gid = v) };
-
-
             yield return new object[] { "devmajor", 10, 3000000, TarEntryType.BlockDevice, Accessors(e => e.DeviceMajor, (e, v) => e.DeviceMajor = v) };
             yield return new object[] { "devminor", 10, 3000000, TarEntryType.BlockDevice, Accessors(e => e.DeviceMinor, (e, v) => e.DeviceMinor = v) };
-
-            // yield return new object[] { "mode", 510, 511, TarEntryType.RegularFile, Accessors(e => e.Mode, (e, v) => e.Mode = v) };
-
-            // yield return new object[] { "mtime", DateTimeOffset.FromUnixTimeSeconds(1234567890), DateTimeOffset.FromUnixTimeSeconds(9876543210), TarEntryType.RegularFile, Accessors(e => e.ModificationTime, (e, v) => e.ModificationTime = v) };
         }
 
         [Theory]
@@ -66,7 +56,6 @@ namespace System.Formats.Tar.Tests
             yield return new object[] { "linkpath", "./newpath", "./newpath", TarEntryType.SymbolicLink, Accessors(e => e.LinkName, (e, v) => e.LinkName = v) };
             yield return new object[] { "mtime", DateTimeOffset.FromUnixTimeSeconds(9876543210), "9876543210", TarEntryType.RegularFile, Accessors(e => e.ModificationTime, (e, v) => e.ModificationTime = v) };
         }
-
 
         [Theory]
         [MemberData(nameof(PropertySetData))]
