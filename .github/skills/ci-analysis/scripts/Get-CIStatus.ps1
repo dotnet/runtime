@@ -2181,7 +2181,9 @@ if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
 }
 
 # Compute recommendation hint
-if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
+if (-not $lastBuildJobSummary -and $buildIds.Count -gt 0) {
+    $summary.recommendationHint = "REVIEW_REQUIRED"
+} elseif ($knownIssuesFromBuildAnalysis.Count -gt 0) {
     $summary.recommendationHint = "KNOWN_ISSUES_DETECTED"
 } elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
     $summary.recommendationHint = "BUILD_SUCCESSFUL"

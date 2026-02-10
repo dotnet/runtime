@@ -48,9 +48,9 @@ Failing job name: {JOB_NAME} (e.g., "TestBuild linux x64")
 Failing work item: {WORK_ITEM} (e.g., "dotnet.Tests.dll.19")
 
 Steps:
-1. Use GitHub MCP to find recently merged PRs to main:
-   github-mcp-server-search_pull_requests query:"is:merged base:main" owner:dotnet repo:{REPO}
-2. Pick the most recent merged PR
+1. Use GitHub MCP to find recently merged PRs targeting the same base branch as this PR:
+   github-mcp-server-search_pull_requests query:"is:merged base:{TARGET_BRANCH}" owner:dotnet repo:{REPO}
+2. Set {TARGET_BRANCH} to the PR's base branch (e.g., main, release/9.0) and pick the most recent merged PR
 3. Run the CI script to check its build status:
    ./scripts/Get-CIStatus.ps1 -PRNumber {MERGED_PR} -Repository "dotnet/{REPO}"
 4. Find the build that passed with the same job name

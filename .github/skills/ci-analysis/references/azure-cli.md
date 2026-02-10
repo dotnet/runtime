@@ -43,8 +43,8 @@ az pipelines list --name "dotnet-unified-build" --org $org -p $project --query "
 # Get pipeline definition details (shows YAML path, triggers, etc.)
 az pipelines show --id 1330 --org $org -p $project --query "{id:id, name:name, yamlPath:process.yamlFilename, repo:repository.name}" -o table
 
-# List recent builds for a pipeline (with filtering)
-az pipelines runs list --pipeline-ids 1330 --branch "refs/heads/main" --top 5 --org $org -p $project --query "[].{id:id, result:result, finish:finishTime}" -o table
+# List recent builds for a pipeline (replace {TARGET_BRANCH} with the PR's base branch, e.g., main or release/9.0)
+az pipelines runs list --pipeline-ids 1330 --branch "refs/heads/{TARGET_BRANCH}" --top 5 --org $org -p $project --query "[].{id:id, result:result, finish:finishTime}" -o table
 
 # Get a specific build's details
 az pipelines runs show --id $buildId --org $org -p $project --query "{id:id, result:result, sourceBranch:sourceBranch}" -o table
