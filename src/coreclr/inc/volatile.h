@@ -336,12 +336,6 @@ void VolatileLoadBarrier()
 // cast the result to a float.  In general, calling Load or Store explicitly will work around
 // any problems that can't be solved by operator overloading.
 //
-// @TODO: it's not clear that we actually *want* any operator overloading here.  It's in here primarily
-// to ease the task of converting all of the old uses of the volatile keyword, but in the long
-// run it's probably better if users of this class are forced to call Load() and Store() explicitly.
-// This would make it much more clear where the memory barriers are, and which operations are actually
-// being performed, but it will have to wait for another cleanup effort.
-//
 template <typename T>
 class Volatile
 {
