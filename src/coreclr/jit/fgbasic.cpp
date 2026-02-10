@@ -3455,7 +3455,7 @@ void Compiler::fgFindBasicBlocks()
 
     // Are there any exception handlers?
     //
-    if (info.compXcptnsCount > 0)
+    if (info.compXcptnsCount > 0 || ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0))
     {
         assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
