@@ -223,6 +223,11 @@ INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
 INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
 INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
 
+// Pseudo-instructions for relocations
+INST(i32_const_address,   "i32.const_address",   0, IF_MEMADDR, 0x41)
+INST(i32_const_funcptr,   "i32.const_funcptr",   0, IF_FUNCPTR, 0x41)
+
+
 // clang-format on
 
 #undef INST

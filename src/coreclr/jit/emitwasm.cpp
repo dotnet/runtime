@@ -404,6 +404,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
@@ -560,6 +562,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(!id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
             dst += emitOutputSLEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_MEMADDR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_MEMORY_ADDR_SLEB);
+            break;
+        }
+        case IF_FUNCPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, true, CorInfoReloc::R_WASM_TABLE_INDEX_SLEB);
             break;
         }
         case IF_CALL:
@@ -792,6 +806,8 @@ void emitter::emitDispIns(
         }
         break;
 
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);

@@ -38,6 +38,8 @@ IF_DEF(MEMARG,        IS_NONE, NONE) // <opcode> <memarg> (<align> <offset>)
 IF_DEF(LOCAL_DECL,    IS_NONE, NONE) // <ULEB128 immediate> <byte>
 IF_DEF(CALL,          IS_NONE, NONE) // <opcode> <ULEB128 immediate (function index)>
 IF_DEF(CALL_INDIRECT, IS_NONE, NONE) // <opcode> <ULEB128 immediate> <ULEB128 immediate>
+IF_DEF(MEMADDR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (memory address in data segment)>
+IF_DEF(FUNCPTR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (function pointer)>
 
 #undef IF_DEF
 #endif // !DEFINE_ID_OPS

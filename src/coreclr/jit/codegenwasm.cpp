@@ -1580,6 +1580,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         void* pAddr = helperFunction.addr;
 
         // Push indirection cell address onto stack for genEmitCall to dereference
+        // FIXME-WASM: This should be INS_i32_const_address
         GetEmitter()->emitIns_I(INS_i32_const, emitActualTypeSize(TYP_I_IMPL), (cnsval_ssize_t)pAddr);
 
         params.callType = EC_INDIR_R;
