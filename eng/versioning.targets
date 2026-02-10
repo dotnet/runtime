@@ -152,19 +152,19 @@
 
       <_RuntimeVersionFileContents>
 <![CDATA[
-#define RuntimeAssemblyMajorVersion 42
-#define RuntimeAssemblyMinorVersion 42
+#define RuntimeAssemblyMajorVersion $(MajorVersion)
+#define RuntimeAssemblyMinorVersion $(MinorVersion)
 
-#define RuntimeFileMajorVersion 42
-#define RuntimeFileMinorVersion 42
-#define RuntimeFileBuildVersion 42
-#define RuntimeFileRevisionVersion 42424
+#define RuntimeFileMajorVersion $(FileVersion.Split('.')[0])
+#define RuntimeFileMinorVersion $(FileVersion.Split('.')[1])
+#define RuntimeFileBuildVersion $(FileVersion.Split('.')[2])
+#define RuntimeFileRevisionVersion $(FileVersion.Split('.')[3])
 
-#define RuntimeProductMajorVersion 42
-#define RuntimeProductMinorVersion 42
-#define RuntimeProductPatchVersion 42
+#define RuntimeProductMajorVersion $(Version.Split(".-")[0])
+#define RuntimeProductMinorVersion $(Version.Split(".-")[1])
+#define RuntimeProductPatchVersion $(Version.Split(".-")[2])
 
-#define RuntimeProductVersion 42.42.42
+#define RuntimeProductVersion $(Version)
  ]]>
       </_RuntimeVersionFileContents>
     </PropertyGroup>
