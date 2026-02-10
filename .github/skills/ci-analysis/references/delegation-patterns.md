@@ -41,7 +41,7 @@ Return: unique FAIL test names + which work items they appeared in.
 
 **Delegate:**
 ```
-Find a recent passing build on the main branch of dotnet/{REPO} that ran the same test leg as this failing build.
+Find a recent passing build on the PR's target/base branch of dotnet/{REPO} that ran the same test leg as this failing build.
 
 Failing build: {BUILD_ID} (PR #{PR_NUMBER})
 Failing job name: {JOB_NAME} (e.g., "TestBuild linux x64")
