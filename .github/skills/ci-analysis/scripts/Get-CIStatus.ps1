@@ -360,6 +360,12 @@ function Get-AzDOBuildIdFromPR {
         throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
     }
 
+    # Check if PR has merge conflicts (no CI runs when mergeable_state is dirty)
+    $prMergeState = $null
+    try {
+        $prMergeState = gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null
+    } catch {}
+
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
     foreach ($line in $checksOutput) {
@@ -386,7 +392,15 @@ function Get-AzDOBuildIdFromPR {
                 }
             }
         }
-        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
+        if ($prMergeState -eq 'dirty') {
+            Write-Host "`nPR #$PR has merge conflicts (mergeable_state: dirty)" -ForegroundColor Red
+            Write-Host "CI will not run until conflicts are resolved." -ForegroundColor Yellow
+            Write-Host "Resolve conflicts and push to trigger CI, or use -BuildId to analyze a previous build." -ForegroundColor Gray
+            return @{ BuildIds = @(); Reason = "MERGE_CONFLICTS"; MergeState = $prMergeState }
+        }
+        Write-Host "`nNo CI build found for PR #$PR in $Repository" -ForegroundColor Red
+        Write-Host "The CI pipeline has not been triggered yet." -ForegroundColor Yellow
+        return @{ BuildIds = @(); Reason = "NO_BUILDS"; MergeState = $prMergeState }
     }
 
     # Return all unique failing build IDs
@@ -1737,8 +1751,42 @@ try {
     $buildIds = @()
     $knownIssuesFromBuildAnalysis = @()
     $prChangedFiles = @()
+    $noBuildReason = $null
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
-        $buildIds = @(Get-AzDOBuildIdFromPR -PR $PRNumber)
+        $buildResult = Get-AzDOBuildIdFromPR -PR $PRNumber
+        if ($buildResult -is [hashtable] -and $buildResult.Reason) {
+            # No builds found — emit summary with reason and exit
+            $noBuildReason = $buildResult.Reason
+            $buildIds = @()
+            $summary = [ordered]@{
+                mode = "PRNumber"
+                repository = $Repository
+                prNumber = $PRNumber
+                builds = @()
+                totalFailedJobs = 0
+                totalLocalFailures = 0
+                lastBuildJobSummary = [ordered]@{
+                    total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
+                }
+                failedJobNames = @()
+                canceledJobNames = @()
+                knownIssues = @()
+                prCorrelation = [ordered]@{
+                    changedFileCount = 0
+                    hasCorrelation = $false
+                    correlatedFiles = @()
+                }
+                recommendationHint = if ($noBuildReason -eq "MERGE_CONFLICTS") { "MERGE_CONFLICTS" } else { "NO_BUILDS" }
+                noBuildReason = $noBuildReason
+                mergeState = $buildResult.MergeState
+            }
+            Write-Host ""
+            Write-Host "[CI_ANALYSIS_SUMMARY]"
+            Write-Host ($summary | ConvertTo-Json -Depth 5)
+            Write-Host "[/CI_ANALYSIS_SUMMARY]"
+            exit 0
+        }
+        $buildIds = @($buildResult)
 
         # Check Build Analysis for known issues
         $knownIssuesFromBuildAnalysis = @(Get-BuildAnalysisKnownIssues -PR $PRNumber)

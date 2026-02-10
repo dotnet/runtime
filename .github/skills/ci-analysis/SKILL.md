@@ -133,6 +133,8 @@ Read `recommendationHint` as a starting point, then layer in context:
 | `LIKELY_PR_RELATED` | Failures correlate with PR changes. Lead with "fix these before retrying" and list `correlatedFiles`. |
 | `POSSIBLY_TRANSIENT` | No correlation with PR changes, no known issues. Suggest checking the target branch, searching for issues, or retrying. |
 | `REVIEW_REQUIRED` | Could not auto-determine cause. Review failures manually. |
+| `MERGE_CONFLICTS` | PR has merge conflicts — CI won't run. Tell the user to resolve conflicts. Offer to analyze a previous build by ID. |
+| `NO_BUILDS` | No AzDO builds found (CI not triggered). Offer to check if CI needs to be triggered or analyze a previous build. |
 
 Then layer in nuance the heuristic can't capture:
 
