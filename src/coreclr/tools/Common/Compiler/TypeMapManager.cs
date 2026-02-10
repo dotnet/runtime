@@ -23,29 +23,6 @@ namespace ILCompiler
     /// </summary>
     public abstract class TypeMapManager : ICompilationRootProvider
     {
-        public enum TypeMapAttributeKind
-        {
-            None,
-            TypeMapAssemblyTarget,
-            TypeMap,
-            TypeMapAssociation
-        }
-
-        public static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
-        {
-            var typeDef = attrType.GetTypeDefinition() as MetadataType;
-            if (typeDef != null && typeDef.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
-            {
-                if (typeDef.Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
-                    return TypeMapAttributeKind.TypeMapAssemblyTarget;
-                else if (typeDef.Name.SequenceEqual("TypeMapAttribute`1"u8))
-                    return TypeMapAttributeKind.TypeMap;
-                else if (typeDef.Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
-                    return TypeMapAttributeKind.TypeMapAssociation;
-            }
-            return TypeMapAttributeKind.None;
-        }
-
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
         }
@@ -58,15 +35,15 @@ namespace ILCompiler
 
         protected abstract bool IsEmpty { get; }
 
-        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        public virtual void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, INativeFormatTypeReferenceProvider commonFixupsTableNode)
         {
             if (IsEmpty)
             {
                 return; // No type maps to emit
             }
 
-            header.Add(ReadyToRunSectionType.ExternalTypeMaps, new ExternalTypeMapObjectNode(commonFixupsTableNode));
-            header.Add(ReadyToRunSectionType.ProxyTypeMaps, new ProxyTypeMapObjectNode(commonFixupsTableNode));
+            header.Add(ReadyToRunSectionType.ExternalTypeMaps, new ExternalTypeMapObjectNode(this, commonFixupsTableNode));
+            header.Add(ReadyToRunSectionType.ProxyTypeMaps, new ProxyTypeMapObjectNode(this, commonFixupsTableNode));
         }
     }
 }

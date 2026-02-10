@@ -85,6 +85,8 @@
     </Compile>
 
     <Compile Include="..\..\Common\Compiler\TypeMapManager.cs" Link="Compiler\TypeMapManager.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeMapMetadata.cs" Link="Compiler\TypeMapMetadata.cs" />
+    <Compile Include="..\..\Common\Compiler\INativeFormatTypeReferenceProvider.cs" Link="Compiler\DependencyAnalysis\INativeFormatTypeReferenceProvider.cs" />
     <Compile Include="..\..\Common\Compiler\IProxyTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\IExternalTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\ProxyTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
@@ -666,7 +668,6 @@
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.Aot.cs" />
-    <Compile Include="Compiler\TypeMapMetadata.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />

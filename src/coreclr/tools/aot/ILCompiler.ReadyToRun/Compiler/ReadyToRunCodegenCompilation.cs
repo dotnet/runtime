@@ -377,6 +377,8 @@ namespace ILCompiler
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
+            if (nodeFactory.FixupCellProvider != null)
+                nodeFactory.FixupCellProvider.Initialize(SymbolNodeFactory);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;

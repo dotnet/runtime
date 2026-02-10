@@ -143,6 +143,8 @@
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\TypeMapManager.cs" Link="Compiler\TypeMapManager.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeMapMetadata.cs" Link="Compiler\TypeMapMetadata.cs" />
+    <Compile Include="..\..\Common\Compiler\INativeFormatTypeReferenceProvider.cs" Link="Compiler\DependencyAnalysis\INativeFormatTypeReferenceProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
@@ -192,6 +194,7 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="CodeGen\ReadyToRunContainerFormat.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportReferenceProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeGenericInfoMapNode.cs" />
@@ -202,6 +205,9 @@
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeValidationChecker.cs" />
     <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunTypeMapManager.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />

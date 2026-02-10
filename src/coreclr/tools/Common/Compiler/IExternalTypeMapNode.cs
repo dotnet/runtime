@@ -10,12 +10,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface IExternalTypeMapNode : IDependencyNode, ISortableNode
+    internal interface IExternalTypeMapNode : IDependencyNode, ISortableNode
     {
         TypeDesc TypeMapGroup { get; }
 
-        Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences);
-
+        Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences);
+#if !READYTORUN
         IExternalTypeMapNode ToAnalysisBasedNode(NodeFactory factory);
+#endif
     }
 }

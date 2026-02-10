@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ProxyTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ProxyTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (IProxyTypeMapNode proxyTypeMap in factory.TypeMapManager.GetProxyTypeMaps())
+            foreach (IProxyTypeMapNode proxyTypeMap in manager.GetProxyTypeMaps())
             {
                 TypeDesc typeMapGroup = proxyTypeMap.TypeMapGroup;
                 typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), proxyTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Size { get; private set; }
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
         public override int ClassCode => (int)ObjectNodeOrder.ProxyTypeMapObjectNode;

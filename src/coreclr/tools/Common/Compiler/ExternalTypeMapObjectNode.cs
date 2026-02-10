@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class ExternalTypeMapObjectNode(TypeMapManager manager, INativeFormatTypeReferenceProvider externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (IExternalTypeMapNode externalTypeMap in factory.TypeMapManager.GetExternalTypeMaps())
+            foreach (IExternalTypeMapNode externalTypeMap in manager.GetExternalTypeMaps())
             {
                 typeMapGroupHashTable.Append((uint)externalTypeMap.TypeMapGroup.GetHashCode(), externalTypeMap.CreateTypeMap(factory, writer, hashTableSection, externalReferences));
             }
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
         public int Size { get; private set; }
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
         public override int ClassCode => (int)ObjectNodeOrder.ExternalTypeMapObjectNode;
