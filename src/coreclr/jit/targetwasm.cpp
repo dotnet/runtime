@@ -28,7 +28,7 @@ WasmClassifier::WasmClassifier(const ClassifierInfo& info)
 }
 
 //-----------------------------------------------------------------------------
-// ToJitType: tranlate CorInfoWasmType to var_types
+// ToJitType: translate CorInfoWasmType to var_types
 //
 // Parameters:
 //   wasmType -- wasm type to translate
@@ -76,22 +76,22 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
     {
         CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
         assert(clsHnd != NO_CLASS_HANDLE);
-        CorInfoWasmType abiType   = comp->info.compCompHnd->getWasmLowering(clsHnd);
-        bool            passByRef = false;
-        var_types       type      = TYP_UNDEF;
+        CorInfoWasmType wasmAbiType = comp->info.compCompHnd->getWasmLowering(clsHnd);
+        bool            passByRef   = false;
+        var_types       abiType     = TYP_UNDEF;
 
-        if (abiType == CORINFO_WASM_TYPE_VOID)
+        if (wasmAbiType == CORINFO_WASM_TYPE_VOID)
         {
-            type      = TYP_I_IMPL;
+            abiType   = TYP_I_IMPL;
             passByRef = true;
         }
         else
         {
-            type = ToJitType(abiType);
+            abiType = ToJitType(wasmAbiType);
         }
 
-        regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));
-        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(type));
+        regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(abiType));
         return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 

@@ -6453,7 +6453,7 @@ void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWa
         GetWasmLowering = new LightWeightMap<DWORDLONG, DWORD>();
     DWORDLONG key = CastHandle(structHnd);
     GetWasmLowering->Add(key, (DWORD) value);
-    DEBUG_REC(dmpGetSwiftLowering(key, valuee));
+    DEBUG_REC(dmpGetWasmLowering(key, value));
 }
 void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
 {

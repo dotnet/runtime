@@ -458,7 +458,7 @@ namespace ILCompiler.ObjectWriter
 
             MethodSignature signature = method.Signature;
             TypeDesc returnType = signature.ReturnType;
-
+            Span<WasmValueType> wasmParameters, lowered;
             if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
             {
                 wasmParameters = new WasmValueType[signature.Length];
