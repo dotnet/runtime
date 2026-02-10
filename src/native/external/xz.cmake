@@ -36,6 +36,17 @@ set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
 set(LZMA_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/xz/src/liblzma/api)
 
+# API functions are marked for export only when HAVE_VISIBILITY=1. However,
+# that happens only if BUILD_SHARED_LIBS is ON. Since we want to export the API
+# functions even for static library to be able to invoke them in the resulting shared
+# libraries, so we need to force HAVE_VISIBILITY=1 for static liblzma as well.
+if (NOT MSVC)
+    get_target_property(defs liblzma COMPILE_DEFINITIONS)
+    list(FILTER defs EXCLUDE REGEX "HAVE_VISIBILITY=.")
+    set_property(TARGET liblzma PROPERTY COMPILE_DEFINITIONS ${defs})
+    target_compile_definitions(liblzma PRIVATE HAVE_VISIBILITY=1)
+endif()
+
 #
 # silence the warnings for now, we will need to fix these in code and upstream the fixes
 #
