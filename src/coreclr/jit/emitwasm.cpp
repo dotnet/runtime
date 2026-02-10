@@ -512,9 +512,16 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
 
 size_t emitter::emitOutputPaddedReloc(uint8_t* destination, bool isSigned)
 {
-    // FIXME: Write fill pattern
     if (destination)
-        memset(destination + writeableOffset, 0, PADDED_RELOC_SIZE);
+    {
+        static_assert(PADDED_RELOC_SIZE > 1);
+        // Write zeroes with the bit set that indicates another byte is coming
+        for (unsigned i = 1; i < PADDED_RELOC_SIZE; i++)
+            *(destination++ + writeableOffset) = 0x80;
+
+        // Write a final zero
+        *(destination + writeableOffset) = 0x0;
+    }
     return PADDED_RELOC_SIZE;
 }
 
