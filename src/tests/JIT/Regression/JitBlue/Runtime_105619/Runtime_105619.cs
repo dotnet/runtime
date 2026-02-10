@@ -15,6 +15,7 @@ namespace Runtime_105619;
 
 using System;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 public interface I1

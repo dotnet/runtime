@@ -6,6 +6,7 @@ namespace Runtime_72265;
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 public unsafe class Runtime_72265
