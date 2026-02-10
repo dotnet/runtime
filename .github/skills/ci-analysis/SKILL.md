@@ -9,7 +9,7 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
-**Workflow**: Run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
+**Workflow**: Gather PR context (Step 0) → run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
 
 ## When to Use This Skill
 
@@ -114,7 +114,7 @@ The script operates in three distinct modes depending on what information you ha
 
 **Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
 
-> ⚠️ **Be cautious labeling failures as "infrastructure."** If Build Analysis didn't flag a failure as a known issue, treat it as potentially real — even if it looks like a device failure, Docker issue, or network timeout. Only conclude "infrastructure" when you have strong evidence (e.g., identical failure on main branch, Build Analysis match, or confirmed outage). Dismissing failures as transient without evidence delays real bug discovery.
+> ⚠️ **Be cautious labeling failures as "infrastructure."** If Build Analysis didn't flag a failure as a known issue, treat it as potentially real — even if it looks like a device failure, Docker issue, or network timeout. Only conclude "infrastructure" when you have strong evidence (e.g., identical failure on the target branch, Build Analysis match, or confirmed outage). Dismissing failures as transient without evidence delays real bug discovery.
 
 > ❌ **Don't confuse "environment-related" with "infrastructure."** A test that fails because a required framework isn't installed (e.g., .NET 2.2) is a **test defect** — the test has wrong assumptions about what's available. Infrastructure failures are *transient*: network timeouts, Docker pull failures, agent crashes, disk space. If the failure would reproduce 100% of the time on any machine with the same setup, it's a code/test issue, not infra. The word "environment" in the error doesn't make it an infrastructure problem.
 
@@ -133,7 +133,7 @@ Read `recommendationHint` as a starting point, then layer in context:
 | `BUILD_SUCCESSFUL` | No failures. Confirm CI is green. |
 | `KNOWN_ISSUES_DETECTED` | Known tracked issues found. Recommend retry if failures match known issues. Link the issues. |
 | `LIKELY_PR_RELATED` | Failures correlate with PR changes. Lead with "fix these before retrying" and list `correlatedFiles`. |
-| `POSSIBLY_TRANSIENT` | No correlation with PR changes, no known issues. Suggest checking main branch, searching for issues, or retrying. |
+| `POSSIBLY_TRANSIENT` | No correlation with PR changes, no known issues. Suggest checking the target branch, searching for issues, or retrying. |
 | `REVIEW_REQUIRED` | Could not auto-determine cause. Review failures manually. |
 
 Then layer in nuance the heuristic can't capture:
@@ -143,7 +143,7 @@ Then layer in nuance the heuristic can't capture:
 - **Build still in progress**: If `lastBuildJobSummary.pending > 0`, note that more failures may appear.
 - **Multiple builds**: If `builds` has >1 entry, `lastBuildJobSummary` reflects only the last build — use `totalFailedJobs` for the aggregate count.
 - **BuildId mode**: `knownIssues` and `prCorrelation` will be empty (those require a PR number). Don't say "no known issues" — say "Build Analysis not available in BuildId mode."
-- **Infrastructure vs code**: Don't label failures as "infrastructure" unless Build Analysis flagged them or the same test passes on main. See the anti-patterns in "Interpreting Results" above.
+- **Infrastructure vs code**: Don't label failures as "infrastructure" unless Build Analysis flagged them or the same test passes on the target branch. See the anti-patterns in "Interpreting Results" above.
 
 ### How to Retry
 
@@ -157,27 +157,76 @@ Be direct. Lead with the most important finding. Use 2-4 bullet points, not long
 
 ## Analysis Workflow
 
-1. **Read PR context first** - Check title, description, comments
-2. **Run the script** with `-ShowLogs` for detailed failure info
-3. **Check Build Analysis** - Known issues are safe to retry
-4. **Correlate with PR changes** - Same files failing = likely PR-related
-5. **Compare with baseline** - If a test passes on main but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
-6. **Interpret patterns** (but don't jump to conclusions):
+### Step 0: Gather Context (before running anything)
+
+Before running the script, read the PR to understand what you're analyzing. Context changes how you interpret every failure.
+
+1. **Read PR metadata** — title, description, author, labels, linked issues
+2. **Classify the PR type** — this determines your interpretation framework:
+
+| PR Type | How to detect | Interpretation shift |
+|---------|--------------|---------------------|
+| **Code PR** | Human author, code changes | Failures likely relate to the changes |
+| **Flow/Codeflow PR** | Author is `dotnet-maestro[bot]`, title mentions "Update dependencies" | Missing packages may be behavioral, not infrastructure (see anti-pattern below) |
+| **Backport** | Title mentions "backport", targets a release branch | Failures may be branch-specific; check if test exists on target branch |
+| **Merge PR** | Merging between branches (e.g., release → main) | Conflicts and merge artifacts cause failures, not the individual changes |
+| **Dependency update** | Bumps package versions, global.json changes | Build failures often trace to the dependency, not the PR's own code |
+
+3. **Check existing comments** — has someone already diagnosed the failures? Is there a retry pending?
+4. **Note the changed files** — you'll use these to evaluate correlation after the script runs
+
+> ❌ **Don't skip Step 0.** Running the script without PR context leads to misdiagnosis — especially for flow PRs where "package not found" looks like infrastructure but is actually a code issue.
+
+### Step 1: Run the script
+
+Run with `-ShowLogs` for detailed failure info.
+
+### Step 2: Analyze results
+
+1. **Check Build Analysis** — Known issues are safe to retry
+2. **Correlate with PR changes** — Same files failing = likely PR-related
+3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
+4. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue
    - Build Analysis flags a known issue → Safe to retry
    - Failure is **not** in Build Analysis → Investigate further before assuming transient
-   - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against main branch first
+   - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against the target branch first
    - Test timeout but tests passed → Executor issue, not test failure
+
+### Step 3: Verify before claiming
+
+Before stating a failure's cause, verify your claim:
+
+- **"Infrastructure failure"** → Did Build Analysis flag it? Does the same test pass on the target branch? If neither, don't call it infrastructure.
+- **"Transient/flaky"** → Has it failed before? Is there a known issue? A single non-reproducing failure isn't enough to call it flaky.
+- **"PR-related"** → Do the changed files actually relate to the failing test? Correlation in the script output is heuristic, not proof.
+- **"Safe to retry"** → Are ALL failures accounted for (known issues or infrastructure), or are you ignoring some?
+- **"Not related to this PR"** → Have you checked if the test passes on the target branch? Don't assume — verify.
 
 ## Presenting Results
 
-The script outputs both human-readable failure details and a `[CI_ANALYSIS_SUMMARY]` JSON block. Use both:
+The script outputs both human-readable failure details and a `[CI_ANALYSIS_SUMMARY]` JSON block. Use both to produce a structured response.
+
+### Output structure
+
+Use this format — adapt sections based on what you find:
+
+**1. Summary verdict** (1-2 sentences)
+Lead with the most important finding. Is CI green? Are failures PR-related? Known issues?
+
+**2. Failure details** (2-4 bullets)
+For each distinct failure category, state: what failed, why (known/correlated/unknown), and evidence.
+
+**3. Recommended actions** (numbered list)
+Specific next steps: retry, fix specific files, investigate further. Include `/azp run` commands if retrying.
+
+### How to synthesize
 
 1. Read the JSON summary for structured facts (failed jobs, known issues, PR correlation, recommendation hint)
 2. Read the human-readable output for failure details, console logs, and error messages
-3. Reason over both to produce contextual recommendations — the `recommendationHint` is a starting point, not the final answer
-4. Look for patterns the heuristic may have missed (e.g., same failure across multiple jobs, related failures in different builds)
-5. Consider the PR context (what files changed, what the PR is trying to do)
+3. Layer in Step 0 context — PR type, author intent, changed files
+4. Reason over all three to produce contextual recommendations — the `recommendationHint` is a starting point, not the final answer
+5. Look for patterns the heuristic may have missed (e.g., same failure across multiple jobs, related failures in different builds)
 6. Present findings with appropriate caveats — state what is known vs. uncertain
 
 ## References
@@ -303,11 +352,10 @@ This is especially useful when:
 
 ## Tips
 
-1. Read PR description and comments first for context
-2. Check if same test fails on main branch before assuming transient
-3. Look for `[ActiveIssue]` attributes for known skipped tests
-4. Use `-SearchMihuBot` for semantic search of related issues
-5. Binlogs in artifacts help diagnose MSB4018 task failures
-6. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
-7. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** in current `gh` versions — `state` contains `SUCCESS`/`FAILURE` directly
-8. When investigating internal AzDO pipelines, check `az account show` first to verify authentication before making REST API calls
+1. Check if same test fails on the target branch before assuming transient
+2. Look for `[ActiveIssue]` attributes for known skipped tests
+3. Use `-SearchMihuBot` for semantic search of related issues
+4. Binlogs in artifacts help diagnose MSB4018 task failures
+5. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
+6. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** in current `gh` versions — `state` contains `SUCCESS`/`FAILURE` directly
+7. When investigating internal AzDO pipelines, check `az account show` first to verify authentication before making REST API calls
