@@ -1972,8 +1972,8 @@ void emitter::emitIns_R_R_R_R(
 /*****************************************************************************
  *
  *  Add an instruction with a register + static member operands.
- *  Constant is stored into JIT data which is adjacent to code.
- *  For LOONGARCH64, maybe not the best, here just supports the func-interface.
+ *  Usually constants are stored into JIT data adjacent to code, in which case no
+ *  relocation is needed. PC-relative offset will be encoded directly into instruction.
  *
  */
 void emitter::emitIns_R_C(
@@ -2000,6 +2000,7 @@ void emitter::emitIns_R_C(
     //   load  reg, r21 + addr_bits[11:0]
 
     instrDesc* id = emitNewInstr(attr);
+    id->idSetRelocFlags(attr);
 
     id->idIns(ins);
     assert(reg != REG_R0); // for special. reg Must not be R0.
@@ -2007,7 +2008,8 @@ void emitter::emitIns_R_C(
 
     id->idSmallCns(offs); // usually is 0.
     id->idInsOpt(INS_OPTS_RC);
-    if (m_compiler->opts.compReloc)
+
+    if (m_compiler->opts.compReloc || id->idIsReloc())
     {
         id->idSetIsDspReloc();
         id->idCodeSize(8);
@@ -2030,7 +2032,6 @@ void emitter::emitIns_R_C(
         id->idOpSize(EA_PTRSIZE);
     }
 
-    // TODO-LoongArch64: this maybe deleted.
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
 
