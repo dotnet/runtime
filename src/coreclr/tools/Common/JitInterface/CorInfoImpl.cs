@@ -1517,7 +1517,7 @@ namespace Internal.JitInterface
                         ref info->resolvedTokenDevirtualizedMethod,
                         originalImpl,
                         ReadyToRunHelperId.MethodHandle,
-                        HandleToObject(MethodBeingCompiled),
+                        MethodBeingCompiled,
                         ref info->instParamLookup);
 #endif
                 }
