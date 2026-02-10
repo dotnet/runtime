@@ -10,6 +10,7 @@
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly Runtime_70259
 {
@@ -70,6 +71,11 @@
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
         string('https://github.com/dotnet/runtime/issues/70279')
         int32(0x2) // Mono
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/124221')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasm')
     }
     .entrypoint
     // Code size       31 (0x1f)
