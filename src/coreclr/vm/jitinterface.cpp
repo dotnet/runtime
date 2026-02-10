@@ -8858,15 +8858,20 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         isGenericVirtual = true;
     }
 
-    info->exactContext = isArray || isGenericVirtual
-        ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD)
-        : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-
     if (!info->instParamLookup.lookupKind.needsRuntimeLookup && (isArray || isGenericVirtual) && pDevirtMD->IsInstantiatingStub())
     {
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
-        pDevirtMD = pDevirtMD->GetWrappedMethodDesc();
+    }
+    
+    if (isArray || isGenericVirtual)
+    {
+        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
+        pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+    }
+    else
+    {
+        info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     }
 
     // Success! Pass back the results.
