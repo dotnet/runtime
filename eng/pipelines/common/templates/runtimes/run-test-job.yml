@@ -42,6 +42,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    hostedOs: ${{ parameters.hostedOs }}
     extraBuildArgs: ${{ parameters.extraBuildArgs }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
