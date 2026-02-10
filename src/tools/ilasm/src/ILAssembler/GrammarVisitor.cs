@@ -628,25 +628,19 @@ namespace ILAssembler
                 return;
             }
 
-            // Determine the DebuggingModes value
-            // System.Diagnostics.DebuggableAttribute.DebuggingModes enum values:
-            // None = 0, Default = 1, DisableOptimizations = 256, IgnoreSymbolStoreSequencePoints = 2, EnableEditAndContinue = 4
-            int debuggingModes;
-            if (_options.DebugMode?.Equals("opt", StringComparison.OrdinalIgnoreCase) == true)
+            // DebuggingModes enum values from System.Diagnostics.DebuggableAttribute:
+            // None = 0x00, Default = 0x01, IgnoreSymbolStoreSequencePoints = 0x02,
+            // EnableEditAndContinue = 0x04, DisableOptimizations = 0x100
+            const int DebuggingModesDefault = 0x101;  // Default | DisableOptimizations
+            const int DebuggingModesOpt = 0x03;       // Default | IgnoreSymbolStoreSequencePoints
+            const int DebuggingModesImpl = 0x103;     // Default | DisableOptimizations | EnableEditAndContinue
+
+            int debuggingModes = _options.DebugMode switch
             {
-                // /DEBUG=OPT: Default | IgnoreSymbolStoreSequencePoints = 0x03
-                debuggingModes = 0x03;
-            }
-            else if (_options.DebugMode?.Equals("impl", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                // /DEBUG=IMPL: Default | DisableOptimizations | EnableEditAndContinue = 0x103
-                debuggingModes = 0x103;
-            }
-            else
-            {
-                // /DEBUG (default): Default | DisableOptimizations = 0x101
-                debuggingModes = 0x101;
-            }
+                DebugMode.Opt => DebuggingModesOpt,
+                DebugMode.Impl => DebuggingModesImpl,
+                _ => DebuggingModesDefault
+            };
 
             // Get reference to core library
             var coreAsmRef = _entityRegistry.GetCoreLibAssemblyReference();
@@ -699,9 +693,11 @@ namespace ILAssembler
             }
             catch (Exception ex)
             {
-                // Create a location pointing to the first document
-                var firstDoc = _documents.Values.First();
-                var location = new Location(new SourceSpan(0, 0), firstDoc);
+                // Create a location pointing to the first document (if available)
+                var firstDoc = _documents.Values.FirstOrDefault();
+                var location = firstDoc is not null
+                    ? new Location(new SourceSpan(0, 0), firstDoc)
+                    : new Location(new SourceSpan(0, 0), new SourceText(string.Empty, keyFilePath));
                 _diagnostics.Add(new Diagnostic(DiagnosticIds.KeyFileError, DiagnosticSeverity.Error, $"Failed to read key file '{keyFilePath}': {ex.Message}", location));
             }
         }

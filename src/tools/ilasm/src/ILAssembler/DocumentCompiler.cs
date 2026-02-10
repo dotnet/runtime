@@ -42,6 +42,8 @@ public sealed class DocumentCompiler
             diagnostics.Add(new Diagnostic("Preprocessor", DiagnosticSeverity.Error, msg, new Location(new(start, length), loadedDocuments[source])));
         };
 
+        // Note: Parser must use the preprocessor token stream (not the raw lexer)
+        // to properly handle #include, #define, and other preprocessor directives.
         CILParser parser = new(new CommonTokenStream(preprocessor));
         var result = parser.decls();
         GrammarVisitor visitor = new GrammarVisitor(loadedDocuments, options, resourceLocator);

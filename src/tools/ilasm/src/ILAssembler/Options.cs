@@ -5,6 +5,24 @@ using System.Reflection.PortableExecutable;
 
 namespace ILAssembler
 {
+    /// <summary>
+    /// Debug mode for the assembler, controlling JIT optimization and sequence points.
+    /// </summary>
+    public enum DebugMode
+    {
+        /// <summary>
+        /// Implicit sequence points - enables edit and continue.
+        /// Produces DebuggingModes = Default | DisableOptimizations | EnableEditAndContinue (0x103).
+        /// </summary>
+        Impl,
+
+        /// <summary>
+        /// Optimized debugging - enables JIT optimization while preserving debug info.
+        /// Produces DebuggingModes = Default | IgnoreSymbolStoreSequencePoints (0x03).
+        /// </summary>
+        Opt
+    }
+
     public sealed class Options
     {
         /// <summary>
@@ -88,9 +106,10 @@ namespace ILAssembler
         public bool Pdb { get; set; }
 
         /// <summary>
-        /// Debug mode: "impl" for implicit sequence points, "opt" to enable JIT optimization.
+        /// Debug mode: Impl for implicit sequence points, Opt to enable JIT optimization.
+        /// When null with Debug=true, uses default (DisableOptimizations).
         /// </summary>
-        public string? DebugMode { get; set; }
+        public DebugMode? DebugMode { get; set; }
 
         /// <summary>
         /// Override the name of the compiled assembly.
@@ -105,11 +124,13 @@ namespace ILAssembler
         /// <summary>
         /// Optimize long instructions to short.
         /// </summary>
+        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
         public bool Optimize { get; set; }
 
         /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
+        /// <remarks>TODO: Not yet implemented - accepted for CLI compatibility.</remarks>
         public bool Fold { get; set; }
 
         /// <summary>
