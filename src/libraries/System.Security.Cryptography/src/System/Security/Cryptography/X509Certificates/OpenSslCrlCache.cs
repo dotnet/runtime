@@ -354,6 +354,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static DateTime ExpirationTimeFromCacheFileTime(DateTime cacheFileTime)
         {
+            // CA/Browser Forum says that CRLs should be updated every 4 to 7 days,
+            // so recheck any cached CRL, that doesn't have a NextUpdate, every 3 days.
             return cacheFileTime.AddDays(3);
         }
 
@@ -740,7 +742,14 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (GC.GetGeneration(this) == GC.MaxGeneration)
                     {
-                        _owner.PruneForGC();
+                        try
+                        {
+                            _owner.PruneForGC();
+                        }
+                        catch
+                        {
+                            // Eat any exception so we don't terminate the finalizer thread.
+                        }
                     }
                 }
             }
