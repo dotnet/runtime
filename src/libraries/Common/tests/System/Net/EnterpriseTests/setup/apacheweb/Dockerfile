@@ -24,8 +24,9 @@ RUN chmod +x *.sh ; \
     cd /tmp && apxs -DAPACHE2 -c -i mod_auth_ntlm_winbind.c
 
 # Setup FTP user and directories
+ARG FTP_PASSWORD=PLACEHOLDER_FTP_PASSWORD
 RUN useradd -m -s /bin/bash ftpuser && \
-    echo "ftpuser:ftppass" | chpasswd && \
+    echo "ftpuser:${FTP_PASSWORD}" | chpasswd && \
     mkdir -p /home/ftpuser/ftp && \
     chown ftpuser:ftpuser /home/ftpuser/ftp && \
     mkdir -p /var/log/proftpd && \
