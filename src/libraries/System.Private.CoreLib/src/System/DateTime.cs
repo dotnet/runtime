@@ -1993,7 +1993,7 @@ namespace System
                 isEndOfDay = true;
             }
 
-            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
+            if ((uint)hour > 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 return false;
             }
