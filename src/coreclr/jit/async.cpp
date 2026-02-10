@@ -379,42 +379,46 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     JITDUMP("Inserted restore statement in return block\n");
     DISPSTMT(restoreStmt);
 
-    *mergedReturnLcl = BAD_VAR_NUM;
-
-    GenTree* ret;
-    if (compMethodHasRetVal())
+    if (!compIsForInlining())
     {
-        *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
+        *mergedReturnLcl = BAD_VAR_NUM;
 
-        var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
-
-        if (varTypeIsStruct(retLclType))
+        GenTree* ret;
+        if (compMethodHasRetVal())
         {
-            lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+            *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
 
-            if (compMethodReturnsMultiRegRetType())
+            var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
+
+            if (varTypeIsStruct(retLclType))
             {
-                lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+
+                if (compMethodReturnsMultiRegRetType())
+                {
+                    lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                }
             }
+            else
+            {
+                lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            }
+
+            GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
+            ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
         }
         else
         {
-            lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
 
-        GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
-        ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
-    }
-    else
-    {
-        ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+        Statement* retStmt = fgNewStmtFromTree(ret);
+
+        fgInsertStmtAtEnd(newReturnBB, retStmt);
+        JITDUMP("Inserted return statement in return block\n");
+        DISPSTMT(retStmt);
     }
 
-    Statement* retStmt = fgNewStmtFromTree(ret);
-
-    fgInsertStmtAtEnd(newReturnBB, retStmt);
-    JITDUMP("Inserted return statement in return block\n");
-    DISPSTMT(retStmt);
     return newReturnBB;
 }
 

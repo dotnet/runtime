@@ -3465,7 +3465,7 @@ void Compiler::fgFindBasicBlocks()
             // Failing here should be extremely rare.
             //
             unsigned numEHEntries = info.compXcptnsCount;
-            // We will introduce another EH clause in the inlinee to restore async contexts
+            // We will introduce another EH clause before inlining finishes to restore async contexts
             if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
             {
                 numEHEntries++;
