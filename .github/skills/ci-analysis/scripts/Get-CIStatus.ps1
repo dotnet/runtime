@@ -1390,7 +1390,7 @@ function Get-HelixWorkItemDetails {
         # (https://github.com/dotnet/dnceng/issues/6072). ListFiles returns direct
         # blob storage URIs that always work.
         $listFiles = Get-HelixWorkItemFiles -JobId $JobId -WorkItemName $WorkItemName
-        if ($listFiles) {
+        if ($null -ne $listFiles) {
             $response.Files = @($listFiles | ForEach-Object {
                 [PSCustomObject]@{
                     FileName = $_.Name
