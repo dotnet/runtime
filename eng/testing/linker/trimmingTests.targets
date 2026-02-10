@@ -115,7 +115,7 @@
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{WasmSdkPackBuildPath}', '$(MonoProjectRoot)nuget/Microsoft.NET.Sdk.WebAssembly.Pack/build/')
-                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/')
+                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/$(NetCoreAppToolCurrent)/')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
                                                  .Replace('{NetCoreAppToolCurrent}', '$(NetCoreAppToolCurrent)')
