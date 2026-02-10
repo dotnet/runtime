@@ -3,10 +3,11 @@
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger } from "./cross-module";
 
-import { ControllablePromise, GCHandle } from "./types";
+import type { ControllablePromise, GCHandle } from "./types";
+import type { PromiseHolder } from "./marshaled-types";
+
 import { isRuntimeRunning } from "./utils";
 import { lookupJsOwnedObject } from "./gc-handles";
-import { PromiseHolder } from "./marshaled-types";
 
 export function isThenable(js_obj: any): boolean {
     // When using an external Promise library like Bluebird the Promise.resolve may not be sufficient

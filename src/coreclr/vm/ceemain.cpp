@@ -824,6 +824,10 @@ void EEStartupHelper()
 
         ExecutionManager::Init();
 
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
+
         JitHost::Init();
 
 #ifndef TARGET_UNIX
@@ -921,9 +925,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects

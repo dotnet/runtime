@@ -60,6 +60,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -326,22 +330,27 @@ namespace Internal.JitInterface
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct AllocMemChunk
+    {
+        // Alignment of the chunk. Must be a power of two with the following restrictions:
+        // - For the hot code chunk the max supported alignment is 32.
+        // - For the cold code chunk the value must always be 1.
+        // - For read-only data chunks the max supported alignment is 64.
+        public uint alignment;
+        public uint size;
+        public CorJitAllocMemFlag flags;
+
+        // out
+        public byte* block;
+        public byte* blockRW;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AllocMemArgs
     {
-        // Input arguments
-        public uint hotCodeSize;
-        public uint coldCodeSize;
-        public uint roDataSize;
+        public AllocMemChunk* chunks;
+        public uint chunksCount;
         public uint xcptnsCount;
-        public CorJitAllocMemFlag flag;
-
-        // Output arguments
-        public void* hotCodeBlock;
-        public void* hotCodeBlockRW;
-        public void* coldCodeBlock;
-        public void* coldCodeBlockRW;
-        public void* roDataBlock;
-        public void* roDataBlockRW;
     }
 
     // Flags computed by a runtime compiler
@@ -726,6 +735,17 @@ namespace Internal.JitInterface
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
+    // Used by Wasm RyuJIT to represent native WebAssembly types and exchanged via some JIT-EE APIs
+    public enum CorInfoWasmType
+    {
+        CORINFO_WASM_TYPE_VOID = 0x40,
+        CORINFO_WASM_TYPE_V128 = 0x7B,
+        CORINFO_WASM_TYPE_F64  = 0x7C,
+        CORINFO_WASM_TYPE_F32  = 0x7D,
+        CORINFO_WASM_TYPE_I64  = 0x7E,
+        CORINFO_WASM_TYPE_I32  = 0x7F,
+    }
+
     public enum CorInfoIsAccessAllowedResult
     {
         CORINFO_ACCESS_ALLOWED = 0,           // Call allowed
@@ -781,12 +801,10 @@ namespace Internal.JitInterface
     // to guide the memory allocation for the code, readonly data, and read-write data
     public enum CorJitAllocMemFlag
     {
-        CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
-        CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
-        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
+        CORJIT_ALLOCMEM_HOT_CODE = 1,
+        CORJIT_ALLOCMEM_COLD_CODE = 2,
+        CORJIT_ALLOCMEM_READONLY_DATA = 4,
+        CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE = 8,
     }
 
     public enum CorJitFuncKind
@@ -1123,7 +1141,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
         CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
         CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1139,7 +1157,6 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
-        CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
@@ -1464,6 +1481,7 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004),
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
         CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
+        CORJIT_R2R_UNSUPPORTED = unchecked((int)0x80000007),
     };
 
     public enum TypeCompareState
