@@ -98,6 +98,13 @@ namespace System.Net.Http
             }
 #endif
 
+            // When enabled, send Basic proxy auth proactively on the first request without waiting
+            // for a 407 challenge. Useful for proxies that don't send 407 responses.
+            public static bool ProxyPreAuthenticate { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.Http.SocketsHttpHandler.ProxyPreAuthenticate",
+                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PROXYPREAUTHENTICATE",
+                false);
+
             public static int MaxConnectionsPerServer { get; } = GetMaxConnectionsPerServer();
 
             private static int GetMaxConnectionsPerServer()
