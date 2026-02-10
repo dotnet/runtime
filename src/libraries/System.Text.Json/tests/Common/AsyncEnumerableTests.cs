@@ -19,6 +19,7 @@ namespace System.Text.Json.Serialization.Tests
         {
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [InlineData(0, 1)]
         [InlineData(1, 1)]
@@ -331,6 +332,7 @@ namespace System.Text.Json.Serialization.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [InlineData(5, 1024)]
         [InlineData(5, 1024 * 1024)]

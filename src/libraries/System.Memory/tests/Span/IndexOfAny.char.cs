@@ -85,6 +85,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchTwo_Char()
         {
@@ -217,6 +218,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchThree_Char()
         {
@@ -352,6 +354,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchFour_Char()
         {
@@ -616,6 +619,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchMany_Char()
         {
