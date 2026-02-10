@@ -137,7 +137,10 @@ After the script outputs the `[CODEFLOW_SUMMARY]` JSON block, **you** synthesize
 
 ### Decision logic
 
-Read `currentState` first:
+Check `isCodeflowPR` first — if `false`, skip all codeflow-specific advice:
+- **Not a codeflow PR** (`isCodeflowPR = false` or `flowDirection = "unknown"`): State this clearly. No darc commands, no codeflow recommendations. Treat as a normal PR.
+
+Then read `currentState`:
 
 | State | Action |
 |-------|--------|

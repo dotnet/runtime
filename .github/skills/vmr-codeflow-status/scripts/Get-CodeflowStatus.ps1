@@ -1399,6 +1399,7 @@ $summary = [ordered]@{
     repository      = $Repository
     prState         = $pr.state
     currentState    = $currentState
+    isCodeflowPR    = ($isMaestroPR -or $isBackflow -or $isForwardFlow)
     flowDirection   = if ($isForwardFlow) { "forward" } elseif ($isBackflow) { "backflow" } else { "unknown" }
     isEmptyDiff     = $isEmptyDiff
     changedFiles    = [int]$pr.changedFiles
@@ -1410,12 +1411,13 @@ $summary = [ordered]@{
 }
 
 # Freshness
+$hasFresnessData = ($null -ne $vmrCommit -and $null -ne $sourceHeadSha)
 $summary.freshness = [ordered]@{
     sourceHeadSha   = if ($sourceHeadSha) { Get-ShortSha $sourceHeadSha } else { $null }
     compareStatus   = $compareStatus
     aheadBy         = $aheadBy
     behindBy        = $behindBy
-    isUpToDate      = ($vmrCommit -and $sourceHeadSha -and ($vmrCommit -eq $sourceHeadSha -or $compareStatus -eq 'identical'))
+    isUpToDate      = if ($hasFresnessData) { ($vmrCommit -eq $sourceHeadSha -or $compareStatus -eq 'identical') } else { $null }
 }
 
 # Force pushes
@@ -1445,7 +1447,7 @@ $summary.commits = [ordered]@{
 
 # PR age
 $summary.age = [ordered]@{
-    daysSinceUpdate = [math]::Round($prAgeDays, 1)
+    daysSinceUpdate = [math]::Max(0, [math]::Round($prAgeDays, 1))
     createdAt       = $pr.createdAt
     updatedAt       = $pr.updatedAt
 }
@@ -1454,3 +1456,6 @@ Write-Host ""
 Write-Host "[CODEFLOW_SUMMARY]"
 Write-Host ($summary | ConvertTo-Json -Depth 4 -Compress)
 Write-Host "[/CODEFLOW_SUMMARY]"
+
+# Ensure clean exit code (gh api failures may leave $LASTEXITCODE = 1)
+exit 0
