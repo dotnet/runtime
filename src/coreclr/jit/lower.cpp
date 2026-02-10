@@ -2468,6 +2468,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            assert(!dstAddr->isContained());
+            assert(!srcAddr->isContained());
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = m_compiler->gtNewIndir(TYP_STRUCT, srcAddr);
