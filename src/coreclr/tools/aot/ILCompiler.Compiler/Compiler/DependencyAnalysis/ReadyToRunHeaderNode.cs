@@ -87,8 +87,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (!relocsOnly && item.Node.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
-                builder.RequireInitialPointerAlignment();
-
                 builder.EmitInt((int)item.Id);
 
                 builder.EmitReloc((ISymbolNode)item.Node, RelocType.IMAGE_REL_SYMBOL_SIZE);
