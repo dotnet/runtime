@@ -332,10 +332,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     SetModuleTokenForTypeSystemEntity(_typeToRefTokens, ecmaType, token);
                 }
             }
-            else if (type.IsCanonicalDefinitionType(CanonicalFormKind.Specific))
-            {
-                return;
-            }
             else if (!specialTypeFound)
             {
                 throw new NotImplementedException(type.ToString());
