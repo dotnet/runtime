@@ -510,7 +510,7 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
     return sz;
 }
 
-size_t emitter::emitOutputPaddedReloc(uint8_t* destination, bool isSigned)
+size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 {
     if (destination)
     {
@@ -530,7 +530,7 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
     if (id->idIsCnsReloc())
     {
         emitRecordRelocation(destination, (void*)emitGetInsSC(id), relocType);
-        return emitOutputPaddedReloc(destination, isSigned);
+        return emitOutputPaddedReloc(destination);
     }
     else if (isSigned)
         return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));

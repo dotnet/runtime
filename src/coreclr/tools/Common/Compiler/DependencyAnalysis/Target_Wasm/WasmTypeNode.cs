@@ -52,6 +52,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public void AppendMangledName(NameMangler nameMangler, Internal.Text.Utf8StringBuilder sb)
         {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__wasmtype_"u8);
+
             foreach (var type in _types)
                 sb.Append(type switch {
                     CorInfoWasmType.CORINFO_WASM_TYPE_VOID => 'v',
