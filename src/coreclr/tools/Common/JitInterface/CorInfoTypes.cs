@@ -520,8 +520,6 @@ namespace Internal.JitInterface
                                                //  e.g. taking the address of a C++ global.
         WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
-        WASM_EVENT_INDEX_LEB,                // Wasm: an event index encoded as a 5-byte varuint32. Used for the immediate argument of a throw and if_except instruction.
-        WASM_TABLE_NUMBER_LEB,               // Wasm: a table number encoded as a 5-byte varuint32. Used for the table immediate argument in the table.* instructions.
     }
 
     public enum CorInfoGCType

@@ -48,8 +48,6 @@ namespace ILCompiler.DependencyAnalysis
                                                        //  e.g. taking the address of a C++ global.
         WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
         WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
-        WASM_EVENT_INDEX_LEB       = 0x206,  // Wasm: an event index encoded as a 5-byte varuint32. Used for the immediate argument of a throw and if_except instruction.
-        WASM_TABLE_NUMBER_LEB      = 0x207,  // Wasm: a table number encoded as a 5-byte varuint32. Used for the table immediate argument in the table.* instructions.
 
         //
         // Relocation operators related to TLS access
@@ -641,8 +639,6 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_MEMORY_ADDR_SLEB  :
                 case RelocType.WASM_TYPE_INDEX_LEB    :
                 case RelocType.WASM_GLOBAL_INDEX_LEB  :
-                case RelocType.WASM_EVENT_INDEX_LEB   :
-                case RelocType.WASM_TABLE_NUMBER_LEB  :
                     // TODO-WASM: Should we do anything here?
                     break;
 
@@ -740,8 +736,6 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_MEMORY_ADDR_SLEB  :
                 case RelocType.WASM_TYPE_INDEX_LEB    :
                 case RelocType.WASM_GLOBAL_INDEX_LEB  :
-                case RelocType.WASM_EVENT_INDEX_LEB   :
-                case RelocType.WASM_TABLE_NUMBER_LEB  :
                     // Wasm relocs do not have offsets, just targets
                     return 0;
                 default:
