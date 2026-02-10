@@ -269,7 +269,7 @@ namespace System
                     message = obj->GetClassName();
 
                 // Allocate the description BSTR.
-                return Interop.OleAut32.SysAllocStringLen(message, (uint)message.Length);
+                return Marshal.StringToBSTR(message);
             }
             catch (Exception ex)
             {
@@ -286,9 +286,7 @@ namespace System
             {
                 string? source = obj->Source;
 
-                return source != null
-                    ? Interop.OleAut32.SysAllocStringLen(source, (uint)source.Length)
-                    : IntPtr.Zero;
+                return Marshal.StringToBSTR(source);
             }
             catch (Exception ex)
             {
@@ -331,9 +329,7 @@ namespace System
             {
                 string? helpFile = obj->GetHelpContext(out *helpContext);
 
-                *bstr = helpFile != null
-                    ? Interop.OleAut32.SysAllocStringLen(helpFile, (uint)helpFile.Length)
-                    : IntPtr.Zero;
+                *bstr = Marshal.StringToBSTR(helpFile);
             }
             catch (Exception ex)
             {
