@@ -351,6 +351,11 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
+
+#ifdef HOST_ANDROID
+    PAL_MarkCrashReportAlreadyLogged();
+#endif
+
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Exiting stack trace printing thread.\n");

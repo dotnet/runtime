@@ -2725,6 +2725,23 @@ static void DoNotOptimize(const void* p)
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
 extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
+
+static bool s_crashReportAlreadyLogged = false;
+
+/*++
+Function:
+  PAL_MarkCrashReportAlreadyLogged
+
+Abstract:
+  Signals that a crash report has already been logged for this crash.
+  Android currently does not support CreateDump, so a crash report is manually logged.
+  This prevents duplicate stack traces from being logged (e.g. unhandled exception)
+--*/
+VOID
+PAL_MarkCrashReportAlreadyLogged()
+{
+    s_crashReportAlreadyLogged = true;
+}
 #endif // HOST_ANDROID
 
 VOID
@@ -2735,7 +2752,7 @@ PROCCreateCrashReportAndDumpIfEnabled(int signal, siginfo_t* siginfo, void* cont
 
 #ifdef HOST_ANDROID
     // Android CoreCLR currently does not support CreateDump, so log a crash report until then.
-    if (LogCallstackForAndroidNativeCrash != nullptr)
+    if (!s_crashReportAlreadyLogged && LogCallstackForAndroidNativeCrash != nullptr)
     {
         minipal_log_write_fatal(".NET runtime crash report\n");
         LogCallstackForAndroidNativeCrash();

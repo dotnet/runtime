@@ -262,6 +262,13 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
 
+#ifdef HOST_ANDROID
+PALIMPORT
+VOID
+PALAPI
+PAL_MarkCrashReportAlreadyLogged();
+#endif
+
 PALIMPORT
 BOOL
 PALAPI

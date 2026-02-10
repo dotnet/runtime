@@ -4383,6 +4383,10 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         PrintToStdErrW(message.GetUnicode());
         PrintToStdErrA("\n");
 
+#ifdef HOST_ANDROID
+        PAL_MarkCrashReportAlreadyLogged();
+#endif
+
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
         if (sendWindowsEventLog && ShouldLogInEventLog())
