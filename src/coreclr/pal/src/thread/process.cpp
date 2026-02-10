@@ -2727,7 +2727,7 @@ static void DoNotOptimize(const void* p)
 #include <minipal/log.h>
 extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
 
-static bool s_crashReportAlreadyLogged = false;
+static Volatile<LONG> s_crashReportAlreadyLogged = FALSE;
 
 /*++
 Function:
@@ -2742,7 +2742,7 @@ VOID
 PALAPI
 PAL_MarkCrashReportAlreadyLogged()
 {
-    s_crashReportAlreadyLogged = true;
+    InterlockedExchange(&s_crashReportAlreadyLogged, TRUE);
 }
 #endif // HOST_ANDROID
 
@@ -2754,7 +2754,9 @@ PROCCreateCrashReportAndDumpIfEnabled(int signal, siginfo_t* siginfo, void* cont
 
 #ifdef HOST_ANDROID
     // Android CoreCLR currently does not support CreateDump, so log a crash report until then.
-    if (!s_crashReportAlreadyLogged && LogCallstackForAndroidNativeCrash != nullptr)
+    // Use atomic exchange to ensure only one thread logs the crash report to avoid interleaved output.
+    if (InterlockedCompareExchange(&s_crashReportAlreadyLogged, TRUE, FALSE) == FALSE &&
+        LogCallstackForAndroidNativeCrash != nullptr)
     {
         minipal_log_write_fatal(".NET runtime crash report\n");
         LogCallstackForAndroidNativeCrash();

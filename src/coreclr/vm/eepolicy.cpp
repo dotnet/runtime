@@ -203,7 +203,9 @@ class CallStackLogger
 #ifdef HOST_ANDROID
         if (pMD == nullptr)
         {
-            PrintToStdErrA("   at [Native Code]\n");
+            SString str(pWordAt);
+            str.Append(W("[Native Code]\n"));
+            PrintToStdErrW(str.GetUnicode());
             return;
         }
 #endif
