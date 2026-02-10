@@ -667,6 +667,12 @@ struct Agnostic_GetContinuationTypeIn
     DWORD     objRefsSize;
 };
 
+struct Agnostic_GetWasmTypeSymbol
+{
+    DWORD types;
+    DWORD typesSize;
+};
+
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;
