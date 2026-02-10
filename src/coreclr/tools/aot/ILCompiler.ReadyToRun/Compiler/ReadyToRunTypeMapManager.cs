@@ -7,12 +7,15 @@ using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Runtime;
 using Internal.TypeSystem;
 
 namespace ILCompiler.ReadyToRun
 {
-    public sealed class ReadyToRunTypeMapManager(ModuleDesc triggeringModule, TypeMapMetadata assemblyTypeMaps, ImportReferenceProvider importProvider) : TypeMapManager
+    public sealed class ReadyToRunTypeMapManager(ModuleDesc triggeringModule, TypeMapMetadata assemblyTypeMaps) : TypeMapManager
     {
+        private ImportReferenceProvider _importReferenceProvider;
+
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             base.AttachToDependencyGraph(graph);
@@ -36,7 +39,7 @@ namespace ILCompiler.ReadyToRun
         {
             foreach (var map in assemblyTypeMaps.Maps)
             {
-                yield return new ReadyToRunExternalTypeMapNode(triggeringModule, map.Key, map.Value, importProvider);
+                yield return new ReadyToRunExternalTypeMapNode(triggeringModule, map.Key, map.Value, _importReferenceProvider);
             }
         }
 
@@ -44,18 +47,20 @@ namespace ILCompiler.ReadyToRun
         {
             foreach (var map in assemblyTypeMaps.Maps)
             {
-                yield return new ReadyToRunProxyTypeMapNode(triggeringModule, map.Key, map.Value, importProvider);
+                yield return new ReadyToRunProxyTypeMapNode(triggeringModule, map.Key, map.Value, _importReferenceProvider);
             }
         }
 
-        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, INativeFormatTypeReferenceProvider commonFixupsTableNode)
+        public void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ImportReferenceProvider importReferenceProvider)
         {
-            base.AddToReadyToRunHeader(header, nodeFactory, commonFixupsTableNode);
+            base.AddToReadyToRunHeader(header, nodeFactory, importReferenceProvider);
+
+            _importReferenceProvider = importReferenceProvider;
 
             if (IsEmpty)
                 return;
 
-
+            header.Add(ReadyToRunSectionType.TypeMapAssemblyTargets, new TypeMapAssemblyTargetsNode(assemblyTypeMaps, importReferenceProvider));
         }
     }
 }

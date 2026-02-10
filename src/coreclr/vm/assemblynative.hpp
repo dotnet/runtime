@@ -168,17 +168,17 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     QCall::TypeHandle pTypeGroup,
     BOOL (*newExternalTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
     BOOL (*newProxyTypeEntry)(CallbackContext* context, ProcessAttributesCallbackArg* arg),
-    BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context, REFLECTMODULEBASEREF* module),
-    BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context, REFLECTMODULEBASEREF* module),
+    BOOL (*newPrecachedExternalTypeMap)(CallbackContext* context),
+    BOOL (*newPrecachedProxyTypeMap)(CallbackContext* context),
     CallbackContext* context);
 
-extern "C" TypeHandle TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
+extern "C" TADDR TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
-    QCall::TypeHandle pType
+    LPCUTF8 key
 );
 
-extern "C" TypeHandle TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
+extern "C" TADDR TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
     QCall::ModuleHandle pModule,
     QCall::TypeHandle pGroupType,
     QCall::TypeHandle pType

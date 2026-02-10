@@ -52,7 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
-// R2R Version 18.1 adds the ExternalTypeMaps and ProxyTypeMaps sections
+// R2R Version 18.1 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 
 struct READYTORUN_CORE_HEADER
 {
@@ -120,6 +120,7 @@ enum class ReadyToRunSectionType : uint32_t
     TypeGenericInfoMap          = 123, // Added in V9.0
     ExternalTypeMaps            = 124, // Added in V18.1
     ProxyTypeMaps               = 125, // Added in V18.1
+    TypeMapAssemblyTargets      = 126, // Added in V18.1
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

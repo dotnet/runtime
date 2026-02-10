@@ -943,6 +943,12 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         {
             m_proxyTypeMaps = NativeHashtable(NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress));
         }
+
+        IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
+        if (pTypeMapAssemblyTargetsDir != NULL)
+        {
+            m_typeMapAssemblyTargets = NativeHashtable(NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress));
+        }
     }
 
     if (!m_isComponentAssembly)
@@ -1594,6 +1600,31 @@ namespace
 
         return *(TypeHandle*)fixupAddress;
     }
+
+    Module* GetModuleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
+    {
+        STANDARD_VM_CONTRACT;
+
+        COUNT_T countImportSections;
+        PTR_READYTORUN_IMPORT_SECTION pImportSections = pR2RInfo->GetImportSections(&countImportSections);
+
+        if (importSection >= countImportSections)
+        {
+            _ASSERTE(!"Malformed PGO type or method handle data");
+            return nullptr;
+        }
+
+        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+        COUNT_T cbData;
+        TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
+        if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
+        {
+            return nullptr;
+        }
+
+        return *(Module**)fixupAddress;
+    }
 }
 
 bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
@@ -1735,6 +1766,59 @@ TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupTyp
 
     // No table found for the group type.
     return TypeHandle();
+}
+
+bool ReadyToRunInfo::HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGroupType != nullptr);
+    if (m_typeMapAssemblyTargets.IsNull())
+    {
+        return false;
+    }
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_typeMapAssemblyTargets.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupType))
+        {
+            *pCount = entryParser.GetUnsigned();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGroupType != nullptr);
+    if (m_typeMapAssemblyTargets.IsNull())
+    {
+        return 0;
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_typeMapAssemblyTargets.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        {
+            continue;
+        }
+
+        COUNT_T numTargets = entryParser.GetUnsigned();
+        COUNT_T resultCount = min(numTargets, count);
+        for (COUNT_T i = 0; i < resultCount; i++)
+        {
+            pTargetModules[i] = GetModuleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned());
+        }
+    }
+
+    return 0;
 }
 
 class NativeManifestModule : public ModuleBase

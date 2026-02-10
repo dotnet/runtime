@@ -184,6 +184,13 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.ContinuationLayout, key)
                 );
             });
+
+            _ecmaModuleFixupCache = new NodeCache<IEcmaModule, Import>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new ReadyToRunModuleSignature(key));
+            });
         }
 
         private NodeCache<AsyncContinuationType, ISymbolNode> _continuationTypeFixups;
@@ -191,6 +198,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ContinuationTypeSymbol(AsyncContinuationType key)
         {
             return _continuationTypeFixups.GetOrAdd(key);
+
+            _ecmaModuleFixupCache = new NodeCache<IEcmaModule, Import>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new ReadyToRunModuleSignature(key));
+            });
         }
 
         private NodeCache<ModuleToken, Import> _importStrings;
@@ -413,7 +427,7 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.MethodDictionary, 
+                    ReadyToRunFixupKind.MethodDictionary,
                     method,
                     isInstantiatingStub: true));
         }
@@ -496,6 +510,12 @@ namespace ILCompiler.DependencyAnalysis
             return _ilBodyFixupsCache.GetOrAdd(_codegenNodeFactory.ILBodyFixupSignature(
                 _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_IL_Body : ReadyToRunFixupKind.Check_IL_Body,
                 method));
+        }
+
+        private NodeCache<IEcmaModule, Import> _ecmaModuleFixupCache;
+        public Import ModuleLookup(IEcmaModule module)
+        {
+            return _ecmaModuleFixupCache.GetOrAdd(module);
         }
 
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>

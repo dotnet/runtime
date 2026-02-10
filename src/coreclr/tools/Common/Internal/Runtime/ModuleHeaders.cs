@@ -83,6 +83,7 @@ namespace Internal.Runtime
         // Shared ReadyToRun sections
         ExternalTypeMaps            = 124, // Added to CoreCLR in V18.1
         ProxyTypeMaps               = 125, // Added to CoreCLR in V18.1
+        TypeMapAssemblyTargets      = 126, // Added in V18.1
 
         //
         // NativeAOT ReadyToRun sections

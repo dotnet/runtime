@@ -397,7 +397,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public InstrumentationDataTableNode InstrumentationDataTable;
         public InliningInfoNode CrossModuleInlningInfo;
-        public ImportReferenceProvider FixupCellProvider;
+        public ImportReferenceProvider ImportReferenceProvider;
 
         public Import ModuleImport;
 
@@ -788,13 +788,13 @@ namespace ILCompiler.DependencyAnalysis
                     var node = new MethodIsGenericMapNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node);
                 }
-                FixupCellProvider ??= new ImportReferenceProvider();
+                ImportReferenceProvider ??= new ImportReferenceProvider();
 
-                TypeMapMetadata metadata = TypeMapMetadata.CreateFromAssembly((EcmaAssembly)inputModule.Assembly, TypeSystemContext, TypeSystemContext.SystemModule, TypeMapAssemblyTargetsMode.Record);
+                TypeMapMetadata metadata = TypeMapMetadata.CreateFromAssembly((EcmaAssembly)inputModule.Assembly, TypeSystemContext.SystemModule, TypeMapAssemblyTargetsMode.Record);
 
-                ReadyToRunTypeMapManager typeMapManager = new(inputModule, metadata, FixupCellProvider);
+                ReadyToRunTypeMapManager typeMapManager = new(inputModule, metadata);
+                typeMapManager.AddToReadyToRunHeader(tableHeader, this, ImportReferenceProvider);
                 typeMapManager.AttachToDependencyGraph(graph);
-                typeMapManager.AddToReadyToRunHeader(tableHeader, this, FixupCellProvider);
             }
 
             InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,

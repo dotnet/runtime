@@ -145,6 +145,7 @@ class ReadyToRunInfo
 
     NativeFormat::NativeHashtable   m_externalTypeMaps;
     NativeFormat::NativeHashtable   m_proxyTypeMaps;
+    NativeFormat::NativeHashtable   m_typeMapAssemblyTargets;
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
@@ -338,6 +339,10 @@ public:
 
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
+
+    bool HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount);
+
+    COUNT_T GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count);
 
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:

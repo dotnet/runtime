@@ -201,7 +201,7 @@ namespace ILCompiler
             /// <summary>
             /// The modules targeted with TypeMapAssemblyTarget attributes for this type map group. This is only populated when TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Record. When TypeMapMetadata is created with TypeMapAssemblyTargetsMode.Traverse, this will be empty as the target assemblies will be traversed to include their type maps instead of just being recorded as targets.
             /// </summary>
-            public IEnumerable<ModuleDesc> TargetModules => _targetModules;
+            public IReadOnlyList<ModuleDesc> TargetModules => _targetModules;
 
             IReadOnlyDictionary<string, (TypeDesc type, TypeDesc trimmingType)> IExternalTypeMap.TypeMap => _externalTypeMap;
 
