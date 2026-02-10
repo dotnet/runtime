@@ -636,6 +636,20 @@ namespace ILCompiler.DependencyAnalysis
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     PutRiscV64AuipcCombo((uint*)location, value, isStype);
                     break;
+
+                case RelocType.IMAGE_REL_WASM_FUNCTION_INDEX_LEB:
+                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_SLEB  :
+                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_I32   :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_LEB   :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_SLEB  :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_I32   :
+                case RelocType.IMAGE_REL_WASM_TYPE_INDEX_LEB    :
+                case RelocType.IMAGE_REL_WASM_GLOBAL_INDEX_LEB  :
+                case RelocType.IMAGE_REL_WASM_EVENT_INDEX_LEB   :
+                case RelocType.IMAGE_REL_WASM_TABLE_NUMBER_LEB  :
+                    // TODO-WASM: Should we do anything here?
+                    break;
+
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
@@ -724,6 +738,18 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
+                case RelocType.IMAGE_REL_WASM_FUNCTION_INDEX_LEB:
+                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_SLEB  :
+                case RelocType.IMAGE_REL_WASM_TABLE_INDEX_I32   :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_LEB   :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_SLEB  :
+                case RelocType.IMAGE_REL_WASM_MEMORY_ADDR_I32   :
+                case RelocType.IMAGE_REL_WASM_TYPE_INDEX_LEB    :
+                case RelocType.IMAGE_REL_WASM_GLOBAL_INDEX_LEB  :
+                case RelocType.IMAGE_REL_WASM_EVENT_INDEX_LEB   :
+                case RelocType.IMAGE_REL_WASM_TABLE_NUMBER_LEB  :
+                    // Wasm relocs do not have offsets, just targets
+                    return 0;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
