@@ -1163,9 +1163,12 @@ namespace System.Reflection.Metadata
         void TestDisableMetadataUpdate()
         {
             var options = new RemoteInvokeOptions();
-            options.StartInfo.EnvironmentVariables.Add(
-                ApplyUpdateUtil.DotNetModifiableAssembliesSwitch, ApplyUpdateUtil.DotNetModifiableAssembliesDisabledValue);
 
+            options.StartInfo.EnvironmentVariables.Add(ApplyUpdateUtil.DotNetModifiableAssembliesSwitch,
+                                                       ApplyUpdateUtil.DotNetModifiableAssembliesValue);
+            RemoteExecutor.Invoke(static () => { Assert.True(MetadataUpdater.IsSupported); }, options).Dispose();
+
+            options.StartInfo.EnvironmentVariables[ApplyUpdateUtil.DotNetModifiableAssembliesSwitch] = ApplyUpdateUtil.DotNetModifiableAssembliesDisabledValue;
             RemoteExecutor.Invoke(static () =>
             {
                 Assert.False(MetadataUpdater.IsSupported);
