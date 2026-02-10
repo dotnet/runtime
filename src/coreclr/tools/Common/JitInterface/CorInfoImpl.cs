@@ -1500,7 +1500,7 @@ namespace Internal.JitInterface
                 {
                     if (info->pResolvedTokenVirtualMethod == null)
                     {
-                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
                         return false;
                     }
 
@@ -1513,12 +1513,9 @@ namespace Internal.JitInterface
                         MethodBeingCompiled,
                         ref info->instParamLookup);
 #else
-                    ComputeLookup(
-                        ref info->resolvedTokenDevirtualizedMethod,
-                        originalImpl,
-                        ReadyToRunHelperId.MethodHandle,
-                        MethodBeingCompiled,
-                        ref info->instParamLookup);
+                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    return false;
 #endif
                 }
             }
@@ -1528,19 +1525,12 @@ namespace Internal.JitInterface
                 impl.IsCanonicalMethod(CanonicalFormKind.Specific))
             {
 #if READYTORUN
-                MethodWithToken originalImplWithToken = new MethodWithToken(
-                    originalImpl,
-                    methodWithTokenImpl.Token,
-                    constrainedType: null,
-                    unboxing: false,
-                    context: null,
-                    devirtualizedMethodOwner: originalImpl.OwningType);
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(
-                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                        ReadyToRunHelperId.MethodHandle,
-                        originalImplWithToken));
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, originalImpl.OwningType);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
 #else
-                Debug.Assert(false); // TODO: NYI, and currently we should never hit this in NativeAOT
+                // TODO: Implement generic virtual method devirtualization constant lookup for NativeAOT
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
 #endif
             }
 
