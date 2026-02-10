@@ -1846,7 +1846,7 @@ public:
 #endif // JIT32_GCENCODER
 
 private:
-    Compiler* comp;
+    Compiler* m_compiler;
 
     // As we discover returns, we'll record them in `returnBlocks`, until
     // the limit is reached, at which point we'll keep track of the merged
@@ -1872,9 +1872,9 @@ private:
 
 public:
     MergedReturns(Compiler* comp)
-        : comp(comp)
+        : m_compiler(comp)
     {
-        comp->fgReturnCount = 0;
+        m_compiler->fgReturnCount = 0;
     }
 
     void SetMaxReturns(unsigned value)
@@ -1904,7 +1904,7 @@ public:
     void Record(BasicBlock* returnBlock)
     {
         // Add this return to our tally
-        unsigned oldReturnCount = comp->fgReturnCount++;
+        unsigned oldReturnCount = m_compiler->fgReturnCount++;
 
         if (!mergingReturns)
         {
@@ -1932,7 +1932,7 @@ public:
 
         // We have too many returns, so merge this one in.
         // Search limit is new return count minus one (to exclude this block).
-        unsigned searchLimit = comp->fgReturnCount - 1;
+        unsigned searchLimit = m_compiler->fgReturnCount - 1;
         Merge(returnBlock, searchLimit);
     }
 
@@ -1971,10 +1971,10 @@ public:
             return false;
         }
 
-        for (unsigned index = 0; index < comp->fgReturnCount; ++index)
+        for (unsigned index = 0; index < m_compiler->fgReturnCount; ++index)
         {
             BasicBlock* returnBlock    = returnBlocks[index];
-            BasicBlock* genReturnBlock = comp->genReturnBB;
+            BasicBlock* genReturnBlock = m_compiler->genReturnBB;
             if (returnBlock == genReturnBlock)
             {
                 continue;
@@ -1983,13 +1983,13 @@ public:
             BasicBlock* insertionPoint = insertionPoints[index];
             assert(insertionPoint != nullptr);
 
-            comp->fgUnlinkBlock(returnBlock);
-            comp->fgMoveBlocksAfter(returnBlock, returnBlock, insertionPoint);
+            m_compiler->fgUnlinkBlock(returnBlock);
+            m_compiler->fgMoveBlocksAfter(returnBlock, returnBlock, insertionPoint);
             // Treat the merged return block as belonging to the same EH region
             // as the insertion point block, to make sure we don't break up
             // EH regions; since returning a constant won't throw, this won't
             // affect program behavior.
-            comp->fgExtendEHRegionAfter(insertionPoint);
+            m_compiler->fgExtendEHRegionAfter(insertionPoint);
         }
 
         return true;
@@ -2004,7 +2004,7 @@ private:
     //    index - Index into `returnBlocks` to store the new block into.
     //    returnConst - Constant that the new block should return; may be nullptr to
     //      indicate that the new merged return is for the non-constant case, in which
-    //      case, if the method's return type is non-void, `comp->genReturnLocal` will
+    //      case, if the method's return type is non-void, `m_compiler->genReturnLocal` will
     //      be initialized to a new local of the appropriate type, and the new block will
     //      return it.
     //
@@ -2013,8 +2013,8 @@ private:
     //
     BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
     {
-        BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
-        comp->fgReturnCount++;
+        BasicBlock* newReturnBB = m_compiler->fgNewBBinRegion(BBJ_RETURN);
+        m_compiler->fgReturnCount++;
 
         noway_assert(newReturnBB->IsLast());
 
@@ -2024,24 +2024,24 @@ private:
 
         if (returnConst != nullptr)
         {
-            returnExpr             = comp->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
+            returnExpr             = m_compiler->gtNewOperNode(GT_RETURN, returnConst->gtType, returnConst);
             returnConstants[index] = returnConst->IntegralValue();
         }
-        else if (comp->compMethodHasRetVal())
+        else if (m_compiler->compMethodHasRetVal())
         {
             // There is a return value, so create a temp for it.  Real returns will store the value in there and
             // it'll be reloaded by the single return.
-            unsigned retLclNum   = comp->lvaGrabTemp(true DEBUGARG("Single return block return value"));
-            comp->genReturnLocal = retLclNum;
-            LclVarDsc* retVarDsc = comp->lvaGetDesc(retLclNum);
+            unsigned retLclNum         = m_compiler->lvaGrabTemp(true DEBUGARG("Single return block return value"));
+            m_compiler->genReturnLocal = retLclNum;
+            LclVarDsc* retVarDsc       = m_compiler->lvaGetDesc(retLclNum);
             var_types  retLclType =
-                comp->compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(comp->info.compRetType);
+                m_compiler->compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(m_compiler->info.compRetType);
 
             if (varTypeIsStruct(retLclType))
             {
-                comp->lvaSetStruct(retLclNum, comp->info.compMethodInfo->args.retTypeClass, false);
+                m_compiler->lvaSetStruct(retLclNum, m_compiler->info.compMethodInfo->args.retTypeClass, false);
 
-                if (comp->compMethodReturnsMultiRegRetType())
+                if (m_compiler->compMethodReturnsMultiRegRetType())
                 {
                     retVarDsc->lvIsMultiRegRet = true;
                 }
@@ -2053,7 +2053,7 @@ private:
 
             if (varTypeIsFloating(retVarDsc->TypeGet()))
             {
-                comp->compFloatingPointUsed = true;
+                m_compiler->compFloatingPointUsed = true;
             }
 
 #ifdef DEBUG
@@ -2062,33 +2062,33 @@ private:
             retVarDsc->lvKeepType = 1;
 #endif
 
-            GenTree* retTemp = comp->gtNewLclvNode(retLclNum, retVarDsc->TypeGet());
+            GenTree* retTemp = m_compiler->gtNewLclvNode(retLclNum, retVarDsc->TypeGet());
 
             // make sure copy prop ignores this node (make sure it always does a reload from the temp).
             retTemp->gtFlags |= GTF_DONT_CSE;
-            returnExpr = comp->gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
+            returnExpr = m_compiler->gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
         }
         else // Return void.
         {
-            assert((comp->info.compRetType == TYP_VOID) || varTypeIsStruct(comp->info.compRetType));
-            comp->genReturnLocal = BAD_VAR_NUM;
+            assert((m_compiler->info.compRetType == TYP_VOID) || varTypeIsStruct(m_compiler->info.compRetType));
+            m_compiler->genReturnLocal = BAD_VAR_NUM;
 
-            returnExpr = new (comp, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+            returnExpr = new (m_compiler, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
 
         // Add 'return' expression to the return block
-        comp->fgNewStmtAtEnd(newReturnBB, returnExpr);
+        m_compiler->fgNewStmtAtEnd(newReturnBB, returnExpr);
         // Flag that this 'return' was generated by return merging so that subsequent
         // return block merging will know to leave it alone.
         returnExpr->gtFlags |= GTF_RET_MERGED;
 
 #ifdef DEBUG
-        if (comp->verbose)
+        if (m_compiler->verbose)
         {
             printf("\nmergeReturns statement tree ");
             Compiler::printTreeID(returnExpr);
             printf(" added to genReturnBB %s\n", newReturnBB->dspToString());
-            comp->gtDispTree(returnExpr);
+            m_compiler->gtDispTree(returnExpr);
             printf("\n");
         }
 #endif
@@ -2130,7 +2130,7 @@ private:
 
         // Do not look for mergeable constant returns in debug codegen as
         // we may lose track of sequence points.
-        if ((returnBlock != nullptr) && (maxReturns > 1) && !comp->opts.compDbgCode)
+        if ((returnBlock != nullptr) && (maxReturns > 1) && !m_compiler->opts.compDbgCode)
         {
             // Check to see if this is a constant return so that we can search
             // for and/or create a constant return block for it.
@@ -2150,7 +2150,7 @@ private:
 
                     // We have already allocated `searchLimit` slots.
                     unsigned slotsReserved = searchLimit;
-                    if (comp->genReturnBB == nullptr)
+                    if (m_compiler->genReturnBB == nullptr)
                     {
                         // We haven't made a non-const return yet, so we have to reserve
                         // a slot for one.
@@ -2170,14 +2170,14 @@ private:
                     mergedReturnBlock = constReturnBlock;
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
-                    assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    assert((m_compiler->info.compFlags & CORINFO_FLG_SYNCH) == 0);
+                    FlowEdge* const newEdge = m_compiler->fgAddRefPred(constReturnBlock, returnBlock);
                     returnBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
                     assert(returnBlock->lastStmt()->GetRootNode()->gtGetOp1()->IsIntegralConst());
-                    comp->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
+                    m_compiler->fgRemoveStmt(returnBlock, returnBlock->lastStmt());
 
                     // Using 'returnBlock' as the insertion point for 'mergedReturnBlock'
                     // will give it a chance to use fallthrough rather than BBJ_ALWAYS.
@@ -2210,14 +2210,14 @@ private:
             // No constant return block for this return; use the general one.
             // We defer flow update and profile update to morph.
             //
-            mergedReturnBlock = comp->genReturnBB;
+            mergedReturnBlock = m_compiler->genReturnBB;
             if (mergedReturnBlock == nullptr)
             {
                 // No general merged return for this function yet; create one.
                 // There had better still be room left in the array.
                 assert(searchLimit < maxReturns);
-                mergedReturnBlock = CreateReturnBB(searchLimit);
-                comp->genReturnBB = mergedReturnBlock;
+                mergedReturnBlock       = CreateReturnBB(searchLimit);
+                m_compiler->genReturnBB = mergedReturnBlock;
                 // Downstream code expects the `genReturnBB` to always remain
                 // once created, so that it can redirect flow edges to it.
                 mergedReturnBlock->SetFlags(BBF_DONT_REMOVE);
@@ -2228,7 +2228,7 @@ private:
         {
             // Update fgReturnCount to reflect or anticipate that `returnBlock` will no longer
             // be a return point.
-            comp->fgReturnCount--;
+            m_compiler->fgReturnCount--;
         }
 
         return mergedReturnBlock;
@@ -2298,7 +2298,7 @@ private:
 
             BasicBlock* returnBlock = returnBlocks[i];
 
-            if (returnBlock == comp->genReturnBB)
+            if (returnBlock == m_compiler->genReturnBB)
             {
                 continue;
             }
@@ -3461,6 +3461,7 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
 {
     if (add->acdDstBlk != nullptr)
     {
+        assert(add->acdDstBlk->HasFlag(BBF_THROW_HELPER));
         return;
     }
 
@@ -3484,6 +3485,8 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     BasicBlock* const newBlk      = fgNewBBinRegion(jumpKinds[add->acdKind], add->acdTryIndex, add->acdHndIndex,
                                                     /* nearBlk */ nullptr, putInFilter,
                                                     /* runRarely */ true, /* insertAtEnd */ true);
+
+    newBlk->SetFlags(BBF_THROW_HELPER);
 
     // Update the descriptor so future lookups can find the block
     //
@@ -3668,6 +3671,11 @@ Compiler::AddCodeDsc* Compiler::fgGetExcptnTarget(SpecialCodeKind kind, BasicBlo
         {
             fgCreateThrowHelperBlock(add);
         }
+    }
+
+    if (add->acdDstBlk != nullptr)
+    {
+        assert(add->acdDstBlk->HasFlag(BBF_THROW_HELPER));
     }
 
     return add;
