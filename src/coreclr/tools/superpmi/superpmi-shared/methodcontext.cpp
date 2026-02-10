@@ -6457,7 +6457,7 @@ void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWa
 }
 void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
 {
-    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d " PRIX64, key, value);
+    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d ", key, value);
 }
 CorInfoWasmType MethodContext::repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd)
 {
