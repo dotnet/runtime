@@ -927,11 +927,10 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
                 (addOpVN == normalLclVN) && (addOpCns >= 0))
             {
-                // We can deduce normalLclVN is [-CNS1..checkedBndVN - CNS1]
-                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-                limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(), -addOpCns);
-                assert(cmpOper == GT_LT);
-                assert(isUnsigned);
+                // normalLclVN is [-CNS..preferredBoundVN - CNS]
+                cmpOper    = GT_LT;
+                isUnsigned = true;
+                limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
             }
             else
             {
