@@ -391,7 +391,9 @@ namespace System.Numerics.Tensors
             {
                 Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
                 for (int i = 0; i < span.Length; i++)
+                {
                     span[i] = T.CreateChecked(random.NextDouble());
+                }
             }
             else
             {
@@ -1583,9 +1585,13 @@ namespace System.Numerics.Tensors
                 ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
                 if (newSize >= span.Length)
+                {
                     span.CopyTo(ospan);
+                }
                 else
+                {
                     span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
             }
             else
             {
@@ -1639,9 +1645,13 @@ namespace System.Numerics.Tensors
                 ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.FlattenedLength);
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
                 if (ospan.Length >= span.Length)
+                {
                     span.CopyTo(ospan);
+                }
                 else
+                {
                     span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
             }
             else
             {
