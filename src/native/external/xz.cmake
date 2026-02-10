@@ -42,8 +42,10 @@ set(LZMA_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/xz/src/liblzma/api)
 # libraries, so we need to force HAVE_VISIBILITY=1 for static liblzma as well.
 if (NOT MSVC)
     get_target_property(defs liblzma COMPILE_DEFINITIONS)
-    list(FILTER defs EXCLUDE REGEX "HAVE_VISIBILITY=.")
-    set_property(TARGET liblzma PROPERTY COMPILE_DEFINITIONS ${defs})
+    if(defs AND NOT defs STREQUAL "defs-NOTFOUND")
+        list(FILTER defs EXCLUDE REGEX "HAVE_VISIBILITY=.")
+        set_property(TARGET liblzma PROPERTY COMPILE_DEFINITIONS ${defs})
+    endif()
     target_compile_definitions(liblzma PRIVATE HAVE_VISIBILITY=1)
 endif()
 
