@@ -161,13 +161,15 @@ Then layer in context from `warnings`, `freshness`, and `commits`:
 
 ### Darc commands to include
 
-When recommending actions, include the relevant `darc` command with the actual `subscriptionId` from the summary:
+When recommending actions, include the relevant `darc` command with the actual `subscriptionId` from the summary. Be precise about what each command does:
 
-```
-darc trigger-subscriptions --id <subscriptionId>           # normal trigger
-darc trigger-subscriptions --id <subscriptionId> --force   # force trigger (overwrites PR)
-darc vmr resolve-conflict --subscription <subscriptionId>  # resolve conflicts locally
-```
+| Command | What it does | When to use |
+|---------|-------------|-------------|
+| `darc trigger-subscriptions --id <id>` | Normal trigger — only works if subscription isn't stale. Creates a new PR if none exists. | PR was closed, or no PR exists |
+| `darc trigger-subscriptions --id <id> --force` | Force trigger — **overwrites the existing PR branch** with fresh VMR content. Does not create a new PR. | PR exists but is stale/no-op and you want to reuse it |
+| `darc vmr resolve-conflict --subscription <id>` | Resolve conflicts locally and push to the PR branch | PR has merge conflicts |
+
+> ⚠️ **Common mistake**: Don't say "close then force-trigger" — force-trigger pushes to the *existing* PR. If you close first, use a normal trigger instead (which creates a new PR). The two paths are: (A) force-trigger to refresh the existing PR, or (B) close + normal-trigger to get a new PR.
 
 ### Tone
 
