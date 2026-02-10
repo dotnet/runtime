@@ -1502,6 +1502,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             // Register the stub's entry point so GC can find it during stack walks
             m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
         }
+        else
+        {
+            pEntryPoint = (PCODE)NULL;
+            goto done;
+        }
     }
 
 #ifdef PROFILING_SUPPORTED
