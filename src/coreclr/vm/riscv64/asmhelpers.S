@@ -1403,7 +1403,7 @@ NESTED_END CallJittedMethodRetIntFloat, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
     mv t6, METHODDESC_REGISTER
@@ -2592,7 +2592,7 @@ LEAF_END Store_FA7
 // ------------------------------------------------------------------
 NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Pass TransitionBlock* as last (6th) argument
     // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
@@ -2619,7 +2619,7 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
     // a0, a1 remain unchanged

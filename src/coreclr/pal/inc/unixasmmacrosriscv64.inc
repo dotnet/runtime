@@ -260,13 +260,13 @@ C_FUNC(\Name):
 //            FPR_f8 / fs0
 // Extra:
 //
-// PushCalleeSavedFloats - Optional parameter. If set to 1, the macro will also save
-//                         the callee-saved floating point registers (fs0-fs11) to the stack.
-//                         These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (fs0-fs11) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
 //
-.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1, PushCalleeSavedFloats = 0
+.macro PROLOG_WITH_TRANSITION_BLOCK extraParameters = 0, extraLocals = 0, SaveFPRegs = 1, pushCalleeSavedFloatRegs = 0
     __PWTB_SaveFPArgs = \SaveFPRegs
-    __PWTB_PushCalleeSavedFloats = \PushCalleeSavedFloats
+    __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
     __PWTB_FloatCalleeSavedRegisters = \extraLocals
 
@@ -275,8 +275,8 @@ C_FUNC(\Name):
         __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 8
     .endif
 
-    // If PushCalleeSavedFloats is specified, reserve space for fs0-fs11 (12 registers * 8 bytes = 96 bytes)
-    .if (__PWTB_PushCalleeSavedFloats == 1)
+    // If pushCalleeSavedFloatRegs is specified, reserve space for fs0-fs11 (12 registers * 8 bytes = 96 bytes)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
         __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters + 96
     .else
         __PWTB_FloatArgumentRegisters = __PWTB_FloatCalleeSavedRegisters
@@ -309,7 +309,7 @@ C_FUNC(\Name):
     .endif
 
     // Save callee-saved floating point registers if requested (fs0-fs11)
-    .if (__PWTB_PushCalleeSavedFloats == 1)
+    .if (__PWTB_PushCalleeSavedFloatRegs == 1)
         fsd     fs0, (__PWTB_FloatCalleeSavedRegisters)(sp)
         fsd     fs1, (__PWTB_FloatCalleeSavedRegisters + 8)(sp)
         fsd     fs2, (__PWTB_FloatCalleeSavedRegisters + 16)(sp)

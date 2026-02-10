@@ -1094,7 +1094,7 @@ JIT_PollGCRarePath
 
     NESTED_ENTRY InterpreterStub
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
 
         INLINE_GETTHREAD x20, x19
         mov x19, METHODDESC_REGISTER ; x19 contains IR bytecode address
@@ -3152,7 +3152,7 @@ CopyLoop
 
     NESTED_ENTRY CallInterpreterFunclet
 
-        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloats
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
 
         ; Pass TransitionBlock* as last (6th) argument
         ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
@@ -3181,7 +3181,7 @@ CopyLoop
 
     NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation
 
-        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloats
+        PROLOG_WITH_TRANSITION_BLOCK , , PushCalleeSavedFloatRegs
 
         ; Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
         ; x0, x1 remain unchanged

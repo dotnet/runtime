@@ -366,7 +366,7 @@ RESTORE_FLOAT_ARGUMENT_REGISTERS macro ofs
 ; callee's rdx
 ; callee's rcx
 
-PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, calleeSavedFloats := <DoNotPushCalleeSavedFloats>, stackAllocOnEntry := <0>, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
+PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, calleeSavedFloatRegs := <DoNotPushCalleeSavedFloatRegs>, stackAllocOnEntry := <0>, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
 
         __PWTB_FloatArgumentRegisters = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + extraLocals
 
@@ -374,7 +374,7 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, calleeSavedFloats := <DoN
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
         endif
 
-        ifidn <calleeSavedFloats>, <PushCalleeSavedFloats>
+        ifidn <calleeSavedFloatRegs>, <PushCalleeSavedFloatRegs>
         __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatArgumentRegisters
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 10 * 16
         endif
@@ -413,7 +413,7 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, calleeSavedFloats := <DoN
         SAVE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         SAVE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
 
-        ifidn <calleeSavedFloats>, <PushCalleeSavedFloats>
+        ifidn <calleeSavedFloatRegs>, <PushCalleeSavedFloatRegs>
         movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters], xmm6
         movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 10h], xmm7
         movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 20h], xmm8

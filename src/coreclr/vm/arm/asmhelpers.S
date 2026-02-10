@@ -1254,7 +1254,7 @@ NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetU2, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
     mov r4, METHODDESC_REGISTER // InterpMethod
@@ -1382,7 +1382,7 @@ NESTED_END InterpreterStubRetBuffR1, _TEXT
 // ------------------------------------------------------------------
 NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
     // Original args: r0=throwable, r1=pHandler, r2=pRD, r3=pExInfo, isFilter on stack
@@ -1424,7 +1424,7 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
     // r0, r1 remain unchanged

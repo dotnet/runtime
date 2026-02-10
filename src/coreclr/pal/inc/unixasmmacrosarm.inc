@@ -152,7 +152,7 @@ C_FUNC(\Name):
 // d2
 // d1
 // d0                          <- __PWTB_FloatArgumentRegisters
-// Optional: Callee saved floating point registers (if PushCalleeSavedFloats=1)
+// Optional: Callee saved floating point registers (if pushCalleeSavedFloatRegs=1)
 //   d15
 //   d14
 //   d13
@@ -162,18 +162,18 @@ C_FUNC(\Name):
 //   d9
 //   d8                        <- __PWTB_FloatCalleeSavedRegisters
 //
-// PushCalleeSavedFloats - Optional parameter. If set to 1, the macro will also save
-//                         the callee-saved floating point registers (d8-d15) to the stack.
-//                         These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+// pushCalleeSavedFloatRegs - Optional parameter. If set to 1, the macro will also save
+//                            the callee-saved floating point registers (d8-d15) to the stack.
+//                            These registers are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
 //
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0, PushCalleeSavedFloats = 0
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, saveFpArgs = 1, pushArgRegs = 0, pushCalleeSavedFloatRegs = 0
 
         __PWTB_FloatCalleeSavedRegisters = \extraLocals
         __PWTB_SaveFPArgs = \saveFpArgs
-        __PWTB_PushCalleeSavedFloats = \PushCalleeSavedFloats
+        __PWTB_PushCalleeSavedFloatRegs = \pushCalleeSavedFloatRegs
 
-        // If PushCalleeSavedFloats is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
-        .if (__PWTB_PushCalleeSavedFloats == 1)
+        // If pushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
                 .if ((__PWTB_FloatCalleeSavedRegisters % 8) != 0)
                 __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatCalleeSavedRegisters + 4
                 .endif
@@ -215,7 +215,7 @@ C_FUNC(\Name):
         .endif
 
         // Save callee-saved floating point registers if requested
-        .if (__PWTB_PushCalleeSavedFloats == 1)
+        .if (__PWTB_PushCalleeSavedFloatRegs == 1)
                 add r6, sp, #(__PWTB_FloatCalleeSavedRegisters)
                 vstm r6, {d8-d15}
         .endif

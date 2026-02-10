@@ -686,9 +686,9 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
 #ifdef TARGET_APPLE
-    PROLOG_WITH_TRANSITION_BLOCK extraLocals=8*16, SaveFPArgs=0,SaveGPArgs=0
+    PROLOG_WITH_TRANSITION_BLOCK extraLocals=8*16, SaveFPArgs=0,SaveGPArgs=0, pushCalleeSavedFloatRegs=1
 #else
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 #endif
 
     // IR bytecode address
@@ -3301,7 +3301,7 @@ LEAF_END SwiftLoweredReturnTerminator
 // ------------------------------------------------------------------
 NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Pass TransitionBlock* as last (6th) argument
     // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
@@ -3328,7 +3328,7 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 
-    PROLOG_WITH_TRANSITION_BLOCK PushCalleeSavedFloats=1
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
     // x0, x1 remain unchanged

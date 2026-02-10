@@ -280,14 +280,14 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 
 #ifdef FEATURE_INTERPRETER
 #ifndef DACCESS_COMPILE
-void InterpreterFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
     LIMITED_METHOD_CONTRACT;
 
     // The interpreter frame saves the floating point callee-saved registers (d8-d15) in the TransitionBlock,
     // so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
     //
-    // Stack layout when PushCalleeSavedFloats is used:
+    // Stack layout when pushCalleeSavedFloatRegs is used:
     //   [d8-d15 (64 bytes)] [q0-q7 (128 bytes)] [TransitionBlock]
     // FP callee-saved are at TransitionBlock - 192 (64 + 128)
     TADDR pTransitionBlock = GetTransitionBlock();

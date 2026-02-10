@@ -33,12 +33,12 @@ $name   SETS    "|$symbol|"
 ; Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 ; comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
 ;
-; $calleeSavedFloats - Optional parameter. If set to "PushCalleeSavedFloats", the macro will also save
-;                      the callee-saved floating point registers (d8-d15) to the stack. These registers
-;                      are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
+; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloats, the macro will also save
+;                             the callee-saved floating point registers (d8-d15) to the stack. These registers
+;                             are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
 ;
     MACRO
-        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs, $calleeSavedFloats
+        PROLOG_WITH_TRANSITION_BLOCK $extraLocals, $SaveFPArgs, $pushCalleeSavedFloatRegs
 
         GBLA __PWTB_FloatArgumentRegisters
         GBLA __PWTB_FloatCalleeSavedRegisters
@@ -65,8 +65,8 @@ __PWTB_FloatCalleeSavedRegisters SETA 0
 __PWTB_FloatCalleeSavedRegisters SETA __PWTB_FloatCalleeSavedRegisters + 8
         ENDIF
 
-        ; If PushCalleeSavedFloats is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
-        IF "$calleeSavedFloats" == "PushCalleeSavedFloats"
+        ; If PushCalleeSavedFloatRegs is specified, reserve space for d8-d15 (8 registers * 8 bytes = 64 bytes)
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
 __PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters + 64
         ELSE
 __PWTB_FloatArgumentRegisters SETA __PWTB_FloatCalleeSavedRegisters
@@ -101,7 +101,7 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
         ENDIF
 
         ; Save callee-saved floating point registers if requested
-        IF "$calleeSavedFloats" == "PushCalleeSavedFloats"
+        IF "$pushCalleeSavedFloatRegs" == "PushCalleeSavedFloatRegs"
         stp     d8, d9, [sp, #__PWTB_FloatCalleeSavedRegisters]
         stp     d10, d11, [sp, #(__PWTB_FloatCalleeSavedRegisters + 16)]
         stp     d12, d13, [sp, #(__PWTB_FloatCalleeSavedRegisters + 32)]
