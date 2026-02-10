@@ -14,7 +14,7 @@ namespace Threading.Tests
         private static ManualResetEvent s_resetEvent = new ManualResetEvent(false);
         private static ulong[] s_threadIds = new ulong[NumThreads];
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TestEntryPoint()
         {
             // The property to be tested is internal.

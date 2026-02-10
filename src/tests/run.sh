@@ -311,7 +311,7 @@ if [[ -n "$RunInterpreter" ]]; then
     runtestPyArguments+=("--interpreter")
 fi
 
-if [[ -n "$RunWithNode" ]]; then
+if [[ -n "$RunWithNodeJS" ]]; then
     echo "Running tests with NodeJS"
     runtestPyArguments+=("--node")
 fi
