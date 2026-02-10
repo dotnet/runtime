@@ -8,6 +8,8 @@ namespace System.Threading.Tasks.Tests
     public class RuntimeAsyncTests
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124015", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
             RemoteExecutor.Invoke(() =>
