@@ -10282,14 +10282,35 @@ public:
     bool compNeedsGSSecurityCookie  = false; // There is an unsafe buffer (or localloc) on the stack.
                                              // Insert cookie on frame and code to check the cookie, like VC++ -GS.
     bool compGSReorderStackLayout = false;   // There is an unsafe buffer on the stack, reorder locals and make local
+
+#ifdef DEBUG
+    const char* compGSSecurityCheckBlocker = nullptr;
+#endif
+
     // copies of susceptible parameters to avoid buffer overrun attacks through locals/params
     bool getNeedsGSSecurityCookie() const
     {
         return compNeedsGSSecurityCookie;
     }
-    void setNeedsGSSecurityCookie()
+
+    // Request stack security for this method. Returns false if security cannot be enabled.
+    bool setNeedsGSSecurityCookie()
     {
+#if defined(TARGET_WASM)
+        INDEBUG(compGSSecurityCheckBlocker = "Not currently enabled for Wasm";)
+        return false;
+#endif
+
+        if (opts.compDbgEnC)
+        {
+            INDEBUG(compGSSecurityCheckBlocker = "incompatible with EnC";)
+            return false;
+        }
+
+        compGSReorderStackLayout  = true;
         compNeedsGSSecurityCookie = true;
+
+        return true;
     }
 
     FrameLayoutState lvaDoneFrameLayout = NO_FRAME_LAYOUT; // The highest frame layout state that we've completed.
