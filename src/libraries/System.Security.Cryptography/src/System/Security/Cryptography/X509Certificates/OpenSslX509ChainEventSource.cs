@@ -773,12 +773,12 @@ namespace System.Security.Cryptography.X509Certificates
         [Event(
             EventId_CrlCacheInMemoryExpired,
             Level = EventLevel.Verbose,
-            Message = "The in-memory cached CRL's nextUpdate value ({1:O}) is before the verification time ({0:O}).")]
-        internal void CrlCacheInMemoryExpired(DateTime verificationTime, DateTime nextUpdate)
+            Message = "The in-memory cached CRL's expiration time ({1:O}) is before the verification time ({0:O}).")]
+        internal void CrlCacheInMemoryExpired(DateTime verificationTime, DateTime expirationTime)
         {
             if (IsEnabled())
             {
-                WriteEvent(EventId_CrlCacheInMemoryExpired, verificationTime, nextUpdate);
+                WriteEvent(EventId_CrlCacheInMemoryExpired, verificationTime, expirationTime);
             }
         }
 
