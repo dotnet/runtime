@@ -117,6 +117,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(MainLibraryFileName)' != ''">
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(MainLibraryFileName)" />
     </ItemGroup>
 
