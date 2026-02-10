@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static async Task CrlDiskCacheRecovers()
         {
-            X509Certificate2 getDotNetCert = await GetGetDotNetCert();
+            using X509Certificate2 getDotNetCert = await GetGetDotNetCert();
             string crlFileName;
 
             using (CrlCacheNameFinderEventListener listener = new(getDotNetCert.Subject))
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 X509Certificate2 getDotNetCert = null;
 
                 SocketsHttpHandler handler = new SocketsHttpHandler
-                {   
+                {
                     SslOptions =
                     {
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
