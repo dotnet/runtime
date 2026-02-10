@@ -2496,8 +2496,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // We've just lowered srcBlk and storeBlk here and it's what genCodeForMemmove expects.
-            // So the nest node to lower is whatever we have after the storeBlk.
+            // We've just lowered srcBlk and storeBlk here and it's now what genCodeForMemmove expects.
+            // So the next node to lower is whatever we have after the storeBlk.
             *next = storeBlk->gtNext;
             return true;
         }
