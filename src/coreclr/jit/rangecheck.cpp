@@ -1002,7 +1002,6 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         // Example: "(uint)(i + 2) < (uint)span.Length" or just "i + 2 < span.Length"
         if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN, Compiler::OAK_LT) &&
             curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS) &&
-            (curAssertion.GetOp2().GetCheckedBoundConstant() == 0) &&
             curAssertion.GetOp2().IsCheckedBoundNeverNegative() &&
             (curAssertion.GetOp2().GetCheckedBound() == preferredBoundVN) &&
             (curAssertion.GetOp1().GetVN() != normalLclVN))
@@ -1016,7 +1015,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
                 isUnsigned = false;
                 // The difference between signed and unsigned is that for unsigned the lower bound can also be
-                // deduced to be -cns instead of INT32_MIN, but we only report the upper bound here.
+                // deduced to be -cns instead of INT32_MIN (but only if curAssertion.GetOp2().GetCheckedBoundConstant()
+                // is true) but we only report one bound at a time in MergeEdgeAssertions.
             }
             else
             {
