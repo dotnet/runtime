@@ -143,9 +143,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 };
 
                 using (HttpClient client = new HttpClient(handler))
+                using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
                 {
-                    HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
-                    await client.SendAsync(req);
+                    using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
+                    using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
                 }
 
                 Assert.NotNull(getDotNetCert);
