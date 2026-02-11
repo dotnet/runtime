@@ -59,7 +59,7 @@ When the progression shows that a failure appeared after new commits, check whet
 
 ```powershell
 # Get review comments with timestamps
-gh api "repos/{OWNER}/{REPO}/pulls/{PR}/comments" \
+gh api "repos/{OWNER}/{REPO}/pulls/{PR}/comments" `
     --jq '.[] | {author: .user.login, body: .body, created: .created_at}'
 ```
 

@@ -388,7 +388,7 @@ function Get-AzDOBuildIdFromPR {
                 $buildIdStr = $anyBuildMatch.Groups[1].Value
                 $buildIdInt = 0
                 if ([int]::TryParse($buildIdStr, [ref]$buildIdInt)) {
-                    return @($buildIdInt)
+                    return @{ BuildIds = @($buildIdInt); Reason = $null; MergeState = $prMergeState }
                 }
             }
         }
@@ -413,7 +413,7 @@ function Get-AzDOBuildIdFromPR {
         }
     }
 
-    return $buildIds
+    return @{ BuildIds = $buildIds; Reason = $null; MergeState = $prMergeState }
 }
 
 function Get-BuildAnalysisKnownIssues {
@@ -1754,7 +1754,7 @@ try {
     $noBuildReason = $null
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
         $buildResult = Get-AzDOBuildIdFromPR -PR $PRNumber
-        if ($buildResult -is [hashtable] -and $buildResult.Reason) {
+        if ($buildResult.Reason) {
             # No builds found — emit summary with reason and exit
             $noBuildReason = $buildResult.Reason
             $buildIds = @()
@@ -1786,7 +1786,7 @@ try {
             Write-Host "[/CI_ANALYSIS_SUMMARY]"
             exit 0
         }
-        $buildIds = @($buildResult)
+        $buildIds = @($buildResult.BuildIds)
 
         # Check Build Analysis for known issues
         $knownIssuesFromBuildAnalysis = @(Get-BuildAnalysisKnownIssues -PR $PRNumber)

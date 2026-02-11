@@ -35,9 +35,9 @@ Return: unique FAIL test names + which work items they appeared in.
 
 ## Pattern 2: Finding a Baseline Build
 
-**When:** A test fails on a PR — need to confirm it passes on main to prove the failure is PR-caused.
+**When:** A test fails on a PR — need to confirm it passes on the PR's target/base branch to prove the failure is PR-caused.
 
-**Problem:** Requires searching recent merged PRs or main CI runs, finding the matching build, locating the right Helix job and work item. Multiple API calls.
+**Problem:** Requires searching recent merged PRs or target branch CI runs, finding the matching build, locating the right Helix job and work item. Multiple API calls.
 
 **Delegate:**
 ```
