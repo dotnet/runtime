@@ -646,8 +646,6 @@ namespace System.Reflection.Emit.Tests
                     parameterTypes: mRun.GetParameters().Select(x => x.GetModifiedParameterType()).ToArray(),
                     parameterTypeRequiredCustomModifiers: null,
                     parameterTypeOptionalCustomModifiers: null);
-                // The method's parameter has a modreq; make sure it is added to the override's signature.
-                // See https://github.com/dotnet/runtime/issues/123857
                 tb.DefineMethodOverride(m, mRun);
                 ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
                 pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: [])!, []));
