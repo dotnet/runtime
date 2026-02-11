@@ -610,5 +610,35 @@ namespace Microsoft.Extensions.Logging.Test
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
             Assert.Equal("Hello David. How are you David", actualLogValues.ToString());
         }
+
+        [Fact]
+        public void LoggerMessage_Define_WithDuplicatePlaceholder_DifferentCasing()
+        {
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+            var action = LoggerMessage.Define<string>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. How are you {name}");
+
+            action(testLogger, "David", null);
+
+            Assert.Single(testSink.Writes);
+            var writeContext = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
+            Assert.Equal("Hello David. How are you David", actualLogValues.ToString());
+        }
+
+        [Fact]
+        public void LoggerMessage_Define_WithAllDuplicatePlaceholders_DifferentCasing()
+        {
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+            var action = LoggerMessage.Define<string>(LogLevel.Information, new EventId(0, "LogSomething"), "{Name} {NAME} {name}");
+
+            action(testLogger, "David", null);
+
+            Assert.Single(testSink.Writes);
+            var writeContext = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
+            Assert.Equal("David David David", actualLogValues.ToString());
+        }
     }
 }

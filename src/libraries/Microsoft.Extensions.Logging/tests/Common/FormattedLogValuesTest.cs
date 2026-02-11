@@ -243,6 +243,8 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData("David David David", "{Name} {Name} {Name}", new object[] { "David" })]
         [InlineData("Age: 100, Name: David, Age: 100, Name: David", "Age: {Age}, Name: {Name}, Age: {Age}, Name: {Name}", new object[] { 100, "David" })]
         [InlineData("Hello David. How are you David", "Hello {Name}. How are you {name}", new object[] { "David" })]
+        [InlineData("David David David", "{Name} {NAME} {name}", new object[] { "David" })]
+        [InlineData("Hello David. You are 100 years old. How are you David", "Hello {Name}. You are {age} years old. How are you {NAME}", new object[] { "David", 100 })]
         public void LogValues_WithDuplicatePlaceholders(string expected, string format, object[] args)
         {
             var logValues = new FormattedLogValues(format, args);
