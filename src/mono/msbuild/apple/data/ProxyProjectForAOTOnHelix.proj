@@ -112,6 +112,10 @@
       <_R2RDylibFiles Include="$(_R2ROutputPath)\*.r2r.dylib" />
     </ItemGroup>
 
+    <Message Importance="High" Text="Found @(_R2RDylibFiles->Count()) R2R dylib file(s) at $(_R2ROutputPath)" />
+
+    <Warning Condition="'@(_R2RDylibFiles)' == ''" Text="No R2R dylib files found at $(_R2ROutputPath)." />
+
     <Copy SourceFiles="@(_R2RCompiledAssemblies)"
           DestinationFolder="$(OriginalPublishDir)"
           OverwriteReadOnlyFiles="true" />
@@ -119,15 +123,22 @@
     <Copy SourceFiles="@(_R2RDylibFiles)"
           DestinationFolder="$(OriginalPublishDir)"
           OverwriteReadOnlyFiles="true" />
+
+    <ItemGroup>
+      <AppleNativeFilesToBundle Include="@(_R2RDylibFiles->'$(OriginalPublishDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_PrepareR2RItemsOnHelix">
     <PropertyGroup>
-      <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+      <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
       <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     </PropertyGroup>
 
+    <Message Importance="High" Text="R2R intermediate output path: $(IntermediateOutputPath)" />
+
     <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" />
       <_R2RPublishAssembly Include="$(OriginalPublishDir)*.dll" Exclude="$(OriginalPublishDir)*.resources.dll" />
     </ItemGroup>
 
@@ -141,6 +152,8 @@
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
+
+    <Message Importance="High" Text="Preparing R2R compilation for @(_R2RPublishAssembly->Count()) assemblies from $(OriginalPublishDir)" />
   </Target>
 
   <!-- Override _ComputeAssembliesToPostprocessOnPublish and _ComputeManagedRuntimePackAssemblies to be a no-op, already populated. -->
