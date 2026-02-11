@@ -60,7 +60,7 @@ Supported execution modes:
 To build CoreCLR runtime, libraries and tools, run the following command from `<repo-root>`:
 
 ```bash
-./build.sh clr+clr.runtime+libs+packs -os <ios|iossimulator|maccatalyst> -arch arm64 -cross -c <Release|Debug>
+./build.sh clr+clr.runtime+libs+packs -os <ios|iossimulator|tvos|tvossimulator|maccatalyst> -arch arm64 -cross -c <Release|Debug>
 ```
 
 > [!NOTE]
