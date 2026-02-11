@@ -98,6 +98,11 @@ extends:
             timeoutInMinutes: 120
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
+
+              # Use PAT for NuGet which is needed when specifying container: below
+              - template: /eng/common/templates/steps/enable-internal-sources.yml
+                parameters:
+                  legacyCredential: $(dn-bot-dnceng-artifact-feeds-rw)
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
@@ -217,6 +222,10 @@ extends:
             timeoutInMinutes: 120
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
+              # Use PAT for NuGet which is needed when specifying container: below
+              - template: /eng/common/templates/steps/enable-internal-sources.yml
+                parameters:
+                  legacyCredential: $(dn-bot-dnceng-artifact-feeds-rw)
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
