@@ -678,14 +678,20 @@ if ($isEmptyDiff) {
 # Check PR timeline for force pushes
 $forcePushEvents = @()
 $owner, $repo = $Repository -split '/'
+$forcePushFetchSucceeded = $false
 try {
     $timelineJson = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --slurp --jq 'map(.[] | select(.event == "head_ref_force_pushed"))' 2>$null
     if ($LASTEXITCODE -eq 0 -and $timelineJson) {
         $forcePushEvents = @($timelineJson | ConvertFrom-Json)
+        $forcePushFetchSucceeded = $true
+    } elseif ($LASTEXITCODE -ne 0) {
+        Write-Warning "Could not fetch PR timeline for force push detection (gh api exit code $LASTEXITCODE). Current state assessment may be incomplete."
+    } else {
+        $forcePushFetchSucceeded = $true
     }
 }
 catch {
-    Write-Verbose "Failed to parse timeline JSON for force push events: $($_.Exception.Message)"
+    Write-Warning "Failed to parse timeline JSON for force push events: $($_.Exception.Message)"
     $forcePushEvents = @()
 }
 
@@ -1431,6 +1437,7 @@ $summary.freshness = [ordered]@{
 # Force pushes
 $summary.forcePushes = [ordered]@{
     count           = $forcePushEvents.Count
+    fetchSucceeded  = $forcePushFetchSucceeded
     lastActor       = if ($lastForcePushActor) { $lastForcePushActor } else { $null }
     lastTime        = if ($lastForcePushTime) { $lastForcePushTime.ToString("o") } else { $null }
 }
