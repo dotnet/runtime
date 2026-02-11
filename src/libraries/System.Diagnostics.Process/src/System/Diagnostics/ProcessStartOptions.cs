@@ -187,7 +187,7 @@ namespace System.Diagnostics
 #if WINDOWS
             // Windows-specific search locations (from CreateProcessW documentation)
 
-            // Check the 32-bit Windows system directory (It can't change over app lifetime)
+            // Check the system directory (e.g., System32)
             path = GetSystemDirectory();
             if (path != null)
             {
@@ -202,7 +202,7 @@ namespace System.Diagnostics
             path = GetWindowsDirectory();
             if (path != null)
             {
-                // Check the 16-bit Windows system directory (System subdirectory of Windows directory)
+                // Check the legacy System subdirectory of Windows directory (for compatibility)
                 string systemPath = Path.Combine(path, "System", filename);
                 if (File.Exists(systemPath))
                 {
@@ -282,7 +282,7 @@ namespace System.Diagnostics
 
             UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
 
-            // Avoid checking user/group when permission.
+            // Avoid checking user/group when all execute permissions are set.
             if (permissions == AllExecute)
             {
                 return true;
