@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>
         /// An <see cref="Microsoft.Extensions.DependencyInjection.IServiceScope"/> controlling the
         /// lifetime of the scope. Once this is disposed, any scoped services and any transient services
-        /// that implement <see cref="System.IDisposable"/> that have been resolved from the
+        /// that have been resolved from the
         /// <see cref="Microsoft.Extensions.DependencyInjection.IServiceScope.ServiceProvider"/> will also be disposed.
         /// </returns>
         IServiceScope CreateScope();
