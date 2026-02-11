@@ -516,7 +516,9 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
     static_assert(PADDED_RELOC_SIZE > 1);
     // Write zeroes with the bit set that indicates another byte is coming
     for (unsigned i = 0; i < PADDED_RELOC_SIZE - 1; i++)
+    {
         destination += emitOutputByte(destination, 0x80);
+    }
 
     emitOutputByte(destination, 0x0);
     return PADDED_RELOC_SIZE;
@@ -531,9 +533,13 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
     }
 
     if (isSigned)
+    {
         return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
+    }
     else
+    {
         return emitOutputULEB128(destination, (uint64_t)emitGetInsSC(id));
+    }
 }
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
