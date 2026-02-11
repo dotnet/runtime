@@ -98,7 +98,28 @@
 
   <Target Name="_RunR2RCompilationOnHelix"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
-          DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages" />
+          DependsOnTargets="_PrepareR2RItemsOnHelix;CreateReadyToRunImages;_AddR2RFilesToAppleBundle" />
+
+  <Target Name="_AddR2RFilesToAppleBundle"
+          Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
+
+    <PropertyGroup>
+      <_R2ROutputPath>$(IntermediateOutputPath)R2R</_R2ROutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_R2RCompiledAssemblies Include="$(_R2ROutputPath)\*.dll" />
+      <_R2RDylibFiles Include="$(_R2ROutputPath)\*.r2r.dylib" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_R2RCompiledAssemblies)"
+          DestinationFolder="$(OriginalPublishDir)"
+          OverwriteReadOnlyFiles="true" />
+
+    <Copy SourceFiles="@(_R2RDylibFiles)"
+          DestinationFolder="$(OriginalPublishDir)"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
 
   <Target Name="_PrepareR2RItemsOnHelix">
     <PropertyGroup>
@@ -120,8 +141,6 @@
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(OriginalPublishDir)$(AssemblyName).dll" />
     </ItemGroup>
-
-    <Message Importance="High" Text="Preparing R2R compilation for @(_R2RPublishAssembly->Count()) assemblies on Helix..." />
   </Target>
 
   <!-- Override _ComputeAssembliesToPostprocessOnPublish and _ComputeManagedRuntimePackAssemblies to be a no-op, already populated. -->
