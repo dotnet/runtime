@@ -451,7 +451,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>A string representation of the dynamic method, showing the return type, name, and parameter types.</returns>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ToString" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ToString" />
         /// </example>
         /// <remarks>
         /// The signature includes only types and the method name, if any. Parameter names are not included.
@@ -476,7 +476,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>The name of the dynamic method.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Name" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Name" />
         /// </example>
         /// <remarks>
         /// <note type="note">It is not necessary to name dynamic methods.</note>
@@ -488,7 +488,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="DeclaringType" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DeclaringType" />
         /// </example>
         /// <remarks>
         /// This property always returns <see langword="null" /> for dynamic methods. Even when a dynamic method is logically associated with a type, it is not declared by the type.
@@ -500,7 +500,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReflectedType" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReflectedType" />
         /// </example>
         /// <remarks>
         /// This property always returns <see langword="null" /> for dynamic methods.
@@ -512,7 +512,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>The <see cref="System.Reflection.Module" /> associated with the dynamic method.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Module" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Module" />
         /// </example>
         /// <remarks>
         /// If a module was specified when the dynamic method was created, this property returns that module. If a type was specified as the owner when the dynamic method was created, this property returns the module that contains that type.
@@ -532,7 +532,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>A bitwise combination of the <see cref="MethodAttributes" /> values representing the attributes for the method.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Attributes" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Attributes" />
         /// </example>
         /// <remarks>
         /// Currently, the method attributes for a dynamic method are always <see cref="MethodAttributes.Public" /> and <see cref="MethodAttributes.Static" />.
@@ -544,7 +544,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>One of the <see cref="CallingConventions" /> values that indicates the calling convention of the method.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="CallingConvention" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="CallingConvention" />
         /// </example>
         /// <remarks>
         /// Currently, the calling convention for a dynamic method is always <see cref="CallingConventions.Standard" />.
@@ -565,7 +565,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>An array of <see cref="ParameterInfo" /> objects representing the parameters of the dynamic method, or an empty array if the method has no parameters.</returns>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="GetParameters" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="GetParameters" />
         /// </example>
         /// <remarks>
         /// The <see cref="ParameterInfo" /> objects returned by this method are for information only. Use the <see cref="DefineParameter" /> method to set or change the characteristics of the parameters.
@@ -687,7 +687,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>A <see cref="Type" /> representing the return type of the dynamic method; or <see cref="void" /> if the method has no return type.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReturnType" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnType" />
         /// </example>
         /// <remarks>
         /// If <see langword="null" /> was specified for the return type when the dynamic method was created, this property returns <see cref="void" />.
@@ -708,7 +708,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>An <see cref="ICustomAttributeProvider" /> representing the custom attributes of the return type for the dynamic method.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" />
         /// </example>
         /// <remarks>
         /// Custom attributes are not supported on the return type of a dynamic method, so the array of custom attributes returned by the <see cref="ICustomAttributeProvider.GetCustomAttributes(bool)" /> method is always empty.
@@ -732,7 +732,7 @@ namespace System.Reflection.Emit
         /// -or-
         /// <paramref name="position" /> is greater than the number of parameters of the dynamic method.</exception>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="DefineParameter" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DefineParameter" />
         /// </example>
         /// <remarks>
         /// If <paramref name="position" /> is 0, the <see cref="DefineParameter" /> method refers to the return value. Setting parameter information has no effect on the return value.
@@ -770,7 +770,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value><see langword="true" /> if the local variables in the method are zero-initialized; otherwise, <see langword="false" />. The default is <see langword="true" />.</value>
         /// <example>
-        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="InitLocals" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="InitLocals" />
         /// </example>
         /// <remarks>
         /// If this property is set to <see langword="true" />, the emitted Microsoft intermediate language (MSIL) includes initialization of local variables. If it is set to <see langword="false" />, local variables are not initialized and the generated code is unverifiable.
