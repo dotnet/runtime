@@ -2183,6 +2183,8 @@ if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
 }
 
 # Compute recommendation hint
+# Priority: KNOWN_ISSUES wins over LIKELY_PR_RELATED intentionally.
+# When both exist, SKILL.md "Mixed signals" guidance tells the agent to separate them.
 if (-not $lastBuildJobSummary -and $buildIds.Count -gt 0) {
     $summary.recommendationHint = "REVIEW_REQUIRED"
 } elseif ($knownIssuesFromBuildAnalysis.Count -gt 0) {
