@@ -1,6 +1,6 @@
 # CoreCLR on iOS/tvOS
 
-This documentation outlines the support of CoreCLR on iOS/tvOS platforms.
+This documentation outlines developer workflows for CoreCLR on iOS/tvOS platforms.
 
 ## Table of Contents
 
