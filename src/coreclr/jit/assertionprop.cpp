@@ -725,16 +725,14 @@ void Compiler::optAssertionInit(bool isLocalProp)
         optLocalAssertionProp           = false;
         optCrossBlockLocalAssertionProp = false;
 
-        // Use a function countFunc to determine a proper maximum assertion count for the
-        // method being compiled. The function is linear to the IL size for small and
-        // moderate methods. For large methods, considering throughput impact, we track no
-        // more than 64 assertions.
-        // Note this tracks at most only 256 assertions.
+        // Heuristic for sizing the assertion table.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
-        static const unsigned       upperBound  = ArrLen(countFunc) - 1;
-        const unsigned              codeSize    = info.compILCodeSize / 512;
-        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
+        // The weighting of basicBlocks vs locals reflects their relative contribution observed empirically.
+        // Validated against 1,115,046 compiled methods:
+        //   - 94.6% of methods stay at the floor of 64 (only 1.9% actually need more).
+        //   - Underpredicts for 481 methods (0.043%), with a worst-case deficit of 127.
+        //   - Only 0.4% of methods hit the 256 cap.
+        optMaxAssertionCount = (AssertionIndex)max(64, min(256, (int)(lvaTrackedCount + 3 * fgBBcount + 48) >> 2));
 
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
@@ -1352,6 +1350,8 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
  */
 AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 {
+    bool canAddNewAssertions = optAssertionCount < optMaxAssertionCount;
+
     // See if we already have this assertion in the table.
     //
     // For local assertion prop we can speed things up by checking the dep vector.
@@ -1378,21 +1378,33 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     }
     else
     {
-        // For global prop we search the entire table.
-        //
-        // Check if exists already, so we can skip adding new one. Search backwards.
-        for (AssertionIndex index = optAssertionCount; index >= 1; index--)
+        bool mayHaveDuplicates =
+            optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
+        // We need to register op2.vn too, even if we know for sure there are no duplicates
+        if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
         {
-            const AssertionDsc& curAssertion = optGetAssertion(index);
-            if (curAssertion.Equals(newAssertion, /* vnBased */ true))
+            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
+                                                                /* addIfNotFound */ canAddNewAssertions);
+        }
+
+        if (mayHaveDuplicates)
+        {
+            // For global prop we search the entire table.
+            //
+            // Check if exists already, so we can skip adding new one. Search backwards.
+            for (AssertionIndex index = optAssertionCount; index >= 1; index--)
             {
-                return index;
+                const AssertionDsc& curAssertion = optGetAssertion(index);
+                if (curAssertion.Equals(newAssertion, /* vnBased */ true))
+                {
+                    return index;
+                }
             }
         }
     }
 
     // Check if we are within max count.
-    if (optAssertionCount >= optMaxAssertionCount)
+    if (!canAddNewAssertions)
     {
         optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
@@ -1437,6 +1449,49 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     optDebugCheckAssertions(optAssertionCount);
 #endif
     return optAssertionCount;
+}
+
+//------------------------------------------------------------------------
+// optAssertionHasAssertionsForVN: Check if we already have assertions for the given VN.
+//    If "addIfNotFound" is true, add the VN to the map if it's not already there.
+//
+// Arguments:
+//    vn            - the VN to check for
+//    addIfNotFound - whether to add the VN to the map if it's not found
+//
+// Return Value:
+//    true if we already have assertions for the given VN, false otherwise.
+//
+bool Compiler::optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound)
+{
+    assert(!optLocalAssertionProp);
+    if (vn == ValueNumStore::NoVN)
+    {
+        assert(!addIfNotFound);
+        return false;
+    }
+
+    if (addIfNotFound)
+    {
+        // Lazy initialize the map when we first need to add to it
+        if (optAssertionVNsMap == nullptr)
+        {
+            optAssertionVNsMap = new (this, CMK_AssertionProp) VNSet(getAllocator(CMK_AssertionProp));
+        }
+
+        // Avoid double lookup by using the return value of LookupPointerOrAdd to
+        // determine whether the VN was already in the map.
+        bool* pValue = optAssertionVNsMap->LookupPointerOrAdd(vn, false);
+        if (!*pValue)
+        {
+            *pValue = true;
+            return false;
+        }
+        return true;
+    }
+
+    // Otherwise just do a normal lookup
+    return (optAssertionVNsMap != nullptr) && optAssertionVNsMap->Lookup(vn);
 }
 
 #ifdef DEBUG
@@ -3275,11 +3330,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
     // For local assertion prop we can filter the assertion set down.
     //
     const unsigned lclNum = tree->GetLclNum();
+    ValueNum       treeVN = optConservativeNormalVN(tree);
 
     ASSERT_TP filteredAssertions = assertions;
     if (optLocalAssertionProp)
     {
         filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+    else if (!optAssertionHasAssertionsForVN(treeVN))
+    {
+        // There are no assertions for this VN
+        return nullptr;
     }
 
     BitVecOps::Iter iter(apTraits, filteredAssertions);
@@ -3342,7 +3403,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         else
         {
             // Check VN in Global Assertion Prop
-            if (curAssertion.GetOp1().GetVN() == vnStore->VNConservativeNormalValue(tree->gtVNPair))
+            if (curAssertion.GetOp1().GetVN() == treeVN)
             {
                 return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
@@ -3572,30 +3633,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     {
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
 
-        // if treeVN has a bound-check assertion where it's an index, then
-        // it means it's not negative, example:
-        //
-        //   array[idx] = 42; // creates 'BoundsCheckNoThrow' assertion
-        //   return idx % 8;  // idx is known to be never negative here, hence, MOD->UMOD
-        //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp1().GetVN() == treeVN))
-        {
-            *isKnownNonNegative = true;
-            continue;
-        }
-
-        // Same for Length, example:
-        //
-        //  array[idx] = 42;
-        //  array.Length is known to be non-negative and non-zero here
-        //
-        if (curAssertion.IsBoundsCheckNoThrow() && (curAssertion.GetOp2().GetCheckedBound() == treeVN))
-        {
-            *isKnownNonNegative = true;
-            *isKnownNonZero     = true;
-            return; // both properties are known, no need to check other assertions
-        }
-
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion.IsConstantInt32Assertion() && (curAssertion.GetOp1().GetVN() == treeVN))
         {
@@ -3637,14 +3674,15 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     }
 
     // Let's see if MergeEdgeAssertions can help us:
-    if (tree->TypeIs(TYP_INT))
+    if (genActualType(tree) == TYP_INT)
     {
         Range rng = RangeCheck::GetRangeFromAssertions(this, treeVN, assertions);
+        assert(rng.IsConstantRange());
         if (rng.LowerLimit().GetConstant() >= 0)
         {
             *isKnownNonNegative = true;
         }
-        if (rng.LowerLimit().GetConstant() > 0)
+        if ((rng.LowerLimit().GetConstant() > 0) || (rng.UpperLimit().GetConstant() < 0))
         {
             *isKnownNonZero = true;
         }
@@ -4430,21 +4468,55 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         }
     }
 
-    // If we don't have a cast of a LCL_VAR then bail.
-    if (!lcl->OperIs(GT_LCL_VAR))
-    {
-        return nullptr;
-    }
-
+    bool removeCast = false;
     if (!optLocalAssertionProp)
     {
-        // optAssertionIsSubrange is only for local assertion prop.
-        return nullptr;
+        // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
+        // small types and IsUnsigned flag for checked casts.
+        IntegralRange castRng = IntegralRange::ForCastInput(cast);
+        int64_t       castLo  = IntegralRange::SymbolicToRealValue(castRng.GetLowerBound());
+        int64_t       castHi  = IntegralRange::SymbolicToRealValue(castRng.GetUpperBound());
+        if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
+        {
+            Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
+            if (castToTypeRange.IsConstantRange() && (genActualType(cast->CastOp()) == TYP_INT))
+            {
+                ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
+                Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
+                assert(castOpRng.IsConstantRange());
+
+                int castFromLo = castOpRng.LowerLimit().GetConstant();
+                int castFromHi = castOpRng.UpperLimit().GetConstant();
+                int castToLo   = castToTypeRange.LowerLimit().GetConstant();
+                int castToHi   = castToTypeRange.UpperLimit().GetConstant();
+
+                if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
+                {
+                    removeCast = true;
+                    if (!lcl->OperIs(GT_LCL_VAR))
+                    {
+                        // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
+                        if (!cast->gtOverflow())
+                        {
+                            return nullptr;
+                        }
+
+                        // Just clear the overflow flag then.
+                        JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
+                        cast->ClearOverflow();
+                        return optAssertionProp_Update(cast, cast, stmt);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        removeCast = lcl->OperIs(GT_LCL_VAR) &&
+                     optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX;
     }
 
-    IntegralRange  range = IntegralRange::ForCastInput(cast);
-    AssertionIndex index = optAssertionIsSubrange(lcl, range, assertions);
-    if (index != NO_ASSERTION_INDEX)
+    if (removeCast)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
 
@@ -4456,13 +4528,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
             {
                 return nullptr;
             }
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                DISPNODE(cast);
-            }
-#endif
+
+            JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
             cast->ClearOverflow();
             return optAssertionProp_Update(cast, cast, stmt);
         }
@@ -4481,13 +4548,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
             op1->ChangeType(varDsc->TypeGet());
         }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            DISPNODE(cast);
-        }
-#endif
+        JITDUMP("Removing cast %06u as redundant based on assertions.\n", dspTreeID(cast));
         return optAssertionProp_Update(op1, cast, stmt);
     }
 
@@ -4656,7 +4717,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions))
+    if (!BitVecOps::MayBeUninit(assertions) && optAssertionHasAssertionsForVN(vn))
     {
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
@@ -5087,6 +5148,23 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             // i.e.  a[i+1] followed by a[i]  by using the VN(i+1) >= VN(i)
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
+        }
+    }
+
+    // Let's see if we can remove the bounds check based on the ranges.
+    if ((genActualType(vnStore->TypeOfVN(vnCurIdx)) == TYP_INT) &&
+        (genActualType(vnStore->TypeOfVN(vnCurLen)) == TYP_INT))
+    {
+        Range idxRng = RangeCheck::GetRangeFromAssertions(this, vnCurIdx, assertions);
+        Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+        if (idxRng.IsConstantRange() && lenRng.IsConstantRange())
+        {
+            // idx.lo >= 0 && idx.hi < len.lo --> drop bounds check
+            if (idxRng.LowerLimit().GetConstant() >= 0 &&
+                idxRng.UpperLimit().GetConstant() < lenRng.LowerLimit().GetConstant())
+            {
+                return dropBoundsCheck(INDEBUG("upper bound of index is less than lower bound of length"));
+            }
         }
     }
 

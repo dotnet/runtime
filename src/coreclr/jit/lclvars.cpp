@@ -269,14 +269,17 @@ void Compiler::lvaInitTypeRef()
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
     {
-        setNeedsGSSecurityCookie();
-        compGSReorderStackLayout = true;
+        bool nowHasCookie = setNeedsGSSecurityCookie();
 
-        for (unsigned i = 0; i < lvaCount; i++)
+        if (nowHasCookie)
         {
-            if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+            JITDUMP("Marking some struct locals as unsafe to stress GS checks\n");
+            for (unsigned i = 0; i < lvaCount; i++)
             {
-                lvaTable[i].lvIsUnsafeBuffer = true;
+                if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+                {
+                    lvaTable[i].lvIsUnsafeBuffer = true;
+                }
             }
         }
     }
@@ -2546,15 +2549,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
-        // GS checks require the stack to be re-ordered, which can't be done with EnC.
         if (unsafeValueClsCheck)
         {
             unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
 
-            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) != 0)
             {
                 setNeedsGSSecurityCookie();
-                compGSReorderStackLayout = true;
                 varDsc->lvIsUnsafeBuffer = true;
             }
         }

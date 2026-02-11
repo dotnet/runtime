@@ -432,7 +432,7 @@ namespace System
         //
         //  Uri constructor. Assumes that input string is canonically escaped
         //
-        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Uri(string) instead.")]
         public Uri([StringSyntax(StringSyntaxAttribute.Uri)] string uriString, bool dontEscape)
         {
             ArgumentNullException.ThrowIfNull(uriString);
@@ -447,7 +447,7 @@ namespace System
         //  Uri combinatorial constructor. Do not perform character escaping if
         //  DontEscape is true
         //
-        [Obsolete("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Uri(Uri, string) instead.")]
         public Uri(Uri baseUri, string? relativeUri, bool dontEscape)
         {
             ArgumentNullException.ThrowIfNull(baseUri);

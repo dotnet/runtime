@@ -183,10 +183,18 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: started = (continuation == null)
-    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-    GenTree* null         = gtNewNull();
-    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    // First argument: resumed = (continuation != null)
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewFalse();
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
@@ -205,7 +213,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     for (BasicBlock* block : Blocks())
     {
-        AddContextArgsToAsyncCalls(block);
+        if (!compIsForInlining())
+        {
+            AddContextArgsToAsyncCalls(block);
+        }
 
         if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
         {
@@ -220,23 +231,28 @@ PhaseStatus Compiler::SaveAsyncContexts()
             newReturnBB->inheritWeightPercentage(block, 0);
         }
 
-        // Store return value to common local
-        Statement* retStmt = block->lastStmt();
-        assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
-
-        if (mergedReturnLcl != BAD_VAR_NUM)
+        // When inlining we do merging during import, so we do not need to do
+        // any storing there.
+        if (!compIsForInlining())
         {
-            GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
-            Statement* insertAfter = retStmt;
-            GenTree*   storeRetVal =
-                gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
-            Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
-            fgInsertStmtAtEnd(block, storeStmt);
-            JITDUMP("Inserted store to common return local\n");
-            DISPSTMT(storeStmt);
-        }
+            // Store return value to common local
+            Statement* retStmt = block->lastStmt();
+            assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
 
-        retStmt->GetRootNode()->gtBashToNOP();
+            if (mergedReturnLcl != BAD_VAR_NUM)
+            {
+                GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
+                Statement* insertAfter = retStmt;
+                GenTree*   storeRetVal = gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter,
+                                                        retStmt->GetDebugInfo(), block);
+                Statement* storeStmt   = fgNewStmtFromTree(storeRetVal);
+                fgInsertStmtAtEnd(block, storeStmt);
+                JITDUMP("Inserted store to common return local\n");
+                DISPSTMT(storeStmt);
+            }
+
+            retStmt->GetRootNode()->gtBashToNOP();
+        }
 
         // Jump to new shared restore + return block
         block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
@@ -334,9 +350,17 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     // Insert "restore" call
     CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-    GenTree* null         = gtNewNull();
-    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewFalse();
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
@@ -355,42 +379,46 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     JITDUMP("Inserted restore statement in return block\n");
     DISPSTMT(restoreStmt);
 
-    *mergedReturnLcl = BAD_VAR_NUM;
-
-    GenTree* ret;
-    if (compMethodHasRetVal())
+    if (!compIsForInlining())
     {
-        *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
+        *mergedReturnLcl = BAD_VAR_NUM;
 
-        var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
-
-        if (varTypeIsStruct(retLclType))
+        GenTree* ret;
+        if (compMethodHasRetVal())
         {
-            lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+            *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
 
-            if (compMethodReturnsMultiRegRetType())
+            var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
+
+            if (varTypeIsStruct(retLclType))
             {
-                lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+
+                if (compMethodReturnsMultiRegRetType())
+                {
+                    lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                }
             }
+            else
+            {
+                lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            }
+
+            GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
+            ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
         }
         else
         {
-            lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
 
-        GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
-        ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
-    }
-    else
-    {
-        ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+        Statement* retStmt = fgNewStmtFromTree(ret);
+
+        fgInsertStmtAtEnd(newReturnBB, retStmt);
+        JITDUMP("Inserted return statement in return block\n");
+        DISPSTMT(retStmt);
     }
 
-    Statement* retStmt = fgNewStmtFromTree(ret);
-
-    fgInsertStmtAtEnd(newReturnBB, retStmt);
-    JITDUMP("Inserted return statement in return block\n");
-    DISPSTMT(retStmt);
     return newReturnBB;
 }
 
