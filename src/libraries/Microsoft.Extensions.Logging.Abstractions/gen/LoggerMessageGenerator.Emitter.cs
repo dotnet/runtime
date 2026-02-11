@@ -557,7 +557,7 @@ namespace {lc.Namespace}
                 bool needsEscaping = false;
                 foreach (char c in text)
                 {
-                    if (c == '<' || c == '>' || c == '&' || c == '"' || c == '\'')
+                    if (c == '<' || c == '>' || c == '&' || c == '"' || c == '\'' || c == '\n' || c == '\r')
                     {
                         needsEscaping = true;
                         break;
@@ -589,6 +589,12 @@ namespace {lc.Namespace}
                             break;
                         case '\'':
                             sb.Append("&apos;");
+                            break;
+                        case '\n':
+                            sb.Append("&#10;");
+                            break;
+                        case '\r':
+                            sb.Append("&#13;");
                             break;
                         default:
                             sb.Append(c);
