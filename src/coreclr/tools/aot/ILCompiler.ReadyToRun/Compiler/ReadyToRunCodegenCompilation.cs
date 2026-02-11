@@ -703,8 +703,8 @@ namespace ILCompiler
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
 
-                        if (!CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method)
-                            && method.IsAsyncCall())
+                        if (method.IsAsyncCall()
+                            && !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method))
                         {
                             AddNecessaryAsyncReferences(method);
                         }
