@@ -62,6 +62,7 @@ namespace System
         public static bool IsNotMobile => !IsMobile;
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
+        public static bool IsAppleMobileCoreCLR => IsAppleMobile && IsCoreCLR;
         public static bool IsNotNetFramework => !IsNetFramework;
         public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
 

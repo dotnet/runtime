@@ -334,6 +334,7 @@ namespace System.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsTrimmedWithILLink))
             /* Stripping security attributes removes UnverifiableCodeAttribute */]
+        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();

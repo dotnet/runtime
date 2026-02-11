@@ -18,6 +18,7 @@ namespace System.Diagnostics.Tests
         private const string TestNotFoundFileName = "notfound.dll";
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void FileVersionInfo_CustomManagedAssembly()
         {
             // Assembly1.dll

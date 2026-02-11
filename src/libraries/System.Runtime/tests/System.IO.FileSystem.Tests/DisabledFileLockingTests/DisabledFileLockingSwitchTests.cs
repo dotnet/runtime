@@ -9,6 +9,7 @@ namespace System.IO.Tests
     public class DisabledFileLockingSwitchTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void ConfigSwitchIsHonored()
         {
             Assert.Equal(OperatingSystem.IsWindows(), PlatformDetection.IsFileLockingEnabled);
