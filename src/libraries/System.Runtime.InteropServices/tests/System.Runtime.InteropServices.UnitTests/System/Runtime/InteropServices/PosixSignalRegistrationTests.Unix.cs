@@ -22,7 +22,12 @@ namespace System.Tests
         public static IEnumerable<object[]> SupportedSignals()
         {
             foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
-                yield return new object[] { value };
+            {
+                if (value != PosixSignal.SIGKILL)
+                {
+                    yield return new object[] { value };
+                }
+            }
         }
 
         public static IEnumerable<object[]> UnsupportedSignals()

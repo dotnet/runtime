@@ -39,6 +39,11 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(handler);
 
+            if (signal == PosixSignal.SIGKILL)
+            {
+                throw new ArgumentException(SR.Arg_CannotRegisterHandlerForSIGKILL, nameof(signal));
+            }
+
             return Register(signal, handler);
         }
 

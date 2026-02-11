@@ -18,6 +18,12 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("handler", () => PosixSignalRegistration.Create(PosixSignal.SIGCONT, null));
         }
 
+        [Fact]
+        public void Create_SIGKILL_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>("signal", () => PosixSignalRegistration.Create(PosixSignal.SIGKILL, ctx => { }));
+        }
+
         [Theory]
         [MemberData(nameof(UnsupportedSignals))]
         public void Create_InvalidSignal_Throws(PosixSignal signal)
