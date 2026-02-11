@@ -100,9 +100,9 @@ The script operates in three distinct modes depending on what information you ha
 
 **Known Issues section**: Failures matching existing GitHub issues - these are tracked and being investigated.
 
-**Canceled jobs**: Jobs that were canceled (not failed) due to earlier stage failures or timeouts. Dependency-canceled jobs (canceled because an earlier stage failed) don't need investigation. Timeout-canceled jobs may still have recoverable Helix results — see "Recovering Results from Canceled Jobs" below.
+**Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: use `hlx_status` on each Helix job in the timed-out build. If all work items passed, the build effectively passed.
 
-> ❌ **Don't dismiss canceled jobs.** Timeout-canceled jobs may have passing Helix results that prove the "failure" was just an AzDO timeout wrapper issue.
+> ❌ **Don't dismiss timed-out builds.** A build marked "failed" due to a 3-hour AzDO timeout can have 100% passing Helix work items. Check before concluding it failed.
 
 **PR Change Correlation**: Files changed by PR appearing in failures - likely PR-related.
 

@@ -18,31 +18,29 @@ On large PRs, the user is usually iterating toward a solution. The recent builds
 
 ### Step 1: List builds for the PR
 
-`gh pr checks` only shows checks for the current HEAD SHA. To see the full build history, query AzDO:
+`gh pr checks` only shows checks for the current HEAD SHA. To see the full build history, use AzDO MCP or CLI:
 
+**With AzDO MCP (preferred):**
+```
+azure-devops-pipelines_get_builds with:
+  project: "public"
+  branchName: "refs/pull/{PR}/merge"
+  top: 20
+  queryOrder: "QueueTimeDescending"
+```
+
+The response includes `triggerInfo` with `pr.sourceSha` — the PR's HEAD commit for each build.
+
+**Without MCP (fallback):**
 ```powershell
 $org = "https://dev.azure.com/dnceng-public"
 $project = "public"
-az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 --org $org -p $project `
-    --query "[].{id:id, result:result, sourceVersion:sourceVersion, finishTime:finishTime}" -o table
+az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 --org $org -p $project -o json
 ```
 
 ### Step 2: Map builds to the PR's head commit
 
-Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. This is the key for mapping builds to commits:
-
-```powershell
-# Get full build details including triggerInfo
-$allBuilds = az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 `
-    --org $org -p $project -o json | ConvertFrom-Json
-
-# Extract PR head commit for each build
-foreach ($build in $allBuilds) {
-    $prHead = $build.triggerInfo.'pr.sourceSha'
-    $short = if ($prHead) { $prHead.Substring(0,7) } else { "n/a" }
-    Write-Host "Build $($build.id): $($build.result) — PR HEAD: $short"
-}
-```
+Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. Extract it from the `get_builds` response or the `az` JSON output.
 
 > ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
 
@@ -50,29 +48,31 @@ foreach ($build in $allBuilds) {
 
 ### Step 2b: Extract the target branch HEAD from checkout logs
 
-The AzDO build API doesn't expose the target branch SHA, but the checkout task log contains it. The first checkout log (typically log ID 5) ends with:
+The AzDO build API doesn't expose the target branch SHA. Extract it from the checkout task log.
 
+**With AzDO MCP (preferred):**
+```
+azure-devops-pipelines_get_build_log_by_id with:
+  project: "public"
+  buildId: {BUILD_ID}
+  logId: 5
+  startLine: 500
+```
+
+Search the output for the merge line:
 ```
 HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}
 ```
 
-Extract it programmatically:
-
+**Without MCP (fallback):**
 ```powershell
 $token = az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv
 $headers = @{ Authorization = "Bearer $token" }
-
-foreach ($build in $allBuilds) {
-    $logUrl = "https://dev.azure.com/{org}/{project}/_apis/build/builds/$($build.id)/logs/5"
-    $log = Invoke-RestMethod -Uri $logUrl -Headers $headers
-    $mergeLine = ($log -split "`n") | Where-Object { $_ -match 'Merge \w+ into \w+' } | Select-Object -First 1
-    if ($mergeLine -match 'Merge (\w+) into (\w+)') {
-        $targetHead = $Matches[2].Substring(0, 7)
-    }
-}
+$logUrl = "https://dev.azure.com/{org}/{project}/_apis/build/builds/{BUILD_ID}/logs/5"
+$log = Invoke-RestMethod -Uri $logUrl -Headers $headers
 ```
 
-> Note: log ID 5 is the first checkout task in most pipelines. If it doesn't contain the merge line, check the build timeline for tasks named "Checkout" and use their log IDs.
+> Note: log ID 5 is the first checkout task in most pipelines. The merge line is typically around line 500-650. If log 5 doesn't contain it, check the build timeline for "Checkout" tasks.
 
 Note: a PR may have more unique `pr.sourceSha` values than commits visible on GitHub, because force-pushes replace the commit history. Each force-push triggers a new build with a new merge commit and a new `pr.sourceSha`.
 

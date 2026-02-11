@@ -13,7 +13,8 @@ Extract all unique test failures from these Helix work items:
 Job: {JOB_ID_1}, Work items: {ITEM_1}, {ITEM_2}
 Job: {JOB_ID_2}, Work items: {ITEM_3}
 
-For each, run:
+For each, use hlx_logs with jobId and workItem to get console output.
+If hlx MCP is not available, fall back to:
   ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB}" -WorkItem "{ITEM}"
 
 Extract lines ending with [FAIL] (xUnit format). Ignore [OUTPUT] and [PASS] lines.
@@ -93,6 +94,25 @@ Or: { "jobName": "...", "hasResults": false, "reason": "no artifacts" }
 ```
 
 This pattern scales to any number of builds — launch N subagents for N builds, collect results, compare.
+
+## Pattern 5: Build Progression with Target HEAD Extraction
+
+**When:** PR has multiple builds and you need the full progression table with target branch HEADs.
+
+**Delegate (one subagent per build):**
+```
+Extract the target branch HEAD from AzDO build {BUILD_ID}.
+
+Use azure-devops-pipelines_get_build_log_by_id with:
+  project: "public", buildId: {BUILD_ID}, logId: 5, startLine: 500
+
+Search for: "HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}"
+
+Return JSON: { "buildId": N, "targetHead": "abc1234", "mergeCommit": "def5678" }
+Or: { "buildId": N, "targetHead": null, "error": "merge line not found in log 5" }
+```
+
+Launch one per build in parallel. The main agent combines with `get_builds` results to build the full progression table.
 
 ## General Guidelines
 
