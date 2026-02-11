@@ -40,7 +40,7 @@ namespace System.Diagnostics
         /// Gets the POSIX signal that terminated the process, or null if the process exited normally.
         /// </summary>
         /// <remarks>
-        /// This property is always null on Windows.
+        /// When produced by <see cref="Process"/> APIs on Windows, this property is always <see langword="null" />.
         /// </remarks>
         public PosixSignal? Signal { get; }
 
