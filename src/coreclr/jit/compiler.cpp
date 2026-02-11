@@ -4724,7 +4724,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             else
             {
                 // At least do local var liveness; lowering depends on this.
-                fgLocalVarLiveness();
+                fgSsaLiveness();
             }
 
             if (doEarlyProp)
@@ -4897,10 +4897,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
-
-    // Create any throw helper blocks that might be needed
-    //
-    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
 
     if (opts.OptimizationEnabled())
     {
@@ -7715,7 +7711,8 @@ START:
     result = param.result;
 
 if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
@@ -10485,7 +10482,7 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
         case CORINFO_DEVIRTUALIZATION_SUCCESS:
             return "success";
         case CORINFO_DEVIRTUALIZATION_FAILED_CANON:
-            return "object class was canonical";
+            return "object class or method was canonical";
         case CORINFO_DEVIRTUALIZATION_FAILED_COM:
             return "object class was com";
         case CORINFO_DEVIRTUALIZATION_FAILED_CAST:
@@ -10519,8 +10516,6 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "Decl method cannot be represented in R2R image";
         case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
             return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
-        case CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL:
-            return "Devirtualization of generic virtual methods is not yet implemented in crossgen2";
         default:
             return "undefined";
     }

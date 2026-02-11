@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 //generic classes A and B
 
 public class HelloWorld
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -67,7 +67,8 @@ struct ArgumentRegisters {
 #define NUM_ARGUMENT_REGISTERS 0
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
-#define ENREGISTERED_RETURNTYPE_MAXSIZE         16  // not sure here, 16 bytes is v128
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
+#define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes, so that v128 can be returned without retbuff
 
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
 
