@@ -9020,7 +9020,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isAwait)
                     {
-                        _impResolveToken(opcode == CEE_CALLVIRT ? CORINFO_TOKENKIND_AwaitVirtual : CORINFO_TOKENKIND_Await);
+                        _impResolveToken(opcode == CEE_CALLVIRT ? CORINFO_TOKENKIND_AwaitVirtual
+                                                                : CORINFO_TOKENKIND_Await);
                         if (resolvedToken.hMethod != nullptr)
                         {
                             // There is a runtime async variant that is implicitly awaitable, just call that.
