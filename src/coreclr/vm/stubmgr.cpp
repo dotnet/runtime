@@ -1910,6 +1910,11 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
     }
 
     PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+    // Note: The PInvoke target may not yet be resolved if it uses lazy binding
+    // (PRECODE_PINVOKE_IMPORT). In that case, GetPInvokeTarget() returns the
+    // precode address. There is a narrow race where the target gets resolved
+    // between this read and the debugger setting a breakpoint, but this is
+    // low priority to address.
     PCODE target = (PCODE)pNMD->GetPInvokeTarget();
     LOG((LF_CORDB, LL_INFO10000, "PISM::DoTraceStub: PInvoke target 0x%p\n", target));
     trace->InitForUnmanaged(target);
