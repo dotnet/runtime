@@ -147,24 +147,6 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Equality comparer for Continuations. Needed because virtual methods do not work on Continuations
-    // So to use them as keys in dictionaries we need a comparer instead of using their GetHashCode/Equals.
-    internal class ContinuationEqualityComparer : IEqualityComparer<Continuation>
-    {
-        internal static readonly ContinuationEqualityComparer Instance = new ContinuationEqualityComparer();
-
-        public bool Equals(Continuation? x, Continuation? y)
-        {
-            return ReferenceEquals(x, y);
-        }
-
-        public int GetHashCode([DisallowNull] Continuation obj)
-        {
-            object o = (object)obj;
-            return RuntimeHelpers.GetHashCode(o);
-        }
-    }
-
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe ref struct AsyncDispatcherInfo
     {
@@ -347,7 +329,7 @@ namespace System.Runtime.CompilerServices
                 m_stateFlags |= (int)InternalTaskOptions.HiddenState;
             }
 
-            [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoOptimization)]
             static RuntimeAsyncTask()
             {
             }
@@ -413,9 +395,9 @@ namespace System.Runtime.CompilerServices
                 SetContinuationState(headContinuation);
 
                 Continuation? nc = headContinuation;
-                long timestamp = Stopwatch.GetTimestamp();
                 if (Task.s_asyncDebuggingEnabled)
                 {
+                    long timestamp = Stopwatch.GetTimestamp();
                     while (nc != null)
                     {
                         // On suspension we set timestamp for all continuations that have not yet had it set.
@@ -491,7 +473,7 @@ namespace System.Runtime.CompilerServices
 
 #pragma warning disable IDE0060 // Remove unused parameter
 #pragma warning disable CA1822 // Mark members as static
-            [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+            [MethodImpl(MethodImplOptions.NoOptimization)]
             public void NotifyDebuggerOfRuntimeAsyncState()
             {
             }

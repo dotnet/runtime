@@ -224,7 +224,7 @@ namespace System.Threading.Tasks
         {
             Dictionary<Continuation, long> continuationTimestamps =
                 Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
-                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<Continuation, long>(ContinuationEqualityComparer.Instance), null) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<Continuation, long>(ReferenceEqualityComparer.Instance), null) ??
                 s_runtimeAsyncContinuationTimestamps;
 
             lock (continuationTimestamps)
