@@ -8,14 +8,10 @@ using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    public static class RuntimeAsyncTestConditions
-    {
-        public static bool IsRemoteExecutorAndRuntimeAsyncSupported() =>
-            RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
-    }
-
     public class RuntimeAsyncTests
     {
+        private static bool IsRemoteExecutorAndRuntimeAsyncSupported => RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
+
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         static async Task Func()
         {
@@ -23,7 +19,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Yield();
         }
 
-        [ConditionalFact(typeof(RuntimeAsyncTestConditions), nameof(RuntimeAsyncTestConditions.IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
@@ -40,8 +36,8 @@ namespace System.Threading.Tasks.Tests
                     await Func();
                 }
 
-                int taskCount = ((dynamic)typeof(Task).GetField("s_runtimeAsyncTaskTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
-                int continuationCount = ((dynamic)typeof(Task).GetField("s_runtimeAsyncContinuationTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                int taskCount = (Dictionary<int, long>)((dynamic)typeof(Task).GetField("s_runtimeAsyncTaskTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                int continuationCount = (Dictionary<object, long>)((dynamic)typeof(Task).GetField("s_runtimeAsyncContinuationTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
                 Assert.InRange(taskCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
                 Assert.InRange(continuationCount, 0, 10);
             }).Dispose();

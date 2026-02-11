@@ -182,7 +182,7 @@ namespace System.Threading.Tasks
         // Needed because Continuations that are inflight have already been dequeued from the chain.
         private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
         // Dictionary to store the timestamp when the logical invocation to which the Continuation belongs started.
-        private static Dictionary<Continuation, long>? s_runtimeAsyncContinuationTimestamps;
+        private static Dictionary<object, long>? s_runtimeAsyncContinuationTimestamps;
 #endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
@@ -220,9 +220,9 @@ namespace System.Threading.Tasks
 #if !MONO
         internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long timestamp)
         {
-            Dictionary<Continuation, long> continuationTimestamps =
+            Dictionary<object, long> continuationTimestamps =
                 Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
-                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<Continuation, long>(ReferenceEqualityComparer.Instance), null) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<object, long>(ReferenceEqualityComparer.Instance), null) ??
                 s_runtimeAsyncContinuationTimestamps;
 
             lock (continuationTimestamps)
@@ -233,7 +233,7 @@ namespace System.Threading.Tasks
 
         internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long timestamp)
         {
-            Dictionary<Continuation, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
             if (continuationTimestamps is null)
             {
                 timestamp = 0;
@@ -248,7 +248,7 @@ namespace System.Threading.Tasks
 
         internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
         {
-            Dictionary<Continuation, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
             if (continuationTimestamps is null)
                 return;
 
@@ -369,6 +369,7 @@ namespace System.Threading.Tasks
         // Constructs the task as already completed
         internal Task(bool canceled, TaskCreationOptions creationOptions, CancellationToken ct)
         {
+            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
             int optionFlags = (int)creationOptions;
             if (canceled)
             {
@@ -388,6 +389,7 @@ namespace System.Threading.Tasks
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
         internal Task()
         {
+            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
             m_stateFlags = (int)TaskStateFlags.WaitingForActivation | (int)InternalTaskOptions.PromiseTask;
         }
 
@@ -396,6 +398,7 @@ namespace System.Threading.Tasks
         // (action,TCO).  It should always be true.
         internal Task(object? state, TaskCreationOptions creationOptions, bool promiseStyle)
         {
+            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
             Debug.Assert(promiseStyle, "Promise CTOR: promiseStyle was false");
 
             // Check the creationOptions. We allow the AttachedToParent option to be specified for promise tasks.
@@ -576,6 +579,7 @@ namespace System.Threading.Tasks
         internal Task(Delegate action, object? state, Task? parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler? scheduler)
         {
+            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
             if (action == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
