@@ -69,6 +69,8 @@ namespace System.Reflection
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         public override Type[] GetGenericArguments() => [];
+        public override Type[] GetOptionalCustomModifiers() => [];
+        public override Type[] GetRequiredCustomModifiers() => [];
         protected override bool IsValueTypeImpl() => false;
 
         public override string ToString()

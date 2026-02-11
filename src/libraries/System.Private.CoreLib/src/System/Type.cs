@@ -653,6 +653,10 @@ namespace System
         /// <param name="isUnmanaged"><see langword="true"/> if the function pointer uses unmanaged calling conventions; otherwise, <see langword="false"/>.</param>
         /// <param name="callingConventions">An array of types representing the calling conventions applied to the function pointer.</param>
         /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="returnType"/>, any supplied parameter type
+        /// or any supplied calling convention is <see langword="null"/>.
+        /// </exception>
         public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
             ArgumentNullException.ThrowIfNull(returnType);
@@ -732,17 +736,20 @@ namespace System
         /// <param name="type">The <see cref="Type"/> to modify. This parameter cannot be <see langword="null"/>.</param>
         /// <param name="requiredCustomModifiers">
         /// An array of <see cref="Type"/> objects that represent required custom modifiers
-        /// (<c>modreq</c>) to apply to the returned type. If <see langword="null"/>, this
-        /// method treats the value as an empty array (no required modifiers).
+        /// (<c>modreq</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no required custom modifiers are applied.
         /// </param>
         /// <param name="optionalCustomModifiers">
         /// An array of <see cref="Type"/> objects that represent optional custom modifiers
-        /// (<c>modopt</c>) to apply to the returned type. If <see langword="null"/>, this
-        /// method treats the value as an empty array (no optional modifiers).
+        /// (<c>modopt</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no optional custom modifiers are applied.
         /// </param>
         /// <returns>A new <see cref="Type"/> instance that represents the specified <paramref name="type"/>
         /// with the given required and optional custom modifiers.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="type"/>
+        /// or any specified modifier type is <see langword="null"/>.
+        /// </exception>
         public static Type MakeModifiedSignatureType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             ArgumentNullException.ThrowIfNull(type);

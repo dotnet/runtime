@@ -24,11 +24,13 @@ namespace System.Reflection
         public override bool IsSZArray => _unmodifiedType.IsSZArray;
         public override bool IsVariableBoundArray => _unmodifiedType.IsVariableBoundArray;
         public override bool IsByRefLike => _unmodifiedType.IsByRefLike;
+        public override bool IsFunctionPointer => _unmodifiedType.IsFunctionPointer;
         public override bool IsGenericTypeDefinition => _unmodifiedType.IsGenericTypeDefinition;
         public override bool IsConstructedGenericType => _unmodifiedType.IsConstructedGenericType;
         public override bool IsGenericParameter => _unmodifiedType.IsGenericParameter;
         public override bool IsGenericTypeParameter => _unmodifiedType.IsGenericTypeParameter;
         public override bool IsGenericMethodParameter => _unmodifiedType.IsGenericMethodParameter;
+        public override bool IsUnmanagedFunctionPointer => _unmodifiedType.IsUnmanagedFunctionPointer;
         public override bool ContainsGenericParameters => _unmodifiedType.ContainsGenericParameters;
         public override Type[] GenericTypeArguments => _unmodifiedType.GenericTypeArguments;
         public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
@@ -41,6 +43,9 @@ namespace System.Reflection
         protected override bool IsByRefImpl() => _unmodifiedType.IsByRef;
         protected override bool IsPointerImpl() => _unmodifiedType.IsPointer;
         public override int GetArrayRank() => _unmodifiedType.GetArrayRank();
+        public override Type[] GetFunctionPointerCallingConventions() => _unmodifiedType.GetFunctionPointerCallingConventions();
+        public override Type[] GetFunctionPointerParameterTypes() => _unmodifiedType.GetFunctionPointerParameterTypes();
+        public override Type GetFunctionPointerReturnType() => _unmodifiedType.GetFunctionPointerReturnType();
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override Type[] GetGenericArguments() => _unmodifiedType.GetGenericArguments();
         public override string ToString() => _unmodifiedType.ToString();
