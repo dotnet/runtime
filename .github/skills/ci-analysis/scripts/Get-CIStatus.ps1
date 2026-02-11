@@ -539,43 +539,6 @@ function Get-PRChangedFiles {
 function Get-PRCorrelation {
     param(
         [array]$ChangedFiles,
-        [string]$FailureInfo
-    )
-
-    # Extract potential file/test names from the failure info
-    $correlations = @()
-
-    foreach ($file in $ChangedFiles) {
-        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
-        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
-
-        # Check if the failure mentions this file
-        if ($FailureInfo -match [regex]::Escape($fileName) -or
-            $FailureInfo -match [regex]::Escape($fileNameWithExt)) {
-            $correlations += @{
-                File = $file
-                MatchType = "direct"
-            }
-        }
-
-        # Check for test file patterns
-        if ($file -match '\.Tests?\.' -or $file -match '/tests?/' -or $file -match '\\tests?\\') {
-            # This is a test file - check if the test name appears in failures
-            if ($FailureInfo -match [regex]::Escape($fileName)) {
-                $correlations += @{
-                    File = $file
-                    MatchType = "test"
-                }
-            }
-        }
-    }
-
-    return $correlations | Select-Object -Unique -Property File, MatchType
-}
-
-function Get-PRCorrelation {
-    param(
-        [array]$ChangedFiles,
         [array]$AllFailures
     )
 
