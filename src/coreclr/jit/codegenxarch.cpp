@@ -11494,7 +11494,7 @@ void CodeGen::genClearAvxStateInEpilog()
 
         // Skip vzeroupper when the method returns a 256-bit or wider SIMD value in a register,
         // as vzeroupper would destroy the upper bits of the return value.
-        if (genTypeSize(compiler->info.compRetNativeType) <= 16)
+        if (genTypeSize(m_compiler->info.compRetNativeType) <= 16)
         {
             instGen(INS_vzeroupper);
         }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -154,91 +155,109 @@ public static class VectorMgdMgd256
         Console.WriteLine($"Vector256<int>.Count = {Vector256<int>.Count}");
         Console.WriteLine($"Vector512<int>.Count = {Vector512<int>.Count}");
 
-        // ---- Single Vector256 tests ----
-        Console.WriteLine("=== Single Vector256 tests ===");
-
-        var v256 = Vector256.Create(1, 2, 3, 4, 5, 6, 7, 8);
-        Check("PassSingle256", PassSingle256(v256) == v256);
-
-        Check("Add256", Add256(Vector256.Create(1), Vector256.Create(2)) == Vector256.Create(3));
-
-        Check("PassMany256", PassMany256(
-            Vector256.Create(1), Vector256.Create(2), Vector256.Create(3), Vector256.Create(4)) == Vector256.Create(10));
-
-        Check("Mixed256", Mixed256(3, Vector256.Create(10), 7L) == Vector256.Create(20));
-
-        // ---- Single Vector512 tests ----
-        Console.WriteLine("=== Single Vector512 tests ===");
-
-        var v512 = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-        Check("PassSingle512", PassSingle512(v512) == v512);
-
-        Check("Add512", Add512(Vector512.Create(1), Vector512.Create(2)) == Vector512.Create(3));
-
-        Check("Mixed512", Mixed512(3, Vector512.Create(10), 7L) == Vector512.Create(20));
-
-        // ---- HVA256 argument tests ----
-        Console.WriteLine("=== HVA256 argument tests ===");
-
-        var hva256_01 = new HVA256_01 { v0 = Vector256.Create(random.Next(100)) };
-        var r01 = PassHVA256_01(hva256_01);
-        Check("PassHVA256_01.v0", r01.v0 == hva256_01.v0);
-
-        var hva256_02 = new HVA256_02 { v0 = Vector256.Create(random.Next(100)), v1 = Vector256.Create(random.Next(100)) };
-        var r02 = PassHVA256_02(hva256_02);
-        Check("PassHVA256_02.v0", r02.v0 == hva256_02.v0);
-        Check("PassHVA256_02.v1", r02.v1 == hva256_02.v1);
-
-        var hva256_03 = new HVA256_03
+        if (Avx.IsSupported)
         {
-            v0 = Vector256.Create(random.Next(100)),
-            v1 = Vector256.Create(random.Next(100)),
-            v2 = Vector256.Create(random.Next(100))
-        };
-        var r03 = PassHVA256_03(hva256_03);
-        Check("PassHVA256_03.v0", r03.v0 == hva256_03.v0);
-        Check("PassHVA256_03.v1", r03.v1 == hva256_03.v1);
-        Check("PassHVA256_03.v2", r03.v2 == hva256_03.v2);
+            // ---- Single Vector256 tests ----
+            Console.WriteLine("=== Single Vector256 tests ===");
 
-        // ---- HVA512 argument tests ----
-        Console.WriteLine("=== HVA512 argument tests ===");
+            var v256 = Vector256.Create(1, 2, 3, 4, 5, 6, 7, 8);
+            Check("PassSingle256", PassSingle256(v256) == v256);
 
-        var hva512_01 = new HVA512_01 { v0 = Vector512.Create(random.Next(100)) };
-        var r512_01 = PassHVA512_01(hva512_01);
-        Check("PassHVA512_01.v0", r512_01.v0 == hva512_01.v0);
+            Check("Add256", Add256(Vector256.Create(1), Vector256.Create(2)) == Vector256.Create(3));
 
-        var hva512_02 = new HVA512_02 { v0 = Vector512.Create(random.Next(100)), v1 = Vector512.Create(random.Next(100)) };
-        var r512_02 = PassHVA512_02(hva512_02);
-        Check("PassHVA512_02.v0", r512_02.v0 == hva512_02.v0);
-        Check("PassHVA512_02.v1", r512_02.v1 == hva512_02.v1);
+            Check("PassMany256", PassMany256(
+                Vector256.Create(1), Vector256.Create(2), Vector256.Create(3), Vector256.Create(4)) == Vector256.Create(10));
 
-        // ---- HVA256 return tests ----
-        Console.WriteLine("=== HVA return tests ===");
+            Check("Mixed256", Mixed256(3, Vector256.Create(10), 7L) == Vector256.Create(20));
 
-        var retH01 = ReturnHVA256_01(Vector256.Create(77));
-        Check("ReturnHVA256_01.v0", retH01.v0 == Vector256.Create(77));
+            // ---- HVA256 argument tests ----
+            Console.WriteLine("=== HVA256 argument tests ===");
 
-        var retH02 = ReturnHVA256_02(Vector256.Create(10), Vector256.Create(20));
-        Check("ReturnHVA256_02.v0", retH02.v0 == Vector256.Create(10));
-        Check("ReturnHVA256_02.v1", retH02.v1 == Vector256.Create(20));
+            var hva256_01 = new HVA256_01 { v0 = Vector256.Create(random.Next(100)) };
+            var r01 = PassHVA256_01(hva256_01);
+            Check("PassHVA256_01.v0", r01.v0 == hva256_01.v0);
 
-        var retH512 = ReturnHVA512_01(Vector512.Create(99));
-        Check("ReturnHVA512_01.v0", retH512.v0 == Vector512.Create(99));
+            var hva256_02 = new HVA256_02 { v0 = Vector256.Create(random.Next(100)), v1 = Vector256.Create(random.Next(100)) };
+            var r02 = PassHVA256_02(hva256_02);
+            Check("PassHVA256_02.v0", r02.v0 == hva256_02.v0);
+            Check("PassHVA256_02.v1", r02.v1 == hva256_02.v1);
 
-        // ---- Mixed scalar + HVA tests ----
-        Console.WriteLine("=== Mixed scalar + HVA tests ===");
+            var hva256_03 = new HVA256_03
+            {
+                v0 = Vector256.Create(random.Next(100)),
+                v1 = Vector256.Create(random.Next(100)),
+                v2 = Vector256.Create(random.Next(100))
+            };
+            var r03 = PassHVA256_03(hva256_03);
+            Check("PassHVA256_03.v0", r03.v0 == hva256_03.v0);
+            Check("PassHVA256_03.v1", r03.v1 == hva256_03.v1);
+            Check("PassHVA256_03.v2", r03.v2 == hva256_03.v2);
 
-        var hMixed = new HVA256_01 { v0 = Vector256.Create(100) };
-        Check("HVA256WithScalars", HVA256WithScalars(1, hMixed, 2) == 103);
+            // ---- HVA256 return tests ----
+            Console.WriteLine("=== HVA return tests ===");
 
-        var hMixed512 = new HVA512_01 { v0 = Vector512.Create(200) };
-        Check("HVA512WithScalars", HVA512WithScalars(1L, hMixed512, 2L) == 203);
+            var retH01 = ReturnHVA256_01(Vector256.Create(77));
+            Check("ReturnHVA256_01.v0", retH01.v0 == Vector256.Create(77));
 
-        // ---- Reflection tests ----
-        Console.WriteLine("=== Reflection tests ===");
+            var retH02 = ReturnHVA256_02(Vector256.Create(10), Vector256.Create(20));
+            Check("ReturnHVA256_02.v0", retH02.v0 == Vector256.Create(10));
+            Check("ReturnHVA256_02.v1", retH02.v1 == Vector256.Create(20));
 
-        TestReflection256();
-        TestReflection512();
+            // ---- Mixed scalar + HVA256 tests ----
+            Console.WriteLine("=== Mixed scalar + HVA tests ===");
+
+            var hMixed = new HVA256_01 { v0 = Vector256.Create(100) };
+            Check("HVA256WithScalars", HVA256WithScalars(1, hMixed, 2) == 103);
+
+            // ---- Reflection256 tests ----
+            Console.WriteLine("=== Reflection tests ===");
+
+            TestReflection256();
+        }
+        else
+        {
+            Console.WriteLine("=== Skipping Vector256 tests: AVX not supported ===");
+        }
+
+        if (Avx512F.IsSupported)
+        {
+            // ---- Single Vector512 tests ----
+            Console.WriteLine("=== Single Vector512 tests ===");
+
+            var v512 = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Check("PassSingle512", PassSingle512(v512) == v512);
+
+            Check("Add512", Add512(Vector512.Create(1), Vector512.Create(2)) == Vector512.Create(3));
+
+            Check("Mixed512", Mixed512(3, Vector512.Create(10), 7L) == Vector512.Create(20));
+
+            // ---- HVA512 argument tests ----
+            Console.WriteLine("=== HVA512 argument tests ===");
+
+            var hva512_01 = new HVA512_01 { v0 = Vector512.Create(random.Next(100)) };
+            var r512_01 = PassHVA512_01(hva512_01);
+            Check("PassHVA512_01.v0", r512_01.v0 == hva512_01.v0);
+
+            var hva512_02 = new HVA512_02 { v0 = Vector512.Create(random.Next(100)), v1 = Vector512.Create(random.Next(100)) };
+            var r512_02 = PassHVA512_02(hva512_02);
+            Check("PassHVA512_02.v0", r512_02.v0 == hva512_02.v0);
+            Check("PassHVA512_02.v1", r512_02.v1 == hva512_02.v1);
+
+            // ---- HVA512 return tests ----
+            var retH512 = ReturnHVA512_01(Vector512.Create(99));
+            Check("ReturnHVA512_01.v0", retH512.v0 == Vector512.Create(99));
+
+            // ---- Mixed scalar + HVA512 tests ----
+            var hMixed512 = new HVA512_01 { v0 = Vector512.Create(200) };
+            Check("HVA512WithScalars", HVA512WithScalars(1L, hMixed512, 2L) == 203);
+
+            // ---- Reflection512 tests ----
+            TestReflection512();
+        }
+        else
+        {
+            Console.WriteLine("=== Skipping Vector512 tests: AVX-512 not supported ===");
+        }
 
         Console.WriteLine(isPassing ? "Test Passed" : "Test FAILED");
 

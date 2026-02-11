@@ -805,9 +805,8 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         var_types simdType = getSIMDTypeForSize(structSize);
         if (simdType != TYP_UNDEF && simdType != TYP_SIMD12)
         {
-            bool canReturnAsSingleSimd = (structSize <= 16) ||
-                (structSize == 32 && canUseVexEncoding()) ||
-                (structSize == 64 && canUseEvexEncoding());
+            bool canReturnAsSingleSimd = (structSize <= 16) || (structSize == 32 && canUseVexEncoding()) ||
+                                         (structSize == 64 && canUseEvexEncoding());
 
             if (canReturnAsSingleSimd)
             {

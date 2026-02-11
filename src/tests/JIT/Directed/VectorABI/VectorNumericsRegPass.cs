@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // Test that System.Numerics.Vector<T> types are passed in registers on Unix AMD64
-// when they fit in the System V ABI limit (16 bytes).
+// for the active hardware-dependent vector size (for example, 16 bytes with SSE or
+// 32 bytes on AVX-capable machines) according to the System V ABI.
 
 public static class VectorNumericsRegPass
 {

@@ -226,54 +226,75 @@ public static class VectorRegPassSysV
         Console.WriteLine("=== Vector256 tests ===");
         Console.WriteLine($"  Avx.IsSupported = {Avx.IsSupported}");
 
-        var v256a = Vector256.Create(1, 2, 3, 4, 5, 6, 7, 8);
-        var v256b = Vector256.Create(10, 20, 30, 40, 50, 60, 70, 80);
-        pass &= Check(AddVec256(v256a, v256b),
-            Vector256.Create(11, 22, 33, 44, 55, 66, 77, 88), "AddVec256");
+        if (Avx.IsSupported)
+        {
+            var v256a = Vector256.Create(1, 2, 3, 4, 5, 6, 7, 8);
+            var v256b = Vector256.Create(10, 20, 30, 40, 50, 60, 70, 80);
+            pass &= Check(AddVec256(v256a, v256b),
+                Vector256.Create(11, 22, 33, 44, 55, 66, 77, 88), "AddVec256");
 
-        pass &= Check(
-            PassManyVec256(
-                Vector256.Create(1), Vector256.Create(2), Vector256.Create(3),
-                Vector256.Create(4), 100),
-            Vector256.Create(110),
-            "PassManyVec256");
+            pass &= Check(
+                PassManyVec256(
+                    Vector256.Create(1), Vector256.Create(2), Vector256.Create(3),
+                    Vector256.Create(4), 100),
+                Vector256.Create(110),
+                "PassManyVec256");
 
-        pass &= Check(MixedArgsVec256(3, Vector256.Create(10.0f), 7L),
-            Vector256.Create(20.0f), "MixedArgsVec256");
+            pass &= Check(MixedArgsVec256(3, Vector256.Create(10.0f), 7L),
+                Vector256.Create(20.0f), "MixedArgsVec256");
 
-        pass &= Check(ReturnVec256(42), Vector256.Create(42), "ReturnVec256");
+            pass &= Check(ReturnVec256(42), Vector256.Create(42), "ReturnVec256");
 
-        // --- Vector256<double> tests ---
-        pass &= Check(AddVec256D(Vector256.Create(1.0), Vector256.Create(2.0)),
-            Vector256.Create(3.0), "AddVec256D");
+            // --- Vector256<double> tests ---
+            pass &= Check(AddVec256D(Vector256.Create(1.0), Vector256.Create(2.0)),
+                Vector256.Create(3.0), "AddVec256D");
 
-        // --- Vector256 chained return tests ---
-        pass &= Check(
-            ChainVec256(Vector256.Create(1.0f), Vector256.Create(2.0f),
-                        Vector256.Create(0.5f), Vector256.Create(0.1f)),
-            Vector256.Create(3.6f), "ChainVec256");
+            // --- Vector256 chained return tests ---
+            pass &= Check(
+                ChainVec256(Vector256.Create(1.0f), Vector256.Create(2.0f),
+                            Vector256.Create(0.5f), Vector256.Create(0.1f)),
+                Vector256.Create(3.6f), "ChainVec256");
+        }
+        else
+        {
+            Console.WriteLine("  Skipping Vector256 tests because AVX is not supported.");
+        }
 
         // --- Vector512 tests ---
         Console.WriteLine("=== Vector512 tests ===");
         Console.WriteLine($"  Avx512F.IsSupported = {Avx512F.IsSupported}");
 
-        var v512a = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-        var v512b = Vector512.Create(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);
-        pass &= Check(AddVec512(v512a, v512b),
-            Vector512.Create(11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 176),
-            "AddVec512");
+        if (Avx512F.IsSupported)
+        {
+            var v512a = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            var v512b = Vector512.Create(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);
+            pass &= Check(AddVec512(v512a, v512b),
+                Vector512.Create(11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 176),
+                "AddVec512");
 
-        pass &= Check(ReturnVec512(99), Vector512.Create(99), "ReturnVec512");
+            pass &= Check(ReturnVec512(99), Vector512.Create(99), "ReturnVec512");
 
-        pass &= Check(MixedArgsVec512(3, Vector512.Create(10.0f), 7L),
-            Vector512.Create(20.0f), "MixedArgsVec512");
+            pass &= Check(MixedArgsVec512(3, Vector512.Create(10.0f), 7L),
+                Vector512.Create(20.0f), "MixedArgsVec512");
+        }
+        else
+        {
+            Console.WriteLine("  Skipping Vector512 tests because AVX-512 is not supported.");
+        }
 
         // --- Multi-size mixing tests ---
         Console.WriteLine("=== Multi-size mixing tests ===");
 
-        pass &= Check(
-            MixedSizes(Vector128.Create(1), Vector256.Create(10), 5),
-            Vector128.Create(16), "MixedSizes_128_256");
+        if (Avx.IsSupported)
+        {
+            pass &= Check(
+                MixedSizes(Vector128.Create(1), Vector256.Create(10), 5),
+                Vector128.Create(16), "MixedSizes_128_256");
+        }
+        else
+        {
+            Console.WriteLine("  Skipping multi-size mixing tests because AVX is not supported.");
+        }
 
         // --- Return into struct field tests ---
         Console.WriteLine("=== Return into struct tests ===");

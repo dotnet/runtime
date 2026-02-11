@@ -63,7 +63,7 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg wellKnownParam)
 {
-    bool                                                canEnreg            = false;
+    bool                                                canEnreg           = false;
     bool                                                handleAsSingleSimd = false;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 
@@ -75,8 +75,7 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     if (comp->isSingleRegisterSIMDType(type, structLayout))
     {
         unsigned simdSize = genTypeSize(type);
-        if ((simdSize <= 16) ||
-            (simdSize == 32 && comp->canUseVexEncoding()) ||
+        if ((simdSize <= 16) || (simdSize == 32 && comp->canUseVexEncoding()) ||
             (simdSize == 64 && comp->canUseEvexEncoding()))
         {
             handleAsSingleSimd = true;
@@ -88,37 +87,37 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
     {
         if (varTypeIsStruct(type))
         {
-        comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(structLayout->GetClassHandle(), &structDesc);
+            comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(structLayout->GetClassHandle(), &structDesc);
 
-        if (structDesc.passedInRegisters)
-        {
-            unsigned intRegCount   = 0;
-            unsigned floatRegCount = 0;
-
-            for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
+            if (structDesc.passedInRegisters)
             {
-                if (structDesc.IsIntegralSlot(i))
-                {
-                    intRegCount++;
-                }
-                else if (structDesc.IsSseSlot(i))
-                {
-                    floatRegCount++;
-                }
-                else
-                {
-                    assert(!"Invalid eightbyte classification type.");
-                    break;
-                }
-            }
+                unsigned intRegCount   = 0;
+                unsigned floatRegCount = 0;
 
-            canEnreg = (intRegCount <= m_intRegs.Count()) && (floatRegCount <= m_floatRegs.Count());
+                for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
+                {
+                    if (structDesc.IsIntegralSlot(i))
+                    {
+                        intRegCount++;
+                    }
+                    else if (structDesc.IsSseSlot(i))
+                    {
+                        floatRegCount++;
+                    }
+                    else
+                    {
+                        assert(!"Invalid eightbyte classification type.");
+                        break;
+                    }
+                }
+
+                canEnreg = (intRegCount <= m_intRegs.Count()) && (floatRegCount <= m_floatRegs.Count());
+            }
         }
-    }
-    else
-    {
-        unsigned availRegs = varTypeUsesFloatArgReg(type) ? m_floatRegs.Count() : m_intRegs.Count();
-        canEnreg           = availRegs > 0;
+        else
+        {
+            unsigned availRegs = varTypeUsesFloatArgReg(type) ? m_floatRegs.Count() : m_intRegs.Count();
+            canEnreg           = availRegs > 0;
         }
     }
 
@@ -128,8 +127,8 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
         if (handleAsSingleSimd)
         {
             regNumber reg = m_floatRegs.Dequeue();
-            info          = ABIPassingInformation::FromSegmentByValue(
-                comp, ABIPassingSegment::InRegister(reg, 0, genTypeSize(type)));
+            info          = ABIPassingInformation::FromSegmentByValue(comp,
+                                                                      ABIPassingSegment::InRegister(reg, 0, genTypeSize(type)));
         }
         else if (varTypeIsStruct(type))
         {
