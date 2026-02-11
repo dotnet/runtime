@@ -11,6 +11,13 @@ namespace System.Tests
 {
     public partial class PosixSignalRegistrationTests
     {
+        [Fact]
+        public void Create_SIGKILL_Throws()
+        {
+            // SIGKILL is not supported on Windows
+            Assert.Throws<PlatformNotSupportedException>(() => PosixSignalRegistration.Create(PosixSignal.SIGKILL, ctx => { }));
+        }
+
         public static IEnumerable<object[]> UninstallableSignals() => Enumerable.Empty<object[]>();
 
         public static IEnumerable<object[]> SupportedSignals() => SupportedPosixSignals.Select(p => new object[] { p });

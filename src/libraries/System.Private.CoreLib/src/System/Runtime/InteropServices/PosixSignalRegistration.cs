@@ -39,12 +39,6 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(handler);
 
-            // SIGKILL cannot be caught or ignored on any OS.
-            if (signal == PosixSignal.SIGKILL)
-            {
-                throw new IOException(SR.Arg_CannotRegisterHandlerForSIGKILL);
-            }
-
             return Register(signal, handler);
         }
 
