@@ -10279,15 +10279,18 @@ public:
     bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
-    bool compNeedsGSSecurityCookie  = false; // There is an unsafe buffer (or localloc) on the stack.
-                                             // Insert cookie on frame and code to check the cookie, like VC++ -GS.
-    bool compGSReorderStackLayout = false;   // There is an unsafe buffer on the stack, reorder locals and make local
+
+    // There is an unsafe buffer (or localloc) on the stack.
+    bool compNeedsGSSecurityCookie = false;
+
+    // There is an unsafe buffer on the stack, reorder locals and make local
+    // copies of susceptible parameters to avoid buffer overrun attacks through locals/params
+    bool compGSReorderStackLayout = false;
 
 #ifdef DEBUG
     const char* compGSSecurityCheckBlocker = nullptr;
 #endif
 
-    // copies of susceptible parameters to avoid buffer overrun attacks through locals/params
     bool getNeedsGSSecurityCookie() const
     {
         return compNeedsGSSecurityCookie;
