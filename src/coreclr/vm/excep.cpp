@@ -4384,7 +4384,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         PrintToStdErrA("\n");
 
 #ifdef HOST_ANDROID
-        PAL_MarkCrashReportAlreadyLogged();
+        EEPolicy::CallstackForFatalErrorLogged();
 #endif
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)

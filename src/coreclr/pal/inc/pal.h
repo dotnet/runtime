@@ -252,6 +252,17 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked when a fatal error occurs. The callback should log the callstack for the fatal error.
+/// </summary>
+typedef VOID (*PLOGCALLSTACKFORFATALERROR_CALLBACK)(void);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogCallstackForFatalErrorCallback(
+    IN PLOGCALLSTACKFORFATALERROR_CALLBACK callback);
+
 PALIMPORT
 BOOL
 PALAPI
@@ -261,13 +272,6 @@ PAL_GenerateCoreDump(
     IN ULONG32 flags,
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
-
-#ifdef HOST_ANDROID
-PALIMPORT
-VOID
-PALAPI
-PAL_MarkCrashReportAlreadyLogged();
-#endif
 
 PALIMPORT
 BOOL

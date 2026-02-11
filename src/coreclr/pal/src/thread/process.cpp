@@ -195,6 +195,9 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
+// Function to call to log the callstack for a fatal error. Used by Android since CoreCLR doesn't support CreateDump on Android.
+Volatile<PLOGCALLSTACKFORFATALERROR_CALLBACK> g_logCallstackForFatalErrorCallback = nullptr;
+
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
@@ -1356,6 +1359,26 @@ PAL_SetCreateDumpCallback(
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetLogCallstackForFatalErrorCallback
+
+Abstract:
+  Sets a callback that is executed when a fatal error (crash) occurs to log the callstack.
+  Used by Android CoreCLR since CreateDump is not supported on Android.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogCallstackForFatalErrorCallback(
+    IN PLOGCALLSTACKFORFATALERROR_CALLBACK callback)
+{
+    _ASSERTE(g_logCallstackForFatalErrorCallback == nullptr);
+    g_logCallstackForFatalErrorCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2723,47 +2746,22 @@ static void DoNotOptimize(const void* p)
     (void)p;
 }
 
-#ifdef HOST_ANDROID
-#include <minipal/log.h>
-extern "C" void LogCallstackForAndroidNativeCrash() __attribute__((weak));
-
-static Volatile<LONG> s_crashReportAlreadyLogged = FALSE;
-
 /*++
 Function:
-  PAL_MarkCrashReportAlreadyLogged
+  PROCLogCallstackForFatalError
 
-Abstract:
-  Signals that a crash report has already been logged for this crash.
-  Android currently does not support CreateDump, so a crash report is manually logged.
-  This prevents duplicate stack traces from being logged (e.g. unhandled exception)
+  Invokes the registered callback to log the callstack for a fatal error.
+  Used by Android since CreateDump is not supported there.
+
+(no return value)
 --*/
 VOID
-PALAPI
-PAL_MarkCrashReportAlreadyLogged()
+PROCLogCallstackForFatalError()
 {
-    InterlockedExchange(&s_crashReportAlreadyLogged, TRUE);
-}
-#endif // HOST_ANDROID
-
-VOID
-PROCCreateCrashReportAndDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
-{
-    // Preserve context pointer to prevent optimization
-    DoNotOptimize(&context);
-
-#ifdef HOST_ANDROID
-    // Android CoreCLR currently does not support CreateDump, so log a crash report until then.
-    // Use atomic exchange to ensure only one thread logs the crash report to avoid interleaved output.
-    if (InterlockedCompareExchange(&s_crashReportAlreadyLogged, TRUE, FALSE) == FALSE &&
-        LogCallstackForAndroidNativeCrash != nullptr)
+    if (g_logCallstackForFatalErrorCallback != nullptr)
     {
-        minipal_log_write_fatal(".NET runtime crash report\n");
-        LogCallstackForAndroidNativeCrash();
+        g_logCallstackForFatalErrorCallback();
     }
-#endif //HOST_ANDROID
-
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, serialize);
 }
 
 /*++
@@ -2782,6 +2780,7 @@ Parameters:
 (no return value)
 --*/
 #ifdef HOST_ANDROID
+#include <minipal/log.h>
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
@@ -2892,7 +2891,8 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashReportAndDumpIfEnabled(signal, siginfo, context, true);
+    PROCLogCallstackForFatalError();
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.

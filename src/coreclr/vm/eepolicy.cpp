@@ -184,7 +184,7 @@ class CallStackLogger
         }
 
 #ifdef HOST_ANDROID
-        // Android tracks native frames for its crash report in PROCCreateCrashReportAndDumpIfEnabled.
+        // Android tracks native frames for its crash report in LogCallstackForFatalErrorCallback.
         // Indicate them with nullptr MethodDesc.
         *itemPtr = pCF->IsNativeMarker() ? nullptr : pCF->GetFunction();
 #else
@@ -380,10 +380,6 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, flags);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
-
-#ifdef HOST_ANDROID
-    PAL_MarkCrashReportAlreadyLogged();
-#endif
 
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
@@ -932,15 +928,30 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 }
 
 #ifdef HOST_ANDROID
-// Until Android CoreCLR is able to create dumps, provide a way for PROCCreateCrashDumpIfEnabled to log the managed callstack.
-extern "C" void LogCallstackForAndroidNativeCrash()
+#include <minipal/log.h>
+
+static Volatile<LONG> s_callstackForFatalErrorLogged = FALSE;
+
+// Logs the callstack for a fatal error. Should only be called once.
+void EEPolicy::LogCallstackForFatalErrorOnce()
 {
     WRAPPER_NO_CONTRACT;
 
+    if (InterlockedCompareExchange(&s_callstackForFatalErrorLogged, TRUE, FALSE) != FALSE)
+    {
+        return;
+    }
+
+    minipal_log_write_fatal("Fatal error.\n");
     Thread *pThread = GetThreadNULLOk();
     if (pThread != NULL)
     {
         LogCallstackForLogWorker(pThread, NULL);
     }
+}
+
+void EEPolicy::CallstackForFatalErrorLogged()
+{
+    s_callstackForFatalErrorLogged = TRUE;
 }
 #endif // HOST_ANDROID
