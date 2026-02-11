@@ -518,15 +518,12 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void LoggerMessage_Define_WithDuplicatePlaceholder_SingleParameter()
         {
-            // Arrange
             var testSink = new TestSink();
             var testLogger = new TestLogger("testlogger", testSink, enabled: true);
             var action = LoggerMessage.Define<string>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. How are you {Name}");
 
-            // Act
             action(testLogger, "David", null);
 
-            // Assert
             Assert.Single(testSink.Writes);
             var writeContext = testSink.Writes.First();
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
@@ -538,15 +535,12 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void LoggerMessage_Define_WithDuplicatePlaceholder_MultipleParameters()
         {
-            // Arrange
             var testSink = new TestSink();
             var testLogger = new TestLogger("testlogger", testSink, enabled: true);
             var action = LoggerMessage.Define<string, int>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. You are {Age} years old. How are you {Name}");
 
-            // Act
             action(testLogger, "David", 100, null);
 
-            // Assert
             Assert.Single(testSink.Writes);
             var writeContext = testSink.Writes.First();
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
@@ -558,15 +552,12 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void LoggerMessage_Define_WithAllDuplicatePlaceholders()
         {
-            // Arrange
             var testSink = new TestSink();
             var testLogger = new TestLogger("testlogger", testSink, enabled: true);
             var action = LoggerMessage.Define<string>(LogLevel.Information, new EventId(0, "LogSomething"), "{Name} {Name} {Name}");
 
-            // Act
             action(testLogger, "David", null);
 
-            // Assert
             Assert.Single(testSink.Writes);
             var writeContext = testSink.Writes.First();
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
@@ -578,15 +569,12 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public void LoggerMessage_DefineScope_WithDuplicatePlaceholder()
         {
-            // Arrange
             var testSink = new TestSink();
             var testLogger = new TestLogger("testlogger", testSink, enabled: true);
             var scopeFunc = LoggerMessage.DefineScope<string>("Hello {Name}. How are you {Name}");
 
-            // Act
             using (scopeFunc(testLogger, "David"))
             {
-                // Assert
                 Assert.Single(testSink.Scopes);
                 var scopeContext = testSink.Scopes.First();
                 var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(scopeContext.Scope);
