@@ -363,7 +363,8 @@ function Get-AzDOBuildIdFromPR {
     # Check if PR has merge conflicts (no CI runs when mergeable_state is dirty)
     $prMergeState = $null
     try {
-        $prMergeState = gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null
+        $prMergeState = (gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null)
+        if ($prMergeState) { $prMergeState = $prMergeState.Trim() }
     } catch { Write-Verbose "Could not determine PR merge state: $_" }
 
     # Find ALL failing Azure DevOps builds
