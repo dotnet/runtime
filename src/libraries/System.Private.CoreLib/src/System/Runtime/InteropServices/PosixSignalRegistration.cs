@@ -43,7 +43,8 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(handler);
 
             // SIGKILL cannot be caught or ignored on any OS.
-            // Check both the enum value (-11) and the raw signal number (9 on POSIX systems).
+            // Check for both the enum value (PosixSignal.SIGKILL = -11) and the raw POSIX signal number (9)
+            // cast to the enum type (e.g., (PosixSignal)9).
             if (signal == PosixSignal.SIGKILL || (int)signal == SIGKILL_POSIX_SIGNAL_NUMBER)
             {
                 throw new ArgumentException(SR.Arg_CannotRegisterHandlerForSIGKILL, nameof(signal));
