@@ -45,7 +45,6 @@
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Runtime controls its dependency graph via Traversal projects and doesn't want or need Arcade's ExcludeFrom infrastructure. -->
     <DisableArcadeExcludeFromBuildSupport>true</DisableArcadeExcludeFromBuildSupport>
-    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
   </PropertyGroup>
 
   <ItemGroup>
