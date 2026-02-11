@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -410,6 +411,8 @@ namespace {lc.Namespace}
 ");
                 }
 
+                GenMethodDocumentation(lm, nestedIndentation);
+
                 _builder.Append($@"
         {nestedIndentation}[{s_generatedCodeAttribute}]
         {nestedIndentation}{lm.Modifiers} void {lm.Name}({extension}");
@@ -518,6 +521,47 @@ namespace {lc.Namespace}
 
                     return level;
                 }
+            }
+
+            private void GenMethodDocumentation(LoggerMethod lm, string nestedIndentation)
+            {
+                string levelName = GetLogLevelName(lm);
+                string message = lm.Message;
+
+                _builder.Append($@"
+        {nestedIndentation}/// <summary>
+        {nestedIndentation}/// Generated log call
+        {nestedIndentation}/// <para><b>Message:</b> {SecurityElement.Escape(message)}</para>");
+
+                if (!string.IsNullOrEmpty(levelName))
+                {
+                    _builder.Append($@"
+        {nestedIndentation}/// <para><b>Level:</b> {levelName}</para>");
+                }
+
+                _builder.Append($@"
+        {nestedIndentation}/// </summary>");
+            }
+
+            private static string GetLogLevelName(LoggerMethod lm)
+            {
+                if (lm.Level == null)
+                {
+                    // Dynamic log level - don't include in documentation
+                    return string.Empty;
+                }
+
+                return lm.Level switch
+                {
+                    0 => "Trace",
+                    1 => "Debug",
+                    2 => "Information",
+                    3 => "Warning",
+                    4 => "Error",
+                    5 => "Critical",
+                    6 => "None",
+                    _ => $"LogLevel({lm.Level})",
+                };
             }
 
             private void GenEnumerationHelper()
