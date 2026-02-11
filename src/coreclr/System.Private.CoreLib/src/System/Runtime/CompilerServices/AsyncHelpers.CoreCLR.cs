@@ -461,6 +461,12 @@ namespace System.Runtime.CompilerServices
                 }
                 catch (Exception ex)
                 {
+                    if (Task.s_asyncDebuggingEnabled)
+                    {
+                        Task.RemoveFromActiveTasks(this);
+                        Task.RemoveRuntimeAsyncTaskTimestamp(this);
+                    }
+
                     Task.ThrowAsync(ex, targetContext: null);
                 }
             }
