@@ -186,13 +186,14 @@ Run with `-ShowLogs` for detailed failure info.
 1. **Check Build Analysis** — Known issues are safe to retry
 2. **Correlate with PR changes** — Same files failing = likely PR-related
 3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
-4. **Interpret patterns** (but don't jump to conclusions):
+4. **Check build progression** — If the PR has multiple builds (multiple pushes), check whether earlier builds passed. A failure that appeared after a specific push narrows the investigation to those commits. See [references/build-progression-analysis.md](references/build-progression-analysis.md). Present findings as facts, not fix recommendations.
+5. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue
    - Build Analysis flags a known issue → Safe to retry
    - Failure is **not** in Build Analysis → Investigate further before assuming transient
    - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against the target branch first
    - Test timeout but tests passed → Executor issue, not test failure
-5. **Check for mismatch with user's question** — The script only reports builds for the current head SHA. If the user asks about a job, error, or cancellation that doesn't appear in the results, **ask** if they're referring to a prior build. Common triggers:
+6. **Check for mismatch with user's question** — The script only reports builds for the current head SHA. If the user asks about a job, error, or cancellation that doesn't appear in the results, **ask** if they're referring to a prior build. Common triggers:
    - User mentions a canceled job but `canceledJobNames` is empty
    - User says "CI is failing" but the latest build is green
    - User references a specific job name not in the current results
@@ -238,6 +239,7 @@ Specific next steps: retry, fix specific files, investigate further. Include `/a
 
 - **Helix artifacts & binlogs**: See [references/helix-artifacts.md](references/helix-artifacts.md)
 - **Binlog comparison (passing vs failing)**: See [references/binlog-comparison.md](references/binlog-comparison.md)
+- **Build progression (commit-to-build correlation)**: See [references/build-progression-analysis.md](references/build-progression-analysis.md)
 - **Subagent delegation patterns**: See [references/delegation-patterns.md](references/delegation-patterns.md)
 - **Azure CLI deep investigation**: See [references/azure-cli.md](references/azure-cli.md)
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
