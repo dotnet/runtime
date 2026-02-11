@@ -362,10 +362,13 @@ function Get-AzDOBuildIdFromPR {
 
     # Check if PR has merge conflicts (no CI runs when mergeable_state is dirty)
     $prMergeState = $null
-    try {
-        $prMergeState = (gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null)
-        if ($prMergeState) { $prMergeState = $prMergeState.Trim() }
-    } catch { Write-Verbose "Could not determine PR merge state: $_" }
+    $prMergeStateOutput = & gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null
+    $ghMergeStateExitCode = $LASTEXITCODE
+    if ($ghMergeStateExitCode -eq 0 -and $prMergeStateOutput) {
+        $prMergeState = $prMergeStateOutput.Trim()
+    } else {
+        Write-Verbose "Could not determine PR merge state (gh exit code $ghMergeStateExitCode)."
+    }
 
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
@@ -2028,11 +2031,16 @@ try {
                                             if ($failureInfo -match 'Timed Out \(timeout') {
                                                 $jobDetail.errorCategory = "test-timeout"
                                             } elseif ($failureInfo -match 'Exit Code:\s*(139|134)' -or $failureInfo -match 'createdump') {
-                                                $jobDetail.errorCategory = "crash"
+                                                # Crash takes highest precedence — don't downgrade
+                                                if ($jobDetail.errorCategory -notin @("crash")) {
+                                                    $jobDetail.errorCategory = "crash"
+                                                }
                                             } elseif ($failureInfo -match 'Traceback \(most recent call last\)' -and $helixLog -match 'Tests run:.*Failures:\s*0') {
                                                 # Work item failed (non-zero exit from reporter crash) but all tests passed.
                                                 # The Python traceback is from Helix infrastructure, not from the test itself.
-                                                $jobDetail.errorCategory = "tests-passed-reporter-failed"
+                                                if ($jobDetail.errorCategory -notin @("crash", "test-timeout")) {
+                                                    $jobDetail.errorCategory = "tests-passed-reporter-failed"
+                                                }
                                             } elseif ($jobDetail.errorCategory -eq "unclassified") {
                                                 $jobDetail.errorCategory = "test-failure"
                                             }
