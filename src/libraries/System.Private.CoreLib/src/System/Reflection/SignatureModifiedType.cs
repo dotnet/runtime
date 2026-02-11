@@ -32,7 +32,7 @@ namespace System.Reflection
         public override bool ContainsGenericParameters => _unmodifiedType.ContainsGenericParameters;
         public override Type[] GenericTypeArguments => _unmodifiedType.GenericTypeArguments;
         public override int GenericParameterPosition => _unmodifiedType.GenericParameterPosition;
-        internal override SignatureType? ElementType => null;
+        internal override SignatureType? ElementType => HasElementType ? new SignatureModifiedType(_unmodifiedType.GetElementType()!, [], []) : null;
         public override string Name => _unmodifiedType.Name;
         public override string? Namespace => _unmodifiedType.Namespace;
         public override bool IsEnum => _unmodifiedType.IsEnum;
