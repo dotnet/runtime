@@ -9,6 +9,9 @@ namespace System.Runtime.InteropServices
     /// <summary>Handles a <see cref="PosixSignal"/>.</summary>
     public sealed partial class PosixSignalRegistration : IDisposable
     {
+        /// <summary>The raw signal number for SIGKILL on POSIX systems.</summary>
+        private const int SIGKILL_POSIX_SIGNAL_NUMBER = 9;
+
         /// <summary>The state associated with this registration.</summary>
         /// <remarks>
         /// This is separate from the registration instance so that this token may be stored
@@ -41,7 +44,7 @@ namespace System.Runtime.InteropServices
 
             // SIGKILL cannot be caught or ignored on any OS.
             // Check both the enum value (-11) and the raw signal number (9 on POSIX systems).
-            if (signal == PosixSignal.SIGKILL || (int)signal == 9)
+            if (signal == PosixSignal.SIGKILL || (int)signal == SIGKILL_POSIX_SIGNAL_NUMBER)
             {
                 throw new ArgumentException(SR.Arg_CannotRegisterHandlerForSIGKILL, nameof(signal));
             }
