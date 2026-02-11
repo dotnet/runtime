@@ -21,28 +21,37 @@ az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 --org $org -p $p
     --query "[].{id:id, result:result, sourceVersion:sourceVersion, finishTime:finishTime}" -o table
 ```
 
-### Step 2: Map builds to commits
+### Step 2: Map builds to the PR's head commit
 
-For each build, identify the source commit and use `git log` to see what was included:
+Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. This is the key for mapping builds to commits:
 
 ```powershell
-# Get source version for a build
-az pipelines runs show --id $buildId --org $org -p $project `
-    --query "{id:id, result:result, sourceVersion:sourceVersion}" -o json
+# Get full build details including triggerInfo
+$allBuilds = az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 `
+    --org $org -p $project -o json | ConvertFrom-Json
 
-# See what commits are between two source versions
-# git log --oneline $passingCommit..$failingCommit
+# Extract PR head commit for each build
+foreach ($build in $allBuilds) {
+    $prHead = $build.triggerInfo.'pr.sourceSha'
+    $short = if ($prHead) { $prHead.Substring(0,7) } else { "n/a" }
+    Write-Host "Build $($build.id): $($build.result) — PR HEAD: $short"
+}
 ```
+
+> ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
+
+Note: a PR may have more unique `pr.sourceSha` values than commits visible on GitHub, because force-pushes replace the commit history. Each force-push triggers a new build with a new merge commit and a new `pr.sourceSha`.
 
 ### Step 3: Build a progression table
 
-Present the facts as a table:
+Present the facts as a table. Group builds by `pr.sourceSha` since multiple pipelines run per push:
 
-| Build | Source commit | Result | What changed since previous build |
-|-------|-------------|--------|----------------------------------|
-| 1284433 | abc123 | ✅ 9/9 | Initial PR commits |
-| 1286087 | def456 | ❌ 7/9 | Added commit C |
-| 1286967 | ghi789 | ❌ 7/9 | Modified commit C |
+| PR HEAD | Builds | Result | Notes |
+|---------|--------|--------|-------|
+| 6d499c2 | 1283943-5 | ✅ 3/3 | Initial commit |
+| 39dc0a6 | 1284433-5 | ✅ 3/3 | Added commit B |
+| f186b93 | 1286087-9 | ❌ 1/3 | Added commit C |
+| 2e74845 | 1286967-9 | ❌ 1/3 | Modified commit C |
 
 ### Step 4: Present findings, not conclusions
 
