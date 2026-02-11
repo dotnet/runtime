@@ -369,7 +369,7 @@ namespace System.Threading.Tasks
         // Constructs the task as already completed
         internal Task(bool canceled, TaskCreationOptions creationOptions, CancellationToken ct)
         {
-            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             int optionFlags = (int)creationOptions;
             if (canceled)
             {
@@ -389,7 +389,7 @@ namespace System.Threading.Tasks
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
         internal Task()
         {
-            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             m_stateFlags = (int)TaskStateFlags.WaitingForActivation | (int)InternalTaskOptions.PromiseTask;
         }
 
@@ -398,7 +398,7 @@ namespace System.Threading.Tasks
         // (action,TCO).  It should always be true.
         internal Task(object? state, TaskCreationOptions creationOptions, bool promiseStyle)
         {
-            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             Debug.Assert(promiseStyle, "Promise CTOR: promiseStyle was false");
 
             // Check the creationOptions. We allow the AttachedToParent option to be specified for promise tasks.
@@ -579,7 +579,7 @@ namespace System.Threading.Tasks
         internal Task(Delegate action, object? state, Task? parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler? scheduler)
         {
-            _ = s_asyncDebuggingEnabled; // Debuggger depends on Task cctor being run when any Task gets created
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             if (action == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
