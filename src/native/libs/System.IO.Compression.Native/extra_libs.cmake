@@ -32,7 +32,7 @@ macro(append_extra_compression_libs NativeLibsExtra)
     list(APPEND ${NativeLibsExtra} ${ZSTD})
   endif ()
 
-  if (CLR_CMAKE_USE_SYSTEM_XZ)
+  if (CLR_CMAKE_USE_SYSTEM_LZMA)
     find_library(XZ xz REQUIRED)
     list(APPEND ${NativeLibsExtra} ${XZ})
   endif ()
