@@ -380,7 +380,7 @@ else
     echo Timeout in ms: $__TestTimeout
     cmd=( node "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
-    run_with_timeout $__TestTimeout $cmd
+    run_with_timeout $__TestTimeout "${cmd[@]}"
 fi
 CLRTestExitCode=$?
       ]]>
