@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -535,7 +534,7 @@ namespace {lc.Namespace}
 
                 _builder.Append($@"
         {nestedIndentation}/// <summary>
-        {nestedIndentation}/// <para><b>Message:</b> {SecurityElement.Escape(message)}</para>");
+        {nestedIndentation}/// <para><b>Message:</b> {message}</para>");
 
                 if (!string.IsNullOrEmpty(levelName))
                 {
@@ -559,6 +558,18 @@ namespace {lc.Namespace}
                 string fullLevelName = GetLogLevelFullName(lm.Level.Value);
 
                 // Extract the simple name (e.g., "Trace" from "global::Microsoft.Extensions.Logging.LogLevel.Trace")
+                // For unknown levels, fullLevelName will be like "(global::Microsoft.Extensions.Logging.LogLevel)7"
+                if (fullLevelName.StartsWith("(", StringComparison.Ordinal))
+                {
+                    // Unknown level - return just the number
+                    int closeParen = fullLevelName.LastIndexOf(')');
+                    if (closeParen >= 0 && closeParen < fullLevelName.Length - 1)
+                    {
+                        return fullLevelName.Substring(closeParen + 1);
+                    }
+                    return fullLevelName;
+                }
+
                 int lastDotIndex = fullLevelName.LastIndexOf('.');
                 if (lastDotIndex >= 0 && lastDotIndex < fullLevelName.Length - 1)
                 {
