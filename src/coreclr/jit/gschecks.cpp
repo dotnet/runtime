@@ -42,7 +42,7 @@ PhaseStatus Compiler::gsPhase()
 #ifdef DEBUG
         if (compGSSecurityCheckBlocker != nullptr)
         {
-            JITDUMP("GS security check requested, but not provided: %s\n", compGSSecurityCheckBlocker)
+            JITDUMP("GS security check requested, but not provided: %s\n", compGSSecurityCheckBlocker);
         }
         else
         {
