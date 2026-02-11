@@ -6792,6 +6792,7 @@ public:
     AddCodeDsc* fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded = false);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
+    void fgSetThrowHelpBlockLiveness(BasicBlock* block);
     void fgSequenceLocals(Statement* stmt);
 
 private:
