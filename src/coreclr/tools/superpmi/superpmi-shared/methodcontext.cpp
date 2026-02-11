@@ -7358,6 +7358,12 @@ void MethodContext::dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, 
 
 CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
 {
+    if (GetWasmTypeSymbol == nullptr)
+    {
+        // Fake up a result so we can cross-replay onto wasm
+        return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)0xbadcab;
+    }
+
     AssertMapExistsNoMessage(GetWasmTypeSymbol);
 
     Agnostic_GetWasmTypeSymbol key;
