@@ -116,11 +116,33 @@ The script operates in three distinct modes depending on what information you ha
 
 **Per-failure details** (`failedJobDetails` in JSON): Each failed job includes `errorCategory`, `errorSnippet`, and `helixWorkItems`. Use these for per-job classification instead of applying a single `recommendationHint` to all failures.
 
-Error categories: `test-failure`, `build-error`, `test-timeout`, `crash` (exit codes 139/134), `tests-passed-reporter-failed` (all tests passed but reporter crashed — genuinely infrastructure), `unclassified` (investigate manually).
+Error categories: `test-failure`, `build-error`, `test-timeout`, `crash` (exit codes 139/134/-4), `tests-passed-reporter-failed` (all tests passed but reporter crashed — genuinely infrastructure), `unclassified` (investigate manually).
+
+> ⚠️ **`crash` does NOT always mean tests failed.** Exit code -4 often means the Helix work item wrapper timed out *after* tests completed. Always check `testResults.xml` before concluding a crash is a real failure. See [Recovering Results from Crashed/Canceled Jobs](#recovering-results-from-crashedcanceled-jobs).
 
 > ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure with strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
 
 > ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs can cause builds to request *different* packages. Check *which* package and *why* before assuming feed delay.
+
+### Recovering Results from Crashed/Canceled Jobs
+
+When an AzDO job is canceled (timeout) or Helix work items show `Crash` (exit code -4), the tests may have actually passed. Follow this procedure:
+
+1. **Find the Helix job IDs** — Read the AzDO "Send to Helix" step log (use `azure-devops-pipelines_get_build_log_by_id`) and search for lines containing `Sent Helix Job`. Extract the job GUIDs.
+
+2. **Check Helix job status** — Use `hlx_batch_status` (batches of 4) or `hlx_status` per job. Look at `failedCount` vs `passedCount`.
+
+3. **For work items marked Crash/Failed** — Use `hlx_files` to check if `testResults.xml` was uploaded. If it exists:
+   - Download it with `hlx_download_url`
+   - Parse the XML: `total`, `passed`, `failed` attributes on the `<assembly>` element
+   - If `failed=0` and `passed > 0`, the tests passed — the "crash" is the wrapper timing out after test completion
+
+4. **Verdict**:
+   - All work items passed or crash-with-passing-results → **Tests effectively passed.** The failure is infrastructure (wrapper timeout).
+   - Some work items have `failed > 0` in testResults.xml → **Real test failures.** Investigate those specific tests.
+   - No testResults.xml uploaded → Tests may not have run at all. Check console logs for errors.
+
+> This pattern is common with long-running test suites (e.g., WasmBuildTests) where tests complete but the Helix work item wrapper exceeds its timeout during result upload or cleanup.
 
 ## Generating Recommendations
 
