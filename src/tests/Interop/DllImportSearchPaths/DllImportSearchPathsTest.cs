@@ -13,6 +13,7 @@ public class DllImportSearchPathsTest
 {
     private static string Subdirectory => Path.Combine(NativeLibraryToLoad.GetDirectory(), "subdirectory");
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoMiniJIT), nameof(TestLibrary.PlatformDetection.IsArm64Process))]
     [Fact]
     public static void AssemblyDirectory_NotFound()
     {

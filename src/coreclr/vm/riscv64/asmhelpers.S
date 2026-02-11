@@ -1154,6 +1154,110 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
 // a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 8-bit to 64-bit
+    sext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Sign extend 16-bit to 64-bit
+    sext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 8-bit to 64-bit
+    zext.b a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sd a4, 24(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
+    ld a2, 16(fp)
+    // Zero extend 16-bit to 64-bit
+    zext.h a0, a0
+    sd a0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)

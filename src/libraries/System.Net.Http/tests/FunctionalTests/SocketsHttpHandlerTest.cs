@@ -592,7 +592,7 @@ namespace System.Net.Http.Functional.Tests
                     string response = LoopbackServer.GetContentModeResponse(mode, content);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        server.ListenSocket.Close(); // Shut down the listen socket so attempts at additional connections would fail on the client
+                        await server.ListenSocket.CloseAsync(); // Shut down the listen socket so attempts at additional connections would fail on the client
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                     });
@@ -1351,6 +1351,16 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task SendAsync_UriWithNonDnsNonAsciiHost_Throws()
+        {
+            using HttpClient client = CreateHttpClient();
+
+            HttpRequestMessage request = CreateRequest(HttpMethod.Get, new Uri($"http://hőst{new string('a', 60)}"), UseVersion);
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1941,7 +1951,7 @@ namespace System.Net.Http.Functional.Tests
 
                             string bigString = string.Concat(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz", 1000));
                             Task lotsOfDataSent = connection.SendResponseAsync(Encoding.ASCII.GetBytes(bigString));
-                            connection.Socket.Shutdown(SocketShutdown.Send);
+                            await connection.Socket.ShutdownAsync(SocketShutdown.Send);
                             await copyTask;
                             await lotsOfDataSent;
                             Assert.Equal("ghijklmnopqrstuvwxyz" + bigString, Encoding.ASCII.GetString(ms.ToArray()));
@@ -2165,7 +2175,7 @@ namespace System.Net.Http.Functional.Tests
                     await request2;
 
                     // Close underlying socket from first connection.
-                    socket.Close();
+                    await socket.CloseAsync();
                 }
             });
         }
