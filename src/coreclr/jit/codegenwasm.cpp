@@ -1815,10 +1815,10 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genLclHeap: Generate code for comparing ints or longs
+// genLclHeap: Generate code for LCLHEAP
 //
 // Arguments:
-//    tree -- LCH_HEAP tree
+//    tree -- LCLHEAP tree
 //
 // Notes:
 //   Codegen varies depending on:
@@ -1826,7 +1826,7 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 //   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
 //
 //   If the sp is changed, the value at sp[0] must be the frame pointer
-//   so that the runtime unwinder can locate the base of thie fixed area
+//   so that the runtime unwinder can locate the base of the fixed area
 //   in the shadow stack.
 //
 void CodeGen::genLclHeap(GenTree* tree)
