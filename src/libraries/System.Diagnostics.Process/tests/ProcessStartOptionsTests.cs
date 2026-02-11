@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestConstructor_NullFileName_Throws()
         {
-            Assert.Throws<ArgumentException>(() => new ProcessStartOptions(null));
+            Assert.Throws<ArgumentNullException>(() => new ProcessStartOptions(null));
         }
 
         [Fact]

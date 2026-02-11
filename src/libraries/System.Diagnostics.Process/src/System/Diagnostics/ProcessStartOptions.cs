@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -103,11 +104,11 @@ namespace System.Diagnostics
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Creating a new process group enables sending signals to the process (e.g., SIGINT, SIGQUIT) 
+        /// Creating a new process group enables sending signals to the process (e.g., SIGINT, SIGQUIT)
         /// on Windows and provides process group isolation on all platforms.
         /// </para>
         /// <para>
-        /// On Unix systems, child processes in a new process group won't receive signals sent to the parent's 
+        /// On Unix systems, child processes in a new process group won't receive signals sent to the parent's
         /// process group, which can be useful for background processes that should continue running independently.
         /// </para>
         /// </remarks>
@@ -154,13 +155,17 @@ namespace System.Diagnostics
 #endif
 
             // Then check the executable's directory
-            string? path = Environment.ProcessPath;
+            string? path = System.Environment.ProcessPath;
             if (path != null)
             {
                 try
                 {
                     path = Path.Combine(Path.GetDirectoryName(path)!, filename);
+#if WINDOWS
                     if (File.Exists(path))
+#else
+                    if (IsExecutableFile(path))
+#endif
                     {
                         return path;
                     }
@@ -170,7 +175,11 @@ namespace System.Diagnostics
 
             // Then check the current directory
             path = Path.Combine(Directory.GetCurrentDirectory(), filename);
+#if WINDOWS
             if (File.Exists(path))
+#else
+            if (IsExecutableFile(path))
+#endif
             {
                 return path;
             }
@@ -221,7 +230,7 @@ namespace System.Diagnostics
         /// <exception cref="FileNotFoundException">Thrown when the program cannot be found in PATH.</exception>
         private static string FindProgramInPath(string program)
         {
-            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
 #if WINDOWS
