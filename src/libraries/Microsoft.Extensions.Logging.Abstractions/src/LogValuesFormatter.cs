@@ -69,14 +69,36 @@ namespace Microsoft.Extensions.Logging
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
                     string valueName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
 
-                    // Lazily allocate the dictionary only when we have placeholders
-                    valueNameIndices ??= new Dictionary<string, int>();
-
-                    if (!valueNameIndices.TryGetValue(valueName, out int valueIndex))
+                    int valueIndex;
+                    if (valueNameIndices != null)
                     {
-                        valueIndex = _valueNames.Count;
-                        _valueNames.Add(valueName);
-                        valueNameIndices[valueName] = valueIndex;
+                        // Use dictionary for lookup when we have many placeholders
+                        if (!valueNameIndices.TryGetValue(valueName, out valueIndex))
+                        {
+                            valueIndex = _valueNames.Count;
+                            _valueNames.Add(valueName);
+                            valueNameIndices[valueName] = valueIndex;
+                        }
+                    }
+                    else
+                    {
+                        // For small number of placeholders, use linear search to avoid dictionary allocation and hashing overhead
+                        valueIndex = _valueNames.IndexOf(valueName);
+                        if (valueIndex < 0)
+                        {
+                            valueIndex = _valueNames.Count;
+                            _valueNames.Add(valueName);
+
+                            // Switch to dictionary when we have many unique placeholders
+                            if (_valueNames.Count > 4)
+                            {
+                                valueNameIndices = new Dictionary<string, int>(_valueNames.Count);
+                                for (int i = 0; i < _valueNames.Count; i++)
+                                {
+                                    valueNameIndices[_valueNames[i]] = i;
+                                }
+                            }
+                        }
                     }
                     vsb.Append(valueIndex.ToString(CultureInfo.InvariantCulture));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
