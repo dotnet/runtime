@@ -510,21 +510,6 @@ namespace {lc.Namespace}
 
                     return level;
                 }
-
-                static string GetLogLevelFullName(int level)
-                {
-                    return level switch
-                    {
-                        0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
-                        1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
-                        2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
-                        3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
-                        4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
-                        5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
-                        6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
-                        _ => $"(global::Microsoft.Extensions.Logging.LogLevel){level}",
-                    };
-                }
             }
 
             private void GenMethodDocumentation(LoggerMethod lm, string nestedIndentation)
