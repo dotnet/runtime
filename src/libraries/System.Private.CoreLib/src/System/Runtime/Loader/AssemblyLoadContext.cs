@@ -386,7 +386,7 @@ namespace System.Runtime.Loader
             ReadOnlySpan<byte> spanAssembly = ReadAllBytes(assembly);
             if (spanAssembly.IsEmpty)
             {
-                throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
+                throw new BadImageFormatException(SR.BadImageFormat_EmptyAssembly);
             }
 
             // Read the symbol stream if provided
