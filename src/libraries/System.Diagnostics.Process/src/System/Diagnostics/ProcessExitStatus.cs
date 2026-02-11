@@ -8,10 +8,10 @@ namespace System.Diagnostics
     /// <summary>
     /// Represents the exit status of a process.
     /// </summary>
-    public readonly struct ProcessExitStatus
+    public sealed class ProcessExitStatus
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ProcessExitStatus"/> structure.
+        /// Initializes a new instance of the <see cref="ProcessExitStatus"/> class.
         /// </summary>
         /// <param name="exitCode">The exit code of the process.</param>
         /// <param name="cancelled">A value indicating whether the process has been terminated due to timeout or cancellation.</param>

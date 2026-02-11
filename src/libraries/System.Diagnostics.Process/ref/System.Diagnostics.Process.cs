@@ -201,9 +201,8 @@ namespace System.Diagnostics
         public void CopyTo(System.Diagnostics.ProcessModule[] array, int index) { }
         public int IndexOf(System.Diagnostics.ProcessModule module) { throw null; }
     }
-    public readonly partial struct ProcessExitStatus
+    public sealed partial class ProcessExitStatus
     {
-        private readonly int _dummyPrimitive;
         public ProcessExitStatus(int exitCode, bool cancelled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
         public bool Canceled { get { throw null; } }
         public int ExitCode { get { throw null; } }
