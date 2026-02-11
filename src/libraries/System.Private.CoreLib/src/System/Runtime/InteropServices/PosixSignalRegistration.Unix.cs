@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices
     public sealed partial class PosixSignalRegistration
     {
         private static readonly Dictionary<int, List<Token>> s_registrations = Initialize();
+        private static readonly int s_sigkillNumber = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
 
         private static unsafe Dictionary<int, List<Token>> Initialize()
         {
@@ -32,8 +33,7 @@ namespace System.Runtime.InteropServices
             }
 
             // SIGKILL cannot have a signal handler installed on Unix
-            int sigkillNumber = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
-            if (signo == sigkillNumber)
+            if (signo == s_sigkillNumber)
             {
                 throw new ArgumentException(SR.Arg_CannotRegisterHandlerForSIGKILL, nameof(signal));
             }
