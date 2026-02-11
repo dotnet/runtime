@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessStartOptionsTests_Windows
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_AddsExeExtension()
         {
             // Test that .exe is appended when no extension is provided
@@ -18,7 +18,7 @@ namespace System.Diagnostics.Tests
             Assert.True(File.Exists(options.FileName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_DoesNotAddExeExtensionForTrailingDot()
         {
             // "If the file name ends in a period (.) with no extension, .exe is not appended."
@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions("notepad."));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_PreservesComExtension()
         {
             // The .com extension should be preserved
@@ -72,37 +72,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestResolvePath_FindsInWindowsDirectory()
         {
-            // Some utilities are in Windows directory
-            // We'll test with a file that's commonly in Windows directory
-            // Note: This might not exist on all systems, so we make it conditional
-            try
-            {
-                ProcessStartOptions options = new ProcessStartOptions("notepad");
-                Assert.True(File.Exists(options.FileName));
-            }
-            catch (FileNotFoundException)
-            {
-                // Skip if notepad is not found - it's not critical for this test
-            }
+            ProcessStartOptions options = new ProcessStartOptions("notepad");
+            Assert.True(File.Exists(options.FileName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void TestResolvePath_FindsInPath()
-        {
-            // powershell.exe should be findable in PATH on most Windows systems
-            try
-            {
-                ProcessStartOptions options = new ProcessStartOptions("powershell");
-                Assert.True(File.Exists(options.FileName));
-                Assert.EndsWith(".exe", options.FileName, StringComparison.OrdinalIgnoreCase);
-            }
-            catch (FileNotFoundException)
-            {
-                // Skip if PowerShell is not found - it might not be in PATH
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_UsesCurrentDirectory()
         {
             string tempDir = Path.GetTempPath();
@@ -135,7 +109,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_PathSeparatorIsSemicolon()
         {
             // Create a temp directory and file
@@ -174,7 +148,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void TestResolvePath_AbsolutePathIsNotModified()
         {
             string tempFile = Path.GetTempFileName();

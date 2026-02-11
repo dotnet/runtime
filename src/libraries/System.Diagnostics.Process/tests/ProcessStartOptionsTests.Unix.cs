@@ -63,6 +63,7 @@ namespace System.Diagnostics.Tests
             string fileName = "testscript";
             string fullPath = Path.Combine(tempDir, fileName);
             
+            string oldPath = Environment.GetEnvironmentVariable("PATH");
             try
             {
                 File.WriteAllText(fullPath, "#!/bin/sh\necho test");
@@ -70,20 +71,13 @@ namespace System.Diagnostics.Tests
                 File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
                 
                 // Add temp directory to PATH using colon separator
-                string oldPath = Environment.GetEnvironmentVariable("PATH");
-                try
-                {
-                    Environment.SetEnvironmentVariable("PATH", tempDir + ":" + oldPath);
-                    ProcessStartOptions options = new ProcessStartOptions(fileName);
-                    Assert.Equal(fullPath, options.FileName);
-                }
-                finally
-                {
-                    Environment.SetEnvironmentVariable("PATH", oldPath);
-                }
+                Environment.SetEnvironmentVariable("PATH", tempDir + ":" + oldPath);
+                ProcessStartOptions options = new ProcessStartOptions(fileName);
+                Assert.Equal(fullPath, options.FileName);
             }
             finally
             {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
