@@ -1776,10 +1776,44 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
-            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
-                result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
+            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
+            {
+                bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || IsCallEffectivelyDirect((MethodDesc)result);
+                if (isDirect && !((MethodDesc)result).IsAsync)
+                {
+                    // Async variant would be a thunk. Do not resolve direct calls
+                    // to async thunks. That just creates and JITs unnecessary
+                    // thunks, and the thunks are harder for the JIT to optimize.
+                }
+                else
+                {
+                    result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
+                }
+            }
 
             return result;
+        }
+
+        private bool IsCallEffectivelyDirect(MethodDesc method)
+        {
+            if (!method.IsVirtual)
+            {
+                return true;
+            }
+
+            // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
+            if (method.OwningType.IsInterface)
+            {
+                return false;
+            }
+
+            // Check if we can devirt per metadata
+            if (method.IsFinal || method.OwningType.IsSealed())
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
