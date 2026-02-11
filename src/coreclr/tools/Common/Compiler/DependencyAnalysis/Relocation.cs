@@ -92,6 +92,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public struct Relocation
     {
+        // NOTE: Keep in sync with emitwasm.cpp
+        private const int WASM_PADDED_RELOC_SIZE = 5;
+
         public readonly RelocType RelocType;
         public readonly int Offset;
         public readonly ISymbolNode Target;
@@ -640,11 +643,12 @@ namespace ILCompiler.DependencyAnalysis
                     // These wasm relocs do not have offsets, just targets
                     return;
 
-                case RelocType.WASM_MEMORY_ADDR_LEB :
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                    ILCompiler.ObjectWriter.DwarfHelper.WriteULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE), checked((ulong)value));
+                    return;
+
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    // FIXME-WASM: We don't have access to LEB encoding or decoding helpers in this assembly
-                    // HACK-WASM: Just stash the raw offset as a 32-bit value since the relocs are padded to 5 bytes
-                    *(int*)location = checked((int)value);
+                    ILCompiler.ObjectWriter.DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE), value);
                     return;
 
                 default:
@@ -741,11 +745,13 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return 0;
+
                 case RelocType.WASM_MEMORY_ADDR_LEB:
+                    return checked((long)ILCompiler.ObjectWriter.DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE)));
+
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    // FIXME-WASM: We don't have access to LEB encoding or decoding helpers in this assembly
-                    // HACK-WASM: We stashed the offset as a 32-bit integer inside the 5 bytes of the padded reloc
-                    return *(int*)location;
+                    return ILCompiler.ObjectWriter.DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE));
+
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

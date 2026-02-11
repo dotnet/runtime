@@ -370,6 +370,7 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
 }
 
 #ifdef TARGET_WASM32
+// NOTE: Keep in sync with Relocation.cs
 static const unsigned PADDED_RELOC_SIZE = 5;
 #else
 #error WASM64
