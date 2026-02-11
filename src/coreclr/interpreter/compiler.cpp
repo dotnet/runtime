@@ -1147,13 +1147,6 @@ void InterpCompiler::EmitCode()
     // no handler is inside of a try block.
     int32_t *ip = m_pMethodCode;
 
-    // Pre-insert IL offset 0 entry pointing to IR offset 0.
-    // This is required for debugger support to set breakpoints at method entry.
-    m_pILToNativeMap[0].ilOffset = 0;
-    m_pILToNativeMap[0].nativeOffset = ConvertOffset(0);
-    m_pILToNativeMap[0].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
-    m_ILToNativeMapSize = 1;
-
     bool emittedBlock;
     int clauseDepth = 0;
     do
