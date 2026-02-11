@@ -3,11 +3,9 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -419,26 +417,10 @@ namespace System.Reflection.Tests
         [Fact]
         public static void GetCustomAttributesDataOnParameterWithNullMetadataTokenReturnsEmptyList()
         {
-            // Test with DynamicMethod parameters that have no metadata
-            // This reproduces the original NullReferenceException when GetCustomAttributesData() is called
-            DynamicMethod dm = new DynamicMethod("TestMethod", typeof(Task), [typeof(string), typeof(int)], typeof(ParameterInfoTests).Module);
-            dm.DefineParameter(1, ParameterAttributes.None, "a");
-            dm.DefineParameter(2, ParameterAttributes.None, "b");
-
-            ILGenerator il = dm.GetILGenerator();
-            il.Emit(OpCodes.Ldnull);
-            il.Emit(OpCodes.Call, typeof(Task).GetMethod(nameof(Task.FromResult)).MakeGenericMethod(typeof(object)));
-            il.Emit(OpCodes.Ret);
-
-            Delegate testDelegate = dm.CreateDelegate(typeof(Func<string, int, Task>));
-
-            // Before the fix, calling GetCustomAttributesData() on these parameters would throw NullReferenceException
-            foreach (var param in testDelegate.Method.GetParameters())
-            {
-                IList<CustomAttributeData> customAttributes = param.GetCustomAttributesData();
-                Assert.NotNull(customAttributes);
-                Assert.Empty(customAttributes);
-            }
+            // Runtime-generated array methods have parameters without metadata tokens
+            ParameterInfo parameterWithNullMetadataToken = typeof(int[]).GetProperty(nameof(Array.Length)).GetMethod.ReturnParameter;
+            IList<CustomAttributeData> customAttributes = parameterWithNullMetadataToken.GetCustomAttributesData();
+            Assert.Empty(customAttributes);
         }
 
         [Fact]
