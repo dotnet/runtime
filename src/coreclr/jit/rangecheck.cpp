@@ -1017,8 +1017,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
                 isUnsigned = false;
                 // The comparison being unsigned may also hint that the lower bound is -CNS1, but it's
-                // unlikely to be useful, so we ignore it for now. The whole thing will work only if some other assertion
-                // proves that the normalLclVN's lower bound is non-negative.
+                // unlikely to be useful, so we ignore it for now. The whole thing will work only if some other
+                // assertion proves that the normalLclVN's lower bound is non-negative.
             }
             else
             {
