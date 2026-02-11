@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
             // sh should be findable in PATH on all Unix systems
             ProcessStartOptions options = new ProcessStartOptions("sh");
             Assert.True(File.Exists(options.FileName));
-            Assert.Contains("sh", options.FileName);
+            Assert.EndsWith("sh", options.FileName);
         }
 
         [Fact]
@@ -33,27 +33,20 @@ namespace System.Diagnostics.Tests
             string fileName = "testscript.sh";
             string fullPath = Path.Combine(tempDir, fileName);
             
+            string oldDir = Directory.GetCurrentDirectory();
             try
             {
                 File.WriteAllText(fullPath, "#!/bin/sh\necho test");
                 // Make it executable
                 File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
                 
-                // Save current directory
-                string oldDir = Directory.GetCurrentDirectory();
-                try
-                {
-                    Directory.SetCurrentDirectory(tempDir);
-                    ProcessStartOptions options = new ProcessStartOptions(fileName);
-                    Assert.Equal(fullPath, options.FileName);
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(oldDir);
-                }
+                Directory.SetCurrentDirectory(tempDir);
+                ProcessStartOptions options = new ProcessStartOptions(fileName);
+                Assert.Equal(fullPath, options.FileName);
             }
             finally
             {
+                Directory.SetCurrentDirectory(oldDir);
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);

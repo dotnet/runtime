@@ -31,7 +31,11 @@ namespace System.Diagnostics
         public IList<string> Arguments
         {
             get => _arguments ??= new List<string>();
-            set => _arguments = value;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _arguments = value;
+            }
         }
 
         /// <summary>
@@ -91,7 +95,11 @@ namespace System.Diagnostics
         public IList<SafeHandle> InheritedHandles
         {
             get => _inheritedHandles ??= new List<SafeHandle>();
-            set => _inheritedHandles = value;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _inheritedHandles = value;
+            }
         }
 
         /// <summary>
@@ -134,6 +142,21 @@ namespace System.Diagnostics
         /// <exception cref="FileNotFoundException">Thrown when <paramref name="filename"/> cannot be resolved to an existing file.</exception>
         internal static string ResolvePath(string filename)
         {
+#if WINDOWS
+            return ResolvePathWindows(filename);
+#else
+            string? resolved = Process.ResolvePath(filename);
+            if (resolved == null)
+            {
+                throw new FileNotFoundException("Could not resolve the file.", filename);
+            }
+            return resolved;
+#endif
+        }
+
+#if WINDOWS
+        private static string ResolvePathWindows(string filename)
+        {
             // If the filename is a complete path, use it, regardless of whether it exists.
             if (Path.IsPathRooted(filename))
             {
@@ -142,7 +165,6 @@ namespace System.Diagnostics
                 return filename;
             }
 
-#if WINDOWS
             // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
             // "If the file name does not contain an extension, .exe is appended.
             // Therefore, if the file name extension is .com, this parameter must include the .com extension.
@@ -153,7 +175,6 @@ namespace System.Diagnostics
             {
                 filename += ".exe";
             }
-#endif
 
             // Then check the executable's directory
             string? path = System.Environment.ProcessPath;
@@ -162,11 +183,7 @@ namespace System.Diagnostics
                 try
                 {
                     path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-#if WINDOWS
                     if (File.Exists(path))
-#else
-                    if (IsExecutableFile(path))
-#endif
                     {
                         return path;
                     }
@@ -176,16 +193,11 @@ namespace System.Diagnostics
 
             // Then check the current directory
             path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-#if WINDOWS
             if (File.Exists(path))
-#else
-            if (IsExecutableFile(path))
-#endif
             {
                 return path;
             }
 
-#if WINDOWS
             // Windows-specific search locations (from CreateProcessW documentation)
 
             // Check the system directory (e.g., System32)
@@ -217,10 +229,9 @@ namespace System.Diagnostics
                     return path;
                 }
             }
-#endif
 
             // Then check each directory listed in the PATH environment variables
-            return FindProgramInPath(filename);
+            return FindProgramInPathWindows(filename);
         }
 
         /// <summary>
@@ -229,22 +240,17 @@ namespace System.Diagnostics
         /// <param name="program">The program name.</param>
         /// <returns>The full path to the program.</returns>
         /// <exception cref="FileNotFoundException">Thrown when the program cannot be found in PATH.</exception>
-        private static string FindProgramInPath(string program)
+        private static string FindProgramInPathWindows(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
-#if WINDOWS
-                char pathSeparator = ';';
-#else
-                char pathSeparator = ':';
-#endif
-                var pathParser = new StringParser(pathEnvVar, pathSeparator, skipEmpty: true);
+                var pathParser = new StringParser(pathEnvVar, ';', skipEmpty: true);
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
                     string path = Path.Combine(subPath, program);
-                    if (IsExecutableFile(path))
+                    if (File.Exists(path))
                     {
                         return path;
                     }
@@ -252,77 +258,6 @@ namespace System.Diagnostics
             }
 
             throw new FileNotFoundException("Could not resolve the file.", program);
-        }
-
-        private static bool IsExecutableFile(string path)
-        {
-#if WINDOWS
-            return File.Exists(path);
-#else
-            return IsExecutable(path);
-#endif
-        }
-
-#if !WINDOWS
-        private static bool IsExecutable(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            // Check if the path is a directory.
-            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
-            {
-                return false;
-            }
-
-            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
-
-            // Avoid checking user/group when all execute permissions are set.
-            if (permissions == AllExecute)
-            {
-                return true;
-            }
-            else if (permissions == 0)
-            {
-                return false;
-            }
-
-            uint euid = Interop.Sys.GetEUid();
-
-            if (euid == 0)
-            {
-                return true; // We're root.
-            }
-
-            if (euid == fileinfo.Uid)
-            {
-                // We own the file.
-                return (permissions & UnixFileMode.UserExecute) != 0;
-            }
-
-            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
-            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
-
-            // Avoid group check when group and other have same permissions.
-            if (groupCanExecute == otherCanExecute)
-            {
-                return groupCanExecute;
-            }
-
-            if (Interop.Sys.IsMemberOfGroup(fileinfo.Gid))
-            {
-                return groupCanExecute;
-            }
-            else
-            {
-                return otherCanExecute;
-            }
         }
 #endif
 

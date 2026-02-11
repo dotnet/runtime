@@ -685,7 +685,7 @@ namespace System.Diagnostics
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
         /// <returns>The resolved path. It can return null in case of URLs.</returns>
-        private static string? ResolvePath(string filename)
+        internal static string? ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
             // 1. First try the exact path provided
@@ -734,7 +734,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="program"></param>
         /// <returns></returns>
-        private static string? FindProgramInPath(string program)
+        internal static string? FindProgramInPath(string program)
         {
             string path;
             string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
@@ -754,7 +754,7 @@ namespace System.Diagnostics
             return null;
         }
 
-        private static bool IsExecutable(string fullPath)
+        internal static bool IsExecutable(string fullPath)
         {
             Interop.Sys.FileStatus fileinfo;
 

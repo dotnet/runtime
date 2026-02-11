@@ -31,16 +31,11 @@ namespace System.Diagnostics.Tests
             Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(nonExistentFile));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TestConstructor_ResolvesCmdOnWindows()
         {
-            if (!OperatingSystem.IsWindows())
-            {
-                return;
-            }
-
             ProcessStartOptions options = new ProcessStartOptions("cmd");
-            Assert.Contains("cmd.exe", options.FileName, StringComparison.OrdinalIgnoreCase);
+            Assert.EndsWith("cmd.exe", options.FileName);
             Assert.True(File.Exists(options.FileName));
         }
 
@@ -69,7 +64,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestArguments_LazyInitialization()
+        public void TestArguments_DefaultIsEmpty()
         {
             ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
             IList<string> args = options.Arguments;
@@ -145,7 +140,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestInheritedHandles_LazyInitialization()
+        public void TestInheritedHandles_DefaultIsEmpty()
         {
             ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
             IList<SafeHandle> handles = options.InheritedHandles;
@@ -217,7 +212,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                return "/bin/sh";
+                return Environment.ProcessPath ?? "/bin/sh";
             }
         }
     }
