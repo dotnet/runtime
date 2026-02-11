@@ -4410,33 +4410,41 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
     bool removeCast = false;
     if (!optLocalAssertionProp)
     {
-        Range castToTypeRange = RangeCheck::GetRangeFromType(cast->CastToType());
-        if (castToTypeRange.IsConstantRange() && (genActualType(cast->CastOp()) == TYP_INT))
+        // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
+        // small types and IsUnsigned flag for checked casts.
+        IntegralRange castRng = IntegralRange::ForCastInput(cast);
+        int64_t       castLo  = IntegralRange::SymbolicToRealValue(castRng.GetLowerBound());
+        int64_t       castHi  = IntegralRange::SymbolicToRealValue(castRng.GetUpperBound());
+        if (FitsIn<int>(castLo) && FitsIn<int>(castHi))
         {
-            ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
-            Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
-            assert(castOpRng.IsConstantRange());
-
-            int castFromLo = castOpRng.LowerLimit().GetConstant();
-            int castFromHi = castOpRng.UpperLimit().GetConstant();
-            int castToLo   = castToTypeRange.LowerLimit().GetConstant();
-            int castToHi   = castToTypeRange.UpperLimit().GetConstant();
-
-            if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
+            Range castToTypeRange = Range(Limit(Limit::keConstant, (int)castLo), Limit(Limit::keConstant, (int)castHi));
+            if (castToTypeRange.IsConstantRange() && (genActualType(cast->CastOp()) == TYP_INT))
             {
-                removeCast = true;
-                if (!lcl->OperIs(GT_LCL_VAR))
-                {
-                    // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
-                    if (!cast->gtOverflow())
-                    {
-                        return nullptr;
-                    }
+                ValueNum castOpVN  = optConservativeNormalVN(cast->CastOp());
+                Range    castOpRng = RangeCheck::GetRangeFromAssertions(this, castOpVN, assertions);
+                assert(castOpRng.IsConstantRange());
 
-                    // Just clear the overflow flag then.
-                    JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
-                    cast->ClearOverflow();
-                    return optAssertionProp_Update(cast, cast, stmt);
+                int castFromLo = castOpRng.LowerLimit().GetConstant();
+                int castFromHi = castOpRng.UpperLimit().GetConstant();
+                int castToLo   = castToTypeRange.LowerLimit().GetConstant();
+                int castToHi   = castToTypeRange.UpperLimit().GetConstant();
+
+                if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
+                {
+                    removeCast = true;
+                    if (!lcl->OperIs(GT_LCL_VAR))
+                    {
+                        // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
+                        if (!cast->gtOverflow())
+                        {
+                            return nullptr;
+                        }
+
+                        // Just clear the overflow flag then.
+                        JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
+                        cast->ClearOverflow();
+                        return optAssertionProp_Update(cast, cast, stmt);
+                    }
                 }
             }
         }
