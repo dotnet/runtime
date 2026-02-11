@@ -269,6 +269,10 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
         JITDUMP("\n");
 
+        // Track any SP pre-adjustments we make for large offsets.
+        // We need to account for these when computing the final SP adjustment.
+        int totalPreAdjust = 0;
+
         // Restore Tier0's callee-saved registers (excluding FP/LR which are restored separately).
         // These are the registers that Tier0 saved and the OSR method must restore when returning.
         //
@@ -308,6 +312,51 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                         fpLrSaveOffset, osrCalleeSaveSpOffset);
             }
 
+            // The LDP instruction can only encode offsets up to 504 (63*8) bytes.
+            // For larger offsets, we first adjust SP to bring callee-saves within range.
+            // We need to check the maximum offset that will be used, which is:
+            //   osrCalleeSaveSpOffset + (numRegsToRestore * REGSIZE_BYTES) - REGSIZE_BYTES
+            // This is because genRestoreCalleeSavedRegistersHelp computes:
+            //   spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES
+            // and then decrements by slotSize (8 or 16) for each load.
+            //
+            unsigned numRegsToRestore      = genCountBits(regsToRestoreMask);
+            int      maxCalleeSaveSpOffset = osrCalleeSaveSpOffset + (int)(numRegsToRestore * REGSIZE_BYTES);
+            if (maxCalleeSaveSpOffset > 504)
+            {
+                // Adjust SP to bring all callee-save loads within the 504 byte limit.
+                // We want the new max offset to be <= 504, so:
+                //   newMaxOffset = maxCalleeSaveSpOffset - preAdjust <= 504
+                //   preAdjust >= maxCalleeSaveSpOffset - 504
+                // Round up to 16-byte alignment for SP adjustment.
+                int preAdjust = (maxCalleeSaveSpOffset - 504 + 15) & ~15;
+                JITDUMP("    Callee-save max offset %d exceeds 504, pre-adjusting SP by %d\n", maxCalleeSaveSpOffset,
+                        preAdjust);
+
+                if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                {
+                    const int lowPart  = preAdjust & 0xFFF;
+                    const int highPart = preAdjust - lowPart;
+                    assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                    m_compiler->unwindAllocStack(highPart);
+                    if (lowPart > 0)
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
+                        m_compiler->unwindAllocStack(lowPart);
+                    }
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                    m_compiler->unwindAllocStack(preAdjust);
+                }
+
+                // Track total pre-adjustment and adjust the offset
+                totalPreAdjust += preAdjust;
+                osrCalleeSaveSpOffset -= preAdjust;
+            }
+
             genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
         }
 
@@ -317,17 +366,20 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         // The LDP instruction can only encode offsets up to 504 (63*8) bytes.
         // For larger offsets, we first adjust SP, then load FP/LR with a smaller offset.
         //
-        int spAdjust = tier0FrameSize;
-        if (fpLrSaveOffset <= 504)
+        // Account for any SP pre-adjustment we made above for callee-save restoration.
+        //
+        int adjustedFpLrSaveOffset = fpLrSaveOffset - totalPreAdjust;
+        int spAdjust               = tier0FrameSize - totalPreAdjust;
+        if (adjustedFpLrSaveOffset >= 0 && adjustedFpLrSaveOffset <= 504)
         {
             // Offset fits in LDP encoding - use it directly
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, adjustedFpLrSaveOffset);
         }
         else
         {
-            // Offset too large for LDP - adjust SP first to bring FP/LR within range
-            // Add fpLrSaveOffset to SP, then load FP/LR from [SP], then adjust SP by remainder
-            int preAdjust = fpLrSaveOffset;
+            // Offset too large (or negative) for LDP - adjust SP first to bring FP/LR within range
+            // Add adjustedFpLrSaveOffset to SP, then load FP/LR from [SP], then adjust SP by remainder
+            int preAdjust = adjustedFpLrSaveOffset;
             if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
             {
                 const int lowPart  = preAdjust & 0xFFF;
@@ -345,7 +397,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // Now FP/LR are at [SP]
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
             // Adjust spAdjust to account for what we already added
-            spAdjust -= fpLrSaveOffset;
+            spAdjust -= adjustedFpLrSaveOffset;
         }
 
         // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
