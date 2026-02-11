@@ -1388,9 +1388,7 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 
             // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
             ValueNum addOpVN;
-            int      addOpCns;
-            if ((newAssertion.GetOp2().GetCheckedBoundConstant() == 0) &&
-                vnStore->IsVNBinFuncWithConst(newAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns))
+            if (vnStore->IsVNBinFuncWithConst<int>(newAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, nullptr))
             {
                 mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
             }
