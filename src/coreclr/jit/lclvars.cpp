@@ -2549,7 +2549,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
-        //
         if (unsafeValueClsCheck)
         {
             unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
