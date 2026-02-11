@@ -451,9 +451,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>A string representation of the dynamic method, showing the return type, name, and parameter types.</returns>
         /// <example>
-        /// <code language="csharp">
-        /// Console.WriteLine("\r\nToString: {0}", hello.ToString());
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ToString" />
         /// </example>
         /// <remarks>
         /// The signature includes only types and the method name, if any. Parameter names are not included.
@@ -478,11 +476,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>The name of the dynamic method.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display the name specified when the dynamic method was created.
-        /// // Note that the name can be blank.
-        /// Console.WriteLine("\r\nName: {0}", hello.Name);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Name" />
         /// </example>
         /// <remarks>
         /// <note type="note">It is not necessary to name dynamic methods.</note>
@@ -494,18 +488,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display the declaring type, which is always null for dynamic
-        /// // methods.
-        /// if (hello.DeclaringType == null)
-        /// {
-        ///     Console.WriteLine("\r\nDeclaringType is always null for dynamic methods.");
-        /// }
-        /// else
-        /// {
-        ///     Console.WriteLine("DeclaringType: {0}", hello.DeclaringType);
-        /// }
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="DeclaringType" />
         /// </example>
         /// <remarks>
         /// This property always returns <see langword="null" /> for dynamic methods. Even when a dynamic method is logically associated with a type, it is not declared by the type.
@@ -517,17 +500,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>Always <see langword="null" /> for dynamic methods.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // For dynamic methods, the reflected type is always null.
-        /// if (hello.ReflectedType == null)
-        /// {
-        ///     Console.WriteLine("\r\nReflectedType is null.");
-        /// }
-        /// else
-        /// {
-        ///     Console.WriteLine("\r\nReflectedType: {0}", hello.ReflectedType);
-        /// }
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReflectedType" />
         /// </example>
         /// <remarks>
         /// This property always returns <see langword="null" /> for dynamic methods.
@@ -539,10 +512,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>The <see cref="System.Reflection.Module" /> associated with the dynamic method.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display the module specified when the dynamic method was created.
-        /// Console.WriteLine("\r\nModule: {0}", hello.Module);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Module" />
         /// </example>
         /// <remarks>
         /// If a module was specified when the dynamic method was created, this property returns that module. If a type was specified as the owner when the dynamic method was created, this property returns the module that contains that type.
@@ -562,11 +532,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>A bitwise combination of the <see cref="MethodAttributes" /> values representing the attributes for the method.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display MethodAttributes for the dynamic method, set when
-        /// // the dynamic method was created.
-        /// Console.WriteLine("\r\nMethod Attributes: {0}", hello.Attributes);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="Attributes" />
         /// </example>
         /// <remarks>
         /// Currently, the method attributes for a dynamic method are always <see cref="MethodAttributes.Public" /> and <see cref="MethodAttributes.Static" />.
@@ -578,11 +544,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>One of the <see cref="CallingConventions" /> values that indicates the calling convention of the method.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display the calling convention of the dynamic method, set when the
-        /// // dynamic method was created.
-        /// Console.WriteLine("\r\nCalling convention: {0}", hello.CallingConvention);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="CallingConvention" />
         /// </example>
         /// <remarks>
         /// Currently, the calling convention for a dynamic method is always <see cref="CallingConventions.Standard" />.
@@ -603,16 +565,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>An array of <see cref="ParameterInfo" /> objects representing the parameters of the dynamic method, or an empty array if the method has no parameters.</returns>
         /// <example>
-        /// <code language="csharp">
-        /// // Display parameter information.
-        /// ParameterInfo[] parameters = hello.GetParameters();
-        /// Console.WriteLine("\r\nParameters: name, type, ParameterAttributes");
-        /// foreach( ParameterInfo p in parameters )
-        /// {
-        ///     Console.WriteLine("\t{0}, {1}, {2}",
-        ///         p.Name, p.ParameterType, p.Attributes);
-        /// }
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="GetParameters" />
         /// </example>
         /// <remarks>
         /// The <see cref="ParameterInfo" /> objects returned by this method are for information only. Use the <see cref="DefineParameter" /> method to set or change the characteristics of the parameters.
@@ -734,10 +687,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>A <see cref="Type" /> representing the return type of the dynamic method; or <see cref="void" /> if the method has no return type.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // If the method has no return type, ReturnType is System.Void.
-        /// Console.WriteLine("\r\nReturn type: {0}", hello.ReturnType);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReturnType" />
         /// </example>
         /// <remarks>
         /// If <see langword="null" /> was specified for the return type when the dynamic method was created, this property returns <see cref="void" />.
@@ -758,33 +708,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>An <see cref="ICustomAttributeProvider" /> representing the custom attributes of the return type for the dynamic method.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // ReturnTypeCustomAttributes returns an ICustomeAttributeProvider
-        /// // that can be used to enumerate the custom attributes of the
-        /// // return value. At present, there is no way to set such custom
-        /// // attributes, so the list is empty.
-        /// if (hello.ReturnType == typeof(void))
-        /// {
-        ///     Console.WriteLine("The method has no return type.");
-        /// }
-        /// else
-        /// {
-        ///     ICustomAttributeProvider caProvider = hello.ReturnTypeCustomAttributes;
-        ///     object[] returnAttributes = caProvider.GetCustomAttributes(true);
-        ///     if (returnAttributes.Length == 0)
-        ///     {
-        ///         Console.WriteLine("\r\nThe return type has no custom attributes.");
-        ///     }
-        ///     else
-        ///     {
-        ///         Console.WriteLine("\r\nThe return type has the following custom attributes:");
-        ///         foreach( object attr in returnAttributes )
-        ///         {
-        ///             Console.WriteLine("\t{0}", attr.ToString());
-        ///         }
-        ///     }
-        /// }
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" />
         /// </example>
         /// <remarks>
         /// Custom attributes are not supported on the return type of a dynamic method, so the array of custom attributes returned by the <see cref="ICustomAttributeProvider.GetCustomAttributes(bool)" /> method is always empty.
@@ -808,14 +732,7 @@ namespace System.Reflection.Emit
         /// -or-
         /// <paramref name="position" /> is greater than the number of parameters of the dynamic method.</exception>
         /// <example>
-        /// <code language="csharp">
-        /// // Add parameter information to the dynamic method. (This is not
-        /// // necessary, but can be useful for debugging.) For each parameter,
-        /// // identified by position, supply the parameter attributes and a
-        /// // parameter name.
-        /// hello.DefineParameter(1, ParameterAttributes.In, "message");
-        /// hello.DefineParameter(2, ParameterAttributes.In, "valueToReturn");
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="DefineParameter" />
         /// </example>
         /// <remarks>
         /// If <paramref name="position" /> is 0, the <see cref="DefineParameter" /> method refers to the return value. Setting parameter information has no effect on the return value.
@@ -853,18 +770,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value><see langword="true" /> if the local variables in the method are zero-initialized; otherwise, <see langword="false" />. The default is <see langword="true" />.</value>
         /// <example>
-        /// <code language="csharp">
-        /// // Display the default value for InitLocals.
-        /// if (hello.InitLocals)
-        /// {
-        ///     Console.Write("\r\nThis method contains verifiable code.");
-        /// }
-        /// else
-        /// {
-        ///     Console.Write("\r\nThis method contains unverifiable code.");
-        /// }
-        /// Console.WriteLine(" (InitLocals = {0})", hello.InitLocals);
-        /// </code>
+        /// <code lang="cs" source="DynamicMethod.Examples.cs" region="InitLocals" />
         /// </example>
         /// <remarks>
         /// If this property is set to <see langword="true" />, the emitted Microsoft intermediate language (MSIL) includes initialization of local variables. If it is set to <see langword="false" />, local variables are not initialized and the generated code is unverifiable.
