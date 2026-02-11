@@ -2120,6 +2120,7 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
 #ifdef FEATURE_INTERPRETER
         // For interpreter code, native offset 0 is within the bytecode header area and cannot
         // have a breakpoint. Use the first sequence map entry's native offset instead.
+        // FIXME: https://github.com/dotnet/runtime/issues/123998
         EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
         if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {

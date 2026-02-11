@@ -39,7 +39,6 @@ struct InterpMethodContextFrame
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
     // Breakpoint bypass state. When the debugger wants the interpreter to skip
     // a breakpoint and execute the original opcode, it sets these fields.
-    // Per-context (not per-thread) so funceval and SetIP don't require save/restore.
     const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
     int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
 #endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER

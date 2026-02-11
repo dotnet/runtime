@@ -5676,9 +5676,9 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightU
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
-    // on wasm the SP is address to interpreter stack, which is located on heap and not on C runtime stack
-    // WASM-TODO: update this when we will have codegen
-#if !defined(TARGET_WASM)
+// on wasm the SP is address to interpreter stack, which is located on heap and not on C runtime stack
+// WASM-TODO: update this when we will have codegen
+#ifndef TARGET_WASM
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT

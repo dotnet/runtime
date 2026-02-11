@@ -1971,7 +1971,6 @@ public:
             ResetThreadStateNC(Thread::TSNC_DebuggerIsStepping);
     }
 
-
 #ifdef FEATURE_EMULATE_SINGLESTEP
     // ARM doesn't currently support any reliable hardware mechanism for single-stepping.
     // ARM64 unix doesn't currently support any reliable hardware mechanism for single-stepping.

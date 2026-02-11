@@ -12,10 +12,6 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
-#include "../debug/ee/executioncontrol.h"
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
-
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -491,14 +487,14 @@ static void InterpHalt()
 #endif // DEBUG
 
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
     Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
     {
         EXCEPTION_RECORD exceptionRecord;
         memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
-        exceptionRecord.ExceptionCode = exceptionCode;
+        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
         exceptionRecord.ExceptionAddress = (PVOID)ip;
 
         // Construct a CONTEXT for the debugger
@@ -521,7 +517,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
-            exceptionCode,
+            STATUS_BREAKPOINT,
             pThread);
     }
 }
@@ -1028,7 +1024,7 @@ SWITCH_OPCODE:
                 case INTOP_BREAKPOINT:
                 {
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT);
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
                     

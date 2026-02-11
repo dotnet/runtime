@@ -1887,13 +1887,7 @@ private:
 //     at all possible next instruction locations.
 //   - For indirect call instructions (INTOP_CALLVIRT, INTOP_CALLI,
 //     INTOP_CALLDELEGATE) whose target can't be resolved statically we rely on
-//     JMC method-enter backstops rather than predicting the target, avoiding
-//     races with concurrent target updates.
-//
-// Usage:
-//   1. Create helper for current instruction context
-//   2. Call SetupStep() to analyze instruction and set breakpoints
-//   3. Patches are cleaned up automatically via DebuggerController
+//     JMC method-enter backstops rather than predicting the target.
 //
 class InterpreterStepHelper
 {
