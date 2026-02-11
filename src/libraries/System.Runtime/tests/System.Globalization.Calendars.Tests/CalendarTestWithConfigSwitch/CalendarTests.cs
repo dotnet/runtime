@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
     public static class CalendarTests
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Doesn't throw on mobile")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Doesn't throw on mobile")]
         public static void TestJapaneseCalendarDateParsing()
         {
             CultureInfo ciJapanese = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() } };

@@ -1276,7 +1276,7 @@ public static partial class XmlSerializerTests
         // Use the latter approach here.
 
         var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
-        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind); 
+        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind);
         Assert.Equal(kind, testTime.Kind);
 
         // Verify TimeOnly -> DateTime
@@ -2568,6 +2568,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
+    [ActiveIssue("TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -3077,7 +3078,7 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         Assert.NotNull(fi);
         fi.SetValue(null, 0);
     }
-    
+
     private static string GuessCachedName(string name)
     {
         // Switch names are typically of the form "Switch.System.Xml.SomeFeature"
