@@ -420,6 +420,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
         public static void MakeSignatureFunctionPointerType_MatchesGetModifiedFieldType_NestedFunctionPointer()
         {
             Type expected = typeof(ClassWithFunctionPointers).GetField("Func4").GetModifiedFieldType();
