@@ -4,6 +4,7 @@
 using Xunit;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
