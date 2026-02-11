@@ -325,6 +325,7 @@ namespace System
         [UnmanagedCallersOnly]
         internal static unsafe void GetHelpContextBstr(Exception* obj, IntPtr* bstr, uint* helpContext, Exception* pException)
         {
+            *bstr = IntPtr.Zero;
             try
             {
                 string? helpFile = obj->GetHelpContext(out *helpContext);
