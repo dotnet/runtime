@@ -281,30 +281,31 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // At this point, SP is at the top of Tier0's frame (lowest address).
             // We need to compute the offset from current SP to where callee-saves are stored.
             //
-            // The callee-save area layout (from low to high address) is: [floats][ints][FP/LR for type 4/5]
-            //
-            // The meaning of calleeSaveSpOffset varies by frame type:
-            // - Frame type 1/2: calleeSaveSpOffset is already the offset from final SP to callee-saves.
-            // - Frame type 3/4/5: calleeSaveSpOffset is the alignment padding within the callee-save area.
-            //   The callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from
-            //   current SP.
-            //
-            // For frame type 4/5, FP/LR are at the END (highest address) of the callee-save area, but
-            // genRestoreCalleeSavedRegistersHelp will naturally skip them since they're not in the mask.
-            // The base offset should point to where floats/ints start, NOT adjusted for FP/LR.
+            // The callee-save area layout varies by frame type:
+            // - Frame type 1/2/3: FP/LR are at the BOTTOM (lowest address) of the callee-save area,
+            //   followed by other callee-saves at higher addresses. So we need to skip past FP/LR
+            //   (16 bytes) to get to the other callee-saves. The offset is fpLrSaveOffset + 16.
+            // - Frame type 4/5: FP/LR are at the TOP (highest address) of the callee-save area,
+            //   so the other callee-saves start at calleeSaveSpOffset from where SP will be
+            //   after the frame is established.
             //
             int osrCalleeSaveSpOffset;
-            if (tier0FrameType >= 3)
+            if (tier0FrameType >= 4)
             {
-                // Frame type 3/4/5: compute offset from current SP to callee-saves
+                // Frame type 4/5: FP/LR are at the top, callee-saves start at calleeSaveSpOffset
+                // Need to account for the frame structure: SP is currently at ambient SP,
+                // callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from SP
                 osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
                 JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n", tier0FrameType,
                         tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
             }
             else
             {
-                // Frame type 1/2: calleeSaveSpOffset is directly usable
-                osrCalleeSaveSpOffset = calleeSaveSpOffset;
+                // Frame type 1/2/3: FP/LR are at the bottom of the callee-save area at fpLrSaveOffset.
+                // Non-FP/LR callee-saves start 16 bytes above FP/LR.
+                osrCalleeSaveSpOffset = fpLrSaveOffset + 2 * REGSIZE_BYTES;
+                JITDUMP("    Frame type %d: osrCalleeSaveSpOffset = fpLrSaveOffset(%d) + 16 = %d\n", tier0FrameType,
+                        fpLrSaveOffset, osrCalleeSaveSpOffset);
             }
 
             genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
@@ -312,13 +313,45 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
         // Restore FP/LR from Tier0's frame since we jumped (not called) to OSR method.
         // FP/LR are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
+        //
+        // The LDP instruction can only encode offsets up to 504 (63*8) bytes.
+        // For larger offsets, we first adjust SP, then load FP/LR with a smaller offset.
+        //
+        int spAdjust = tier0FrameSize;
+        if (fpLrSaveOffset <= 504)
+        {
+            // Offset fits in LDP encoding - use it directly
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
+        }
+        else
+        {
+            // Offset too large for LDP - adjust SP first to bring FP/LR within range
+            // Add fpLrSaveOffset to SP, then load FP/LR from [SP], then adjust SP by remainder
+            int preAdjust = fpLrSaveOffset;
+            if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+            {
+                const int lowPart  = preAdjust & 0xFFF;
+                const int highPart = preAdjust - lowPart;
+                assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                m_compiler->unwindAllocStack(highPart);
+                preAdjust = lowPart;
+            }
+            if (preAdjust > 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                m_compiler->unwindAllocStack(preAdjust);
+            }
+            // Now FP/LR are at [SP]
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+            // Adjust spAdjust to account for what we already added
+            spAdjust -= fpLrSaveOffset;
+        }
 
         // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
         // use a scratch reg. So just do two subtracts if necessary.
         //
-        int spAdjust = tier0FrameSize;
-        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
+        if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
         {
             const int lowPart  = spAdjust & 0xFFF;
             const int highPart = spAdjust - lowPart;
