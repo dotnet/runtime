@@ -272,7 +272,7 @@ fi
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
-if [ -z ${RunWithNodeJS} ] ; then
+if [ -z "${RunWithNodeJS:-}" ] ; then
     # Build wasm app containing the test dll
     __Command=""
     if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -364,7 +364,7 @@ run_with_timeout() {
   fi
 }
 
-if [ -z ${RunWithNodeJS} ] ; then
+if [ -z "${RunWithNodeJS:-}" ] ; then
     cd WasmApp
     ./run-v8.sh
 else
