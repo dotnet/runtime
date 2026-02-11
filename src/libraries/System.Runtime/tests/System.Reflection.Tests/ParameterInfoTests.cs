@@ -415,6 +415,29 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetCustomAttributesDataOnParameterWithNullMetadataTokenReturnsEmptyList()
+        {
+            // Test with return parameter of a runtime-generated array method (has no metadata)
+            var parameterWithNullMetadataToken = typeof(int[]).GetProperty(nameof(Array.Length)).GetMethod.ReturnParameter;
+            IList<CustomAttributeData> customAttributes = parameterWithNullMetadataToken.GetCustomAttributesData();
+            Assert.NotNull(customAttributes);
+            Assert.Empty(customAttributes);
+
+            // Test with parameter from a runtime-generated array method
+            var arraySetMethod = typeof(int[]).GetMethod("Set");
+            if (arraySetMethod != null)
+            {
+                var parameters = arraySetMethod.GetParameters();
+                foreach (var param in parameters)
+                {
+                    customAttributes = param.GetCustomAttributesData();
+                    Assert.NotNull(customAttributes);
+                    Assert.Empty(customAttributes);
+                }
+            }
+        }
+
+        [Fact]
         public void VerifyGetCustomAttributesData()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithCustomAttribute", 0);

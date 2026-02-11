@@ -484,6 +484,9 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
+            if (MdToken.IsNullToken(m_tkParamDef))
+                return Array.Empty<CustomAttributeData>();
+
             return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
