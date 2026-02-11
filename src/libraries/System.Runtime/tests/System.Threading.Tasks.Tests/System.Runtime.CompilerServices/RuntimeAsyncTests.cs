@@ -37,8 +37,8 @@ namespace System.Threading.Tasks.Tests
                     await Func();
                 }
 
-                int taskCount = (Dictionary<int, long>)((dynamic)typeof(Task).GetField("s_runtimeAsyncTaskTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
-                int continuationCount = (Dictionary<object, long>)((dynamic)typeof(Task).GetField("s_runtimeAsyncContinuationTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                int taskCount = ((Dictionary<int, long>)typeof(Task).GetField("s_runtimeAsyncTaskTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
+                int continuationCount = ((Dictionary<object, long>)typeof(Task).GetField("s_runtimeAsyncContinuationTimestamps", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null)).Count;
                 Assert.InRange(taskCount, 0, 10); // some other tasks may be created by the runtime, so this is just using a reasonably small upper bound
                 Assert.InRange(continuationCount, 0, 10);
             }).Dispose();
