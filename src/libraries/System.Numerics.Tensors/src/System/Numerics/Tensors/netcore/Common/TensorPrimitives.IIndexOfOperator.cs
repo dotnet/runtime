@@ -53,7 +53,9 @@ namespace System.Numerics.Tensors
 
             if (sizeof(T) == 2)
             {
-                // For short/ushort, use unsigned comparison to handle indices up to 65535
+                // For short/ushort types, use unsigned comparison for index ordering
+                // This allows indices up to 65535 to be compared correctly even when
+                // stored as signed short (which wraps negative for values > 32767)
                 // Compare 0,1,2,3 with 4,5,6,7
                 tmpResult = Vector128.Shuffle(result.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
                 tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
@@ -95,8 +97,8 @@ namespace System.Numerics.Tensors
                 tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
                 TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
 
-                // Return 0
-                return resultIndex.As<T, byte>().ToScalar();
+                // Return 0 - explicitly cast to int for consistency
+                return (int)resultIndex.As<T, byte>().ToScalar();
             }
         }
 
