@@ -118,7 +118,8 @@ namespace System.Diagnostics
         /// Initializes a new instance of the <see cref="ProcessStartOptions"/> class.
         /// </summary>
         /// <param name="fileName">The application to start.</param>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="fileName"/> is null or empty.</exception>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="fileName"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="fileName"/> is empty.</exception>
         /// <exception cref="FileNotFoundException">Thrown when <paramref name="fileName"/> cannot be resolved to an existing file.</exception>
         public ProcessStartOptions(string fileName)
         {
@@ -344,6 +345,7 @@ namespace System.Diagnostics
 
         private static string? GetWindowsDirectory()
         {
+            // Don't cache Windows directory as it's user-specific and can change during app lifetime
             Span<char> buffer = stackalloc char[260]; // MAX_PATH
             uint length = Interop.Kernel32.GetWindowsDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
             if (length > 0 && length < buffer.Length)
