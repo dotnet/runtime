@@ -1209,6 +1209,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_compiler->gtSetStmtInfo(m_testInfo1.testStmt);
         m_compiler->fgSetStmtSeq(m_testInfo1.testStmt);
+        m_compiler->gtUpdateStmtSideEffects(m_testInfo1.testStmt);
     }
 
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
