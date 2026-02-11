@@ -156,7 +156,7 @@ endif(FEATURE_STATICALLY_LINKED)
 if(FEATURE_DYNAMIC_CODE_COMPILED)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
 elseif(FEATURE_INTERPRETER)
-    set(CORECLR_STATIC_CLRINTERPRETER_STATIC clrinterpreter_objects)
+    set(CORECLR_STATIC_CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
 endif()
 
 if(CLR_CMAKE_HOST_ARCH_WASM)
