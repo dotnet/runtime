@@ -17,6 +17,7 @@ Module Name:
 #include "excep.h"
 
 #include "syncclean.hpp"
+#include "ebr.h"
 
 #include "threadsuspend.h"
 #include "minipal/time.h"
@@ -94,6 +95,18 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
 
 #endif // !DACCESS_COMPILE
 
+// Static helper for EBR deferred deletion of obsolete bucket arrays.
+static void DeleteObsoleteBuckets(void* p)
+{
+    LIMITED_METHOD_CONTRACT;
+    Bucket* pBucket = (Bucket*)p;
+    while (pBucket) {
+        Bucket* pNextBucket = NextObsolete(pBucket);
+        delete [] pBucket;
+        pBucket = pNextBucket;
+    }
+}
+
 //---------------------------------------------------------------------
 //  inline Bucket* HashMap::Buckets()
 //  get the pointer to the bucket array
@@ -103,7 +116,7 @@ PTR_Bucket HashMap::Buckets()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #if !defined(DACCESS_COMPILE)
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled() || IsGCThread());
+    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || g_HashMapEbr.InCriticalRegion() || IsGCThread());
 #endif
     return m_rgBuckets + 1;
 }
@@ -477,8 +490,10 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    // Enter EBR critical region to protect against concurrent bucket array
+    // replacement during async mode. Replaces the former COOP transition
+    // which caused deadlocks with DebuggerController lock ordering.
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
 
@@ -542,14 +557,12 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    // Also called by AppDomain::FindCachedAssembly to resolve AssemblyRef -- this is used by stack walking on the GC thread.
-    // See comments in GCHeapUtilities::RestartEE (above the call to SyncClean::CleanUp) for reason to enter COOP mode.
-    // However, if the current thread is the GC thread, we know we're not going to call GCHeapUtilities::RestartEE
-    // while accessing the HashMap, so it's safe to proceed.
-    // (m_fAsyncMode && !IsGCThread() is the condition for entering COOP mode.  I.e., enable COOP GC only if
-    // the HashMap is in async mode and this is not a GC thread.)
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode && !IsGCThread());
+    // Enter EBR critical region to protect against concurrent bucket array
+    // replacement during async mode. This replaces the former COOP transition
+    // (GCX_MAYBE_COOP_NO_THREAD_BROKEN) which caused a deadlock when called
+    // while holding the DebuggerController lock. The GC thread is excluded
+    // since it cannot race with itself on RestartEE.
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode && !IsGCThread());
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -621,8 +634,7 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
 
     _ASSERTE(OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -695,8 +707,7 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     // check proper use in synchronous mode
     SyncAccessHolder holoder(this);  //no-op in non DEBUG code
@@ -867,10 +878,9 @@ void HashMap::Rehash()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
 
-    // BROKEN: This is called for the RCWCache on the GC thread
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
+    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || g_HashMapEbr.InCriticalRegion());
     _ASSERTE (OwnLock());
 
     UPTR newPrimeIndex = NewSize();
@@ -989,8 +999,13 @@ LDone:
 
     if (m_fAsyncMode)
     {
-        // If we are allowing asynchronous reads, we must delay bucket cleanup until GC time.
-        SyncClean::AddHashMap (pObsoleteTables);
+        // In async mode, readers may still be traversing the old bucket array.
+        // Queue for deferred deletion via EBR. The buckets will be freed once
+        // all threads have exited their critical regions.
+        g_HashMapEbr.QueueForDeletion(
+            pObsoleteTables,
+            DeleteObsoleteBuckets,
+            (GetSize(pObsoleteTables) + 1) * sizeof(Bucket));
     }
     else
     {
@@ -1020,7 +1035,7 @@ void HashMap::Compact()
     _ASSERTE (OwnLock());
 
     //
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
     ASSERT(m_rgBuckets != NULL);
 
     // Try to resize if that makes sense (reduce the size of the table), but

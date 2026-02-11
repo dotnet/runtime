@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -786,6 +787,10 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
+        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending, 1024 * 1024);
+
         StubManager::InitializeStubManagers();
 
         // Set up the cor handle map. This map is used to load assemblies in
@@ -1381,6 +1386,9 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
+                // Shutdown EBR before GC heap to ensure all deferred deletions are drained.
+                g_HashMapEbr.Shutdown();
+
                 GCHeapUtilities::GetGCHeap()->Shutdown();
             }
         }
