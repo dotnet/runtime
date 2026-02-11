@@ -1478,7 +1478,10 @@ function Format-TestFailure {
         'BUG:',
         'FAILED\s*$',
         'END EXECUTION - FAILED',
-        'System\.\w+Exception:'
+        'System\.\w+Exception:',
+        'Traceback \(most recent call last\)',
+        '\w+Error:',
+        'Timed Out \(timeout'
     )
     $combinedPattern = ($failureStartPatterns -join '|')
 
@@ -1770,6 +1773,7 @@ try {
     $allFailuresForCorrelation = @()
     $allFailedJobNames = @()
     $allCanceledJobNames = @()
+    $allFailedJobDetails = @()
     $lastBuildJobSummary = $null
 
     foreach ($currentBuildId in $buildIds) {
@@ -1957,6 +1961,15 @@ try {
                 Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
                 Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
 
+                # Track per-job failure details for JSON summary
+                $jobDetail = [ordered]@{
+                    jobName = $job.name
+                    errorSnippet = ""
+                    helixWorkItems = @()
+                    knownIssues = @()
+                    errorCategory = "unclassified"
+                }
+
                 # Get Helix tasks for this job
                 $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
 
@@ -1984,6 +1997,8 @@ try {
                                         HelixLogs = @()
                                         FailedTests = $failures | ForEach-Object { $_.TestName }
                                     }
+                                    $jobDetail.errorCategory = "test-failure"
+                                    $jobDetail.errorSnippet = ($failures | Select-Object -First 3 | ForEach-Object { $_.TestName }) -join "; "
                                 }
 
                             # Extract and optionally fetch Helix URLs
@@ -1999,6 +2014,7 @@ try {
                                     $workItemName = ""
                                     if ($url -match '/workitems/([^/]+)/console') {
                                         $workItemName = $Matches[1]
+                                        $jobDetail.helixWorkItems += $workItemName
                                     }
 
                                     $helixLog = Get-HelixConsoleLog -Url $url
@@ -2007,8 +2023,35 @@ try {
                                         if ($failureInfo) {
                                             Write-Host $failureInfo -ForegroundColor White
 
+                                            # Categorize failure from log content
+                                            if ($failureInfo -match 'Timed Out \(timeout') {
+                                                $jobDetail.errorCategory = "test-timeout"
+                                            } elseif ($failureInfo -match 'Exit Code:\s*(139|134)' -or $failureInfo -match 'createdump') {
+                                                $jobDetail.errorCategory = "crash"
+                                            } elseif ($failureInfo -match 'Traceback \(most recent call last\)' -and $helixLog -match 'Tests run:.*Failures:\s*0') {
+                                                # Work item failed (non-zero exit from reporter crash) but all tests passed.
+                                                # The Python traceback is from Helix infrastructure, not from the test itself.
+                                                $jobDetail.errorCategory = "tests-passed-reporter-failed"
+                                            } elseif ($jobDetail.errorCategory -eq "unclassified") {
+                                                $jobDetail.errorCategory = "test-failure"
+                                            }
+                                            if (-not $jobDetail.errorSnippet) {
+                                                $jobDetail.errorSnippet = $failureInfo.Substring(0, [Math]::Min(200, $failureInfo.Length))
+                                            }
+
                                             # Search for known issues
                                             Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
+                                        }
+                                        else {
+                                            # No failure pattern matched — show tail of log
+                                            $lines = $helixLog -split "`n"
+                                            $lastLines = $lines | Select-Object -Last 20
+                                            $tailText = $lastLines -join "`n"
+                                            Write-Host $tailText -ForegroundColor White
+                                            if (-not $jobDetail.errorSnippet) {
+                                                $jobDetail.errorSnippet = $tailText.Substring(0, [Math]::Min(200, $tailText.Length))
+                                            }
+                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $tailText -IncludeMihuBot:$SearchMihuBot
                                         }
                                     }
                                 }
@@ -2050,6 +2093,11 @@ try {
                                         HelixLogs = @()
                                         FailedTests = @()
                                     }
+                                    $jobDetail.errorCategory = "build-error"
+                                    if (-not $jobDetail.errorSnippet) {
+                                        $snippet = ($buildErrors | Select-Object -First 2) -join "; "
+                                        $jobDetail.errorSnippet = $snippet.Substring(0, [Math]::Min(200, $snippet.Length))
+                                    }
 
                                     # Extract Helix log URLs from the full log content
                                     $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
@@ -2085,6 +2133,7 @@ try {
                     }
                 }
 
+            $allFailedJobDetails += $jobDetail
             $processedJobs++
         }
         catch {
@@ -2162,6 +2211,7 @@ $summary = [ordered]@{
         total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
     } }
     failedJobNames = @($allFailedJobNames)
+    failedJobDetails = @($allFailedJobDetails)
     canceledJobNames = @($allCanceledJobNames)
     knownIssues = @($knownIssuesFromBuildAnalysis | ForEach-Object {
         [ordered]@{ number = $_.Number; title = $_.Title; url = $_.Url }

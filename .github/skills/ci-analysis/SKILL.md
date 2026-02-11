@@ -112,7 +112,17 @@ The script operates in three distinct modes depending on what information you ha
 
 **Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
 
-> ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure when you have strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. "Environment" in the error doesn't make it infrastructure — a test requiring an uninstalled framework is a test defect, not infra.
+**Per-failure details** (`failedJobDetails` in JSON): Each failed job includes `errorCategory`, `errorSnippet`, `helixWorkItems`, and `knownIssues`. Use these for per-job classification instead of applying a single `recommendationHint` to all failures.
+
+Error categories:
+- `test-failure` — test assertions failed
+- `build-error` — compilation/build errors
+- `test-timeout` — Helix work item timed out
+- `crash` — process crash (SIGSEGV/SIGABRT exit codes 139/134)
+- `tests-passed-reporter-failed` — all tests passed but the Helix work item still failed because post-test infrastructure (e.g., Python result reporter) crashed. This shows as a failed job in CI even though no tests failed. This is genuinely infrastructure.
+- `unclassified` — no pattern matched; investigate manually
+
+> ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure when you have strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. "Environment" in the error doesn't make it infrastructure — a test requiring an uninstalled framework is a test defect, not infra. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
 
 > ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs bring behavioral changes that can cause builds to request *different* packages. Always check *which* package is missing and *why* before assuming feed propagation delay.
 
@@ -129,13 +139,14 @@ Read `recommendationHint` as a starting point, then layer in context:
 | `BUILD_SUCCESSFUL` | No failures. Confirm CI is green. |
 | `KNOWN_ISSUES_DETECTED` | Known tracked issues found. Recommend retry if failures match known issues. Link the issues. |
 | `LIKELY_PR_RELATED` | Failures correlate with PR changes. Lead with "fix these before retrying" and list `correlatedFiles`. |
-| `POSSIBLY_TRANSIENT` | No correlation with PR changes, no known issues. Suggest checking the target branch, searching for issues, or retrying. |
+| `POSSIBLY_TRANSIENT` | Failures could not be automatically classified — does NOT mean they are transient. Use `failedJobDetails` to investigate each failure individually. |
 | `REVIEW_REQUIRED` | Could not auto-determine cause. Review failures manually. |
 | `MERGE_CONFLICTS` | PR has merge conflicts — CI won't run. Tell the user to resolve conflicts. Offer to analyze a previous build by ID. |
 | `NO_BUILDS` | No AzDO builds found (CI not triggered). Offer to check if CI needs to be triggered or analyze a previous build. |
 
 Then layer in nuance the heuristic can't capture:
 
+- **Use `failedJobDetails`**: When present, classify each job individually by its `errorCategory` rather than applying the `recommendationHint` uniformly. Different jobs may have different causes.
 - **Mixed signals**: Some failures match known issues AND some correlate with PR changes → separate them. Known issues = safe to retry; correlated = fix first.
 - **Canceled jobs with recoverable results**: If `canceledJobNames` is non-empty, mention that canceled jobs may have passing Helix results (see "Recovering Results from Canceled Jobs").
 - **Build still in progress**: If `lastBuildJobSummary.pending > 0`, note that more failures may appear.
