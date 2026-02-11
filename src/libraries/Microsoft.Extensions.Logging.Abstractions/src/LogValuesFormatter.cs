@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging
                     else
                     {
                         // For small number of placeholders, use linear search to avoid dictionary allocation and hashing overhead
-                        valueIndex = _valueNames.IndexOf(valueName);
+                        valueIndex = FindValueName(valueName);
                         if (valueIndex < 0)
                         {
                             valueIndex = _valueNames.Count;
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging
                             // Switch to dictionary when we have many unique placeholders
                             if (_valueNames.Count > 4)
                             {
-                                valueNameIndices = new Dictionary<string, int>(_valueNames.Count);
+                                valueNameIndices = new Dictionary<string, int>(_valueNames.Count, StringComparer.OrdinalIgnoreCase);
                                 for (int i = 0; i < _valueNames.Count; i++)
                                 {
                                     valueNameIndices[_valueNames[i]] = i;
@@ -122,6 +122,19 @@ namespace Microsoft.Extensions.Logging
         public string OriginalFormat { get; }
         public List<string> ValueNames => _valueNames;
         public int PlaceholderCount => _placeholderCount;
+
+        private int FindValueName(string valueName)
+        {
+            for (int i = 0; i < _valueNames.Count; i++)
+            {
+                if (string.Equals(_valueNames[i], valueName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
         {
