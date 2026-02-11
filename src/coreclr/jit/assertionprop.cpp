@@ -4991,40 +4991,37 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     //  a[a.Length >> 1] when a.Length > 0
     //
     VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) &&
-        (funcApp.FuncIs(VNF_ADD, VNF_DIV, VNF_UDIV, VNF_MOD, VNF_UMOD, VNF_RSZ, VNF_RSH)))
+    if (tree->TypeIs(TYP_INT) && vnStore->GetVNFunc(vnCurIdx, &funcApp) &&
+        (funcApp.FuncIs(VNF_ADD, VNF_DIV, VNF_UDIV, VNF_MOD, VNF_UMOD, VNF_RSZ, VNF_RSH)) &&
+        (funcApp.m_args[0] == vnCurLen))
     {
-        if (funcApp.m_args[0] == vnCurLen)
+        Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
+        Range op2Rng = RangeCheck::GetRangeFromAssertions(this, funcApp.m_args[1], assertions);
+
+        // Both must be valid full ranges with constant limits
+        assert(lenRng.IsConstantRange());
+        assert(op2Rng.IsConstantRange());
+
+        // Lower known limit of ArrLen:
+        const int lenLowerLimit = lenRng.LowerLimit().GetConstant();
+        if (lenLowerLimit > 0)
         {
-            Range lenRng = RangeCheck::GetRangeFromAssertions(this, vnCurLen, assertions);
-            Range op2Rng = RangeCheck::GetRangeFromAssertions(this, funcApp.m_args[1], assertions);
-
-            // Both must be valid full ranges with constant limits
-            assert(lenRng.IsConstantRange());
-            assert(op2Rng.IsConstantRange());
-
-            // Lower known limit of ArrLen:
-            const int lenLowerLimit = lenRng.LowerLimit().GetConstant();
-            if (lenLowerLimit > 0)
+            if (funcApp.FuncIs(VNF_ADD) && (op2Rng.UpperLimit().GetConstant() < 0) &&
+                (op2Rng.LowerLimit().GetConstant() > INT_MIN) && (lenLowerLimit >= -op2Rng.LowerLimit().GetConstant()))
             {
-                if (funcApp.FuncIs(VNF_ADD) && (op2Rng.UpperLimit().GetConstant() < 0) &&
-                    (op2Rng.LowerLimit().GetConstant() > INT_MIN) &&
-                    (lenLowerLimit >= -op2Rng.LowerLimit().GetConstant()))
-                {
-                    return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
-                }
-                if (funcApp.FuncIs(VNF_UDIV, VNF_DIV) && (op2Rng.LowerLimit().GetConstant() > 1))
-                {
-                    return dropBoundsCheck(INDEBUG("a[a.Length / cns] when a.Length > 0 && cns is > 1"));
-                }
-                if (funcApp.FuncIs(VNF_UMOD, VNF_MOD) && (op2Rng.LowerLimit().GetConstant() > 0))
-                {
-                    return dropBoundsCheck(INDEBUG("a[a.Length % cns] when a.Length > 0 && cns is > 0"));
-                }
-                if (funcApp.FuncIs(VNF_RSZ, VNF_RSH) && (op2Rng.LowerLimit().GetConstant() > 0))
-                {
-                    return dropBoundsCheck(INDEBUG("a[a.Length >> cns] when a.Length > 0 && cns is > 0"));
-                }
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+            }
+            if (funcApp.FuncIs(VNF_UDIV, VNF_DIV) && (op2Rng.LowerLimit().GetConstant() > 1))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length / cns] when a.Length > 0 && cns is > 1"));
+            }
+            if (funcApp.FuncIs(VNF_UMOD, VNF_MOD) && (op2Rng.LowerLimit().GetConstant() > 0))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length % cns] when a.Length > 0 && cns is > 0"));
+            }
+            if (funcApp.FuncIs(VNF_RSZ, VNF_RSH) && (op2Rng.LowerLimit().GetConstant() > 0))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length >> cns] when a.Length > 0 && cns is > 0"));
             }
         }
     }
