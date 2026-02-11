@@ -386,11 +386,13 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(Type[]), type.GetTypeInfo().GenericTypeParameters.GetType());
             Assert.Equal(typeof(Type[]), type.GetGenericArguments().GetType());
             Assert.Equal(typeof(Type[]), type.GetInterfaces().GetType());
+#if NET
             if (type.IsFunctionPointer)
             {
                 Assert.Equal(typeof(Type[]), type.GetFunctionPointerParameterTypes().GetType());
                 Assert.Equal(typeof(Type[]), type.GetFunctionPointerCallingConventions().GetType());
             }
+#endif
 
             const BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.FlattenHierarchy;
             foreach (MemberInfo mem in type.GetMember("*", MemberTypes.All, bf))
