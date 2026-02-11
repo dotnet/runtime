@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="ExtendedLayout.cs" />
     <Compile Include="CStruct.cs" />
+    <Compile Include="CUnion.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ExtendedLayoutTypes.ilproj" />

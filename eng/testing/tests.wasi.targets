@@ -95,7 +95,6 @@
   <Target Name="PrepareForWasiBuildApp">
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">

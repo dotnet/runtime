@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -27,7 +27,7 @@ import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
 import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-import { localHeapViewU8, malloc, setU32 } from "./memory";
+import { localHeapViewU8, malloc, setU32, fixupPointer } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
@@ -218,18 +218,9 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
-            const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-            try {
-                const wds = FS.stat(cwd);
-                if (!wds) {
-                    Module.FS_createPath("/", cwd, true, true);
-                } else {
-                    mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
-                }
-            } catch (e) {
-                Module.FS_createPath("/", cwd, true, true);
-            }
-            FS.chdir(cwd);
+            FS.createPath("/", browserVirtualAppBase, true, true);
+            FS.createPath("/", runtimeHelpers.config.virtualWorkingDirectory, true, true);
+            FS.chdir(runtimeHelpers.config.virtualWorkingDirectory);
         }
 
         if (runtimeHelpers.config.interpreterPgo)
@@ -594,12 +585,12 @@ export function mono_wasm_asm_loaded (assembly_name: CharPtr, assembly_ptr: numb
         return;
     const heapU8 = localHeapViewU8();
     const assembly_name_str = assembly_name !== CharPtrNull ? utf8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(heapU8.buffer, assembly_ptr, assembly_len);
+    const assembly_data = new Uint8Array(heapU8.buffer, fixupPointer(assembly_ptr, 0), assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
     if (pdb_ptr) {
-        const pdb_data = new Uint8Array(heapU8.buffer, pdb_ptr, pdb_len);
+        const pdb_data = new Uint8Array(heapU8.buffer, fixupPointer(pdb_ptr, 0), pdb_len);
         pdb_b64 = toBase64StringImpl(pdb_data);
     }
 

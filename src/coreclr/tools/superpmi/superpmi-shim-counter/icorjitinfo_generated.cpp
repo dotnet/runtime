@@ -1079,13 +1079,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    mcs->AddCall("getLazyStringLiteralHelper");
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection)
@@ -1452,6 +1445,14 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize)
+{
+    mcs->AddCall("getWasmTypeSymbol");
+    return original_ICorJitInfo->getWasmTypeSymbol(types, typesSize);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(

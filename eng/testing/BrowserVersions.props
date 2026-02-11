@@ -1,9 +1,9 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>142.0.7444.59</linux_ChromeVersion>
-    <linux_ChromeRevision>1522585</linux_ChromeRevision>
-    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1522586</linux_ChromeBaseSnapshotUrl>
-    <linux_V8Version>14.2.231</linux_V8Version>
+    <linux_ChromeVersion>143.0.7499.40</linux_ChromeVersion>
+    <linux_ChromeRevision>1536371</linux_ChromeRevision>
+    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1536376</linux_ChromeBaseSnapshotUrl>
+    <linux_V8Version>14.3.127</linux_V8Version>
     <win_ChromeVersion>143.0.7499.40</win_ChromeVersion>
     <win_ChromeRevision>1536371</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1536376</win_ChromeBaseSnapshotUrl>

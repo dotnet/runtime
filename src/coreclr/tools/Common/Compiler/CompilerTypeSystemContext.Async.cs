@@ -112,7 +112,7 @@ namespace ILCompiler
             {
                 yield return method;
 
-                // We create an async variant slot for any virtual Task-returning method, not just runtime-async.
+                // We create an async variant slot for any Task-returning method, not just runtime-async.
                 // This is not a problem in practice because the slot is still subject to dependency
                 // analysis and if not used, will not be generated.
                 //
@@ -137,8 +137,14 @@ namespace ILCompiler
                 //     //    didn't know about IFoo in Base either. Who has the slot?
                 //     // A: Base has the runtime-async slot, despite the method not being runtime-async.
                 // }
-                if ((method.IsAsync || method.IsVirtual)
-                    && method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+                //
+                // The other reason is that when the method is awaited, RyuJIT will prefer the AsyncCallable
+                // variant, no matter if the method is async.
+                //
+                // We restrict this to EcmaMethod since AsyncVariantMethod cannot deal with non-ECMA methods
+                // and we shouldn't be awaiting compiler-generated methods (delegate thunks, etc.) anyway.
+                if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod
+                    && ecmaMethod.Signature.ReturnsTaskOrValueTask())
                 {
                     yield return context.GetAsyncVariantMethod(method);
                 }
@@ -196,7 +202,8 @@ namespace ILCompiler
 
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
-            return _continuationTypeHashtable.GetOrCreateValue(pointerMap);
+            var cont = _continuationTypeHashtable.GetOrCreateValue(pointerMap);
+            return cont;
         }
 
         private sealed class ContinuationTypeHashtable : LockFreeReaderHashtable<GCPointerMap, AsyncContinuationType>
@@ -213,7 +220,10 @@ namespace ILCompiler
                 => value1.PointerMap.Equals(value2.PointerMap);
             protected override AsyncContinuationType CreateValueFromKey(GCPointerMap key)
             {
-                return new AsyncContinuationType(_parent.ContinuationType, key);
+                var cont = new AsyncContinuationType(_parent.ContinuationType, key);
+                // Short circuit loadability checks for this type
+                _parent._validTypes.TryAdd(cont);
+                return cont;
             }
         }
         private ContinuationTypeHashtable _continuationTypeHashtable;

@@ -556,9 +556,6 @@ void getFunctionFixedEntryPoint(
           bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
-CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle) override;
-
 CORINFO_MODULE_HANDLE embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection) override;
@@ -754,6 +751,10 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize) override;
 
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;

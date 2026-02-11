@@ -540,9 +540,6 @@ inline bool OperIsControlFlow(genTreeOps oper)
         case GT_RETFILT:
         case GT_SWIFT_ERROR_RET:
         case GT_RETURN_SUSPEND:
-#if defined(FEATURE_EH_WINDOWS_X86)
-        case GT_END_LFIN:
-#endif // FEATURE_EH_WINDOWS_X86
             return true;
 
         default:

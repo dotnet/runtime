@@ -705,7 +705,7 @@ void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDL
 //
 void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token)
 {
-    const int MAX_LITERAL_LENGTH      = 256;
+    const int MAX_LITERAL_LENGTH      = 50;
     char16_t  str[MAX_LITERAL_LENGTH] = {};
     int       length                  = -1;
     eeRunFunctorWithSPMIErrorTrap([&]() {
@@ -718,9 +718,11 @@ void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token
     }
     else
     {
-        char dst[MAX_LITERAL_LENGTH];
-        convertUtf16ToUtf8ForPrinting(str, length, dst, MAX_LITERAL_LENGTH);
-        printf("\"%.50s%s\"", dst, length > 50 ? "..." : "");
+        char dst[MAX_LITERAL_LENGTH * 3 + 1];
+        // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
+        int truncatedLength = min(length, MAX_LITERAL_LENGTH);
+        convertUtf16ToUtf8ForPrinting(str, truncatedLength, dst, sizeof(dst));
+        printf("\"%s%s\"", dst, length > MAX_LITERAL_LENGTH ? "..." : "");
     }
 }
 #endif // DEBUG

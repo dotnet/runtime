@@ -239,7 +239,7 @@ namespace ILCompiler
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
-            public override bool IsExtendedLayout => true;
+            public override bool IsExtendedLayout => false;
             public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
@@ -273,7 +273,7 @@ namespace ILCompiler
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
-            public override MetadataType GetNestedType(string name) => null;
+            public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
             public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 

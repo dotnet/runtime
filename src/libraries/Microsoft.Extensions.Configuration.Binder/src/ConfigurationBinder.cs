@@ -1094,7 +1094,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         private static List<PropertyInfo> GetAllProperties(
-#if NET10_0_OR_GREATER
+#if NET
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)]
 #else
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]

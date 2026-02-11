@@ -107,6 +107,122 @@ public:
     }
 };
 
+//------------------------------------------------------------------------
+// WasmInterval
+//
+// Represents a Wasm BLOCK/END or LOOP/END span in the linearized
+// basic block list.
+//
+class WasmInterval
+{
+private:
+
+    // m_chain refers to the conflict set member with the lowest m_start.
+    // (for "trivial" singleton conflict sets m_chain will be `this`)
+    WasmInterval* m_chain;
+
+    // True index of start
+    unsigned m_start;
+
+    // True index of end; interval ends just before this block
+    unsigned m_end;
+
+    // Largest end index of any chained interval
+    unsigned m_chainEnd;
+
+    // true if this is a loop interval (extents cannot change)
+    bool m_isLoop;
+
+public:
+
+    WasmInterval(unsigned start, unsigned end, bool isLoop)
+        : m_chain(nullptr)
+        , m_start(start)
+        , m_end(end)
+        , m_chainEnd(end)
+        , m_isLoop(isLoop)
+    {
+        m_chain = this;
+    }
+
+    unsigned Start() const
+    {
+        return m_start;
+    }
+
+    unsigned End() const
+    {
+        return m_end;
+    }
+
+    unsigned ChainEnd() const
+    {
+        return m_chainEnd;
+    }
+
+    // Call while resolving intervals when building chains.
+    WasmInterval* FetchAndUpdateChain()
+    {
+        if (m_chain == this)
+        {
+            return this;
+        }
+
+        WasmInterval* chain = m_chain->FetchAndUpdateChain();
+        m_chain             = chain;
+        return chain;
+    }
+
+    // Call after intervals are resolved and chains are fixed.
+    WasmInterval* Chain() const
+    {
+        assert((m_chain == this) || (m_chain == m_chain->Chain()));
+        return m_chain;
+    }
+
+    bool IsLoop() const
+    {
+        return m_isLoop;
+    }
+
+    void SetChain(WasmInterval* c)
+    {
+        m_chain       = c;
+        c->m_chainEnd = max(c->m_chainEnd, m_chainEnd);
+    }
+
+    static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
+        return result;
+    }
+
+    static WasmInterval* NewLoop(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ true);
+        return result;
+    }
+
+#ifdef DEBUG
+    void Dump(bool chainExtent = false)
+    {
+        printf("[%03u,%03u]%s", m_start, chainExtent ? m_chainEnd : m_end, m_isLoop && !chainExtent ? " L" : "");
+
+        if (m_chain != this)
+        {
+            printf(" --> ");
+            m_chain->Dump(true);
+        }
+        else
+        {
+            printf("\n");
+        }
+    }
+#endif
+};
+
 //------------------------------------------------------------------------------
 // FgWasm: Wasm-specific flow graph methods
 //
@@ -202,9 +318,51 @@ public:
 //  consider exceptional successors or successors that require runtime intervention
 //  (eg funclet returns).
 //
+// For method and funclet entries we add any "ACD" blocks as successors before the
+// true successors. This ensures the ACD blocks end up at the end of the funclet
+// region, and that we create proper Wasm blocks so we can branch to them from
+// anywhere within the method region or funclet region.
+//
 template <typename TFunc>
 BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
 {
+    // Special case throw helper blocks that are not yet connected in the flow graph.
+    //
+    Compiler::AddCodeDscMap* const acdMap = comp->fgGetAddCodeDscMap();
+    if (acdMap != nullptr)
+    {
+        // Behave as if these blocks have edges from their respective region entry blocks.
+        //
+        if ((block == comp->fgFirstBB) || comp->bbIsFuncletBeg(block))
+        {
+            Compiler::AcdKeyDesignator dsg;
+            const unsigned             blockData = comp->bbThrowIndex(block, &dsg);
+
+            // We do not expect any ACDs to be mapped to try regions (only method/handler/filter)
+            //
+            assert(dsg != Compiler::AcdKeyDesignator::KD_TRY);
+
+            for (const Compiler::AddCodeDscKey& key : Compiler::AddCodeDscMap::KeyIteration(acdMap))
+            {
+                if (key.Data() == blockData)
+                {
+                    // This ACD refers to a throw helper block in the right region.
+                    // Make the block a successor.
+                    //
+                    Compiler::AddCodeDsc* acd = nullptr;
+                    acdMap->Lookup(key, &acd);
+
+                    // We only need to consider used ACDs... we may have demanded throw helpers that are not needed.
+                    //
+                    if (acd->acdUsed)
+                    {
+                        RETURN_ON_ABORT(func(acd->acdDstBlk));
+                    }
+                }
+            }
+        }
+    }
+
     switch (block->GetKind())
     {
         // Funclet returns have no successors

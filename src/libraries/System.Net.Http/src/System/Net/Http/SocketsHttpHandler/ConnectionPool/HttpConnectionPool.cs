@@ -771,7 +771,7 @@ namespace System.Net.Http
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);
 
-            if (tunnelResponse.StatusCode != HttpStatusCode.OK)
+            if (!tunnelResponse.IsSuccessStatusCode)
             {
                 tunnelResponse.Dispose();
                 throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), statusCode: tunnelResponse.StatusCode);
