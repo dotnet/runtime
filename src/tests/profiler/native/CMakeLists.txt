@@ -11,6 +11,7 @@ set(SOURCES
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
+    exceptionprofiler/exceptionprofiler.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
     gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
