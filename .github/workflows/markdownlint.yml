@@ -10,7 +10,6 @@ on:
       - ".markdownlint.json"
       - ".github/workflows/markdownlint.yml"
       - ".github/workflows/markdownlint-problem-matcher.json"
-      - ".github/workflows/markdownlintignore"
 
 jobs:
   lint:
@@ -27,4 +26,4 @@ jobs:
       run: |
         echo "::add-matcher::.github/workflows/markdownlint-problem-matcher.json"
         npm i -g markdownlint-cli
-        markdownlint --ignore-path .github/workflows/markdownlintignore "**/*.md"
+        markdownlint "**/*.md"
