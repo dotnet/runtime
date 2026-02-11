@@ -454,18 +454,11 @@ namespace Microsoft.Extensions.Logging
             var logValuesFormatter = new LogValuesFormatter(formatString);
 
             int actualCount = logValuesFormatter.ValueNames.Count;
-            if (actualCount != expectedNamedParameterCount)
+            if (actualCount > expectedNamedParameterCount
+                || (actualCount < expectedNamedParameterCount && logValuesFormatter.PlaceholderCount == actualCount))
             {
-                // Allow fewer unique placeholder names than expected when duplicates exist
-                // (e.g., Define<string>("{Name}...{Name}") has 1 unique but 2 total).
-                // Also allow backward compat where args match total placeholders
-                // (e.g., Define<string, string>("{Name}...{Name}") has 2 total, 2 expected).
-                bool hasDuplicates = logValuesFormatter.PlaceholderCount > actualCount;
-                if (!hasDuplicates || actualCount > expectedNamedParameterCount)
-                {
-                    throw new ArgumentException(
-                        SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));
-                }
+                throw new ArgumentException(
+                    SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));
             }
 
             return logValuesFormatter;
