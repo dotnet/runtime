@@ -783,25 +783,6 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
-CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = IsDynamicScope(handle) ? CORINFO_HELP_UNDEF : CORINFO_HELP_STRCNS;
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 
 CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE context)
 {
@@ -2402,6 +2383,28 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
     return result;
 }
 
+#if defined(UNIX_AMD64_ABI_ITF)
+SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR SystemVRegDescriptorFromSystemVEightByteRegistersInfo(const SystemVEightByteRegistersInfo& info)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR desc = {};
+
+    desc.passedInRegisters = true;
+    desc.eightByteCount = info.GetNumEightBytes();
+    _ASSERTE(desc.eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+    _ASSERTE(desc.eightByteCount > 0);
+    for (unsigned int i = 0; i < info.GetNumEightBytes(); i++)
+    {
+        desc.eightByteClassifications[i] = info.GetEightByteClassification(i);
+        desc.eightByteSizes[i] = (uint8_t)info.GetEightByteSize(i);
+        desc.eightByteOffsets[i] = (uint8_t)i * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+    }
+
+    return desc;
+}
+#endif // defined(UNIX_AMD64_ABI_ITF)
+
 // returns the enregister info for a struct based on type of fields, alignment, etc.
 bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
                                                 /*IN*/  CORINFO_CLASS_HANDLE structHnd,
@@ -2459,30 +2462,42 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
         if (th.GetSize() <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
         {
-            canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+            canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
         }
 #endif // !defined(UNIX_AMD64_ABI)
 
         if (canPassInRegisters)
         {
 #if defined(UNIX_AMD64_ABI)
-            SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
-            bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+            if (!useNativeLayout)
+            {
+                // For managed layout structs, we have already computed
+                // and cached the classification in the MethodTable.
+                SystemVEightByteRegistersInfo eightByteInfo = methodTablePtr->GetClass()->GetEightByteRegistersInfo();
+                *structPassInRegDescPtr = SystemVRegDescriptorFromSystemVEightByteRegistersInfo(eightByteInfo);
+            }
+            else
+#endif // UNIX_AMD64_ABI
+            {
+#if defined(UNIX_AMD64_ABI)
+                SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+                bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
 
-            // The answer must be true at this point.
-            _ASSERTE(result);
+                // The answer must be true at this point.
+                _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
 
-            structPassInRegDescPtr->passedInRegisters = true;
+                structPassInRegDescPtr->passedInRegisters = true;
 
-            structPassInRegDescPtr->eightByteCount = (uint8_t)helper.eightByteCount;
-            _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
+                structPassInRegDescPtr->eightByteCount = (uint8_t)helper.eightByteCount;
+                _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
-            for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
-            {
-                structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
-                structPassInRegDescPtr->eightByteSizes[i] = (uint8_t)helper.eightByteSizes[i];
-                structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)helper.eightByteOffsets[i];
+                for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
+                {
+                    structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
+                    structPassInRegDescPtr->eightByteSizes[i] = (uint8_t)helper.eightByteSizes[i];
+                    structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)helper.eightByteOffsets[i];
+                }
             }
         }
 
@@ -3743,6 +3758,9 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
 
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
+
+            if (pClass->HasLayout() && pClass->GetLayoutInfo()->GetLayoutType() == EEClassLayoutInfo::LayoutType::CUnion)
+                ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
@@ -8568,16 +8586,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
-    info->wasArrayInterfaceDevirt = false;
+    info->needsMethodContext = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
 
     // Method better be from a fully loaded class
     _ASSERTE(pBaseMT->IsFullyLoaded());
-
-    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
-    _ASSERTE(!pBaseMD->HasMethodInstantiation());
 
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
@@ -8786,6 +8801,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
+    bool isGenericVirtual = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8803,6 +8819,24 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
+    // This is generic virtual method devirtualization.
+    if (!isArray && pBaseMD->HasMethodInstantiation())
+    {
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
+            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
+
+        // We still can't handle shared generic methods because we don't have
+        // the right generic context for runtime lookup.
+        // TODO: Remove this limitation.
+        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        isGenericVirtual = true;
+    }
+
     // Success! Pass back the results.
     //
     if (isArray)
@@ -8812,13 +8846,21 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->wasArrayInterfaceDevirt = true;
+        info->needsMethodContext = true;
+    }
+    else if (isGenericVirtual)
+    {
+        // We don't support shared generic methods yet so this should always be false
+        info->needsMethodContext = false;
+        // We don't produce an instantiating stub
+        info->isInstantiatingStub = false;
+        info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
         info->isInstantiatingStub = false;
-        info->wasArrayInterfaceDevirt = false;
+        info->needsMethodContext = false;
     }
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
@@ -10098,6 +10140,13 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     EE_TO_JIT_TRANSITION();
 }
 
+CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
+    CorInfoWasmType* types, size_t typesSize)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();
+}
+
 CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     CONTRACTL {
@@ -10275,6 +10324,33 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
+static MethodTable* getContinuationType(
+    size_t dataSize,
+    bool* objRefs,
+    size_t objRefsSize,
+    Module* loaderModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
+    LoaderAllocator* allocator = loaderModule->GetLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
+    MethodTable* mt = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
+
+#ifdef DEBUG
+    MethodTable* mt2 = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
+    _ASSERTE(mt2 == mt);
+#endif
+
+    return mt;
+}
+
 CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
     size_t dataSize,
     bool* objRefs,
@@ -10290,15 +10366,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
-    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-
-#ifdef DEBUG
-    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-    _ASSERTE(result2 == result);
-#endif
+    result = (CORINFO_CLASS_HANDLE)::getContinuationType(dataSize, objRefs, objRefsSize, m_pMethodBeingCompiled->GetLoaderModule());
 
     EE_TO_JIT_TRANSITION();
 
@@ -11147,11 +11215,9 @@ void CEEJitInfo::WriteCode(EECodeGenManager * jitMgr)
     // Now that the code header was written to the final location, publish the code via the nibble map
     NibbleMapSet<CodeHeader>();
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Publish the new unwind information in a way that the ETW stack crawler can find
     _ASSERTE(m_usedUnwindInfos == m_totalUnwindInfos);
     UnwindInfoTable::PublishUnwindInfoForMethod(m_moduleBase, ((CodeHeader*)m_CodeHeader)->GetUnwindInfo(0), m_totalUnwindInfos);
-#endif // defined(FEATURE_EH_FUNCLETS)
 }
 
 /*********************************************************************/
@@ -11348,12 +11414,12 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 {
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pArgs->coldCodeSize == 0);
-    _ASSERTE(pArgs->roDataSize == 0);
+    _ASSERTE(pArgs->chunksCount == 1);
 
-    ULONG codeSize      = pArgs->hotCodeSize;
-    void **codeBlock    = &pArgs->hotCodeBlock;
-    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    unsigned codeAlign    = std::max((unsigned)CODE_SIZE_ALIGN, pArgs->chunks[0].alignment);
+    ULONG codeSize        = pArgs->chunks[0].size;
+    uint8_t **codeBlock   = &pArgs->chunks[0].block;
+    uint8_t **codeBlockRW = &pArgs->chunks[0].blockRW;
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     _ASSERTE(m_CodeHeader == 0 &&
@@ -11378,15 +11444,11 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+            codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
-                                                 , &m_pRealCodeHeader
-#ifdef FEATURE_EH_FUNCLETS
-                                                 , 0
-#endif
-                                                  );
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
+        &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
 
@@ -11397,11 +11459,6 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
     *codeBlockRW = current;
 
     current += codeSize;
-
-    pArgs->coldCodeBlock = NULL;
-    pArgs->coldCodeBlockRW = NULL;
-    pArgs->roDataBlock = NULL;
-    pArgs->roDataBlockRW = NULL;
 
     _ASSERTE((SIZE_T)(current - (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
 
@@ -11603,7 +11660,6 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 //
 void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)
 {
-#ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -11628,10 +11684,6 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
     m_totalUnwindInfos++;
 
     EE_TO_JIT_TRANSITION_LEAF();
-#else // FEATURE_EH_FUNCLETS
-    LIMITED_METHOD_CONTRACT;
-    // Dummy implementation to make cross-platform altjit work
-#endif // FEATURE_EH_FUNCLETS
 }
 
 // Allocate and initialize the .rdata and .pdata for this method or
@@ -11664,7 +11716,6 @@ void CEEJitInfo::allocUnwindInfo (
         CorJitFuncKind      funcKind               /* IN */
         )
 {
-#ifdef FEATURE_EH_FUNCLETS
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -11795,10 +11846,6 @@ void CEEJitInfo::allocUnwindInfo (
 #endif
 
     EE_TO_JIT_TRANSITION();
-#else // FEATURE_EH_FUNCLETS
-    LIMITED_METHOD_CONTRACT;
-    // Dummy implementation to make cross-platform altjit work
-#endif // FEATURE_EH_FUNCLETS
 }
 
 void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
@@ -12663,59 +12710,32 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pArgs->coldCodeSize == 0);
-    if (pArgs->coldCodeBlock)
-    {
-        pArgs->coldCodeBlock = NULL;
-    }
+    unsigned codeSize = 0;
+    unsigned roDataSize = 0;
+    S_SIZE_T totalSize(0);
+    unsigned alignment = CODE_SIZE_ALIGN;
 
-    ULONG codeSize      = pArgs->hotCodeSize;
-    void **codeBlock    = &pArgs->hotCodeBlock;
-    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    for (unsigned i = 0; i < pArgs->chunksCount; i++)
+    {
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        _ASSERTE((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) == 0);
 
-    S_SIZE_T totalSize = S_SIZE_T(codeSize);
-
-    size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 64;
-    }
-    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 32;
-    }
-    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 16;
-    }
-    else if (pArgs->roDataSize >= 8)
-    {
-        roDataAlignment = 8;
-    }
-    if (pArgs->roDataSize > 0)
-    {
-        size_t codeAlignment = sizeof(void*);
-
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+        if ((chunk.flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
         {
-            codeAlignment = 32;
+            codeSize += chunk.size;
         }
-        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+        else
         {
-            codeAlignment = 16;
+            roDataSize += chunk.size;
         }
-        totalSize.AlignUp(codeAlignment);
-        if (roDataAlignment > codeAlignment) {
-            // Add padding to align read-only data.
-            totalSize += (roDataAlignment - codeAlignment);
-        }
-        totalSize += pArgs->roDataSize;
+
+        totalSize.AlignUp(chunk.alignment);
+        totalSize += chunk.size;
+        alignment = max(alignment, chunk.alignment);
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     totalSize.AlignUp(sizeof(DWORD));
     totalSize += m_totalUnwindSize;
-#endif
 
     _ASSERTE(m_CodeHeader == 0 &&
             // The jit-compiler sometimes tries to compile a method a second time
@@ -12743,48 +12763,33 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
         }
 
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+            codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap
-                                      , &m_pRealCodeHeader
-#ifdef FEATURE_EH_FUNCLETS
-                                      , m_totalUnwindInfos
-#endif
-                                       );
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
+        &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
-#ifdef FEATURE_EH_FUNCLETS
     m_moduleBase = m_pCodeHeap->GetModuleBase();
-#endif
 
-    BYTE* current = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+    BYTE* start = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+    size_t offset = 0;
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
-    *codeBlock = current;
-    *codeBlockRW = current + writeableOffset;
-    current += codeSize;
-
-    if (pArgs->roDataSize > 0)
+    for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
-        current = (BYTE *)ALIGN_UP(current, roDataAlignment);
-        pArgs->roDataBlock = current;
-        pArgs->roDataBlockRW = current + writeableOffset;
-        current += pArgs->roDataSize;
-    }
-    else
-    {
-        pArgs->roDataBlock = NULL;
-        pArgs->roDataBlockRW = NULL;
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        offset = AlignUp(offset, chunk.alignment);
+        chunk.block = start + offset;
+        chunk.blockRW = start + offset + writeableOffset;
+        offset += chunk.size;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
-    current = (BYTE *)ALIGN_UP(current, sizeof(DWORD));
+    offset = AlignUp(offset, sizeof(DWORD));
 
-    m_theUnwindBlock = current;
-    current += m_totalUnwindSize;
-#endif
+    m_theUnwindBlock = start + offset;
+    offset += m_totalUnwindSize;
 
-    _ASSERTE((SIZE_T)(current - (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
+    _ASSERTE(offset <= totalSize.Value());
 
 #ifdef _DEBUG
     m_codeSize = codeSize;
@@ -13169,6 +13174,7 @@ void ThrowExceptionForJit(HRESULT res)
 
         case CORJIT_BADCODE:
         case CORJIT_IMPLLIMITATION:
+        case CORJIT_R2R_UNSUPPORTED:
         default:
             COMPlusThrow(kInvalidProgramException);
             break;
@@ -13287,7 +13293,20 @@ static TADDR UnsafeJitFunctionWorker(
         //
         // Notify the debugger that we have successfully jitted the function
         //
-        if (g_pDebugInterface)
+        bool isInterpreterCode = false;
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo((TADDR)nativeEntry);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+            {
+                isInterpreterCode = true;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+        // TODO: Revisit this for interpreter code
+        if (g_pDebugInterface && !isInterpreterCode)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
 
@@ -13654,8 +13673,6 @@ CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
     case readyToRunHelper:                                  return corInfoHelpFunc;
 #include "readytorunhelpers.h"
 
-    case READYTORUN_HELPER_GetString:                       return CORINFO_HELP_STRCNS;
-
     default:                                                return CORINFO_HELP_UNDEF;
     }
 }
@@ -13694,6 +13711,52 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
         cur--;
     } while (cur >= last);
 }
+
+MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* currentModule)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigPointer p(pBlob);
+    // Skip Continuation type signature
+    IfFailThrow(p.SkipExactlyOne());
+
+    uint32_t dwFlags;
+    IfFailThrow(p.GetData(&dwFlags));
+
+    uint32_t dwExpectedSize;
+    IfFailThrow(p.GetData(&dwExpectedSize));
+
+    if (((dwFlags & READYTORUN_LAYOUT_GCLayout) == 0)
+        || ((dwFlags & READYTORUN_LAYOUT_Alignment_Native) == 0)
+        || ((dwExpectedSize % TARGET_POINTER_SIZE) != 0))
+    {
+        return nullptr;
+    }
+
+    if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
+    {
+        // No GC references, don't read a bitmap
+        return ::getContinuationType(dwExpectedSize, nullptr, 0, currentModule);
+    }
+    else
+    {
+        uint8_t* pGCRefMapBlob = (uint8_t*)p.GetPtr();
+        size_t objRefsSize = (dwExpectedSize / TARGET_POINTER_SIZE);
+        bool* objRefs = (bool*)_alloca(objRefsSize * sizeof(bool));
+        size_t bytesInBlob = (objRefsSize + 7) / 8;
+        // Expand bitmap to bool array for use with getContinuationType
+        for (size_t byteIndex = 0; byteIndex < bytesInBlob; byteIndex++)
+        {
+            uint8_t b = pGCRefMapBlob[byteIndex];
+            for (int bit = 0; bit < 8 && byteIndex * 8 + bit < objRefsSize; bit++)
+            {
+                objRefs[byteIndex * 8 + bit] = (b & (1 << bit)) != 0;
+            }
+        }
+        return ::getContinuationType(dwExpectedSize, objRefs, objRefsSize, currentModule);
+    }
+}
+
 
 //
 // Type layout check verifies that there was no incompatible change in the value type layout.
@@ -14166,6 +14229,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_Continuation_Layout:
+        {
+            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob, currentModule);
+            if (continuationTypeMethodTable == NULL)
+            {
+                return FALSE;
+            }
+
+            TypeHandle th = TypeHandle(continuationTypeMethodTable);
+            result = (size_t)th.AsPtr();
+        }
+        break;
+
     case READYTORUN_FIXUP_Check_FieldOffset:
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);
@@ -14304,6 +14380,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     _ASSERTE(slot < pBaseMT->GetNumVirtuals());
                     pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
+                }
+            }
+
+            // Strip off method instantiation for comparison if the method is generic virtual.
+            if (pDeclMethod->HasMethodInstantiation())
+            {
+                if (pImplMethodRuntime != NULL)
+                {
+                    pImplMethodRuntime = pImplMethodRuntime->StripMethodInstantiation();
+                }
+
+                if (pImplMethodCompiler != NULL)
+                {
+                    pImplMethodCompiler = pImplMethodCompiler->StripMethodInstantiation();
                 }
             }
 
@@ -15115,10 +15205,8 @@ EECodeInfo::EECodeInfo()
     m_pMD = NULL;
     m_relOffset = 0;
 
-#ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
     m_isFuncletCache = IsFuncletCache::NotSet;
-#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15143,9 +15231,7 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
-#ifdef FEATURE_EH_FUNCLETS
     m_isFuncletCache = IsFuncletCache::NotSet;
-#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -15165,10 +15251,7 @@ Invalid:
     m_pJM = NULL;
     m_pMD = NULL;
     m_relOffset = 0;
-
-#ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
-#endif
 }
 
 TADDR EECodeInfo::GetSavedMethodCode()
@@ -15237,8 +15320,6 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion() const
     return NativeCodeVersion(pMD);
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 // ----------------------------------------------------------------------------
 // EECodeInfo::GetMainFunctionInfo
 //
@@ -15258,9 +15339,7 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_relOffset = 0;
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
-#ifdef FEATURE_EH_FUNCLETS
     result.m_isFuncletCache = IsFuncletCache::IsNotFunclet;
-#endif
 
     return result;
 }
@@ -15309,8 +15388,6 @@ BOOL EECodeInfo::HasFrameRegister()
     return fHasFrameRegister;
 }
 #endif // defined(TARGET_AMD64)
-
-#endif // defined(FEATURE_EH_FUNCLETS)
 
 #if defined(TARGET_X86)
 

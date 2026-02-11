@@ -505,7 +505,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -536,8 +536,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 #ifdef FEATURE_COMINTEROP
 //==========================================================================================
 // get the method desc given the interface method desc on a COM implemented server
-// (if fNullOk is set then NULL is an allowable return value)
-MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk)
+MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
     CONTRACT(MethodDesc*)
     {
@@ -547,7 +546,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(fNullOk || CheckPointer(RETVAL));
+        POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
@@ -577,17 +576,12 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
 
         // The interface is not in the static class definition so we need to look at the
         // dynamic interfaces.
-        else if (FindDynamicallyAddedInterface(pItfMT))
-        {
-            // This interface was added to the class dynamically so it is implemented
-            // by the COM object. We treat this dynamically added interfaces the same
-            // way we treat COM objects. That is by using the interface vtable.
-            RETURN(pItfMD);
-        }
-        else
-        {
-            RETURN(NULL);
-        }
+        _ASSERTE(FindDynamicallyAddedInterface(pItfMT));
+
+        // This interface was added to the class dynamically so it is implemented
+        // by the COM object. We treat this dynamically added interface the same
+        // way we treat COM objects. That is by using the interface vtable.
+        RETURN(pItfMD);
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -2045,16 +2039,16 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
 #endif // _DEBUG && LOGGING
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout, MethodTable** pByValueClassCache)
+bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelper *helperPtr, bool useNativeLayout, MethodTable** pByValueClassCache)
 {
     if (useNativeLayout)
     {
         _ASSERTE(pByValueClassCache == NULL);
-        return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
+        return ClassifyEightBytesWithNativeLayout(helperPtr, 0, 0, GetNativeLayoutInfo());
     }
     else
     {
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, pByValueClassCache);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, 0, 0, useNativeLayout, pByValueClassCache);
     }
 }
 
@@ -2117,7 +2111,7 @@ static MethodTable* ByValueClassCacheLookup(MethodTable** pByValueClassCache, un
 }
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
+bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelper *helperPtr,
                                                      unsigned int nestingLevel,
                                                      unsigned int startOffsetOfStruct,
                                                      bool useNativeLayout,
@@ -2326,7 +2320,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 }
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
+bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelper *helperPtr,
                                                     unsigned int nestingLevel,
                                                     unsigned int startOffsetOfStruct,
                                                     EEClassNativeLayoutInfo const* pNativeLayoutInfo)
@@ -2575,7 +2569,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 }
 
 // Assigns the classification types to the array with eightbyte types.
-void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const
+void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelper *helperPtr, unsigned int nestingLevel) const
 {
     static const size_t CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS = CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
     static_assert(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
@@ -2717,7 +2711,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 
         for (unsigned int currentEightByte = 0; currentEightByte < usedEightBytes; currentEightByte++)
         {
-            unsigned int eightByteSize = accumulatedSizeForEightBytes < (SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES * (currentEightByte + 1))
+            uint8_t eightByteSize = accumulatedSizeForEightBytes < (SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES * (currentEightByte + 1))
                 ? accumulatedSizeForEightBytes % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES
                 :   SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
 
@@ -2726,7 +2720,8 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
             helperPtr->eightByteOffsets[currentEightByte] = currentEightByte * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
         }
 
-        helperPtr->eightByteCount = usedEightBytes;
+        _ASSERTE(usedEightBytes <= 255);
+        helperPtr->eightByteCount = (uint8_t)usedEightBytes;
 
         _ASSERTE(helperPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 

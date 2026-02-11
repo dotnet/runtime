@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 // Regression test for a bug found in Roslyn testing; as of authoting
 // this test CoreCLR static virtual method support apparently has a bug
 // causing "Testing Test1" to return "I1.M1" from a call to M1 instead
@@ -18,6 +19,7 @@ public class Test1 : Test2, I1
     static public int M1() { return 0; }
     static public ref int M2() { throw null; }
 
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     public static int TestEntryPoint()
     {

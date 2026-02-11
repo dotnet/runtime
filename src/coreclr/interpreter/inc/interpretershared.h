@@ -14,8 +14,8 @@
 #define INTERP_API __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
 
-#define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
-#define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
+#define INTERP_STACK_SLOT_SIZE 8u    // Alignment of each var offset on the interpreter stack
+#define INTERP_STACK_ALIGNMENT 16u   // Alignment of interpreter stack at the start of a frame
 
 struct InterpHelperData {
     uint32_t addressDataItemIndex : 29;
@@ -45,11 +45,12 @@ struct InterpMethod
     CallStubHeader *pCallStub;
     bool initLocals;
     bool unmanagedCallersOnly;
+    bool publishSecretStubParam;
 
 #ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
-        void** pDataItems, bool initLocals, bool unmanagedCallersOnly
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly, bool publishSecretStubParam
     )
     {
 #if DEBUG
@@ -61,6 +62,7 @@ struct InterpMethod
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
         this->unmanagedCallersOnly = unmanagedCallersOnly;
+        this->publishSecretStubParam = publishSecretStubParam;
         pCallStub = NULL;
     }
 #endif
@@ -212,7 +214,7 @@ struct InterpAsyncSuspendData
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreExecutionContextMethod);
-    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsMethod);
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
 };
 
 #endif

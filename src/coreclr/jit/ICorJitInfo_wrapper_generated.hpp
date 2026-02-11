@@ -1310,15 +1310,6 @@ void WrapICorJitInfo::getFunctionFixedEntryPoint(
     API_LEAVE(getFunctionFixedEntryPoint);
 }
 
-CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    API_ENTER(getLazyStringLiteralHelper);
-    CorInfoHelpFunc temp = wrapHnd->getLazyStringLiteralHelper(handle);
-    API_LEAVE(getLazyStringLiteralHelper);
-    return temp;
-}
-
 CORINFO_MODULE_HANDLE WrapICorJitInfo::embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection)
@@ -1755,6 +1746,16 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE WrapICorJitInfo::getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize)
+{
+    API_ENTER(getWasmTypeSymbol);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = wrapHnd->getWasmTypeSymbol(types, typesSize);
+    API_LEAVE(getWasmTypeSymbol);
     return temp;
 }
 

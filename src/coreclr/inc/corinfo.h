@@ -367,8 +367,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
-    CORINFO_HELP_STRCNS,            // create a new string literal
-
     /* Object model */
 
     CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -481,6 +479,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
+    CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE,
 
     /* Debugger */
 
@@ -575,6 +574,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
@@ -636,6 +636,17 @@ enum CorInfoType
 
     CORINFO_TYPE_VAR             = 0x16,
     CORINFO_TYPE_COUNT,                         // number of jit types
+};
+
+// Used by Wasm RyuJIT to represent native WebAssembly types and exchanged via some JIT-EE APIs
+enum CorInfoWasmType
+{
+    CORINFO_WASM_TYPE_VOID = 0x40,
+    CORINFO_WASM_TYPE_V128 = 0x7B,
+    CORINFO_WASM_TYPE_F64  = 0x7C,
+    CORINFO_WASM_TYPE_F32  = 0x7D,
+    CORINFO_WASM_TYPE_I64  = 0x7E,
+    CORINFO_WASM_TYPE_I32  = 0x7F,
 };
 
 enum CorInfoTypeWithMod
@@ -985,6 +996,7 @@ typedef struct CORINFO_ARG_LIST_STRUCT_*    CORINFO_ARG_LIST_HANDLE;    // repre
 typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
 typedef struct CORINFO_GENERIC_STRUCT_*     CORINFO_GENERIC_HANDLE;     // a generic handle (could be any of the above)
+typedef struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_* CORINFO_WASM_TYPE_SYMBOL_HANDLE; // a handle for WASM type symbols
 
 // what is actually passed on the varargs call
 typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
@@ -1542,7 +1554,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
 {
     CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
     CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
     CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
     CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
     CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1580,7 +1592,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
-    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    // - needsMethodContext is set TRUE if the devirtualized method may require a method context
     //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
@@ -1589,7 +1601,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            needsMethodContext;
 };
 
 //----------------------------------------------------------------------------
@@ -2379,7 +2391,10 @@ public:
             CORINFO_RESOLVED_TOKEN *    pResolvedToken /* IN  */) = 0;
 
     // Returns (sub)string length and content (can be null for dynamic context)
-    // for given metaTOK and module, length `-1` means input is incorrect
+    // for given metaTOK and module, length `-1` means input is incorrect.
+    //
+    // Return value: The actual length of the (sub)string. Note that this may be larger
+    // than bufferSize, in which case only bufferSize characters are copied to buffer.
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
@@ -3237,12 +3252,6 @@ public:
             CORINFO_CONST_LOOKUP *  pResult
             ) = 0;
 
-    // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-    // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-    virtual CorInfoHelpFunc getLazyStringLiteralHelper(
-            CORINFO_MODULE_HANDLE   handle
-            ) = 0;
-
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(
             CORINFO_MODULE_HANDLE   handle,
             void                  **ppIndirection = NULL
@@ -3462,6 +3471,11 @@ public:
     // but for tailcalls, the contract is that JIT leaves the indirection cell in
     // a register during tailcall.
     virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
+
+    virtual CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
+        CorInfoWasmType*          types,
+        size_t                    typesSize
+        ) = 0;
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };

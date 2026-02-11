@@ -6,7 +6,7 @@ using System.Diagnostics.Tracing;
 namespace Mono.Linker
 {
     [EventSource(Name = "Microsoft-DotNET-Linker")]
-    sealed class LinkerEventSource : EventSource
+    internal sealed partial class LinkerEventSource : EventSource
     {
         public static LinkerEventSource Log { get; } = new LinkerEventSource();
 

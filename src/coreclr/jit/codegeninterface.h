@@ -30,15 +30,6 @@
 class CodeGenInterface;
 class emitter;
 
-// Small helper types
-
-//-------------------- Register selection ---------------------------------
-
-struct RegState
-{
-    regMaskTP rsCalleeRegArgMaskLiveIn; // mask of register arguments (live on entry to method)
-};
-
 //-------------------- CodeGenInterface ---------------------------------
 // interface to hide the full CodeGen implementation from rest of Compiler
 
@@ -69,7 +60,7 @@ public:
 
     Compiler* GetCompiler() const
     {
-        return compiler;
+        return m_compiler;
     }
 
 #if defined(TARGET_AMD64)
@@ -153,17 +144,16 @@ public:
                                    unsigned* mulPtr,
                                    ssize_t*  cnsPtr) = 0;
 
-    GCInfo   gcInfo;
-    RegSet   regSet;
-    RegState intRegState;
-    RegState floatRegState;
+    GCInfo    gcInfo;
+    RegSet    regSet;
+    regMaskTP calleeRegArgMaskLiveIn; // Mask of register arguments live on entry to the (root) method.
 
 #if HAS_FIXED_REGISTER_SET
     NodeInternalRegisters internalRegisters;
 #endif
 
 protected:
-    Compiler* compiler;
+    Compiler* m_compiler;
     bool      m_genAlignLoops;
 
 private:
@@ -253,6 +243,42 @@ public:
     {
         m_cgFrameRequired = value;
     }
+
+#if !HAS_FIXED_REGISTER_SET
+private:
+    // For targets without a fixed SP/FP, these are the registers with which they are associated.
+    PhasedVar<regNumber> m_cgStackPointerReg = REG_NA;
+    PhasedVar<regNumber> m_cgFramePointerReg = REG_NA;
+
+public:
+    void SetStackPointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgStackPointerReg = reg;
+    }
+    void SetFramePointerReg(regNumber reg)
+    {
+        assert(reg != REG_NA);
+        m_cgFramePointerReg = reg;
+    }
+    regNumber GetStackPointerReg() const
+    {
+        return m_cgStackPointerReg;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return m_cgFramePointerReg;
+    }
+#else  // HAS_FIXED_REGISTER_SET
+    regNumber GetStackPointerReg() const
+    {
+        return REG_SPBASE;
+    }
+    regNumber GetFramePointerReg() const
+    {
+        return REG_FPBASE;
+    }
+#endif // HAS_FIXED_REGISTER_SET
 
 public:
     int genCallerSPtoFPdelta() const;
@@ -347,6 +373,16 @@ public:
     }
 
 #endif // !DOUBLE_ALIGN
+
+#ifdef TARGET_WASM
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
+#endif
 
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't
@@ -779,7 +815,7 @@ public:
         unsigned int m_LiveDscCount;  // count of args, special args, and IL local variables to report home
         unsigned int m_LiveArgsCount; // count of arguments to report home
 
-        Compiler* m_Compiler;
+        Compiler* m_compiler;
 
         VariableLiveDescriptor* m_vlrLiveDsc; // Array of descriptors that manage VariableLiveRanges.
                                               // Its indices correspond to lvaTable indexes (or lvSlotNum).

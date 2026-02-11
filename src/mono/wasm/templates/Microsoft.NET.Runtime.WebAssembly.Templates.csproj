@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+
     <PackageType>Template</PackageType>
     <!-- when changing the net version also change it in template.json in the templates -->
-    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net10</PackageId>
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net11</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
     <Description>Templates to create WebAssembly projects.</Description>
     <PackageTags>dotnet-new;templates</PackageTags>
-
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>

@@ -105,7 +105,11 @@ namespace System.Diagnostics.Tests
         {
             yield return new object[] { new StackFrame(), "MoveNext at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new StackFrame("FileName", 1, 2), "MoveNext at offset {offset} in file:line:column FileName:1:2" + Environment.NewLine };
-            yield return new object[] { new StackFrame(int.MaxValue), "<null>" + Environment.NewLine };
+
+            // https://github.com/dotnet/runtime/issues/103218
+            if (!PlatformDetection.IsNativeAot)
+                yield return new object[] { new StackFrame(int.MaxValue), "<null>" + Environment.NewLine };
+
             yield return new object[] { GenericMethod<string>(), "GenericMethod<T> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { GenericMethod<string, int>(), "GenericMethod<T,U> at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
             yield return new object[] { new ClassWithConstructor().StackFrame, ".ctor at offset {offset} in file:line:column {fileName}:{lineNumber}:{column}" + Environment.NewLine };
@@ -113,7 +117,6 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15186", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103156", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(StackFrame stackFrame, string expectedToString)
         {

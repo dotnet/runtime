@@ -188,37 +188,7 @@ MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
     return pMT;
 }
 
-MethodTable* AsyncContinuationsManager::CreateNewContinuationMethodTable(
-    unsigned dataSize,
-    const bool* objRefs,
-    MethodDesc* asyncMethod,
-    AllocMemTracker* pamTracker)
-{
-    MethodTable* pMT = CreateNewContinuationMethodTable(
-        dataSize,
-        objRefs,
-        GetOrCreateSingletonSubContinuationEEClass(),
-        m_allocator,
-        asyncMethod->GetLoaderModule(),
-        pamTracker);
-
-#ifdef DEBUG
-    StackSString debugName;
-    PrintContinuationName(
-        pMT,
-        [&](LPCSTR str, LPCWSTR wstr) { debugName.AppendUTF8(str); },
-        [&](unsigned num) { debugName.AppendPrintf("%u", num); });
-    const char* debugNameUTF8 = debugName.GetUTF8();
-    size_t len = strlen(debugNameUTF8) + 1;
-    char* name = (char*)pamTracker->Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
-    strcpy_s(name, len, debugNameUTF8);
-    pMT->SetDebugClassName(name);
-#endif
-
-    return pMT;
-}
-
-MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, MethodDesc* asyncMethod)
+MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(unsigned dataSize, const bool* objRefs, Module* loaderModule)
 {
     STANDARD_VM_CONTRACT;
 
@@ -237,7 +207,27 @@ MethodTable* AsyncContinuationsManager::LookupOrCreateContinuationMethodTable(un
 #endif
 
     AllocMemTracker amTracker;
-    MethodTable* pNewMT = CreateNewContinuationMethodTable(dataSize, objRefs, asyncMethod, &amTracker);
+    MethodTable* pNewMT = CreateNewContinuationMethodTable(
+        dataSize,
+        objRefs,
+        GetOrCreateSingletonSubContinuationEEClass(),
+        m_allocator,
+        loaderModule,
+        &amTracker);
+
+#ifdef DEBUG
+    StackSString debugName;
+    PrintContinuationName(
+        pNewMT,
+        [&](LPCSTR str, LPCWSTR wstr) { debugName.AppendUTF8(str); },
+        [&](unsigned num) { debugName.AppendPrintf("%u", num); });
+    const char* debugNameUTF8 = debugName.GetUTF8();
+    size_t len = strlen(debugNameUTF8) + 1;
+    char* name = (char*)amTracker.Track(m_allocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(len)));
+    strcpy_s(name, len, debugNameUTF8);
+    pNewMT->SetDebugClassName(name);
+#endif
+
     MethodTable* pReturnedMT = pNewMT;
     {
         CrstHolder lock(&m_layoutsLock);

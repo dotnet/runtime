@@ -348,9 +348,6 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
 BOOL CLRFreeLibrary(HMODULE hModule);
 
-// Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
-
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
 // your class.
@@ -369,125 +366,14 @@ private:
 };
 
 //*****************************************************************************
-// Must associate each handle to an instance of a resource dll with the int
-// that it represents
-//*****************************************************************************
-typedef HINSTANCE HRESOURCEDLL;
-
-
-class CCulturedHInstance
-{
-    HRESOURCEDLL    m_hInst;
-    BOOL            m_fMissing;
-
-public:
-    CCulturedHInstance()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hInst = NULL;
-        m_fMissing = FALSE;
-    }
-
-    HRESOURCEDLL GetLibraryHandle()
-    {
-        return m_hInst;
-    }
-
-    BOOL IsSet()
-    {
-        return m_hInst != NULL;
-    }
-
-    BOOL IsMissing()
-    {
-        return m_fMissing;
-    }
-
-    void SetMissing()
-    {
-        _ASSERTE(m_hInst == NULL);
-        m_fMissing = TRUE;
-    }
-
-    void Set(HRESOURCEDLL hInst)
-    {
-        _ASSERTE(m_hInst == NULL);
-        _ASSERTE(m_fMissing == FALSE);
-        m_hInst = hInst;
-    }
- };
-
-//*****************************************************************************
-// CCompRC manages string Resource access for CLR. This includes loading
-// the MsCorRC.dll for resources. No localization is supported.
+// CCompRC manages string Resource access for CLR.
 //*****************************************************************************
 class CCompRC
 {
 public:
 
-    enum ResourceCategory
-    {
-        // must be present
-        Required,
-
-        // present in Desktop CLR and Core CLR + debug pack, an error
-        // If missing, get a generic error message instead
-        Error,
-
-        // present in Desktop CLR and Core CLR + debug pack, normal operation (e.g tracing)
-        // if missing, get a generic "resource not found" message instead
-        Debugging,
-
-        // present in Desktop CLR, optional for CoreCLR
-        DesktopCLR,
-
-        // might not be present, non essential
-        Optional
-    };
-
-    CCompRC()
-    {
-        // This constructor will be fired up on startup. Make sure it doesn't
-        // do anything besides zero-out out values.
-        m_csMap = NULL;
-        m_pResourceFile = NULL;
-    }// CCompRC
-
-    HRESULT Init(LPCWSTR pResourceFile);
-    void Destroy();
-
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-
-    // Get the default resource location (mscorrc.dll)
-    static CCompRC* GetDefaultResourceDll();
-
-private:
-// String resources packaged as PE files only exist on Windows
-#ifdef HOST_WINDOWS
-    HRESULT GetLibrary(HRESOURCEDLL* phInst);
-#ifndef DACCESS_COMPILE
-    HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString& rcPath);
-    HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
-    HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
-    HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif // DACCESS_COMPILE
-#endif // HOST_WINDOWS
-
-    // We do not have global constructors any more
-    static LONG     m_dwDefaultInitialized;
-    static CCompRC  m_DefaultResourceDll;
-    static LPCWSTR  m_pDefaultResource;
-
-    // Use a singleton since we don't support localization any more.
-    CCulturedHInstance m_Primary;
-
-    CRITSEC_COOKIE m_csMap;
-
-    LPCWSTR m_pResourceFile;
+    static HRESULT LoadString(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to
@@ -610,7 +496,14 @@ void    SplitPathInterior(
     _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt);
 
 
-#include "ostype.h"
+#ifdef HOST_64BIT
+inline BOOL RunningInWow64()
+{
+    return FALSE;
+}
+#else
+BOOL RunningInWow64();
+#endif
 
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
@@ -621,11 +514,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
-
-//
-// Allocate free memory with specific alignment
-//
-LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
 
 #ifdef HOST_WINDOWS
 
@@ -830,9 +718,9 @@ public:
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ 0 }
-        , m_iSize{ 0 }
-        , m_pTable{ NULL}
+        : m_iCount{ other.m_iCount }
+        , m_iSize{ other.m_iSize }
+        , m_pTable{ other.m_pTable }
     {
         LIMITED_METHOD_CONTRACT;
         other.m_iCount = 0;
@@ -2876,70 +2764,6 @@ private:
 
 private:
     DWORD  m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigString
-{
-public:
-    inline LPWSTR val(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-        return m_value;
-    }
-
-    bool isInitialized()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        return m_inited == 1;
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    LPWSTR m_value;
-    BYTE m_inited;
-};
-
-/**************************************************************************/
-class ConfigMethodSet
-{
-public:
-    bool isEmpty()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(m_inited == 1);
-        return m_list.IsEmpty();
-    }
-
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
-
-    inline void ensureInit(const CLRConfig::ConfigStringInfo & info)
-    {
-        WRAPPER_NO_CONTRACT;
-        // make sure that the memory was zero initialized
-        _ASSERTE(m_inited == 0 || m_inited == 1);
-
-        if (!m_inited) init(info);
-    }
-
-private:
-    void init(const CLRConfig::ConfigStringInfo & info);
-
-private:
-    MethodNamesListBase m_list;
-
     BYTE m_inited;
 };
 

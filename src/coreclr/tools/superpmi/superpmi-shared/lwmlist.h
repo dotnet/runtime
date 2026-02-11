@@ -98,7 +98,6 @@ LWM(GetHFAType, DWORDLONG, DWORD)
 LWM(GetIntConfigValue, Agnostic_ConfigIntInfo, DWORD)
 LWM(GetJitFlags, DWORD, DD)
 LWM(GetJustMyCodeHandle, DWORDLONG, DLDL)
-LWM(GetLazyStringLiteralHelper, DWORDLONG, DWORD)
 LWM(GetLocationOfThisType, DWORDLONG, Agnostic_CORINFO_LOOKUP_KIND)
 LWM(IsIntrinsic, DWORDLONG, DWORD)
 LWM(NotifyMethodInfoUsage, DWORDLONG, DWORD)
@@ -172,6 +171,7 @@ LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
+LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
 
 #undef LWM
 #undef DENSELWM

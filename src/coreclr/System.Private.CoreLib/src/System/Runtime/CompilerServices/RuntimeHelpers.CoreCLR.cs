@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -467,25 +468,55 @@ namespace System.Runtime.CompilerServices
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
-        /// <summary>
-        /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="Type"/> is unloaded.
-        /// </summary>
-        /// <param name="type">Type associated with the allocated memory.</param>
-        /// <param name="size">Amount of memory in bytes to allocate.</param>
-        /// <returns>The allocated memory</returns>
+        /// <summary>Allocates memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <returns>The allocated memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType rt)
+            {
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
+        /// <summary>Allocates aligned memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <param name="alignment">The alignment, in bytes, of the memory to allocate. This must be a power of <c>2</c>.</param>
+        /// <returns>The allocated aligned memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
+        /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
+        {
+            if (type is not RuntimeType rt)
+            {
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            if (!BitOperations.IsPow2(alignment))
+            {
+                // The C standard doesn't define what a valid alignment is, however Windows and POSIX implementation requires a power of 2
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
+            }
+
+            return AllocateTypeAssociatedMemoryAligned(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
+        }
+
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
+
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
+        private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
