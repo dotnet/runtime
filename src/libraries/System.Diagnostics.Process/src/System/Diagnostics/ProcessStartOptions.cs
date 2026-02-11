@@ -31,11 +31,7 @@ namespace System.Diagnostics
         public IList<string> Arguments
         {
             get => _arguments ??= new List<string>();
-            set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-                _arguments = value;
-            }
+            set => _arguments = value;
         }
 
         /// <summary>
@@ -95,11 +91,7 @@ namespace System.Diagnostics
         public IList<SafeHandle> InheritedHandles
         {
             get => _inheritedHandles ??= new List<SafeHandle>();
-            set
-            {
-                ArgumentNullException.ThrowIfNull(value);
-                _inheritedHandles = value;
-            }
+            set => _inheritedHandles = value;
         }
 
         /// <summary>
@@ -142,21 +134,6 @@ namespace System.Diagnostics
         /// <exception cref="FileNotFoundException">Thrown when <paramref name="filename"/> cannot be resolved to an existing file.</exception>
         internal static string ResolvePath(string filename)
         {
-#if WINDOWS
-            return ResolvePathWindows(filename);
-#else
-            string? resolved = Process.ResolvePath(filename);
-            if (resolved == null)
-            {
-                throw new FileNotFoundException("Could not resolve the file.", filename);
-            }
-            return resolved;
-#endif
-        }
-
-#if WINDOWS
-        private static string ResolvePathWindows(string filename)
-        {
             // If the filename is a complete path, use it, regardless of whether it exists.
             if (Path.IsPathRooted(filename))
             {
@@ -165,6 +142,7 @@ namespace System.Diagnostics
                 return filename;
             }
 
+#if WINDOWS
             // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
             // "If the file name does not contain an extension, .exe is appended.
             // Therefore, if the file name extension is .com, this parameter must include the .com extension.
@@ -175,6 +153,7 @@ namespace System.Diagnostics
             {
                 filename += ".exe";
             }
+#endif
 
             // Then check the executable's directory
             string? path = System.Environment.ProcessPath;
@@ -183,7 +162,11 @@ namespace System.Diagnostics
                 try
                 {
                     path = Path.Combine(Path.GetDirectoryName(path)!, filename);
+#if WINDOWS
                     if (File.Exists(path))
+#else
+                    if (IsExecutableFile(path))
+#endif
                     {
                         return path;
                     }
@@ -193,11 +176,16 @@ namespace System.Diagnostics
 
             // Then check the current directory
             path = Path.Combine(Directory.GetCurrentDirectory(), filename);
+#if WINDOWS
             if (File.Exists(path))
+#else
+            if (IsExecutableFile(path))
+#endif
             {
                 return path;
             }
 
+#if WINDOWS
             // Windows-specific search locations (from CreateProcessW documentation)
 
             // Check the system directory (e.g., System32)
@@ -229,9 +217,10 @@ namespace System.Diagnostics
                     return path;
                 }
             }
+#endif
 
             // Then check each directory listed in the PATH environment variables
-            return FindProgramInPathWindows(filename);
+            return FindProgramInPath(filename);
         }
 
         /// <summary>
@@ -240,17 +229,22 @@ namespace System.Diagnostics
         /// <param name="program">The program name.</param>
         /// <returns>The full path to the program.</returns>
         /// <exception cref="FileNotFoundException">Thrown when the program cannot be found in PATH.</exception>
-        private static string FindProgramInPathWindows(string program)
+        private static string FindProgramInPath(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
-                var pathParser = new StringParser(pathEnvVar, ';', skipEmpty: true);
+#if WINDOWS
+                char pathSeparator = ';';
+#else
+                char pathSeparator = ':';
+#endif
+                var pathParser = new StringParser(pathEnvVar, pathSeparator, skipEmpty: true);
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
                     string path = Path.Combine(subPath, program);
-                    if (File.Exists(path))
+                    if (IsExecutableFile(path))
                     {
                         return path;
                     }
@@ -259,6 +253,18 @@ namespace System.Diagnostics
 
             throw new FileNotFoundException("Could not resolve the file.", program);
         }
+
+        private static bool IsExecutableFile(string path)
+        {
+#if WINDOWS
+            return File.Exists(path);
+#else
+            return Process.IsExecutable(path);
+#endif
+        }
+
+#if !WINDOWS
+        // Unix executable checking is in Process.IsExecutable
 #endif
 
 #if WINDOWS
