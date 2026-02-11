@@ -80,20 +80,27 @@ namespace ILCompiler.ObjectWriter
             writer.Advance(WriteSLEB128(buffer, value));
         }
 
-        public static void WritePaddedULEB128(Span<byte> buffer, ulong value)
+        public static void WritePaddedULEB128(Span<byte> bytes, ulong value)
         {
-            uint actualSize = SizeOfULEB128(value);
-            int paddingByteCount = buffer.Length - (int)actualSize;
-            buffer.Slice(0, paddingByteCount).Fill(0x80);
-            WriteULEB128(buffer.Slice(paddingByteCount), value);
+            int actualSize = WriteULEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill(0x80);
+                bytes[bytes.Length - 1] = 0x00;
+            }
         }
 
-        public static void WritePaddedSLEB128(Span<byte> buffer, long value)
+        public static void WritePaddedSLEB128(Span<byte> bytes, long value)
         {
-            uint actualSize = SizeOfSLEB128(value);
-            int paddingByteCount = buffer.Length - (int)actualSize;
-            buffer.Slice(0, paddingByteCount).Fill((byte)(value < 0 ? 0xFF : 0x80));
-            WriteSLEB128(buffer.Slice(paddingByteCount), value);
+            int actualSize = WriteSLEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                byte padValue = value < 0 ? (byte)0x7f : (byte)0x00;
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill((byte)(padValue | 0x80));
+                bytes[bytes.Length - 1] = padValue;
+            }
         }
 
         public static ulong ReadULEB128(ReadOnlySpan<byte> buffer)
