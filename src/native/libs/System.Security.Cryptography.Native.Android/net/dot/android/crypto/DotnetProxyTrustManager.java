@@ -64,7 +64,9 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
     }
 
     public X509Certificate[] getAcceptedIssuers() {
-        return platformTrustManager.getAcceptedIssuers();
+        // Return an empty array to avoid restricting which client certificates the TLS layer
+        // considers acceptable. The actual trust validation is done in checkServerTrusted/checkClientTrusted.
+        return new X509Certificate[0];
     }
 
     static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, boolean chainTrustedByPlatform);

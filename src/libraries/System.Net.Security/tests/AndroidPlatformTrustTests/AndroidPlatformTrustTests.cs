@@ -170,6 +170,83 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task SslStream_DomainNotInConfig_CallbackReceivesChainErrors()
+        {
+            // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
+            // The client connects with a domain NOT listed in network_security_config.xml,
+            // so the base-config applies (system CAs only). The platform trust manager rejects
+            // because the NDX Test Root CA is not a system CA. This simulates a certificate
+            // pinning scenario: the cert chain is valid (signed by a known CA) but the platform
+            // rejects based on its trust configuration.
+            //
+            // The callback must receive RemoteCertificateChainErrors so the application
+            // knows the platform rejected the certificate.
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "otherdomain.contoso.com",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    }
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.True(
+                (reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors) != 0,
+                $"Expected RemoteCertificateChainErrors but got: {reportedErrors.Value}");
+        }
+
+        [Fact]
+        public async Task SslStream_UntrustedCertificateWithoutCallback_ThrowsAuthenticationException()
+        {
+            // When the platform trust manager rejects and no callback is provided,
+            // the connection must fail. This verifies that platform trust rejection
+            // (e.g. certificate pinning) is enforced even without a user callback.
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetSelfSignedServerCertificate())
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testservereku.contoso.com",
+                };
+
+                Task serverTask = server.AuthenticateAsServerAsync(serverOptions);
+                await Assert.ThrowsAsync<AuthenticationException>(() =>
+                    client.AuthenticateAsClientAsync(clientOptions));
+
+                try { await serverTask.WaitAsync(TimeSpan.FromSeconds(5)); }
+                catch { }
+            }
+        }
+
         private static (SslStream client, SslStream server) GetConnectedSslStreams()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

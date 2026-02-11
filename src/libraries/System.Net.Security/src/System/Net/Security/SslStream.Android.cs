@@ -11,18 +11,36 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
-            // If the platform's trust manager rejected the certificate chain,
-            // report RemoteCertificateChainErrors so the callback can handle it.
-            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform
+            // When the platform's trust manager rejected the chain AND the managed
+            // chain builder is using system trust (not CustomRootTrust), pre-inject
+            // RemoteCertificateChainErrors. This is critical for scenarios like certificate
+            // pinning via network-security-config.xml: the platform rejects the pin mismatch,
+            // but the managed chain builder (which doesn't know about pins) would accept the
+            // chain as valid. Without pre-injection, pinning would be silently bypassed.
+            //
+            // When CustomRootTrust is configured, the user has explicitly provided their own
+            // trust anchors. The platform's rejection is expected (it doesn't know about custom
+            // roots) and the managed chain builder's assessment should be authoritative.
+            bool ignorePlatformTrustManager =
+                _sslAuthenticationOptions.CertificateContext?.Trust is not null
+                || _sslAuthenticationOptions.CertificateChainPolicy?.TrustMode == X509ChainTrustMode.CustomRootTrust;
+
+            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform || ignorePlatformTrustManager
                 ? SslPolicyErrors.None
                 : SslPolicyErrors.RemoteCertificateChainErrors;
 
+            bool platformTrustIsAuthoritative = chainTrustedByPlatform && !ignorePlatformTrustManager;
+
             ProtocolToken alertToken = default;
 
-            RemoteCertificateValidationCallback? userCallback = _sslAuthenticationOptions.CertValidationDelegate;
-            RemoteCertificateValidationCallback? effectiveCallback = userCallback;
+            var isValid = VerifyRemoteCertificate(
+                _sslAuthenticationOptions.CertValidationDelegate,
+                _sslAuthenticationOptions.CertificateContext?.Trust,
+                ref alertToken,
+                ref sslPolicyErrors,
+                out X509ChainStatusFlags chainStatus);
 
-            if (chainTrustedByPlatform)
+            if (platformTrustIsAuthoritative)
             {
                 // The platform's trust manager (which respects network-security-config.xml)
                 // already validated the certificate chain. The managed X509 chain builder may
@@ -30,27 +48,18 @@ namespace System.Net.Security
                 // is not in the managed certificate store (e.g. PartialChain or UntrustedRoot).
                 // Strip chain errors — the platform's assessment is authoritative for chain trust.
                 //
-                // We wrap (or provide) the callback so that:
-                // 1. User callbacks see errors without spurious RemoteCertificateChainErrors.
-                // 2. When no user callback is set, the default "accept if no errors" logic
-                //    doesn't reject connections that the platform already accepted.
-                effectiveCallback = userCallback is not null
-                    ? (sender, certificate, chain, errors) =>
-                        userCallback(sender, certificate, chain, errors & ~SslPolicyErrors.RemoteCertificateChainErrors)
-                    : (sender, certificate, chain, errors) =>
-                        (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) == SslPolicyErrors.None;
-            }
-
-            var isValid = VerifyRemoteCertificate(
-                effectiveCallback,
-                _sslAuthenticationOptions.CertificateContext?.Trust,
-                ref alertToken,
-                ref sslPolicyErrors,
-                out X509ChainStatusFlags chainStatus);
-
-            if (chainTrustedByPlatform)
-            {
+                // When CustomRootTrust is configured, the managed chain builder's assessment
+                // is authoritative and its chain errors are real, not false positives.
                 sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
+
+                if (!isValid && sslPolicyErrors == SslPolicyErrors.None)
+                {
+                    // The connection was rejected only because of chain errors that the platform
+                    // already validated. Re-evaluate: accept if there's no user callback, or
+                    // re-invoke the user callback with the corrected errors.
+                    isValid = _sslAuthenticationOptions.CertValidationDelegate?.Invoke(
+                        this, _remoteCertificate, null, sslPolicyErrors) ?? true;
+                }
             }
 
             return new()

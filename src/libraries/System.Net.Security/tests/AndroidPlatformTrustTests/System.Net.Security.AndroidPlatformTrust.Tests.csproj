@@ -35,12 +35,8 @@
 
     <MakeDir Directories="$(_NetworkSecurityConfigDir)/res/raw" />
 
-    <!-- Extract root CA from PKCS#7 bundle and convert to DER -->
-    <Exec Condition="'$(OS)' == 'Windows_NT'"
-          Command="powershell -NoProfile -Command &quot;$$tmp = Join-Path '$(_NetworkSecurityConfigDir)' 'contoso-root.pem'; $$p7b = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2Collection; $$p7b.Import('$(_CaCertP7bPath)'); $$root = $$p7b | Where-Object { $_.Subject -eq $_.Issuer } | Select-Object -First 1; if (-not $$root) { throw 'Root CA not found in contoso.com.p7b'; } [System.IO.File]::WriteAllBytes('$(_CaCertDerPath)', $$root.RawData)&quot;" />
-
-    <Exec Condition="'$(OS)' != 'Windows_NT'"
-          Command="openssl pkcs7 -inform DER -in '$(_CaCertP7bPath)' -print_certs | awk 'BEGIN{emit=0} /^subject=CN=NDX Test Root CA/{emit=1} emit{print}' | openssl x509 -outform DER -out '$(_CaCertDerPath)'" />
+    <!-- Extract root CA from PKCS#7 bundle and write as DER -->
+    <ExtractRootCA P7bPath="$(_CaCertP7bPath)" OutputPath="$(_CaCertDerPath)" />
 
     <!-- Copy network_security_config.xml to the intermediate directory -->
     <Copy SourceFiles="$(MSBuildThisFileDirectory)network_security_config.xml"
@@ -53,5 +49,33 @@
     <NetworkSecurityConfig>$(IntermediateOutputPath)network-security-config/network_security_config.xml</NetworkSecurityConfig>
     <NetworkSecurityConfigResourcesDir>$(IntermediateOutputPath)network-security-config/res</NetworkSecurityConfigResourcesDir>
   </PropertyGroup>
+
+  <UsingTask TaskName="ExtractRootCA" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <P7bPath ParameterType="System.String" Required="true" />
+      <OutputPath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.Security.Cryptography.X509Certificates" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        var collection = new X509Certificate2Collection();
+        collection.Import(P7bPath);
+        X509Certificate2 root = null;
+        foreach (var cert in collection)
+        {
+            if (cert.Subject == cert.Issuer)
+            {
+                root = cert;
+                break;
+            }
+        }
+        if (root == null)
+            throw new Exception("Root CA not found in " + P7bPath);
+        System.IO.File.WriteAllBytes(OutputPath, root.RawData);
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
 
 </Project>

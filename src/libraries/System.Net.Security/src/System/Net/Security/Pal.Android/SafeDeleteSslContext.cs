@@ -297,9 +297,7 @@ namespace System.Net
             // Make sure the class instance is associated to the session and is provided in the Read/Write callback connection parameter
             // Additionally, all calls should be synchronous so there's no risk of the managed object being collected while native code is executing.
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
-            string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost)
-                ? authOptions.TargetHost
-                : null;
+            string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
             Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, &CleanupManagedContext, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
@@ -324,6 +322,11 @@ namespace System.Net
             if (isServer && authOptions.RemoteCertRequired)
             {
                 Interop.AndroidCrypto.SSLStreamRequestClientAuthentication(handle);
+            }
+
+            if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost))
+            {
+                Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
             }
         }
     }

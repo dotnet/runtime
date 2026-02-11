@@ -85,6 +85,14 @@ PALEXPORT int32_t AndroidCryptoNative_SSLStreamInitialize(
     SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, const char* peerHost);
 
 /*
+Set target host
+  - targetHost : SNI host name
+
+Returns 1 on success, 0 otherwise
+*/
+PALEXPORT int32_t AndroidCryptoNative_SSLStreamSetTargetHost(SSLStream* sslStream, const char* targetHost);
+
+/*
 Check if the local certificate has been sent to the peer during the TLS handshake.
 
 Returns true if the local certificate has been sent to the peer, false otherwise.
