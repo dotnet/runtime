@@ -1056,18 +1056,28 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     }
                 }
             }
-            else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
+            else if (normalLclVN == lenVN)
             {
-                // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
-                int indexCns = comp->vnStore->GetConstantInt32(indexVN);
-                if (indexCns >= 0)
+                if (comp->vnStore->IsVNInt32Constant(indexVN))
                 {
-                    cmpOper = GT_GT;
-                    limit   = Limit(Limit::keConstant, indexCns);
+                    // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
+                    int indexCns = comp->vnStore->GetConstantInt32(indexVN);
+                    if (indexCns >= 0)
+                    {
+                        cmpOper = GT_GT;
+                        limit   = Limit(Limit::keConstant, indexCns);
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 else
                 {
-                    continue;
+                    // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
+                    // This means the array has at least one element, so we can deduce "normalLclVN > 0".
+                    cmpOper = GT_GT;
+                    limit   = Limit(Limit::keConstant, 0);
                 }
             }
             else
