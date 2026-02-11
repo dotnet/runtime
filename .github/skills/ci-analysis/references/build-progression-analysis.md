@@ -40,11 +40,13 @@ foreach ($build in $allBuilds) {
 
 > ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
 
+> ⚠️ **Target branch moves between builds.** Each build merges `pr.sourceSha` into the target branch HEAD *at the time the build starts*. If `main` received new commits between build N and N+1, the two builds merged against different baselines — even if `pr.sourceSha` is the same. When the progression shows a transition from pass → fail, always check whether the target branch moved. Compare `sourceVersion` (the merge commit) parents, or check the target branch commit log for the time window between builds.
+
 Note: a PR may have more unique `pr.sourceSha` values than commits visible on GitHub, because force-pushes replace the commit history. Each force-push triggers a new build with a new merge commit and a new `pr.sourceSha`.
 
 ### Step 3: Build a progression table
 
-Present the facts as a table. Group builds by `pr.sourceSha` since multiple pipelines run per push:
+Present the facts as a table. Group builds by `pr.sourceSha` since multiple pipelines run per push. Include the target branch HEAD if available (from `sourceVersion` merge parents or commit timestamps) to catch baseline shifts:
 
 | PR HEAD | Builds | Result | Notes |
 |---------|--------|--------|-------|
@@ -52,6 +54,8 @@ Present the facts as a table. Group builds by `pr.sourceSha` since multiple pipe
 | 39dc0a6 | 1284433-5 | ✅ 3/3 | Added commit B |
 | f186b93 | 1286087-9 | ❌ 1/3 | Added commit C |
 | 2e74845 | 1286967-9 | ❌ 1/3 | Modified commit C |
+
+If a pass→fail transition has the **same** `pr.sourceSha`, the target branch moved — the PR didn't change, so the failure came from the new baseline. Check what merged into the target branch between those builds.
 
 ### Step 4: Present findings, not conclusions
 
@@ -90,7 +94,7 @@ Both techniques compare a failing build against a passing one:
 | **Target-branch comparison** | Recent build on the base branch (e.g., main) | "Does this test pass without the PR's changes at all?" |
 | **Build progression** | Earlier build on the same PR | "Did this test pass with the PR's *earlier* changes?" |
 
-Use target-branch comparison first to confirm the failure is PR-related. Use build progression to narrow down *which part* of the PR introduced it.
+Use target-branch comparison first to confirm the failure is PR-related. Use build progression to narrow down *which part* of the PR introduced it. If build progression shows a pass→fail transition with the same `pr.sourceSha`, the target branch is the more likely culprit — use target-branch comparison to confirm.
 
 ## Anti-Patterns
 
