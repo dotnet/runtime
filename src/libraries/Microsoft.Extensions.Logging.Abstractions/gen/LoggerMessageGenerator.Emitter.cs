@@ -530,7 +530,7 @@ namespace {lc.Namespace}
             private void GenMethodDocumentation(LoggerMethod lm, string nestedIndentation)
             {
                 string levelName = GetLogLevelName(lm);
-                string message = lm.Message;
+                string message = EscapeXml(lm.Message);
 
                 _builder.Append($@"
         {nestedIndentation}/// <summary>
@@ -544,6 +544,59 @@ namespace {lc.Namespace}
 
                 _builder.Append($@"
         {nestedIndentation}/// </summary>");
+            }
+
+            private static string EscapeXml(string text)
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    return text;
+                }
+
+                // Check if escaping is needed
+                bool needsEscaping = false;
+                foreach (char c in text)
+                {
+                    if (c == '<' || c == '>' || c == '&' || c == '"' || c == '\'')
+                    {
+                        needsEscaping = true;
+                        break;
+                    }
+                }
+
+                if (!needsEscaping)
+                {
+                    return text;
+                }
+
+                // Perform escaping
+                var sb = new StringBuilder(text.Length + 20);
+                foreach (char c in text)
+                {
+                    switch (c)
+                    {
+                        case '<':
+                            sb.Append("&lt;");
+                            break;
+                        case '>':
+                            sb.Append("&gt;");
+                            break;
+                        case '&':
+                            sb.Append("&amp;");
+                            break;
+                        case '"':
+                            sb.Append("&quot;");
+                            break;
+                        case '\'':
+                            sb.Append("&apos;");
+                            break;
+                        default:
+                            sb.Append(c);
+                            break;
+                    }
+                }
+
+                return sb.ToString();
             }
 
             private static string GetLogLevelName(LoggerMethod lm)
