@@ -239,11 +239,6 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
         break;
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
-        case GT_ARR_ELEM:
-            // Should not exist after morph.
-            assert(!"GT_ARR_ELEM should not exist after morph");
-            break;
-
         case GT_INDEX_ADDR:
             if (node->AsIndexAddr()->IsBoundsChecked())
             {
