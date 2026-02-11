@@ -130,6 +130,7 @@ namespace ILCompiler.DependencyAnalysis
             _gvmImplementations = null;
 
             byte[] streamBytes = nativeFormatWriter.Save();
+
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

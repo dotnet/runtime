@@ -47,6 +47,7 @@ namespace ILCompiler.DependencyAnalysis
             VertexHashtable hashtable = new VertexHashtable();
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
+
             foreach (MethodDesc method in factory.MetadataManager.GetExactMethodHashtableEntries())
             {
                 // Get the method pointer vertex
@@ -93,6 +94,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] streamBytes = nativeWriter.Save();
+
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

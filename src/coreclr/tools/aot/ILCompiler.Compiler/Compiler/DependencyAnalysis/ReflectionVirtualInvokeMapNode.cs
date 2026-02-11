@@ -203,6 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
+
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

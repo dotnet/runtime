@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         public int Offset => 0;
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data"u8);
@@ -304,6 +305,7 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(sourcePosition == o.Data.Length);
                 dehydratedSegmentPosition += o.Data.Length;
             }
+
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)
                 builder.EmitReloc(relocSort[i].Key, RelocType.IMAGE_REL_BASED_RELPTR32);

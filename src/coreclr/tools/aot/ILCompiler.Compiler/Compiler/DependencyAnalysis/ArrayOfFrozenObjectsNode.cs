@@ -54,6 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             // Terminate with a null pointer as expected by the GC
             AlignNextObject(ref builder, factory);
             builder.EmitZeroPointer();
+
             return builder.ToObjectData();
         }
 

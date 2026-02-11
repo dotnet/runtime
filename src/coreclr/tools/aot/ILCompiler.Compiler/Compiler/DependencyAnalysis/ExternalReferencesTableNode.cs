@@ -26,6 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             _blobName = blobName;
             _nodeFactory = nodeFactory;
         }
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_" + _blobName + "_references");
@@ -97,6 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                     builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
                 }
             }
+
             builder.AddSymbol(this);
 
             return builder.ToObjectData();

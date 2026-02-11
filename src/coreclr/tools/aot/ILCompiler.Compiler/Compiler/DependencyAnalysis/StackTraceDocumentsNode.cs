@@ -82,6 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                 bw.Write(Encoding.UTF8.GetBytes(_documents[i]));
                 bw.Write((byte)0);
             }
+
             return new ObjectData(ms.ToArray(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

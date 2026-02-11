@@ -20,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _externalReferences = externalReferences;
         }
+
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__array_type_map"u8);
@@ -61,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
+
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

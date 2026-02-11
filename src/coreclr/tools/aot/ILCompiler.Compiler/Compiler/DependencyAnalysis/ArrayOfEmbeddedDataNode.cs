@@ -16,6 +16,7 @@ namespace ILCompiler.DependencyAnalysis
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
         private List<TEmbedded> _nestedNodesList = new List<TEmbedded>();
         private IComparer<TEmbedded> _sorter;
+
         public ArrayOfEmbeddedDataNode(string mangledName, IComparer<TEmbedded> nodeSorter) : base(mangledName)
         {
             _sorter = nodeSorter;
@@ -80,6 +81,7 @@ namespace ILCompiler.DependencyAnalysis
             builder.AddSymbol(this);
 
             GetElementDataForNodes(ref builder, factory, relocsOnly);
+
             ObjectData objData = builder.ToObjectData();
             return objData;
         }

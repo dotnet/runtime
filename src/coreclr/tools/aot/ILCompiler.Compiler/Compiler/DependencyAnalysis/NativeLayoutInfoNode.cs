@@ -80,6 +80,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             SaveNativeLayoutInfoWriter(factory);
+
             return new ObjectData(_writerSavedBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
