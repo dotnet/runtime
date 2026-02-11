@@ -4556,62 +4556,22 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //
 bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 {
-    if (op->OperIs(GT_ADD) && op->AsOp()->gtGetOp2()->IsCnsIntOrI() &&
-        !fgIsBigOffset(op->AsOp()->gtGetOp2()->AsIntCon()->IconValue()))
+    // Local assertion prop
+    //
+    if (optLocalAssertionProp)
     {
-        op = op->AsOp()->gtGetOp1();
-    }
-
-    // Fast path when we have a VN
-    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()))
-    {
-        return true;
-    }
-
-    if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
-    {
-        return false;
-    }
-
-    op = op->gtEffectiveVal();
-    if (!op->OperIs(GT_LCL_VAR))
-    {
-        return false;
-    }
-
-    // If local assertion prop use lcl comparison, else use VN comparison.
-    if (!optLocalAssertionProp)
-    {
-        // Look at both the top-level vn, and
-        // the vn we get by stripping off any constant adds.
-        //
-        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
-        if (vn == ValueNumStore::NoVN)
+        if (!optCanPropNonNull || BitVecOps::MayBeUninit(assertions))
         {
             return false;
         }
 
-        ValueNum       vnBase = vn;
         target_ssize_t offset = 0;
-        vnStore->PeelOffsets(&vnBase, &offset);
-
-        // Check each assertion to find if we have a vn != null assertion.
-        //
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
+        gtPeelOffsets(&op, &offset);
+        if (fgIsBigOffset(offset) || !op->OperIs(GT_LCL_VAR))
         {
-            AssertionIndex      assertionIndex = GetAssertionIndex(index);
-            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-            if (curAssertion.CanPropNonNull() &&
-                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
-            {
-                return true;
-            }
+            return false;
         }
-    }
-    else
-    {
+
         // Find live assertions related to lclNum
         //
         unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
@@ -4630,6 +4590,54 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
                 curAssertion.GetOp1().KindIs(O1K_LCLVAR) &&    // op1
                 curAssertion.GetOp2().KindIs(O2K_CONST_INT) && // op2
                 (curAssertion.GetOp1().GetLclNum() == lclNum) && (curAssertion.GetOp2().GetIntConstant() == 0))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Global assertion prop
+    //
+    assert(!optLocalAssertionProp);
+
+    ValueNum vn = optConservativeNormalVN(op);
+    if (vn == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    // Check VN and base address for null if the offset is within the valid threshold.
+    ValueNum       vnBase = vn;
+    target_ssize_t offset = 0;
+    vnStore->PeelOffsets(&vnBase, &offset);
+    if (fgIsBigOffset(offset))
+    {
+        vnBase = vn;
+    }
+
+    // Unlike Local AP, for Global AP we focus on GC nulls (VNForNull).
+    // Relaxing this check may slightly improve coverage but risks a TP regression
+    if (!varTypeIsGC(vnStore->TypeOfVN(vn)))
+    {
+        return false;
+    }
+
+    if (vnStore->IsKnownNonNull(vnBase))
+    {
+        return true;
+    }
+
+    if (optCanPropNonNull && !BitVecOps::MayBeUninit(assertions))
+    {
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
+        {
+            AssertionIndex      assertionIndex = GetAssertionIndex(index);
+            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+            if (curAssertion.CanPropNonNull() &&
+                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
             {
                 return true;
             }
