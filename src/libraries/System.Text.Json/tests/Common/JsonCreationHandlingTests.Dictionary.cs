@@ -735,6 +735,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public IDictionary Property { get; } = new StructDictionary<string, JsonElement>(ParseJsonObject("""{"a":1,"b":2,"c":3}"""));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructDictionaryOfStringToInt()
     {
@@ -829,6 +830,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructDictionary<string, int> Property { get; set; } = new StructDictionary<string, int>() { ["a"] = 1, ["b"] = 2, ["c"] = 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructDictionaryOfStringToInt_WithNumberHandling()
     {
