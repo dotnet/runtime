@@ -1,4 +1,4 @@
-# Experimental support of CoreCLR on Android
+# CoreCLR on Android
 
 This documentation outlines developer workflows for CoreCLR on Android platforms.
 
