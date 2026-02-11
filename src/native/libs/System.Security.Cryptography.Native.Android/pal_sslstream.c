@@ -463,7 +463,7 @@ cleanup:
     return keyStore;
 }
 
-SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle, char* targetHost)
+SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle, const char* targetHost)
 {
     abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
 
@@ -557,7 +557,7 @@ cleanup:
 }
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStreamProxyHandle,
-                                                               char* targetHost,
+                                                               const char* targetHost,
                                                                uint8_t* pkcs8PrivateKey,
                                                                int32_t pkcs8PrivateKeyLen,
                                                                PAL_KeyAlgorithm algorithm,
@@ -618,7 +618,7 @@ cleanup:
 
 SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(
     intptr_t sslStreamProxyHandle,
-    char* targetHost,
+    const char* targetHost,
     jobject privateKeyEntry)
 {
     abort_unless(sslStreamProxyHandle != 0, "invalid pointer to the .NET SslStream proxy");
@@ -724,7 +724,7 @@ cleanup:
 }
 
 int32_t AndroidCryptoNative_SSLStreamInitialize(
-    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, char* peerHost)
+    SSLStream* sslStream, bool isServer, ManagedContextHandle managedContextHandle, STREAM_READER streamReader, STREAM_WRITER streamWriter, MANAGED_CONTEXT_CLEANUP managedContextCleanup, int32_t appBufferSize, const char* peerHost)
 {
     abort_if_invalid_pointer_argument (sslStream);
     abort_unless(sslStream->sslContext != NULL, "sslContext is NULL in SSL stream");

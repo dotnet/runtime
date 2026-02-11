@@ -465,11 +465,17 @@ public partial class ApkBuilder
         // Handle network security config
         string networkSecurityConfigAttr = "";
         string resourceDirArg = "";
+        if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir) && string.IsNullOrEmpty(NetworkSecurityConfig))
+        {
+            throw new ArgumentException(
+                $"'{nameof(NetworkSecurityConfigResourcesDir)}' is set but '{nameof(NetworkSecurityConfig)}' is not. Both properties must be set together.",
+                nameof(NetworkSecurityConfigResourcesDir));
+        }
         if (!string.IsNullOrEmpty(NetworkSecurityConfig))
         {
             if (!File.Exists(NetworkSecurityConfig))
             {
-                throw new ArgumentException($"NetworkSecurityConfig file not found: '{NetworkSecurityConfig}'");
+                throw new ArgumentException($"NetworkSecurityConfig file not found: '{NetworkSecurityConfig}'", nameof(NetworkSecurityConfig));
             }
 
             string resXmlDir = Path.Combine(OutputDir, "res", "xml");
@@ -483,7 +489,7 @@ public partial class ApkBuilder
             {
                 if (!Directory.Exists(NetworkSecurityConfigResourcesDir))
                 {
-                    throw new ArgumentException($"NetworkSecurityConfigResourcesDir directory not found: '{NetworkSecurityConfigResourcesDir}'");
+                    throw new ArgumentException($"NetworkSecurityConfigResourcesDir directory not found: '{NetworkSecurityConfigResourcesDir}'", nameof(NetworkSecurityConfigResourcesDir));
                 }
 
                 string destResDir = Path.Combine(OutputDir, "res");
