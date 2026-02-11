@@ -1736,6 +1736,7 @@ try {
                     total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
                 }
                 failedJobNames = @()
+                failedJobDetails = @()
                 canceledJobNames = @()
                 knownIssues = @()
                 prCorrelation = [ordered]@{
