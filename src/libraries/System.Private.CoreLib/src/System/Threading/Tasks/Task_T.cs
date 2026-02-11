@@ -1421,7 +1421,7 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        public TResult Result => m_task.Result;
+        public TResult Result => m_task.IsCompleted ? m_task.Result : default!;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;
