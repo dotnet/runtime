@@ -191,6 +191,34 @@ Exit /b 2
 :ReleaseLock
 if exist %lockFolder% rd /s /q %lockFolder%
 Exit /b 0
+
+:RunWithTimeout
+REM Usage: call :RunWithTimeout <timeout_seconds> <command...>
+set __Timeout=%1
+shift
+set __RunCmd=
+:BuildRunCmd
+if "%1"=="" goto :RunCmd
+set __RunCmd=%__RunCmd% %1
+shift
+goto :BuildRunCmd
+:RunCmd
+start "" /B cmd /c "%__RunCmd% & call echo %%^^ERRORLEVEL%% > __exitcode.tmp"
+set /A __elapsed=0
+:WaitLoop
+if exist __exitcode.tmp goto :DoneWaiting
+timeout /t 1 /nobreak >NUL
+set /A __elapsed+=1
+if %__elapsed% GEQ %__Timeout% (
+  REM Timeout exceeded, map to exit code 99
+  del /q __exitcode.tmp 2>NUL
+  Exit /b 99
+)
+goto :WaitLoop
+:DoneWaiting
+set /p __ExitCode=<__exitcode.tmp
+del /q __exitcode.tmp 2>NUL
+Exit /b %__ExitCode%
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
 
@@ -253,7 +281,28 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android'">
+      <!-- Note that this overwrites CLRTestBatchPreCommands rather than adding to it. -->
+      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+IF NOT DEFINED RunWithNodeJS (
+    REM Build wasm app containing the test dll
+    IF DEFINED __TestDotNetCmd (
+        set __Command=%__TestDotNetCmd%
+    ) ELSE (
+        set __Command=dotnet
+    )
+
+    REM workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
+    set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
+    !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%CD% $(CLRTestMSBuildArgs)
+    IF NOT "!ERRORLEVEL!"=="0" (
+        popd
+        Exit /b !ERRORLEVEL!
+    )
+)
+      ]]></CLRTestBatchPreCommands>
+
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android' And '$(TargetOS)' != 'browser'">
     <![CDATA[
 $(BatchCopyCoreShimLocalCmds)
 
@@ -281,6 +330,25 @@ set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
   call :ReleaseLock
 )
+      ]]></BatchCLRTestLaunchCmds>
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
+    <![CDATA[
+IF NOT DEFINED RunWithNodeJS (
+    cd WasmApp
+    call run-v8.cmd
+) ELSE (
+    ECHO Running with node
+    ECHO CORE_ROOT: %CORE_ROOT%
+    ECHO ExePath: %CD%\%ExePath%
+    ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
+    REM Disable minidump generation for browser tests
+    REM active issue https://github.com/dotnet/runtime/issues/124088
+    set DOTNET_DbgEnableMiniDump=0
+    set __NodeCmd=node "%CORE_ROOT%\corerun.js" -c "%CORE_ROOT%" "%CD%\%ExePath%" %CLRTestExecutionArguments%
+    ECHO Running: !__NodeCmd!
+    call :RunWithTimeout 300 !__NodeCmd!
+)
+set CLRTestExitCode=!ERRORLEVEL!
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'android'">
     <![CDATA[
