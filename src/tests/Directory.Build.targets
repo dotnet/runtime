@@ -74,7 +74,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
   </ItemGroup>
 
   <!--
