@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Logging
 
             OriginalFormat = format;
 
+            Dictionary<string, int>? valueNameIndices = null;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
             int scanIndex = 0;
             int endIndex = format.Length;
@@ -67,11 +68,15 @@ namespace Microsoft.Extensions.Logging
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
                     string valueName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
-                    int valueIndex = _valueNames.IndexOf(valueName);
-                    if (valueIndex < 0)
+
+                    // Lazily allocate the dictionary only when we have placeholders
+                    valueNameIndices ??= new Dictionary<string, int>();
+
+                    if (!valueNameIndices.TryGetValue(valueName, out int valueIndex))
                     {
                         valueIndex = _valueNames.Count;
                         _valueNames.Add(valueName);
+                        valueNameIndices[valueName] = valueIndex;
                     }
                     vsb.Append(valueIndex.ToString(CultureInfo.InvariantCulture));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
