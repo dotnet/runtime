@@ -613,30 +613,27 @@ namespace {lc.Namespace}
                     return string.Empty;
                 }
 
-                // Use the same mapping as GetLogLevel and extract just the simple name
-                string fullLevelName = GetLogLevelFullName(lm.Level.Value);
-
-                // Extract the simple name (e.g., "Trace" from "global::Microsoft.Extensions.Logging.LogLevel.Trace")
-                // For unknown levels, fullLevelName will be like "(global::Microsoft.Extensions.Logging.LogLevel)7"
-                if (fullLevelName.StartsWith("(", StringComparison.Ordinal))
+                // Map level to simple name using array lookup for standard levels
+                int level = lm.Level.Value;
+                if (level >= 0 && level < s_logLevelNames.Length)
                 {
-                    // Unknown level - return just the number
-                    int closeParen = fullLevelName.LastIndexOf(')');
-                    if (closeParen >= 0 && closeParen < fullLevelName.Length - 1)
-                    {
-                        return fullLevelName.Substring(closeParen + 1);
-                    }
-                    return fullLevelName;
+                    return s_logLevelNames[level];
                 }
 
-                int lastDotIndex = fullLevelName.LastIndexOf('.');
-                if (lastDotIndex >= 0 && lastDotIndex < fullLevelName.Length - 1)
-                {
-                    return fullLevelName.Substring(lastDotIndex + 1);
-                }
-
-                return fullLevelName;
+                // For unknown levels, return the numeric value
+                return level.ToString();
             }
+
+            private static readonly string[] s_logLevelNames = new[]
+            {
+                "Trace",        // 0
+                "Debug",        // 1
+                "Information",  // 2
+                "Warning",      // 3
+                "Error",        // 4
+                "Critical",     // 5
+                "None",         // 6
+            };
 
             private static string GetLogLevelFullName(int level)
             {
