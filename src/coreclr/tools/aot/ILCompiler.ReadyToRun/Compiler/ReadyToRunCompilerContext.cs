@@ -105,6 +105,16 @@ namespace ILCompiler
             get
             {
 #if FEATURE_DYNAMIC_CODE_COMPILED
+                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
+                {
+                    return false;
+                }
+
+                if (Target.Architecture is TargetArchitecture.Wasm32)
+                {
+                    return false;
+                }
+
                 return true;
 #else
                 return false;
