@@ -414,6 +414,24 @@ namespace System.Reflection.Runtime.TypeInfos
             return this.GetMultiDimArrayType(rank).ToType();
         }
 
+        public Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            parameterTypes ??= [];
+            RuntimeTypeInfo[] runtimeParameterTypes = new RuntimeTypeInfo[parameterTypes.Length];
+
+            for (int i = 0; i < parameterTypes.Length; i++)
+            {
+                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
+
+                if (parameterTypes[i] is not RuntimeType rtType)
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+
+                runtimeParameterTypes[i] = rtType.GetRuntimeTypeInfo();
+            }
+
+            return this.GetFunctionPointerType(runtimeParameterTypes, isUnmanaged).ToType();
+        }
+
         public Type MakePointerType()
         {
             return this.GetPointerType().ToType();

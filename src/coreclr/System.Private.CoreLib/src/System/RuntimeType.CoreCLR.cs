@@ -3733,7 +3733,12 @@ namespace System
         {
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             for (int i = 0; i < parameterTypes.Length; i++)
+            {
                 ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
+
+                if (parameterTypes[i] is not RuntimeType)
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+            }
 
             return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
         }
