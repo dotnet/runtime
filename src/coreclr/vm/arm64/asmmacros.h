@@ -33,7 +33,7 @@ $name   SETS    "|$symbol|"
 ; Define the prolog for a TransitionFrame-based method. This macro should be called first in the method and
 ; comprises the entire prolog (i.e. don't modify SP after calling this).The locals must be 8 byte aligned
 ;
-; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloats, the macro will also save
+; $pushCalleeSavedFloatRegs - Optional parameter. If set to PushCalleeSavedFloatRegs, the macro will also save
 ;                             the callee-saved floating point registers (d8-d15) to the stack. These registers
 ;                             are NOT restored by the EPILOG_WITH_TRANSITION_BLOCK variants.
 ;

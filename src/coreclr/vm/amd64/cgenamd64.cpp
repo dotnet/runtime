@@ -138,7 +138,7 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 
 #ifdef FEATURE_INTERPRETER
 #ifndef DACCESS_COMPILE
-void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
 {
     LIMITED_METHOD_CONTRACT;
 

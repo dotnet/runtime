@@ -173,15 +173,7 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_INTERPRETER
         [MethodImpl(MethodImplOptions.InternalCall)]
         [StackTraceHidden]
-        private static extern void AsyncHelpers_ResumeInterpreterContinuation(ObjectHandleOnStack cont, ref byte resultStorage);
-
-        [StackTraceHidden]
-        internal static Continuation? ResumeInterpreterContinuation(Continuation cont, ref byte resultStorage)
-        {
-            ObjectHandleOnStack contHandle = ObjectHandleOnStack.Create(ref cont);
-            AsyncHelpers_ResumeInterpreterContinuation(contHandle, ref resultStorage);
-            return cont;
-        }
+        internal static extern Continuation? ResumeInterpreterContinuation(Continuation cont, ref byte resultStorage);
 #endif
 
         // This is the "magic" method on which other "Await" methods are built.

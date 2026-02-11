@@ -153,9 +153,11 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("GetLoaderAllocatorInternal", RuntimeMethodHandle::GetLoaderAllocatorInternal)
 FCFuncEnd()
 
+#ifdef FEATURE_INTERPRETER
 FCFuncStart(gAsyncHelpers)
-    FCFuncElement("AsyncHelpers_ResumeInterpreterContinuation", AsyncHelpers_ResumeInterpreterContinuation)
+    FCFuncElement("ResumeInterpreterContinuation", AsyncHelpers_ResumeInterpreterContinuation)
 FCFuncEnd()
+#endif // FEATURE_INTERPRETER
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetUtf8NameInternal", RuntimeFieldHandle::GetUtf8Name)
@@ -390,7 +392,9 @@ FCFuncEnd()
 
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
+#ifdef FEATURE_INTERPRETER
 FCClassElement("AsyncHelpers", "System.Runtime.CompilerServices", gAsyncHelpers)
+#endif
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("Delegate", "System", gDelegateFuncs)

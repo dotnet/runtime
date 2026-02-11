@@ -2155,6 +2155,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             goto Cleanup;
         }
 
+#ifdef FEATURE_INTERPRETER
         if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
         {
             PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
@@ -2162,6 +2163,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
             m_crawl.GotoNextFrame();
         }
+#endif // FEATURE_INTERPRETER
 
 #define FAIL_IF_SPECULATIVE_WALK(condition)             \
         if (m_flags & PROFILER_DO_STACK_SNAPSHOT)       \
@@ -2421,9 +2423,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 _ASSERTE(GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP);
                 // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                 // Switch to walking the underlying interpreted frames.
-                // Save the registers the interpreter frames walking reuses so that we can restore them
-                // after we are done with the interpreter frames.
-                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
+                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n"));
                 ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                 if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                 {

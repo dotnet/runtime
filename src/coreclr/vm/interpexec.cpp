@@ -993,7 +993,7 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
-extern "C" void AsyncHelpers_ResumeInterpreterContinuationWorker(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
+extern "C" Object* AsyncHelpers_ResumeInterpreterContinuationWorker(Object* cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
 {
     CONTRACTL
     {
@@ -1021,7 +1021,7 @@ extern "C" void AsyncHelpers_ResumeInterpreterContinuationWorker(QCall::ObjectHa
     }
     frames(pTransitionBlock);
 
-    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
+    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont);
     NULL_CHECK(contRef);
 
     // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
@@ -1072,8 +1072,10 @@ extern "C" void AsyncHelpers_ResumeInterpreterContinuationWorker(QCall::ObjectHa
         }
     }
 
-    cont.Set(frames.interpreterFrame.GetContinuation());
+    contRef = frames.interpreterFrame.GetContinuation();
     frames.interpreterFrame.Pop();
+
+    return OBJECTREFToObject(contRef);
 }
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
