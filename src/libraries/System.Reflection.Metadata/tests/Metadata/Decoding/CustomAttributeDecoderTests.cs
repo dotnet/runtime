@@ -86,7 +86,6 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void TestCustomAttributeDecoderUsingReflection()
         {
             Type type = typeof(HasAttributes);

@@ -302,7 +302,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Logs_OnlyFormattedMessage_IfKeywordSet()
         {
             using (var testListener = new TestEventListener())

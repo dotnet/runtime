@@ -222,7 +222,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/123033", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Version_Valid()
         {
             Assert.Equal(Version.Parse((string)AppContext.GetData("System.Runtime.Extensions.Tests.EnvironmentTests.ExpectedVersion")), Environment.Version);
