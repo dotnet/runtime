@@ -357,7 +357,7 @@ namespace System
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if (NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
+                        if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                         {
                             break;
                         }
