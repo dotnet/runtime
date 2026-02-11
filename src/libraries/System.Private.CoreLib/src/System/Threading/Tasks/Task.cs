@@ -178,12 +178,10 @@ namespace System.Threading.Tasks
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
 #if !MONO
-        // Dictionary that relates a runtime-async Task's ID to the QPC tick count when the current inflight invocation started.
+        // Dictionary that relates a runtime-async Task's ID to the QPC timestamp when the current inflight invocation started.
         // Needed because Continuations that are inflight have already been dequeued from the chain.
         private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
-        // Dictionary to store debug info about runtime-async Continuations.
-        // The TickCount field stores the QPC tick count when the logical invocation to which the Continuation belongs started.
-        // The ID field stores a unique ID for the Continuation, similar to Task IDs.
+        // Dictionary to store the QPC timestamp when the logical invocation to which the Continuation belongs started.
         private static Dictionary<Continuation, long>? s_runtimeAsyncContinuationTimestamps;
 #endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
@@ -220,7 +218,7 @@ namespace System.Threading.Tasks
         }
 
 #if !MONO
-        internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long tickCount)
+        internal static void SetRuntimeAsyncContinuationTimestamp(Continuation continuation, long timestamp)
         {
             Dictionary<Continuation, long> continuationTimestamps =
                 Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
@@ -229,22 +227,22 @@ namespace System.Threading.Tasks
 
             lock (continuationTimestamps)
             {
-                continuationTimestamps.TryAdd(continuation, tickCount);
+                continuationTimestamps.TryAdd(continuation, timestamp);
             }
         }
 
-        internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long tickCount)
+        internal static bool GetRuntimeAsyncContinuationTimestamp(Continuation continuation, out long timestamp)
         {
             Dictionary<Continuation, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
             if (continuationTimestamps is null)
             {
-                tickCount = 0;
+                timestamp = 0;
                 return false;
             }
 
             lock (continuationTimestamps)
             {
-                return continuationTimestamps.TryGetValue(continuation, out tickCount);
+                return continuationTimestamps.TryGetValue(continuation, out timestamp);
             }
         }
 
@@ -260,7 +258,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTickCount)
+        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, long inflightTimestamp)
         {
             Dictionary<int, long> runtimeAsyncTaskTimestamps =
                 Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
@@ -269,7 +267,7 @@ namespace System.Threading.Tasks
 
             lock (runtimeAsyncTaskTimestamps)
             {
-                runtimeAsyncTaskTimestamps[task.Id] = inflightTickCount;
+                runtimeAsyncTaskTimestamps[task.Id] = inflightTimestamp;
             }
         }
 
