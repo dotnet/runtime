@@ -152,9 +152,9 @@ namespace System.Numerics.Tensors
                 // For byte and short types, check if the array is large enough to cause index overflow
                 // If so, fall back to scalar processing to avoid incorrect results
                 // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
-                if ((sizeof(T) == 1 && x.Length > 256) ||
-                    (typeof(T) == typeof(short) && x.Length > 32768) ||
-                    (typeof(T) == typeof(ushort) && x.Length > 65536))
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
                 {
                     goto ScalarPath;
                 }
@@ -246,9 +246,9 @@ namespace System.Numerics.Tensors
                 // For byte and short types, check if the array is large enough to cause index overflow
                 // If so, fall back to scalar processing to avoid incorrect results
                 // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
-                if ((sizeof(T) == 1 && x.Length > 256) ||
-                    (typeof(T) == typeof(short) && x.Length > 32768) ||
-                    (typeof(T) == typeof(ushort) && x.Length > 65536))
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
                 {
                     goto ScalarPath;
                 }
@@ -340,9 +340,9 @@ namespace System.Numerics.Tensors
                 // For byte and short types, check if the array is large enough to cause index overflow
                 // If so, fall back to scalar processing to avoid incorrect results
                 // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
-                if ((sizeof(T) == 1 && x.Length > 256) ||
-                    (typeof(T) == typeof(short) && x.Length > 32768) ||
-                    (typeof(T) == typeof(ushort) && x.Length > 65536))
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
                 {
                     goto ScalarPath;
                 }
