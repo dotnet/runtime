@@ -80,6 +80,22 @@ namespace ILCompiler.ObjectWriter
             writer.Advance(WriteSLEB128(buffer, value));
         }
 
+        public static void WritePaddedULEB128(Span<byte> buffer, ulong value)
+        {
+            uint actualSize = SizeOfULEB128(value);
+            int paddingByteCount = buffer.Length - (int)actualSize;
+            buffer.Slice(0, paddingByteCount).Fill(0x80);
+            WriteULEB128(buffer.Slice(paddingByteCount), value);
+        }
+
+        public static void WritePaddedSLEB128(Span<byte> buffer, long value)
+        {
+            uint actualSize = SizeOfSLEB128(value);
+            int paddingByteCount = buffer.Length - (int)actualSize;
+            buffer.Slice(0, paddingByteCount).Fill((byte)(value < 0 ? 0xFF : 0x80));
+            WriteSLEB128(buffer.Slice(paddingByteCount), value);
+        }
+
         public static ulong ReadULEB128(ReadOnlySpan<byte> buffer)
         {
             ulong value = 0;

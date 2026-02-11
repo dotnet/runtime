@@ -644,11 +644,11 @@ namespace ILCompiler.DependencyAnalysis
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WriteULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
+                    ILCompiler.ObjectWriter.DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
+                    ILCompiler.ObjectWriter.DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
 
                 default:
