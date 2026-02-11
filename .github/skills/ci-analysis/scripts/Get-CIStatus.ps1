@@ -364,7 +364,7 @@ function Get-AzDOBuildIdFromPR {
     $prMergeState = $null
     try {
         $prMergeState = gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null
-    } catch {}
+    } catch { Write-Verbose "Could not determine PR merge state: $_" }
 
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
@@ -621,7 +621,7 @@ function Show-PRCorrelationSummary {
             }
         }
 
-        Write-Host "`nThese failures are likely PR-related." -ForegroundColor Yellow
+        Write-Host "`nCorrelated files found — check JSON summary for details." -ForegroundColor Yellow
     }
 }
 
