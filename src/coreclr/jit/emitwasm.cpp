@@ -694,7 +694,7 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf("      ;;");
+                printf("      ;; ");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);

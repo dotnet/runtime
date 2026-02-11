@@ -394,6 +394,34 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// MakeOperandMultiUse: Prepare an operand for multiple usages.
+//
+// Extracts an internal register from 'node' if 'operand' is not already
+// in a register, and initializes the extracted register via "local.tee".
+//
+// Arguments:
+//    node    - The parent node of 'operand', holder of the internal registers
+//    operand - The operand, must be on top of the value stack
+//
+// Return Value:
+//    The register to use for 'operand'.
+//
+regNumber CodeGen::MakeOperandMultiUse(GenTree* node, GenTree* operand)
+{
+    if (genIsRegCandidateLocal(operand))
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(operand->AsLclVar());
+        assert(varDsc->lvIsInReg());
+        return varDsc->GetRegNum();
+    }
+
+    InternalRegs* regs = internalRegisters.GetAll(node);
+    regNumber     reg  = regs->Extract();
+    GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(operand), WasmRegToIndex(reg));
+    return reg;
+}
+
+//------------------------------------------------------------------------
 // genCodeForTreeNode: codegen for a particular tree node
 //
 // Arguments:
@@ -955,34 +983,56 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
-    // wasm stack is
-    // divisor (top)
-    // dividend (next)
-    // ...
-    // TODO-WASM: To check for exception, we will have to spill these to
-    // internal registers along the way, like so:
-    //
-    // ... push dividend
-    // tee.local $temp1
-    // ... push divisor
-    // tee.local $temp2
-    // ... exception checks (using $temp1 and $temp2; will introduce flow)
-    // div/mod op
-
     if (!varTypeIsFloating(treeNode->TypeGet()))
     {
         ExceptionSetFlags exSetFlags = treeNode->OperExceptions(m_compiler);
+        bool              is64BitOp  = treeNode->TypeIs(TYP_LONG);
+        emitAttr          size       = is64BitOp ? EA_8BYTE : EA_4BYTE;
 
-        // TODO-WASM:(AnyVal / 0) => DivideByZeroException
-        //
+        // (AnyVal / 0) => DivideByZeroException.
+        GenTree*  divisor    = treeNode->gtGetOp2();
+        regNumber divisorReg = REG_NA;
         if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
+            divisorReg = MakeOperandMultiUse(treeNode, divisor);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_eqz : INS_i32_eqz);
+            genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO);
         }
 
-        // TODO-WASM: (MinInt / -1) => ArithmeticException
-        //
+        // (MinInt / -1) => ArithmeticException.
+        GenTree*  dividend    = treeNode->gtGetOp1();
+        regNumber dividendReg = REG_NA;
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
+            // First, push "divisor == -1".
+            if (divisorReg == REG_NA)
+            {
+                divisorReg = MakeOperandMultiUse(treeNode, divisor);
+            }
+            else
+            {
+                GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
+            }
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, -1);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
+
+            // Second, push "dividend == MinInt".
+            dividendReg = MakeOperandMultiUse(treeNode, dividend);
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
+
+            // Finally, do the and.
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
+            genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
+        }
+
+        if (dividendReg != REG_NA)
+        {
+            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(dividendReg));
+        }
+        if (divisorReg != REG_NA)
+        {
+            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
         }
     }
 
@@ -1024,9 +1074,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForDivMod");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
