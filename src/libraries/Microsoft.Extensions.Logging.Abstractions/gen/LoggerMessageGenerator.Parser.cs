@@ -780,7 +780,10 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
 
                     templateMap[templateName] = templateName;
-                    templateList.Add(templateName);
+                    if (!templateList.Contains(templateName))
+                    {
+                        templateList.Add(templateName);
+                    }
 
                     scanIndex = closeBraceIndex + 1;
                 }

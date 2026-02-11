@@ -66,8 +66,14 @@ namespace Microsoft.Extensions.Logging
                     formatDelimiterIndex = formatDelimiterIndex < 0 ? closeBraceIndex : formatDelimiterIndex + openBraceIndex;
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
-                    vsb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
-                    _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
+                    string valueName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+                    int valueIndex = _valueNames.IndexOf(valueName);
+                    if (valueIndex < 0)
+                    {
+                        valueIndex = _valueNames.Count;
+                        _valueNames.Add(valueName);
+                    }
+                    vsb.Append(valueIndex.ToString(CultureInfo.InvariantCulture));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
 
                     scanIndex = closeBraceIndex + 1;
