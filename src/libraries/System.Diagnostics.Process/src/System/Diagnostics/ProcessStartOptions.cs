@@ -31,7 +31,11 @@ namespace System.Diagnostics
         public IList<string> Arguments
         {
             get => _arguments ??= new List<string>();
-            set => _arguments = value;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _arguments = value;
+            }
         }
 
         /// <summary>
@@ -91,7 +95,11 @@ namespace System.Diagnostics
         public IList<SafeHandle> InheritedHandles
         {
             get => _inheritedHandles ??= new List<SafeHandle>();
-            set => _inheritedHandles = value;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _inheritedHandles = value;
+            }
         }
 
         /// <summary>
@@ -125,14 +133,10 @@ namespace System.Diagnostics
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            _fileName = ResolvePath(fileName);
+            _fileName = ResolvePath(fileName) ?? throw new FileNotFoundException("Could not resolve the file.", fileName); ;
         }
 
-        /// <summary>Resolves a path to the filename. </summary>
-        /// <param name="filename">The filename.</param>
-        /// <returns>The resolved path.</returns>
-        /// <exception cref="FileNotFoundException">Thrown when <paramref name="filename"/> cannot be resolved to an existing file.</exception>
-        internal static string ResolvePath(string filename)
+        internal static string? ResolvePath(string filename)
         {
             // If the filename is a complete path, use it, regardless of whether it exists.
             if (Path.IsPathRooted(filename))
@@ -162,11 +166,7 @@ namespace System.Diagnostics
                 try
                 {
                     path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-#if WINDOWS
                     if (File.Exists(path))
-#else
-                    if (IsExecutableFile(path))
-#endif
                     {
                         return path;
                     }
@@ -176,11 +176,7 @@ namespace System.Diagnostics
 
             // Then check the current directory
             path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-#if WINDOWS
             if (File.Exists(path))
-#else
-            if (IsExecutableFile(path))
-#endif
             {
                 return path;
             }
@@ -219,53 +215,33 @@ namespace System.Diagnostics
             }
 #endif
 
-            // Then check each directory listed in the PATH environment variables
             return FindProgramInPath(filename);
         }
 
-        /// <summary>
-        /// Gets the path to the program by searching in PATH environment variable.
-        /// </summary>
-        /// <param name="program">The program name.</param>
-        /// <returns>The full path to the program.</returns>
-        /// <exception cref="FileNotFoundException">Thrown when the program cannot be found in PATH.</exception>
-        private static string FindProgramInPath(string program)
+        internal static string? FindProgramInPath(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar != null)
             {
-#if WINDOWS
-                char pathSeparator = ';';
-#else
-                char pathSeparator = ':';
-#endif
+                char pathSeparator = OperatingSystem.IsWindows() ? ';' : ':';
                 var pathParser = new StringParser(pathEnvVar, pathSeparator, skipEmpty: true);
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
                     string path = Path.Combine(subPath, program);
-                    if (IsExecutableFile(path))
+#if WINDOWS
+                    if (File.Exists(path))
+#else
+                    if (Process.IsExecutable(path))
+#endif
                     {
                         return path;
                     }
                 }
             }
 
-            throw new FileNotFoundException("Could not resolve the file.", program);
+            return null;
         }
-
-        private static bool IsExecutableFile(string path)
-        {
-#if WINDOWS
-            return File.Exists(path);
-#else
-            return Process.IsExecutable(path);
-#endif
-        }
-
-#if !WINDOWS
-        // Unix executable checking is in Process.IsExecutable
-#endif
 
 #if WINDOWS
         private static string? s_cachedSystemDirectory;
