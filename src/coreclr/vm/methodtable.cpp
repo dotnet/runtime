@@ -2163,13 +2163,11 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         if (isSIMDType)
         {
-            if (structSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
-            {
-                LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: SIMD type %s size %u exceeds register passing limit; will not be enregistered\n",
-                    nestingLevel * 5, "", this->GetDebugClassName(), structSize));
-
-                return false;
-            }
+            // All callers (SystemVAmd64CheckForPassStructInRegister, ClassifyEightBytes)
+            // already filter out structs > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS (16 bytes).
+            // Only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512 are handled
+            // by the JIT's handleAsSingleSimd path and never consult this classification.
+            _ASSERTE(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
 
             // Directly classify each 8-byte chunk as SSE so the JIT passes them in XMM registers.
             for (unsigned offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
@@ -2421,13 +2419,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
         if (isSIMDType)
         {
-            if (structSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
-            {
-                LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: SIMD type %s size %u exceeds register passing limit; will not be enregistered\n",
-                    nestingLevel * 5, "", this->GetDebugClassName(), structSize));
-
-                return false;
-            }
+            // All callers (SystemVAmd64CheckForPassNativeStructInRegister) already filter out
+            // structs > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS (16 bytes).
+            // Only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512 are handled
+            // by the JIT's handleAsSingleSimd path and never consult this classification.
+            _ASSERTE(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
 
             // Directly classify each 8-byte chunk as SSE so the JIT passes them in XMM registers.
             for (unsigned offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)

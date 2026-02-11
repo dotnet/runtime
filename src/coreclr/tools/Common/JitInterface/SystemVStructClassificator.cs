@@ -231,10 +231,13 @@ namespace Internal.JitInterface
                         VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
                     {
                         int structSize = typeDesc.GetElementSize().AsInt;
-                        if (structSize > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS)
-                        {
-                            return false;
-                        }
+
+                        // The entry point (GetSystemVAmd64PassStructInRegisterDescriptor) already
+                        // filters out types > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS,
+                        // so only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512
+                        // are handled by the JIT's handleAsSingleSimd path and never consult this
+                        // classification.
+                        Debug.Assert(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
 
                         // Directly classify each 8-byte chunk as SSE.
                         for (int offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
