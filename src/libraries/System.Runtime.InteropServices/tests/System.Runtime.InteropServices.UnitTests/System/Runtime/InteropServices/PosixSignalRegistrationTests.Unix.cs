@@ -4,7 +4,6 @@
 using Xunit;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -15,15 +14,9 @@ namespace System.Tests
 {
     public partial class PosixSignalRegistrationTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
-        public void Create_SIGKILL_Throws()
-        {
-            // OS throws IOException when trying to install a handler for SIGKILL
-            Assert.Throws<IOException>(() => PosixSignalRegistration.Create(PosixSignal.SIGKILL, ctx => { }));
-        }
-
         public static IEnumerable<object[]> UninstallableSignals()
         {
+            yield return new object[] { PosixSignal.SIGKILL };
             yield return new object[] { (PosixSignal)9 };
         }
 
