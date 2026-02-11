@@ -5015,9 +5015,10 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[a.Length / cns] when a.Length > 0 && cns is > 1"));
             }
-            if (funcApp.FuncIs(VNF_UMOD, VNF_MOD) && (op2Rng.LowerLimit().GetConstant() > 0))
+            if (funcApp.FuncIs(VNF_UMOD, VNF_MOD) && (op2Rng.LowerLimit().GetConstant() > 0) &&
+                (op2Rng.UpperLimit().GetConstant() <= lenLowerLimit))
             {
-                return dropBoundsCheck(INDEBUG("a[a.Length % cns] when a.Length > 0 && cns is > 0"));
+                return dropBoundsCheck(INDEBUG("a[a.Length % cns] when a.Length > 0 && 0 < cns <= a.Length"));
             }
             if (funcApp.FuncIs(VNF_RSZ, VNF_RSH) && (op2Rng.LowerLimit().GetConstant() > 0))
             {
