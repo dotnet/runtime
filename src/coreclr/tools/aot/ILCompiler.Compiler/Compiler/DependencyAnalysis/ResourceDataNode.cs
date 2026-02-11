@@ -26,8 +26,6 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         private List<ResourceIndexData> _indexData;
         private int _totalLength;
-
-
         public override bool IsShareable => false;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;

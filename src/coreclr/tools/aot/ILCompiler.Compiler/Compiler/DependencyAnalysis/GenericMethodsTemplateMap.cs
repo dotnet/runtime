@@ -46,8 +46,6 @@ namespace ILCompiler.DependencyAnalysis
             VertexHashtable hashtable = new VertexHashtable();
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
-
-
             foreach (var methodEntryNode in factory.MetadataManager.GetTemplateMethodEntries())
             {
                 // Method entry
@@ -69,8 +67,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] streamBytes = nativeWriter.Save();
-
-
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 

@@ -17,8 +17,6 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class StackTraceMethodMappingNode : ObjectNode, ISymbolDefinitionNode
     {
-
-
         public override bool IsShareable => false;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;

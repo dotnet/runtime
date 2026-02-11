@@ -13,8 +13,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode
     {
-
-
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__module_initializers"u8);
@@ -141,8 +139,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             var result = builder.ToObjectData();
-
-
             return result;
         }
 

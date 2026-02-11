@@ -23,8 +23,6 @@ namespace ILCompiler.DependencyAnalysis
             _resourceDataNode = resourceDataNode;
         }
 
-
-
         public override bool IsShareable => false;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;

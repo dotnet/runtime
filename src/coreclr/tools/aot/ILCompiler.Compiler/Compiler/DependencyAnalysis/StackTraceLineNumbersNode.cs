@@ -134,8 +134,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] streamBytes = nativeWriter.Save();
-
-
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
