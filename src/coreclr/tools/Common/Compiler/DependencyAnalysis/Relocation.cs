@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
     public struct Relocation
     {
         // NOTE: Keep in sync with emitwasm.cpp
-        private const int WASM_PADDED_RELOC_SIZE = 5;
+        private const int WASM_PADDED_RELOC_SIZE_32 = 5;
 
         public readonly RelocType RelocType;
         public readonly int Offset;
@@ -644,11 +644,11 @@ namespace ILCompiler.DependencyAnalysis
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WriteULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE), checked((ulong)value));
+                    ILCompiler.ObjectWriter.DwarfHelper.WriteULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE), value);
+                    ILCompiler.ObjectWriter.DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
 
                 default:
@@ -747,10 +747,10 @@ namespace ILCompiler.DependencyAnalysis
                     return 0;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
-                    return checked((long)ILCompiler.ObjectWriter.DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE)));
+                    return checked((long)ILCompiler.ObjectWriter.DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    return ILCompiler.ObjectWriter.DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE));
+                    return ILCompiler.ObjectWriter.DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
