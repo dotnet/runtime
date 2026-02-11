@@ -573,6 +573,47 @@ function Get-PRCorrelation {
     return $correlations | Select-Object -Unique -Property File, MatchType
 }
 
+function Get-PRCorrelation {
+    param(
+        [array]$ChangedFiles,
+        [array]$AllFailures
+    )
+
+    $result = @{ CorrelatedFiles = @(); TestFiles = @() }
+    if ($ChangedFiles.Count -eq 0 -or $AllFailures.Count -eq 0) { return $result }
+
+    $failureText = ($AllFailures | ForEach-Object {
+        $_.TaskName
+        $_.JobName
+        $_.Errors -join "`n"
+        $_.HelixLogs -join "`n"
+        $_.FailedTests -join "`n"
+    }) -join "`n"
+
+    foreach ($file in $ChangedFiles) {
+        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
+        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
+        $baseTestName = $fileName -replace '\.[^.]+$', ''
+
+        $isCorrelated = $false
+        if ($failureText -match [regex]::Escape($fileName) -or
+            $failureText -match [regex]::Escape($fileNameWithExt) -or
+            $failureText -match [regex]::Escape($file) -or
+            ($baseTestName -and $failureText -match [regex]::Escape($baseTestName))) {
+            $isCorrelated = $true
+        }
+
+        if ($isCorrelated) {
+            $isTestFile = $file -match '\.Tests?\.' -or $file -match '[/\\]tests?[/\\]' -or $file -match 'Test\.cs$' -or $file -match 'Tests\.cs$'
+            if ($isTestFile) { $result.TestFiles += $file } else { $result.CorrelatedFiles += $file }
+        }
+    }
+
+    $result.CorrelatedFiles = @($result.CorrelatedFiles | Select-Object -Unique)
+    $result.TestFiles = @($result.TestFiles | Select-Object -Unique)
+    return $result
+}
+
 function Show-PRCorrelationSummary {
     param(
         [array]$ChangedFiles,
@@ -583,50 +624,9 @@ function Show-PRCorrelationSummary {
         return
     }
 
-    # Combine all failure info into searchable text
-    $failureText = ($AllFailures | ForEach-Object {
-        $_.TaskName
-        $_.JobName
-        $_.Errors -join "`n"
-        $_.HelixLogs -join "`n"
-        $_.FailedTests -join "`n"
-    }) -join "`n"
-
-    # Also include the raw local test failure messages which may contain test class names
-    # These come from the "issues" property on local failures
-
-    # Find correlations
-    $correlatedFiles = @()
-    $testFiles = @()
-
-    foreach ($file in $ChangedFiles) {
-        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
-        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
-
-        # For files like NtAuthTests.FakeServer.cs, also check NtAuthTests
-        $baseTestName = $fileName -replace '\.[^.]+$', ''  # Remove .FakeServer etc.
-
-        # Check if this file appears in any failure
-        $isCorrelated = $false
-
-        if ($failureText -match [regex]::Escape($fileName) -or
-            $failureText -match [regex]::Escape($fileNameWithExt) -or
-            $failureText -match [regex]::Escape($file) -or
-            ($baseTestName -and $failureText -match [regex]::Escape($baseTestName))) {
-            $isCorrelated = $true
-        }
-
-        # Track test files separately
-        $isTestFile = $file -match '\.Tests?\.' -or $file -match '[/\\]tests?[/\\]' -or $file -match 'Test\.cs$' -or $file -match 'Tests\.cs$'
-
-        if ($isCorrelated) {
-            if ($isTestFile) {
-                $testFiles += $file
-            } else {
-                $correlatedFiles += $file
-            }
-        }
-    }
+    $correlation = Get-PRCorrelation -ChangedFiles $ChangedFiles -AllFailures $AllFailures
+    $correlatedFiles = $correlation.CorrelatedFiles
+    $testFiles = $correlation.TestFiles
 
     # Show results
     if ($correlatedFiles.Count -gt 0 -or $testFiles.Count -gt 0) {
@@ -2211,21 +2211,12 @@ $summary = [ordered]@{
     recommendationHint = ""
 }
 
-# Compute PR correlation
+# Compute PR correlation using shared helper
 if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
-    $correlatedFiles = @()
-    foreach ($failure in $allFailuresForCorrelation) {
-        $failureText = ($failure.Errors + $failure.HelixLogs + $failure.FailedTests) -join " "
-        foreach ($file in $prChangedFiles) {
-            $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
-            if ($failureText -match [regex]::Escape($fileName)) {
-                $correlatedFiles += $file
-            }
-        }
-    }
-    $correlatedFiles = @($correlatedFiles | Select-Object -Unique)
-    $summary.prCorrelation.hasCorrelation = $correlatedFiles.Count -gt 0
-    $summary.prCorrelation.correlatedFiles = $correlatedFiles
+    $correlation = Get-PRCorrelation -ChangedFiles $prChangedFiles -AllFailures $allFailuresForCorrelation
+    $allCorrelated = @($correlation.CorrelatedFiles) + @($correlation.TestFiles) | Select-Object -Unique
+    $summary.prCorrelation.hasCorrelation = $allCorrelated.Count -gt 0
+    $summary.prCorrelation.correlatedFiles = @($allCorrelated)
 }
 
 # Compute recommendation hint
