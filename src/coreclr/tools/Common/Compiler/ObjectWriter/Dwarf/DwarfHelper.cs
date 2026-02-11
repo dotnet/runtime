@@ -79,5 +79,40 @@ namespace ILCompiler.ObjectWriter
             Span<byte> buffer = writer.GetSpan((int)SizeOfSLEB128(value));
             writer.Advance(WriteSLEB128(buffer, value));
         }
+
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            return value;
+        }
+
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            if (((ulong)shift < (8 * sizeof(ulong))) && ((@byte & 0x40) != 0))
+                value |= unchecked((ulong)(long)-1) << shift;
+
+            return unchecked((long)value);
+        }
     }
 }
