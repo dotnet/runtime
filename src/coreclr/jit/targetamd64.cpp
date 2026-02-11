@@ -172,9 +172,11 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
     // vice versa.
     assert(m_intRegs.Count() == m_floatRegs.Count());
 
-    bool     passedByRef = false;
-    unsigned typeSize    = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
-    if ((typeSize > TARGET_POINTER_SIZE) || !isPow2(typeSize))
+    bool     passedByRef  = false;
+    unsigned typeSize     = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
+    bool     passSimdInReg = varTypeIsSIMD(type) && JitConfig.JitPassSimdInReg() != 0;
+
+    if (!passSimdInReg && ((typeSize > TARGET_POINTER_SIZE) || !isPow2(typeSize)))
     {
         passedByRef = true;
         typeSize    = TARGET_POINTER_SIZE;
@@ -183,15 +185,19 @@ ABIPassingInformation WinX64Classifier::Classify(Compiler*    comp,
     ABIPassingSegment segment;
     if (m_intRegs.Count() > 0)
     {
-        regNumber reg = varTypeUsesFloatArgReg(type) ? m_floatRegs.Peek() : m_intRegs.Peek();
-        segment       = ABIPassingSegment::InRegister(reg, 0, typeSize);
+        // SIMD types use float registers (XMM/YMM/ZMM) when passed directly.
+        // varTypeUsesFloatArgReg returns false for SIMD on x64, so check explicitly.
+        bool      useFloatReg = passSimdInReg || varTypeUsesFloatArgReg(type);
+        regNumber reg         = useFloatReg ? m_floatRegs.Peek() : m_intRegs.Peek();
+        segment               = ABIPassingSegment::InRegister(reg, 0, typeSize);
         m_intRegs.Dequeue();
         m_floatRegs.Dequeue();
     }
     else
     {
+        unsigned stackSlotSize = passSimdInReg ? roundUp(typeSize, TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
         segment = ABIPassingSegment::OnStack(m_stackArgSize, 0, typeSize);
-        m_stackArgSize += TARGET_POINTER_SIZE;
+        m_stackArgSize += stackSlotSize;
     }
 
     return ABIPassingInformation::FromSegment(comp, passedByRef, segment);
