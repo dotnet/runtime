@@ -70,7 +70,7 @@ namespace System.Buffers
                 span[0] = '^';
                 pos = 1;
             }
-            bool formatted = ((nuint)Start.Value).TryFormat(span.Slice(pos), out int charsWritten);
+            bool formatted = ((uint)Start.Value).TryFormat(span.Slice(pos), out int charsWritten);
             Debug.Assert(formatted);
             pos += charsWritten;
 
@@ -81,7 +81,7 @@ namespace System.Buffers
             {
                 span[pos++] = '^';
             }
-            formatted = ((nuint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
+            formatted = ((uint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
             Debug.Assert(formatted);
             pos += charsWritten;
 
