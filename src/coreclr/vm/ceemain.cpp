@@ -824,6 +824,10 @@ void EEStartupHelper()
 
         ExecutionManager::Init();
 
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
+
         JitHost::Init();
 
 #ifndef TARGET_UNIX
