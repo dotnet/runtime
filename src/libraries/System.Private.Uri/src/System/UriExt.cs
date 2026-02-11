@@ -119,12 +119,6 @@ namespace System
 
                     return GetException(err);
                 }
-
-                if (uriKind == UriKind.Relative)
-                {
-                    // Here we know that we can create an absolute Uri, but the user has requested only a relative one
-                    return GetException(ParsingError.CannotCreateRelative);
-                }
             }
             else
             {
@@ -148,12 +142,12 @@ namespace System
                     // we use = here to clear all parsing flags for a uri that we think is invalid.
                     _flags = Flags.UserDrivenParsing | (_flags & Flags.UserEscaped);
                 }
-                else if (uriKind == UriKind.Relative)
-                {
-                    // Here we know that custom parser can create an absolute Uri, but the user has requested only a
-                    // relative one
-                    return GetException(ParsingError.CannotCreateRelative);
-                }
+            }
+
+            if (uriKind == UriKind.Relative)
+            {
+                // Here we know that we can create an absolute Uri, but the user has requested only a relative one
+                return GetException(ParsingError.CannotCreateRelative);
             }
 
             if (hasUnicode)

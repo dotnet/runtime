@@ -14,7 +14,7 @@ The script works with any dotnet repository that uses Azure DevOps and Helix:
 
 Use `-Repository` to specify the target:
 ```powershell
-./scripts/Get-HelixFailures.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
+./scripts/Get-CIStatus.ps1 -PRNumber 12345 -Repository "dotnet/aspnetcore"
 ```
 
 ## Build Definition IDs (Example: dotnet/runtime)
@@ -41,7 +41,7 @@ Each repository has its own build definition IDs. Here are common ones for dotne
 
 Override with:
 ```powershell
-./scripts/Get-HelixFailures.ps1 -BuildId 1276327 -Organization "dnceng" -Project "internal-project-guid"
+./scripts/Get-CIStatus.ps1 -BuildId 1276327 -Organization "dnceng" -Project "internal-project-guid"
 ```
 
 ## Common Pipeline Names (Example: dotnet/runtime)

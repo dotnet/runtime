@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Retrieves test failures from Azure DevOps builds and Helix test runs.
 
@@ -65,26 +65,26 @@
     to find related build tests that do have binlogs for deeper analysis.
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327
+    .\Get-CIStatus.ps1 -BuildId 1276327
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -ShowLogs
+    .\Get-CIStatus.ps1 -PRNumber 123445 -ShowLogs
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
+    .\Get-CIStatus.ps1 -PRNumber 123445 -Repository dotnet/aspnetcore
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -WorkItem "iOS.Device.Aot.Test"
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -BuildId 1276327 -SearchMihuBot
+    .\Get-CIStatus.ps1 -BuildId 1276327 -SearchMihuBot
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
+    .\Get-CIStatus.ps1 -HelixJob "4b24b2c2-ad5a-4c46-8a84-844be03b1d51" -FindBinlogs
     # Scans work items to find which ones contain MSBuild binlog files
 
 .EXAMPLE
-    .\Get-HelixFailures.ps1 -ClearCache
+    .\Get-CIStatus.ps1 -ClearCache
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'BuildId')]
@@ -152,7 +152,7 @@ $script:TempDir = Get-TempDirectory
 
 # Handle -ClearCache parameter
 if ($ClearCache) {
-    $cacheDir = Join-Path $script:TempDir "helix-failures-cache"
+    $cacheDir = Join-Path $script:TempDir "ci-analysis-cache"
     if (Test-Path $cacheDir) {
         $files = Get-ChildItem -Path $cacheDir -File
         $count = $files.Count
@@ -166,7 +166,7 @@ if ($ClearCache) {
 }
 
 # Setup caching
-$script:CacheDir = Join-Path $script:TempDir "helix-failures-cache"
+$script:CacheDir = Join-Path $script:TempDir "ci-analysis-cache"
 if (-not (Test-Path $script:CacheDir)) {
     New-Item -ItemType Directory -Path $script:CacheDir -Force | Out-Null
 }
@@ -357,7 +357,7 @@ function Get-AzDOBuildIdFromPR {
     $ghExitCode = $LASTEXITCODE
 
     if ($ghExitCode -ne 0 -and -not ($checksOutput | Select-String -Pattern "buildId=")) {
-        throw "Failed to fetch CI status for PR #$PR in $Repository — check PR number and permissions"
+        throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
     }
 
     # Find ALL failing Azure DevOps builds
@@ -386,7 +386,7 @@ function Get-AzDOBuildIdFromPR {
                 }
             }
         }
-        throw "No CI build found for PR #$PR in $Repository — the CI pipeline has not been triggered yet"
+        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
     }
 
     # Return all unique failing build IDs
@@ -1351,25 +1351,52 @@ function Get-HelixWorkItems {
     }
 }
 
+function Get-HelixWorkItemFiles {
+    <#
+    .SYNOPSIS
+        Fetches work item files via the ListFiles endpoint which returns direct blob storage URIs.
+    .DESCRIPTION
+        Workaround for https://github.com/dotnet/dnceng/issues/6072:
+        The Details endpoint returns incorrect permalink URIs for files in subdirectories
+        and rejects unicode characters in filenames. The ListFiles endpoint returns direct
+        blob storage URIs that always work, regardless of subdirectory depth or unicode.
+    #>
+    param([string]$JobId, [string]$WorkItemName)
+
+    $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem/files"
+
+    try {
+        $files = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
+        return $files
+    }
+    catch {
+        Write-Warning "Failed to fetch files for work item ${WorkItemName}: $_"
+        return $null
+    }
+}
+
 function Get-HelixWorkItemDetails {
     param([string]$JobId, [string]$WorkItemName)
 
-    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$WorkItemName"
+    $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
+    $url = "https://helix.dot.net/api/2019-06-17/jobs/$JobId/workitems/$encodedWorkItem"
 
     try {
         $response = Invoke-CachedRestMethod -Uri $url -TimeoutSec $TimeoutSec -AsJson
 
-        # Workaround for https://github.com/dotnet/dnceng/issues/6072:
-        # Helix API returns incorrect file URIs for files in subdirectories
-        # (e.g., xharness-output/testResults.xml). Rebuild URI from FileName.
-        if ($response -and $response.Files) {
-            $encodedWorkItem = [uri]::EscapeDataString($WorkItemName)
-            foreach ($file in $response.Files) {
-                if ($file.FileName -and $file.FileName -match '/') {
-                    $encodedFileName = ($file.FileName -split '/' | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
-                    $file.Uri = "https://helix.dot.net/api/jobs/$JobId/workitems/$encodedWorkItem/files/$encodedFileName?api-version=2019-06-17"
+        # Replace Files from the Details endpoint with results from ListFiles.
+        # The Details endpoint has broken URIs for subdirectory and unicode filenames
+        # (https://github.com/dotnet/dnceng/issues/6072). ListFiles returns direct
+        # blob storage URIs that always work.
+        $listFiles = Get-HelixWorkItemFiles -JobId $JobId -WorkItemName $WorkItemName
+        if ($listFiles) {
+            $response.Files = @($listFiles | ForEach-Object {
+                [PSCustomObject]@{
+                    FileName = $_.Name
+                    Uri = $_.Link
                 }
-            }
+            })
         }
 
         return $response

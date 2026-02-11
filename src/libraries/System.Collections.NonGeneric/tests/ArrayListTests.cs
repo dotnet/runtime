@@ -587,6 +587,144 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void BinarySearch_LargeList_NoIntegerOverflow()
+        {
+            // This test verifies that BinarySearch doesn't overflow when searching large lists.
+            // The old implementation computed mid = (lo + hi) / 2, which can overflow
+            // when both lo and hi are very large (near int.MaxValue).
+            // Example: if lo = 2,000,000,000 and hi = 2,000,000,010
+            // then (lo + hi) = 4,000,000,010 which overflows int.MaxValue (2,147,483,647)
+            // and wraps to a large negative number, causing mid to be negative.
+            // The fixed implementation uses mid = lo + ((hi - lo) >> 1) which is overflow-safe.
+            
+            // Create a simulated large list - we can't actually allocate int.MaxValue/2 + 2 bytes in tests
+            // This class simulates a sorted array without allocating memory
+            var largeList = new FakeLargeIList(int.MaxValue / 2 + 2);
+            ArrayList adapter = ArrayList.Adapter(largeList);
+            
+            // Perform binary search - with the old buggy code, this could produce incorrect results
+            // due to integer overflow in the midpoint calculation
+            int result = adapter.BinarySearch((byte)1);
+            
+            // We're searching for 1, but all elements are 0, so result should be negative
+            // The key is that the search completes without error
+            Assert.True(result < 0);
+        }
+
+        [Fact]
+        public static void BinarySearch_EmptyList()
+        {
+            var arrList = new ArrayList();
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Searching in empty list should return -1 (bitwise complement of 0)
+                Assert.Equal(-1, arrList2.BinarySearch(0));
+                Assert.Equal(-1, arrList2.BinarySearch(0, null));
+                Assert.Equal(-1, arrList2.BinarySearch(0, 0, 0, null));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_SingleElement()
+        {
+            var arrList = new ArrayList { 5 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Find the single element
+                Assert.Equal(0, arrList2.BinarySearch(5));
+                
+                // Value less than element
+                Assert.Equal(-1, arrList2.BinarySearch(3));
+                
+                // Value greater than element
+                Assert.Equal(-2, arrList2.BinarySearch(7));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_BoundaryConditions()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Search at the very beginning
+                int result = arrList2.BinarySearch(0, arrList2.Count, 0, null);
+                Assert.Equal(0, result);
+                
+                // Search at the very end
+                result = arrList2.BinarySearch(0, arrList2.Count, 9, null);
+                Assert.Equal(9, result);
+                
+                // Search in a range that includes only the first element
+                result = arrList2.BinarySearch(0, 1, 0, null);
+                Assert.Equal(0, result);
+                
+                // Search in a range that includes only the last element
+                result = arrList2.BinarySearch(9, 1, 9, null);
+                Assert.Equal(9, result);
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_PartialRangeSearch()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(20); // 0 to 19
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Search in the middle range [5, 15)
+                int result = arrList2.BinarySearch(5, 10, 10, null);
+                Assert.Equal(10, result);
+                
+                // Value before the range should not be found
+                result = arrList2.BinarySearch(5, 10, 3, null);
+                Assert.True(result < 0);
+                
+                // Value after the range should not be found
+                result = arrList2.BinarySearch(5, 10, 17, null);
+                Assert.True(result < 0);
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_ComparerThrowsException()
+        {
+            ArrayList arrList1 = Helpers.CreateIntArrayList(10);
+            var throwingComparer = new ThrowingComparer();
+            
+            Helpers.PerformActionOnAllArrayListWrappers(arrList1, arrList2 =>
+            {
+                // Should propagate the exception from the comparer
+                Assert.Throws<InvalidOperationException>(() => arrList2.BinarySearch(5, throwingComparer));
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_UnsortedList()
+        {
+            // BinarySearch on unsorted list has undefined results but should not crash
+            var arrList = new ArrayList { 5, 1, 9, 3, 7 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                // Should complete without throwing - result is undefined for unsorted lists
+                arrList2.BinarySearch(5);
+            });
+        }
+
+        [Fact]
+        public static void BinarySearch_TwoElementList()
+        {
+            var arrList = new ArrayList { 1, 5 };
+            Helpers.PerformActionOnAllArrayListWrappers(arrList, arrList2 =>
+            {
+                Assert.Equal(0, arrList2.BinarySearch(1));
+                Assert.Equal(1, arrList2.BinarySearch(5));
+                Assert.Equal(-1, arrList2.BinarySearch(0));
+                Assert.Equal(-2, arrList2.BinarySearch(3));
+                Assert.Equal(-3, arrList2.BinarySearch(7));
+            });
+        }
+
+        [Fact]
         public static void Capacity_Get()
         {
             var arrList = Helpers.CreateIntArrayList(10);
@@ -2508,6 +2646,14 @@ namespace System.Collections.Tests
             }
         }
 
+        private class ThrowingComparer : IComparer
+        {
+            public int Compare(object x, object y)
+            {
+                throw new InvalidOperationException("Comparer intentionally throws");
+            }
+        }
+
         private class Foo
         {
             public string StringValue { get; set; } = "Hello World";
@@ -2967,5 +3113,45 @@ namespace System.Collections.Tests
                 _iList.Remove(Prefix + i);
             }
         }
+    }
+
+    // Helper class that simulates a large IList without actually allocating memory
+    internal class FakeLargeIList : IList
+    {
+        private readonly int _count;
+
+        public FakeLargeIList(int count)
+        {
+            _count = count;
+        }
+
+        public int Count => _count;
+        public bool IsFixedSize => true;
+        public bool IsReadOnly => true;
+        public bool IsSynchronized => false;
+        public object SyncRoot => this;
+
+        // For BinarySearch to work, we need to return comparable values
+        // Return 0 for all valid indices to simulate a sorted array of zeros
+        public object? this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= _count)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+                return (byte)0;
+            }
+            set => throw new NotSupportedException();
+        }
+
+        public int Add(object? value) => throw new NotSupportedException();
+        public void Clear() => throw new NotSupportedException();
+        public bool Contains(object? value) => false;
+        public int IndexOf(object? value) => -1;
+        public void Insert(int index, object? value) => throw new NotSupportedException();
+        public void Remove(object? value) => throw new NotSupportedException();
+        public void RemoveAt(int index) => throw new NotSupportedException();
+        public void CopyTo(Array array, int index) => throw new NotSupportedException();
+        public IEnumerator GetEnumerator() => throw new NotSupportedException();
     }
 }

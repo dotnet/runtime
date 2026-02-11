@@ -404,6 +404,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (sig->isAsyncCall())
                 {
                     impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -716,6 +721,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (sig->isAsyncCall())
     {
         impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+
+        if (compDonotInline())
+        {
+            return TYP_UNDEF;
+        }
 
         if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
         {
@@ -6868,6 +6878,12 @@ void Compiler::impCheckForPInvokeCall(
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
+    if (compIsForInlining())
+    {
+        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+        return;
+    }
+
     AsyncCallInfo asyncInfo;
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
@@ -8120,14 +8136,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
-        return;
-    }
-
-    if (call->IsAsync() && (call->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None))
-    {
-        // Cannot currently handle moving to captured context/thread pool when logically returning from inlinee.
-        //
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_CONTINUATION_HANDLING);
         return;
     }
 

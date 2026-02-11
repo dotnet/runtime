@@ -8,6 +8,10 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 
+Before completing, use the `code-review` skill to review your code changes. Any issues flagged as errors or warnings should be addressed before completing.
+
+If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
+
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
 In addition to the rules enforced by `.editorconfig`, you SHOULD:
