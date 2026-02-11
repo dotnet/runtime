@@ -603,8 +603,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Condition="!Exists('$(_AppleClang)')"
       Text="Apple Clang was not found at: '$(_AppleClang)'" />
 
-    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMsBuild="true" Condition="'$(StripSymbols)' == 'true'">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_DsymUtilOutput" />
+    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />
     </Exec>
 
     <PropertyGroup Condition="'$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
