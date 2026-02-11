@@ -65,6 +65,16 @@ public class ElidedBoundsChecks
         return span[i & (span.Length - 1)];
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static byte HalfLengthIndex(byte[] a)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if (a.Length != 0)
+            return (byte)(a[a.Length / 2] + a[a.Length >>> 1] + a[a.Length % 3]);
+        return 0;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -90,6 +100,9 @@ public class ElidedBoundsChecks
             return 0;
 
         if (AndByLength(255) != 4)
+            return 0;
+
+        if (HalfLengthIndex(new byte[] { 10, 20, 30, 40 }) != 80)
             return 0;
 
         return 100;
