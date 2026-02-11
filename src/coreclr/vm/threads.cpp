@@ -6217,10 +6217,14 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
         return NULL;
     }
 
-    OBJECTREF pCurrentCulture;
-    MethodDescCallSite propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE);
-    ARG_SLOT retVal = propGet.Call_RetArgSlot(NULL);
-    pCurrentCulture = ArgSlotToObj(retVal);
+    OBJECTREF pCurrentCulture = NULL;
+    GCPROTECT_BEGIN(pCurrentCulture);
+
+    UnmanagedCallersOnlyCaller propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE_UCO : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE_UCO);
+    propGet.InvokeThrowing(&pCurrentCulture);
+
+    GCPROTECT_END();
+
     return pCurrentCulture;
 }
 
@@ -6233,17 +6237,10 @@ void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    MethodDescCallSite propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE);
-
-    // Set up the Stack.
-    ARG_SLOT pNewArgs[] = {
-        ObjToArgSlot(*CultureObj)
-    };
-
-    // Make the actual call.
-    propSet.Call_RetArgSlot(pNewArgs);
+    UnmanagedCallersOnlyCaller propSet(bUICulture
+        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE_UCO
+        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE_UCO);
+    propSet.InvokeThrowing(CultureObj);
 }
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)

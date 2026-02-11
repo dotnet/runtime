@@ -28,6 +28,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Globalization
@@ -1160,5 +1161,72 @@ namespace System.Globalization
 
             return ci;
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCurrentCulture(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = CurrentCulture;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void SetCurrentCulture(CultureInfo* pValue, Exception* pException)
+        {
+            try
+            {
+                CurrentCulture = *pValue;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCurrentUICulture(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = CurrentUICulture;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void SetCurrentUICulture(CultureInfo* pValue, Exception* pException)
+        {
+            try
+            {
+                CurrentUICulture = *pValue;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new CultureInfo(culture);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
     }
 }

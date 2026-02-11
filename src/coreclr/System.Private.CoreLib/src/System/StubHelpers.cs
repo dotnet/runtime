@@ -1657,6 +1657,32 @@ namespace System.StubHelpers
         {
             return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
         }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(oleColor);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToNative(*pSrcObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 #endif
 }

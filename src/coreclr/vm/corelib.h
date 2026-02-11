@@ -213,9 +213,14 @@ DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
+DEFINE_METHOD(CULTURE_INFO,         INT_CTOR_UCO,           CreateCultureInfo,          SM_Int_PtrObj_PtrException_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_UI_CULTURE,   CurrentUICulture,   CultureInfo)
+DEFINE_METHOD(CULTURE_INFO,         GET_CURRENT_CULTURE_UCO,    GetCurrentCulture,          SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(CULTURE_INFO,         SET_CURRENT_CULTURE_UCO,    SetCurrentCulture,          SM_PtrCultureInfo_PtrException_RetVoid)
+DEFINE_METHOD(CULTURE_INFO,         GET_CURRENT_UI_CULTURE_UCO, GetCurrentUICulture,        SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(CULTURE_INFO,         SET_CURRENT_UI_CULTURE_UCO, SetCurrentUICulture,        SM_PtrCultureInfo_PtrException_RetVoid)
 
 DEFINE_CLASS(CURRENCY,              System,                 Currency)
 DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,                      IM_Dec_RetVoid)
@@ -659,12 +664,12 @@ DEFINE_METHOD(PROPERTY,             GET_GETTER,             GetGetMethod,       
 DEFINE_CLASS(PROPERTY_INFO,         Reflection,             PropertyInfo)
 
 DEFINE_CLASS(RESOLVER,              System,                 Resolver)
-DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              IM_RefInt_RetRuntimeType)
-DEFINE_METHOD(RESOLVER,             GET_CODE_INFO,          GetCodeInfo,                IM_RefInt_RefInt_RefInt_RetArrByte)
-DEFINE_METHOD(RESOLVER,             GET_LOCALS_SIGNATURE,   GetLocalsSignature,         IM_RetArrByte)
+DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              SM_PtrResolver_PtrInt_PtrClass_PtrException_RetVoid)
+DEFINE_METHOD(RESOLVER,             GET_CODE_INFO,          GetCodeInfo,                SM_PtrResolver_PtrInt_PtrInt_PtrInt_PtrArrByte_PtrException_RetVoid)
+DEFINE_METHOD(RESOLVER,             GET_LOCALS_SIGNATURE,   GetLocalsSignature,         SM_PtrResolver_PtrArrByte_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_EH_INFO,            GetEHInfo,                  IM_Int_VoidPtr_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_RAW_EH_INFO,        GetRawEHInfo,               IM_RetArrByte)
-DEFINE_METHOD(RESOLVER,             GET_STRING_LITERAL,     GetStringLiteral,           IM_Int_RetStr)
+DEFINE_METHOD(RESOLVER,             GET_STRING_LITERAL,     GetStringLiteral,           SM_PtrResolver_Int_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             RESOLVE_TOKEN,          ResolveToken,               IM_Int_RefIntPtr_RefIntPtr_RefIntPtr_RetVoid)
 DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,           IM_IntInt_RetArrByte)
 
@@ -892,11 +897,11 @@ DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrame
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
-DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_RetVoid)
+DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_PtrException_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_PtrException_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
@@ -1125,8 +1130,10 @@ DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertCon
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_IntPtr_RetVoid)
 
 DEFINE_CLASS(COLORMARSHALER, StubHelpers, ColorMarshaler)
-DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_NATIVE,  ConvertToNative,  SM_Obj_RetInt)
-DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, SM_Int_RetObj)
+DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_NATIVE,      ConvertToNative,  SM_Obj_RetInt)
+DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_MANAGED,     ConvertToManaged, SM_Int_RetObj)
+DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_NATIVE_UCO,  ConvertToNative,  SM_PtrObj_PtrInt_PtrException_RetVoid)
+DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_MANAGED_UCO, ConvertToManaged, SM_Int_PtrObj_PtrException_RetVoid)
 DEFINE_FIELD(COLORMARSHALER, COLOR_TYPE, s_colorType)
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
@@ -1223,7 +1230,7 @@ DEFINE_CLASS_U(Reflection,             LoaderAllocator,          LoaderAllocator
 DEFINE_FIELD_U(m_slots,                  LoaderAllocatorObject,      m_pSlots)
 DEFINE_FIELD_U(m_slotsUsed,              LoaderAllocatorObject,      m_slotsUsed)
 DEFINE_CLASS(LOADERALLOCATOR,           Reflection,             LoaderAllocator)
-DEFINE_METHOD(LOADERALLOCATOR,          CTOR,                   .ctor,                    IM_RetVoid)
+DEFINE_METHOD(LOADERALLOCATOR,          CREATE,                 Create,                     SM_PtrObj_PtrException_RetVoid)
 
 DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocatorScoutObject)
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
