@@ -43,7 +43,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> </para>
         /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]

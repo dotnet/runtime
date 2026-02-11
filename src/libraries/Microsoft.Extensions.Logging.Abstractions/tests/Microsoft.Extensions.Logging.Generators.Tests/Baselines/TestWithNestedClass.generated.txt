@@ -20,7 +20,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses.NestedNamesp
                                 global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Debug, new global::Microsoft.Extensions.Logging.EventId(9, nameof(M9)), "M9", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
                             /// <summary>
-                            /// Generated log call
                             /// <para><b>Message:</b> M9</para>
                             /// <para><b>Level:</b> Debug</para>
                             /// </summary>

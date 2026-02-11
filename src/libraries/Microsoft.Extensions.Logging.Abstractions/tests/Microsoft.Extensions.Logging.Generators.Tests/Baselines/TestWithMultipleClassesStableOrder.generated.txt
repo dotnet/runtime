@@ -10,7 +10,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Debug, new global::Microsoft.Extensions.Logging.EventId(1, nameof(LogA)), "Message from ClassA", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> Message from ClassA</para>
         /// <para><b>Level:</b> Debug</para>
         /// </summary>
@@ -33,7 +32,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(2, nameof(LogB)), "Message from ClassB", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> Message from ClassB</para>
         /// <para><b>Level:</b> Information</para>
         /// </summary>
@@ -56,7 +54,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Warning, new global::Microsoft.Extensions.Logging.EventId(3, nameof(LogC)), "Message from ClassC", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> Message from ClassC</para>
         /// <para><b>Level:</b> Warning</para>
         /// </summary>

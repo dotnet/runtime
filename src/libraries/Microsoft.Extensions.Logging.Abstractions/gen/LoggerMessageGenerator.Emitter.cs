@@ -506,20 +506,25 @@ namespace {lc.Namespace}
                     }
                     else
                     {
-                        level = lm.Level switch
-                        {
-                            0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
-                            1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
-                            2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
-                            3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
-                            4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
-                            5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
-                            6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
-                            _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
-                        };
+                        level = GetLogLevelFullName(lm.Level.Value);
                     }
 
                     return level;
+                }
+
+                static string GetLogLevelFullName(int level)
+                {
+                    return level switch
+                    {
+                        0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
+                        1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
+                        2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
+                        3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
+                        4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
+                        5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
+                        6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
+                        _ => $"(global::Microsoft.Extensions.Logging.LogLevel){level}",
+                    };
                 }
             }
 
@@ -530,7 +535,6 @@ namespace {lc.Namespace}
 
                 _builder.Append($@"
         {nestedIndentation}/// <summary>
-        {nestedIndentation}/// Generated log call
         {nestedIndentation}/// <para><b>Message:</b> {SecurityElement.Escape(message)}</para>");
 
                 if (!string.IsNullOrEmpty(levelName))
@@ -551,16 +555,31 @@ namespace {lc.Namespace}
                     return string.Empty;
                 }
 
-                return lm.Level switch
+                // Use the same mapping as GetLogLevel and extract just the simple name
+                string fullLevelName = GetLogLevelFullName(lm.Level.Value);
+
+                // Extract the simple name (e.g., "Trace" from "global::Microsoft.Extensions.Logging.LogLevel.Trace")
+                int lastDotIndex = fullLevelName.LastIndexOf('.');
+                if (lastDotIndex >= 0 && lastDotIndex < fullLevelName.Length - 1)
                 {
-                    0 => "Trace",
-                    1 => "Debug",
-                    2 => "Information",
-                    3 => "Warning",
-                    4 => "Error",
-                    5 => "Critical",
-                    6 => "None",
-                    _ => $"LogLevel({lm.Level})",
+                    return fullLevelName.Substring(lastDotIndex + 1);
+                }
+
+                return fullLevelName;
+            }
+
+            private static string GetLogLevelFullName(int level)
+            {
+                return level switch
+                {
+                    0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
+                    1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
+                    2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
+                    3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
+                    4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
+                    5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
+                    6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
+                    _ => $"(global::Microsoft.Extensions.Logging.LogLevel){level}",
                 };
             }
 

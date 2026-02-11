@@ -76,7 +76,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}</para>
         /// <para><b>Level:</b> Error</para>
         /// </summary>

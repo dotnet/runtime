@@ -10,7 +10,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::Microsoft.Extensions.Logging.LoggerMessage.Define<global::System.Int32, global::System.Collections.Generic.IEnumerable<global::System.Int32>>(global::Microsoft.Extensions.Logging.LogLevel.Error, new global::Microsoft.Extensions.Logging.EventId(0, nameof(M0)), "M0 {a1} {a2}", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> M0 {a1} {a2}</para>
         /// <para><b>Level:</b> Error</para>
         /// </summary>

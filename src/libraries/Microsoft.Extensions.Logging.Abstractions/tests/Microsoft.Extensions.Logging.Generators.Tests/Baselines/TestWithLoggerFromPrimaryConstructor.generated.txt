@@ -10,7 +10,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::Microsoft.Extensions.Logging.LoggerMessage.Define(global::Microsoft.Extensions.Logging.LogLevel.Debug, new global::Microsoft.Extensions.Logging.EventId(0, nameof(M0)), "M0", new global::Microsoft.Extensions.Logging.LogDefineOptions() { SkipEnabledCheck = true });
 
         /// <summary>
-        /// Generated log call
         /// <para><b>Message:</b> M0</para>
         /// <para><b>Level:</b> Debug</para>
         /// </summary>
