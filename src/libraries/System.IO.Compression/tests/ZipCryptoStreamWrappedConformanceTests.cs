@@ -110,10 +110,6 @@ namespace System.IO.Compression.Tests
 
         private static async Task<Stream> CreateDecryptStreamAsync(Stream baseStream, byte[] keyBytes, byte expectedCheckByte, bool leaveOpen)
         {
-            var assembly = typeof(ZipArchive).Assembly;
-            var zipCryptoStreamType = assembly.GetType("System.IO.Compression.ZipCryptoStream", throwOnError: true)!;
-
-
             // CreateAsync returns Task<ZipCryptoStream>, await it and get the result
             var task = (Task)s_createAsyncMethod.Invoke(null, new object[]
             {

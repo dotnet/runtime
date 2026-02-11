@@ -281,7 +281,7 @@ namespace System.IO.Compression
             // Compare the first 10 bytes of the expected hash
             if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
             {
-                throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
 
             _authCodeValidated = true;
@@ -548,9 +548,10 @@ namespace System.IO.Compression
                     await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
-            else
+            else if (_encryptedDataRemaining > 0)
             {
-                await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                // Base stream returned 0 bytes but we expected more encrypted data - stream is truncated
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
             }
 
             return bytesRead;

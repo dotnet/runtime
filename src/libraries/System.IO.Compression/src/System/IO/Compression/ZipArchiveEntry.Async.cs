@@ -215,7 +215,7 @@ public partial class ZipArchiveEntry
                 }
                 return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
             case ZipArchiveMode.Create:
-                throw new Exception(SR.EncryptionNotSpecified);
+                throw new InvalidOperationException(SR.EncryptionNotSpecified);
             case ZipArchiveMode.Update:
             default:
                 Debug.Assert(_archive.Mode == ZipArchiveMode.Update);

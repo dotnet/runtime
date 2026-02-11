@@ -137,7 +137,7 @@ namespace System.IO.Compression
                                                               string password, EncryptionMethod encryption)
         {
 
-            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true);
+            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false);
 
             using (fs)
             {
