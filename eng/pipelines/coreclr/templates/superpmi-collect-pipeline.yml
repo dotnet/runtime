@@ -98,7 +98,6 @@ extends:
             timeoutInMinutes: 120
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
-
               # Use PAT for NuGet which is needed when specifying container: below
               - template: /eng/common/core-templates/steps/enable-internal-sources.yml
                 parameters:
