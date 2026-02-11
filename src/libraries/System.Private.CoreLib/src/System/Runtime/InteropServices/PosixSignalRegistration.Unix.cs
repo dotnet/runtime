@@ -31,6 +31,13 @@ namespace System.Runtime.InteropServices
                 throw new PlatformNotSupportedException();
             }
 
+            // SIGKILL cannot have a signal handler installed on Unix
+            int sigkillNumber = Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL);
+            if (signo == sigkillNumber)
+            {
+                throw new ArgumentException(SR.Arg_CannotRegisterHandlerForSIGKILL, nameof(signal));
+            }
+
             var token = new Token(signal, signo, handler);
             var registration = new PosixSignalRegistration(token);
 

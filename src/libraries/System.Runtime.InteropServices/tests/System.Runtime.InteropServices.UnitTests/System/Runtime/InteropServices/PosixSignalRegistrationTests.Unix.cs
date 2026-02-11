@@ -257,7 +257,12 @@ namespace System.Tests
                 var data = new TheoryData<PosixSignal>();
                 foreach (var value in Enum.GetValues(typeof(PosixSignal)))
                 {
-                    int signo = GetPlatformSignalNumber((PosixSignal)value);
+                    PosixSignal signal = (PosixSignal)value;
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be registered
+                    }
+                    int signo = GetPlatformSignalNumber(signal);
                     Assert.True(signo > 0, "Expected raw signal number to be greater than 0.");
                     data.Add((PosixSignal)signo);
                 }
