@@ -100,6 +100,8 @@ The script operates in three distinct modes depending on what information you ha
 
 **Known Issues section**: Failures matching existing GitHub issues - these are tracked and being investigated.
 
+**Build Analysis check status**: The "Build Analysis" GitHub check is **green** only when *every* failure is matched to a known issue. If it's **red**, at least one failure is unaccounted for — do NOT claim "all failures are known issues" just because some known issues were found. You must verify each failing job is covered by a specific known issue before calling it safe to retry.
+
 **Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: use `hlx_status` on each Helix job in the timed-out build. If all work items passed, the build effectively passed.
 
 > ❌ **Don't dismiss timed-out builds.** A build marked "failed" due to a 3-hour AzDO timeout can have 100% passing Helix work items. Check before concluding it failed.
@@ -131,7 +133,7 @@ Read `recommendationHint` as a starting point, then layer in context:
 | Hint | Action |
 |------|--------|
 | `BUILD_SUCCESSFUL` | No failures. Confirm CI is green. |
-| `KNOWN_ISSUES_DETECTED` | Known tracked issues found. Recommend retry if failures match known issues. Link the issues. |
+| `KNOWN_ISSUES_DETECTED` | Known tracked issues found — but this does NOT mean all failures are covered. Check the Build Analysis check status: if it's red, some failures are unmatched. Only recommend retry for failures that specifically match a known issue; investigate the rest. |
 | `LIKELY_PR_RELATED` | Failures correlate with PR changes. Lead with "fix these before retrying" and list `correlatedFiles`. |
 | `POSSIBLY_TRANSIENT` | Failures could not be automatically classified — does NOT mean they are transient. Use `failedJobDetails` to investigate each failure individually. |
 | `REVIEW_REQUIRED` | Could not auto-determine cause. Review failures manually. |
@@ -189,13 +191,13 @@ Run with `-ShowLogs` for detailed failure info.
 
 ### Step 2: Analyze results
 
-1. **Check Build Analysis** — Known issues are safe to retry
+1. **Check Build Analysis** — If the Build Analysis GitHub check is **green**, all failures matched known issues and it's safe to retry. If it's **red**, some failures are unaccounted for — you must identify which failing jobs are covered by known issues and which are not. Never say "all failures are known issues" when Build Analysis is red.
 2. **Correlate with PR changes** — Same files failing = likely PR-related
 3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
 4. **Check build progression** — If the PR has multiple builds (multiple pushes), check whether earlier builds passed. A failure that appeared after a specific push narrows the investigation to those commits. See [references/build-progression-analysis.md](references/build-progression-analysis.md). Present findings as facts, not fix recommendations.
 5. **Interpret patterns** (but don't jump to conclusions):
    - Same error across many jobs → Real code issue
-   - Build Analysis flags a known issue → Safe to retry
+   - Build Analysis flags a known issue → That *specific failure* is safe to retry (but others may not be)
    - Failure is **not** in Build Analysis → Investigate further before assuming transient
    - Device failures, Docker pulls, network timeouts → *Could* be infrastructure, but verify against the target branch first
    - Test timeout but tests passed → Executor issue, not test failure
@@ -212,7 +214,7 @@ Before stating a failure's cause, verify your claim:
 - **"Infrastructure failure"** → Did Build Analysis flag it? Does the same test pass on the target branch? If neither, don't call it infrastructure.
 - **"Transient/flaky"** → Has it failed before? Is there a known issue? A single non-reproducing failure isn't enough to call it flaky.
 - **"PR-related"** → Do the changed files actually relate to the failing test? Correlation in the script output is heuristic, not proof.
-- **"Safe to retry"** → Are ALL failures accounted for (known issues or infrastructure), or are you ignoring some?
+- **"Safe to retry"** → Are ALL failures accounted for (known issues or infrastructure), or are you ignoring some? Check the Build Analysis check status — if it's red, not all failures are matched. Map each failing job to a specific known issue before concluding "safe to retry."
 - **"Not related to this PR"** → Have you checked if the test passes on the target branch? Don't assume — verify.
 
 ## References
