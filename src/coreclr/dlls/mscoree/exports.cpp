@@ -136,8 +136,7 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyValuesWRef,
     BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
-    host_runtime_contract** hostContract,
-    bool* enableCrashChaining)
+    host_runtime_contract** hostContract)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
     ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
@@ -181,16 +180,6 @@ static void ConvertConfigPropertiesToUnicode(
 
             if (hostContractLocal->pinvoke_override != nullptr)
                 *pinvokeOverride = hostContractLocal->pinvoke_override;
-        }
-        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_CRASH_CHAINING) == 0)
-        {
-            // Enable crash chaining - generate crash dump before invoking previously registered signal handler.
-            // This must be processed before PAL initialization.
-            if (enableCrashChaining != nullptr)
-            {
-                *enableCrashChaining = (u16_strcmp(propertyValuesW[propertyIndex], W("1")) == 0 ||
-                                        u16_strcmp(propertyValuesW[propertyIndex], W("true")) == 0);
-            }
         }
     }
 
@@ -257,7 +246,6 @@ int coreclr_initialize(
     BundleProbeFn* bundleProbe = nullptr;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
     host_runtime_contract* hostContract = nullptr;
-    bool enableCrashChaining = false;
 
 #ifdef TARGET_UNIX
     HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
@@ -271,15 +259,9 @@ int coreclr_initialize(
         &propertyValuesW,
         &bundleProbe,
         &pinvokeOverride,
-        &hostContract,
-        &enableCrashChaining);
+        &hostContract);
 
 #ifdef TARGET_UNIX
-    if (enableCrashChaining)
-    {
-        PAL_EnableCrashChaining();
-    }
-
     DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
@@ -314,6 +296,13 @@ int coreclr_initialize(
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+
+#ifdef TARGET_UNIX
+    if (Configuration::GetKnobBooleanValue(W("CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
+    {
+        PAL_EnableCrashReportBeforeSignalChaining();
+    }
+#endif
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);

@@ -255,7 +255,7 @@ PAL_SetCreateDumpCallback(
 PALIMPORT
 VOID
 PALAPI
-PAL_EnableCrashChaining();
+PAL_EnableCrashReportBeforeSignalChaining();
 
 PALIMPORT
 BOOL

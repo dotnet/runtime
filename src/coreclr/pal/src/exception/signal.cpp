@@ -104,7 +104,7 @@ bool g_registered_signal_handlers = false;
 bool g_enable_alternate_stack_check = false;
 #endif // !HAVE_MACH_EXCEPTIONS
 // When true, generate crash dump before invoking previously registered signal handler
-static bool g_enable_crash_chaining = false;
+static bool g_crash_report_before_signal_chaining = false;
 
 static bool g_registered_sigterm_handler = false;
 static bool g_registered_activation_handler = false;
@@ -136,26 +136,18 @@ const int StackOverflowFlag = 0x40000000;
 /* public function definitions ************************************************/
 
 /*++
-Function :
-    PAL_EnableCrashChaining
+Function:
+  PAL_EnableCrashReportBeforeSignalChaining
 
-    Enables crash chaining. When enabled, crash dumps are generated
-    before invoking the previously registered signal handler.
-
-Parameters :
-    None
-
-    (no return value)
-
-Note :
-    Must be called before PAL_InitializeCoreCLR for the setting to take effect.
+Abstract:
+  Enables generating a crash report before the signal is chained to previous handlers.
 --*/
 PALIMPORT
 VOID
 PALAPI
-PAL_EnableCrashChaining()
+PAL_EnableCrashReportBeforeSignalChaining()
 {
-    g_enable_crash_chaining = true;
+    g_crash_report_before_signal_chaining = true;
 }
 
 /*++
@@ -185,14 +177,6 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
             g_enable_alternate_stack_check = (value != 0);
     }
 #endif
-
-    CLRConfigNoCache crashChaining = CLRConfigNoCache::Get("EnableCrashChaining", /*noprefix*/ false, &getenv);
-    if (crashChaining.IsSet())
-    {
-        DWORD value;
-        if (crashChaining.TryAsInteger(10, value))
-            g_enable_crash_chaining = (value != 0);
-    }
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
     {
@@ -483,7 +467,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     _ASSERTE(!IsSigDfl(action) && !IsSigIgn(action));
 
-    if (g_enable_crash_chaining)
+    if (g_crash_report_before_signal_chaining)
     {
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
@@ -502,7 +486,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     }
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
-    if (!g_enable_crash_chaining)
+    if (!g_crash_report_before_signal_chaining)
     {
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
