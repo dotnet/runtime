@@ -102,6 +102,7 @@ extends:
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
+                  container: linux_x64
                   displayName: Build SuperPMI
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -220,6 +221,7 @@ extends:
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
+                  container: linux_x64
                   displayName: Build SuperPMI
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
