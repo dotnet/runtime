@@ -512,16 +512,12 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
 
 size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 {
-    if (destination)
-    {
-        static_assert(PADDED_RELOC_SIZE > 1);
-        // Write zeroes with the bit set that indicates another byte is coming
-        for (unsigned i = 1; i < PADDED_RELOC_SIZE; i++)
-            *(destination++ + writeableOffset) = 0x80;
+    static_assert(PADDED_RELOC_SIZE > 1);
+    // Write zeroes with the bit set that indicates another byte is coming
+    for (unsigned i = 0; i < PADDED_RELOC_SIZE - 1; i++)
+        destination += emitOutputByte(destination, 0x80);
 
-        // Write a final zero
-        *(destination + writeableOffset) = 0x0;
-    }
+    emitOutputByte(destination, 0x0);
     return PADDED_RELOC_SIZE;
 }
 
@@ -532,7 +528,8 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
         emitRecordRelocation(destination, (void*)emitGetInsSC(id), relocType);
         return emitOutputPaddedReloc(destination);
     }
-    else if (isSigned)
+
+    if (isSigned)
         return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
     else
         return emitOutputULEB128(destination, (uint64_t)emitGetInsSC(id));

@@ -634,9 +634,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB  :
-                case RelocType.WASM_TYPE_INDEX_LEB    :
-                case RelocType.WASM_GLOBAL_INDEX_LEB  :
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return;
 
@@ -736,13 +736,13 @@ namespace ILCompiler.DependencyAnalysis
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
                 case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB  :
-                case RelocType.WASM_TYPE_INDEX_LEB    :
-                case RelocType.WASM_GLOBAL_INDEX_LEB  :
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
                     // These wasm relocs do not have offsets, just targets
                     return 0;
-                case RelocType.WASM_MEMORY_ADDR_LEB   :
-                case RelocType.WASM_MEMORY_ADDR_SLEB  :
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
                     // FIXME-WASM: We don't have access to LEB encoding or decoding helpers in this assembly
                     // HACK-WASM: We stashed the offset as a 32-bit integer inside the 5 bytes of the padded reloc
                     return *(int*)location;
