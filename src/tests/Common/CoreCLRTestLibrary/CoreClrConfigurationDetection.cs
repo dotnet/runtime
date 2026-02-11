@@ -27,6 +27,7 @@ public static class CoreClrConfigurationDetection
     {
         get
         {
+            // WASM-TODO: update when codegen is in place
             if (PlatformDetection.IsWasm)
                 return true;
             if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
