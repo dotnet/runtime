@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
 {
-    public abstract partial class Crc32ParameterSet
+    public partial class Crc32ParameterSet
     {
         /// <summary>
         ///   Gets the parameter set for the variant of CRC-32 as used in

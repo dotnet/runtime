@@ -3,11 +3,23 @@
 
 namespace System.IO.Hashing
 {
-    public abstract partial class Crc64ParameterSet
+    public partial class Crc64ParameterSet
     {
+        /// <summary>
+        ///   Gets the parameter set for the ECMA-182 variant of CRC-64.
+        /// </summary>
+        /// <value>
+        ///   The parameter set for the ECMA-182 variant of CRC-64.
+        /// </value>
         public static Crc64ParameterSet Crc64 =>
             field ??= new Ecma182ParameterSet();
 
+        /// <summary>
+        ///   Gets the parameter set used for CRC-64 in Non-Volatile Memory Express (NVMe).
+        /// </summary>
+        /// <value>
+        ///   The parameter set used for CRC-64 in Non-Volatile Memory Express (NVMe).
+        /// </value>
         public static Crc64ParameterSet Nvme =>
             field ??= Create(0xAD93D23594C93659, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, true);
 

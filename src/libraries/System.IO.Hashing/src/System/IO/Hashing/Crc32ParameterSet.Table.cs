@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.IO.Hashing
 {
-    public abstract partial class Crc32ParameterSet
+    public partial class Crc32ParameterSet
     {
         private static uint[] GenerateLookupTable(uint polynomial, bool reflectInput)
         {

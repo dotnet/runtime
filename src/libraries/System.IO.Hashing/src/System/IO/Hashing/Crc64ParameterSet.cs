@@ -5,7 +5,7 @@ using System.Buffers.Binary;
 
 namespace System.IO.Hashing
 {
-    public abstract partial class Crc64ParameterSet
+    public partial class Crc64ParameterSet
     {
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
         /// <value>The polynomial value used for the CRC calculation.</value>

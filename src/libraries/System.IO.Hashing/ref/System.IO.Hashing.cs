@@ -31,7 +31,7 @@ namespace System.IO.Hashing
         public static bool TryHash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    public abstract partial class Crc32ParameterSet
+    public partial class Crc32ParameterSet
     {
         internal Crc32ParameterSet() { }
         public static System.IO.Hashing.Crc32ParameterSet Crc32 { get { throw null; } }
@@ -60,7 +60,6 @@ namespace System.IO.Hashing
         public static byte[] Hash(byte[] source) { throw null; }
         public static byte[] Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, byte[] source) { throw null; }
         public static byte[] Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static int Hash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
         public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
@@ -72,7 +71,7 @@ namespace System.IO.Hashing
         public static bool TryHash(System.IO.Hashing.Crc64ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    public abstract partial class Crc64ParameterSet
+    public partial class Crc64ParameterSet
     {
         internal Crc64ParameterSet() { }
         public static System.IO.Hashing.Crc64ParameterSet Crc64 { get { throw null; } }

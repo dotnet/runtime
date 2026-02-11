@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.IO.Hashing
 {
-    public abstract partial class Crc64ParameterSet
+    public partial class Crc64ParameterSet
     {
         private static ulong[] GenerateLookupTable(ulong polynomial, bool reflectInput)
         {

@@ -273,7 +273,6 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="parameterSet"/> is <see langword="null"/>.
         /// </exception>
-        [CLSCompliant(false)]
         public static int Hash(Crc64ParameterSet parameterSet, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             ArgumentNullException.ThrowIfNull(parameterSet);
