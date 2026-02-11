@@ -4589,7 +4589,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->GetIndirOrArrMetaDataAddr());
+    assert(tree->OperIsIndirOrArrMetaData());
 
     bool updated = optNonNullAssertionProp_Ind(assertions, tree);
     if (tree->OperIs(GT_STOREIND))
