@@ -201,6 +201,19 @@ namespace System.Diagnostics
         public void CopyTo(System.Diagnostics.ProcessModule[] array, int index) { }
         public int IndexOf(System.Diagnostics.ProcessModule module) { throw null; }
     }
+    public readonly partial struct ProcessExitStatus : System.IEquatable<System.Diagnostics.ProcessExitStatus>
+    {
+        private readonly int _dummyPrimitive;
+        public ProcessExitStatus(int exitCode, bool cancelled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
+        public bool Canceled { get { throw null; } }
+        public int ExitCode { get { throw null; } }
+        public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+        public bool Equals(System.Diagnostics.ProcessExitStatus other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Diagnostics.ProcessExitStatus left, System.Diagnostics.ProcessExitStatus right) { throw null; }
+        public static bool operator !=(System.Diagnostics.ProcessExitStatus left, System.Diagnostics.ProcessExitStatus right) { throw null; }
+    }
     public enum ProcessPriorityClass
     {
         Normal = 32,
