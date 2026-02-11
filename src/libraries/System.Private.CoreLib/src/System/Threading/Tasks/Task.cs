@@ -178,10 +178,10 @@ namespace System.Threading.Tasks
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
 #if !MONO
-        // Dictionary that relates a runtime-async Task's ID to the QPC timestamp when the current inflight invocation started.
+        // Dictionary that relates a runtime-async Task's ID to the timestamp when the current inflight invocation started.
         // Needed because Continuations that are inflight have already been dequeued from the chain.
         private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
-        // Dictionary to store the QPC timestamp when the logical invocation to which the Continuation belongs started.
+        // Dictionary to store the timestamp when the logical invocation to which the Continuation belongs started.
         private static Dictionary<Continuation, long>? s_runtimeAsyncContinuationTimestamps;
 #endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
