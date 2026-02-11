@@ -112,11 +112,9 @@ The script operates in three distinct modes depending on what information you ha
 
 **Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
 
-> ⚠️ **Be cautious labeling failures as "infrastructure."** If Build Analysis didn't flag a failure as a known issue, treat it as potentially real — even if it looks like a device failure, Docker issue, or network timeout. Only conclude "infrastructure" when you have strong evidence (e.g., identical failure on the target branch, Build Analysis match, or confirmed outage). Dismissing failures as transient without evidence delays real bug discovery.
+> ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure when you have strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. "Environment" in the error doesn't make it infrastructure — a test requiring an uninstalled framework is a test defect, not infra.
 
-> ❌ **Don't confuse "environment-related" with "infrastructure."** A test that fails because a required framework isn't installed (e.g., .NET 2.2) is a **test defect** — the test has wrong assumptions about what's available. Infrastructure failures are *transient*: network timeouts, Docker pull failures, agent crashes, disk space. If the failure would reproduce 100% of the time on any machine with the same setup, it's a code/test issue, not infra. The word "environment" in the error doesn't make it an infrastructure problem.
-
-> ❌ **Missing packages on flow PRs are NOT always infrastructure failures.** When a codeflow or dependency-update PR fails with "package not found" or "version not available", don't assume it's a feed propagation delay. Flow PRs bring in behavioral changes from upstream repos that can cause the build to request *different* packages than before. Example: an SDK flow changed runtime pack resolution logic, causing builds to look for `Microsoft.NETCore.App.Runtime.browser-wasm` (CoreCLR — doesn't exist) instead of `Microsoft.NETCore.App.Runtime.Mono.browser-wasm` (what had always been used). The fix was in the flowed code, not in feed infrastructure. Always check *which* package is missing and *why* it's being requested before diagnosing as infrastructure.
+> ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs bring behavioral changes that can cause builds to request *different* packages. Always check *which* package is missing and *why* before assuming feed propagation delay.
 
 ## Generating Recommendations
 
@@ -151,9 +149,14 @@ Then layer in nuance the heuristic can't capture:
 - **All pipelines**: Comment `/azp run` to retry all failing pipelines
 - **Helix work items**: Cannot be individually retried — must re-run the entire AzDO build
 
-### Tone
+### Tone and output format
 
-Be direct. Lead with the most important finding. Use 2-4 bullet points, not long paragraphs. Distinguish what's known vs. uncertain.
+Be direct. Lead with the most important finding. Structure your response as:
+1. **Summary verdict** (1-2 sentences) — Is CI green? Failures PR-related? Known issues?
+2. **Failure details** (2-4 bullets) — what failed, why, evidence
+3. **Recommended actions** (numbered) — retry, fix, investigate. Include `/azp run` commands.
+
+Synthesize from: JSON summary (structured facts) + human-readable output (details/logs) + Step 0 context (PR type, author intent).
 
 ## Analysis Workflow
 
@@ -209,32 +212,6 @@ Before stating a failure's cause, verify your claim:
 - **"Safe to retry"** → Are ALL failures accounted for (known issues or infrastructure), or are you ignoring some?
 - **"Not related to this PR"** → Have you checked if the test passes on the target branch? Don't assume — verify.
 
-## Presenting Results
-
-The script outputs both human-readable failure details and a `[CI_ANALYSIS_SUMMARY]` JSON block. Use both to produce a structured response.
-
-### Output structure
-
-Use this format — adapt sections based on what you find:
-
-**1. Summary verdict** (1-2 sentences)
-Lead with the most important finding. Is CI green? Are failures PR-related? Known issues?
-
-**2. Failure details** (2-4 bullets)
-For each distinct failure category, state: what failed, why (known/correlated/unknown), and evidence.
-
-**3. Recommended actions** (numbered list)
-Specific next steps: retry, fix specific files, investigate further. Include `/azp run` commands if retrying.
-
-### How to synthesize
-
-1. Read the JSON summary for structured facts (failed jobs, known issues, PR correlation, recommendation hint)
-2. Read the human-readable output for failure details, console logs, and error messages
-3. Layer in Step 0 context — PR type, author intent, changed files
-4. Reason over all three to produce contextual recommendations — the `recommendationHint` is a starting point, not the final answer
-5. Look for patterns the heuristic may have missed (e.g., same failure across multiple jobs, related failures in different builds)
-6. Present findings with appropriate caveats — state what is known vs. uncertain
-
 ## References
 
 - **Helix artifacts & binlogs**: See [references/helix-artifacts.md](references/helix-artifacts.md)
@@ -245,18 +222,11 @@ Specific next steps: retry, fix specific files, investigate further. Include `/a
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
 - **AzDO/Helix details**: See [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
-## Recovering Results from Canceled Jobs
-
-Canceled jobs (typically from timeouts) often still have useful Helix results. See [references/azure-cli.md](references/azure-cli.md) for artifact download steps and [references/binlog-comparison.md](references/binlog-comparison.md) for the "binlogs to find binlogs" workflow.
-
-**Key insight**: "Canceled" ≠ "Failed". Always check artifacts before concluding results are lost.
-
 ## Tips
 
 1. Check if same test fails on the target branch before assuming transient
 2. Look for `[ActiveIssue]` attributes for known skipped tests
 3. Use `-SearchMihuBot` for semantic search of related issues
-4. Binlogs in artifacts help diagnose MSB4018 task failures
-5. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
-6. If checking CI status via `gh pr checks --json`, the valid fields are `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow`. There is **no `conclusion` field** in current `gh` versions — `state` contains `SUCCESS`/`FAILURE` directly
-7. When investigating internal AzDO pipelines, use the Azure CLI — see [references/azure-cli.md](references/azure-cli.md). Check `az account show` first to verify authentication
+4. Use the MSBuild MCP server (`binlog.mcp`) to search binlogs for Helix job IDs, build errors, and properties
+5. `gh pr checks --json` valid fields: `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow` — no `conclusion` field, `state` has `SUCCESS`/`FAILURE` directly
+6. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results. Check artifacts before concluding results are lost.

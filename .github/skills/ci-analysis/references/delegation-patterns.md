@@ -73,9 +73,9 @@ Download and analyze binlog from AzDO build {BUILD_ID}, artifact {ARTIFACT_NAME}
 
 Steps:
 1. Download the artifact (see azure-cli.md)
-2. Load: mcp-binlog-tool-load_binlog path:"{BINLOG_PATH}"
-3. Extract target info: mcp-binlog-tool-search_tasks_by_name taskName:"Csc"
-4. Get task parameters: mcp-binlog-tool-get_task_info
+2. Load: binlog-load_binlog path:"{BINLOG_PATH}"
+3. Find tasks: binlog-search_tasks_by_name taskName:"Csc"
+4. Get task parameters: binlog-get_task_info
 
 Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 ```
