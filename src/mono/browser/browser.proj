@@ -2,9 +2,9 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.RunWithEmSdkEnv" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
+
   <PropertyGroup>
-    <!-- FIXME: clean up the duplication with libraries Directory.Build.props -->
-    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <!-- only use for files that are not configuration dependent -->
     <NativeGeneratedFilesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', 'generated'))</NativeGeneratedFilesDir>
   </PropertyGroup>
@@ -28,14 +28,11 @@
     <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
-    <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
-    <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
-    <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <EmSdkLLVMAr>$(EMSDK_PATH)\bin\llvm-ar</EmSdkLLVMAr>
     <EmSdkLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(EmSdkLLVMAr).exe</EmSdkLLVMAr>
   </PropertyGroup>
 
-  <Target Name="CheckEnv">
+  <Target Name="CheckEnv" DependsOnTargets="AcquireEmscriptenSdk">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'browser'" Text="Expected TargetOS==browser, got '$(TargetOS)'"/>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
@@ -75,7 +72,12 @@
 
 
 
-  <Target Name="GenerateEmccPropsAndRspFiles">
+  <Target Name="GenerateEmccPropsAndRspFiles" DependsOnTargets="AcquireEmscriptenSdk">
+    <PropertyGroup>
+      <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
+      <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
+      <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
+    </PropertyGroup>
 
     <!-- Generate wasm-props.json -->
 
@@ -136,7 +138,6 @@
       <EmccExportedFunction Include="stackAlloc" />
       <EmccExportedFunction Include="stackRestore" />
       <EmccExportedFunction Include="stackSave"  />
-      <EmccExportedFunction Include="_emscripten_force_exit" />
     </ItemGroup>
     <!-- for the jiterpreter -->
     <ItemGroup>
@@ -445,6 +446,7 @@
   </Target>
 
   <Target Name="InstallNpmPackages"
+          DependsOnTargets="AcquireEmscriptenSdk"
           Inputs="$(BrowserProjectRoot)runtime/package.json"
           Outputs="$(BrowserProjectRoot)runtime/node_modules/.npm-stamp"
           >
@@ -520,7 +522,7 @@
   <Target Name="BuildWithRollup"
           Inputs="@(_RollupInputs);$(_RollupEnvIntermediateFile);$(NativeGeneratedFilesDir)mintops.ts"
           Outputs="$(NativeBinDir).rollup-stamp"
-	  DependsOnTargets="WriteRollupEnvToFile;GenerateMintopsTS"
+	  DependsOnTargets="AcquireEmscriptenSdk;WriteRollupEnvToFile;GenerateMintopsTS"
           >
     <!-- code style check -->
     <RunWithEmSdkEnv Command="npm run lint" StandardOutputImportance="High" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(BrowserProjectRoot)runtime/"/>

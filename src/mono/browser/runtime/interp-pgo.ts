@@ -190,7 +190,7 @@ export async function getCacheKey (prefix: string): Promise<string | null> {
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for config hash
-    delete inputs.forwardConsoleLogsToWS;
+    delete inputs.forwardConsole;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
     delete inputs.interopCleanupOnExit;

@@ -619,20 +619,20 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 
 #ifdef TARGET_XARCH
 
-  #define JMP_DIST_SMALL_MAX_NEG  (-128)
-  #define JMP_DIST_SMALL_MAX_POS  (+127)
+#define JMP_DIST_SMALL_MAX_NEG  (-128)
+#define JMP_DIST_SMALL_MAX_POS  (+127)
 
-  #define JCC_DIST_SMALL_MAX_NEG  (-128)
-  #define JCC_DIST_SMALL_MAX_POS  (+127)
+#define JCC_DIST_SMALL_MAX_NEG  (-128)
+#define JCC_DIST_SMALL_MAX_POS  (+127)
 
-  #define JMP_SIZE_SMALL          (2)
-  #define JMP_SIZE_LARGE          (5)
+#define JMP_SIZE_SMALL          (2)
+#define JMP_SIZE_LARGE          (5)
 
-  #define JCC_SIZE_SMALL          (2)
-  #define JCC_SIZE_LARGE          (6)
+#define JCC_SIZE_SMALL          (2)
+#define JCC_SIZE_LARGE          (6)
 
-  #define PUSH_INST_SIZE          (5)
-  #define CALL_INST_SIZE          (5)
+#define PUSH_INST_SIZE          (5)
+#define CALL_INST_SIZE          (5)
 
 #endif // TARGET_XARCH
 
@@ -649,12 +649,12 @@ static_assert((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #if CPU_HAS_BYTE_REGS
-  #define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
-  #define BYTE_REG_COUNT          4
-  #define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
+#define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
+#define BYTE_REG_COUNT          4
+#define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
 #else
-  #define RBM_BYTE_REGS            RBM_ALLINT
-  #define RBM_NON_BYTE_REGS        RBM_NONE
+#define RBM_BYTE_REGS            RBM_ALLINT
+#define RBM_NON_BYTE_REGS        RBM_NONE
 #endif
 // clang-format on
 
@@ -1186,6 +1186,11 @@ static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;
+#elif defined(TARGET_WASM)
+// WebAssembly has native support for 64-bit constants even in 32-bit mode, so we need the
+//  ability to store long constants regardless of pointer size on host or target.
+typedef int64_t  cnsval_ssize_t;
+typedef uint64_t cnsval_size_t;
 #else
 typedef target_ssize_t cnsval_ssize_t;
 typedef target_size_t  cnsval_size_t;

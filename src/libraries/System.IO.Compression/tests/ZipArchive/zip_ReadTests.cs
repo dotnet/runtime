@@ -595,10 +595,9 @@ namespace System.IO.Compression.Tests
                 // Check the entry's compression method to determine seekability
                 // SubReadStream should be seekable when the underlying stream is seekable and the entry is stored (uncompressed)
                 // If the entry is compressed (Deflate, Deflate64, etc.), it will be wrapped in a compression stream which is not seekable
-                ushort compressionMethod = (ushort)compressionMethodField.GetValue(e);
-                const ushort StoredCompressionMethod = 0x0; // CompressionMethodValues.Stored
+                ZipCompressionMethod compressionMethod = (ZipCompressionMethod)compressionMethodField.GetValue(e);
                 
-                if (compressionMethod == StoredCompressionMethod)
+                if (compressionMethod == ZipCompressionMethod.Stored)
                 {
                     // Entry is stored (uncompressed), should be seekable
                     Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored (uncompressed) entry '{e.FullName}' with compression method {compressionMethod} when underlying stream is seekable");
@@ -819,6 +818,76 @@ namespace System.IO.Compression.Tests
                 NumberOfDisposeCalls++;
                 base.Dispose(disposing);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate_ReturnsDeflate(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.Optimal);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Stored_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_EmptyFile_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("empty.txt");
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate64_ReturnsDeflate64(bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip"));
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate64, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
         }
     }
 }

@@ -107,9 +107,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     JITDUMP("Determining Wasm DFS entry points\n");
 
     // All funclets are entries. For now we assume finallys are funclets.
+    // We walk from outer->inner order, so that for mutual protect trys
+    // the "first" handler is visited last and ends up earlier in RPO.
     //
-    for (EHblkDsc* const ehDsc : EHClauses(comp))
+    for (int XTnum = comp->compHndBBtabCount - 1; XTnum >= 0; XTnum--)
     {
+        EHblkDsc* const ehDsc = &comp->compHndBBtab[XTnum];
+
         JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
         if (ehDsc->HasFilter())
@@ -190,7 +194,7 @@ class Scc
 private:
 
     FgWasm*              m_fgWasm;
-    Compiler*            m_comp;
+    Compiler*            m_compiler;
     FlowGraphDfsTree*    m_dfsTree;
     BitVecTraits*        m_traits;
     BitVec               m_blocks;
@@ -213,7 +217,7 @@ public:
     //
     Scc(FgWasm* fgWasm, BasicBlock* block)
         : m_fgWasm(fgWasm)
-        , m_comp(fgWasm->Comp())
+        , m_compiler(fgWasm->Comp())
         , m_dfsTree(fgWasm->GetDfsTree())
         , m_traits(fgWasm->GetTraits())
         , m_blocks(BitVecOps::UninitVal())
@@ -295,7 +299,7 @@ public:
                         assert(m_enclosingHndIndex == block->bbHndIndex);
 
                         // But possibly different try regions
-                        m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                        m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
                 }
             }
@@ -411,7 +415,7 @@ public:
                 }
             }
 
-            WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+            WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
             for (BasicBlock* const succ : successors)
             {
                 JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -450,7 +454,7 @@ public:
 
         // Build a new postorder for the nested blocks
         //
-        BasicBlock** postOrder = new (m_comp, CMK_WasmSccTransform) BasicBlock*[nestedCount];
+        BasicBlock** postOrder = new (m_compiler, CMK_WasmSccTransform) BasicBlock*[nestedCount];
 
         auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
 
@@ -460,7 +464,10 @@ public:
 
         auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
 
+#ifdef DEBUG
         // Dump subgraph as dot
+        //
+        if (m_compiler->verbose)
         {
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
             BitVecOps::Iter iterator(m_traits, nestedBlocks);
@@ -472,7 +479,7 @@ public:
 
                 JITDUMP(FMT_BB ";\n", block->bbNum);
 
-                WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+                WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
                 for (BasicBlock* const succ : successors)
                 {
                     JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -481,6 +488,7 @@ public:
 
             JITDUMP("}\n");
         }
+#endif
 
         unsigned numBlocks =
             m_fgWasm->WasmRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
@@ -494,7 +502,7 @@ public:
 
         // Use that to find the nested Sccs
         //
-        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_WasmSccTransform));
+        ArrayStack<Scc*> nestedSccs(m_compiler->getAllocator(CMK_WasmSccTransform));
         m_fgWasm->WasmFindSccsCore(nestedBlocks, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
@@ -559,12 +567,13 @@ public:
 
             // Split edges, rewire flow, and add control var assignments
             //
-            const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
+            const unsigned controlVarNum =
+                m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
+            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
-            FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
             BitVecOps::Iter  iterator(m_traits, m_entries);
             unsigned int     poHeaderNumber = 0;
@@ -592,8 +601,8 @@ public:
                     {
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
-                    dispatcher = m_comp->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
-                                                         /* nearBlk */ nullptr);
+                    dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
+                                                             /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
@@ -625,20 +634,36 @@ public:
                     else
                     {
                         assert(!pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHFINALLYRET));
-                        transferBlock = m_comp->fgSplitEdge(pred, header);
+                        transferBlock = m_compiler->fgSplitEdge(pred, header);
                     }
 
-                    GenTree* const   targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const   storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-                    Statement* const assignStmt      = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                    GenTree* const targetIndex     = m_compiler->gtNewIconNode(headerNumber);
+                    GenTree* const storeControlVar = m_compiler->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
-                    m_comp->gtSetStmtInfo(assignStmt);
-                    m_comp->fgSetStmtSeq(assignStmt);
+                    if (transferBlock->IsLIR())
+                    {
+                        LIR::Range range = LIR::SeqTree(m_compiler, storeControlVar);
 
-                    m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                        if (transferBlock->isEmpty())
+                        {
+                            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
+                        }
+                        else
+                        {
+                            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
+                        }
+                    }
+                    else
+                    {
+                        Statement* const assignStmt = m_compiler->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                        m_compiler->gtSetStmtInfo(assignStmt);
+                        m_compiler->fgSetStmtSeq(assignStmt);
+                    }
+
+                    m_compiler->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
 
-                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+                FlowEdge* const dispatchToHeaderEdge = m_compiler->fgAddRefPred(header, dispatcher);
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
@@ -668,15 +693,26 @@ public:
             //
             JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
-                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
+                new (m_compiler, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const   controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const   switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
-            Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+            GenTree* const controlVar = m_compiler->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_compiler->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
 
-            m_comp->gtSetStmtInfo(switchStmt);
-            m_comp->fgSetStmtSeq(switchStmt);
+            assert(dispatcher->isEmpty());
+
+            if (dispatcher->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(m_compiler, switchNode);
+                LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
+            }
+            else
+            {
+                Statement* const switchStmt = m_compiler->fgNewStmtAtEnd(dispatcher, switchNode);
+
+                m_compiler->gtSetStmtInfo(switchStmt);
+                m_compiler->fgSetStmtSeq(switchStmt);
+            }
         }
 
         // Handle nested Sccs
@@ -764,13 +800,10 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
         AssignBlockToScc(block, block, subset, sccs, map);
     }
 
-    if (sccs.Height() > 0)
+    for (int i = 0; i < sccs.Height(); i++)
     {
-        for (int i = 0; i < sccs.Height(); i++)
-        {
-            Scc* const scc = sccs.Bottom(i);
-            scc->Finalize();
-        }
+        Scc* const scc = sccs.Bottom(i);
+        scc->Finalize();
     }
 }
 
@@ -966,121 +999,6 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 }
 
 //------------------------------------------------------------------------
-// WasmInterval
-//
-// Represents a Wasm BLOCK/END or LOOP/END
-//
-class WasmInterval
-{
-private:
-
-    // m_chain refers to the conflict set member with the lowest m_start.
-    // (for "trivial" singleton conflict sets m_chain will be `this`)
-    WasmInterval* m_chain;
-
-    // True index of start
-    unsigned m_start;
-
-    // True index of end; interval ends just before this block
-    unsigned m_end;
-
-    // Largest end index of any chained interval
-    unsigned m_chainEnd;
-
-    // true if this is a loop interval (extents cannot change)
-    bool m_isLoop;
-
-public:
-
-    WasmInterval(unsigned start, unsigned end, bool isLoop)
-        : m_chain(nullptr)
-        , m_start(start)
-        , m_end(end)
-        , m_chainEnd(end)
-        , m_isLoop(isLoop)
-    {
-        m_chain = this;
-    }
-
-    unsigned Start() const
-    {
-        return m_start;
-    }
-
-    unsigned End() const
-    {
-        return m_end;
-    }
-
-    unsigned ChainEnd() const
-    {
-        return m_chainEnd;
-    }
-
-    // Call while resolving intervals when building chains.
-    WasmInterval* FetchAndUpdateChain()
-    {
-        if (m_chain == this)
-        {
-            return this;
-        }
-
-        WasmInterval* chain = m_chain->FetchAndUpdateChain();
-        m_chain             = chain;
-        return chain;
-    }
-
-    // Call after intervals are resolved and chains are fixed.
-    WasmInterval* Chain() const
-    {
-        assert((m_chain == this) || (m_chain == m_chain->Chain()));
-        return m_chain;
-    }
-
-    bool IsLoop() const
-    {
-        return m_isLoop;
-    }
-
-    void SetChain(WasmInterval* c)
-    {
-        m_chain       = c;
-        c->m_chainEnd = max(c->m_chainEnd, m_chainEnd);
-    }
-
-    static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
-    {
-        WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
-        return result;
-    }
-
-    static WasmInterval* NewLoop(Compiler* comp, BasicBlock* start, BasicBlock* end)
-    {
-        WasmInterval* result =
-            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ true);
-        return result;
-    }
-
-#ifdef DEBUG
-    void Dump(bool chainExtent = false)
-    {
-        printf("[%03u,%03u]%s", m_start, chainExtent ? m_chainEnd : m_end, m_isLoop && !chainExtent ? " L" : "");
-
-        if (m_chain != this)
-        {
-            printf(" --> ");
-            m_chain->Dump(true);
-        }
-        else
-        {
-            printf("\n");
-        }
-    }
-#endif
-};
-
-//------------------------------------------------------------------------
 // fgWasmControlFlow: determine how to emit control flow instructions for wasm
 //
 // Notes:
@@ -1139,15 +1057,10 @@ public:
 // Still TODO
 // * Blocks only reachable via EH
 // * proper handling of BR_TABLE defaults
-// * branch inversion
-// * actual block reordering
-// * instruction emission
 // * tail calls (RETURN_CALL)
-// * UNREACHED in more places (eg noreturn calls)
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
-// * We do not branch with operands on the wasm stack, so we need to add suitable (void?) types to branches
 // * During LaRPO formation, remember the position of the last block in the loop
-// * Settle on ordering of WasmSccTransform / Lower / LSRA / WasmControlFlow (LSRA can introduce blocks)
+// * Compatibility of LaRPO with try region layout constraints (if any)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
 {
@@ -1209,7 +1122,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Allocate interval and scratch vectors. We'll use the scratch vector to keep track of
     // block intervals that end at a certain point.
     //
-    jitstd::vector<WasmInterval*> intervals(getAllocator(CMK_WasmCfgLowering));
+    fgWasmIntervals = new (this, CMK_WasmCfgLowering) jitstd::vector<WasmInterval*>(getAllocator(CMK_WasmCfgLowering));
     jitstd::vector<WasmInterval*> scratch(numBlocks, nullptr, getAllocator(CMK_WasmCfgLowering));
 
     for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
@@ -1237,7 +1150,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
             // We assume here that a block is only the header of one loop.
             //
-            intervals.push_back(loopInterval);
+            fgWasmIntervals->push_back(loopInterval);
         }
 
         // Now see where block branches to...
@@ -1262,10 +1175,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Branch to next needs no block, unless this is a switch
-            // (eventually when we leave the default on the switch we can remove this).
+            // Branch to next needs no block, unless this is a switch or next is a throw helper.
+            // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
             {
                 continue;
             }
@@ -1294,7 +1207,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Non-contiguous, non-subsumed forward branch
             //
             WasmInterval* const branch = WasmInterval::NewBlock(this, block, initialLayout[succNum]);
-            intervals.push_back(branch);
+            fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here
             //
@@ -1308,7 +1221,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         // Display the raw intervals...
         //
         JITDUMP("\n-------------- Initial set of wasm intervals\n");
-        for (WasmInterval* interval : intervals)
+        for (WasmInterval* interval : *fgWasmIntervals)
         {
             JITDUMPEXEC(interval->Dump());
         }
@@ -1326,8 +1239,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Since this is only looking at prior intervals it could be
     // merged with (2) above.
     //
-    auto resolve = [&intervals](WasmInterval* const current) {
-        for (WasmInterval* prior : intervals)
+    auto resolve = [this](WasmInterval* const current) {
+        for (WasmInterval* prior : *fgWasmIntervals)
         {
             // We only need to consider intervals that start at the same point or earlier.
             //
@@ -1381,7 +1294,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
     };
 
-    for (WasmInterval* interval : intervals)
+    for (WasmInterval* interval : *fgWasmIntervals)
     {
         resolve(interval);
     }
@@ -1390,7 +1303,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     if (verbose)
     {
         JITDUMP("\n-------------- After finding conflicts\n");
-        for (WasmInterval* iv : intervals)
+        for (WasmInterval* iv : *fgWasmIntervals)
         {
             JITDUMPEXEC(iv->Dump());
         }
@@ -1440,13 +1353,13 @@ PhaseStatus Compiler::fgWasmControlFlow()
         return false;
     };
 
-    jitstd::sort(intervals.begin(), intervals.end(), comesBefore);
+    jitstd::sort(fgWasmIntervals->begin(), fgWasmIntervals->end(), comesBefore);
 
 #ifdef DEBUG
     if (verbose)
     {
         JITDUMP("\n-------------- After sorting\n");
-        for (WasmInterval* interval : intervals)
+        for (WasmInterval* interval : *fgWasmIntervals)
         {
             JITDUMPEXEC(interval->Dump());
         }
@@ -1454,18 +1367,128 @@ PhaseStatus Compiler::fgWasmControlFlow()
     }
 #endif
 
-    // (5) Create the wasm control flow operations
+    // (5) Reorder the blocks
     //
-    // Show (roughly) what the WASM control flow looks like
+    // Todo: verify this ordering is compatible with our EH story.
     //
-    ArrayStack<WasmInterval*> activeIntervals(getAllocator(CMK_WasmCfgLowering));
-    unsigned                  wasmCursor = 0;
+    // If we use an explicit EH state marker, likely we do not need
+    // to keep the try region contiguous.
+    //
+    // If we need contiguous trys we can likely create a try-aware
+    // loop-aware RPO, since both regions will be single-entry.
+    // The main trick is to figure out both the extent of the try region
+    // and if there is a block that is both try entry and loop header,
+    // which is nested in which.
+    //
+    JITDUMP("Reordering block list\n");
+    BasicBlock* lastBlock = nullptr;
 
     for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
         BasicBlock* const block = initialLayout[cursor];
 
+        if (cursor == 0)
+        {
+            assert(block == fgFirstBB);
+            lastBlock = block;
+        }
+        else
+        {
+            fgUnlinkBlock(block);
+            fgInsertBBafter(lastBlock, block);
+
+            // If the last block was the end of a handler, we may need
+            // to update the enclosing region endpoint.
+            //
+            // Because we are not keeping try regions contiguous,
+            // we can't and don't need to do the same for a try.
+            //
+            if (ehIsBlockHndLast(lastBlock) && block->hasHndIndex() && BasicBlock::sameHndRegion(lastBlock, block))
+            {
+                fgSetHndEnd(ehGetBlockHndDsc(block), block);
+            }
+            lastBlock = block;
+        }
+
+        // If BBJ_COND true target is branch to next,
+        // reverse the condition
+        //
+        if (block->KindIs(BBJ_COND))
+        {
+            const unsigned trueNum  = block->GetTrueTarget()->bbPreorderNum;
+            const unsigned falseNum = block->GetFalseTarget()->bbPreorderNum;
+
+            // We don't expect degenerate BBJ_COND
+            //
+            assert(trueNum != falseNum);
+
+            // If the true target is the next block, reverse the branch
+            //
+            const bool reverseCondition = trueNum == (cursor + 1);
+
+            if (reverseCondition)
+            {
+                JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
+                        block->GetTrueTarget()->bbNum);
+
+                GenTree* const test = block->GetLastLIRNode();
+                assert(test->OperIs(GT_JTRUE));
+                {
+                    GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
+                    // Ensure `gtReverseCond` did not create a new node.
+                    assert(cond == test->AsOp()->gtOp1);
+                    test->AsOp()->gtOp1 = cond;
+                }
+
+                // Rewire the flow
+                //
+                std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+            }
+            else
+            {
+                JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+            }
+        }
+    }
+
+    // Publish the index to block map for use during codegen.
+    //
+    fgIndexToBlockMap = initialLayout;
+
+    JITDUMPEXEC(fgDumpWasmControlFlow());
+    JITDUMPEXEC(fgDumpWasmControlFlowDot());
+
+    // By publishing the index to block map, we are also indicating
+    // that try regions may no longer be contiguous.
+    //
+    assert(fgTrysNotContiguous());
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+//  fgDumpWasmControlFlow: show (roughly) what the WASM control flow looks like
+//
+//  Notes:
+//    Assumes blocks have been reordered
+//
+void Compiler::fgDumpWasmControlFlow()
+{
+    if (!verbose)
+    {
+        return;
+    }
+
+    ArrayStack<WasmInterval*> activeIntervals(getAllocator(CMK_WasmCfgLowering));
+    unsigned                  wasmCursor = 0;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        unsigned const cursor = block->bbPreorderNum;
         JITDUMP("Before " FMT_BB " at %u stack is:", block->bbNum, cursor);
+
         if (activeIntervals.Empty())
         {
             JITDUMP("empty");
@@ -1489,9 +1512,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         // Open intervals that start here or earlier
         //
-        if (wasmCursor < intervals.size())
+        if (wasmCursor < fgWasmIntervals->size())
         {
-            WasmInterval* interval = intervals[wasmCursor];
+            WasmInterval* interval = fgWasmIntervals->at(wasmCursor);
             WasmInterval* chain    = interval->Chain();
 
             while (chain->Start() <= cursor)
@@ -1501,12 +1524,12 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 wasmCursor++;
                 activeIntervals.Push(interval);
 
-                if (wasmCursor >= intervals.size())
+                if (wasmCursor >= fgWasmIntervals->size())
                 {
                     break;
                 }
 
-                interval = intervals[wasmCursor];
+                interval = fgWasmIntervals->at(wasmCursor);
                 chain    = interval->Chain();
             }
         }
@@ -1587,7 +1610,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 {
                     JITDUMP("FALLTHROUGH\n");
                 }
-                else if (succNum < numBlocks)
+                else
                 {
                     bool const isBackedge = succNum <= cursor;
                     unsigned   blockNum   = 0;
@@ -1614,18 +1637,16 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 //
                 // We could anticipate this above and induce a block like we do for switches.
                 //
-                // Or we can just invert the branch condition here; I think this should be viable.
+                // Or we can just reverse the branch condition here; I think this should be viable.
                 // (eg invoke the core part of optOptimizePostLayout).
                 //
-                const bool invertCondition = trueNum == (cursor + 1);
+                const bool reverseCondition = trueNum == (cursor + 1);
 
-                if (invertCondition)
+                if (reverseCondition)
                 {
-                    // TODO: induce a block and avoid this case, or actually modify the IR
-                    //
                     JITDUMP("FALLTHROUGH-inv\n");
                 }
-                else if (trueNum < numBlocks)
+                else
                 {
                     bool const isBackedge = trueNum <= cursor;
                     unsigned   blockNum   = 0;
@@ -1637,12 +1658,12 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 {
                     JITDUMP("FALLTHROUGH\n");
                 }
-                else if (falseNum < numBlocks)
+                else
                 {
                     bool const isBackedge = falseNum <= cursor;
                     unsigned   blockNum   = 0;
                     unsigned   depth      = findDepth(falseNum, isBackedge, blockNum);
-                    JITDUMP("BR%s %d (%u)%s\n", invertCondition ? "_IF-inv" : "", depth, blockNum,
+                    JITDUMP("BR%s %d (%u)%s\n", reverseCondition ? "_IF-inv" : "", depth, blockNum,
                             isBackedge ? "be" : "");
                 }
 
@@ -1654,13 +1675,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 BBswtDesc* const desc      = block->GetSwitchTargets();
                 unsigned const   caseCount = desc->GetCaseCount();
 
-                // BR_TABLE supports a default case, so we need to ensure
-                // that wasm lower does not remove it.
+                // BR_TABLE supports a default case.
+                // Wasm lower should not remove it.
                 //
-                // For now, we expect non-wasm lower has made the default case check explicit
-                // and so our BR_TABLE emission is deficient.
-                //
-                assert(!desc->HasDefaultCase());
+                assert(desc->HasDefaultCase());
 
                 if (caseCount == 0)
                 {
@@ -1675,13 +1693,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                     BasicBlock* const caseTarget    = desc->GetCase(caseNum)->getDestinationBlock();
                     unsigned const    caseTargetNum = caseTarget->bbPreorderNum;
 
-                    if (caseTargetNum < numBlocks)
-                    {
-                        bool const isBackedge = caseTargetNum <= cursor;
-                        unsigned   blockNum   = 0;
-                        unsigned   depth      = findDepth(caseTargetNum, isBackedge, blockNum);
-                        JITDUMP("%s %d (%u)%s", caseNum > 0 ? "," : "", depth, blockNum, isBackedge ? "be" : "");
-                    }
+                    bool const isBackedge = caseTargetNum <= cursor;
+                    unsigned   blockNum   = 0;
+                    unsigned   depth      = findDepth(caseTargetNum, isBackedge, blockNum);
+                    JITDUMP("%s %d (%u)%s", caseNum > 0 ? "," : "", depth, blockNum, isBackedge ? "be" : "");
                 }
 
                 JITDUMP("\n");
@@ -1705,100 +1720,101 @@ PhaseStatus Compiler::fgWasmControlFlow()
         WasmInterval* const i = activeIntervals.Pop();
         JITDUMP("END    (%u)%s\n", i->End(), i->IsLoop() ? " LOOP" : "");
     }
+}
 
-#ifdef DEBUG
-
-    if (verbose)
+//------------------------------------------------------------------------
+//  fgDumpWasmControlFlowDot: show (roughly) what the WASM control flow looks like
+//    using dot markup
+//
+void Compiler::fgDumpWasmControlFlowDot()
+{
+    if (!verbose)
     {
-        // Ditto but in dot markup
-        //
-        activeIntervals.Reset();
-        wasmCursor = 0;
-        JITDUMP("\ndigraph WASM {\n");
-
-        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
-        {
-            BasicBlock* const block = initialLayout[cursor];
-
-            // Close intervals that end here (at most two, block and/or loop)
-            //
-            while (!activeIntervals.Empty() && (activeIntervals.Top()->End() == cursor))
-            {
-                JITDUMP("  }\n");
-                activeIntervals.Pop();
-            }
-
-            // Open intervals that start here
-            //
-            if (wasmCursor < intervals.size())
-            {
-                WasmInterval* interval = intervals[wasmCursor];
-                WasmInterval* chain    = interval->Chain();
-
-                while (chain->Start() <= cursor)
-                {
-                    JITDUMP("  subgraph cluster_%u_%u%s {\n", chain->Start(), interval->End(),
-                            interval->IsLoop() ? "_loop" : "");
-
-                    if (interval->IsLoop())
-                    {
-                        JITDUMP("    color=red;\n");
-                    }
-                    else
-                    {
-                        JITDUMP("    color=black;\n");
-                    }
-
-                    wasmCursor++;
-                    activeIntervals.Push(interval);
-
-                    if (wasmCursor >= intervals.size())
-                    {
-                        break;
-                    }
-
-                    interval = intervals[wasmCursor];
-                    chain    = interval->Chain();
-                }
-            }
-
-            JITDUMP("    " FMT_BB ";\n", block->bbNum);
-        }
-
-        // Close remaining intervals
-        //
-        while (!activeIntervals.Empty())
-        {
-            activeIntervals.Pop();
-            JITDUMP("  }\n");
-        }
-
-        // Now list all the branches
-        //
-        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
-        {
-            BasicBlock* const block = initialLayout[cursor];
-
-            if (block->KindIs(BBJ_CALLFINALLY))
-            {
-                if (block->isBBCallFinallyPair())
-                {
-                    JITDUMP("   " FMT_BB " -> " FMT_BB " [style=dotted];\n", block->bbNum, block->Next()->bbNum);
-                }
-            }
-            else
-            {
-                for (BasicBlock* const succ : block->Succs())
-                {
-                    JITDUMP("   " FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
-                }
-            }
-        }
-
-        JITDUMP("}\n");
+        return;
     }
 
-#endif // DEBUG
+    ArrayStack<WasmInterval*> activeIntervals(getAllocator(CMK_WasmCfgLowering));
+    unsigned                  wasmCursor = 0;
+    JITDUMP("\ndigraph WASM {\n");
 
-    return PhaseStatus::MODIFIED_NOTHING;
+    for (BasicBlock* const block : Blocks())
+    {
+        unsigned const cursor = block->bbPreorderNum;
+
+        // Close intervals that end here (at most two, block and/or loop)
+        //
+        while (!activeIntervals.Empty() && (activeIntervals.Top()->End() == cursor))
+        {
+            JITDUMP("  }\n");
+            activeIntervals.Pop();
+        }
+
+        // Open intervals that start here
+        //
+        if (wasmCursor < fgWasmIntervals->size())
+        {
+            WasmInterval* interval = fgWasmIntervals->at(wasmCursor);
+            WasmInterval* chain    = interval->Chain();
+
+            while (chain->Start() <= cursor)
+            {
+                JITDUMP("  subgraph cluster_%u_%u%s {\n", chain->Start(), interval->End(),
+                        interval->IsLoop() ? "_loop" : "");
+
+                if (interval->IsLoop())
+                {
+                    JITDUMP("    color=red;\n");
+                }
+                else
+                {
+                    JITDUMP("    color=black;\n");
+                }
+
+                wasmCursor++;
+                activeIntervals.Push(interval);
+
+                if (wasmCursor >= fgWasmIntervals->size())
+                {
+                    break;
+                }
+
+                interval = fgWasmIntervals->at(wasmCursor);
+                chain    = interval->Chain();
+            }
+        }
+
+        JITDUMP("    " FMT_BB ";\n", block->bbNum);
+    }
+
+    // Close remaining intervals
+    //
+    while (!activeIntervals.Empty())
+    {
+        activeIntervals.Pop();
+        JITDUMP("  }\n");
+    }
+
+    // Now list all the branches
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            if (block->isBBCallFinallyPair())
+            {
+                JITDUMP("   " FMT_BB " -> " FMT_BB " [style=dotted];\n", block->bbNum, block->Next()->bbNum);
+            }
+        }
+        else
+        {
+            for (BasicBlock* const succ : block->Succs())
+            {
+                JITDUMP("   " FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
+            }
+        }
+    }
+
+    JITDUMP("}\n");
 }
+
+#endif // DEBUG

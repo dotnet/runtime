@@ -108,7 +108,7 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
                 isReadyToRun: false);
 
             string systemModuleName = Get(_command.SystemModuleName);
@@ -314,8 +314,16 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                // Get TypeMappingEntryAssembly from command-line option if specified
+                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
+                if (typeMappingEntryAssembly is not null)
                 {
+                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext));
+                }
+                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    // Fall back to entryassembly if not specified
                     typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
                 }
             }
@@ -412,8 +420,16 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            var stackTracePolicy = Get(_command.EmitStackTraceData) ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+            (bool emitStackTraceData, bool stackTraceLineNumbers) = Get(_command.StackTraceData) switch
+            {
+                null or "none" => (false, false),
+                "frames" => (true, false),
+                "lines" => (true, true),
+                _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
+            };
+
+            var stackTracePolicy = emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;

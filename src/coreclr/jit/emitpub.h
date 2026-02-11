@@ -22,19 +22,17 @@ void emitEndFN();
 
 void emitComputeCodeSizes();
 
-unsigned emitEndCodeGen(Compiler*         comp,
-                        bool              contTrkPtrLcls,
-                        bool              fullyInt,
-                        bool              fullPtrMap,
-                        unsigned          xcptnsCount,
-                        unsigned*         prologSize,
-                        unsigned*         epilogSize,
-                        void**            codeAddr,
-                        void**            codeAddrRW,
-                        void**            coldCodeAddr,
-                        void**            coldCodeAddrRW,
-                        void**            consAddr,
-                        void** consAddrRW DEBUGARG(unsigned* instrCount));
+unsigned emitEndCodeGen(Compiler*             comp,
+                        bool                  contTrkPtrLcls,
+                        bool                  fullyInt,
+                        bool                  fullPtrMap,
+                        unsigned              xcptnsCount,
+                        unsigned*             prologSize,
+                        unsigned*             epilogSize,
+                        void**                codeAddr,
+                        void**                codeAddrRW,
+                        void**                coldCodeAddr,
+                        void** coldCodeAddrRW DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */
@@ -65,7 +63,6 @@ void emitFinishPrologEpilogGeneration();
 /*           Record a code position and later convert it to offset      */
 /************************************************************************/
 
-void*    emitCurBlock();
 unsigned emitCurOffset();
 unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
@@ -80,8 +77,6 @@ const char* emitOffsetToLabel(unsigned offs);
 /************************************************************************/
 
 UNATIVE_OFFSET emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType);
-
-void emitEnsureDataSectionAlignment(unsigned alignment);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 

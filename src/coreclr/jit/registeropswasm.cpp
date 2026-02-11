@@ -27,11 +27,44 @@ static_assert(((static_cast<RegNumUnderlyingType>(WasmValueType::Count) - 1) >> 
 //
 regNumber MakeWasmReg(unsigned index, var_types type)
 {
+    WasmValueType wasmType = TypeToWasmValueType(type);
+    return MakeWasmReg(index, wasmType);
+}
+
+//------------------------------------------------------------------------
+// MakeWasmReg: Create a register number representing a WASM local.
+//
+// Arguments:
+//    index - The index of the WASM local
+//    type  - Its type
+//
+// Return Value:
+//    'regNumber' representing a tuple of '(index, type)'.
+//
+regNumber MakeWasmReg(unsigned index, WasmValueType type)
+{
+    assert((WasmValueType::Invalid < type) && (type < WasmValueType::Count));
+
     // WASM engines have a much smaller limit on the number of locals (50K) than this.
     if ((index & WASM_REG_TYPE_MASK) != 0)
     {
         IMPL_LIMITATION("Too many locals");
     }
+    RegNumUnderlyingType regValue = index | (static_cast<RegNumUnderlyingType>(type) << WASM_REG_TYPE_SHIFT);
+    return static_cast<regNumber>(regValue);
+}
+
+//------------------------------------------------------------------------
+// TypeToWasmValueType: Convert a 'var_types' value to a 'WasmValueType' value.
+//
+// Arguments:
+//    type - The input type, must be directly mappable to the WASM type system
+//
+// Return Value:
+//    The WASM type corresponding to 'type'.
+//
+WasmValueType TypeToWasmValueType(var_types type)
+{
     // clang-format off
     static const WasmValueType s_mapping[] = {
         WasmValueType::Invalid, // TYP_UNDEF,
@@ -56,9 +89,24 @@ regNumber MakeWasmReg(unsigned index, var_types type)
 
     WasmValueType wasmType = s_mapping[type];
     assert(wasmType != WasmValueType::Invalid);
+    return wasmType;
+}
 
-    RegNumUnderlyingType regValue = index | (static_cast<RegNumUnderlyingType>(wasmType) << WASM_REG_TYPE_SHIFT);
-    return static_cast<regNumber>(regValue);
+const char* WasmValueTypeName(WasmValueType type)
+{
+    // clang-format off
+    static const char* const WasmValueTypeNames[] = {
+        "Invalid",
+        "i32",
+        "i64",
+        "f32",
+        "f64",
+    };
+    static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
+    // clang-format on
+
+    assert(WasmValueType::Invalid <= type && type < WasmValueType::Count);
+    return WasmValueTypeNames[static_cast<unsigned>(type)];
 }
 
 //------------------------------------------------------------------------
@@ -82,7 +130,7 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
 }
 
 //------------------------------------------------------------------------
-// UnpackWasmReg: Extract the WASM local's index out of a register
+// WasmRegToIndex: Extract the WASM local's index out of a register
 //
 // Arguments:
 //    reg   - The register number representing '(index, type)'
@@ -92,7 +140,27 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
 //
 unsigned WasmRegToIndex(regNumber reg)
 {
-    return UnpackWasmReg(reg);
+    WasmValueType wasmType;
+    unsigned      index = UnpackWasmReg(reg, &wasmType);
+    assert((WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count));
+    return index;
+}
+
+//------------------------------------------------------------------------
+// WasmRegToType: Extract the WASM local's type out of a register
+//
+// Arguments:
+//    reg   - The register number representing '(index, type)'
+//
+// Return Value:
+//    The type represented by 'reg'.
+//
+WasmValueType WasmRegToType(regNumber reg)
+{
+    WasmValueType wasmType;
+    UnpackWasmReg(reg, &wasmType);
+    assert((WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count));
+    return wasmType;
 }
 
 bool genIsValidReg(regNumber reg)
@@ -100,6 +168,25 @@ bool genIsValidReg(regNumber reg)
     WasmValueType wasmType;
     UnpackWasmReg(reg, &wasmType);
     return (WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count);
+}
+
+bool genIsValidIntReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::I32) || (type == WasmValueType::I64);
+}
+
+bool genIsValidIntOrFakeReg(regNumber reg)
+{
+    return genIsValidIntReg(reg);
+}
+
+bool genIsValidFloatReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
 }
 
 const char* getRegName(regNumber reg)

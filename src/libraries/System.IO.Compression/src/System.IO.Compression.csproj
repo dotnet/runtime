@@ -54,6 +54,7 @@
     <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.cs" />
     <Compile Include="System\IO\Compression\ZLibCompressionOptions.cs" />
     <Compile Include="System\IO\Compression\ZLibStream.cs" />
+    <Compile Include="System\IO\Compression\ZipCompressionMethod.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
   </ItemGroup>

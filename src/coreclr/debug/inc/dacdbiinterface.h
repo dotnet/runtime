@@ -1571,25 +1571,25 @@ public:
     typedef enum
     {
         kNone,
-        kILStub,
+        kDiagnosticHidden,
         kLCGMethod,
     } DynamicMethodType;
 
     //
-    // Check whether the specified method is an IL stub or an LCG method.  This answer determines if we
+    // Check whether the specified method is a DiagnosticHidden or an LCG method.  This answer determines if we
     // need to expose the method in a V2-style stackwalk.
     //
     // Arguments:
     //    vmMethodDesc - the method to be checked
     //
     // Return Value:
-    //    Return kNone if the method is neither an IL stub or an LCG method.
-    //    Return kILStub if the method is an IL stub.
+    //    Return kNone if the method is neither a DiagnosticHidden or an LCG method.
+    //    Return kDiagnosticHidden if the method is a DiagnosticHidden method.
     //    Return kLCGMethod if the method is an LCG method.
     //
 
     virtual
-    DynamicMethodType IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc) = 0;
+    DynamicMethodType IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc) = 0;
 
     //
     // Return a TargetBuffer for the raw vararg signature.
@@ -1715,14 +1715,18 @@ public:
     //    the most recent one
     // Arguments:
     //    Input:
-    //        hotCodeStartAddr  - the beginning of the code hot code region
+    //        codeAddress  - any code address within the method body
     //    Output (required):
     //        pCodeInfo     - data structure describing the native code regions.
+    //    Output (optional):
+    //        pVmModule     - module containing metadata for the method
+    //        pFunctionToken - metadata token for the function
 
     virtual
-    void GetNativeCodeInfoForAddr(VMPTR_MethodDesc    vmMethodDesc,
-                                  CORDB_ADDRESS hotCodeStartAddr,
-                                  NativeCodeFunctionData * pCodeInfo) = 0;
+    void GetNativeCodeInfoForAddr(CORDB_ADDRESS codeAddress,
+                                  NativeCodeFunctionData * pCodeInfo,
+                                  VMPTR_Module *           pVmModule,
+                                  mdToken * pFunctionToken) = 0;
 
     //-----------------------------------------------------------------------------
     // Functions to get information about types
@@ -2710,6 +2714,25 @@ public:
 
     virtual
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
+
+    virtual
+    HRESULT ParseContinuation(
+        CORDB_ADDRESS continuationAddress,
+        OUT PCODE* pDiagnosticIP,
+        OUT CORDB_ADDRESS* pNextContinuation,
+        OUT UINT32* pState) = 0;
+
+    virtual
+    void GetAsyncLocals(
+        VMPTR_MethodDesc vmMethod,
+        CORDB_ADDRESS codeAddr,
+        UINT32 state,
+        OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
+
+    virtual
+    HRESULT GetGenericArgTokenIndex(
+        VMPTR_MethodDesc vmMethod,
+        OUT UINT32* pTokenIndex) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
