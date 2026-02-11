@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Logging
     {
         private const string NullValue = "(null)";
         private readonly List<string> _valueNames = new List<string>();
+        private readonly int _placeholderCount;
 #if NET
         private readonly CompositeFormat _format;
 #else
@@ -37,6 +38,7 @@ namespace Microsoft.Extensions.Logging
             var vsb = new ValueStringBuilder(stackalloc char[256]);
             int scanIndex = 0;
             int endIndex = format.Length;
+            int placeholderCount = 0;
 
             while (scanIndex < endIndex)
             {
@@ -68,6 +70,7 @@ namespace Microsoft.Extensions.Logging
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
                     string valueName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+                    placeholderCount++;
 
                     int valueIndex;
                     if (valueNameIndices != null)
@@ -107,6 +110,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
+            _placeholderCount = placeholderCount;
             _format =
 #if NET
                 CompositeFormat.Parse(vsb.ToString());
@@ -117,6 +121,7 @@ namespace Microsoft.Extensions.Logging
 
         public string OriginalFormat { get; }
         public List<string> ValueNames => _valueNames;
+        public int PlaceholderCount => _placeholderCount;
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
         {

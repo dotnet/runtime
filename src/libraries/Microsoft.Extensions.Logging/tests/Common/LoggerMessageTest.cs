@@ -595,5 +595,20 @@ namespace Microsoft.Extensions.Logging.Test
                 Assert.Equal("Hello {Name}. How are you {Name}", actualLogValues.First(v => v.Key == "{OriginalFormat}").Value);
             }
         }
+
+        [Fact]
+        public void LoggerMessage_Define_WithDuplicatePlaceholder_BackwardCompat_MatchingArgCount()
+        {
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+            var action = LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. How are you {Name}");
+
+            action(testLogger, "David", "David", null);
+
+            Assert.Single(testSink.Writes);
+            var writeContext = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
+            Assert.Equal("Hello David. How are you David", actualLogValues.ToString());
+        }
     }
 }
