@@ -779,10 +779,11 @@ namespace Microsoft.Extensions.Logging.Generators
                         break;
                     }
 
-                    templateMap[templateName] = templateName;
-                    if (!templateList.Contains(templateName))
+                    // Only add the template name to the list if it hasn't been seen before
+                    if (!templateMap.ContainsKey(templateName))
                     {
                         templateList.Add(templateName);
+                        templateMap[templateName] = templateName;
                     }
 
                     scanIndex = closeBraceIndex + 1;
