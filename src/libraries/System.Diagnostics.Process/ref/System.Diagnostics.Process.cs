@@ -203,7 +203,7 @@ namespace System.Diagnostics
     }
     public sealed partial class ProcessExitStatus
     {
-        public ProcessExitStatus(int exitCode, bool cancelled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
+        public ProcessExitStatus(int exitCode, bool canceled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
         public bool Canceled { get { throw null; } }
         public int ExitCode { get { throw null; } }
         public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
