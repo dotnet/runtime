@@ -997,11 +997,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         genTreeOps cmpOper    = GT_NONE;
         bool       isUnsigned = false;
 
-        // o1: (normalLclVN + CNS1) - OAK_LT[_UN] - o2: (preferredBoundVN + 0)
+        // o1: (normalLclVN + CNS1) - OAK_LT_UN - o2: (preferredBoundVN + 0)
         // We can deduce normalLclVN's upper bound to be preferredBoundVN - CNS1
-        // Example: "(uint)(i + 2) < (uint)span.Length" or just "i + 2 < span.Length"
-        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN, Compiler::OAK_LT) &&
+        // Example: "(uint)(i + 2) < (uint)span.Length"
+        if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LT_UN) &&
             curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS) &&
+            // Normally, checked bound doesn't directly imply non-negativity, so we check
+            // that explicitly here:
             curAssertion.GetOp2().IsCheckedBoundNeverNegative() &&
             (curAssertion.GetOp2().GetCheckedBound() == preferredBoundVN) &&
             (curAssertion.GetOp1().GetVN() != normalLclVN))
@@ -1014,9 +1016,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 cmpOper    = GT_LT;
                 limit      = Limit(Limit::keBinOpArray, preferredBoundVN, -addOpCns);
                 isUnsigned = false;
-                // The difference between signed and unsigned is that for unsigned the lower bound can also be
-                // deduced to be -cns instead of INT32_MIN (but only if curAssertion.GetOp2().GetCheckedBoundConstant()
-                // is true) but we only report one bound at a time in MergeEdgeAssertions.
+                // The comparison being unsigned may also hint that the lower bound is -CNS1, but it's
+                // unlikely to be useful, so we ignore it for now. The whole thing will work only if some other assertion
+                // proves that the normalLclVN's lower bound is non-negative.
             }
             else
             {
