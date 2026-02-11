@@ -304,7 +304,7 @@
     <PlatformManifestFileEntry Include="zstd_static.lib" IsNative="true" />
     <!-- xz/lzma-specific files -->
     <PlatformManifestFileEntry Include="liblzma.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="lzma_static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="lzma.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>
