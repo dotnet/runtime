@@ -4776,7 +4776,7 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 //
 bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
 {
-    assert(indir->GetIndirOrArrMetaDataAddr());
+    assert(indir->OperIsIndirOrArrMetaData());
 
     if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
