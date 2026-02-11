@@ -39,7 +39,7 @@ namespace System
         {
             if (_adjustmentRules == null)
             {
-                return Array.Empty<AdjustmentRule>();
+                return [];
             }
 
             return (AdjustmentRule[])_adjustmentRules.Clone();

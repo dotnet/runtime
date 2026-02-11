@@ -44,7 +44,7 @@
   <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(TargetPath)" />
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
-        <WasmPInvokeAssembly Include="$(AssembliesScanPath)**/*.dll" />
+        <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
         <WasmPInvokeModule Include="libSystem.Native" />
         <WasmPInvokeModule Include="libSystem.Native.Browser" />
         <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />

@@ -217,8 +217,8 @@ build_native()
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool $target -j $__NumProc"
-        "$buildTool" $target -j "$__NumProc"
+        echo "Executing $buildTool -j $__NumProc $target"
+        "$buildTool" -j "$__NumProc" $target
         exit_code="$?"
 
         popd
@@ -234,8 +234,8 @@ build_native()
             # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
             pushd "$intermediatesDir"
 
-            echo "Executing $buildTool $target -j $__NumProc"
-            "$buildTool" $target -j "$__NumProc"
+            echo "Executing $buildTool -j $__NumProc $target"
+            "$buildTool" -j "$__NumProc" $target
             exit_code="$?"
 
             popd
@@ -271,7 +271,7 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-ninja: target ninja instead of GNU make"
+    echo "-ninja: target ninja instead of GNU make (default: true, use -ninja false to disable)"
     echo "-numproc: set the number of build processes."
     echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
@@ -310,6 +310,9 @@ elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
 else
   __NumProc=1
 fi
+
+# Default to using Ninja for faster builds
+__UseNinja=1
 
 while :; do
     if [[ "$#" -le 0 ]]; then
@@ -412,7 +415,17 @@ while :; do
             ;;
 
         ninja|-ninja)
-            __UseNinja=1
+            if [[ -z "${2+x}" ]] || [[ "$2" == -* ]]; then
+              __UseNinja=1
+            else
+              ninja_arg="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+              if [[ "$ninja_arg" == "false" ]]; then
+                __UseNinja=0
+              else
+                __UseNinja=1
+              fi
+              shift
+            fi
             ;;
 
         numproc|-numproc)

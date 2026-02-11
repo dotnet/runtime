@@ -377,7 +377,7 @@ class RefInfoListNodePool final
     static const unsigned defaultPreallocation = 8;
 
 public:
-    RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
+    RefInfoListNodePool(Compiler* m_compiler, unsigned preallocate = defaultPreallocation);
     RefInfoListNode* GetNode(RefPosition* r, GenTree* t);
     void             ReturnNode(RefInfoListNode* listNode);
 };
@@ -917,7 +917,7 @@ private:
 
     bool stressInitialParamReg()
     {
-        return compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
+        return m_compiler->compStressCompile(Compiler::STRESS_INITIAL_PARAM_REG, 25);
     }
 
     // Dump support
@@ -988,8 +988,6 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
-    Compiler* GetCompiler() const;
-
     // Determine which locals are candidates for allocation
     template <bool localVarsEnregistered>
     void identifyCandidates();
@@ -1055,7 +1053,7 @@ private:
     {
         if (tree->IsLocal())
         {
-            const LclVarDsc* varDsc = compiler->lvaGetDesc(tree->AsLclVarCommon());
+            const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
             return isCandidateVar(varDsc);
         }
         return false;
@@ -1103,7 +1101,7 @@ private:
         {
             assert(tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
             GenTreeLclVar* lclVar = tree->AsLclVar();
-            LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+            LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);
         }
         assert(type != TYP_UNDEF && type != TYP_STRUCT);
@@ -1132,14 +1130,14 @@ private:
 
     Interval* getIntervalForLocalVar(unsigned varIndex)
     {
-        assert(varIndex < compiler->lvaTrackedCount);
+        assert(varIndex < m_compiler->lvaTrackedCount);
         assert(localVarIntervals[varIndex] != nullptr);
         return localVarIntervals[varIndex];
     }
 
     Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
     {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
         assert(varDsc->lvTracked);
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
@@ -1395,7 +1393,7 @@ private:
         if (splitBBNumToTargetBBNumMap == nullptr)
         {
             splitBBNumToTargetBBNumMap =
-                new (getAllocator(compiler)) SplitBBNumToTargetBBNumMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) SplitBBNumToTargetBBNumMap(getAllocator(m_compiler));
         }
         return splitBBNumToTargetBBNumMap;
     }
@@ -1426,7 +1424,7 @@ private:
         if (nextConsecutiveRefPositionMap == nullptr)
         {
             nextConsecutiveRefPositionMap =
-                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+                new (getAllocator(m_compiler)) NextConsecutiveRefPositionsMap(getAllocator(m_compiler));
         }
         return nextConsecutiveRefPositionMap;
     }
@@ -1606,7 +1604,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler*     compiler;
+    Compiler*     m_compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -2259,7 +2257,7 @@ public:
     void microDump();
 #endif // DEBUG
 
-    void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
+    void setLocalNumber(Compiler* m_compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
     SingleTypeRegSet registerPreferences;
