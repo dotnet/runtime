@@ -159,14 +159,22 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             id->idInsFmt(IF_ULEB128);
             break;
         case EC_INDIR_R:
+        {
             // Indirect load of actual ftn ptr from indirection cell (on the stack)
             // TODO-WASM: temporary, move this into higher layers (lowering).
             emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+
+            // TODO-WASM: Generate actual list of types and generate reloc
+            // This is here to exercise the new JIT-EE API
+            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID};
+            codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
+
+            id = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
+        }
         default:
             unreached();
     }
@@ -175,11 +183,36 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
         id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
     }
 
     dispIns(id);
     appendToCurIG(id);
-    // emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
+}
+
+//------------------------------------------------------------------------
+// GetWasmArgsCount: Get WASM argument count for the root method.
+//
+// Arguments:
+//    compiler - The compiler object
+//
+// Return Value:
+//    The number of arguments in the WASM signature of the method being compiled.
+//
+static unsigned GetWasmArgsCount(Compiler* compiler)
+{
+    assert(compiler->funCurrentFunc()->funKind == FUNC_ROOT);
+
+    unsigned count = 0;
+    for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
+    {
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        {
+            count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+        }
+    }
+    return count;
 }
 
 //-----------------------------------------------------------------------------
@@ -206,7 +239,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->lclOffset = lclOffset;
+        id->idDebugOnlyInfo()->lclBaseIndex = GetWasmArgsCount(m_compiler) + lclOffset;
     }
 
     return id;
@@ -221,7 +254,9 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 //   ins      - instruction to emit
 //   imm      - immediate value (local count)
 //   valType  - value type of the local variable
-//   offs     - local variable offset (= count of preceding locals) for debug info
+//   offs     - local variable offset (= count of preceding locals) for debug info,
+//              only includes locals declared explicitly (not args)
+//
 void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs)
 {
     instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
@@ -321,10 +356,10 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
     // clang-format off
     static const uint8_t typecode_mapping[] = {
         0x00, // WasmValueType::Invalid = 0,
-        0x7C, // WasmValueType::F64 = 1,
-        0x7D, // WasmValueType::F32 = 2,
-        0x7E, // WasmValueType::I64 = 3,
-        0x7F, // WasmValueType::I32 = 4,
+        0x7F, // WasmValueType::I32 = 1,
+        0x7E, // WasmValueType::I64 = 2,
+        0x7D, // WasmValueType::F32 = 3,
+        0x7C, // WasmValueType::F64 = 4,
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
@@ -659,11 +694,18 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf(" ;; ");
+                printf("      ;;");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
             }
+        }
+    };
+
+    auto dispHandleIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
         }
     };
 
@@ -681,6 +723,7 @@ void emitter::emitDispIns(
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+            dispHandleIfAny();
         }
         break;
 
@@ -688,6 +731,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu 0", (uint64_t)imm);
+            dispHandleIfAny();
         }
         break;
 
@@ -700,7 +744,7 @@ void emitter::emitDispIns(
             if (m_debugInfoSize > 0)
             {
                 // With debug info: print the local offsets being declared
-                int offs = id->idDebugOnlyInfo()->lclOffset;
+                int offs = id->idDebugOnlyInfo()->lclBaseIndex;
                 if (count > 1)
                 {
                     printf("[%u..%u] type=%s", offs, offs + count - 1, WasmValueTypeName(valType));

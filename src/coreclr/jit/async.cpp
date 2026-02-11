@@ -183,10 +183,18 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: started = (continuation == null)
-    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-    GenTree* null         = gtNewNull();
-    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    // First argument: resumed = (continuation != null)
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewFalse();
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
@@ -205,7 +213,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     for (BasicBlock* block : Blocks())
     {
-        AddContextArgsToAsyncCalls(block);
+        if (!compIsForInlining())
+        {
+            AddContextArgsToAsyncCalls(block);
+        }
 
         if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
         {
@@ -220,23 +231,28 @@ PhaseStatus Compiler::SaveAsyncContexts()
             newReturnBB->inheritWeightPercentage(block, 0);
         }
 
-        // Store return value to common local
-        Statement* retStmt = block->lastStmt();
-        assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
-
-        if (mergedReturnLcl != BAD_VAR_NUM)
+        // When inlining we do merging during import, so we do not need to do
+        // any storing there.
+        if (!compIsForInlining())
         {
-            GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
-            Statement* insertAfter = retStmt;
-            GenTree*   storeRetVal =
-                gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
-            Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
-            fgInsertStmtAtEnd(block, storeStmt);
-            JITDUMP("Inserted store to common return local\n");
-            DISPSTMT(storeStmt);
-        }
+            // Store return value to common local
+            Statement* retStmt = block->lastStmt();
+            assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
 
-        retStmt->GetRootNode()->gtBashToNOP();
+            if (mergedReturnLcl != BAD_VAR_NUM)
+            {
+                GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
+                Statement* insertAfter = retStmt;
+                GenTree*   storeRetVal = gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter,
+                                                        retStmt->GetDebugInfo(), block);
+                Statement* storeStmt   = fgNewStmtFromTree(storeRetVal);
+                fgInsertStmtAtEnd(block, storeStmt);
+                JITDUMP("Inserted store to common return local\n");
+                DISPSTMT(storeStmt);
+            }
+
+            retStmt->GetRootNode()->gtBashToNOP();
+        }
 
         // Jump to new shared restore + return block
         block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
@@ -334,9 +350,17 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     // Insert "restore" call
     CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-    GenTree* null         = gtNewNull();
-    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewFalse();
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    }
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
@@ -355,56 +379,58 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     JITDUMP("Inserted restore statement in return block\n");
     DISPSTMT(restoreStmt);
 
-    *mergedReturnLcl = BAD_VAR_NUM;
-
-    GenTree* ret;
-    if (compMethodHasRetVal())
+    if (!compIsForInlining())
     {
-        *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
+        *mergedReturnLcl = BAD_VAR_NUM;
 
-        var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
-
-        if (varTypeIsStruct(retLclType))
+        GenTree* ret;
+        if (compMethodHasRetVal())
         {
-            lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+            *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
 
-            if (compMethodReturnsMultiRegRetType())
+            var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
+
+            if (varTypeIsStruct(retLclType))
             {
-                lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+
+                if (compMethodReturnsMultiRegRetType())
+                {
+                    lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                }
             }
+            else
+            {
+                lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            }
+
+            GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
+            ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
         }
         else
         {
-            lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
 
-        GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
-        ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
-    }
-    else
-    {
-        ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+        Statement* retStmt = fgNewStmtFromTree(ret);
+
+        fgInsertStmtAtEnd(newReturnBB, retStmt);
+        JITDUMP("Inserted return statement in return block\n");
+        DISPSTMT(retStmt);
     }
 
-    Statement* retStmt = fgNewStmtFromTree(ret);
-
-    fgInsertStmtAtEnd(newReturnBB, retStmt);
-    JITDUMP("Inserted return statement in return block\n");
-    DISPSTMT(retStmt);
     return newReturnBB;
 }
 
 class AsyncLiveness
 {
     Compiler*              m_compiler;
-    bool                   m_hasLiveness;
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
 
 public:
-    AsyncLiveness(Compiler* comp, bool hasLiveness)
+    AsyncLiveness(Compiler* comp)
         : m_compiler(comp)
-        , m_hasLiveness(hasLiveness)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
     {
@@ -430,9 +456,6 @@ private:
 //
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
-    if (!m_hasLiveness)
-        return;
-
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
 }
 
@@ -446,9 +469,6 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    if (!m_hasLiveness)
-        return;
-
     m_updater.UpdateLife(node);
 }
 
@@ -539,8 +559,9 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    if (!m_hasLiveness)
+    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
     {
+        // Keep all IL locals in debug codegen
         return true;
     }
 
@@ -701,21 +722,18 @@ PhaseStatus AsyncTransformation::Run()
 #endif
 
     // Compute liveness to be used for determining what must be captured on
-    // suspension. In unoptimized codegen we capture everything.
-    if (m_compiler->opts.OptimizationEnabled())
+    // suspension.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        if (m_compiler->m_dfsTree == nullptr)
-        {
-            m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
-        }
-
-        m_compiler->lvaComputeRefCounts(true, false);
-        m_compiler->fgLocalVarLiveness();
-        INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
-        VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
     }
 
-    AsyncLiveness liveness(m_compiler, m_compiler->opts.OptimizationEnabled());
+    m_compiler->lvaComputePreciseRefCounts(/* isRecompute */ true, /* setSlotNumbers */ false);
+    m_compiler->fgAsyncLiveness();
+    INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
+    VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+
+    AsyncLiveness liveness(m_compiler);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
@@ -782,6 +800,28 @@ PhaseStatus AsyncTransformation::Run()
     CreateResumptionSwitch();
 
     m_compiler->fgInvalidateDfsTree();
+
+    if (m_compiler->opts.OptimizationDisabled())
+    {
+        // Rest of the compiler does not expect that we started tracking locals, so reset that state.
+        for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+        {
+            m_compiler->lvaGetDesc(m_compiler->lvaTrackedToVarNum[i])->lvTracked = false;
+        }
+
+        m_compiler->lvaCurEpoch++;
+        m_compiler->lvaTrackedCount             = 0;
+        m_compiler->lvaTrackedCountInSizeTUnits = 0;
+
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            block->bbLiveIn  = VarSetOps::UninitVal();
+            block->bbLiveOut = VarSetOps::UninitVal();
+            block->bbVarUse  = VarSetOps::UninitVal();
+            block->bbVarDef  = VarSetOps::UninitVal();
+        }
+        m_compiler->fgBBVarSetsInited = false;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

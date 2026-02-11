@@ -11,10 +11,12 @@ public partial class AppSettingsTest
     [JSExport]
     public static void Run()
     {
+        const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+
         // Check file presence in VFS based on application environment
-        PrintFileExistence("/appsettings.json");
-        PrintFileExistence("/appsettings.Development.json");
-        PrintFileExistence("/appsettings.Production.json");
+        PrintFileExistence(browserVirtualAppBase + "appsettings.json");
+        PrintFileExistence(browserVirtualAppBase + "appsettings.Development.json");
+        PrintFileExistence(browserVirtualAppBase + "appsettings.Production.json");
     }
 
     // Synchronize with AppSettingsTests

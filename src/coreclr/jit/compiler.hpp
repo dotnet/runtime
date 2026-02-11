@@ -3799,21 +3799,19 @@ inline void Compiler::optAssertionReset()
         AssertionIndex      index        = optAssertionCount;
         const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion.op1.lclNum;
+        unsigned lclNum = curAssertion.GetOp1().GetLclNum();
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion.IsCopyAssertion())
         {
-            assert(curAssertion.op1.kind == O1K_LCLVAR);
-
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion.op2.lclNum;
+            lclNum = curAssertion.GetOp2().GetLclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }
