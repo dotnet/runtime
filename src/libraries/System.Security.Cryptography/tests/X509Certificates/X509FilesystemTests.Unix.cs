@@ -136,7 +136,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
                         {
-                            getDotNetCert = (X509Certificate2)certificate;
+                            getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
+                            Assert.NotNull(getDotNetCert.Subject);
                             return errors == SslPolicyErrors.None;
                         }
                     }
@@ -150,6 +151,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
 
                 Assert.NotNull(getDotNetCert);
+                Assert.NotNull(getDotNetCert.Subject);
                 return getDotNetCert;
             }
         }
