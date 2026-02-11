@@ -33,10 +33,10 @@ namespace System.Threading.Tasks.Tests
 
             Task.WaitAll(c1, c2, c3, c4);
 
-            Assert.True(c1.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task=>task continuation leaks state");
-            Assert.True(c2.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task=>task with result continuation leaks state");
-            Assert.True(c3.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task with result=>task continuation leaks state");
-            Assert.True(c4.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task with result=>task with result continuation leaks state");
+            Assert.True(c1.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task=>Task continuation leaks state");
+            Assert.True(c2.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task=>Task<TResult> continuation leaks state");
+            Assert.True(c3.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task<TResult>=>Task continuation leaks state");
+            Assert.True(c4.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task<TResult>=>Task<TResult> continuation leaks state");
         }
 
         // Stresses on multiple continuations from a single antecedent

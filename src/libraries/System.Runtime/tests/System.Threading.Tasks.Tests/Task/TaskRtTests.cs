@@ -59,7 +59,7 @@ namespace System.Threading.Tasks.Tests
                 // Test Run(Func<Task<int>>)
                 Task<int> f2 = Task.Run(() =>
                 {
-                    // Make sure AttachedToParent is ignored for tasks with result as well as tasks
+                    // Make sure AttachedToParent is ignored for tasks
                     fInner = new Task<int>(() => { return 42; }, TaskCreationOptions.AttachedToParent);
                     Task<int> returnTask = Task<int>.Factory.StartNew(() => 11);
                     return returnTask;
@@ -81,10 +81,10 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task did not end in RanToCompletion state.");
 
             Task<int> taskWithResult1 = Task.Run(() => { return 7; });
-            Debug.WriteLine("RunRunTests - Basic w/o CT: waiting for a task with result.  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests - Basic w/o CT: waiting for a Task<int>.  If we hang, something went wrong.");
             taskWithResult1.Wait();
-            Assert.True(taskWithResult1.Result == 7, "    > FAILED.  Task with result completed but did not run.");
-            Assert.True(taskWithResult1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task with result did not end in RanToCompletion state.");
+            Assert.True(taskWithResult1.Result == 7, "    > FAILED.  Task<int> completed but did not run.");
+            Assert.True(taskWithResult1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task<int> did not end in RanToCompletion state.");
 
             task1 = Task.Run(() => { return Task.Run(() => { count = 11; }); });
             Debug.WriteLine("RunRunTests - Basic w/o CT: waiting for a task(unwrapped).  If we hang, something went wrong.");
@@ -93,10 +93,10 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task(unwrapped) did not end in RanToCompletion state.");
 
             taskWithResult1 = Task.Run(() => { return Task.Run(() => 17); });
-            Debug.WriteLine("RunRunTests - Basic w/o CT: waiting for a task with result(unwrapped).  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests - Basic w/o CT: waiting for a Task<int>(unwrapped).  If we hang, something went wrong.");
             taskWithResult1.Wait();
-            Assert.True(taskWithResult1.Result == 17, "    > FAILED.  Task with result(unwrapped) completed but did not run.");
-            Assert.True(taskWithResult1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task with result(unwrapped) did not end in RanToCompletion state.");
+            Assert.True(taskWithResult1.Result == 17, "    > FAILED.  Task<int>(unwrapped) completed but did not run.");
+            Assert.True(taskWithResult1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task<int>(unwrapped) did not end in RanToCompletion state.");
 
             //
             // Test basic functionality w/ uncancelled cancellation token
@@ -110,10 +110,10 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task w/ uncanceled token did not end in RanToCompletion state.");
 
             Task<int> taskWithResult2 = Task.Run(() => 27, token);
-            Debug.WriteLine("RunRunTests: waiting for a task with result w/ uncanceled token.  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests: waiting for a Task<int> w/ uncanceled token.  If we hang, something went wrong.");
             taskWithResult2.Wait();
-            Assert.True(taskWithResult2.Result == 27, "    > FAILED.  Task with result w/ uncanceled token completed but did not run.");
-            Assert.True(taskWithResult2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task with result w/ uncanceled token did not end in RanToCompletion state.");
+            Assert.True(taskWithResult2.Result == 27, "    > FAILED.  Task<int> w/ uncanceled token completed but did not run.");
+            Assert.True(taskWithResult2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task<int> w/ uncanceled token did not end in RanToCompletion state.");
 
             task2 = Task.Run(() => { return Task.Run(() => { count = 31; }); }, token);
             Debug.WriteLine("RunRunTests: waiting for a task(unwrapped) w/ uncanceled token.  If we hang, something went wrong.");
@@ -122,10 +122,10 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
 
             taskWithResult2 = Task.Run(() => Task.Run(() => 37), token);
-            Debug.WriteLine("RunRunTests: waiting for a task with result(unwrapped) w/ uncanceled token.  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests: waiting for a Task<int>(unwrapped) w/ uncanceled token.  If we hang, something went wrong.");
             taskWithResult2.Wait();
-            Assert.True(taskWithResult2.Result == 37, "    > FAILED.  Task with result(unwrapped) w/ uncanceled token completed but did not run.");
-            Assert.True(taskWithResult2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task with result(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
+            Assert.True(taskWithResult2.Result == 37, "    > FAILED.  Task<int>(unwrapped) w/ uncanceled token completed but did not run.");
+            Assert.True(taskWithResult2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Task<int>(unwrapped) w/ uncanceled token did not end in RanToCompletion state.");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -147,11 +147,11 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task3.IsCanceled, "    > FAILED.  Task w/ canceled token should have ended in Canceled state");
 
             Task taskWithResult3 = Task.Run(() => { count = 47; return count; }, token);
-            Debug.WriteLine("RunRunTests: waiting for a task with result w/ canceled token.  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests: waiting for a Task<int> w/ canceled token.  If we hang, something went wrong.");
             Assert.Throws<AggregateException>(
                () => { taskWithResult3.Wait(); });
-            Assert.False(count == 47, "    > FAILED.  Task with result w/ canceled token ran when it should not have.");
-            Assert.True(taskWithResult3.IsCanceled, "    > FAILED.  Task with result w/ canceled token should have ended in Canceled state");
+            Assert.False(count == 47, "    > FAILED.  Task<int> w/ canceled token ran when it should not have.");
+            Assert.True(taskWithResult3.IsCanceled, "    > FAILED.  Task<int> w/ canceled token should have ended in Canceled state");
 
             task3 = Task.Run(() => { return Task.Run(() => { count = 51; }); }, token);
             Debug.WriteLine("RunRunTests: waiting for a task(unwrapped) w/ canceled token.  If we hang, something went wrong.");
@@ -161,11 +161,11 @@ namespace System.Threading.Tasks.Tests
             Assert.True(task3.IsCanceled, "    > FAILED.  Task(unwrapped) w/ canceled token should have ended in Canceled state");
 
             taskWithResult3 = Task.Run(() => { return Task.Run(() => { count = 57; return count; }); }, token);
-            Debug.WriteLine("RunRunTests: waiting for a task with result(unwrapped) w/ canceled token.  If we hang, something went wrong.");
+            Debug.WriteLine("RunRunTests: waiting for a Task<int>(unwrapped) w/ canceled token.  If we hang, something went wrong.");
             Assert.Throws<AggregateException>(
                () => { taskWithResult3.Wait(); });
-            Assert.False(count == 57, "    > FAILED.  Task with result(unwrapped) w/ canceled token ran when it should not have.");
-            Assert.True(taskWithResult3.IsCanceled, "    > FAILED.  Task with result(unwrapped) w/ canceled token should have ended in Canceled state");
+            Assert.False(count == 57, "    > FAILED.  Task<int>(unwrapped) w/ canceled token ran when it should not have.");
+            Assert.True(taskWithResult3.IsCanceled, "    > FAILED.  Task<int>(unwrapped) w/ canceled token should have ended in Canceled state");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -232,25 +232,25 @@ namespace System.Threading.Tasks.Tests
                 // Now run them through Task.Run
                 Task<int> fastPath1 = Task.Run(() => alreadyCompletedTask);
                 fastPath1.Wait();
-                Assert.True(fastPath1.Status == TaskStatus.RanToCompletion, "RunRunTests: Expected proxy for already-ran-to-completion task with result to be in RanToCompletion status");
+                Assert.True(fastPath1.Status == TaskStatus.RanToCompletion, "RunRunTests: Expected proxy for already-ran-to-completion Task<TResult> to be in RanToCompletion status");
 
                 fastPath1 = Task.Run(() => alreadyFaultedTask);
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-faulted task with result to throw on Wait()");
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-faulted Task<TResult> to throw on Wait()");
                 }
                 catch { }
-                Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted task with result to be in Faulted status");
+                Assert.True(fastPath1.Status == TaskStatus.Faulted, "Expected proxy for already-faulted Task<TResult> to be in Faulted status");
 
                 fastPath1 = Task.Run(() => alreadyCanceledTask);
                 try
                 {
                     fastPath1.Wait();
-                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-canceled task with result to throw on Wait()");
+                    Assert.Fail("RunRunTests:    > FAILURE: Expected proxy for already-canceled Task<TResult> to throw on Wait()");
                 }
                 catch { }
-                Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled task with result to be in Canceled status");
+                Assert.True(fastPath1.Status == TaskStatus.Canceled, "RunRunTests: Expected proxy for already-canceled Task<TResult> to be in Canceled status");
             }
         }
 
@@ -732,7 +732,7 @@ namespace System.Threading.Tasks.Tests
             // Test mcw off of Task
             Task t = Task.Factory.StartNew(delegate { });
 
-            // Throw in the returned task with result
+            // Throw in the returned Task<TResult>
             Task<int> mcw1 = t.ContinueWith(delegate (Task antecedent)
             {
                 Task<int> inner = Task<int>.Factory.StartNew(delegate
@@ -759,10 +759,10 @@ namespace System.Threading.Tasks.Tests
 
             mcwExceptionChecker(mcw2, "Task antecedent, throw in returned Task<TResult>");
 
-            // Test mcw off of task with result
+            // Test mcw off of Task<TResult>
             Task<int> f = Task<int>.Factory.StartNew(delegate { return 0; });
 
-            // Throw in the returned task with result
+            // Throw in the returned Task<TResult>
             mcw1 = f.ContinueWith(delegate (Task<int> antecedent)
             {
                 Task<int> inner = Task<int>.Factory.StartNew(delegate

@@ -141,8 +141,8 @@ namespace System.Threading.Tasks.Tests
                         Assert.Null(ex); // , "Did not expect exception from tLarge.Wait()")
                         Assert.True((result == 20) || (!continuationsHaveResult), "Expected valid result from tLarge");
                     } // end x-loop (ResultTaskFactory or TaskFactory)
-                } // end j-loop (continuations are tasks with result or tasks)
-            }// end i-loop (antecedents are tasks with result or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of ContinueWhenAll overloads w/ CancellationToken
@@ -310,8 +310,8 @@ namespace System.Threading.Tasks.Tests
                             }
                         } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (preCanceled or not)
-                } // end j-loop (continuations are tasks with result or tasks)
-            }// end i-loop (antecedents are tasks with result or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of ContinueWhenAll overloads w/ TaskContinuationOptions
@@ -451,8 +451,8 @@ namespace System.Threading.Tasks.Tests
                             Assert.True((tLarge.CreationOptions == TaskCreationOptions.None) || longRunning, "tLarge CreationOptions should be None unless longRunning is true");
                         } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (TaskContinuationOptions are LongRunning or None)
-                } // end j-loop (continuations are tasks with result or tasks)
-            }// end i-loop (antecedents are tasks with result or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of "full up" ContinueWhenAll overloads
@@ -623,8 +623,8 @@ namespace System.Threading.Tasks.Tests
                             }
                         } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (preCanceled or not)
-                } // end j-loop (continuations are tasks with result or tasks)
-            }// end i-loop (antecedents are tasks with result or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

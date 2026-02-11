@@ -534,8 +534,8 @@ namespace System.Threading.Tasks.Tests
 
                     Assert.True(ex == null, "TestTaskTConstruction_bare: Did not expect an exception");
                     Assert.True(sideEffect, "TestTaskTConstruction_bare: The func delegate apparently did not run");
-                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected task with result's result to be 42");
-                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected task with result to be in RanToCompletion status");
+                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected Task<int> result to be 42");
+                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected Task<int> to be in RanToCompletion status");
                     Assert.True(useObj || (asyncState == null), "TestTaskTConstruction_bare: Expected non-null AsyncState only if object overload was used");
                     Assert.True((!useObj) || (asyncState == refObj), "TestTaskTConstruction_bare: Wrong AsyncState value returned");
                 }
@@ -607,8 +607,8 @@ namespace System.Threading.Tasks.Tests
                         object asyncState = ((IAsyncResult)f1).AsyncState;
 
                         Assert.True((ex != null) || (result == 42), "TestTaskTConstruction_ct:  Expected either a valid result or an exception");
-                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected task with result cancellation only with pre-canceled token");
-                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected task with result to complete only with un-canceled token");
+                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected Task<int> cancellation only with pre-canceled token");
+                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected Task<int> to complete only with un-canceled token");
                         Assert.True(preCanceledToken != (result == 42), "TestTaskTConstruction_ct:  Expected valid result only with non-canceled token");
                         Assert.True(preCanceledToken == (ex != null), "TestTaskTConstruction_ct:  Expected exception only with pre-canceled token");
                         Assert.True(
@@ -749,12 +749,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        // Basic task with result functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
+        // Basic Task<TResult> functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
         [Fact]
         public static void RunBasicTaskWithResultTest()
         {
             //
-            // task with result basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             //
@@ -811,7 +811,7 @@ namespace System.Threading.Tasks.Tests
         public static void RunBasicTaskWithResultTest_Negative()
         {
             //
-            // task with result basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             // Test exceptional conditions

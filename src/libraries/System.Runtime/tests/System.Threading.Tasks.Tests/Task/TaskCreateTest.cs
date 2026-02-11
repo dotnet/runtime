@@ -856,8 +856,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Class that verifies that all the public constructors of Task, task with result, promise and task with result T are working correctly
-        /// The test creates the test object (Task, task with result, promise) using various ctor and ensures that they were
+        /// Class that verifies that all the public constructors of Task, Task&lt;TResult&gt;, promise, and Task&lt;TResult&gt; are working correctly.
+        /// The test creates the test object (Task, Task&lt;TResult&gt;, promise) using various ctor and ensures that they were
         /// created and can be started. All the negative cases (exceptional cases are also covered in this test set).
         /// </summary>
         internal sealed class TaskCreateTest
@@ -918,12 +918,12 @@ namespace System.Threading.Tasks.Tests
             #region Test Methods (These are the ones that are actually invoked)
 
             /// <summary>
-            /// Test that creates a Task, task with result and Promise using various Ctor and ensures that the task was created successfully
+            /// Test that creates a Task, Task<TResult>, and Promise using various Ctor and ensures that the task was created successfully
             /// </summary>
             /// <returns>indicates whether test passed or failed (invoking ctor was success or not)</returns>
             internal void CreateTask()
             {
-                //Using the parameters specified in the XML input file create a Task, task with result or promise
+                //Using the parameters specified in the XML input file create a Task, Task<TResult>, or Promise
                 _task = CreateTaskHelper();
 
                 // Checks whether the task was created, initialized with specified action
@@ -1343,7 +1343,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             /// <summary>
-            /// Helper function that creates Task/task with result based on test parameters
+            /// Helper function that creates Task/Task<TResult> based on test parameters
             /// </summary>
             /// <returns></returns>
             private Task CreateTaskHelper()

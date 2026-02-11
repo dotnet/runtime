@@ -306,10 +306,10 @@ namespace System.Threading.Tasks.Tests
 
             ae = Assert.Throws<AggregateException>(() =>
             {
-                asyncTask.Wait();
+                asyncTaskWithResult.Wait();
             });
             Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
-            Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
+            Assert.Equal(TaskStatus.Canceled, asyncTaskWithResult.Status);
 
             // Test beginMethod overload that returns Task<string>
             asyncTaskWithResult = null;
