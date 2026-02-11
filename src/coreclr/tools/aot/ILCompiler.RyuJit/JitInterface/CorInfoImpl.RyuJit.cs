@@ -1363,7 +1363,7 @@ namespace Internal.JitInterface
             else
             {
                 // We can devirtualize the callvirt if the method is not virtual to begin with
-                bool canDevirt = IsCallEffectivelyDirect(method);
+                bool canDevirt = IsCallEffectivelyDirect(targetMethod);
 
                 // We might be able to devirt based on whole program view
                 if (!canDevirt
@@ -1372,7 +1372,7 @@ namespace Internal.JitInterface
                     // with a method generic dictionary argument).
                     && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
                 {
-                    canDevirt = _compilation.IsEffectivelySealed(method);
+                    canDevirt = _compilation.IsEffectivelySealed(targetMethod);
                 }
 
                 if (canDevirt)
