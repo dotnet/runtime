@@ -68,5 +68,36 @@ namespace System.Reflection.Tests
             ReadOnlySpan<Type> span = genericArguments.AsSpan();
             Assert.Equal(0, span.Length);
         }
+
+        [Fact]
+        public static void GetFunctionPointerParameterTypes_ReturnsTypeArray()
+        {
+            // Test that GetFunctionPointerParameterTypes() returns Type[] not RoModifiedType[]
+            Type functionPointerType = typeof(delegate*<int, string, void>).Project();
+            Type[] parameterTypes = functionPointerType.GetFunctionPointerParameterTypes();
+
+            // Verify the returned array is Type[]
+            Assert.Equal(typeof(Type[]), parameterTypes.GetType());
+
+            // Verify we can use AsSpan() on the result (this would throw ArrayTypeMismatchException with RoModifiedType[])
+            ReadOnlySpan<Type> span = parameterTypes.AsSpan();
+            Assert.Equal(2, span.Length);
+            Assert.Equal("Int32", span[0].Name);
+            Assert.Equal("String", span[1].Name);
+        }
+
+        [Fact]
+        public static void GetFunctionPointerCallingConventions_ReturnsTypeArray()
+        {
+            // Test that GetFunctionPointerCallingConventions() returns Type[]
+            Type functionPointerType = typeof(delegate*<int, void>).Project();
+            Type[] callingConventions = functionPointerType.GetFunctionPointerCallingConventions();
+
+            // Verify the returned array is Type[]
+            Assert.Equal(typeof(Type[]), callingConventions.GetType());
+
+            // Verify we can use AsSpan() on the result
+            ReadOnlySpan<Type> span = callingConventions.AsSpan();
+        }
     }
 }
