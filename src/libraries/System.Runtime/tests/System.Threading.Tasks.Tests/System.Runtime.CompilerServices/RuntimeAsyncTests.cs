@@ -8,10 +8,15 @@ using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
+    public static class RuntimeAsyncTestConditions
+    {
+        public static bool IsRemoteExecutorAndRuntimeAsyncSupported() =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsRuntimeAsyncSupported;
+    }
+
     public class RuntimeAsyncTests
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RuntimeAsyncTestConditions), nameof(RuntimeAsyncTestConditions.IsRemoteExecutorAndRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
