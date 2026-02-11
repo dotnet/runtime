@@ -21,7 +21,7 @@ namespace System.Tests
         [Fact]
         public void Create_SIGKILL_Throws()
         {
-            AssertExtensions.Throws<ArgumentException>("signal", () => PosixSignalRegistration.Create(PosixSignal.SIGKILL, ctx => { }));
+            Assert.Throws<IOException>(() => PosixSignalRegistration.Create(PosixSignal.SIGKILL, ctx => { }));
         }
 
         [Theory]
