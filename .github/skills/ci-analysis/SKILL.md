@@ -112,19 +112,13 @@ The script operates in three distinct modes depending on what information you ha
 
 **Local test failures**: Some repos (e.g., dotnet/sdk) run tests directly on build agents. These can also match known issues - search for the test name with the "Known Build Error" label.
 
-**Per-failure details** (`failedJobDetails` in JSON): Each failed job includes `errorCategory`, `errorSnippet`, `helixWorkItems`, and `knownIssues`. Use these for per-job classification instead of applying a single `recommendationHint` to all failures.
+**Per-failure details** (`failedJobDetails` in JSON): Each failed job includes `errorCategory`, `errorSnippet`, and `helixWorkItems`. Use these for per-job classification instead of applying a single `recommendationHint` to all failures.
 
-Error categories:
-- `test-failure` — test assertions failed
-- `build-error` — compilation/build errors
-- `test-timeout` — Helix work item timed out
-- `crash` — process crash (SIGSEGV/SIGABRT exit codes 139/134)
-- `tests-passed-reporter-failed` — all tests passed but the Helix work item still failed because post-test infrastructure (e.g., Python result reporter) crashed. This shows as a failed job in CI even though no tests failed. This is genuinely infrastructure.
-- `unclassified` — no pattern matched; investigate manually
+Error categories: `test-failure`, `build-error`, `test-timeout`, `crash` (exit codes 139/134), `tests-passed-reporter-failed` (all tests passed but reporter crashed — genuinely infrastructure), `unclassified` (investigate manually).
 
-> ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure when you have strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. "Environment" in the error doesn't make it infrastructure — a test requiring an uninstalled framework is a test defect, not infra. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
+> ⚠️ **Be cautious labeling failures as "infrastructure."** Only conclude infrastructure with strong evidence: Build Analysis match, identical failure on target branch, or confirmed outage. Exception: `tests-passed-reporter-failed` is genuinely infrastructure.
 
-> ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs bring behavioral changes that can cause builds to request *different* packages. Always check *which* package is missing and *why* before assuming feed propagation delay.
+> ❌ **Missing packages on flow PRs ≠ infrastructure.** Flow PRs can cause builds to request *different* packages. Check *which* package and *why* before assuming feed delay.
 
 ## Generating Recommendations
 
@@ -146,13 +140,11 @@ Read `recommendationHint` as a starting point, then layer in context:
 
 Then layer in nuance the heuristic can't capture:
 
-- **Use `failedJobDetails`**: When present, classify each job individually by its `errorCategory` rather than applying the `recommendationHint` uniformly. Different jobs may have different causes.
 - **Mixed signals**: Some failures match known issues AND some correlate with PR changes → separate them. Known issues = safe to retry; correlated = fix first.
 - **Canceled jobs with recoverable results**: If `canceledJobNames` is non-empty, mention that canceled jobs may have passing Helix results (see "Recovering Results from Canceled Jobs").
 - **Build still in progress**: If `lastBuildJobSummary.pending > 0`, note that more failures may appear.
 - **Multiple builds**: If `builds` has >1 entry, `lastBuildJobSummary` reflects only the last build — use `totalFailedJobs` for the aggregate count.
-- **BuildId mode**: `knownIssues` will be empty and `prCorrelation` will show `hasCorrelation = false` with `changedFileCount = 0` (PR correlation is not available without a PR number). Don't say "no known issues" or "no correlation" — say "Build Analysis and PR correlation not available in BuildId mode."
-- **Infrastructure vs code**: Don't label failures as "infrastructure" unless Build Analysis flagged them or the same test passes on the target branch. See the anti-patterns in "Interpreting Results" above.
+- **BuildId mode**: `knownIssues` and `prCorrelation` won't be populated. Say "Build Analysis and PR correlation not available in BuildId mode."
 
 ### How to Retry
 

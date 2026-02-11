@@ -1966,7 +1966,6 @@ try {
                     jobName = $job.name
                     errorSnippet = ""
                     helixWorkItems = @()
-                    knownIssues = @()
                     errorCategory = "unclassified"
                 }
 

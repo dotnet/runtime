@@ -10,7 +10,13 @@ When the current build is failing, the PR's build history can reveal whether the
 
 ## The Pattern
 
-### Step 1: List all builds for the PR
+### Step 0: Start with the recent builds
+
+Don't try to analyze the full build history upfront — especially on large PRs with many pushes. Start with the most recent N builds (5-8), present the progression table, and let the user decide whether to dig deeper into earlier builds.
+
+On large PRs, the user is usually iterating toward a solution. The recent builds are the most relevant. Offer: "Here are the last N builds — the pass→fail transition was between X and Y. Want me to look at earlier builds?"
+
+### Step 1: List builds for the PR
 
 `gh pr checks` only shows checks for the current HEAD SHA. To see the full build history, query AzDO:
 
@@ -40,22 +46,49 @@ foreach ($build in $allBuilds) {
 
 > ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
 
-> ⚠️ **Target branch moves between builds.** Each build merges `pr.sourceSha` into the target branch HEAD *at the time the build starts*. If `main` received new commits between build N and N+1, the two builds merged against different baselines — even if `pr.sourceSha` is the same. When the progression shows a transition from pass → fail, always check whether the target branch moved. Compare `sourceVersion` (the merge commit) parents, or check the target branch commit log for the time window between builds.
+> ⚠️ **Target branch moves between builds.** Each build merges `pr.sourceSha` into the target branch HEAD *at the time the build starts*. If `main` received new commits between build N and N+1, the two builds merged against different baselines — even if `pr.sourceSha` is the same. Always extract the target branch HEAD to detect baseline shifts.
+
+### Step 2b: Extract the target branch HEAD from checkout logs
+
+The AzDO build API doesn't expose the target branch SHA, but the checkout task log contains it. The first checkout log (typically log ID 5) ends with:
+
+```
+HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}
+```
+
+Extract it programmatically:
+
+```powershell
+$token = az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" --query accessToken -o tsv
+$headers = @{ Authorization = "Bearer $token" }
+
+foreach ($build in $allBuilds) {
+    $logUrl = "https://dev.azure.com/{org}/{project}/_apis/build/builds/$($build.id)/logs/5"
+    $log = Invoke-RestMethod -Uri $logUrl -Headers $headers
+    $mergeLine = ($log -split "`n") | Where-Object { $_ -match 'Merge \w+ into \w+' } | Select-Object -First 1
+    if ($mergeLine -match 'Merge (\w+) into (\w+)') {
+        $targetHead = $Matches[2].Substring(0, 7)
+    }
+}
+```
+
+> Note: log ID 5 is the first checkout task in most pipelines. If it doesn't contain the merge line, check the build timeline for tasks named "Checkout" and use their log IDs.
 
 Note: a PR may have more unique `pr.sourceSha` values than commits visible on GitHub, because force-pushes replace the commit history. Each force-push triggers a new build with a new merge commit and a new `pr.sourceSha`.
 
 ### Step 3: Build a progression table
 
-Present the facts as a table. Group builds by `pr.sourceSha` since multiple pipelines run per push. Include the target branch HEAD if available (from `sourceVersion` merge parents or commit timestamps) to catch baseline shifts:
+Include the target branch HEAD to catch baseline shifts:
 
-| PR HEAD | Builds | Result | Notes |
-|---------|--------|--------|-------|
-| 6d499c2 | 1283943-5 | ✅ 3/3 | Initial commit |
-| 39dc0a6 | 1284433-5 | ✅ 3/3 | Added commit B |
-| f186b93 | 1286087-9 | ❌ 1/3 | Added commit C |
-| 2e74845 | 1286967-9 | ❌ 1/3 | Modified commit C |
+| PR HEAD | Target HEAD | Builds | Result | Notes |
+|---------|-------------|--------|--------|-------|
+| 7af79ad | 2d638dc | 1283986 | ❌ | Initial commits |
+| 28ec8a0 | 0b691ba | 1284169 | ❌ | Iteration 2 |
+| 39dc0a6 | 18a3069 | 1284433 | ✅ | Iteration 3 |
+| f186b93 | 5709f35 | 1286087 | ❌ | Added commit C; target moved ~35 commits |
+| 2e74845 | 482d8f9 | 1286967 | ❌ | Modified commit C |
 
-If a pass→fail transition has the **same** `pr.sourceSha`, the target branch moved — the PR didn't change, so the failure came from the new baseline. Check what merged into the target branch between those builds.
+When both `pr.sourceSha` AND `Target HEAD` change between a pass→fail transition, either could be the cause. Analyze the failure content to determine which. If only the target moved (same `pr.sourceSha`), the failure came from the new baseline.
 
 ### Step 4: Present findings, not conclusions
 
