@@ -1471,6 +1471,8 @@ function Format-TestFailure {
     $failureCount = 0
 
     # Expanded failure detection patterns
+    # CAUTION: These trigger "failure block" capture. Overly broad patterns (e.g. \w+Error:)
+    # will grab Python harness/reporter noise and swamp the real test failure.
     $failureStartPatterns = @(
         '\[FAIL\]',
         'Assert\.\w+\(\)\s+Failure',
@@ -1479,8 +1481,6 @@ function Format-TestFailure {
         'FAILED\s*$',
         'END EXECUTION - FAILED',
         'System\.\w+Exception:',
-        'Traceback \(most recent call last\)',
-        '\w+Error:',
         'Timed Out \(timeout'
     )
     $combinedPattern = ($failureStartPatterns -join '|')
