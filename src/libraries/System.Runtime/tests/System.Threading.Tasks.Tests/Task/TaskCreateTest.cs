@@ -856,8 +856,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Class that verifies that all the public constructors of Task, Task&lt;TResult&gt;, promise, and Task&lt;TResult&gt; are working correctly.
-        /// The test creates the test object (Task, Task&lt;TResult&gt;, promise) using various ctor and ensures that they were
+        /// Class that verifies that all the public constructors of Task, Task{TResult}, promise, and Task{TResult} are working correctly.
+        /// The test creates the test object (Task, Task{TResult}, promise) using various ctor and ensures that they were
         /// created and can be started. All the negative cases (exceptional cases are also covered in this test set).
         /// </summary>
         internal sealed class TaskCreateTest
