@@ -156,7 +156,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             ins = params.isJump ? INS_return_call : INS_call;
             id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, 0 /* FIXME-WASM: function index reloc */);
             id->idIns(ins);
-            id->idInsFmt(IF_CALL);
+            id->idInsFmt(IF_FUNCIDX);
             break;
         case EC_INDIR_R:
         {
@@ -400,7 +400,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size             = SizeOfULEB128(emitGetLclVarDeclCount(this)) + sizeof(typeCode);
             break;
         }
-        case IF_CALL:
+        case IF_FUNCIDX:
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
@@ -586,7 +586,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
             break;
         }
-        case IF_CALL:
+        case IF_FUNCIDX:
         {
             dst += emitOutputOpcode(dst, ins);
             dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
@@ -772,7 +772,7 @@ void emitter::emitDispIns(
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
-        case IF_CALL:
+        case IF_FUNCIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
