@@ -1,0 +1,2 @@
+# Threat model files with intentional formatting
+src/libraries/System.Private.Uri/docs/*Threat*Model*.md
