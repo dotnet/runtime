@@ -454,8 +454,7 @@ namespace Microsoft.Extensions.Logging
             var logValuesFormatter = new LogValuesFormatter(formatString);
 
             int actualCount = logValuesFormatter.ValueNames.Count;
-            if (actualCount > expectedNamedParameterCount
-                || (actualCount < expectedNamedParameterCount && logValuesFormatter.PlaceholderCount == actualCount))
+            if (actualCount != expectedNamedParameterCount)
             {
                 throw new ArgumentException(
                     SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));

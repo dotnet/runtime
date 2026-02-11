@@ -585,18 +585,10 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        public void LoggerMessage_Define_WithDuplicatePlaceholder_BackwardCompat_MatchingArgCount()
+        public void LoggerMessage_Define_WithDuplicatePlaceholder_MatchingArgCount_Throws()
         {
-            var testSink = new TestSink();
-            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
-            var action = LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. How are you {Name}");
-
-            action(testLogger, "David", "David", null);
-
-            Assert.Single(testSink.Writes);
-            var writeContext = testSink.Writes.First();
-            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(writeContext.State);
-            Assert.Equal("Hello David. How are you David", actualLogValues.ToString());
+            Assert.Throws<ArgumentException>(() =>
+                LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(0, "LogSomething"), "Hello {Name}. How are you {Name}"));
         }
 
         [Fact]
