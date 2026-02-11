@@ -116,8 +116,6 @@ public class ProcessRunner : IDisposable
 
     private readonly StringBuilder _outputCapture;
 
-    private readonly object _outputCaptureLock;
-
     public ProcessRunner(ProcessInfo processInfo, int processIndex, int processCount, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
     {
         _processInfo = processInfo;
@@ -174,7 +172,6 @@ public class ProcessRunner : IDisposable
         }
 
         _outputCapture = new StringBuilder();
-        _outputCaptureLock = new object();
 
         _outputHandler = new DataReceivedEventHandler(StandardOutputEventHandler);
         _process.OutputDataReceived += _outputHandler;
@@ -287,7 +284,7 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
-            lock (_outputCaptureLock)
+            lock (_outputCapture)
             {
                 _outputCapture.AppendLine("  " + data);
             }
@@ -300,7 +297,7 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
-            lock (_outputCaptureLock)
+            lock (_outputCapture)
             {
                 _outputCapture.AppendLine("!! " + data);
             }
@@ -369,10 +366,7 @@ public class ProcessRunner : IDisposable
             WriteLog(failureMessage);
 
             Console.Error.WriteLine(failureMessage + $": {processSpec}");
-            lock (_outputCaptureLock)
-            {
-                Console.Error.Write(_outputCapture.ToString());
-            }
+            Console.Error.Write(_outputCapture.ToString());
         }
 
         CleanupProcess();
