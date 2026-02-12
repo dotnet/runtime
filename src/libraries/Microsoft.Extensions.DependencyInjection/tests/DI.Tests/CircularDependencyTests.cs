@@ -204,5 +204,46 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Equal(expectedMessage, exception.Message);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FactoryCircularDependency_DetectedWithValidateOnBuild(bool validateOnBuild)
+        {
+            // This test demonstrates circular dependency through factory functions
+            // Service A has constructor dependency on Service B
+            // Service B is registered with a factory that requests Service A from IServiceProvider
+            // This creates a circular dependency: A -> B -> A
+
+            var services = new ServiceCollection();
+            services.AddSingleton<FactoryCircularDependencyA>();
+            services.AddSingleton<FactoryCircularDependencyB>(sp => 
+            {
+                // Factory tries to resolve FactoryCircularDependencyA, creating a circle
+                var a = sp.GetRequiredService<FactoryCircularDependencyA>();
+                return new FactoryCircularDependencyB();
+            });
+
+            if (validateOnBuild)
+            {
+                // With ValidateOnBuild = true, the circular dependency should be detected at build time
+                var exception = Assert.Throws<AggregateException>(() =>
+                    services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true }));
+
+                Assert.Contains("circular dependency", exception.ToString(), StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                // Without ValidateOnBuild, the circular dependency causes a deadlock or stack overflow at resolution time
+                // This test demonstrates the issue - it would hang/deadlock without the fix
+                var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false });
+
+                // This will either throw InvalidOperationException (good) or deadlock/timeout (bad - issue #88390)
+                Assert.ThrowsAny<Exception>(() =>
+                {
+                    var a = serviceProvider.GetRequiredService<FactoryCircularDependencyA>();
+                });
+            }
+        }
     }
 }
