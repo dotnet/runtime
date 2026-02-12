@@ -9,10 +9,12 @@ set(INTERPRETER_SOURCES
   stackmap.cpp
   naming.cpp
   methodset.cpp
-  intrinsics.cpp)
+  intrinsics.cpp
+  simdhash.cpp)
 
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo
+  minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -40,14 +42,16 @@ endif()
 
 add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
 
+target_include_directories(clrinterpreter_objects PRIVATE ../jitshared)
+
 if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
   set_target_properties(clrinterpreter_objects PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
 endif()
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:jitshared> $<TARGET_OBJECTS:dn-containers>)
 else()
-  add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+  add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:jitshared> $<TARGET_OBJECTS:dn-containers>)
 endif()
 
 target_include_directories(clrinterpreter INTERFACE "interpreter/inc")

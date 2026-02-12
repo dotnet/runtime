@@ -205,6 +205,7 @@ include_directories("hosts/inc")
 include_directories("interpreter/inc")
 include_directories("minipal")
 
+add_subdirectory(jitshared)
 if(FEATURE_INTERPRETER)
   add_subdirectory(interpreter)
 endif()
