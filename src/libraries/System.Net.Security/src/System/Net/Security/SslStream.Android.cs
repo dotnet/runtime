@@ -11,25 +11,22 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
-            // When the platform's trust manager rejected the chain AND the managed
-            // chain builder is using system trust (not CustomRootTrust), pre-inject
-            // RemoteCertificateChainErrors. This is critical for scenarios like certificate
-            // pinning via network-security-config.xml: the platform rejects the pin mismatch,
-            // but the managed chain builder (which doesn't know about pins) would accept the
-            // chain as valid. Without pre-injection, pinning would be silently bypassed.
-            //
-            // When CustomRootTrust is configured, the user has explicitly provided their own
-            // trust anchors. The platform's rejection is expected (it doesn't know about custom
-            // roots) and the managed chain builder's assessment should be authoritative.
-            bool ignorePlatformTrustManager =
-                _sslAuthenticationOptions.CertificateContext?.Trust is not null
-                || _sslAuthenticationOptions.CertificateChainPolicy?.TrustMode == X509ChainTrustMode.CustomRootTrust;
+            // TODO: Investigate whether we can avoid this bypass by also passing ExtraStore
+            // intermediates to the platform's KeyStore (without elevating them to trust anchors),
+            // or by implementing a custom X509TrustManager that performs AIA fetching.
+            // Currently, when CertificateChainPolicy specifies CustomRootTrust (without
+            // SslCertificateTrust), the platform may reject the chain because it doesn't have
+            // the intermediate certs (which are only in ExtraStore) or because the hostname
+            // verification flags differ from managed settings. The managed chain builder —
+            // which has access to both CustomTrustStore and ExtraStore — is authoritative
+            // in this case.
+            bool managedTrustOnly =
+                _sslAuthenticationOptions.CertificateContext?.Trust is null
+                && _sslAuthenticationOptions.CertificateChainPolicy?.TrustMode == X509ChainTrustMode.CustomRootTrust;
 
-            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform || ignorePlatformTrustManager
+            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform || managedTrustOnly
                 ? SslPolicyErrors.None
                 : SslPolicyErrors.RemoteCertificateChainErrors;
-
-            bool platformTrustIsAuthoritative = chainTrustedByPlatform && !ignorePlatformTrustManager;
 
             ProtocolToken alertToken = default;
 
@@ -39,28 +36,6 @@ namespace System.Net.Security
                 ref alertToken,
                 ref sslPolicyErrors,
                 out X509ChainStatusFlags chainStatus);
-
-            if (platformTrustIsAuthoritative)
-            {
-                // The platform's trust manager (which respects network-security-config.xml)
-                // already validated the certificate chain. The managed X509 chain builder may
-                // report RemoteCertificateChainErrors because the root CA trusted by the platform
-                // is not in the managed certificate store (e.g. PartialChain or UntrustedRoot).
-                // Strip chain errors — the platform's assessment is authoritative for chain trust.
-                //
-                // When CustomRootTrust is configured, the managed chain builder's assessment
-                // is authoritative and its chain errors are real, not false positives.
-                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
-
-                if (!isValid && sslPolicyErrors == SslPolicyErrors.None)
-                {
-                    // The connection was rejected only because of chain errors that the platform
-                    // already validated. Re-evaluate: accept if there's no user callback, or
-                    // re-invoke the user callback with the corrected errors.
-                    isValid = _sslAuthenticationOptions.CertValidationDelegate?.Invoke(
-                        this, _remoteCertificate, null, sslPolicyErrors) ?? true;
-                }
-            }
 
             return new()
             {

@@ -46,30 +46,33 @@ Create an SSL context
 
 Returns NULL on failure
 */
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(intptr_t sslStreamProxyHandle, const char* targetHost);
-
-/*
-Create an SSL context with the specified certificates
-
-Returns NULL on failure
-*/
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithCertificates(intptr_t sslStreamProxyHandle,
-                                                                         const char* targetHost,
-                                                                         uint8_t* pkcs8PrivateKey,
-                                                                         int32_t pkcs8PrivateKeyLen,
-                                                                         PAL_KeyAlgorithm algorithm,
-                                                                         jobject* /*X509Certificate[]*/ certs,
-                                                                         int32_t certsLen);
-
-/*
-Create an SSL context with the specified certificates and private key from KeyChain
-
-Returns NULL on failure
-*/
-PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry(
+PALEXPORT SSLStream* AndroidCryptoNative_SSLStreamCreate(
     intptr_t sslStreamProxyHandle,
     const char* targetHost,
-    jobject privateKeyEntry);
+    jobject* /*X509Certificate[]*/ trustCerts,
+    int32_t trustCertsLen,
+    jobjectArray keyManagers);
+
+/*
+Create key managers from a PKCS8 private key and certificate chain.
+The returned KeyManager[] should be passed to SSLStreamCreate.
+
+Returns NULL on failure
+*/
+PALEXPORT jobjectArray AndroidCryptoNative_SSLStreamCreateKeyManagers(
+    uint8_t* pkcs8PrivateKey,
+    int32_t pkcs8PrivateKeyLen,
+    PAL_KeyAlgorithm algorithm,
+    jobject* /*X509Certificate[]*/ certs,
+    int32_t certsLen);
+
+/*
+Create key managers from a KeyStore PrivateKeyEntry.
+The returned KeyManager[] should be passed to SSLStreamCreate.
+
+Returns NULL on failure
+*/
+PALEXPORT jobjectArray AndroidCryptoNative_SSLStreamCreateKeyManagersFromKeyStoreEntry(jobject privateKeyEntry);
 
 /*
 Initialize an SSL context

@@ -1,5 +1,6 @@
 #include "pal_trust_manager.h"
 #include <stdatomic.h>
+#include <stdio.h>
 
 static _Atomic RemoteCertificateValidationCallback verifyRemoteCertificate;
 
@@ -8,8 +9,9 @@ ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCa
     atomic_store(&verifyRemoteCertificate, callback);
 }
 
-// Gets the default X509TrustManager from the system TrustManagerFactory
-static jobject GetDefaultX509TrustManager(JNIEnv* env)
+// Gets the X509TrustManager from TrustManagerFactory, optionally initialized
+// with a custom KeyStore containing trusted certificates.
+static jobject GetX509TrustManager(JNIEnv* env, jobject customTrustKeyStore)
 {
     jobject result = NULL;
     INIT_LOCALS(loc, algorithm, tmf, trustManagers);
@@ -22,8 +24,8 @@ static jobject GetDefaultX509TrustManager(JNIEnv* env)
     loc[tmf] = (*env)->CallStaticObjectMethod(env, g_TrustManagerFactory, g_TrustManagerFactoryGetInstance, loc[algorithm]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    // tmf.init((KeyStore)null) -> use default system key store
-    (*env)->CallVoidMethod(env, loc[tmf], g_TrustManagerFactoryInit, NULL);
+    // tmf.init(keyStore) -> NULL for system defaults, or custom KeyStore for custom trust roots
+    (*env)->CallVoidMethod(env, loc[tmf], g_TrustManagerFactoryInit, customTrustKeyStore);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // TrustManager[] tms = tmf.getTrustManagers();
@@ -48,20 +50,66 @@ cleanup:
     return result;
 }
 
-jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const char* targetHost)
+// Creates a KeyStore containing the given trusted certificates.
+// Returns NULL if trustCerts is NULL or trustCertsLen is 0.
+static jobject CreateTrustKeyStore(JNIEnv* env, jobject* trustCerts, int32_t trustCertsLen)
 {
-    // X509TrustManager platformTrustManager = GetDefaultX509TrustManager();
-    // DotnetProxyTrustManager dotnetProxyTrustManager = new DotnetProxyTrustManager(sslStreamProxyHandle, platformTrustManager, targetHost);
-    // TrustManager[] trustManagers = new TrustManager[] { dotnetProxyTrustManager };
-    // return trustManagers;
+    if (trustCerts == NULL || trustCertsLen <= 0)
+        return NULL;
 
+    jobject keyStore = NULL;
+    jstring ksType = NULL;
+
+    // KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    // keyStore.load(null, null);
+    ksType = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetDefaultType);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    keyStore = (*env)->CallStaticObjectMethod(env, g_KeyStoreClass, g_KeyStoreGetInstance, ksType);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+    (*env)->CallVoidMethod(env, keyStore, g_KeyStoreLoad, NULL, NULL);
+    ON_EXCEPTION_PRINT_AND_GOTO(error);
+
+    ReleaseLRef(env, ksType);
+    ksType = NULL;
+
+    for (int32_t i = 0; i < trustCertsLen; i++)
+    {
+        char alias[32];
+        snprintf(alias, sizeof(alias), "trust_%d", i);
+        jstring aliasStr = make_java_string(env, alias);
+
+        // keyStore.setCertificateEntry(alias, cert);
+        (*env)->CallVoidMethod(env, keyStore, g_KeyStoreSetCertificateEntry, aliasStr, trustCerts[i]);
+        ReleaseLRef(env, aliasStr);
+        ON_EXCEPTION_PRINT_AND_GOTO(error);
+    }
+
+    return keyStore;
+
+error:
+    ReleaseLRef(env, ksType);
+    ReleaseLRef(env, keyStore);
+    return NULL;
+}
+
+jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const char* targetHost, jobject* trustCerts, int32_t trustCertsLen)
+{
     jobjectArray trustManagers = NULL;
-    INIT_LOCALS(loc, platformTrustManager, dotnetProxyTrustManager);
+    INIT_LOCALS(loc, trustKeyStore, platformTrustManager, dotnetProxyTrustManager);
 
-    loc[platformTrustManager] = GetDefaultX509TrustManager(env);
+    loc[trustKeyStore] = CreateTrustKeyStore(env, trustCerts, trustCertsLen);
+    // If custom trust certs were requested but KeyStore creation failed, propagate the
+    // failure rather than silently falling back to system trust (security downgrade).
+    if (loc[trustKeyStore] == NULL && trustCerts != NULL && trustCertsLen > 0)
+    {
+        LOG_ERROR("Failed to create custom trust KeyStore");
+        goto cleanup;
+    }
+
+    loc[platformTrustManager] = GetX509TrustManager(env, loc[trustKeyStore]);
     if (loc[platformTrustManager] == NULL)
     {
-        LOG_ERROR("Failed to get default X509TrustManager");
+        LOG_ERROR("Failed to get X509TrustManager");
         goto cleanup;
     }
 
