@@ -715,7 +715,7 @@ A frame pointer, if used, points at the bottom of the "fixed" portion of the sta
 
 Structs are generally passed by-reference, unless they happen to exactly contain a single primitive field (or be a struct exactly containing such a struct). The linear stack provides the backing storage for the by-reference structs.
 
-Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the `$sp` argument.  In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
+Structs are generally returned via hidden buffers, whose address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack.
 
 (TBD: ABI for vector types)
 

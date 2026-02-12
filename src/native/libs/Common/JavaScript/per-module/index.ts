@@ -3,12 +3,14 @@
 
 import type { VoidPtr, CharPtr, NativePointer } from "../types";
 
+export const globalThisAny = globalThis as any;
 export const ENVIRONMENT_IS_NODE = typeof process === "object" && typeof process.versions === "object" && typeof process.versions.node === "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts === "function";
-export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof (globalThis as any).dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof globalThisAny.dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window === "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
+export const browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
