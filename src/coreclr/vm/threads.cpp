@@ -6211,17 +6211,11 @@ OBJECTREF Thread::GetCulture(BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    // This is the case when we're building CoreLib and haven't yet created
-    // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL) {
-        return NULL;
-    }
-
     OBJECTREF pCurrentCulture = NULL;
     GCPROTECT_BEGIN(pCurrentCulture);
 
-    UnmanagedCallersOnlyCaller propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE_UCO : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE_UCO);
-    propGet.InvokeThrowing(&pCurrentCulture);
+    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
+    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
 
     GCPROTECT_END();
 
@@ -6237,10 +6231,8 @@ void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
     }
     CONTRACTL_END;
 
-    UnmanagedCallersOnlyCaller propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE_UCO
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE_UCO);
-    propSet.InvokeThrowing(CultureObj);
+    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
+    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
 }
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)

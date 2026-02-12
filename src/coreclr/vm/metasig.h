@@ -422,8 +422,6 @@ DEFINE_METASIG_T(SM(PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid, P(C(AS
 DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid, I P(C(ASSEMBLY_NAME)) P(C(ASSEMBLYBASE)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrException_RetVoid, P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrException_RetVoid, P(u) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrObj_PtrException_RetVoid, P(j) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrCultureInfo_PtrException_RetVoid, P(C(CULTURE_INFO)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(Int_PtrObj_PtrException_RetVoid, i P(j) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrObj_PtrInt_PtrException_RetVoid, P(j) P(i) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrResolver_PtrInt_PtrClass_PtrException_RetVoid, P(C(RESOLVER)) P(i) P(C(CLASS)) P(C(EXCEPTION)), v))

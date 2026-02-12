@@ -273,7 +273,7 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     }
     CONTRACTL_END;
 
-    UnmanagedCallersOnlyCaller cultureInfoCtor(METHOD__CULTURE_INFO__INT_CTOR_UCO);
+    UnmanagedCallersOnlyCaller cultureInfoCtor(METHOD__CULTUREINFOMARSHALER__CREATE_CULTURE_INFO);
     cultureInfoCtor.InvokeThrowing((int)lcid, pCultureObj);
 }
 

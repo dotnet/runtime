@@ -213,14 +213,9 @@ DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
-DEFINE_METHOD(CULTURE_INFO,         INT_CTOR_UCO,           CreateCultureInfo,          SM_Int_PtrObj_PtrException_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_UI_CULTURE,   CurrentUICulture,   CultureInfo)
-DEFINE_METHOD(CULTURE_INFO,         GET_CURRENT_CULTURE_UCO,    GetCurrentCulture,          SM_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(CULTURE_INFO,         SET_CURRENT_CULTURE_UCO,    SetCurrentCulture,          SM_PtrCultureInfo_PtrException_RetVoid)
-DEFINE_METHOD(CULTURE_INFO,         GET_CURRENT_UI_CULTURE_UCO, GetCurrentUICulture,        SM_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(CULTURE_INFO,         SET_CURRENT_UI_CULTURE_UCO, SetCurrentUICulture,        SM_PtrCultureInfo_PtrException_RetVoid)
 
 DEFINE_CLASS(CURRENCY,              System,                 Currency)
 DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,                      IM_Dec_RetVoid)
@@ -1129,6 +1124,11 @@ DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_SPACE_TO_MANAGED,    ConvertSpa
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CONVERT_CONTENTS_TO_MANAGED, ConvertContentsToManaged,   SM_IntPtr_RefObj_IntPtr_RetVoid)
 DEFINE_METHOD(MNGD_SAFE_ARRAY_MARSHALER, CLEAR_NATIVE,                ClearNative,                SM_IntPtr_RefObj_IntPtr_RetVoid)
 
+DEFINE_CLASS(CULTUREINFOMARSHALER, StubHelpers, CultureInfoMarshaler)
+DEFINE_METHOD(CULTUREINFOMARSHALER, GET_CURRENT_CULTURE,    GetCurrentCulture,          NoSig)
+DEFINE_METHOD(CULTUREINFOMARSHALER, SET_CURRENT_CULTURE,    SetCurrentCulture,          NoSig)
+DEFINE_METHOD(CULTUREINFOMARSHALER, CREATE_CULTURE_INFO,            CreateCultureInfo,          NoSig)
+
 DEFINE_CLASS(COLORMARSHALER, StubHelpers, ColorMarshaler)
 DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_NATIVE,      ConvertToNative,  SM_Obj_RetInt)
 DEFINE_METHOD(COLORMARSHALER, CONVERT_TO_MANAGED,     ConvertToManaged, SM_Int_RetObj)
@@ -1230,7 +1230,7 @@ DEFINE_CLASS_U(Reflection,             LoaderAllocator,          LoaderAllocator
 DEFINE_FIELD_U(m_slots,                  LoaderAllocatorObject,      m_pSlots)
 DEFINE_FIELD_U(m_slotsUsed,              LoaderAllocatorObject,      m_slotsUsed)
 DEFINE_CLASS(LOADERALLOCATOR,           Reflection,             LoaderAllocator)
-DEFINE_METHOD(LOADERALLOCATOR,          CREATE,                 Create,                     SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(LOADERALLOCATOR,          CREATE,                 Create,                     NoSig)
 
 DEFINE_CLASS_U(Reflection,             LoaderAllocatorScout,     LoaderAllocatorScoutObject)
 DEFINE_FIELD_U(m_nativeLoaderAllocator,  LoaderAllocatorScoutObject,      m_nativeLoaderAllocator)
