@@ -13,6 +13,7 @@ namespace System.Runtime.Caching.Configuration
     {
         internal const string CacheMemoryLimitMegabytes = "cacheMemoryLimitMegabytes";
         internal const string PhysicalMemoryLimitPercentage = "physicalMemoryLimitPercentage";
+        internal const string PhysicalMemoryMode = "physicalMemoryMode";
         internal const string PollingInterval = "pollingInterval";
         internal const string UseMemoryCacheManager = "useMemoryCacheManager";
         internal const string ThrowOnDisposed = "throwOnDisposed";
@@ -92,6 +93,22 @@ namespace System.Runtime.Caching.Configuration
             }
 
             return bValue;
+        }
+
+        internal static string GetStringValue(NameValueCollection config, string valueName, string defaultValue)
+        {
+            string sValue = config[valueName];
+            return sValue ?? defaultValue;
+        }
+
+        internal static PhysicalMemoryMode ParsePhysicalMemoryMode(string rawValue)
+        {
+            if (!Enum.TryParse<PhysicalMemoryMode>(rawValue, true, out PhysicalMemoryMode mode))
+            {
+                throw new ArgumentException(null, ConfigUtil.PhysicalMemoryMode);
+            }
+
+            return mode;
         }
     }
 }

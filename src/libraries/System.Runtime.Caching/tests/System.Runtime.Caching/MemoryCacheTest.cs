@@ -178,6 +178,37 @@ namespace MonoTests.System.Runtime.Caching
                 mc = new MemoryCache("MyCache", config);
             });
 
+            config.Clear();
+            config.Add("PhysicalMemoryMode", "Standard");
+            // Just make sure it doesn't throw any exception
+            mc = new MemoryCache("MyCache", config);
+
+            config.Clear();
+            config.Add("PhysicalMemoryMode", "Legacy");
+            // Just make sure it doesn't throw any exception
+            mc = new MemoryCache("MyCache", config);
+
+            config.Clear();
+            config.Add("PhysicalMemoryMode", "GCThresholds");
+            // Just make sure it doesn't throw any exception
+            mc = new MemoryCache("MyCache", config);
+
+            config.Clear();
+            config.Add("PhysicalMemoryMode", "NotValidMode");
+            if (IsFullFramework)
+            {
+                // On .NET Framework, this does not throw, because the Framework version of SRC gets loaded,
+                // and it cares nothing for this setting.
+                mc = new MemoryCache("MyCache", config);
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    mc = new MemoryCache("MyCache", config);
+                });
+            }
+
             // Just make sure it doesn't throw any exception
             config.Clear();
             config.Add("UnsupportedSetting", "123");
@@ -239,23 +270,55 @@ namespace MonoTests.System.Runtime.Caching
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
         public void ConstructorValues()
         {
+            // Testing with auto-calculated physical memory limit percentage across different modes
             var config = new NameValueCollection();
             config.Add("CacheMemoryLimitMegabytes", "1");
             config.Add("pollingInterval", "00:10:00");
-
             var mc = new MemoryCache("MyCache", config);
             Assert.Equal(1048576, mc.CacheMemoryLimit);
             Assert.Equal(TimeSpan.FromMinutes(10), mc.PollingInterval);
+            Assert.True(mc.PhysicalMemoryLimit < 100);
+            Assert.True(mc.PhysicalMemoryLimit >= 95);
 
+            // Also, let's not try to duplicate the default-guessing logic here - but lets do grab the value MC
+            // calculated in this basec case, so we can double check that MC is using the same auto-calc value
+            // for our test environment later
+            var autoCalculatedPhysicalMemoryLimit = mc.PhysicalMemoryLimit;
+
+            config.Add("PhysicalMemoryMode", "Standard");
+            mc = new MemoryCache("MyCache", config);
+            // Full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryMode' setting matters. Just make sure it doesn't get in the way.
+            Assert.Equal(autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
+
+            config.Set("PhysicalMemoryMode", "Legacy");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
+
+            config.Set("PhysicalMemoryMode", "GCThresholds");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(IsFullFramework ? autoCalculatedPhysicalMemoryLimit : 100, mc.PhysicalMemoryLimit);
+
+            // Now, verify that auto-calculated physical memory limit percentage does not override manually set values in any mode
             config.Clear();
             config.Add("PhysicalMemoryLimitPercentage", "10");
             config.Add("CacheMemoryLimitMegabytes", "5");
             config.Add("PollingInterval", "01:10:00");
-
             mc = new MemoryCache("MyCache", config);
             Assert.Equal(10, mc.PhysicalMemoryLimit);
             Assert.Equal(5242880, mc.CacheMemoryLimit);
             Assert.Equal(TimeSpan.FromMinutes(70), mc.PollingInterval);
+
+            config.Add("PhysicalMemoryMode", "Standard");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(10, mc.PhysicalMemoryLimit);
+
+            config.Set("PhysicalMemoryMode", "Legacy");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(10, mc.PhysicalMemoryLimit);
+
+            config.Set("PhysicalMemoryMode", "GCThresholds");
+            mc = new MemoryCache("MyCache", config);
+            Assert.Equal(10, mc.PhysicalMemoryLimit);
         }
 
         [Theory, InlineData("true"), InlineData("false"), InlineData(null)]
