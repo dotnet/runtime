@@ -15,7 +15,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      buildConfig: checked
+      buildConfig: Checked
       runtimeFlavor: CoreCLR
       platforms:
         - ${{ platform }}
