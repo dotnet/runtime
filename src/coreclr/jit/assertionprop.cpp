@@ -5296,9 +5296,10 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
 
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
         case GT_ARR_LENGTH:
+        // TODO-CQ: Enable for MD arrays as well (produces massive size regressions currently).
+        // case GT_MDARR_LENGTH:
+        // case GT_MDARR_LOWER_BOUND:
             // Unfortunately, doing this in LocalAP produces an asymmetry in exception sets between
             // uses/defs that CSE does not manage to make good use of. As a result, some bounds checks are no longer
             // removed.
