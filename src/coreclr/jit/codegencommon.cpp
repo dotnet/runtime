@@ -347,7 +347,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 {
                     // Pre-adjust SP to bring the callee-save area into LDP range.
                     // We want maxCalleeSaveSpOffset - preAdjust <= 504, so preAdjust >= maxCalleeSaveSpOffset - 504.
-                    // We also need osrCalleeSaveSpOffset - preAdjust >= -512, so preAdjust <= osrCalleeSaveSpOffset + 512.
+                    // We also need osrCalleeSaveSpOffset - preAdjust >= -512, so preAdjust <= osrCalleeSaveSpOffset +
+                    // 512.
                     int minPreAdjust = maxCalleeSaveSpOffset - 504;
                     int maxPreAdjust = osrCalleeSaveSpOffset + 512; // Allow LDP offset down to -512
                     int preAdjust    = ((minPreAdjust + 15) & ~15);
@@ -360,8 +361,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
                     assert(preAdjust >= minPreAdjust); // Should always find valid alignment
 
-                    JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range (min=%d, max=%d)\n",
-                            preAdjust, minPreAdjust, maxPreAdjust);
+                    JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range (min=%d, max=%d)\n", preAdjust,
+                            minPreAdjust, maxPreAdjust);
 
                     if (preAdjust > 0)
                     {
