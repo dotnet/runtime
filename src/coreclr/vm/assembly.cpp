@@ -129,6 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}

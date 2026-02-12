@@ -37,7 +37,7 @@ public:
     // a sequence point will also be a stack_empty point, and/or a call site.
     // The debugger will check to see if a boundary offset's source field &
     // SEQUENCE_POINT is true to determine if the boundary is a sequence point.
-    // DebugInfo cDAC contract depends on the values of SOURCE_TYPE_INVALID, STACK_EMPTY, CALL_INSTRUCTION, and ASYNC.
+    // [cDAC] [DebugInfo]: Contract depends on the values of SOURCE_TYPE_INVALID, STACK_EMPTY, CALL_INSTRUCTION, and ASYNC.
 
     enum SourceTypes
     {

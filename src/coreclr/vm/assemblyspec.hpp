@@ -40,7 +40,7 @@ enum FileLoadLevel
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
 
-// Loader cDAC contract depends on the value of PROFILER_NOTIFIED.
+// [cDAC] [Loader]: Contract depends on the value of PROFILER_NOTIFIED.
 enum NotificationStatus
 {
     NOT_NOTIFIED=0,

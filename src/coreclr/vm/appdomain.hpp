@@ -446,8 +446,6 @@ enum
 // The flags can be combined so if you want all loaded assemblies, you must specify:
 //
 ///     kIncludeLoaded|kIncludeExecution
-/// Loader cDAC contract depends on the values of kIncludeLoaded, kIncludeLoading, kIncludeAvailableToProfilers,
-/// kIncludeExecution, kIncludeFailedToLoad, kExcludeCollectible, and kIncludeCollected.
 
 enum AssemblyIterationFlags
 {

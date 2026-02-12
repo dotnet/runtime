@@ -147,13 +147,13 @@ private:
 
 #ifdef FEATURE_CODE_VERSIONING
 
-// ReJIT cDAC contract depends on the values of kStateRequested, kStateGettingReJITParameters, kStateActive, kStateMask, and kSuppressParams.
 enum class RejitFlags : uint32_t
 {
     // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
     // called back to the profiler to get any info or indicate that the ReJit has
     // started. (This Info can be 'reused' for a new ReJit if the
     // profiler calls RequestRejit again before we transition to the next state.)
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateRequested = 0x00000000,
 
     // The CLR has initiated the call to the profiler's GetReJITParameters() callback
@@ -165,8 +165,10 @@ enum class RejitFlags : uint32_t
 
     // We have asked the profiler about this method via ICorProfilerFunctionControl,
     // and have thus stored the IL and codegen flags the profiler specified.
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateActive = 0x00000002,
 
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateMask = 0x0000000F,
 
     // Indicates that the method being ReJITted is an inliner of the actual
@@ -316,7 +318,7 @@ private:
     DAC_IGNORE(const) unsigned m_ilOffset;
 #endif
 
-    // CodeVersions cDAC contract depends on the value of IsActiveChildFlag.
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsActiveChildFlag.
     enum NativeCodeVersionNodeFlags
     {
         IsActiveChildFlag = 1
@@ -498,7 +500,7 @@ public:
 private:
     PTR_MethodDesc m_pMethodDesc;
 
-    // CodeVersions cDAC contract depends on the value of IsDefaultVersionActiveChildFlag.
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsDefaultVersionActiveChildFlag.
     enum MethodDescVersioningStateFlags
     {
         IsDefaultVersionActiveChildFlag = 0x4
