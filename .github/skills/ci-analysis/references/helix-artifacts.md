@@ -226,12 +226,17 @@ $env:TEMP\TestBuild_linux_x64\
 
 ### Mapping Binlogs to Failures
 
-| You want to investigate... | Use this binlog | Source |
-|---------------------------|-----------------|--------|
-| Why a test's internal `dotnet build` failed | `msbuild.binlog` or `msbuild{N}.binlog` | Helix work item |
-| Why the CI build itself failed to compile | `Build.binlog` | AzDO build artifact |
-| Which Helix jobs were dispatched | `SendToHelix.binlog` | AzDO build artifact |
-| AOT compilation failure | `AOTBuild.binlog` | Helix work item |
+This table shows the **typical** source for each binlog type. The boundaries aren't absolute — some repos run tests on the build agent (producing test binlogs in AzDO artifacts), and Helix work items for SDK/Blazor tests invoke `dotnet build` internally (producing build binlogs as Helix artifacts).
+
+| You want to investigate... | Look here first | But also check... |
+|---------------------------|-----------------|-------------------|
+| Why a test's internal `dotnet build` failed | Helix work item (`msbuild{N}.binlog`) | AzDO artifact if tests ran on agent |
+| Why the CI build itself failed to compile | AzDO build artifact (`Build.binlog`) | — |
+| Which Helix jobs were dispatched | AzDO build artifact (`SendToHelix.binlog`) | — |
+| AOT compilation failure | Helix work item (`AOTBuild.binlog`) | — |
+| Test build/publish behavior | Helix work item (`publish.msbuild.binlog`) | AzDO artifact (`TestBuildTests.binlog`) |
+
+> **Rule of thumb:** If the failing job name contains "Helix" or "Send to Helix", the test binlogs are in Helix. If the job runs tests directly (common in dotnet/sdk), check AzDO artifacts.
 
 ### Tracking Downloaded Artifacts with SQL
 
@@ -265,7 +270,7 @@ Use this whenever you're juggling artifacts from 2+ Helix jobs (especially durin
 ### Tips
 
 - **Multiple binlogs ≠ multiple builds.** A single work item can produce several binlogs if the test suite runs multiple `dotnet build`/`dotnet publish` commands.
-- **Helix binlogs are test-time, AzDO binlogs are build-time.** If a test was built wrong, check AzDO artifacts. If it ran a build that produced wrong output, check Helix artifacts.
+- **Helix and AzDO binlogs can overlap.** Helix binlogs are *usually* from test execution and AzDO binlogs from the build phase, but SDK/Blazor tests invoke MSBuild inside Helix (producing build-like binlogs), and some repos run tests directly on the build agent (producing test binlogs in AzDO). Check both sources if you can't find what you need.
 - **Not all work items have binlogs.** Standard unit tests only produce `testResults.xml` and console logs.
 - **Use `hlx_download` with `pattern:"*.binlog"`** to filter downloads and avoid pulling large console logs.
 
