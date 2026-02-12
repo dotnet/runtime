@@ -96,11 +96,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
     // and in the vast majority of user scenarios, assemblies will be correctly referenced with TypeMapAssemblyTargetAttribute.
     // Nearly every case where this behavior would kick in is a bug in user code.
     [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional3), Tool = Tool.Trimmer)]
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedTypeMapUniverse>))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UsedTypeMapUniverse>))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssemblyTargetAttribute<UsedTypeMapUniverse>))]
-    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssemblyTargetAttribute<UsedWithoutAssemblyTargetUniverse>))]
     [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UnusedTypeMapUniverse>))]
     [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UnusedTypeMapUniverse>))]
 
