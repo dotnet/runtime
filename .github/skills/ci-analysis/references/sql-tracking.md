@@ -100,3 +100,4 @@ WHERE body LIKE '%PTAL%' OR body LIKE '%could you%look%';
 | Crash recovery across multiple work items | Yes — cache testResults.xml findings |
 | Single build, single failure | No — overkill |
 | PR chain or long-lived PR with extensive triage comments | Yes — preserves diagnosis context across tool calls |
+| Downloading artifacts from 2+ Helix jobs (e.g., binlog comparison) | Yes — see [helix-artifacts.md](helix-artifacts.md) |
