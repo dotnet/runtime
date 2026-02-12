@@ -209,9 +209,9 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
-      <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false</_ConfigurationProperties>
+      <_ConfigurationProperties Condition="'$(UseLocalAppHostPack)' == 'true' or '$(TargetOS)' == 'browser'">$(_ConfigurationProperties) -p:EnableAppHostPackDownload=false -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false</_ConfigurationProperties>
       <_ForceRestore Condition="'$(_ForceRestore)' == 'true'">-f</_ForceRestore>
-      <DotnetRestoreCommand>"$(DotNetTool)" restore $(_ForceRestore) -r $(RuntimeIdentifier) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true /p:RuntimeIdentifier=$(RuntimeIdentifier) -p:EnableTargetingPackDownload=false -p:EnableRuntimePackDownload=false $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore $(_ForceRestore) -r $(RuntimeIdentifier) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true /p:RuntimeIdentifier=$(RuntimeIdentifier) $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
