@@ -116,8 +116,8 @@ namespace System.Threading
             // We estimate availability of CPU resources and limit spin count accordingly.
             // See comments on DefaultSemaphoreSpinCountLimit for more details.
             // Count current thread as active for the duration of spinning.
-            activeThreadCount += 1;
-            int available = _procCount - activeThreadCount;
+            int active = activeThreadCount + 1;
+            int available = _procCount - active;
             int spinStep = _maxSpinCount * 2 / _procCount;
             int spinsRemaining = (available - _procCount / 4) * spinStep;
 

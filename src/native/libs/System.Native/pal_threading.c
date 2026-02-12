@@ -243,6 +243,7 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
     assert(waitResult == 0 || errno == EAGAIN || errno == EINTR || errno == ETIMEDOUT);
 
     // normal/immediate/spurious wakes are not timeouts
+    // in release treat unexpected results as spurious wakes
     return waitResult == 0 || errno != ETIMEDOUT;
 }
 
