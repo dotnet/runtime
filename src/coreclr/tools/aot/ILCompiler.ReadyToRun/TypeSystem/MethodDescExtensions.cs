@@ -25,6 +25,7 @@ namespace ILCompiler.ReadyToRun.TypeSystem
             {
                 return resumptionStub.TargetMethod.GetPrimaryMethodDesc();
             }
+            return method;
         }
 
         public static bool IsPrimaryMethodDesc(this MethodDesc method)
