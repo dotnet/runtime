@@ -939,7 +939,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <param name="exceptions">An array that contains the exception metadata.</param>
         /// <remarks>
-        /// The exception metadata for a method defines the location and size of all `try`, `catch`, `finally`, filter, and fault blocks. For information on the layout of this metadata, see the Common Language Infrastructure (CLI) documentation, especially "Partition II: Metadata Definition and Semantics". For more information, see <see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA 335 Common Language Infrastructure (CLI)</see>.
+        /// The exception metadata for a method defines the location and size of all <c>try</c>, <c>catch</c>, <c>finally</c>, filter, and fault blocks. For information on the layout of this metadata, see the Common Language Infrastructure (CLI) documentation, especially "Partition II: Metadata Definition and Semantics". For more information, see <see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA 335 Common Language Infrastructure (CLI)</see>.
         /// </remarks>
         public void SetExceptions(byte[]? exceptions)
         {
@@ -952,7 +952,7 @@ namespace System.Reflection.Emit
         /// <param name="exceptions">A pointer to a byte array containing the exception metadata.</param>
         /// <param name="exceptionsSize">The number of bytes of exception metadata.</param>
         /// <remarks>
-        /// The exception metadata for a method defines the location and size of all `try`, `catch`, `finally`, filter, and fault blocks. For information on the layout of this metadata, see the Common Language Infrastructure (CLI) documentation, especially "Partition II: Metadata Definition and Semantics" and "Partition III: CIL Instruction Set". For more information, see <see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA 335 Common Language Infrastructure (CLI)</see>.
+        /// The exception metadata for a method defines the location and size of all <c>try</c>, <c>catch</c>, <c>finally</c>, filter, and fault blocks. For information on the layout of this metadata, see the Common Language Infrastructure (CLI) documentation, especially "Partition II: Metadata Definition and Semantics" and "Partition III: CIL Instruction Set". For more information, see <see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA 335 Common Language Infrastructure (CLI)</see>.
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="exceptions" /> is <see langword="null" /> and <paramref name="exceptionsSize" /> is greater than 0.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="exceptionsSize" /> is less than 0.</exception>
