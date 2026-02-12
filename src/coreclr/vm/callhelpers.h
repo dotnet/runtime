@@ -746,6 +746,57 @@ public:
 
         GCPROTECT_END();
     }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeThrowing_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+        
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        Ret ret;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            ret = fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+
+        return ret;
+    }
 };
 
 #endif //!DACCESS_COMPILE

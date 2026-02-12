@@ -324,9 +324,9 @@ struct RangeOps
         return result;
     }
 
-    static Range Add(const Range& r1, const Range& r2)
+    static Range Add(const Range& r1, const Range& r2, bool unsignedAdd = false)
     {
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
+        return ApplyRangeOp(r1, r2, [unsignedAdd](const Limit& a, const Limit& b) {
             // For Add we support:
             //   keConstant + keConstant  => keConstant
             //   keBinOpArray + keConstant => keBinOpArray
@@ -339,7 +339,8 @@ struct RangeOps
                     return Limit(Limit::keUnknown);
                 }
 
-                if (!IntAddOverflows(a.GetConstant(), b.GetConstant()))
+                static_assert(CheckedOps::Unsigned == true);
+                if (!CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd))
                 {
                     if (a.IsConstant() && b.IsConstant())
                     {
@@ -354,7 +355,18 @@ struct RangeOps
         });
     }
 
-    static Range Multiply(const Range& r1, const Range& r2)
+    static Range Subtract(const Range& r1, const Range& r2, bool unsignedSub = false)
+    {
+        if (unsignedSub)
+        {
+            return Limit(Limit::keUnknown); // Give up on unsigned subtraction for now
+        }
+
+        // Delegate to Add after negating the second operand. Possible overflows will be handled there.
+        return Add(r1, Negate(r2));
+    }
+
+    static Range Multiply(const Range& r1, const Range& r2, bool unsignedMul = false)
     {
         if (!r1.IsConstantRange() || !r2.IsConstantRange())
         {
@@ -366,10 +378,9 @@ struct RangeOps
         int r2lo = r2.LowerLimit().GetConstant();
         int r2hi = r2.UpperLimit().GetConstant();
 
-        if (CheckedOps::MulOverflows(r1lo, r2lo, CheckedOps::Signed) ||
-            CheckedOps::MulOverflows(r1lo, r2hi, CheckedOps::Signed) ||
-            CheckedOps::MulOverflows(r1hi, r2lo, CheckedOps::Signed) ||
-            CheckedOps::MulOverflows(r1hi, r2hi, CheckedOps::Signed))
+        static_assert(CheckedOps::Unsigned == true);
+        if (CheckedOps::MulOverflows(r1lo, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsignedMul) ||
+            CheckedOps::MulOverflows(r1hi, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsignedMul))
         {
             return Limit(Limit::keUnknown);
         }
@@ -750,6 +761,9 @@ public:
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
 
+    // Compute the range from the given type
+    static Range GetRangeFromType(var_types type);
+
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
@@ -771,9 +785,6 @@ private:
     // Internal worker for GetRange.
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range from the given type
-    static Range GetRangeFromType(var_types type);
-
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
@@ -791,6 +802,8 @@ private:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    static Limit TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower);
 
     // Inspect the assertions about the current ValueNum to refine pRange
     static void MergeEdgeAssertions(Compiler*        comp,

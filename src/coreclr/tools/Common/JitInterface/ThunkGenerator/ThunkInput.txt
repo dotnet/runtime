@@ -122,6 +122,8 @@ CorInfoIsAccessAllowedResult
 CorInfoMethodRuntimeFlags
 CorInfoTailCall
 CorInfoType
+CorInfoWasmType
+CorInfoWasmType*
 CorInfoHFAElemType
 CorInfoTypeWithMod
 CorInfoCallConvExtension
@@ -154,6 +156,7 @@ CORINFO_CLASS_HANDLE*,CORINFO_CLASS_STRUCT_**
 CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
 CORINFO_VARARGS_HANDLE,IntPtr
 CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
+CORINFO_WASM_TYPE_SYMBOL_HANDLE,CORINFO_WASM_TYPE_SYMBOL_STRUCT_*
 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
 
 ICorDebugInfo::OffsetMapping*,OffsetMapping*
@@ -346,4 +349,5 @@ FUNCTIONS
     CorInfoReloc getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

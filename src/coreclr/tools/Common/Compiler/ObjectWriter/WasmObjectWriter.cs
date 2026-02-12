@@ -26,7 +26,6 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection TypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
@@ -80,7 +79,7 @@ namespace ILCompiler.ObjectWriter
             _uniqueSignatures[signature] = signatureIndex;
             _signatureCount++;
 
-            SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.TypeSection);
+            SectionWriter writer = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
             int signatureSize = signature.EncodeSize();
             signature.Encode(writer.Buffer.GetSpan(signatureSize));
             writer.Buffer.Advance(signatureSize);
@@ -165,7 +164,7 @@ namespace ILCompiler.ObjectWriter
             { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
             { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
             { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
-            { WasmObjectNodeSection.TypeSection, WasmSectionType.Type },
+            { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code }
         };
         private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
@@ -291,14 +290,14 @@ namespace ILCompiler.ObjectWriter
         {
             int index = _sectionNameToIndex[name];
             return _sections[index];
-        } 
+        }
 
         private protected override void EmitObjectFile(Stream outputFileStream)
         {
             EmitWasmHeader(outputFileStream);
 
             // Type section (1)
-            SectionByName(WasmObjectNodeSection.TypeSection.Name).Emit(outputFileStream);
+            SectionByName(ObjectNodeSection.WasmTypeSection.Name).Emit(outputFileStream);
             // Import section (2)
             SectionByName(WasmObjectNodeSection.ImportSection.Name).Emit(outputFileStream);
             // Function section (3)
@@ -376,7 +375,7 @@ namespace ILCompiler.ObjectWriter
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);
 
-            int typeIdx = _sectionNameToIndex[WasmObjectNodeSection.TypeSection.Name];
+            int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
             PrependCount(_sections[typeIdx], _uniqueSignatures.Count);
 
             int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
@@ -618,7 +617,7 @@ namespace ILCompiler.ObjectWriter
     internal enum WasmDataSectionType : byte
     {
         Active = 0,  // (data list(byte) (active offset-expr))
-        Passive = 1, // (data list(byte) passive) 
+        Passive = 1, // (data list(byte) passive)
         ActiveMemorySpecified = 2 // (data list(byte) (active memidx offset-expr))
     }
 
@@ -647,7 +646,7 @@ namespace ILCompiler.ObjectWriter
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
                         _initExpr.EncodeSize() + // init expr encodeSize
                         (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
-                    WasmDataSectionType.Passive => 
+                    WasmDataSectionType.Passive =>
                         (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
                         (int)DwarfHelper.SizeOfULEB128((ulong)_stream.Length), // encodeSize of data length
                     _ =>

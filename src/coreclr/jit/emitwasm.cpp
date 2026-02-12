@@ -159,14 +159,22 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             id->idInsFmt(IF_ULEB128);
             break;
         case EC_INDIR_R:
+        {
             // Indirect load of actual ftn ptr from indirection cell (on the stack)
             // TODO-WASM: temporary, move this into higher layers (lowering).
             emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+
+            // TODO-WASM: Generate actual list of types and generate reloc
+            // This is here to exercise the new JIT-EE API
+            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID};
+            codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
+
+            id = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
+        }
         default:
             unreached();
     }

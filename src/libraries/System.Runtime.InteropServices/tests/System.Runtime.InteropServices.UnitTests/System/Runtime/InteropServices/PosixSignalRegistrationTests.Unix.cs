@@ -16,13 +16,19 @@ namespace System.Tests
     {
         public static IEnumerable<object[]> UninstallableSignals()
         {
+            yield return new object[] { PosixSignal.SIGKILL };
             yield return new object[] { (PosixSignal)9 };
         }
 
         public static IEnumerable<object[]> SupportedSignals()
         {
             foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
-                yield return new object[] { value };
+            {
+                if (value != PosixSignal.SIGKILL)
+                {
+                    yield return new object[] { value };
+                }
+            }
         }
 
         public static IEnumerable<object[]> UnsupportedSignals()
@@ -252,7 +258,12 @@ namespace System.Tests
                 var data = new TheoryData<PosixSignal>();
                 foreach (var value in Enum.GetValues(typeof(PosixSignal)))
                 {
-                    int signo = GetPlatformSignalNumber((PosixSignal)value);
+                    PosixSignal signal = (PosixSignal)value;
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be registered
+                    }
+                    int signo = GetPlatformSignalNumber(signal);
                     Assert.True(signo > 0, "Expected raw signal number to be greater than 0.");
                     data.Add((PosixSignal)signo);
                 }

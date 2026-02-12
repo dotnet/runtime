@@ -5271,7 +5271,7 @@ void CordbProcess::RawDispatchEvent(
                 pCallback1->UnloadModule(pAppDomain, module);
             }
 
-            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly));
+            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(module->m_vmModule));
         }
         break;
 

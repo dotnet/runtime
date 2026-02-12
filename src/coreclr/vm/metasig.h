@@ -399,7 +399,10 @@ DEFINE_METASIG_T(SM(IntPtr_RetRuntimeType, I , C(CLASS)))
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))
 
 // Exception
-DEFINE_METASIG(IM(RefUInt_RetStr, r(K), s))
+#ifdef FEATURE_COMINTEROP
+DEFINE_METASIG_T(SM(PtrException_PtrException_RetIntPtr, P(C(EXCEPTION)) P(C(EXCEPTION)), I))
+DEFINE_METASIG_T(SM(PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid, P(C(EXCEPTION)) P(I) P(K) P(C(EXCEPTION)), v))
+#endif //FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 // The signature of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface

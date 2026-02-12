@@ -3492,6 +3492,10 @@ void Compiler::fgCreateThrowHelperBlock(AddCodeDsc* add)
     //
     add->acdDstBlk = newBlk;
 
+    // Set up liveness
+    //
+    fgSetThrowHelpBlockLiveness(newBlk);
+
 #ifdef DEBUG
     if (verbose)
     {
