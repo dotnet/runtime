@@ -4985,6 +4985,8 @@ private:
 
     bool impCanReimport;
 
+    bool m_nextAwaitIsTail = false;
+
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum
 #ifdef DEBUG
