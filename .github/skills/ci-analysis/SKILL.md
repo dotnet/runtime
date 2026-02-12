@@ -165,7 +165,7 @@ Read `recommendationHint` as a starting point, then layer in context:
 Then layer in nuance the heuristic can't capture:
 
 - **Mixed signals**: Some failures match known issues AND some correlate with PR changes → separate them. Known issues = safe to retry; correlated = fix first.
-- **Canceled jobs with recoverable results**: If `canceledJobNames` is non-empty, mention that canceled jobs may have passing Helix results (see "Recovering Results from Canceled Jobs").
+- **Canceled jobs with recoverable results**: If `canceledJobNames` is non-empty, mention that canceled jobs may have passing Helix results (see "Recovering Results from Crashed/Canceled Jobs").
 - **Build still in progress**: If `lastBuildJobSummary.pending > 0`, note that more failures may appear.
 - **Multiple builds**: If `builds` has >1 entry, `lastBuildJobSummary` reflects only the last build — use `totalFailedJobs` for the aggregate count.
 - **BuildId mode**: `knownIssues` and `prCorrelation` won't be populated. Say "Build Analysis and PR correlation not available in BuildId mode."
