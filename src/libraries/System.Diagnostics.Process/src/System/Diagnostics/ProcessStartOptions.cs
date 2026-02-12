@@ -133,7 +133,12 @@ namespace System.Diagnostics
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            _fileName = ResolvePath(fileName) ?? throw new FileNotFoundException("Could not resolve the file.", fileName); ;
+            string? resolved = ResolvePath(fileName);
+            if (resolved == null || !File.Exists(resolved))
+            {
+                throw new FileNotFoundException(SR.FileNotFoundResolvePath, fileName);
+            }
+            _fileName = resolved;
         }
 
         internal static string? ResolvePath(string filename)
@@ -153,7 +158,9 @@ namespace System.Diagnostics
             // If the file name ends in a period (.) with no extension, or if the file name contains a path, .exe is not appended."
 
             // HasExtension returns false for trailing dot, so we need to check that separately
-            if (filename[filename.Length - 1] != '.' && !Path.HasExtension(filename))
+            if (filename[filename.Length - 1] != '.'
+                && string.IsNullOrEmpty(Path.GetDirectoryName(filename))
+                && !Path.HasExtension(filename))
             {
                 filename += ".exe";
             }
@@ -262,7 +269,8 @@ namespace System.Diagnostics
 
         private static string? GetWindowsDirectory()
         {
-            // Don't cache Windows directory as it's user-specific and can change during app lifetime
+            // We don't cache the Windows directory; GetWindowsDirectoryW returns a stable system-wide path,
+            // and this method is not expected to be called frequently enough to warrant additional caching.
             Span<char> buffer = stackalloc char[260]; // MAX_PATH
             uint length = Interop.Kernel32.GetWindowsDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
             if (length > 0 && length < buffer.Length)

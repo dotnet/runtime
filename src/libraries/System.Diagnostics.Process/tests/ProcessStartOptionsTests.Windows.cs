@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
             Assert.True(File.Exists(options.FileName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void ResolvePath_AddsExeExtension()
         {
             // Test that .exe is appended when no extension is provided
@@ -66,10 +66,11 @@ namespace System.Diagnostics.Tests
             // cmd.exe should be found in system directory
             ProcessStartOptions options = new("cmd");
             Assert.True(File.Exists(options.FileName));
-            Assert.Contains("system32", options.FileName, StringComparison.OrdinalIgnoreCase);
+            string systemDirectory = Environment.SystemDirectory;
+            Assert.StartsWith(systemDirectory, options.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void ResolvePath_FindsInWindowsDirectory()
         {
             ProcessStartOptions options = new("notepad");

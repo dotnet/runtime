@@ -28,12 +28,6 @@ namespace System.Diagnostics.Tests
             Assert.EndsWith("sh", options.FileName);
         }
 
-        private static string ResolveTarget(string path)
-        {
-            FileSystemInfo? target = File.ResolveLinkTarget(path, returnFinalTarget: true);
-            return target?.FullName ?? path;
-        }
-
         [Fact]
         public void ResolvePath_DoesNotAddExeExtension()
         {
