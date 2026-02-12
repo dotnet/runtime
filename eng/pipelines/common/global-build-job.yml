@@ -173,8 +173,6 @@ jobs:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
-      parameters:
-        legacyCredential: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
