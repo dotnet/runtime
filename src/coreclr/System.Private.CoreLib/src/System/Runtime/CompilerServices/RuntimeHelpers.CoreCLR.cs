@@ -109,6 +109,8 @@ namespace System.Runtime.CompilerServices
             uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
             Debug.Assert(uint.IsPow2(targetTypeSize));
 
+            // RVA static data may not be
+            // aligned to the natural boundary of the element type in WASM linear memory.
             if (((nuint)data & (targetTypeSize - 1)) != 0)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
