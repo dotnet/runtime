@@ -188,9 +188,13 @@ If a test runs `dotnet build` internally (like SDK end-to-end tests), both sourc
 
 When you download artifacts via MCP tools or manually, the directory structure can be confusing. Here's what to expect.
 
-### Helix Work Item Downloads (`hlx_download`)
+### Helix Work Item Downloads
 
-`hlx_download` saves files to a temp directory and returns local paths. The structure is **flat** — all files from the work item land in one directory:
+Two MCP tools download Helix artifacts:
+- **`hlx_download`** — downloads multiple files from a work item, with optional glob `pattern` (e.g., `pattern:"*.binlog"`). Returns local file paths.
+- **`hlx_download_url`** — downloads a single file by direct URI (from `hlx_files` output). Use when you know exactly which file you need.
+
+`hlx_download` saves files to a temp directory. The structure is **flat** — all files from the work item land in one directory:
 
 ```
 C:\...\Temp\helix-{hash}\
