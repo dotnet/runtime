@@ -1767,10 +1767,10 @@ TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupTyp
         NativeParser typeMapEntryParser;
         while (typeMapLookup.GetNext(typeMapEntryParser))
         {
-            uint32_t keyImportSection = entryParser.GetUnsigned();
-            uint32_t keyFixupIndex = entryParser.GetUnsigned();
+            uint32_t keyImportSection = typeMapEntryParser.GetUnsigned();
+            uint32_t keyFixupIndex = typeMapEntryParser.GetUnsigned();
             TypeHandle keyTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, keyImportSection, keyFixupIndex);
-            if (keyTypeHandle != TypeHandle(pGroupType))
+            if (keyTypeHandle != key)
             {
                 continue;
             }
@@ -1844,6 +1844,8 @@ COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Modul
             uint32_t moduleFixupIndex = entryParser.GetUnsigned();
             pTargetModules[i] = GetModuleForNativeFormatFixupReference(this, m_pModule, moduleImportSection, moduleFixupIndex);
         }
+
+        return resultCount;
     }
 
     return 0;
