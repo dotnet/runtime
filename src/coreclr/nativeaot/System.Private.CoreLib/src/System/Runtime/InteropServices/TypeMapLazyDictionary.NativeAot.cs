@@ -106,12 +106,11 @@ namespace System.Runtime.InteropServices
 
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReadyToRunSectionType sectionType, out NativeReader reader)
         {
-            byte* pBlob;
-            uint cbBlob;
+            byte* pBlob = (byte*)RuntimeImports.RhGetModuleSection(module, sectionType, out int length);
 
-            if (RuntimeImports.RhGetModuleSection(module, (uint)sectionType, &pBlob, &cbBlob))
+            if (pBlob != null)
             {
-                reader = new NativeReader(pBlob, cbBlob);
+                reader = new NativeReader(pBlob, (uint)length);
                 return true;
             }
 

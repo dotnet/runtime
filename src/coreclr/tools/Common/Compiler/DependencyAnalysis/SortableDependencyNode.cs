@@ -61,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             Win32ResourcesNode,
             CorHeaderNode,
-            ReadyToRunHeaderNode,
+            GlobalHeaderNode,
             ReadyToRunAssemblyHeaderNode,
             ImportSectionsTableNode,
             ImportSectionNode,

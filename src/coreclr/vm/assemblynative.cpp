@@ -1549,13 +1549,14 @@ namespace
         PTR_Module pModule = pAssembly->GetModule();
         if (!pModule->IsReadyToRun())
         {
-            return false;
+            return true;
         }
 
         PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
 
         if (filter(pR2RInfo))
         {
+            *pHasPrecachedInfo = true;
             return callback(pR2RInfo);
         }
         return true;
@@ -1769,7 +1770,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
             // We will only process the specific type maps if we have a callback to process
             // the entry and the precached map was not calculated for this module.
-            if (newExternalTypeEntry != NULL && !hasPrecachedInfo)
+            if (newExternalTypeEntry != NULL)
             {
                 MappingsProcessor onExternalType{ newExternalTypeEntry, context };
                 ProcessTypeMapAttribute(
@@ -1779,7 +1780,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                     currAssembly);
             }
 
-            if (newProxyTypeEntry != NULL && !hasPrecachedInfo)
+            if (newProxyTypeEntry != NULL)
             {
                 MappingsProcessor onProxyType{ newProxyTypeEntry, context };
                 ProcessTypeMapAttribute(

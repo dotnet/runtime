@@ -333,7 +333,17 @@ namespace System.Runtime.InteropServices
                 _preCachedModules.Add(module);
             }
 
-            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value) => TryGetOrLoadType(key, out value);
+            public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out Type value)
+            {
+                foreach (RuntimeModule module in _preCachedModules)
+                {
+                    if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out value))
+                    {
+                        return true;
+                    }
+                }
+                return TryGetOrLoadType(key, out value);
+            }
 
             // Not supported to avoid exposing TypeMap entries in a manner that
             // would violate invariants the Trimmer is attempting to enforce.

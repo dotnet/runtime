@@ -26,7 +26,7 @@ namespace ILCompiler.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public int Offset => throw new System.NotImplementedException();
+        public int Offset => 0;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -45,10 +45,18 @@ namespace ILCompiler.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            // This node does not trigger generation of other nodes.
+            if (relocsOnly)
+                return new ObjectData([], [], 1, [this]);
+
+            ObjectDataBuilder builder = new(factory, relocsOnly);
+            builder.AddSymbol(this);
+
             NativeWriter writer = new();
             Section section = writer.NewSection();
 
             VertexHashtable table = new();
+            section.Place(table);
 
             foreach (var map in _assemblyTypeMaps.Maps)
             {
@@ -60,14 +68,10 @@ namespace ILCompiler.ReadyToRun
                     Vertex targetModuleVertex = _importReferenceProvider.EncodeReferenceToModule(writer, targetModule);
                     modules.Append(targetModuleVertex);
                 }
-                Vertex modulesVertex = writer.GetTuple(groupTypeVertex, modules);
-                table.Append((uint)groupType.GetHashCode(), modulesVertex);
+                Vertex entry = writer.GetTuple(groupTypeVertex, modules);
+                table.Append((uint)groupType.GetHashCode(), section.Place(entry));
             }
 
-            section.Place(table);
-
-            ObjectDataBuilder builder = new();
-            builder.AddSymbol(this);
             builder.EmitBytes(writer.Save());
             return builder.ToObjectData();
         }

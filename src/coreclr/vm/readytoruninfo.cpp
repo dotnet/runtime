@@ -1643,7 +1643,10 @@ bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupTypeMT))
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle == TypeHandle(pGroupTypeMT))
         {
             return true;
         }
@@ -1666,7 +1669,10 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        uint32_t groupTypeImportSection = entryParser.GetUnsigned();
+        uint32_t groupTypeFixupIndex = entryParser.GetUnsigned();
+        TypeHandle groupTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, groupTypeImportSection, groupTypeFixupIndex);
+        if (groupTypeHandle != TypeHandle(pGroupType))
         {
             continue;
         }
@@ -1686,7 +1692,10 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
         {
             if (typeMapEntryParser.StringEquals(pKey, (uint32_t)strlen(pKey)))
             {
-                return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, typeMapEntryParser.GetUnsigned(), typeMapEntryParser.GetUnsigned());
+                typeMapEntryParser.SkipString();
+                uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();
+                uint32_t resultFixupIndex = typeMapEntryParser.GetUnsigned();
+                return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, resultImportSection, resultFixupIndex);
             }
         }
 
@@ -1711,7 +1720,10 @@ bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupType))
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle == TypeHandle(pGroupType))
         {
             return true;
         }
@@ -1734,7 +1746,10 @@ TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupTyp
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        uint32_t groupTypeImportSection = entryParser.GetUnsigned();
+        uint32_t groupTypeFixupIndex = entryParser.GetUnsigned();
+        TypeHandle groupTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, groupTypeImportSection, groupTypeFixupIndex);
+        if (groupTypeHandle != TypeHandle(pGroupType))
         {
             continue;
         }
@@ -1752,12 +1767,17 @@ TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupTyp
         NativeParser typeMapEntryParser;
         while (typeMapLookup.GetNext(typeMapEntryParser))
         {
-            if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+            uint32_t keyImportSection = entryParser.GetUnsigned();
+            uint32_t keyFixupIndex = entryParser.GetUnsigned();
+            TypeHandle keyTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, keyImportSection, keyFixupIndex);
+            if (keyTypeHandle != TypeHandle(pGroupType))
             {
                 continue;
             }
 
-            return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, typeMapEntryParser.GetUnsigned(), typeMapEntryParser.GetUnsigned());
+            uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();
+            uint32_t resultFixupIndex = typeMapEntryParser.GetUnsigned();
+            return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, resultImportSection, resultFixupIndex);
         }
 
         // No matching entry found in the table.
@@ -1781,7 +1801,10 @@ bool ReadyToRunInfo::HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T*
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) == TypeHandle(pGroupType))
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle == TypeHandle(pGroupType))
         {
             *pCount = entryParser.GetUnsigned();
             return true;
@@ -1805,7 +1828,10 @@ COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Modul
     NativeParser entryParser;
     while (lookup.GetNext(entryParser))
     {
-        if (GetTypeHandleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned()) != TypeHandle(pGroupType))
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle == TypeHandle(pGroupType))
         {
             continue;
         }
@@ -1814,7 +1840,9 @@ COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Modul
         COUNT_T resultCount = min(numTargets, count);
         for (COUNT_T i = 0; i < resultCount; i++)
         {
-            pTargetModules[i] = GetModuleForNativeFormatFixupReference(this, m_pModule, entryParser.GetUnsigned(), entryParser.GetUnsigned());
+            uint32_t moduleImportSection = entryParser.GetUnsigned();
+            uint32_t moduleFixupIndex = entryParser.GetUnsigned();
+            pTargetModules[i] = GetModuleForNativeFormatFixupReference(this, m_pModule, moduleImportSection, moduleFixupIndex);
         }
     }
 
