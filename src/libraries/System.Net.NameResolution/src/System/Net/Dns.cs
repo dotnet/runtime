@@ -416,6 +416,9 @@ namespace System.Net
             return true;
         }
 
+        private const string Localhost = "localhost";
+        private const string InvalidDomain = "invalid";
+
         /// <summary>
         /// Checks if the given host name matches a reserved name or is a subdomain of it.
         /// For example, IsReservedName("foo.localhost", "localhost") returns true.
@@ -432,7 +435,7 @@ namespace System.Net
 
             // Strip trailing dot if present (DNS root notation)
             ReadOnlySpan<char> hostSpan = hostName.AsSpan();
-            if (hostSpan.Length > 0 && hostSpan[hostSpan.Length - 1] == '.')
+            if (hostSpan.EndsWith('.'))
             {
                 hostSpan = hostSpan.Slice(0, hostSpan.Length - 1);
             }
@@ -451,13 +454,13 @@ namespace System.Net
         {
             // Strip trailing dot for length comparison
             int length = hostName.Length;
-            if (length > 0 && hostName[length - 1] == '.')
+            if (hostName.EndsWith('.'))
             {
                 length--;
             }
 
             // Must be longer than "localhost" (not just equal with trailing dot)
-            return length > "localhost".Length && IsReservedName(hostName, "localhost");
+            return length > Localhost.Length && IsReservedName(hostName, Localhost);
         }
 
         /// <summary>
@@ -467,7 +470,7 @@ namespace System.Net
         private static bool TryHandleRfc6761InvalidDomain(string hostName, out SocketException? exception)
         {
             // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN.
-            if (IsReservedName(hostName, "invalid"))
+            if (IsReservedName(hostName, InvalidDomain))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Returning NXDOMAIN for 'invalid' domain");
                 exception = new SocketException((int)SocketError.HostNotFound);
@@ -502,7 +505,7 @@ namespace System.Net
             bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
 
             bool fallbackToLocalhost = false;
-            object result;
+            object? result = null;
             try
             {
                 SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, addressFamily, out string? newHostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
@@ -522,7 +525,7 @@ namespace System.Net
                         throw CreateException(errorCode, nativeErrorCode);
                     }
                 }
-                else if (isLocalhostSubdomain && addresses.Length == 0)
+                else if (addresses.Length == 0 && isLocalhostSubdomain)
                 {
                     // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
@@ -541,10 +544,6 @@ namespace System.Net
                             Aliases = aliases
                         };
                 }
-                else
-                {
-                    result = null!; // Satisfies definite assignment; overwritten by fallback below.
-                }
             }
             catch (Exception ex) when (LogFailure(hostName, activity, ex))
             {
@@ -554,9 +553,10 @@ namespace System.Net
 
             if (fallbackToLocalhost)
             {
-                return GetHostEntryOrAddressesCore("localhost", justAddresses, addressFamily);
+                return GetHostEntryOrAddressesCore(Localhost, justAddresses, addressFamily);
             }
 
+            Debug.Assert(result is not null);
             NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result);
 
             return result;
@@ -661,6 +661,13 @@ namespace System.Net
                     Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
 
+            if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
+            {
+                return justAddresses ? (Task)
+                    Task.FromResult((IPAddress[])resultOnFailure) :
+                    Task.FromResult((IPHostEntry)resultOnFailure);
+            }
+
             object asyncState;
 
             // See if it's an IP Address.
@@ -685,14 +692,6 @@ namespace System.Net
             {
                 // Validate hostname before any processing
                 ValidateHostName(hostName);
-
-                // Check address family support after validation
-                if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
-                {
-                    return justAddresses ? (Task)
-                        Task.FromResult((IPAddress[])resultOnFailure) :
-                        Task.FromResult((IPHostEntry)resultOnFailure);
-                }
 
                 // RFC 6761 Section 6.4: "invalid" domains must return NXDOMAIN.
                 if (TryHandleRfc6761InvalidDomain(hostName, out SocketException? invalidDomainException))
@@ -801,8 +800,8 @@ namespace System.Net
 
                         // Resolve plain "localhost" instead
                         return await ((Task<T>)(justAddresses
-                            ? (Task)Dns.GetHostAddressesAsync("localhost", addressFamily, cancellationToken)
-                            : Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken))).ConfigureAwait(false);
+                            ? (Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)
+                            : Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken))).ConfigureAwait(false);
                     }
 
                     if (isLocalhostSubdomain && result is IPHostEntry entry && entry.AddressList.Length == 0)
@@ -812,7 +811,7 @@ namespace System.Net
                         fallbackOccurred = true;
 
                         // Resolve plain "localhost" instead
-                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken)).ConfigureAwait(false);
+                        return await ((Task<T>)(Task)Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken)).ConfigureAwait(false);
                     }
 
                     return result;
@@ -825,8 +824,8 @@ namespace System.Net
                     fallbackOccurred = true;
 
                     return await ((Task<T>)(justAddresses
-                        ? (Task)Dns.GetHostAddressesAsync("localhost", addressFamily, cancellationToken)
-                        : Dns.GetHostEntryAsync("localhost", addressFamily, cancellationToken))).ConfigureAwait(false);
+                        ? (Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)
+                        : Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken))).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
