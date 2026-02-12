@@ -308,12 +308,14 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(simdBaseType));
-                        size = getVectorTByteLength();
+                        size = getCompileTimeVectorTByteLength();
 
                         if (size == 0)
                         {
                             return TYP_UNDEF;
                         }
+
+                        vectorTHandle = typeHnd;
                         break;
                     }
 
