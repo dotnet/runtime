@@ -86,11 +86,12 @@ Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 Check if canceled job "{JOB_NAME}" from build {BUILD_ID} has recoverable Helix results.
 
 Steps:
-1. Download the testResults.xml artifact from the canceled job (see azure-cli.md)
-2. If available, parse for pass/fail counts and work item status
+1. Use hlx-hlx_files with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to find testResults.xml
+2. Download with hlx-hlx_download_url using the testResults.xml URI
+3. Parse the XML for pass/fail counts on the <assembly> element
 
 Return JSON: { "jobName": "...", "hasResults": true, "passed": N, "failed": N }
-Or: { "jobName": "...", "hasResults": false, "reason": "no artifacts" }
+Or: { "jobName": "...", "hasResults": false, "reason": "no testResults.xml uploaded" }
 ```
 
 This pattern scales to any number of builds — launch N subagents for N builds, collect results, compare.
@@ -116,10 +117,11 @@ Launch one per build in parallel. The main agent combines with `get_builds` resu
 
 ## General Guidelines
 
-- **Use `task` agent type** — it has shell + MCP access
+- **Use `general-purpose` agent type** — it has shell + MCP access (hlx-*, azure-devops-*, mcp-binlog-tool-*)
 - **Run independent tasks in parallel** — the whole point of delegation
 - **Include script paths** — subagents don't inherit skill context
 - **Require structured JSON output** — enables comparison across subagents
 - **Don't delegate interpretation** — subagents return facts, main agent reasons
 - **STOP on errors** — subagents should return error details immediately, not troubleshoot auth/environment issues
 - **Use SQL for many results** — when launching 5+ subagents or doing multi-phase delegation, store results in a SQL table (`CREATE TABLE results (agent_id TEXT, build_id INT, data TEXT, status TEXT)`) so you can query across all results instead of holding them in context
+- **Specify `model: "claude-sonnet-4"` for MCP-heavy tasks** — default model may time out on multi-step MCP tool chains
