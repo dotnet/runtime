@@ -9,7 +9,7 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
-**Workflow**: Gather PR context (Step 0) → run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
+**Workflow**: Gather PR context (Step 0) → run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice. For supplementary investigation beyond the script, MCP tools (AzDO, Helix, GitHub) provide structured access when available; the script and `gh` CLI work independently when they're not.
 
 ## When to Use This Skill
 
@@ -75,7 +75,7 @@ The script operates in three distinct modes depending on what information you ha
 ## What the Script Does
 
 ### PR Analysis Mode (`-PRNumber`)
-1. Discovers AzDO builds associated with the PR (via `gh pr checks` — finds failing builds and one non-failing build as fallback; for full build history, use `azure-devops-pipelines_get_builds`)
+1. Discovers AzDO builds associated with the PR (via `gh pr checks`, or `pull_request_read` with method `get_status` — finds failing builds and one non-failing build as fallback; for full build history, use `azure-devops-pipelines_get_builds`)
 2. Fetches Build Analysis for known issues
 3. Gets failed jobs from Azure DevOps timeline
 4. **Separates canceled jobs from failed jobs** (canceled may be dependency-canceled or timeout-canceled)

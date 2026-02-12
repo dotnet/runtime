@@ -53,8 +53,10 @@ Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when
 For the current/latest build, the merge ref (`refs/pull/{PR}/merge`) is available via the GitHub API. The merge commit's first parent is the target branch HEAD at the time GitHub computed the merge:
 
 ```
-gh api repos/{owner}/{repo}/git/commits/{sourceVersion} --jq '.parents[0].sha'
+gh api repos/{OWNER}/{REPO}/git/commits/{sourceVersion} --jq '.parents[0].sha'
 ```
+
+Or with GitHub MCP: `get_commit` with the `sourceVersion` SHA — the first parent in the response is the target branch HEAD.
 
 Where `sourceVersion` is the merge commit SHA from the AzDO build (not `pr.sourceSha`). This is simpler than parsing checkout logs.
 
