@@ -914,7 +914,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var singleService = serviceProvider.GetService<IFakeOpenGenericService<PocoClass>>();
             var allServices = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
 
-            // Assert - Both services should be returned in enumerable, in registration order
+            // Assert - Both services should be returned; validates closed generic and open generic are both resolved
             Assert.NotNull(singleService);
             Assert.Equal(2, allServices.Count);
             Assert.IsType<FakeService>(allServices[0]);
@@ -934,7 +934,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Act - Resolve enumerable directly without calling GetService first
             var allServices = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
 
-            // Assert - Both services should be returned in registration order
+            // Assert - Both services should be returned; validates closed generic and open generic are both resolved
             Assert.Equal(2, allServices.Count);
             Assert.IsType<FakeService>(allServices[0]);
             Assert.IsType<ClassWithNoConstraints<PocoClass>>(allServices[1]);
