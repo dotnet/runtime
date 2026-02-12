@@ -1831,7 +1831,7 @@ COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Modul
         uint32_t importSection = entryParser.GetUnsigned();
         uint32_t fixupIndex = entryParser.GetUnsigned();
         TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
-        if (typeHandle == TypeHandle(pGroupType))
+        if (typeHandle != TypeHandle(pGroupType))
         {
             continue;
         }
