@@ -1079,7 +1079,7 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
 }
 
 #ifdef TARGET_WASM
-extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(ContinuationObject* cont, uint8_t* resultStorage)
+FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage)
 {
     STATIC_CONTRACT_WRAPPER;
 
@@ -1088,6 +1088,7 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(Contin
 
     return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
 }
+FCIMPLEND
 #endif // TARGET_WASM
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
