@@ -46,17 +46,6 @@
     </LibraryBuilderTask>
   </Target>
 
-  <Target Name="_PublishNativeBinary">
-
-    <ItemGroup>
-      <_NativeBinaryFiles Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_NativeBinaryFiles)"
-          DestinationFolder="$(OriginalPublishDir)" />
-
-  </Target>
-
   <Target Name="_GenerateBundle"
           Condition="'$(BundlesResources)' != 'false'">
     <PropertyGroup>

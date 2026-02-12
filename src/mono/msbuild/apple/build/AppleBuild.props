@@ -48,7 +48,6 @@
         $(_ProcessRuntimeComponentsForLibraryMode);
         $(_AotCompileTargetName);
         _BuildNativeLibrary;
-        _PublishNativeBinary;
         _AppleGenerateAppBundle;
         _AfterAppleBuild
     </AppleBuildDependsOn>
