@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData((UnmanagedType)(-1))]
         [InlineData(UnmanagedType.HString)]
         [InlineData((UnmanagedType)int.MaxValue)]
-        public void Ctor_UmanagedTye(UnmanagedType unmanagedType)
+        public void Ctor_UnmanagedType(UnmanagedType unmanagedType)
         {
             var attribute = new MarshalAsAttribute(unmanagedType);
             Assert.Equal(unmanagedType, attribute.Value);
