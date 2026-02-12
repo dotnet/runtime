@@ -81,14 +81,14 @@ lzma2_header_lzma(lzma_lzma2_coder *coder)
 
 	// Uncompressed size
 	size_t size = coder->uncompressed_size - 1;
-	coder->buf[pos++] += size >> 16;
-	coder->buf[pos++] = (size >> 8) & 0xFF;
-	coder->buf[pos++] = size & 0xFF;
+	coder->buf[pos++] += (uint8_t)(size >> 16);
+	coder->buf[pos++] = (uint8_t)((size >> 8) & 0xFF);
+	coder->buf[pos++] = (uint8_t)(size & 0xFF);
 
 	// Compressed size
 	size = coder->compressed_size - 1;
-	coder->buf[pos++] = size >> 8;
-	coder->buf[pos++] = size & 0xFF;
+	coder->buf[pos++] = (uint8_t)(size >> 8);
+	coder->buf[pos++] = (uint8_t)(size & 0xFF);
 
 	// Properties, if needed
 	if (coder->need_properties)
@@ -122,7 +122,7 @@ lzma2_header_uncompressed(lzma_lzma2_coder *coder)
 	coder->need_dictionary_reset = false;
 
 	// "Compressed" size
-	coder->buf[1] = (coder->uncompressed_size - 1) >> 8;
+	coder->buf[1] = (uint8_t)((coder->uncompressed_size - 1) >> 8);
 	coder->buf[2] = (coder->uncompressed_size - 1) & 0xFF;
 
 	// Set the start position for copying.
@@ -164,8 +164,8 @@ lzma2_encode(void *coder_ptr, lzma_mf *restrict mf,
 	case SEQ_LZMA_ENCODE: {
 		// Calculate how much more uncompressed data this chunk
 		// could accept.
-		const uint32_t left = LZMA2_UNCOMPRESSED_MAX
-				- coder->uncompressed_size;
+		const uint32_t left = (uint32_t)(LZMA2_UNCOMPRESSED_MAX
+				- coder->uncompressed_size);
 		uint32_t limit;
 
 		if (left < mf->match_len_max) {

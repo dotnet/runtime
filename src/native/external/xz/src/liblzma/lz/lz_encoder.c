@@ -107,7 +107,7 @@ fill_window(lzma_coder *coder, const lzma_allocator *allocator,
 				coder->mf.size, action);
 	}
 
-	coder->mf.write_pos = write_pos;
+	coder->mf.write_pos = (uint32_t)write_pos;
 
 	// Silence Valgrind. lzma_memcmplen() can read extra bytes
 	// and Valgrind will give warnings if those bytes are uninitialized
@@ -199,10 +199,10 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
 			|| lz_options->nice_len > lz_options->match_len_max)
 		return true;
 
-	mf->keep_size_before = lz_options->before_size + lz_options->dict_size;
+	mf->keep_size_before = (uint32_t)(lz_options->before_size + lz_options->dict_size);
 
-	mf->keep_size_after = lz_options->after_size
-			+ lz_options->match_len_max;
+	mf->keep_size_after = (uint32_t)(lz_options->after_size
+			+ lz_options->match_len_max);
 
 	// To avoid constant memmove()s, allocate some extra space. Since
 	// memmove()s become more expensive when the size of the buffer
@@ -215,12 +215,12 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
 	//     to size_t.
 	//   - Memory usage calculation needs something too, e.g. use uint64_t
 	//     for mf->size.
-	uint32_t reserve = lz_options->dict_size / 2;
+	uint32_t reserve = (uint32_t)(lz_options->dict_size / 2);
 	if (reserve > (UINT32_C(1) << 30))
 		reserve /= 2;
 
-	reserve += (lz_options->before_size + lz_options->match_len_max
-			+ lz_options->after_size) / 2 + (UINT32_C(1) << 19);
+	reserve += (uint32_t)((lz_options->before_size + lz_options->match_len_max
+			+ lz_options->after_size) / 2 + (UINT32_C(1) << 19));
 
 	const uint32_t old_size = mf->size;
 	mf->size = mf->keep_size_before + reserve + mf->keep_size_after;
@@ -233,8 +233,8 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
 	}
 
 	// Match finder options
-	mf->match_len_max = lz_options->match_len_max;
-	mf->nice_len = lz_options->nice_len;
+	mf->match_len_max = (uint32_t)lz_options->match_len_max;
+	mf->nice_len = (uint32_t)lz_options->nice_len;
 
 	// cyclic_size has to stay smaller than 2 Gi. Note that this doesn't
 	// mean limiting dictionary size to less than 2 GiB. With a match
@@ -251,7 +251,7 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
 	// memory to keep the code simpler. The current way is simple and
 	// still allows pretty big dictionaries, so I don't expect these
 	// limits to change.
-	mf->cyclic_size = lz_options->dict_size + 1;
+	mf->cyclic_size = (uint32_t)(lz_options->dict_size + 1);
 
 	// Validate the match finder ID and setup the function pointers.
 	switch (lz_options->match_finder) {
@@ -308,7 +308,7 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
 	} else {
 		// Round dictionary size up to the next 2^n - 1 so it can
 		// be used as a hash mask.
-		hs = lz_options->dict_size - 1;
+		hs = (uint32_t)(lz_options->dict_size - 1);
 		hs |= hs >> 1;
 		hs |= hs >> 2;
 		hs |= hs >> 4;

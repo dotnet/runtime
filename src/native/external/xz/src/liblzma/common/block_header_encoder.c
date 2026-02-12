@@ -81,7 +81,7 @@ lzma_block_header_encode(const lzma_block *block, uint8_t *out)
 	const size_t out_size = block->header_size - 4;
 
 	// Store the Block Header Size.
-	out[0] = out_size / 4;
+	out[0] = (uint8_t)(out_size / 4);
 
 	// We write Block Flags in pieces.
 	out[1] = 0x00;

@@ -205,7 +205,7 @@ dict_repeat(lzma_dict *restrict dict,
 {
 	// Don't write past the end of the dictionary.
 	const size_t dict_avail = dict->limit - dict->pos;
-	uint32_t left = my_min(dict_avail, *len);
+	uint32_t left = (uint32_t)my_min(dict_avail, *len);
 	*len -= left;
 
 	size_t back = dict->pos - distance - 1;

@@ -143,7 +143,7 @@ block_encode_uncompressed(lzma_block *block, const uint8_t *in, size_t in_size,
 		// Size of the uncompressed chunk
 		const size_t copy_size
 				= my_min(in_size - in_pos, LZMA2_CHUNK_MAX);
-		out[(*out_pos)++] = (copy_size - 1) >> 8;
+		out[(*out_pos)++] = (uint8_t)((copy_size - 1) >> 8);
 		out[(*out_pos)++] = (copy_size - 1) & 0xFF;
 
 		// The actual data

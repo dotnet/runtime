@@ -59,7 +59,7 @@ call_filter(lzma_simple_coder *coder, uint8_t *buffer, size_t size)
 	const size_t filtered = coder->filter(coder->simple,
 			coder->now_pos, coder->is_encoder,
 			buffer, size);
-	coder->now_pos += filtered;
+	coder->now_pos += (uint32_t)filtered;
 	return filtered;
 }
 
