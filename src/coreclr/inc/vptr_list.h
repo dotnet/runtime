@@ -30,9 +30,9 @@ VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
 VPTR_CLASS(VirtualCallStubManager)
 VPTR_CLASS(VirtualCallStubManagerManager)
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 VPTR_CLASS(JumpStubStubManager)
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
 VPTR_CLASS(InteropDispatchStubManager)
