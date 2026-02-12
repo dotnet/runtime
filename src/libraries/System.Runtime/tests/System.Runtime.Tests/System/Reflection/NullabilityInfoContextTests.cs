@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO.Enumeration;
+using System.Reflection.Emit;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -1470,6 +1471,30 @@ namespace System.Reflection.Tests
 
             Assert.Equal(expectedRead, info.ReadState);
             Assert.Equal(expectedWrite, info.WriteState);
+        }
+
+        [Fact]
+        public void DynamicMethodParameters_DoesNotThrow()
+        {
+            var dynamicMethod = new DynamicMethod("TestMethod", typeof(string), new[] { typeof(int), typeof(string) });
+            var context = new NullabilityInfoContext();
+            var parameters = dynamicMethod.GetParameters();
+
+            Assert.Equal(2, parameters.Length);
+            Assert.Null(parameters[0].Name);
+            Assert.Null(parameters[1].Name);
+
+            NullabilityInfo info0 = context.Create(parameters[0]);
+            Assert.Equal(NullabilityState.NotNull, info0.ReadState);
+            Assert.Equal(typeof(int), info0.Type);
+
+            NullabilityInfo info1 = context.Create(parameters[1]);
+            Assert.Equal(NullabilityState.Unknown, info1.ReadState);
+            Assert.Equal(typeof(string), info1.Type);
+
+            NullabilityInfo returnInfo = context.Create(dynamicMethod.ReturnParameter);
+            Assert.Equal(NullabilityState.Unknown, returnInfo.ReadState);
+            Assert.Equal(typeof(string), returnInfo.Type);
         }
     }
 

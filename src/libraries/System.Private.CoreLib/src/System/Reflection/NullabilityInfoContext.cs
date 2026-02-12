@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Reflection.Emit;
 
 namespace System.Reflection
 {
@@ -69,6 +70,12 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(parameterInfo);
 
+            // DynamicMethod parameters don't have nullability metadata, so return Unknown state
+            if (parameterInfo.Member is DynamicMethod)
+            {
+                return GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, NullableAttributeStateParser.Unknown);
+            }
+
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
                 ? NullableAttributeStateParser.Unknown
@@ -100,7 +107,7 @@ namespace System.Reflection
                 case MethodInfo method:
                     MethodInfo metaMethod = GetMethodMetadataDefinition(method);
                     metaMember = metaMethod;
-                    metaParameter = string.IsNullOrEmpty(parameter.Name) ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
+                    metaParameter = parameter.Position == -1 ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
                     break;
 
                 default:
@@ -118,8 +125,7 @@ namespace System.Reflection
             ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (parameter.Position == i &&
-                    parameter.Name == parameters[i].Name)
+                if (parameter.Position == i)
                 {
                     return parameters[i];
                 }
