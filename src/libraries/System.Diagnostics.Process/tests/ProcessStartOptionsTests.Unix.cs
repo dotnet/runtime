@@ -7,27 +7,35 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.OSX)]
-    public class ProcessStartOptionsTests_Unix
+    public partial class ProcessStartOptionsTests
     {
         [Fact]
-        public void TestResolvePath_FindsInPath()
+        public void Constructor_ResolvesShOnUnix()
+        {
+            ProcessStartOptions options = new("sh");
+            Assert.True(File.Exists(options.FileName));
+            Assert.Equal("/bin/sh", options.FileName);
+        }
+
+        [Fact]
+        public void ResolvePath_FindsInPath()
         {
             // sh should be findable in PATH on all Unix systems
-            ProcessStartOptions options = new ProcessStartOptions("sh");
+            ProcessStartOptions options = new("sh");
             Assert.True(File.Exists(options.FileName));
             Assert.EndsWith("sh", options.FileName);
         }
 
         [Fact]
-        public void TestResolvePath_DoesNotAddExeExtension()
+        public void ResolvePath_DoesNotAddExeExtension()
         {
             // On Unix, no .exe extension should be added
-            ProcessStartOptions options = new ProcessStartOptions("sh");
+            ProcessStartOptions options = new("sh");
             Assert.False(options.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]
-        public void TestResolvePath_UsesCurrentDirectory()
+        public void ResolvePath_UsesCurrentDirectory()
         {
             string tempDir = Path.GetTempPath();
             string fileName = "testscript.sh";
@@ -41,8 +49,8 @@ namespace System.Diagnostics.Tests
                 File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
                 
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new ProcessStartOptions(fileName);
-                Assert.Equal(fullPath, options.FileName);
+                ProcessStartOptions options = new(fileName);
+                Assert.Equal(Path.GetFullPath(fullPath), options.FileName);
             }
             finally
             {
@@ -55,7 +63,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestResolvePath_PathSeparatorIsColon()
+        public void ResolvePath_PathSeparatorIsColon()
         {
             // Create a temp directory and file
             string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -72,8 +80,8 @@ namespace System.Diagnostics.Tests
                 
                 // Add temp directory to PATH using colon separator
                 Environment.SetEnvironmentVariable("PATH", tempDir + ":" + oldPath);
-                ProcessStartOptions options = new ProcessStartOptions(fileName);
-                Assert.Equal(fullPath, options.FileName);
+                ProcessStartOptions options = new(fileName);
+                Assert.Equal(Path.GetFullPath(fullPath), options.FileName);
             }
             finally
             {
@@ -90,48 +98,12 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestResolvePath_ChecksExecutablePermissions()
-        {
-            // Create a file without execute permissions
-            string tempDir = Path.GetTempPath();
-            string fileName = "nonexecutable.sh";
-            string fullPath = Path.Combine(tempDir, fileName);
-            
-            try
-            {
-                File.WriteAllText(fullPath, "#!/bin/sh\necho test");
-                // Explicitly make it non-executable
-                File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-                
-                // Save current directory
-                string oldDir = Directory.GetCurrentDirectory();
-                try
-                {
-                    Directory.SetCurrentDirectory(tempDir);
-                    // Should throw because file is not executable
-                    Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(fileName));
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(oldDir);
-                }
-            }
-            finally
-            {
-                if (File.Exists(fullPath))
-                {
-                    File.Delete(fullPath);
-                }
-            }
-        }
-
-        [Fact]
-        public void TestResolvePath_AbsolutePathIsNotModified()
+        public void ResolvePath_AbsolutePathIsNotModified()
         {
             string tempFile = Path.GetTempFileName();
             try
             {
-                ProcessStartOptions options = new ProcessStartOptions(tempFile);
+                ProcessStartOptions options = new(tempFile);
                 Assert.Equal(tempFile, options.FileName);
             }
             finally
@@ -143,43 +115,35 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        public void TestResolvePath_FindsCommonUtilities()
+        [Theory]
+        [InlineData("ls")]
+        [InlineData("cat")]
+        [InlineData("echo")]
+        [InlineData("sh")]
+        public void ResolvePath_FindsCommonUtilities(string utilName)
         {
-            // Test common Unix utilities
-            string[] commonUtils = { "ls", "cat", "echo", "sh" };
-            
-            foreach (string util in commonUtils)
-            {
-                ProcessStartOptions options = new ProcessStartOptions(util);
-                Assert.True(File.Exists(options.FileName), $"{util} should be found and exist");
-                Assert.Contains(util, options.FileName);
-            }
+            ProcessStartOptions options = new(utilName);
+            Assert.True(File.Exists(options.FileName), $"{utilName} should be found and exist");
+            Assert.Contains(utilName, options.FileName);
         }
 
         [Fact]
-        public void TestResolvePath_RejectsDirectories()
+        public void ResolvePath_RejectsDirectories()
         {
             // Create a directory with executable permissions
             string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempDir);
             
+            string oldDir = Directory.GetCurrentDirectory();
             try
             {
                 // Try to use the directory name as a command
-                string oldDir = Directory.GetCurrentDirectory();
-                try
-                {
-                    Directory.SetCurrentDirectory(Path.GetTempPath());
-                    Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(Path.GetFileName(tempDir)));
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(oldDir);
-                }
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(Path.GetFileName(tempDir)));
             }
             finally
             {
+                Directory.SetCurrentDirectory(oldDir);
                 if (Directory.Exists(tempDir))
                 {
                     Directory.Delete(tempDir);

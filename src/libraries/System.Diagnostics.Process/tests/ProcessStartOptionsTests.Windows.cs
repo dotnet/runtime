@@ -7,52 +7,52 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessStartOptionsTests_Windows
+    public partial class ProcessStartOptionsTests
     {
-        [Fact]
-        public void TestResolvePath_AddsExeExtension()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Constructor_ResolvesCmdOnWindows()
+        {
+            ProcessStartOptions options = new("cmd");
+            Assert.EndsWith("cmd.exe", options.FileName);
+            Assert.True(File.Exists(options.FileName));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void ResolvePath_AddsExeExtension()
         {
             // Test that .exe is appended when no extension is provided
-            ProcessStartOptions options = new ProcessStartOptions("notepad");
+            ProcessStartOptions options = new("notepad");
             Assert.EndsWith(".exe", options.FileName, StringComparison.OrdinalIgnoreCase);
             Assert.True(File.Exists(options.FileName));
         }
 
         [Fact]
-        public void TestResolvePath_DoesNotAddExeExtensionForTrailingDot()
+        public void ResolvePath_DoesNotAddExeExtensionForTrailingDot()
         {
             // "If the file name ends in a period (.) with no extension, .exe is not appended."
             // This should fail since "notepad." won't exist
-            Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions("notepad."));
+            Assert.Throws<FileNotFoundException>(() => new("notepad."));
         }
 
         [Fact]
-        public void TestResolvePath_PreservesComExtension()
+        public void ResolvePath_PreservesComExtension()
         {
             // The .com extension should be preserved
             string fileName = "test.com";
             string tempDir = Path.GetTempPath();
             string fullPath = Path.Combine(tempDir, fileName);
             
+            string oldDir = Directory.GetCurrentDirectory();
             try
             {
                 File.WriteAllText(fullPath, "test");
-                
-                // Save current directory
-                string oldDir = Directory.GetCurrentDirectory();
-                try
-                {
-                    Directory.SetCurrentDirectory(tempDir);
-                    ProcessStartOptions options = new ProcessStartOptions(fileName);
-                    Assert.EndsWith(".com", options.FileName, StringComparison.OrdinalIgnoreCase);
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(oldDir);
-                }
+                Directory.SetCurrentDirectory(tempDir);
+                ProcessStartOptions options = new(fileName);
+                Assert.EndsWith(".com", options.FileName, StringComparison.OrdinalIgnoreCase);
             }
             finally
             {
+                Directory.SetCurrentDirectory(oldDir);
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
@@ -61,47 +61,39 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void TestResolvePath_FindsInSystemDirectory()
+        public void ResolvePath_FindsInSystemDirectory()
         {
             // cmd.exe should be found in system directory
-            ProcessStartOptions options = new ProcessStartOptions("cmd");
+            ProcessStartOptions options = new("cmd");
             Assert.True(File.Exists(options.FileName));
             Assert.Contains("system32", options.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void TestResolvePath_FindsInWindowsDirectory()
+        public void ResolvePath_FindsInWindowsDirectory()
         {
-            ProcessStartOptions options = new ProcessStartOptions("notepad");
+            ProcessStartOptions options = new("notepad");
             Assert.True(File.Exists(options.FileName));
         }
 
         [Fact]
-        public void TestResolvePath_UsesCurrentDirectory()
+        public void ResolvePath_UsesCurrentDirectory()
         {
             string tempDir = Path.GetTempPath();
             string fileName = "testapp.exe";
             string fullPath = Path.Combine(tempDir, fileName);
             
+            string oldDir = Directory.GetCurrentDirectory();
             try
             {
                 File.WriteAllText(fullPath, "test");
-                
-                // Save current directory
-                string oldDir = Directory.GetCurrentDirectory();
-                try
-                {
-                    Directory.SetCurrentDirectory(tempDir);
-                    ProcessStartOptions options = new ProcessStartOptions(fileName);
-                    Assert.Equal(fullPath, options.FileName);
-                }
-                finally
-                {
-                    Directory.SetCurrentDirectory(oldDir);
-                }
+                Directory.SetCurrentDirectory(tempDir);
+                ProcessStartOptions options = new(fileName);
+                Assert.Equal(fullPath, options.FileName);
             }
             finally
             {
+                Directory.SetCurrentDirectory(oldDir);
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
@@ -110,7 +102,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestResolvePath_PathSeparatorIsSemicolon()
+        public void ResolvePath_PathSeparatorIsSemicolon()
         {
             // Create a temp directory and file
             string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -118,25 +110,17 @@ namespace System.Diagnostics.Tests
             string fileName = "testexe.exe";
             string fullPath = Path.Combine(tempDir, fileName);
             
+            string oldPath = Environment.GetEnvironmentVariable("PATH");
             try
             {
                 File.WriteAllText(fullPath, "test");
-                
-                // Add temp directory to PATH using semicolon separator
-                string oldPath = Environment.GetEnvironmentVariable("PATH");
-                try
-                {
-                    Environment.SetEnvironmentVariable("PATH", tempDir + ";" + oldPath);
-                    ProcessStartOptions options = new ProcessStartOptions("testexe");
-                    Assert.Equal(fullPath, options.FileName);
-                }
-                finally
-                {
-                    Environment.SetEnvironmentVariable("PATH", oldPath);
-                }
+                Environment.SetEnvironmentVariable("PATH", tempDir + ";" + oldPath);
+                ProcessStartOptions options = new("testexe");
+                Assert.Equal(fullPath, options.FileName);
             }
             finally
             {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
                 if (File.Exists(fullPath))
                 {
                     File.Delete(fullPath);
@@ -149,7 +133,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestResolvePath_AbsolutePathIsNotModified()
+        public void ResolvePath_AbsolutePathIsNotModified()
         {
             string tempFile = Path.GetTempFileName();
             try
@@ -159,7 +143,7 @@ namespace System.Diagnostics.Tests
                 File.Move(tempFile, noExtFile);
                 tempFile = noExtFile;
 
-                ProcessStartOptions options = new ProcessStartOptions(tempFile);
+                ProcessStartOptions options = new(tempFile);
                 Assert.Equal(tempFile, options.FileName);
             }
             finally

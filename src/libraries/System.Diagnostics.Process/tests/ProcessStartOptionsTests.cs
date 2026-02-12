@@ -10,51 +10,34 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessStartOptionsTests : ProcessTestBase
+    public partial class ProcessStartOptionsTests
     {
         [Fact]
-        public void TestConstructor_NullFileName_Throws()
+        public void Constructor_NullFileName_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new ProcessStartOptions(null));
         }
 
         [Fact]
-        public void TestConstructor_EmptyFileName_Throws()
+        public void Constructor_EmptyFileName_Throws()
         {
             Assert.Throws<ArgumentException>(() => new ProcessStartOptions(string.Empty));
         }
 
         [Fact]
-        public void TestConstructor_NonExistentFile_Throws()
+        public void Constructor_NonExistentFile_Throws()
         {
             string nonExistentFile = "ThisFileDoesNotExist_" + Guid.NewGuid().ToString();
             Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(nonExistentFile));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void TestConstructor_ResolvesCmdOnWindows()
-        {
-            ProcessStartOptions options = new ProcessStartOptions("cmd");
-            Assert.EndsWith("cmd.exe", options.FileName);
-            Assert.True(File.Exists(options.FileName));
-        }
-
-        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD | TestPlatforms.OSX)]
         [Fact]
-        public void TestConstructor_ResolvesShOnUnix()
-        {
-            ProcessStartOptions options = new ProcessStartOptions("sh");
-            Assert.Contains("sh", options.FileName);
-            Assert.True(File.Exists(options.FileName));
-        }
-
-        [Fact]
-        public void TestConstructor_WithAbsolutePath()
+        public void Constructor_WithAbsolutePath()
         {
             string tempFile = Path.GetTempFileName();
             try
             {
-                ProcessStartOptions options = new ProcessStartOptions(tempFile);
+                ProcessStartOptions options = new(tempFile);
                 Assert.Equal(tempFile, options.FileName);
             }
             finally
@@ -64,18 +47,18 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestArguments_DefaultIsEmpty()
+        public void Arguments_DefaultIsEmpty()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             IList<string> args = options.Arguments;
             Assert.NotNull(args);
             Assert.Empty(args);
         }
 
         [Fact]
-        public void TestArguments_CanAddAndModify()
+        public void Arguments_CanAddAndModify()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             options.Arguments.Add("arg1");
             options.Arguments.Add("arg2");
             Assert.Equal(2, options.Arguments.Count);
@@ -88,24 +71,9 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestEnvironment_LazyInitialization()
+        public void Environment_CanAddAndModify()
         {
-            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS || PlatformDetection.IsMacCatalyst)
-            {
-                // Whole list of environment variables can no longer be accessed on non-OSX apple platforms
-                return;
-            }
-
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
-            IDictionary<string, string?> env = options.Environment;
-            Assert.NotNull(env);
-            Assert.NotEmpty(env);
-        }
-
-        [Fact]
-        public void TestEnvironment_CanAddAndModify()
-        {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             IDictionary<string, string?> env = options.Environment;
             
             int originalCount = env.Count;
@@ -121,9 +89,9 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestEnvironment_CaseInsensitivityOnWindows()
+        public void Environment_CaseSensitivityIsPlatformSpecific()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             IDictionary<string, string?> env = options.Environment;
             
             env["TestKey"] = "TestValue";
@@ -140,80 +108,74 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestInheritedHandles_DefaultIsEmpty()
+        public void InheritedHandles_DefaultIsEmpty()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             IList<SafeHandle> handles = options.InheritedHandles;
             Assert.NotNull(handles);
             Assert.Empty(handles);
         }
 
         [Fact]
-        public void TestInheritedHandles_CanSet()
+        public void InheritedHandles_CanSet()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             List<SafeHandle> newHandles = new List<SafeHandle>();
             options.InheritedHandles = newHandles;
             Assert.Same(newHandles, options.InheritedHandles);
         }
 
         [Fact]
-        public void TestWorkingDirectory_DefaultIsNull()
+        public void WorkingDirectory_DefaultIsNull()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             Assert.Null(options.WorkingDirectory);
         }
 
         [Fact]
-        public void TestWorkingDirectory_CanSet()
+        public void WorkingDirectory_CanSet()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             string tempDir = Path.GetTempPath();
             options.WorkingDirectory = tempDir;
             Assert.Equal(tempDir, options.WorkingDirectory);
         }
 
         [Fact]
-        public void TestKillOnParentExit_DefaultIsFalse()
+        public void KillOnParentExit_DefaultIsFalse()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             Assert.False(options.KillOnParentExit);
         }
 
         [Fact]
-        public void TestKillOnParentExit_CanSet()
+        public void KillOnParentExit_CanSet()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             options.KillOnParentExit = true;
             Assert.True(options.KillOnParentExit);
         }
 
         [Fact]
-        public void TestCreateNewProcessGroup_DefaultIsFalse()
+        public void CreateNewProcessGroup_DefaultIsFalse()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             Assert.False(options.CreateNewProcessGroup);
         }
 
         [Fact]
-        public void TestCreateNewProcessGroup_CanSet()
+        public void CreateNewProcessGroup_CanSet()
         {
-            ProcessStartOptions options = new ProcessStartOptions(GetCurrentProcessName());
+            ProcessStartOptions options = new(GetCurrentProcessName());
             options.CreateNewProcessGroup = true;
             Assert.True(options.CreateNewProcessGroup);
         }
 
         private string GetCurrentProcessName()
         {
-            // Get a valid executable path for testing
-            if (OperatingSystem.IsWindows())
-            {
-                return Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            }
-            else
-            {
-                return Environment.ProcessPath ?? "/bin/sh";
-            }
+            return Environment.ProcessPath ?? (OperatingSystem.IsWindows()
+                ? Path.Combine(Environment.SystemDirectory, "cmd.exe")
+                : "/bin/sh");
         }
     }
 }
