@@ -18,7 +18,7 @@ namespace GPT53TokenizerExample
         public static void Main(string[] args)
         {
             Console.WriteLine("GPT-5.3 Tokenizer Example");
-            Console.WriteLine("=" .PadRight(50, '='));
+            Console.WriteLine("=".PadRight(50, '='));
 
             // Example 1: Base GPT-5.3 model
             DemonstrateTokenization("gpt-5.3", "Hello, GPT-5.3! This is a test.");
