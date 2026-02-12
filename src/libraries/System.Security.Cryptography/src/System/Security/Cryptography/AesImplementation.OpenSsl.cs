@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
                         algorithm,
                         ref MemoryMarshal.GetReference(key),
                         key.Length * 8,
-                        ref MemoryMarshal.GetReference(ReadOnlySpan<byte>.Empty),
+                        ref Unsafe.NullRef<byte>(),
                         enc);
 
                     if (ctx.IsInvalid)
