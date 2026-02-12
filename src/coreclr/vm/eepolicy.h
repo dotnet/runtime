@@ -39,7 +39,7 @@ public:
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
 #ifdef HOST_ANDROID
-    static void LogCallstackForFatalErrorOnce();
+    static void LogCallstackForFatalErrorOnce(LPCWSTR errorMessage);
 
     static void CallstackForFatalErrorLogged();
 #endif

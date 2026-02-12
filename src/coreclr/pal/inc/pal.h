@@ -255,7 +255,7 @@ PAL_SetCreateDumpCallback(
 /// <summary>
 /// Callback invoked when a fatal error occurs. The callback should log the callstack for the fatal error.
 /// </summary>
-typedef VOID (*PLOGCALLSTACKFORFATALERROR_CALLBACK)(void);
+typedef VOID (*PLOGCALLSTACKFORFATALERROR_CALLBACK)(LPCWSTR errorMessage);
 
 PALIMPORT
 VOID

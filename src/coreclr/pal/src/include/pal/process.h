@@ -197,9 +197,12 @@ Function:
   Invokes the registered callback to log the callstack for a fatal error.
   Used by Android since CreateDump is not supported there.
 
+Parameters:
+  signal - POSIX signal number
+
 (no return value)
 --*/
-VOID PROCLogCallstackForFatalError();
+VOID PROCLogCallstackForFatalError(int signal);
 
 #ifdef __cplusplus
 }

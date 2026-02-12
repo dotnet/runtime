@@ -931,7 +931,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 static Volatile<LONG> s_callstackForFatalErrorLogged = FALSE;
 
 // Logs the callstack for a fatal error. Should only be called once.
-void EEPolicy::LogCallstackForFatalErrorOnce()
+void EEPolicy::LogCallstackForFatalErrorOnce(LPCWSTR errorMessage)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -940,7 +940,7 @@ void EEPolicy::LogCallstackForFatalErrorOnce()
         return;
     }
 
-    LogInfoForFatalError(0, W("Native crash"), nullptr, nullptr, nullptr);
+    LogInfoForFatalError(0, errorMessage, nullptr, nullptr, nullptr);
 }
 
 void EEPolicy::CallstackForFatalErrorLogged()

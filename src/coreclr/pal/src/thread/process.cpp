@@ -2746,6 +2746,20 @@ static void DoNotOptimize(const void* p)
     (void)p;
 }
 
+static LPCWSTR GetSignalName(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return W("SIGSEGV");
+        case SIGBUS:  return W("SIGBUS");
+        case SIGFPE:  return W("SIGFPE");
+        case SIGILL:  return W("SIGILL");
+        case SIGABRT: return W("SIGABRT");
+        case SIGTERM: return W("SIGTERM");
+        default:      return W("Unknown signal");
+    }
+}
+
 /*++
 Function:
   PROCLogCallstackForFatalError
@@ -2753,14 +2767,18 @@ Function:
   Invokes the registered callback to log the callstack for a fatal error.
   Used by Android since CreateDump is not supported there.
 
+Parameters:
+  signal - POSIX signal number
+
 (no return value)
 --*/
 VOID
-PROCLogCallstackForFatalError()
+PROCLogCallstackForFatalError(int signal)
 {
     if (g_logCallstackForFatalErrorCallback != nullptr)
     {
-        g_logCallstackForFatalErrorCallback();
+        LPCWSTR errorMessage = GetSignalName(signal);
+        g_logCallstackForFatalErrorCallback(errorMessage);
     }
 }
 
@@ -2891,7 +2909,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCLogCallstackForFatalError();
+    PROCLogCallstackForFatalError(signal);
     PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
