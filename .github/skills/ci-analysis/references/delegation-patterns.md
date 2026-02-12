@@ -86,8 +86,8 @@ Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 Check if canceled job "{JOB_NAME}" from build {BUILD_ID} has recoverable Helix results.
 
 Steps:
-1. Use hlx-hlx_files with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to find testResults.xml
-2. Download with hlx-hlx_download_url using the testResults.xml URI
+1. Use hlx_files with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to find testResults.xml
+2. Download with hlx_download_url using the testResults.xml URI
 3. Parse the XML for pass/fail counts on the <assembly> element
 
 Return JSON: { "jobName": "...", "hasResults": true, "passed": N, "failed": N }
