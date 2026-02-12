@@ -1385,6 +1385,13 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         {
             mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
                                                                 /* addIfNotFound */ canAddNewAssertions);
+
+            // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
+            ValueNum addOpVN;
+            if (vnStore->IsVNBinFuncWithConst<int>(newAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, nullptr))
+            {
+                mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
+            }
         }
 
         if (mayHaveDuplicates)
