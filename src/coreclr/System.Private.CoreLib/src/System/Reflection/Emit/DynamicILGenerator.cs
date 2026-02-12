@@ -844,7 +844,7 @@ namespace System.Reflection.Emit
     /// Provides support for alternative ways to generate the Microsoft intermediate language (MSIL) and metadata for a dynamic method, including methods for creating tokens and for inserting the code, exception handling, and local variable signature blobs.
     /// </summary>
     /// <remarks>
-    /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicilinfo.md">Supplemental API remarks for DynamicILInfo</see>.
+    /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicilinfo.md">Supplemental API remarks for DynamicILInfo</see>.
     /// </remarks>
     public class DynamicILInfo
     {

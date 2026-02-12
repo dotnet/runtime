@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
     /// Defines and represents a dynamic method that can be compiled, executed, and discarded. Discarded methods are available for garbage collection.
     /// </summary>
     /// <remarks>
-    /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+    /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
     /// </remarks>
     public sealed partial class DynamicMethod : MethodInfo
     {
@@ -41,7 +41,7 @@ namespace System.Reflection.Emit
         /// <exception cref="ArgumentNullException"><paramref name="name" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
         /// <exception cref="ArgumentNullException"><paramref name="name" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
         /// <paramref name="m" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -141,7 +141,7 @@ namespace System.Reflection.Emit
         /// <paramref name="m" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -185,7 +185,7 @@ namespace System.Reflection.Emit
         /// -or-
         /// .NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -224,7 +224,7 @@ namespace System.Reflection.Emit
         /// <paramref name="owner" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -261,7 +261,7 @@ namespace System.Reflection.Emit
         /// <paramref name="owner" /> is <see langword="null" />.</exception>
         /// <exception cref="NotSupportedException">.NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -305,7 +305,7 @@ namespace System.Reflection.Emit
         /// -or-
         /// .NET Framework and .NET Core versions older than 2.1: <paramref name="returnType" /> is a type for which <see cref="Type.IsByRef" /> returns <see langword="true" />.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod.md">Supplemental API remarks for DynamicMethod</see>.
         /// </remarks>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
@@ -593,7 +593,7 @@ namespace System.Reflection.Emit
         /// .NET Framework: <see langword="true" /> if the current dynamic method is security-critical or security-safe-critical; <see langword="false" /> if it is transparent.
         /// </value>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-issecuritycritical.md">Supplemental API remarks for DynamicMethod.IsSecurityCritical</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-issecuritycritical.md">Supplemental API remarks for DynamicMethod.IsSecurityCritical</see>.
         /// </remarks>
         public override bool IsSecurityCritical => true;
 
@@ -758,7 +758,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <returns>An <see cref="ILGenerator" /> object for the method.</returns>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
         /// </remarks>
         public ILGenerator GetILGenerator()
         {

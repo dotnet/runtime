@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
         /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
         /// <exception cref="ArgumentException"><paramref name="delegateType" /> has the wrong number of parameters or the wrong parameter types.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
         /// </remarks>
         public sealed override Delegate CreateDelegate(Type delegateType) =>
             CreateDelegate(delegateType, target: null);
@@ -63,7 +63,7 @@ namespace System.Reflection.Emit
         /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
         /// <exception cref="ArgumentException"><paramref name="delegateType" /> has the wrong number of parameters or the wrong parameter types.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-createdelegate.md">Supplemental API remarks for DynamicMethod.CreateDelegate</see>.
         /// </remarks>
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
@@ -148,7 +148,7 @@ namespace System.Reflection.Emit
         /// <exception cref="NotSupportedException">The dynamic method contains unverifiable code.</exception>
         /// <exception cref="InvalidOperationException">The dynamic method has no method body.</exception>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-invoke.md">Supplemental API remarks for DynamicMethod.Invoke</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-invoke.md">Supplemental API remarks for DynamicMethod.Invoke</see>.
         /// </remarks>
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit
         /// <param name="streamSize">The size of the MSIL stream, in bytes.</param>
         /// <returns>An <see cref="ILGenerator" /> object for the method.</returns>
         /// <remarks>
-        /// For more information about this API, see <see href="https://raw.githubusercontent.com/dotnet/docs/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
+        /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod-getilgenerator.md">Supplemental API remarks for DynamicMethod.GetILGenerator</see>.
         /// </remarks>
         public ILGenerator GetILGenerator(int streamSize)
         {
