@@ -610,8 +610,8 @@ bool IsDynamic(ModuleHandle handle)
 bool IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
-    return assembly.IsLoaded;
+    bool isLoaded = target.Read<byte>(assembly + /* Assembly::IsLoaded*/) != 0;
+    return isLoaded;
 }
 
 TargetPointer GetGlobalLoaderAllocator()
