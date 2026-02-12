@@ -309,8 +309,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
         // Check if FP/LR are at a small offset but callee-saves are at a large offset.
         // In this case, restore FP/LR first so we can freely adjust SP for callee-saves.
-        bool restoreFpLrFirst =
-            (fpLrSaveOffset <= 504) && (maxCalleeSaveSpOffset > 504) && (fpLrSaveOffset + 512 < maxCalleeSaveSpOffset - 504);
+        bool restoreFpLrFirst = (fpLrSaveOffset <= 504) && (maxCalleeSaveSpOffset > 504) &&
+                                (fpLrSaveOffset + 512 < maxCalleeSaveSpOffset - 504);
 
         JITDUMP("    fpLrSaveOffset=%d, maxCalleeSaveSpOffset=%d, restoreFpLrFirst=%s\n", fpLrSaveOffset,
                 maxCalleeSaveSpOffset, restoreFpLrFirst ? "true" : "false");
@@ -434,8 +434,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             if (adjustedFpLrSaveOffset >= -512 && adjustedFpLrSaveOffset <= 504)
             {
                 // Offset fits in LDP encoding - use it directly
-                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                              adjustedFpLrSaveOffset);
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, adjustedFpLrSaveOffset);
             }
             else if (adjustedFpLrSaveOffset > 504)
             {
