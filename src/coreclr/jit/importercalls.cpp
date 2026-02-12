@@ -3400,6 +3400,17 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return nullptr;
     }
 
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait)
+    {
+        if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+        {
+            BADCODE("TailAwait is not supported in async methods that capture contexts");
+        }
+
+        m_nextAwaitIsTail = true;
+        return gtNewNothingNode();
+    }
+
     bool betterToExpand = false;
 
     // Allow some lightweight intrinsics in Tier0 which can improve throughput
@@ -6914,6 +6925,13 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     else
     {
         JITDUMP("Call is an async non-task await\n");
+    }
+
+    if (m_nextAwaitIsTail)
+    {
+        asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
+        asyncInfo.IsTailAwait                 = true;
+        m_nextAwaitIsTail                     = false;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
@@ -10906,6 +10924,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "AsyncCallContinuation") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
+                            else if (strcmp(methodName, "TailAwait") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
