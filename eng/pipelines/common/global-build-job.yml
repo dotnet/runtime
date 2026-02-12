@@ -36,6 +36,7 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
+  enableNativeBuildCaching: false
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -190,6 +191,21 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
+    # CMake tryrun cache — restore cached feature detection results to speed up configure
+    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+      - script: |
+          compiler_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
+          echo "##vso[task.setvariable variable=CompilerVersion]${compiler_version}"
+          echo "Detected compiler version: ${compiler_version}"
+        displayName: Detect compiler version for cache key
+
+      - task: Cache@2
+        displayName: Restore CMake tryrun cache
+        inputs:
+          key: 'cmake-tryrun | v1 | "${{ parameters.osGroup }}" | "${{ parameters.archType }}" | "$(CompilerVersion)" | eng/native/configurecompiler.cmake | src/coreclr/pal/src/configure.cmake | src/native/libs/configure.cmake | src/native/minipal/configure.cmake | src/native/eventpipe/configure.cmake'
+          path: $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache
+          cacheHitVar: CMAKE_TRYRUN_CACHE_RESTORED
+
     - ${{ if ne(parameters.preBuildSteps,'') }}:
       - ${{ each preBuildStep in parameters.preBuildSteps }}:
         - ${{ if ne(preBuildStep.template, '') }}:
@@ -220,6 +236,21 @@ jobs:
         buildArgs: ${{ parameters.buildArgs }}
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+    # CMake tryrun cache — extract results after build on cache miss
+    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+      - script: |
+          if [[ "$(CMAKE_TRYRUN_CACHE_RESTORED)" == "true" ]]; then
+            echo "Cache was restored, skipping extraction."
+            exit 0
+          fi
+          echo "Cache miss — extracting tryrun results for future runs..."
+          $(Build.SourcesDirectory)/eng/native/extract-tryrun-cache.sh \
+            $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache/tryrun.${{ parameters.osGroup }}-${{ parameters.archType }}.cmake \
+            $(Build.SourcesDirectory)/artifacts/obj
+        displayName: Extract CMake tryrun cache
+        continueOnError: true
+        condition: succeeded()
 
     - task: CopyFiles@2
       displayName: Gather CMakeConfigureLog for publish to artifacts
