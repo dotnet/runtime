@@ -128,6 +128,39 @@ Present the table to the user:
 
 When both `pr.sourceSha` AND `Target HEAD` change between a pass→fail transition, either could be the cause. Analyze the failure content to determine which. If only the target moved (same `pr.sourceSha`), the failure came from the new baseline.
 
+#### Tracking individual test failures across builds
+
+For deeper analysis, track which tests failed in each build:
+
+```sql
+CREATE TABLE IF NOT EXISTS build_failures (
+  build_id INT,
+  job_name TEXT,
+  test_name TEXT,
+  error_snippet TEXT,
+  helix_job TEXT,
+  work_item TEXT,
+  PRIMARY KEY (build_id, job_name, test_name)
+);
+```
+
+Insert failures as you investigate each build, then query for patterns:
+
+```sql
+-- Tests that fail in every build (persistent, not flaky)
+SELECT test_name, COUNT(DISTINCT build_id) as fail_count, GROUP_CONCAT(build_id) as builds
+FROM build_failures GROUP BY test_name HAVING fail_count > 1;
+
+-- New failures in the latest build (what changed?)
+SELECT f.* FROM build_failures f
+LEFT JOIN build_failures prev ON f.test_name = prev.test_name AND prev.build_id = {PREV_BUILD_ID}
+WHERE f.build_id = {LATEST_BUILD_ID} AND prev.test_name IS NULL;
+
+-- Flaky tests: fail in some builds, pass in others
+SELECT test_name FROM build_failures GROUP BY test_name
+HAVING COUNT(DISTINCT build_id) < (SELECT COUNT(*) FROM build_progression WHERE result = 'failed');
+```
+
 ### Step 4: Present findings, not conclusions
 
 Report what the progression shows:
