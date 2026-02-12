@@ -21,7 +21,6 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
-using System.Linq;
 using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler
@@ -705,116 +704,15 @@ namespace ILCompiler
                                 _methodsWhichNeedMutableILBodies.Add(typicalDef);
                             }
                         }
-                        if (!CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method)
-                            && method.IsAsyncCall()
-                            && !_hasAddedAsyncReferences)
-                        {
-                            // Keep in sync with CorInfoImpl.getAsyncInfo()
-                            DefType continuation = TypeSystemContext.ContinuationType;
-                            var runtimeHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8);
-                            var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-                            // AsyncHelpers should already be referenced in the module for the call to Await()
-                            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
-                            TypeDesc[] requiredTypes = [continuation];
-                            FieldDesc[] requiredFields = [
-                                // For getAsyncInfo
-                                continuation.GetKnownField("Next"u8),
-                                continuation.GetKnownField("ResumeInfo"u8),
-                                continuation.GetKnownField("State"u8),
-                                continuation.GetKnownField("Flags"u8),
-                            ];
-                            MethodDesc[] requiredMethods = [
-                                // For getAsyncInfo
-                                asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
-                                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
-                                asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
-                                asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
-                                asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
-                                asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
 
-                                // R2R Helpers
-                                asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
-                                asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
-                                asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
-                            ];
-                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
-                            try
-                            {
-                                // Unconditionally add references to the MutableModule. These members are internal / private and
-                                // shouldn't be referenced already, and this lets us avoid doing this more than once
-                                foreach (var td in requiredTypes)
-                                {
-                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
-                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
-                                }
-                                foreach (var fd in requiredFields)
-                                {
-                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(fd);
-                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForField(fd, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
-                                }
-                                foreach (var md in requiredMethods)
-                                {
-                                    _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
-                                    Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
-                                }
-                                _hasAddedAsyncReferences = true;
-                            }
-                            finally
-                            {
-                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
-                            }
+                        if (method.IsAsyncCall()
+                            && !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method))
+                        {
+                            AddNecessaryAsyncReferences(method);
                         }
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
-                        {
-                            // Validate that the typedef tokens for all of the instantiation parameters of the method
-                            // have tokens.
-                            foreach (var type in method.Instantiation)
-                                EnsureTypeDefTokensAreReady(type);
-                            foreach (var type in method.OwningType.Instantiation)
-                                EnsureTypeDefTokensAreReady(type);
-
-                            void EnsureTypeDefTokensAreReady(TypeDesc type)
-                            {
-                                // Type represented by simple element type
-                                if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString || type.IsTypedReference)
-                                    return;
-
-                                if (type is EcmaType ecmaType)
-                                {
-                                    if (!_nodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull)
-                                        return;
-                                    try
-                                    {
-                                        Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(ecmaType.Module));
-                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
-                                            = ecmaType.Module;
-                                        if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ecmaType).HasValue)
-                                            throw new InternalCompilerErrorException($"Unable to create token to {ecmaType}");
-                                    }
-                                    finally
-                                    {
-                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
-                                            = null;
-                                    }
-                                    return;
-                                }
-
-                                if (type.HasInstantiation)
-                                {
-                                    EnsureTypeDefTokensAreReady(type.GetTypeDefinition());
-
-                                    foreach (TypeDesc instParam in type.Instantiation)
-                                    {
-                                        EnsureTypeDefTokensAreReady(instParam);
-                                    }
-                                }
-                                else if (type.IsParameterizedType)
-                                {
-                                    EnsureTypeDefTokensAreReady(type.GetParameterType());
-                                }
-                            }
-                        }
+                            EnsureInstantiationReferencesArePresentForExternalMethod(method);
                     }
                 }
 
@@ -1025,6 +923,119 @@ namespace ILCompiler
                     if (Logger.IsVerbose)
                         Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
+            }
+        }
+
+        private void EnsureInstantiationReferencesArePresentForExternalMethod(MethodDesc method)
+        {
+            // Validate that the typedef tokens for all of the instantiation parameters of the method
+            // have tokens.
+            foreach (var type in method.Instantiation)
+                EnsureTypeDefTokensAreReady(type);
+            foreach (var type in method.OwningType.Instantiation)
+                EnsureTypeDefTokensAreReady(type);
+
+            void EnsureTypeDefTokensAreReady(TypeDesc type)
+            {
+                // Type represented by simple element type
+                if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString || type.IsTypedReference)
+                    return;
+
+                if (type is EcmaType ecmaType)
+                {
+                    if (!_nodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull)
+                        return;
+                    try
+                    {
+                        Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(ecmaType.Module));
+                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                            = ecmaType.Module;
+                        if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ecmaType).HasValue)
+                            throw new InternalCompilerErrorException($"Unable to create token to {ecmaType}");
+                    }
+                    finally
+                    {
+                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
+                            = null;
+                    }
+                    return;
+                }
+
+                if (type.HasInstantiation)
+                {
+                    EnsureTypeDefTokensAreReady(type.GetTypeDefinition());
+
+                    foreach (TypeDesc instParam in type.Instantiation)
+                    {
+                        EnsureTypeDefTokensAreReady(instParam);
+                    }
+                }
+                else if (type.IsParameterizedType)
+                {
+                    EnsureTypeDefTokensAreReady(type.GetParameterType());
+                }
+            }
+        }
+
+        private void AddNecessaryAsyncReferences(MethodDesc method)
+        {
+            if (_hasAddedAsyncReferences)
+                return;
+
+            // Keep in sync with CorInfoImpl.getAsyncInfo()
+            DefType continuation = TypeSystemContext.ContinuationType;
+            var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            // AsyncHelpers should already be referenced in the module for the call to Await()
+            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull);
+            TypeDesc[] requiredTypes = [continuation];
+            FieldDesc[] requiredFields =
+            [
+                // For CorInfoImpl.getAsyncInfo
+                continuation.GetKnownField("Next"u8),
+                continuation.GetKnownField("ResumeInfo"u8),
+                continuation.GetKnownField("State"u8),
+                continuation.GetKnownField("Flags"u8),
+            ];
+            MethodDesc[] requiredMethods =
+            [
+                // For CorInfoImpl.getAsyncInfo
+                asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+
+                // R2R Helpers
+                asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
+                asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
+            ];
+            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            try
+            {
+                // Unconditionally add references to the MutableModule. These members are internal / private and
+                // shouldn't be referenced already, and this lets us avoid doing this more than once
+                foreach (var td in requiredTypes)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {td}");
+                }
+                foreach (var fd in requiredFields)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(fd).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {fd}");
+                }
+                foreach (var md in requiredMethods)
+                {
+                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md).HasValue)
+                        throw new InternalCompilerErrorException($"Unable to create token to {md}");
+                }
+                _hasAddedAsyncReferences = true;
+            }
+            finally
+            {
+                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
             }
         }
 

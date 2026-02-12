@@ -13568,12 +13568,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
-#ifndef FEATURE_JIT
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         _ASSERTE(!"this platform does not support JIT compilation");
     }
-#else // !FEATURE_JIT
+#else // !FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13632,7 +13632,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
-#endif // !FEATURE_JIT
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;
