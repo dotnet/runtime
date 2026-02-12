@@ -9984,13 +9984,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     impStoreToTemp(stackallocAsLocal, gtNewIconNode(0), CHECK_SPILL_ALL);
                                 }
 
-                                if (!this->opts.compDbgEnC)
-                                {
-                                    // Ensure we have stack security for this method.
-                                    // Reorder layout since the converted localloc is treated as an unsafe buffer.
-                                    setNeedsGSSecurityCookie();
-                                    compGSReorderStackLayout = true;
-                                }
+                                // Request stack security for this method.
+                                setNeedsGSSecurityCookie();
                             }
                         }
                     }
@@ -10014,7 +10009,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
                         op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
 
-                        // Ensure we have stack security for this method.
+                        // Request stack security for this method.
                         setNeedsGSSecurityCookie();
 
                         /* The FP register may not be back to the original value at the end
