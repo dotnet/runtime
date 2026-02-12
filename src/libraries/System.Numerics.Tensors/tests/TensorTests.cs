@@ -936,6 +936,70 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorReverseTests()
         {
+            // Helper: verify Reverse correctness for any shape
+            static void AssertReverseCorrect(nint[] shape)
+            {
+                nint totalLengthNative = 1;
+                foreach (var s in shape)
+                    totalLengthNative = checked(totalLengthNative * s);
+
+                int totalLength = checked((int)totalLengthNative);
+
+                // Use 1-based values so 0 (default) is never a valid value - makes bugs obvious
+                int[] data = new int[totalLength];
+                for (int i = 0; i < totalLength; i++)
+                    data[i] = i + 1;
+
+                var tensor = Tensor.Create<int>(data, shape);
+                var reversed = Tensor.Reverse<int>(tensor);
+
+                // Shape must be preserved
+                Assert.Equal(tensor.Lengths.ToArray(), reversed.Lengths.ToArray());
+
+                // Flattened elements should be in reverse order
+                var flatOriginal = new int[totalLength];
+                tensor.FlattenTo(flatOriginal);
+                Array.Reverse(flatOriginal);
+
+                var actualFlat = new int[totalLength];
+                reversed.FlattenTo(actualFlat);
+
+                Assert.Equal(flatOriginal, actualFlat);
+            }
+
+            // Test the reproduction case from issue #124105
+            AssertReverseCorrect([1, 3]);
+
+            // Test 1D tensors
+            AssertReverseCorrect([1]);
+            AssertReverseCorrect([3]);
+            AssertReverseCorrect([5]);
+
+            // Test 2D tensors with length-1 dimensions
+            AssertReverseCorrect([3, 1]);
+            AssertReverseCorrect([1, 1]);
+            AssertReverseCorrect([1, 4]);
+            AssertReverseCorrect([4, 1]);
+
+            // Test 2D tensors asymmetric
+            AssertReverseCorrect([2, 3]);
+            AssertReverseCorrect([3, 2]);
+
+            // Test 3D tensors with length-1 dimensions
+            AssertReverseCorrect([1, 2, 3]);
+            AssertReverseCorrect([2, 1, 3]);
+            AssertReverseCorrect([2, 3, 1]);
+            AssertReverseCorrect([1, 1, 3]);
+            AssertReverseCorrect([1, 3, 1]);
+            AssertReverseCorrect([3, 1, 1]);
+            AssertReverseCorrect([1, 1, 1]);
+
+            // Test larger tensors
+            AssertReverseCorrect([2, 3, 4]);
+            AssertReverseCorrect([1, 2, 3, 4]);
+            AssertReverseCorrect([2, 1, 3, 2]);
+
+            // Keep existing explicit test case
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8).ToArray(), lengths: [2, 2, 2]);
             var t1 = Tensor.Reverse<int>(t0);
             Assert.Equal(7, t1[0, 0, 0]);

@@ -51,11 +51,12 @@ protected:
         //
         // * Outside SSA: Partial defs are _not_ full defs and are also not
         // considered uses. They do not get included in bbVarUse/bbVarDef.
-        SsaLiveness           = false,
-        ComputeMemoryLiveness = false,
-        IsLIR                 = false,
-        IsEarly               = false,
-        EliminateDeadCode     = false,
+        SsaLiveness               = false,
+        ComputeMemoryLiveness     = false,
+        IsLIR                     = false,
+        IsEarly                   = false,
+        EliminateDeadCode         = false,
+        TrackAddressExposedLocals = false,
     };
 
     Liveness(Compiler* compiler)
@@ -446,7 +447,7 @@ void Liveness<TLiveness>::SelectTrackedLocals()
         // Pinned variables may not be tracked (a condition of the GCInfo representation)
         // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
         // references when using the general GC encoding.
-        if (varDsc->IsAddressExposed())
+        if (!TLiveness::TrackAddressExposedLocals && varDsc->IsAddressExposed())
         {
             varDsc->lvTracked = 0;
             assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
@@ -1044,7 +1045,8 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
         // We don't treat stores to tracked locals as modifications of ByrefExposed memory;
         // Make sure no tracked local is addr-exposed, to make sure we don't incorrectly CSE byref
         // loads aliasing it across a store to it.
-        assert(!varDsc->IsAddressExposed());
+        assert(!varDsc->IsAddressExposed() ||
+               (TLiveness::TrackAddressExposedLocals && !TLiveness::ComputeMemoryLiveness));
 
         if (TLiveness::IsLIR && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
@@ -1470,22 +1472,7 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            VarSetOps::ClearD(m_compiler, block->bbLiveOut);
-            if (keepAliveThis)
-            {
-                unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
-                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
-            }
-
-            if (block->HasPotentialEHSuccs(m_compiler))
-            {
-                block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
-                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
-                    return BasicBlockVisit::Continue;
-                });
-            }
-
-            VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
+            m_compiler->fgSetThrowHelpBlockLiveness(block);
         }
     }
 
@@ -1611,6 +1598,34 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
         memoryLiveness |= succ->bbMemoryLiveIn;
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// fgSetThrowHelpBlockLiveness: set liveness for throw helper block
+//
+// Arguments:
+//  block -- potential throw helper block
+//
+void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
+{
+    VarSetOps::ClearD(this, block->bbLiveOut);
+
+    const bool keepAliveThis = lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked;
+    if (keepAliveThis)
+    {
+        unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
+        VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
+    }
+
+    if (block->HasPotentialEHSuccs(this))
+    {
+        block->VisitEHSuccs(this, [=](BasicBlock* succ) {
+            VarSetOps::UnionD(this, block->bbLiveOut, succ->bbLiveIn);
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    VarSetOps::Assign(this, block->bbLiveIn, block->bbLiveOut);
 }
 
 #ifdef DEBUG
@@ -2822,11 +2837,12 @@ void Compiler::fgSsaLiveness()
     {
         enum
         {
-            SsaLiveness           = true,
-            ComputeMemoryLiveness = true,
-            IsLIR                 = false,
-            IsEarly               = false,
-            EliminateDeadCode     = true,
+            SsaLiveness               = true,
+            ComputeMemoryLiveness     = true,
+            IsLIR                     = false,
+            IsEarly                   = false,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         SsaLivenessClass(Compiler* comp)
@@ -2848,11 +2864,12 @@ void Compiler::fgAsyncLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = true,
-            IsEarly               = false,
-            EliminateDeadCode     = false,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = true,
+            IsEarly                   = false,
+            EliminateDeadCode         = false,
+            TrackAddressExposedLocals = true,
         };
 
         AsyncLiveness(Compiler* comp)
@@ -2874,11 +2891,12 @@ void Compiler::fgPostLowerLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = true,
-            IsEarly               = false,
-            EliminateDeadCode     = true,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = true,
+            IsEarly                   = false,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         PostLowerLiveness(Compiler* comp)
@@ -2918,11 +2936,12 @@ PhaseStatus Compiler::fgEarlyLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = false,
-            IsEarly               = true,
-            EliminateDeadCode     = true,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = false,
+            IsEarly                   = true,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         EarlyLiveness(Compiler* comp)

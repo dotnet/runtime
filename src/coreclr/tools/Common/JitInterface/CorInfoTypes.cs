@@ -60,6 +60,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -729,6 +733,17 @@ namespace Internal.JitInterface
 
         CORINFO_TYPE_VAR = 0x16,
         CORINFO_TYPE_COUNT,                         // number of jit types
+    }
+
+    // Used by Wasm RyuJIT to represent native WebAssembly types and exchanged via some JIT-EE APIs
+    public enum CorInfoWasmType
+    {
+        CORINFO_WASM_TYPE_VOID = 0x40,
+        CORINFO_WASM_TYPE_V128 = 0x7B,
+        CORINFO_WASM_TYPE_F64  = 0x7C,
+        CORINFO_WASM_TYPE_F32  = 0x7D,
+        CORINFO_WASM_TYPE_I64  = 0x7E,
+        CORINFO_WASM_TYPE_I32  = 0x7F,
     }
 
     public enum CorInfoIsAccessAllowedResult

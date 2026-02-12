@@ -985,7 +985,8 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize() const;
+    unsigned  lvExactSize() const;
+    ValueSize lvValueSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -3679,8 +3680,8 @@ public:
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool early = false);
 
-    bool gtStoreDefinesField(
-        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
+    bool gtStoreMayDefineField(
+        LclVarDsc* fieldVarDsc, ssize_t offset, ValueSize size, ssize_t* pFieldRelativeOffset, ValueSize* pFieldAffectedBytes);
 
     void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr) const;
 
@@ -4204,6 +4205,7 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
+    ValueSize lvaLclValueSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4985,6 +4987,8 @@ private:
 
     bool impCanReimport;
 
+    bool m_nextAwaitIsTail = false;
+
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum
 #ifdef DEBUG
@@ -5731,18 +5735,18 @@ public:
     void fgValueNumberLocalStore(GenTree*             storeNode,
                                  GenTreeLclVarCommon* lclDefNode,
                                  ssize_t              offset,
-                                 unsigned             storeSize,
+                                 ValueSize            storeSize,
                                  ValueNumPair         value,
                                  bool                 normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
-    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
+    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, ValueSize storeSize, ValueNum value);
 
     void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset);
 
     void fgValueNumberFieldStore(
-        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
+        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, ValueSize storeSize, ValueNum value);
 
     static bool fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq);
 
@@ -6792,6 +6796,7 @@ public:
     AddCodeDsc* fgGetExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock, bool createIfNeeded = false);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
+    void fgSetThrowHelpBlockLiveness(BasicBlock* block);
     void fgSequenceLocals(Statement* stmt);
 
 private:
@@ -8410,7 +8415,8 @@ protected:
     JitExpandArray<ASSERT_TP>* optAssertionDep = nullptr; // table that holds dependent assertions (assertions
                                                           // using the value of a local var) for each local var
     AssertionDsc*  optAssertionTabPrivate;                // table that holds info about assertions
-    AssertionIndex optAssertionCount = 0;                 // total number of assertions in the assertion table
+    VNSet*         optAssertionVNsMap = nullptr;
+    AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
@@ -8503,6 +8509,7 @@ public:
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt, BasicBlock* block);
+    GenTree* optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
@@ -8538,6 +8545,7 @@ public:
 
     bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
 
+    bool optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound = false);
 #ifdef DEBUG
     void optPrintAssertion(const AssertionDsc& newAssertion, AssertionIndex assertionIndex = 0);
     void optPrintAssertionIndex(AssertionIndex index);
@@ -10278,17 +10286,41 @@ public:
     bool compGeneratingEpilog       = false;
     bool compGeneratingUnwindProlog = false;
     bool compGeneratingUnwindEpilog = false;
-    bool compNeedsGSSecurityCookie  = false; // There is an unsafe buffer (or localloc) on the stack.
-                                             // Insert cookie on frame and code to check the cookie, like VC++ -GS.
-    bool compGSReorderStackLayout = false;   // There is an unsafe buffer on the stack, reorder locals and make local
+
+    // There is an unsafe buffer (or localloc) on the stack.
+    bool compNeedsGSSecurityCookie = false;
+
+    // There is an unsafe buffer on the stack, reorder locals and make local
     // copies of susceptible parameters to avoid buffer overrun attacks through locals/params
+    bool compGSReorderStackLayout = false;
+
+#ifdef DEBUG
+    const char* compGSSecurityCheckBlocker = nullptr;
+#endif
+
     bool getNeedsGSSecurityCookie() const
     {
         return compNeedsGSSecurityCookie;
     }
-    void setNeedsGSSecurityCookie()
+
+    // Request stack security for this method. Returns false if security cannot be enabled.
+    bool setNeedsGSSecurityCookie()
     {
+#if defined(TARGET_WASM)
+        INDEBUG(compGSSecurityCheckBlocker = "Not currently enabled for Wasm";)
+        return false;
+#endif
+
+        if (opts.compDbgEnC)
+        {
+            INDEBUG(compGSSecurityCheckBlocker = "incompatible with EnC";)
+            return false;
+        }
+
+        compGSReorderStackLayout  = true;
         compNeedsGSSecurityCookie = true;
+
+        return true;
     }
 
     FrameLayoutState lvaDoneFrameLayout = NO_FRAME_LAYOUT; // The highest frame layout state that we've completed.

@@ -1175,13 +1175,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_LEA:
         {
             GenTreeAddrMode* lea = tree->AsAddrMode();
