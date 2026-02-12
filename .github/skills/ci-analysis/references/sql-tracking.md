@@ -52,6 +52,44 @@ SELECT job_name, error_snippet FROM failed_jobs WHERE is_pr_correlated = TRUE;
 
 See [build-progression-analysis.md](build-progression-analysis.md) for the `build_progression` and `build_failures` tables that track pass/fail across multiple builds.
 
+## PR Comment Tracking
+
+For deep-dive analysis — especially across a chain of related PRs (e.g., dependency flow failures, sequential merge PRs, or long-lived PRs with weeks of triage) — store PR comments so you can query them without re-fetching:
+
+```sql
+CREATE TABLE IF NOT EXISTS pr_comments (
+  pr_number INT,
+  repo TEXT DEFAULT 'dotnet/runtime',
+  comment_id INT PRIMARY KEY,
+  author TEXT,
+  created_at TEXT,
+  body TEXT,
+  is_triage BOOLEAN DEFAULT FALSE  -- set TRUE if comment diagnoses a failure
+);
+```
+
+### Key queries
+
+```sql
+-- What has already been diagnosed? (avoid re-investigating)
+SELECT author, created_at, substr(body, 1, 200) FROM pr_comments
+WHERE is_triage = TRUE ORDER BY created_at;
+
+-- Cross-PR: same failure discussed in multiple PRs?
+SELECT pr_number, author, substr(body, 1, 150) FROM pr_comments
+WHERE body LIKE '%BlazorWasm%' ORDER BY created_at;
+
+-- Who was asked to investigate what?
+SELECT author, substr(body, 1, 200) FROM pr_comments
+WHERE body LIKE '%PTAL%' OR body LIKE '%could you%look%';
+```
+
+### When to use
+
+- Long-lived PRs (>1 week) with 10+ comments containing triage context
+- Analyzing a chain of related PRs where earlier PRs have relevant diagnosis
+- When the same failure appears across multiple merge/flow PRs and you need to know what was already tried
+
 ## When to Use SQL vs. Not
 
 | Situation | Use SQL? |
@@ -61,3 +99,4 @@ See [build-progression-analysis.md](build-progression-analysis.md) for the `buil
 | Build progression with 5+ builds | Yes — see build-progression-analysis.md |
 | Crash recovery across multiple work items | Yes — cache testResults.xml findings |
 | Single build, single failure | No — overkill |
+| PR chain or long-lived PR with extensive triage comments | Yes — preserves diagnosis context across tool calls |
