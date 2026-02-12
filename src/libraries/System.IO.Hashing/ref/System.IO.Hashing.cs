@@ -8,7 +8,7 @@ namespace System.IO.Hashing
 {
     public sealed partial class Adler32 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
-        public Adler32() : base(default(int)) { }
+        public Adler32() : base (default(int)) { }
         public override void Append(System.ReadOnlySpan<byte> source) { }
         public System.IO.Hashing.Adler32 Clone() { throw null; }
         [System.CLSCompliantAttribute(false)]

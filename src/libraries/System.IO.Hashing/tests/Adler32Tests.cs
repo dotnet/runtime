@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace System.IO.Hashing.Tests
@@ -148,10 +147,26 @@ namespace System.IO.Hashing.Tests
         {
             var alg = new Adler32();
             alg.Append(testCase.Input);
-            // For some reason if I set littleEndian to false below the test would fail as it would not match the expected value in the tests.
             AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32(), littleEndian: false);
-
             AssertEqualHashNumber(testCase.OutputHex, Adler32.HashToUInt32(testCase.Input), littleEndian: false);
+        }
+
+        [Theory]
+        [InlineData(5553, 0xAA40476Bu)]
+        [InlineData(11104, 0xA2778E87u)]
+        public void LargeInput_ExceedsNMax(int length, uint expected)
+        {
+            byte[] data = new byte[length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)('a' + (i % 26));
+            }
+
+            Assert.Equal(expected, Adler32.HashToUInt32(data));
+
+            var alg = new Adler32();
+            alg.Append(data);
+            Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
         }
     }
 }
