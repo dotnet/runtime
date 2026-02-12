@@ -106,6 +106,14 @@ int GetLCIDParameterIndex(MethodDesc *pMD);
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj);
 
 //---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture);
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF *CultureObj, BOOL bUICulture);
+
+//---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.
 BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef mdAssociate);
 

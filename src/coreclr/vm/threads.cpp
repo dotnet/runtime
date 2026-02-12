@@ -6202,38 +6202,6 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-OBJECTREF Thread::GetCulture(BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pCurrentCulture = NULL;
-    GCPROTECT_BEGIN(pCurrentCulture);
-
-    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
-    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
-
-    GCPROTECT_END();
-
-    return pCurrentCulture;
-}
-
-void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
-    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
-}
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
 {

@@ -277,6 +277,45 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     cultureInfoCtor.InvokeThrowing((int)lcid, pCultureObj);
 }
 
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF pCurrentCulture = NULL;
+    GCPROTECT_BEGIN(pCurrentCulture);
+
+    UnmanagedCallersOnlyCaller propGet(METHOD__CULTUREINFOMARSHALER__GET_CURRENT_CULTURE);
+    propGet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), &pCurrentCulture);
+
+    GCPROTECT_END();
+
+    return pCurrentCulture;
+}
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF* CultureObj, BOOL bUICulture)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
+    propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
+}
+
 
 //---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.

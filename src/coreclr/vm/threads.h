@@ -2245,10 +2245,6 @@ public:
         return m_TraceCallCount;
     }
 
-    // Functions to get/set culture information for current thread.
-    static OBJECTREF GetCulture(BOOL bUICulture);
-    static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
-
 private:
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Used in suspension code to redirect a thread at a HandledJITCase
