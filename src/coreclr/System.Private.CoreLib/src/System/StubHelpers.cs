@@ -1664,6 +1664,7 @@ namespace System.StubHelpers
         [UnmanagedCallersOnly]
         internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
         {
+            // Consider a cached system that avoids this expensive creation.
             try
             {
                 *pResult = new Globalization.CultureInfo(culture);
