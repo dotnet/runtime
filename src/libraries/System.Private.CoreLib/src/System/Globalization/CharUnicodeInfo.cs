@@ -354,7 +354,6 @@ namespace System.Globalization
          * if the code point has not been assigned.
          */
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UnicodeCategory GetUnicodeCategory(char ch)
         {
             return GetUnicodeCategoryNoBoundsChecks(ch);
