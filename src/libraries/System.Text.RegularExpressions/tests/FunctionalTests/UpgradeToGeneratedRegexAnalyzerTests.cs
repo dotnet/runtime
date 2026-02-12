@@ -970,7 +970,7 @@ public partial class A
         }
 
         [Fact]
-        public async Task CodeFixSupportsExtensionMembers()
+        public async Task CodeFixSupportsExtensionMembers_StaticInvocation()
         {
             string test = @"using System.Text.RegularExpressions;
 
@@ -989,6 +989,36 @@ static partial class Foo
     extension(string value)
     {
         public bool Test() => MyRegex.IsMatch(value);
+    }
+
+    [GeneratedRegex(@""\d+"")]
+    private static partial Regex MyRegex { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixSupportsExtensionMembers_Constructor()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Foo
+{
+    extension(string value)
+    {
+        public Regex GetRegex() => [|new Regex|](@""\d+"");
+    }
+}
+";
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+static partial class Foo
+{
+    extension(string value)
+    {
+        public Regex GetRegex() => MyRegex;
     }
 
     [GeneratedRegex(@""\d+"")]
