@@ -8866,15 +8866,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // For R2R, we don't (yet) support array interface devirtualization.
             assert(call->IsGenericVirtual(this) || !IsAot());
 
-            // If we don't know the array type exactly we may have the wrong interface type here.
-            // Bail out.
-            //
-            if (!isExact)
-            {
-                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-                return;
-            }
-
             instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
 
