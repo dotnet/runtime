@@ -646,7 +646,7 @@ extends:
           platforms:
           - linux_x64
           - windows_x64
-          - osx_x64
+          - osx_arm64
           - linux_arm64
           - windows_arm64
           variables:
