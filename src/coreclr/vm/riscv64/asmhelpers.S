@@ -2612,9 +2612,9 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // The worker function will restore callee-saved registers from the
 // TransitionBlock.
 //
-// extern "C" void AsyncHelpers_ResumeInterpreterContinuation(
-//     QCall::ObjectHandleOnStack cont,  // a0
-//     uint8_t* resultStorage             // a1
+// extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(
+//     ContinuationObject* cont,          // x0
+//     uint8_t* resultStorage             // x1
 // );
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler

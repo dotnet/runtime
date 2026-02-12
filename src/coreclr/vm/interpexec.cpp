@@ -1078,6 +1078,18 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
     return (ContinuationObject*)OBJECTREFToObject(contRef);
 }
 
+#ifdef TARGET_WASM
+extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(ContinuationObject* cont, uint8_t* resultStorage)
+{
+    STATIC_CONTRACT_WRAPPER;
+
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
+
+    return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
+}
+#endif // TARGET_WASM
+
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
 {
     CONTRACTL

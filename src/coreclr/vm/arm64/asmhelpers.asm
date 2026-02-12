@@ -3172,9 +3172,9 @@ CopyLoop
 ;; The worker function will restore callee-saved registers from the
 ;; TransitionBlock.
 ;;
-;; extern "C" void AsyncHelpers_ResumeInterpreterContinuation(
-;;     QCall::ObjectHandleOnStack cont,  ; x0
-;;     uint8_t* resultStorage             ; x1
+;; extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(
+;;     ContinuationObject* cont,          // x0
+;;     uint8_t* resultStorage             // x1
 ;; );
 ;; ------------------------------------------------------------------
     IMPORT AsyncHelpers_ResumeInterpreterContinuationWorker

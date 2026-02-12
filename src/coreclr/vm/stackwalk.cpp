@@ -2423,7 +2423,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 _ASSERTE(GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP);
                 // We have hit the InterpreterFrame while we were not processing the interpreter frames.
                 // Switch to walking the underlying interpreted frames.
-                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n"));
+                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n", m_crawl.pFrame));
                 ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                 if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                 {
