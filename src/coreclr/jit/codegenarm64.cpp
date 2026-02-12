@@ -323,38 +323,73 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             JITDUMP("    Restoring FP/LR first at offset %d\n", fpLrSaveOffset);
             GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
 
-            // Now we can freely pre-adjust SP to bring callee-saves into range
-            if (regsToRestoreMask != RBM_NONE && maxCalleeSaveSpOffset > 504)
-            {
-                int preAdjust = (maxCalleeSaveSpOffset - 504 + 15) & ~15;
-                JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range\n", preAdjust);
-
-                if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
-                {
-                    const int lowPart  = preAdjust & 0xFFF;
-                    const int highPart = preAdjust - lowPart;
-                    assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
-                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
-                    m_compiler->unwindAllocStack(highPart);
-                    if (lowPart > 0)
-                    {
-                        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
-                        m_compiler->unwindAllocStack(lowPart);
-                    }
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
-                    m_compiler->unwindAllocStack(preAdjust);
-                }
-
-                totalPreAdjust = preAdjust;
-                osrCalleeSaveSpOffset -= preAdjust;
-            }
-
-            // Restore callee-saves
+            // Now we can freely pre-adjust SP to bring callee-saves into range.
+            // After pre-adjust, we need:
+            //   osrCalleeSaveSpOffset - preAdjust >= -512 (lowest callee-save reachable by LDP)
+            //   maxCalleeSaveSpOffset - preAdjust <= 504 (highest callee-save reachable by LDP)
+            //
+            // So: preAdjust >= maxCalleeSaveSpOffset - 504 AND preAdjust <= osrCalleeSaveSpOffset + 512
+            //
+            // For a valid 16-aligned preAdjust to exist, we need:
+            //   maxCalleeSaveSpOffset - 504 <= osrCalleeSaveSpOffset + 512
+            //   calleeSaveSpan <= 1016
+            //
+            // Since ARM64 has at most ~18 callee-saved registers (144 bytes), this is always satisfied.
             if (regsToRestoreMask != RBM_NONE)
             {
+                // The callee-save area spans from osrCalleeSaveSpOffset to maxCalleeSaveSpOffset.
+                // We want to pre-adjust SP so that all LDP offsets are in range [-512, 504].
+                int calleeSaveSpan = maxCalleeSaveSpOffset - osrCalleeSaveSpOffset;
+                assert(calleeSaveSpan >= 0);
+                assert(calleeSaveSpan <= 1016); // Must fit in LDP range window; always true for ARM64
+
+                if (maxCalleeSaveSpOffset > 504)
+                {
+                    // Pre-adjust SP to bring the callee-save area into LDP range.
+                    // We want maxCalleeSaveSpOffset - preAdjust <= 504, so preAdjust >= maxCalleeSaveSpOffset - 504.
+                    // We also need osrCalleeSaveSpOffset - preAdjust >= -512, so preAdjust <= osrCalleeSaveSpOffset +
+                    // 512.
+                    int minPreAdjust = maxCalleeSaveSpOffset - 504;
+                    int maxPreAdjust = osrCalleeSaveSpOffset + 512; // Allow LDP offset down to -512
+                    int preAdjust    = ((minPreAdjust + 15) & ~15);
+
+                    // Clamp to maxPreAdjust to ensure lowest offset stays within LDP range
+                    if (preAdjust > maxPreAdjust)
+                    {
+                        preAdjust = maxPreAdjust & ~15;
+                    }
+
+                    assert(preAdjust >= minPreAdjust); // Should always find valid alignment
+
+                    JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range (min=%d, max=%d)\n", preAdjust,
+                            minPreAdjust, maxPreAdjust);
+
+                    if (preAdjust > 0)
+                    {
+                        if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                        {
+                            const int lowPart  = preAdjust & 0xFFF;
+                            const int highPart = preAdjust - lowPart;
+                            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                            m_compiler->unwindAllocStack(highPart);
+                            if (lowPart > 0)
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
+                                m_compiler->unwindAllocStack(lowPart);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                            m_compiler->unwindAllocStack(preAdjust);
+                        }
+
+                        totalPreAdjust = preAdjust;
+                        osrCalleeSaveSpOffset -= preAdjust;
+                    }
+                }
+
                 genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
             }
 
