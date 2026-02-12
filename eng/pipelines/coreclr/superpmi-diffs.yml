@@ -54,11 +54,8 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          - windows_x86
-          # Not needed for subsequent steps, but this ensures we get some build
-          # coverage of community JITs in CI on JIT PRs.
           - windows_x64
+          - windows_x86
           jobParameters:
             buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
