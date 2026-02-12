@@ -46,7 +46,21 @@ Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when
 
 > ⚠️ **Target branch moves between builds.** Each build merges `pr.sourceSha` into the target branch HEAD *at the time the build starts*. If `main` received new commits between build N and N+1, the two builds merged against different baselines — even if `pr.sourceSha` is the same. Always extract the target branch HEAD to detect baseline shifts.
 
-### Step 2b: Extract the target branch HEAD from checkout logs
+### Step 2b: Extract the target branch HEAD
+
+**Shortcut for the latest build — use the GitHub merge commit:**
+
+For the current/latest build, the merge ref (`refs/pull/{PR}/merge`) is available via the GitHub API. The merge commit's first parent is the target branch HEAD at the time GitHub computed the merge:
+
+```
+gh api repos/{owner}/{repo}/git/commits/{sourceVersion} --jq '.parents[0].sha'
+```
+
+Where `sourceVersion` is the merge commit SHA from the AzDO build (not `pr.sourceSha`). This is simpler than parsing checkout logs.
+
+> ⚠️ **This only works for the latest build.** GitHub recomputes `refs/pull/{PR}/merge` on each push, so the merge commit changes. For historical builds in a progression analysis, the merge ref no longer reflects what was built — use the checkout log method below.
+
+**For historical builds — extract from checkout logs:**
 
 The AzDO build API doesn't expose the target branch SHA. Extract it from the checkout task log.
 
@@ -207,3 +221,5 @@ Use target-branch comparison first to confirm the failure is PR-related. Use bui
 > ❌ **Don't make fix recommendations from progression alone.** "Build N passed and build N+1 failed after adding commit C" is a fact worth reporting. "Therefore revert commit C" is a judgment that requires more context than the agent has — the commit may be addressing a critical review concern, fixing a different bug, or partially correct.
 
 > ❌ **Don't assume earlier passing builds prove the original approach was complete.** A build may pass because it didn't change enough to trigger the failing test scenario. The reviewer who requested additional changes may have identified a real gap.
+
+> ❌ **Don't assume MSBuild changes only affect the platform you're looking at.** MSBuild properties, conditions, and targets are shared infrastructure. A commit that changes a condition, moves a property, or modifies a restore flag can impact any platform that evaluates the same code path. When a commit touches MSBuild files, verify its impact across all platforms — don't assume it's scoped to the one you're investigating.
