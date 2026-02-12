@@ -1138,7 +1138,7 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
     GCPROTECT_BEGIN(gc);
 
     UnmanagedCallersOnlyCaller getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT);
-    getJitContext.InvokeThrowing(&gc.Resolver, (int*)securityControlFlags, &gc.ResultType);
+    getJitContext.InvokeThrowing(&gc.Resolver, (int32_t*)securityControlFlags, &gc.ResultType);
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)gc.ResultType;
     *typeOwner = refType != NULL ? refType->GetType() : TypeHandle();
