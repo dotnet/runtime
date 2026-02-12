@@ -77,7 +77,7 @@ A prerequisite for building and running samples locally is to have CoreCLR succe
 To build `HelloiOS`, run the following command from `<repo-root>`:
 
 ```bash
-./dotnet.sh build src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:UseMonoRuntime=false /p:RunAOTCompilation=false
+./dotnet.sh build src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:UseMonoRuntime=false
 ```
 
 On successful execution, the command will output the iOS app bundle.
@@ -87,7 +87,7 @@ On successful execution, the command will output the iOS app bundle.
 To run the sample, run the following command from `<repo-root>`:
 
 ```bash
-./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:DeployAndRun=true /p:UseMonoRuntime=false /p:RunAOTCompilation=false
+./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:DeployAndRun=true /p:UseMonoRuntime=false
 ```
 
 The command also produces an Xcode project that can be opened for debugging:
