@@ -673,7 +673,7 @@ namespace System.Reflection.Emit
         /// <exception cref="ArgumentNullException"><paramref name="attributeType" /> is <see langword="null" />.</exception>
         /// <remarks>
         /// For dynamic methods, specifying <see langword="true" /> for <paramref name="inherit" /> has no effect. Dynamic methods have no inheritance chain.
-        /// <note type="note">Custom attributes are not currently supported on dynamic methods.</note>
+        /// <note type="note">Dynamic methods do not support user-defined custom attributes. This method reports attributes only if <paramref name="attributeType" /> is <see cref="MethodImplAttribute" /> or a base type of it, reflecting the method's implementation flags.</note>
         /// </remarks>
         public override bool IsDefined(Type attributeType, bool inherit)
         {
@@ -685,12 +685,12 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Gets the return type of the dynamic method.
         /// </summary>
-        /// <value>A <see cref="Type" /> representing the return type of the dynamic method; or <see cref="void" /> if the method has no return type.</value>
+        /// <value>A <see cref="Type" /> representing the return type of the dynamic method; or <see langword="void" /> if the method has no return type.</value>
         /// <example>
         /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnType" />
         /// </example>
         /// <remarks>
-        /// If <see langword="null" /> was specified for the return type when the dynamic method was created, this property returns <see cref="void" />.
+        /// If <see langword="null" /> was specified for the return type when the dynamic method was created, this property returns <see langword="void" />.
         /// </remarks>
         public override Type ReturnType => _returnType;
 
@@ -699,7 +699,7 @@ namespace System.Reflection.Emit
         /// </summary>
         /// <value>A <see cref="ParameterInfo" /> object that represents the return parameter of the dynamic method.</value>
         /// <remarks>
-        /// This property always returns <see langword="null" /> for dynamic methods.
+        /// In modern .NET, this property returns a <see cref="ParameterInfo" /> instance that describes the return value for dynamic methods. In .NET Framework, this property always returns <see langword="null" /> for dynamic methods.
         /// </remarks>
         public override ParameterInfo ReturnParameter => new RuntimeParameterInfo(this, null, _returnType, -1);
 

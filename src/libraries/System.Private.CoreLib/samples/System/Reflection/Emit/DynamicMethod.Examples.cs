@@ -83,7 +83,7 @@ namespace System.Reflection.Emit.Examples
             #endregion
 
             #region ReturnTypeCustomAttributes
-            // ReturnTypeCustomAttributes returns an ICustomeAttributeProvider
+            // ReturnTypeCustomAttributes returns an ICustomAttributeProvider
             // that can be used to enumerate the custom attributes of the
             // return value. At present, there is no way to set such custom
             // attributes, so the list is empty.
