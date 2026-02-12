@@ -269,8 +269,20 @@ namespace System.Reflection
                 ? null
                 : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
 
-            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            RuntimeType? safeArrayUserDefinedType = null;
+
+            try
+            {
+                safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
+                    TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            }
+            catch (TypeLoadException)
+            {
+                // The user may have supplied a bad type name string causing this TypeLoadException
+                // Regardless, we return the bad type name
+                Debug.Assert(safeArrayUserDefinedTypeName is not null);
+            }
+
             RuntimeType? marshalTypeRef = null;
 
             try
