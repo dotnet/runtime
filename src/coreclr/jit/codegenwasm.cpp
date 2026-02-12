@@ -1580,7 +1580,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         void* pAddr = helperFunction.addr;
 
         // Push indirection cell address onto stack for genEmitCall to dereference
-        GetEmitter()->emitIns_I(INS_i32_const_address, emitActualTypeSize(TYP_I_IMPL), (cnsval_ssize_t)pAddr);
+        GetEmitter()->emitIns_I(INS_i32_const_address, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)pAddr);
 
         params.callType = EC_INDIR_R;
     }
