@@ -372,8 +372,8 @@ namespace System.Reflection.Emit
             AddOneArgTypeHelper(clsArgument);
         }
 
-        private void AddOneArgTypeHelper(Type clsArgument) { AddOneArgTypeHelperWorker(clsArgument, false); }
-        private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst)
+        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null) { AddOneArgTypeHelperWorker(clsArgument, false, scope); }
+        private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
             if (clsArgument.IsGenericParameter)
             {
@@ -388,7 +388,7 @@ namespace System.Reflection.Emit
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
 
-                AddOneArgTypeHelperWorker(clsArgument.GetGenericTypeDefinition(), true);
+                AddOneArgTypeHelperWorker(clsArgument.GetGenericTypeDefinition(), true, scope);
 
                 Type[] args = clsArgument.GetGenericArguments();
 
@@ -474,6 +474,22 @@ namespace System.Reflection.Emit
                     AddData(rank);  // lower bound
                     for (int i = 0; i < rank; i++)
                         AddData(0);
+                }
+            }
+            else if (clsArgument.IsFunctionPointer && scope != null)
+            {
+                AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
+                SignatureHelper sig = GetMethodSigHelper(scope, clsArgument);
+                byte[] bytes = sig.GetSignature();
+
+                if (m_currSig + bytes.Length > m_signature.Length)
+                {
+                    m_signature = ExpandArray(m_signature, m_signature.Length + bytes.Length);
+                }
+
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    m_signature[m_currSig++] = bytes[i];
                 }
             }
             else
@@ -782,34 +798,9 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void AddFunctionPointerType(DynamicScope scope, Type type)
-        {
-            Debug.Assert(type.IsFunctionPointer);
-
-            AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
-            SignatureHelper sig = GetMethodSigHelper(scope, type);
-            byte[] bytes = sig.GetSignature();
-
-            if (m_currSig + bytes.Length > m_signature.Length)
-            {
-                m_signature = ExpandArray(m_signature, m_signature.Length + bytes.Length);
-            }
-
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                m_signature[m_currSig++] = bytes[i];
-            }
-        }
-
         internal void AddReturnType(DynamicScope scope, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
             Debug.Assert(type != null);
-
-            if (type.IsFunctionPointer)
-            {
-                AddFunctionPointerType(scope, type);
-                return;
-            }
 
             if (optionalCustomModifiers != null)
             {
@@ -853,7 +844,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            AddOneArgTypeHelper(type);
+            AddOneArgTypeHelper(type, scope);
         }
 
         internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
@@ -908,7 +899,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            AddOneArgTypeHelper(clsArgument);
+            AddOneArgTypeHelper(clsArgument, dynamicScope);
         }
 
         internal void AddArguments(DynamicScope dynamicScope, Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
@@ -919,14 +910,6 @@ namespace System.Reflection.Emit
             for (int i = 0; i < arguments.Length; i++)
             {
                 Type arg = arguments[i];
-
-                if (arg.IsFunctionPointer)
-                {
-                    IncrementArgCounts();
-                    AddFunctionPointerType(dynamicScope, arg);
-                    continue;
-                }
-
                 AddDynamicArgument(dynamicScope, arg, requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
             }
         }
