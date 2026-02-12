@@ -993,7 +993,7 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
-extern "C" Object* AsyncHelpers_ResumeInterpreterContinuationWorker(Object* cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
+extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(ContinuationObject* cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
 {
     CONTRACTL
     {
@@ -1072,10 +1072,10 @@ extern "C" Object* AsyncHelpers_ResumeInterpreterContinuationWorker(Object* cont
         }
     }
 
-    contRef = frames.interpreterFrame.GetContinuation();
+    contRef = (CONTINUATIONREF)frames.interpreterFrame.GetContinuation();
     frames.interpreterFrame.Pop();
 
-    return OBJECTREFToObject(contRef);
+    return (ContinuationObject*)OBJECTREFToObject(contRef);
 }
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
