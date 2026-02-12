@@ -37,15 +37,7 @@ typedef void (*EbrDeleteFunc)(void* pObject);
 
 // Forward declarations
 struct EbrThreadData;
-
-// Singly-linked list node for pending deletions.
-struct EbrPendingEntry
-{
-    void*            m_pObject;
-    EbrDeleteFunc    m_pfnDelete;
-    size_t           m_estimatedSize;
-    EbrPendingEntry* m_pNext;
-};
+struct EbrPendingEntry;
 
 // EBR Collector - manages epoch-based deferred reclamation.
 //

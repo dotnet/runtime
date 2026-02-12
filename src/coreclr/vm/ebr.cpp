@@ -27,6 +27,15 @@ struct EbrThreadData
     EbrThreadData*     m_pNext;
 };
 
+// Singly-linked list node for pending deletions.
+struct EbrPendingEntry
+{
+    void*            m_pObject;
+    EbrDeleteFunc    m_pfnDelete;
+    size_t           m_estimatedSize;
+    EbrPendingEntry* m_pNext;
+};
+
 // Each thread holds its own EbrThreadData via thread_local.
 // We support only a single collector per process; if multiple collectors
 // are needed this can be extended to a per-collector TLS map, but for the
