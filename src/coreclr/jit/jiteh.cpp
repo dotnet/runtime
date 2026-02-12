@@ -3460,28 +3460,36 @@ void Compiler::fgVerifyHandlerTab()
 
                 if (fgFuncletsCreated)
                 {
-                    // If both the 'try' region and the outer 'try' region are in the main function area, then we can
-                    // do the normal nesting check. Otherwise, it's harder to find a useful assert to make about their
-                    // relationship.
-                    if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
+                    if (fgTrysNotContiguous())
                     {
-                        if (multipleBegBlockNormalizationDone)
+                        // We can't check much in this case.
+                    }
+                    else
+                    {
+                        // If both the 'try' region and the outer 'try' region are in the main function area, then we
+                        // can do the normal nesting check. Otherwise, it's harder to find a useful assert to make about
+                        // their relationship.
+                        if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
                         {
-                            assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same
-                                                                    // block (by EH normalization).
-                        }
-                        else
-                        {
-                            assert(bbNumOuterTryBeg <= bbNumTryBeg);
-                        }
-                        if (multipleLastBlockNormalizationDone)
-                        {
-                            assert(bbNumTryLast < bbNumOuterTryLast); // Two 'try' regions can't end at the same block
-                                                                      //(by EH normalization).
-                        }
-                        else
-                        {
-                            assert(bbNumTryLast <= bbNumOuterTryLast);
+                            if (multipleBegBlockNormalizationDone)
+                            {
+                                assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same
+                                // block (by EH normalization).
+                            }
+                            else
+                            {
+                                assert(bbNumOuterTryBeg <= bbNumTryBeg);
+                            }
+                            if (multipleLastBlockNormalizationDone)
+                            {
+                                assert(bbNumTryLast < bbNumOuterTryLast); // Two 'try' regions can't end at the same
+                                                                          // block
+                                //(by EH normalization).
+                            }
+                            else
+                            {
+                                assert(bbNumTryLast <= bbNumOuterTryLast);
+                            }
                         }
                     }
 
@@ -3491,6 +3499,9 @@ void Compiler::fgVerifyHandlerTab()
                 }
                 else
                 {
+                    // If we haven't created funclets trys should still be contiguous.
+                    assert(!fgTrysNotContiguous());
+
                     if (multipleBegBlockNormalizationDone)
                     {
                         assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same block
