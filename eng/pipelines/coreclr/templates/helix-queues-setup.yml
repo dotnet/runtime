@@ -54,11 +54,11 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - OSX.13.Amd64.Iphone.Open
+      - OSX.15.Amd64.Iphone.Open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-        - OSX.13.Amd64.AppleTV.Open
+        - OSX.15.Amd64.AppleTV.Open
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
@@ -105,16 +105,16 @@ jobs:
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.13.ARM64.Open
+        - OSX.15.ARM64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.13.ARM64
+        - OSX.15.ARM64
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.13.Amd64.Open
+        - OSX.15.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.13.Amd64
+        - OSX.15.Amd64
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
