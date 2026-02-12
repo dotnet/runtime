@@ -761,6 +761,9 @@ public:
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
 
+    // Compute the range from the given type
+    static Range GetRangeFromType(var_types type);
+
 private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
@@ -782,9 +785,6 @@ private:
     // Internal worker for GetRange.
     Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range from the given type
-    static Range GetRangeFromType(var_types type);
-
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
@@ -802,6 +802,8 @@ private:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    static Limit TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool isLower);
 
     // Inspect the assertions about the current ValueNum to refine pRange
     static void MergeEdgeAssertions(Compiler*        comp,
