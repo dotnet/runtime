@@ -6,6 +6,9 @@
 //
 // Found by Antigen
 
+
+namespace Runtime_91252;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;

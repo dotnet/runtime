@@ -160,7 +160,7 @@ namespace System.IO
             // as it does on Windows.These checks can be removed if a solution to
             // https://github.com/dotnet/runtime/issues/14885 is found that doesn't require
             // validity checks before making an API call.
-            if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists)
+            if (!System.IO.Directory.Exists(Path.GetDirectoryName(FullName)))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));
 
             if (!Exists)
@@ -203,6 +203,24 @@ namespace System.IO
             StreamWriter streamWriter = new StreamWriter(NormalizedPath, append);
             Invalidate();
             return streamWriter;
+        }
+
+        /// <summary>
+        /// Creates a hard link located in <see cref="Name"/> that refers to the same file content as <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="pathToTarget">The path of the hard link target.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="pathToTarget"/> contains invalid path characters.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <see cref="Name"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public void CreateAsHardLink(string pathToTarget)
+        {
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+            FileSystem.CreateHardLink(OriginalPath, pathToTarget);
         }
     }
 }

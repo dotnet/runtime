@@ -24,10 +24,18 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
     <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
     <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
     <UseLocalCrossgen2Pack>$(PublishReadyToRun)</UseLocalCrossgen2Pack>
+  </PropertyGroup>
+
+  <!-- Use the Mach-O format for Apple mobile platforms as we can't load native code from PE files on these platforms -->
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <ForcePublishReadyToRunComposite>true</ForcePublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
@@ -50,6 +58,10 @@
                      TargetOS="$(_CrossGenTargetOS)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+      <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
+    </PropertyGroup>
   </Target>
 
   <!--

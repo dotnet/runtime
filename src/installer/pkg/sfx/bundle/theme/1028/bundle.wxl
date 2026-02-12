@@ -66,7 +66,7 @@
   <String Id="WelcomeHeaderMessage" Value=".NET 執行階段"/>
   <String Id="WelcomeDescription" Value=".NET Runtime 可用於在您的 Windows 電腦上執行 .NET 應用程式。.NET 為開放原始碼形式，且可跨平台運作，同時受到 Microsoft 支援。希望您會喜歡!"/>
   <String Id="LearnMoreTitle" Value="深入了解 .NET"/>
-  <String Id="SuccessInstallLocation" Value="下列項目已安裝在 [DOTNETHOME]"/>
+  <String Id="SuccessInstallLocation" Value="已安裝下列項目:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="資源"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;文件&lt;/A&gt;"/>

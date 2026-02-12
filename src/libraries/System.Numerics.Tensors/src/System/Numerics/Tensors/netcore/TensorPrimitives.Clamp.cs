@@ -219,44 +219,9 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x, T min, T max) => T.Clamp(x, min, max);
 
-#if NET9_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(x, min, max);
-#else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> min, Vector128<T> max)
-            {
-                if (Vector128.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> min, Vector256<T> max)
-            {
-                if (Vector256.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> min, Vector512<T> max)
-            {
-                if (Vector512.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-#endif
         }
 
         /// <summary>T.Clamp(min, max, x)</summary>
@@ -267,44 +232,9 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T min, T max, T x) => T.Clamp(x, min, max);
 
-#if NET9_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> min, Vector512<T> max, Vector512<T> x) => Vector512.Clamp(x, min, max);
-#else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> min, Vector128<T> max, Vector128<T> x)
-            {
-                if (Vector128.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> min, Vector256<T> max, Vector256<T> x)
-            {
-                if (Vector256.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> min, Vector512<T> max, Vector512<T> x)
-            {
-                if (Vector512.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-#endif
         }
 
         /// <summary>T.Clamp(max, x, min)</summary>
@@ -316,44 +246,9 @@ namespace System.Numerics.Tensors
             public static T Invoke(T max, T x, T min) => T.Clamp(x, min, max);
 
 
-#if NET9_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min) => Vector128.Clamp(x, min, max);
             public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min) => Vector256.Clamp(x, min, max);
             public static Vector512<T> Invoke(Vector512<T> max, Vector512<T> x, Vector512<T> min) => Vector512.Clamp(x, min, max);
-#else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<T> Invoke(Vector128<T> max, Vector128<T> x, Vector128<T> min)
-            {
-                if (Vector128.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<T> Invoke(Vector256<T> max, Vector256<T> x, Vector256<T> min)
-            {
-                if (Vector256.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<T> Invoke(Vector512<T> max, Vector512<T> x, Vector512<T> min)
-            {
-                if (Vector512.GreaterThanAny(min, max))
-                {
-                    ThrowHelper.ThrowArgument_MinGreaterThanMax();
-                }
-
-                return MinOperator<T>.Invoke(MaxOperator<T>.Invoke(x, min), max);
-            }
-#endif
         }
     }
 }

@@ -66,7 +66,7 @@
   <String Id="WelcomeHeaderMessage" Value=".NET 运行时"/>
   <String Id="WelcomeDescription" Value=".NET 运行时用于在 Windows 计算机上运行 .NET 应用程序。.NET 是开源、跨平台的，且由 Microsoft 提供支持。希望你喜欢它!"/>
   <String Id="LearnMoreTitle" Value="了解有关 .NET 的详细信息"/>
-  <String Id="SuccessInstallLocation" Value="以下项已安装到 [DOTNETHOME]"/>
+  <String Id="SuccessInstallLocation" Value="已安装以下项:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="资源"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;文档&lt;/A&gt;"/>

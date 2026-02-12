@@ -1,8 +1,192 @@
+# WebAssembly Debugging
 
-WASM runtime debugging
-======================
+This document provides debugging instructions for WebAssembly.
 
-- Disable symbol stripping by setting the `WasmNativeStrip` msbuild property to `false`.  See also, [collecting stack traces with symbols in Blazor](#collecting-stack-traces-with-symbols-in-blazor)
+## Debug with VS Code
+To debug WebAssembly with Visual Studio Code:
+
+### 1. Configuration
+
+Add the appropriate configuration to your `.vscode/launch.json` depending on your debugging scenario:
+
+**For WebAssembly applications, library tests, and general debugging:**
+```json
+{
+    "name": "WASM Attach",
+    "request": "attach",
+    "type": "chrome",
+    "address": "localhost",
+    "port": <PROXY_PORT>
+}
+```
+
+**For WASI applications:**
+```json
+{
+    "name": "WASI Attach",
+    "type": "mono",
+    "request": "attach",
+    "address": "localhost",
+    "port": <PROXY_PORT>
+}
+```
+
+Replace `<PROXY_PORT>` with the proxy port shown in your application's output.
+
+### 2. Setup Steps
+
+1. **Set initial breakpoint**: Place a breakpoint in `WasmTestRunner.cs` or your main entry point to prevent execution before you're ready
+2. **Run the configuration**: Launch the VS Code debug configuration
+3. **Set additional breakpoints**: Once stopped, set breakpoints in the code you want to debug
+4. **Continue execution**: Click Resume or F5 to continue
+
+## Debug with Chrome DevTools
+
+### 1. Basic Setup
+
+1. **Open Chrome Inspector**: Navigate to `chrome://inspect/#devices` in a new Chrome tab
+2. **Configure proxy**: Click "Configure":
+
+![image](https://user-images.githubusercontent.com/32700855/201867874-7f707eb1-e859-441c-8205-abb70a7a0d0b.png)
+
+and paste the address of proxy that was provided in the program output:
+
+![image](https://user-images.githubusercontent.com/32700855/201862487-df76a06c-b24d-41a0-bf06-6959bba59a58.png)
+
+3. **Select target**: New remote targets will be displayed, select the address you opened in the other tab by clicking `Inspect`:
+
+![image](https://user-images.githubusercontent.com/32700855/201863048-6a4fe20b-a215-435d-b594-47750fcb2872.png)
+
+### 2. Using DevTools
+
+1. **Sources tab**: A new window with Chrome DevTools will be opened. In the tab `sources` you should look for `file://` directory to browse source files
+2. **Wait for files to load**: It may take time for all source files to appear. You cannot set breakpoints in Chrome DevTools before the files get loaded
+3. **Set breakpoints**: Click on line numbers to set breakpoints
+4. **Initial run strategy**: Consider using the first run to set an initial breakpoint in `WasmTestRunner.cs`, then restart the application. DevTools will stop on the previously set breakpoint and you will have time to set breakpoints in the libs you want to debug and click Resume
+
+### 3. For Native/C Code Debugging
+
+1. **Install DWARF extension**: Install the "C/C++ DevTools Support (DWARF)" Chrome extension
+2. **Enable symbols**: Build with `WasmNativeDebugSymbols=true` and `WasmNativeStrip=false`
+3. **Debug native code**: Step through C/C++ code, set breakpoints, and inspect WebAssembly linear memory
+
+## Starting Chrome with Remote Debugging
+
+To enable remote debugging for WebAssembly applications:
+
+```bash
+# Close all Chrome instances first
+chrome --remote-debugging-port=9222 <APP_URL>
+```
+
+Replace `<APP_URL>` with the URL shown in your application's output.
+
+## Common Debugging Workflow
+
+### For Library Tests
+
+For building libraries or testing them without debugging, read:
+- [Building libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md)
+- [Testing libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md)
+
+**Run the selected library tests with debugger support:**
+
+Run the selected library tests in the browser, e.g. `System.Collections.Concurrent.Tests` this way:
+```bash
+dotnet run -r browser-wasm -c Debug --project src/libraries/System.Collections/tests/System.Collections.Tests.csproj --debug --host browser -p:DebuggerSupport=true
+```
+
+Where we choose `browser-wasm` as the runtime and by setting `DebuggerSupport=true` we ensure that tests won't start execution before the debugger will get attached. In the output, among others you should see:
+
+```
+Debug proxy for chrome now listening on http://127.0.0.1:58346/. And expecting chrome at http://localhost:9222/
+App url: http://127.0.0.1:9000/index.html?arg=--debug&arg=--run&arg=WasmTestRunner.dll&arg=System.Collections.Concurrent.Tests.dll
+```
+
+The proxy's url/port will be used in the next step.
+
+You may need to close all Chrome instances. Then, start the browser with debugging mode enabled:
+
+```bash
+chrome --remote-debugging-port=9222 <APP_URL>
+```
+
+Now you can choose an IDE to start debugging. Remember that the tests wait only till the debugger gets attached. Once it does, they start running. You may want to set breakpoints first, before attaching the debugger, e.g. setting one in `src\libraries\Common\tests\WasmTestRunner\WasmTestRunner.cs` on the first line of `Main()` will prevent any test to be run before you get prepared.
+
+Use either Chrome DevTools or VS Code as described above to attach the debugger
+
+### For WASI Applications
+
+1. **Build with debug**:
+   ```bash
+   cd sample/console
+   make debug
+   ```
+
+2. **Set up VS Code**: Use the Mono Debug extension configuration above
+3. **Set breakpoints**: Place breakpoints in your Program.cs or other C# files
+4. **Start debugging**: Launch the VS Code configuration
+
+## Troubleshooting
+
+### Files Not Loading in DevTools
+- Wait patiently - source files can take time to load initially
+- Try refreshing the DevTools window
+- Ensure your build includes debug symbols
+
+### Breakpoints Not Hit
+- Verify the proxy port matches your configuration
+- Check that Chrome is started with remote debugging enabled
+- Ensure your breakpoints are set in code that will actually execute
+
+### Connection Issues
+- Verify no firewall is blocking the proxy port
+- Check that the proxy is still running (visible in application output)
+- Try restarting both the application and Chrome
+
+## Advanced Debugging
+
+### Enable Additional Logging
+
+Add environment variables for more detailed logging:
+
+```javascript
+await dotnet
+    .withDiagnosticTracing(true)
+    .withConfig({
+        environmentVariables: {
+            "MONO_LOG_LEVEL": "debug",
+            "MONO_LOG_MASK": "all"
+        }
+    })
+    .run();
+```
+
+### Native Stack Traces
+
+For native crashes with symbols:
+
+1. **Build configuration**:
+   ```xml
+   <PropertyGroup>
+     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+     <WasmNativeStrip>false</WasmNativeStrip>
+   </PropertyGroup>
+   ```
+
+2. **Install DWARF extension** in Chrome for C/C++ debugging support
+
+### Collect Stack Traces
+
+For detailed instructions on collecting stack traces and breaking into the JavaScript debugger from runtime code, see the [Native Runtime Debugging](#native-runtime-debugging) section below.
+
+## Native Runtime Debugging
+
+This section covers debugging the Mono WebAssembly runtime itself, native crashes, and advanced debugging scenarios.
+
+### Runtime Debugging Techniques
+
+- Disable symbol stripping by setting the `WasmNativeStrip` msbuild property to `false`. See also, [collecting stack traces with symbols in Blazor](#collecting-stack-traces-with-symbols-in-blazor)
 
 - Emscripten generates dwarf debug info and Chrome 80 and later can use it.
 
@@ -56,7 +240,7 @@ corresponding wasm code:
 - The `wasm-dis` tool from `https://github.com/WebAssembly/binaryen` can be used to
 disassemble wasm executables (.wasm files).
 
-# Deterministic execution
+### Deterministic Execution
 
 Wasm execution can be made deterministic by passing the -s DETERMINISTIC=1 option to emcc.
 This will cause the app to always execute the same way, i.e. using the same memory
@@ -88,7 +272,7 @@ which needs the same treatment.
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
 emscripten installation in `src/mono/browser/emsdk` with these changes.
 
-# Debugging signature mismatch errors
+### Debugging Signature Mismatch Errors
 
 When v8 fails with `RuntimeError: function signature mismatch`, it means a function call was
 made to a function pointer with an incompatible signature, or to a NULL pointer.
@@ -130,7 +314,7 @@ never meant to be reached, i.e. `no_gsharedvt_in_wrapper` or `no_llvmonly_interp
 These functions are used as placeholders for function pointers with different signatures, so
 if they do end up being called due to a bug, a signature mismatch error happens.
 
-# Collecting stack traces with symbols in Blazor
+### Collecting Stack Traces with Symbols in Blazor
 
 When debugging a native crash in a .NET 6 Blazor app or another WebAssembly
 framework that uses our default `dotnet.wasm`, the native stack frames will not
@@ -258,10 +442,10 @@ dispatchGlobalEventToAllElements @ blazor.webassembly.js:1
 onGlobalEvent @ blazor.webassembly.js:1
 ```
 
-# Enabling additional logging in Blazor
+### Enabling Additional Logging in Blazor
 
 In .NET 8+, Blazor startup can be controlled by setting the `autostart="false"` attribute on the
-`<script>` tag that loads the blazor webassembly framework.  After that, a call to the
+`<script>` tag that loads the blazor webassembly framework. After that, a call to the
 `globalThis.Blazor.start()` JavaScript function can be passed additional configuration options,
 including setting mono environment variables, or additional command line arguments.
 
@@ -271,7 +455,7 @@ Blazor WebAssembly project (template `blazorwasm`) or a Blazor project (template
 See the runtime `DotnetHostBuilder` interface in
 [dotnet.d.ts](../../../../src/mono/browser/runtime/dotnet.d.ts) for additional configuration functions.
 
-## Blazor WebAssembly
+#### Blazor WebAssembly
 
 In a `blazorwasm` project, the script is `_framework/blazor.webassembly.js` and it is loaded in `wwwroot/index.html`:
 
@@ -311,7 +495,7 @@ Replace it with this:
     </script></body>
 ```
 
-## Blazor
+#### Blazor
 
 In a `blazor` project, the script is `_framework/blazor.web.js` and it is loaded by `Components/App.razor` in the server-side project:
 
@@ -341,3 +525,10 @@ Replace it with this (note that for a `blazor` project, `Blazor.start` needs an 
     </script>
 </body>
 ```
+
+## References
+
+- [Testing Libraries on WebAssembly](../testing/libraries/testing-wasm.md)
+- [Debugging WebAssembly Libraries](../testing/libraries/debugging-wasm.md)
+- [WASI Support](../../src/mono/wasi/README.md)
+- [VS Code Debugging Guide](debugging/libraries/debugging-vscode.md)

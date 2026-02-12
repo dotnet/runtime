@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
                     PropertyAccessors accessors = property.GetAccessors();
 
                     if (accessors.Getter == methodHandle || accessors.Setter == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc((EcmaType)method.OwningType, propertyHandle));
+                        AddDependenciesDueToCustomAttributes(ref dependencies, propertyCondition, factory, method.Module, property.GetCustomAttributes(), new PropertyPseudoDesc(method.OwningType, propertyHandle));
                 }
 
                 object eventCondition = GetMetadataApiDependency(factory, "Event"u8);
@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     EventAccessors accessors = @event.GetAccessors();
 
                     if (accessors.Adder == methodHandle || accessors.Remover == methodHandle || accessors.Raiser == methodHandle)
-                        AddDependenciesDueToCustomAttributes(ref dependencies, eventCondition, factory, method.Module, @event.GetCustomAttributes(), new EventPseudoDesc((EcmaType)method.OwningType, eventHandle));
+                        AddDependenciesDueToCustomAttributes(ref dependencies, eventCondition, factory, method.Module, @event.GetCustomAttributes(), new EventPseudoDesc(method.OwningType, eventHandle));
                 }
             }
         }
@@ -91,14 +91,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataReader reader = type.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(type.Handle);
-            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.EcmaModule, typeDef.GetCustomAttributes(), type);
+            AddDependenciesDueToCustomAttributes(ref dependencies, GetMetadataApiDependency(factory, "TypeDefinition"u8), factory, type.Module, typeDef.GetCustomAttributes(), type);
 
             // Handle custom attributes on generic type parameters
             object genericParameterCondition = GetMetadataApiDependency(factory, "GenericParameter"u8);
             foreach (GenericParameterHandle genericParameterHandle in typeDef.GetGenericParameters())
             {
                 GenericParameter parameter = reader.GetGenericParameter(genericParameterHandle);
-                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.EcmaModule, parameter.GetCustomAttributes(), type);
+                AddDependenciesDueToCustomAttributes(ref dependencies, genericParameterCondition, factory, type.Module, parameter.GetCustomAttributes(), type);
             }
         }
 
@@ -250,7 +250,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (!accessors.Setter.IsNil)
                     {
-                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.EcmaModule.GetObject(accessors.Setter);
+                        MethodDesc setterMethod = (MethodDesc)attributeTypeDefinition.Module.GetObject(accessors.Setter);
                         if (factory.MetadataManager.IsReflectionBlocked(setterMethod))
                             return false;
 

@@ -68,10 +68,10 @@ namespace System.Numerics.Tensors
         private TensorShape(nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, TensorFlags flags)
         {
             int rank = lengths.Length;
-
+            ReadOnlySpan<nint> rank0Lengths = [0];
             if (rank == 0)
             {
-                lengths = [0];
+                lengths = rank0Lengths;
                 rank = 1;
             }
             Debug.Assert(rank >= 1);
@@ -494,7 +494,7 @@ namespace System.Numerics.Tensors
                 // which case we still need to keep incrementing the index but without
                 // adjusting the linearOffset
 
-                if (index >= 0)//destinationLengths[destinationRankIndex])
+                if (index >= 0)
                 {
                     if (index >= length)
                     {
@@ -504,7 +504,7 @@ namespace System.Numerics.Tensors
                     return linearOffset;
                 }
 
-                indexes[destinationRankIndex] = lengths[rankIndex];
+                indexes[destinationRankIndex] = destinationLengths[destinationRankIndex] - 1;
                 linearOffset += (stride * length);
             }
 

@@ -11,6 +11,9 @@
     <Compile Include="PInvokeUnhandled.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

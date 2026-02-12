@@ -82,7 +82,7 @@ namespace System.Reflection
                 ReferenceEquals(ei.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_token, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
         #endregion
 
         #region ICustomAttributeProvider
@@ -138,7 +138,7 @@ namespace System.Reflection
             List<MethodInfo> ret = new List<MethodInfo>();
 
             if (m_otherMethod is null)
-                return Array.Empty<MethodInfo>();
+                return [];
 
             for (int i = 0; i < m_otherMethod.Length; i++)
             {

@@ -157,7 +157,7 @@ namespace ILCompiler
                 AppendName(sb, type.ElementType, options);
                 sb.Append('[');
                 if (type.Rank > 1)
-                    sb.Append(new string(',', type.Rank - 1));
+                    sb.Append(',', type.Rank - 1);
                 sb.Append(']');
                 return default;
             }

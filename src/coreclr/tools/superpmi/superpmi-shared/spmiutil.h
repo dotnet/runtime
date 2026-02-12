@@ -8,6 +8,12 @@
 #define _SPMIUtil
 
 #include "methodcontext.h"
+#ifdef TARGET_WINDOWS
+#define GET_PROC_ADDRESS ::GetProcAddress
+#else
+#include <dlfcn.h>
+#define GET_PROC_ADDRESS ::dlsym
+#endif
 
 bool BreakOnDebugBreakorAV();
 void SetBreakOnDebugBreakOrAV(bool value);
@@ -21,13 +27,15 @@ char* GetEnvironmentVariableWithDefaultA(const char* envVarName, const char* def
 
 WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* defaultValue = nullptr);
 
-#ifdef TARGET_UNIX
-LPSTR GetCommandLineA();
-#endif // TARGET_UNIX
+const char* GetEnvWithDefault(const char* envVarName, const char* defaultValue = nullptr);
 
-bool LoadRealJitLib(HMODULE& realJit, WCHAR* realJitPath);
+std::string GetProcessCommandLine();
 
-WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension);
+bool LoadRealJitLib(HMODULE& realJit, const std::string& realJitPath);
+
+std::string GetResultFileName(const std::string& folderPath,
+                              const std::string& fileName,
+                              const std::string& extension);
 
 // SuperPMI stores handles as unsigned 64-bit integers, no matter the platform the collection happens on
 // (32 or 64 bit). Handles are defined as pointers. We need to be careful when converting from a handle
@@ -55,7 +63,8 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_ARM64,
     SPMI_TARGET_ARCHITECTURE_ARM,
     SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
-    SPMI_TARGET_ARCHITECTURE_RISCV64
+    SPMI_TARGET_ARCHITECTURE_RISCV64,
+    SPMI_TARGET_ARCHITECTURE_WASM32,
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -64,7 +73,8 @@ void SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE spmiTargetArchitecture);
 inline bool IsSpmiTarget32Bit()
 {
     return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_X86) ||
-           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM);
+           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM) ||
+           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM32);
 }
 
 inline bool IsSpmiTarget64Bit()
@@ -97,8 +107,8 @@ bool Is32BitThumb2Instruction(UINT16* p);
 UINT32 ExtractArm32MovImm(UINT32 instr);
 void PutArm32MovtConstant(UINT32* p, unsigned con);
 
-INT64 GetRiscV64AuipcItype(UINT32 * pCode);
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype);
 
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])

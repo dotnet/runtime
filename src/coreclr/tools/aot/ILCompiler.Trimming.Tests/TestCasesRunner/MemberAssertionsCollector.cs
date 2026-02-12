@@ -89,7 +89,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 if (t.GetName() == nameof(BaseMemberAssertionAttribute))
                     return true;
 
-                t = t.MetadataBaseType;
+                t = t.BaseType;
             }
 
             return false;
@@ -164,7 +164,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         private static IEnumerable<CustomAttribute> GetCustomAttributes(EcmaType type)
         {
             var metadataReader = type.MetadataReader;
-            return GetCustomAttributes(metadataReader.GetTypeDefinition(type.Handle).GetCustomAttributes(), metadataReader, type.EcmaModule);
+            return GetCustomAttributes(metadataReader.GetTypeDefinition(type.Handle).GetCustomAttributes(), metadataReader, type.Module);
         }
 
         private static IEnumerable<CustomAttribute> GetCustomAttributes(EcmaMethod method)
@@ -181,12 +181,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         private static IEnumerable<CustomAttribute> GetCustomAttributes(EcmaType type, PropertyPseudoDesc prop)
         {
-            return GetCustomAttributes(prop.GetCustomAttributes, type.MetadataReader, type.EcmaModule);
+            return GetCustomAttributes(prop.GetCustomAttributes, type.MetadataReader, type.Module);
         }
 
         private static IEnumerable<CustomAttribute> GetCustomAttributes(EcmaType type, EventPseudoDesc @event)
         {
-            return GetCustomAttributes(@event.GetCustomAttributes, type.MetadataReader, type.EcmaModule);
+            return GetCustomAttributes(@event.GetCustomAttributes, type.MetadataReader, type.Module);
         }
 
         private static IEnumerable<CustomAttribute> GetCustomAttributes(CustomAttributeHandleCollection attributeHandles, MetadataReader metadataReader, EcmaModule module)

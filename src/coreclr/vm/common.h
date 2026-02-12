@@ -68,6 +68,8 @@
 #include <time.h>
 #include <limits.h>
 #include <assert.h>
+#include <cstdint>
+#include <functional>
 
 #include <olectl.h>
 
@@ -91,7 +93,7 @@ using std::min;
 
 #include "stdmacros.h"
 
-#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:I64(0xCCCCCCCCCCCCCCCC)))
+#define POISONC ((UINT_PTR)((sizeof(int *) == 4)?0xCCCCCCCCL:0xCCCCCCCCCCCCCCCCLL))
 
 #include "switches.h"
 #include "holder.h"
@@ -234,7 +236,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 // src/vm
 #include "gcenv.interlocked.h"
@@ -270,7 +272,6 @@ namespace Loader
 #include "eehash.h"
 
 #include "vars.hpp"
-#include "eventstore.hpp"
 
 #include "synch.h"
 #include "regdisp.h"
@@ -278,7 +279,6 @@ namespace Loader
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
 #include "peassembly.h"

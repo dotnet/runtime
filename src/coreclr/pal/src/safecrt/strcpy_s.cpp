@@ -4,11 +4,8 @@
 /***
 *strcpy_s.c - contains strcpy_s()
 *
-
-*
 *Purpose:
 *   strcpy_s() copies one string onto another.
-*
 *******************************************************************************/
 
 #include <string.h>
@@ -18,7 +15,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME strcpy_s
 #define _CHAR char
 #define _DEST _Dst

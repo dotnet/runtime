@@ -464,9 +464,8 @@ namespace System.Security.Cryptography.Cose.Tests
             }
         }
 
-        [ThreadStatic]
-        private static TestKeyRing? t_threadKeys;
-        private static TestKeyRing ThreadKeys => (t_threadKeys ??= new TestKeyRing());
+        [field: ThreadStatic]
+        private static TestKeyRing ThreadKeys => field ??= new();
 
         internal static ECDsa ES256 => ThreadKeys.ES256;
         internal static ECDsa ES384 => ThreadKeys.ES384;
