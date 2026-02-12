@@ -37,7 +37,7 @@ arm_code(void *simple lzma_attribute((__unused__)),
 			dest >>= 2;
 			buffer[i + 2] = (dest >> 16);
 			buffer[i + 1] = (dest >> 8);
-			buffer[i + 0] = dest;
+			buffer[i + 0] = (uint8_t)dest;
 		}
 	}
 

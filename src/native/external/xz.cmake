@@ -52,5 +52,4 @@ endif()
 #
 # silence the warnings for now, we will need to fix these in code and upstream the fixes
 #
-target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>)
