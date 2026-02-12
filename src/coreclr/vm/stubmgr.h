@@ -504,7 +504,7 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
 //
@@ -542,7 +542,7 @@ class JumpStubStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
 #endif
 };
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
