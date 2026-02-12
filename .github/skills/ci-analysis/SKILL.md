@@ -213,7 +213,7 @@ Run with `-ShowLogs` for detailed failure info.
 
 ### Step 2: Analyze results
 
-1. **Check Build Analysis** — If the Build Analysis GitHub check is **green**, all failures matched known issues and it's safe to retry. If it's **red**, some failures are unaccounted for — you must identify which failing jobs are covered by known issues and which are not. Never say "all failures are known issues" when Build Analysis is red.
+1. **Check Build Analysis** — If the Build Analysis GitHub check is **green**, all failures matched known issues and it's safe to retry. If it's **red**, some failures are unaccounted for — you must identify which failing jobs are covered by known issues and which are not. For 3+ failures, use SQL tracking to avoid missed matches (see [references/sql-tracking.md](references/sql-tracking.md)).
 2. **Correlate with PR changes** — Same files failing = likely PR-related
 3. **Compare with baseline** — If a test passes on the target branch but fails on the PR, compare Helix binlogs. See [references/binlog-comparison.md](references/binlog-comparison.md) — **delegate binlog download/extraction to subagents** to avoid burning context on mechanical work.
 4. **Check build progression** — If the PR has multiple builds (multiple pushes), check whether earlier builds passed. A failure that appeared after a specific push narrows the investigation to those commits. See [references/build-progression-analysis.md](references/build-progression-analysis.md). Present findings as facts, not fix recommendations.
@@ -247,6 +247,7 @@ Before stating a failure's cause, verify your claim:
 - **Subagent delegation patterns**: See [references/delegation-patterns.md](references/delegation-patterns.md)
 - **Azure CLI deep investigation**: See [references/azure-cli.md](references/azure-cli.md)
 - **Manual investigation steps**: See [references/manual-investigation.md](references/manual-investigation.md)
+- **SQL tracking for investigations**: See [references/sql-tracking.md](references/sql-tracking.md)
 - **AzDO/Helix details**: See [references/azdo-helix-reference.md](references/azdo-helix-reference.md)
 
 ## Tips
