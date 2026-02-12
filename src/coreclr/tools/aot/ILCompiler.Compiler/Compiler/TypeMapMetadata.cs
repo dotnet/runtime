@@ -107,6 +107,8 @@ namespace ILCompiler
 
             public void MergePendingMap(Map pendingMap)
             {
+                // Don't waste time adding entries from the pending map if we already have an exception stub,
+                // as the exception stub means the map is invalid and the entries won't be used anyway.
                 if (_associatedTypeMapExceptionStub is null)
                 {
                     if (pendingMap._associatedTypeMapExceptionStub is not null)
@@ -121,7 +123,15 @@ namespace ILCompiler
                         }
                     }
                 }
+                else if (_associatedTypeMapExceptionStub.Exception is not TypeSystemException.FileNotFoundException &&
+                         pendingMap._associatedTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
+                {
+                    // If the pending map has a FileNotFoundException, it takes precedence over our existing exception stub, so use it instead.
+                    _associatedTypeMapExceptionStub = pendingMap._associatedTypeMapExceptionStub;
+                }
 
+                // Don't waste time adding entries from the pending map if we already have an exception stub,
+                // as the exception stub means the map is invalid and the entries won't be used anyway.
                 if (_externalTypeMapExceptionStub is null)
                 {
                     if (pendingMap._externalTypeMapExceptionStub is not null)
@@ -135,6 +145,12 @@ namespace ILCompiler
                             AddExternalTypeMapEntry(kvp.Key, kvp.Value.type, kvp.Value.trimmingTarget);
                         }
                     }
+                }
+                else if (_externalTypeMapExceptionStub.Exception is not TypeSystemException.FileNotFoundException &&
+                         pendingMap._externalTypeMapExceptionStub?.Exception is TypeSystemException.FileNotFoundException)
+                {
+                    // If the pending map has a FileNotFoundException, it takes precedence over our existing exception stub, so use it instead.
+                    _externalTypeMapExceptionStub = pendingMap._externalTypeMapExceptionStub;
                 }
             }
 
@@ -337,7 +353,6 @@ namespace ILCompiler
                     // We can hit this case when the type map group has no entries in the current assembly.
                     scannedAssemblies.Add((currentAssembly, currentTypeMapGroup));
                 }
-
 
                 void ProcessTypeMapAssemblyTargetAttribute(CustomAttributeValue<TypeDesc> attrValue, Map typeMapState)
                 {

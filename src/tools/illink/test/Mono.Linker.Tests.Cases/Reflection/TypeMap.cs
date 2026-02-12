@@ -18,6 +18,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedProxyTypeMap>))]
 [assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedExternalTypeMap>))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedWithoutAssemblyTargetUniverse>))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsTarget", typeof(TargetAndTrimTarget), typeof(TargetAndTrimTarget))]
 [assembly: TypeMap<UsedTypeMap>("TrimTargetIsUnrelated", typeof(TargetType), typeof(TrimTarget))]
 [assembly: TypeMap<UsedTypeMap>(nameof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClassTarget), typeof(AllocatedNoTypeCheckClass))]
@@ -53,6 +54,8 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
+[assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
+
 [assembly: KeptAttributeAttribute(typeof(TypeMapAssemblyTargetAttribute<UsedTypeMap>))]
 [assembly: TypeMapAssemblyTarget<UsedTypeMap>("library")]
 // TypeMapAssemblyTarget is kept regardless of which type map the program needs (External or Proxy)
@@ -86,9 +89,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptMemberInAssembly("library.dll", typeof(ProxySource1), ".ctor()")]
     [KeptTypeInAssembly("library.dll", typeof(ProxyTarget1))]
 
+    // For correctness, NativeAOT only preserves type map entries in a given assembly when the type map is referenced
+    // and the given assembly is referenced with TypeMapAssemblyTargetAttribute with the given type map group.
+    // This is required for the correct runtime behavior.
+    // For simplicity, we do not do the same for ILLinker as the runtime behavior will be correct in CoreCLR regardless
+    // and in the vast majority of user scenarios, assemblies will be correctly referenced with TypeMapAssemblyTargetAttribute.
+    // Nearly every case where this behavior would kick in is a bug in user code.
+    [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional3), Tool = Tool.Trimmer)]
+
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UsedTypeMapUniverse>))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UsedTypeMapUniverse>))]
     [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssemblyTargetAttribute<UsedTypeMapUniverse>))]
+    [KeptAttributeInAssembly("library.dll", typeof(TypeMapAssemblyTargetAttribute<UsedWithoutAssemblyTargetUniverse>))]
     [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAttribute<UnusedTypeMapUniverse>))]
     [RemovedAttributeInAssembly("library.dll", typeof(TypeMapAssociationAttribute<UnusedTypeMapUniverse>))]
 
@@ -524,4 +536,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class UsedProxyTarget;
     [Kept]
     class UsedProxyTarget2;
+
+    [Kept]
+    class PreservedTargetType;
 }
