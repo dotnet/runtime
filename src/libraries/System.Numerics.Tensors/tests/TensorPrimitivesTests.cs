@@ -1135,6 +1135,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
 
+#if !SNT_NET8_TESTS
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public void IndexOfMax_NoIntegerOverflow()
         {
@@ -1179,6 +1180,7 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(65537, TensorPrimitives.IndexOfMax<ushort>(data));
             }
         }
+#endif
         #endregion
 
         #region IndexOfMaxMagnitude
