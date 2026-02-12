@@ -332,7 +332,7 @@ fi
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
 run_with_timeout() {
-  local timeout_sec=$(( $1 / 1000 ))
+  local timeout_sec=%24(( $1 / 1000 ))
   shift
   local cmd=("$@")
 
