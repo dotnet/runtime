@@ -441,7 +441,7 @@ namespace System.Net.NameResolution.Tests
         // 3. Different systems configure localhost differently
         // The key requirement is that localhost subdomains return loopback addresses.
         [Fact]
-        public async Task DnsGetHostEntry_LocalhostSubdomain_ReturnsLoopback()
+        public async Task DnsGetHostEntry_LocalhostAndSubdomain_BothReturnLoopback()
         {
             IPHostEntry localhostEntry = Dns.GetHostEntry("localhost");
             IPHostEntry subdomainEntry = Dns.GetHostEntry("foo.localhost");

@@ -229,6 +229,8 @@ namespace System.Net.NameResolution.Tests
         [InlineData("foo.localhost")]
         [InlineData("bar.foo.localhost")]
         [InlineData("test.localhost")]
+        [InlineData("FOO.LOCALHOST")]
+        [InlineData("Test.LocalHost")]
         public async Task DnsGetHostAddresses_LocalhostSubdomain_ReturnsLoopback(string hostName)
         {
             // The subdomain goes to OS resolver first. If it fails (likely on most systems),
@@ -275,7 +277,7 @@ namespace System.Net.NameResolution.Tests
         // 3. Different systems configure localhost differently
         // The key requirement is that localhost subdomains return loopback addresses.
         [Fact]
-        public async Task DnsGetHostAddresses_LocalhostSubdomain_ReturnsLoopback()
+        public async Task DnsGetHostAddresses_LocalhostAndSubdomain_BothReturnLoopback()
         {
             IPAddress[] localhostAddresses = Dns.GetHostAddresses("localhost");
             IPAddress[] subdomainAddresses = Dns.GetHostAddresses("foo.localhost");
@@ -308,6 +310,43 @@ namespace System.Net.NameResolution.Tests
 
             addresses = await Dns.GetHostAddressesAsync(hostName);
             Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: Ensure names that look similar but are not reserved are still resolved via OS.
+        [Theory]
+        [InlineData("notlocalhost")]
+        [InlineData("localhostfoo")]
+        [InlineData("invalidname")]
+        [InlineData("testinvalid")]
+        public async Task DnsGetHostAddresses_SimilarButNotReserved_ThrowsSocketException(string hostName)
+        {
+            Assert.ThrowsAny<SocketException>(() => Dns.GetHostAddresses(hostName));
+            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostAddressesAsync(hostName));
+        }
+
+        // Malformed hostnames should not be treated as RFC 6761 reserved names.
+        [Theory]
+        [InlineData(".localhost")]
+        [InlineData("foo..localhost")]
+        [InlineData(".invalid")]
+        [InlineData("test..invalid")]
+        public async Task DnsGetHostAddresses_MalformedReservedName_NotTreatedAsReserved(string hostName)
+        {
+            Assert.ThrowsAny<Exception>(() => Dns.GetHostAddresses(hostName));
+            await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostAddressesAsync(hostName));
+        }
+
+        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
+        [Fact]
+        public async Task DnsGetHostAddresses_LocalhostWithTrailingDot_ReturnsLoopback()
+        {
+            IPAddress[] addresses = Dns.GetHostAddresses("localhost.");
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            addresses = await Dns.GetHostAddressesAsync("localhost.");
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
             Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
         }
     }
