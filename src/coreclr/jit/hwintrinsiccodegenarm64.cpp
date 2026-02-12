@@ -2361,8 +2361,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else if (intrin.id == NI_Sve2_GatherVectorNonTemporal)
                     {
-                        assert(emitActualTypeSize(intrin.baseType) == 8);
-                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 3, opt);
+                        emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+                        if (baseSize == EA_4BYTE)
+                        {
+                            GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 2, opt);
+                        }
+                        else
+                        {
+                            assert(baseSize == EA_8BYTE);
+                            GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 3, opt);
+                        }
                     }
 
                     // op2Reg and op3Reg are swapped
