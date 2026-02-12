@@ -325,6 +325,7 @@ struct MethodTableAuxiliaryData
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
+        // RuntimeTypeSystem cDAC contract depends on the values of enum_flag_Initialized, enum_flag_IsInitError, and enum_flag_IsNotFullyLoaded.
 
         enum_flag_Initialized               = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
@@ -3713,7 +3714,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        //
+        // RuntimeTypeSystem cDAC contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state
@@ -3787,6 +3788,12 @@ private:
 
         // The following bits describe mutually exclusive locations of the type
         // in the type hierarchy.
+
+        // RuntimeTypeSystem cDAC contract depends on the values of:
+        // enum_flag_Category_Mask, enum_flag_Category_ElementTypeMask, enum_flag_Category_Array_Mask,
+        // enum_flag_Category_IfArrayThenSzArray, enum_flag_Category_Array, enum_flag_Category_ValueType,
+        // enum_flag_Category_Nullable, enum_flag_Category_PrimitiveValueType, enum_flag_Category_TruePrimitive,
+        // enum_flag_Category_Interface, enum_flag_Collectible, enum_flag_ContainsGCPointers, and enum_flag_HasComponentSize.
         enum_flag_Category_Mask             = 0x000F0000,
 
         enum_flag_Category_Class            = 0x00000000,
@@ -3851,6 +3858,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
+        // RuntimeTypeSystem cDAC contract depends on the value of enum_flag_DynamicStatics.
 
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_DynamicStatics            = 0x0002,
@@ -3977,6 +3985,7 @@ private:
     PTR_MethodTableAuxiliaryData m_pAuxiliaryData;
 
     // The value of lowest two bits describe what the union contains
+    // RuntimeTypeSystem cDAC contract depends on the values of UNION_EECLASS and UNION_METHODTABLE.
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
         UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.

@@ -43,6 +43,7 @@
 
 class Thread;
 
+// Thread cDAC contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
 enum class TLSIndexType
 {
     NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address

@@ -499,6 +499,7 @@ public:
     // debugging or GC.  -- That's not stricly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
+    // Thread cDAC contract depends on the values of TS_Unknown, TS_Hijacked, TS_Background, TS_Unstarted, TS_Dead, and TS_TPWorkerThread.
     //
     enum ThreadState
     {

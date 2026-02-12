@@ -387,6 +387,7 @@ class PEDecoder
     // Instance members
     // ------------------------------------------------------------
 
+    // Loader cDAC contract depends on the value of FLAG_MAPPED.
     enum
     {
         FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)

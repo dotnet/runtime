@@ -869,6 +869,8 @@ typedef char * MDUTF8STR;
 //
 //*****************************************************************************
 
+// RuntimeTypeSystem cDAC contract depends on the values of this enum.
+
 typedef enum CorElementType
 {
     ELEMENT_TYPE_END            = 0x00,

@@ -177,6 +177,7 @@ FORCEINLINE mdToken MergeToken(UINT16 tokrange, UINT16 tokremainder)
 // so that when a method is replaced its relevant flags are updated
 
 // Used in MethodDesc
+// RuntimeTypeSystem cDAC contract depends on the values of mcIL, mcFCall, mcPInvoke, mcEEImpl, mcArray, mcInstantiated, mcComInterop, and mcDynamic.
 enum MethodClassification
 {
     mcIL        = 0, // IL
@@ -196,6 +197,8 @@ enum MethodClassification
 
 
 // All flags in the MethodDesc now reside in a single 16-bit field.
+// RuntimeTypeSystem cDAC contract depends on the values of mdfClassification, mdfHasNonVtableSlot, mdfMethodImpl,
+// mdfHasNativeCodeSlot, and mdfHasAsyncMethodData.
 
 enum MethodDescFlags
 {
@@ -1823,6 +1826,7 @@ protected:
     {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
+        // RuntimeTypeSystem cDAC contract depends on the values of enum_flag3_HasStableEntryPoint, enum_flag3_HasPrecode, enum_flag3_IsUnboxingStub, and enum_flag3_IsEligibleForTieredCompilation.
         enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
         // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set in non-portable entrypoint scenarios.
@@ -1837,6 +1841,7 @@ protected:
 
     BYTE        m_chunkIndex;
 
+    // RuntimeTypeSystem cDAC contract depends on the value of enum_flag4_TemporaryEntryPointAssigned.
     enum {
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
@@ -2797,6 +2802,7 @@ public:
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
 
+    // RuntimeTypeSystem cDAC contract depends on the values of StubPInvokeVarArg and StubCLRToCOMInterop.
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
@@ -2830,6 +2836,7 @@ public:
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
+        // RuntimeTypeSystem cDAC contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -3748,6 +3755,7 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     PTR_Dictionary m_pPerInstInfo;  //SHARED
 
 private:
+    // RuntimeTypeSystem cDAC contract depends on the values of KindMask, GenericMethodDefinition, UnsharedMethodInstantiation, SharedMethodInstantiation, and WrapperStubWithInstantiations.
     enum
     {
         KindMask                        = 0x07,

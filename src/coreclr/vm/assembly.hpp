@@ -62,6 +62,7 @@ public:
 
     // Loaded means that the file can be used passively. This includes loading types, reflection,
     // and jitting.
+    // Loader cDAC contract depends on the logic of this method.
     bool IsLoaded() { LIMITED_METHOD_DAC_CONTRACT; return m_level >= FILE_LOAD_DELIVER_EVENTS; }
 
     // Active means that the file can be used actively. This includes code execution, static field
