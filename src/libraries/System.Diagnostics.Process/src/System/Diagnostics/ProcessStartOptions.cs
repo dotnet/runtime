@@ -17,7 +17,7 @@ namespace System.Diagnostics
     {
         private readonly string _fileName;
         private IList<string>? _arguments;
-        private DictionaryWrapper? _environment;
+        private Dictionary<string, string?>? _environment;
         private IList<SafeHandle>? _inheritedHandles;
 
         /// <summary>
@@ -52,9 +52,9 @@ namespace System.Diagnostics
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
-                    _environment = new DictionaryWrapper(new Dictionary<string, string?>(
+                    _environment = new Dictionary<string, string?>(
                         envVars.Count,
-                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal));
+                        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = envVars.GetEnumerator();
