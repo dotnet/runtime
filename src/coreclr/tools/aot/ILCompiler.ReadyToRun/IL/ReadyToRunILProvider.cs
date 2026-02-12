@@ -269,7 +269,7 @@ namespace Internal.IL
                     return methodIL;
 
                 return NeedsAsyncThunk(amv) ?
-                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, method.GetTargetOfAsyncVariant())
+                    null // Async thunks not supported yet
                     : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create((EcmaMethod)method.GetTargetOfAsyncVariant()));
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
