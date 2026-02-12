@@ -237,17 +237,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         // Attempt to resolve the service. If there's a circular dependency through
                         // a factory function, it will be detected during resolution and throw.
-                        try
-                        {
-                            CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                        }
-                        catch (InvalidOperationException) when (descriptor.Lifetime != ServiceLifetime.Singleton)
-                        {
-                            // If this is not a singleton but is cached at root (e.g., scoped service being
-                            // resolved from root during validation), we can ignore resolution errors here
-                            // as they would be caught by scope validation.
-                            throw;
-                        }
+                        CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
                     }
                 }
             }

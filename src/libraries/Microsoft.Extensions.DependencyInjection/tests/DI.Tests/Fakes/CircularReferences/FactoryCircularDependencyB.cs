@@ -3,6 +3,10 @@
 
 namespace Microsoft.Extensions.DependencyInjection.Tests.Fakes
 {
+    /// <summary>
+    /// Test helper class used with FactoryCircularDependencyA to test factory-based
+    /// circular dependency detection (issue #88390).
+    /// </summary>
     public class FactoryCircularDependencyB
     {
     }

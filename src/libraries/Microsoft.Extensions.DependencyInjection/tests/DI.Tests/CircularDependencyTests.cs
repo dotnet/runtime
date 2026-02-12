@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var services = new ServiceCollection();
             services.AddSingleton<FactoryCircularDependencyA>();
-            services.AddSingleton<FactoryCircularDependencyB>(sp => 
+            services.AddSingleton<FactoryCircularDependencyB>(sp =>
             {
                 // Factory tries to resolve FactoryCircularDependencyA, creating a circle
                 var a = sp.GetRequiredService<FactoryCircularDependencyA>();
@@ -230,19 +230,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 var exception = Assert.Throws<AggregateException>(() =>
                     services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true }));
 
+                // Verify it's a circular dependency error
                 Assert.Contains("circular dependency", exception.ToString(), StringComparison.OrdinalIgnoreCase);
             }
             else
             {
-                // Without ValidateOnBuild, the circular dependency causes a deadlock or stack overflow at resolution time
-                // This test demonstrates the issue - it would hang/deadlock without the fix
+                // Without ValidateOnBuild, build succeeds but resolution fails
                 var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false });
 
-                // This will either throw InvalidOperationException (good) or deadlock/timeout (bad - issue #88390)
-                Assert.ThrowsAny<Exception>(() =>
+                // Resolution should throw InvalidOperationException for circular dependency
+                var exception = Assert.Throws<InvalidOperationException>(() =>
                 {
                     var a = serviceProvider.GetRequiredService<FactoryCircularDependencyA>();
                 });
+
+                // Verify it's a circular dependency error
+                Assert.Contains("circular dependency", exception.Message, StringComparison.OrdinalIgnoreCase);
             }
         }
     }
