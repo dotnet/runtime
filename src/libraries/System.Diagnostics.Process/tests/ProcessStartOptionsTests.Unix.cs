@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartOptions options = new("sh");
             Assert.True(File.Exists(options.FileName));
-            Assert.Equal("/bin/sh", options.FileName);
+            Assert.Equal(Path.GetFullPath("/bin/sh"), options.FileName);
         }
 
         [Fact]

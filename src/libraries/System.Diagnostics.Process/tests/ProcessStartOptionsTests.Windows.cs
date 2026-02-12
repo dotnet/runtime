@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessStartOptionsTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Constructor_ResolvesCmdOnWindows()
         {
             ProcessStartOptions options = new("cmd");
