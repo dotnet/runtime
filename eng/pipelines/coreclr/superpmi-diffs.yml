@@ -54,7 +54,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
-          - osx_arm64
+          - linux_arm64
           - windows_x86
           # Not needed for subsequent steps, but this ensures we get some build
           # coverage of community JITs in CI on JIT PRs.
@@ -106,7 +106,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
           buildConfig: checked
           platforms:
-          - osx_arm64
+          - linux_arm64
           - windows_x86
           helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
