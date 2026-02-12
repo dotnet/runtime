@@ -60,6 +60,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -731,6 +735,17 @@ namespace Internal.JitInterface
         CORINFO_TYPE_COUNT,                         // number of jit types
     }
 
+    // Used by Wasm RyuJIT to represent native WebAssembly types and exchanged via some JIT-EE APIs
+    public enum CorInfoWasmType
+    {
+        CORINFO_WASM_TYPE_VOID = 0x40,
+        CORINFO_WASM_TYPE_V128 = 0x7B,
+        CORINFO_WASM_TYPE_F64  = 0x7C,
+        CORINFO_WASM_TYPE_F32  = 0x7D,
+        CORINFO_WASM_TYPE_I64  = 0x7E,
+        CORINFO_WASM_TYPE_I32  = 0x7F,
+    }
+
     public enum CorInfoIsAccessAllowedResult
     {
         CORINFO_ACCESS_ALLOWED = 0,           // Call allowed
@@ -1126,7 +1141,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
         CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+        CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
         CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
         CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
         CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found
@@ -1142,7 +1157,6 @@ namespace Internal.JitInterface
         CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
         CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
-        CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
         CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
     }
 
@@ -1467,6 +1481,7 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004),
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
         CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
+        CORJIT_R2R_UNSUPPORTED = unchecked((int)0x80000007),
     };
 
     public enum TypeCompareState

@@ -94,6 +94,14 @@ namespace ILAssembler
 
         public void WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames)
         {
+            // Set the assembly handle early since DeclarativeSecurityAttribute needs it
+            // The assembly definition handle is always row 1 (there's only ever one assembly per module)
+            // Assembly table token = 0x20000001
+            if (Assembly is not null)
+            {
+                ((IHasHandle)Assembly).SetHandle(MetadataTokens.EntityHandle(0x20000001));
+            }
+
             // Now that we've seen all of the entities, we can write them out in the correct order.
             // Record the entities in the correct order so they are assigned handles.
             // After this, we'll write out the content of the entities in the correct order.
@@ -109,10 +117,20 @@ namespace ILAssembler
                         // or other rows that would refer to it.
                         if (param.Name is not null
                             || param.MarshallingDescriptor.Count != 0
-                            || param.HasCustomAttributes)
+                            || param.HasCustomAttributes
+                            || param.HasConstant)
                         {
                             RecordEntityInTable(TableIndex.Param, param);
                         }
+                    }
+                    // Record generic parameters for methods
+                    foreach (var genericParam in method.GenericParameters)
+                    {
+                        RecordEntityInTable(TableIndex.GenericParam, genericParam);
+                    }
+                    foreach (var constraint in method.GenericParameterConstraints)
+                    {
+                        RecordEntityInTable(TableIndex.GenericParamConstraint, constraint);
                     }
                 }
                 foreach (var field in type.Fields)
@@ -269,6 +287,11 @@ namespace ILAssembler
                 {
                     builder.AddMarshallingDescriptor(param.Handle, builder.GetOrAddBlob(param.MarshallingDescriptor));
                 }
+
+                if (param.HasConstant)
+                {
+                    builder.AddConstant(param.Handle, param.ConstantValue);
+                }
             }
 
             foreach (InterfaceImplementationEntity impl in GetSeenEntities(TableIndex.InterfaceImpl))
@@ -292,6 +315,21 @@ namespace ILAssembler
                     declSecurity.Parent?.Handle ?? default,
                     declSecurity.Action,
                     builder.GetOrAddBlob(declSecurity.PermissionSet));
+            }
+
+            foreach (CustomAttributeEntity customAttr in GetSeenEntities(TableIndex.CustomAttribute))
+            {
+                EntityHandle parent = customAttr.Owner switch
+                {
+                    AssemblyEntity => EntityHandle.AssemblyDefinition,
+                    ModuleEntity => EntityHandle.ModuleDefinition,
+                    { Handle: var h } => h,
+                    _ => default
+                };
+                builder.AddCustomAttribute(
+                    parent,
+                    customAttr.Constructor.Handle,
+                    builder.GetOrAddBlob(customAttr.Value));
             }
 
             foreach (StandaloneSignatureEntity standaloneSig in GetSeenEntities(TableIndex.StandAloneSig))
@@ -324,6 +362,11 @@ namespace ILAssembler
                 {
                     builder.AddMethodSemantics(prop.Handle, accessor.Semantic, (MethodDefinitionHandle)accessor.Method.Handle);
                 }
+
+                if (prop.HasConstant)
+                {
+                    builder.AddConstant(prop.Handle, prop.ConstantValue);
+                }
             }
 
             foreach (ModuleReferenceEntity moduleRef in GetSeenEntities(TableIndex.ModuleRef))
@@ -349,12 +392,14 @@ namespace ILAssembler
 
             if (Assembly is not null)
             {
+                // Combine the base flags with the architecture bits
+                var assemblyFlags = Assembly.Flags | (AssemblyFlags)((int)Assembly.ProcessorArchitecture << 4);
                 builder.AddAssembly(
                     builder.GetOrAddString(Assembly.Name),
                     Assembly.Version ?? new Version(),
                     Assembly.Culture is null ? default : builder.GetOrAddString(Assembly.Culture),
                     Assembly.PublicKeyOrToken is null ? default : builder.GetOrAddBlob(Assembly.PublicKeyOrToken),
-                    Assembly.Flags,
+                    assemblyFlags,
                     Assembly.HashAlgorithm);
             }
 
@@ -368,11 +413,17 @@ namespace ILAssembler
 
             foreach (ExportedTypeEntity exportedType in GetSeenEntities(TableIndex.ExportedType))
             {
+                // Implementation must be a valid handle type: AssemblyFileHandle, AssemblyReferenceHandle, or ExportedTypeHandle
+                // COMPAT: If implementation is null, skip emitting this exported type
+                if (exportedType.Implementation is null)
+                {
+                    continue;
+                }
                 builder.AddExportedType(
                     exportedType.Attributes,
                     builder.GetOrAddString(exportedType.Namespace),
                     builder.GetOrAddString(exportedType.Name),
-                    exportedType.Implementation?.Handle ?? default,
+                    exportedType.Implementation.Handle,
                     exportedType.TypeDefinitionId);
             }
 
@@ -388,6 +439,22 @@ namespace ILAssembler
             foreach (MethodSpecificationEntity methodSpec in GetSeenEntities(TableIndex.MethodSpec))
             {
                 builder.AddMethodSpecification(methodSpec.Parent.Handle, builder.GetOrAddBlob(methodSpec.Signature));
+            }
+
+            foreach (GenericParameterEntity genericParam in GetSeenEntities(TableIndex.GenericParam))
+            {
+                builder.AddGenericParameter(
+                    genericParam.Owner!.Handle,
+                    genericParam.Attributes,
+                    builder.GetOrAddString(genericParam.Name),
+                    genericParam.Index);
+            }
+
+            foreach (GenericParameterConstraintEntity constraint in GetSeenEntities(TableIndex.GenericParamConstraint))
+            {
+                builder.AddGenericParameterConstraint(
+                    (GenericParameterHandle)constraint.Owner!.Handle,
+                    constraint.BaseType.Handle);
             }
 
             static FieldDefinitionHandle GetFieldHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex)
@@ -407,20 +474,26 @@ namespace ILAssembler
 
             static EntityHandle GetHandleForList(IReadOnlyList<EntityBase> list, IReadOnlyList<EntityBase> listOwner, Func<EntityBase, IReadOnlyList<EntityBase>> getList, int ownerIndex, TableIndex tokenType)
             {
-                // Return the first entry in the list.
-                // If the list is empty, return the start of the next list.
+                // Return the first entry in the list that has a handle.
+                // If no item has a handle, return the start of the next list.
                 // If there is no next list, return one past the end of the previous list.
-                if (list.Count != 0 && !list[0].Handle.IsNil)
+                foreach (var item in list)
                 {
-                    return list[0].Handle;
+                    if (!item.Handle.IsNil)
+                    {
+                        return item.Handle;
+                    }
                 }
 
-                for (int i = 0; i < listOwner.Count; i++)
+                for (int i = ownerIndex + 1; i < listOwner.Count; i++)
                 {
                     var otherList = getList(listOwner[i]);
-                    if (otherList.Count != 0 && !otherList[0].Handle.IsNil)
+                    foreach (var item in otherList)
                     {
-                        return otherList[0].Handle;
+                        if (!item.Handle.IsNil)
+                        {
+                            return item.Handle;
+                        }
                     }
                 }
 
@@ -432,8 +505,9 @@ namespace ILAssembler
                         return MetadataTokens.EntityHandle(tokenType, MetadataTokens.GetRowNumber(otherList[otherList.Count - 1].Handle) + 1);
                     }
                 }
-                // If all lists are empty, return a nil handle for the right table
-                return MetadataTokens.EntityHandle(tokenType, 0);
+                // If all lists are empty, return row 1 (first potential entry).
+                // ECMA-335 metadata rows are 1-indexed, so row 0 is invalid.
+                return MetadataTokens.EntityHandle(tokenType, 1);
             }
         }
 
@@ -487,14 +561,18 @@ namespace ILAssembler
 
         private TypeReferenceEntity ResolveFromCoreAssembly(string typeName)
         {
-            // Match native ilasm behavior: check for assembly refs in order of preference,
-            // then fall back to creating mscorlib if none found
-            AssemblyReferenceEntity coreAsmRef = FindAssemblyReference("System.Private.CoreLib")
+            // Check for assembly refs in order of preference then fall back to creating mscorlib if none found
+            AssemblyReferenceEntity coreAsmRef = GetCoreLibAssemblyReference();
+            return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
+        }
+
+        public AssemblyReferenceEntity GetCoreLibAssemblyReference()
+        {
+            return FindAssemblyReference("System.Private.CoreLib")
                 ?? FindAssemblyReference("System.Runtime")
                 ?? FindAssemblyReference("mscorlib")
                 ?? FindAssemblyReference("netstandard")
                 ?? GetOrCreateAssemblyReference("mscorlib", new Version(4, 0), culture: null, publicKeyOrToken: null, 0, ProcessorArchitecture.None);
-            return GetOrCreateTypeReference(coreAsmRef, new TypeName(null, typeName));
         }
 
         public interface IHasHandle
@@ -1020,8 +1098,10 @@ namespace ILAssembler
 
         public ExportedTypeEntity GetOrCreateExportedType(EntityBase? implementation, string @namespace, string name, Action<ExportedTypeEntity> onCreateType)
         {
-            // We only key on the implementation if the type is nested.
-            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, key.Item1), onCreateType);
+            // We only key on the implementation if the type is nested (ExportedTypeEntity).
+            // For forwarders, implementation is AssemblyReferenceEntity which is not used in the key.
+            // However, we need to pass the actual implementation to the entity constructor.
+            return GetOrCreateEntity((implementation as ExportedTypeEntity, @namespace, name), TableIndex.ExportedType, _seenExportedTypes, (key) => new(key.Item3, key.Item2, implementation), onCreateType);
         }
 
         public ExportedTypeEntity? FindExportedType(ExportedTypeEntity? containingType, string @namespace, string @name)
@@ -1232,6 +1312,26 @@ namespace ILAssembler
             /// Debug information for this method (sequence points, document).
             /// </summary>
             public MethodDebugInfo DebugInfo { get; } = new();
+
+            /// <summary>
+            /// Export ordinal for this method (from .export directive). -1 means not exported.
+            /// </summary>
+            public int ExportOrdinal { get; set; } = -1;
+
+            /// <summary>
+            /// Export alias name (from .export [n] as alias). Null means use method name.
+            /// </summary>
+            public string? ExportAlias { get; set; }
+
+            /// <summary>
+            /// 1-based VTable entry index (from .vtentry directive). 0 means not in vtable.
+            /// </summary>
+            public int VTableEntry { get; set; }
+
+            /// <summary>
+            /// 1-based slot within the VTable entry (from .vtentry directive). 0 means not in vtable.
+            /// </summary>
+            public int VTableSlot { get; set; }
         }
 
         public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
@@ -1241,6 +1341,8 @@ namespace ILAssembler
             public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
             public int Sequence { get; } = sequence;
+            public bool HasConstant { get; set; }
+            public object? ConstantValue { get; set; }
         }
 
         public sealed class MemberReferenceEntity(EntityBase parent, string name, BlobBuilder signature) : EntityBase
@@ -1342,9 +1444,11 @@ namespace ILAssembler
 
         public sealed class PropertyEntity(PropertyAttributes attributes, BlobBuilder type, string name) : EntityBase
         {
-            public PropertyAttributes Attributes { get; } = attributes;
+            public PropertyAttributes Attributes { get; set; } = attributes;
             public BlobBuilder Type { get; } = type;
             public string Name { get; } = name;
+            public bool HasConstant { get; set; }
+            public object? ConstantValue { get; set; }
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();
         }

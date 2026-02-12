@@ -1433,7 +1433,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 // -------------------------------------------------------
 // JumpStub stubs
 //
@@ -1482,7 +1482,7 @@ BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
 
     return TRUE;
 }
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -1546,10 +1546,10 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
@@ -2158,6 +2158,86 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
 
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
+#ifndef DACCESS_COMPILE
+
+/* static */
+void AsyncThunkStubManager::Init()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    StubManager::AddStubManager(new AsyncThunkStubManager());
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
+BOOL AsyncThunkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+
+    return (pMD != NULL) && (pMD->IsAsyncThunkMethod());
+}
+
+BOOL AsyncThunkStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LOG((LF_CORDB, LL_EVERYTHING, "AsyncThunkStubManager::DoTraceStub called\n"));
+
+#ifndef DACCESS_COMPILE
+     _ASSERTE(CheckIsStub_Internal(stubStartAddress));
+
+    trace->InitForManagerPush(stubStartAddress, this);
+
+    LOG_TRACE_DESTINATION(trace, stubStartAddress, "AsyncThunkStubManager::DoTraceStub");
+
+    return TRUE;
+
+#else // !DACCESS_COMPILE
+    trace->InitForOther((PCODE)NULL);
+    return FALSE;
+
+#endif // !DACCESS_COMPILE
+}
+
+#ifndef DACCESS_COMPILE
+
+BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
+                                         TraceDestination *trace,
+                                         T_CONTEXT *pContext,
+                                         BYTE **pRetAddr)
+{
+    PCODE stubIP = GetIP(pContext);
+    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
+
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
+    if (pMD->IsAsyncThunkMethod())
+    {
+        MethodDesc* pOtherMD = pMD->GetAsyncOtherVariant();
+        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+
+        LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
+        PCODE target = GetStubTarget(pOtherMD);
+        if (target == (PCODE)NULL)
+        {
+            trace->InitForUnjittedMethod(pOtherMD);
+            return TRUE;
+        }
+
+        trace->InitForManaged(target);
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif //!DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 
@@ -2182,7 +2262,7 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     GetRangeList()->EnumMemoryRegions(flags);
 }
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 void
 JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2191,7 +2271,7 @@ JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
 }
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -2241,5 +2321,13 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p TailCallStubManager\n", dac_cast<TADDR>(this)));
 }
 #endif
+
+void AsyncThunkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    WRAPPER_NO_CONTRACT;
+    DAC_ENUM_VTHIS();
+    EMEM_OUT(("MEM: %p AsyncThunkStubManager\n", dac_cast<TADDR>(this)));
+}
 
 #endif // #ifdef DACCESS_COMPILE
