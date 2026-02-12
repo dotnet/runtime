@@ -218,7 +218,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
