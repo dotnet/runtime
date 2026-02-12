@@ -1085,7 +1085,8 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
             // we cannot resolve to an Async variant in such case.
             // return NULL, so that caller would re-resolve as a regular method call
-            if (pMD->ReturnsTaskOrValueTask())
+            bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
+            if (allowAsyncVariant)
             {
                 bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
                 if (!isDirect)
@@ -1106,14 +1107,11 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                     // Async variant would be a thunk. Do not resolve direct calls
                     // to async thunks. That just creates and JITs unnecessary
                     // thunks, and the thunks are harder for the JIT to optimize.
-                    pMD = NULL;
-                }
-                else
-                {
-                    pMD = pMD->GetAsyncVariant(/*allowInstParam*/FALSE);
+                    allowAsyncVariant = false;
                 }
             }
 
+            pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             break;
 
         default:

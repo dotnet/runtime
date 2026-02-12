@@ -6749,7 +6749,9 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
     if (m_resolvedAsyncCallToken.hMethod == NULL)
     {
         return false;
@@ -6818,7 +6820,9 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
     if (m_resolvedAsyncCallToken.hMethod == NULL)
     {
         return false;
@@ -6893,7 +6897,9 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
     if (m_resolvedAsyncCallToken.hMethod == NULL)
     {
         return false;
@@ -6931,7 +6937,9 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
     if (m_resolvedAsyncCallToken.hMethod == NULL)
     {
         return false;

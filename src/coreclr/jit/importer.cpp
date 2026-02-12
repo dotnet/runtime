@@ -9009,6 +9009,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
                         if (codeAddrAfterMatch != nullptr)
                         {
+                            JITDUMP("Recognized await%s\n", configVal == 0 ? " (with ConfigureAwait(false))" : "");
+
                             isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
                             if (configVal != 0)
@@ -9031,10 +9033,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else
                         {
-                            // This can happen in rare cases when the Task-returning method is not a runtime Async
-                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument. Treat
-                            // that as a regular call that is Awaited
+                            // This can happen in cases when the Task-returning method is not a runtime Async
+                            // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
+                            // It can also happen generally if the VM does not think using the async entry point
+                            // is worth it. Treat these as a regular call that is Awaited.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            isAwait = false;
+
+                            JITDUMP("No async variant provided by VM, treating as regular call that is awaited\n");
                         }
                     }
                     else
