@@ -44,12 +44,12 @@ enum { OPT_BLENDED,
     OPT_DEFAULT = OPT_BLENDED };
 
 enum ClrModifiableAssemblies {
-	/* modifiable assemblies are implicitly disabled */
-	MODIFIABLE_ASSM_UNSET = 0,
-	/* modifiable assemblies are explicitly disabled */
-	MODIFIABLE_ASSM_NONE = 1,
-	/* assemblies with the Debug flag are modifiable */
-	MODIFIABLE_ASSM_DEBUG = 2,
+    /* modifiable assemblies are implicitly disabled */
+    MODIFIABLE_ASSM_UNSET = 0,
+    /* modifiable assemblies are explicitly disabled */
+    MODIFIABLE_ASSM_NONE = 1,
+    /* assemblies with the Debug flag are modifiable */
+    MODIFIABLE_ASSM_DEBUG = 2,
 };
 
 enum ParseCtl {

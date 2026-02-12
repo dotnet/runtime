@@ -22,6 +22,9 @@ namespace System.Reflection.Metadata
         public static bool IsSupported => (IsModifiableAssembliesSet || IsRemoteExecutorSupported) &&
             (!IsMonoRuntime || IsSupportedMonoConfiguration);
 
+        /// true if RemoteExecutor is available and the runtime supports metadata updates.
+        public static bool IsRemoteExecutorSupportedAndFeatureCapable => IsSupported && IsRemoteExecutorSupported;
+
         /// true if the current runtime was not launched with the appropriate settings for applying
         /// updates (DOTNET_MODIFIABLE_ASSEMBLIES unset), but we can use the remote executor to
         /// launch a child process that has the right setting.

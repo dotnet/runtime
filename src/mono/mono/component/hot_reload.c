@@ -372,8 +372,10 @@ hot_reload_update_enabled_slow_check (char **env_invalid_val_out)
 	char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
 	if (val && !g_strcasecmp (val, "debug")) {
 		modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+		g_free (val);
 	} else if (val && !g_strcasecmp (val, "none")) {
 		modifiable = MONO_MODIFIABLE_ASSM_NONE;
+		g_free (val);
 	} else {
 		/* unset or unrecognized value */
 		if (env_invalid_val_out != NULL) {
@@ -392,7 +394,12 @@ assembly_update_supported (MonoImage *image_base, MonoError *error)
 	char *invalid_env_val = NULL;
 	modifiable = hot_reload_update_enabled_slow_check (&invalid_env_val);
 	if (modifiable == MONO_MODIFIABLE_ASSM_UNSET) {
-		mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		if (invalid_env_val == NULL)
+		{
+			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is not set", image_base->name);
+		} else {
+			mono_error_set_invalid_operation (error, "The assembly '%s' cannot be edited or changed, because environment variable DOTNET_MODIFIABLE_ASSEMBLIES is set to '%s', not 'Debug'", image_base->name, invalid_env_val);
+		}
 		g_free (invalid_env_val);
 		return FALSE;
 	} else if (modifiable == MONO_MODIFIABLE_ASSM_NONE) {

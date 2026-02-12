@@ -1159,7 +1159,7 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsRemoteExecutorSupportedAndFeatureCapable))]
         void TestDisableMetadataUpdate()
         {
             var options = new RemoteInvokeOptions();
