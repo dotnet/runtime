@@ -269,69 +269,65 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
         JITDUMP("\n");
 
-        // Track any SP pre-adjustments we make for large offsets.
-        // We need to account for these when computing the final SP adjustment.
-        int totalPreAdjust = 0;
+        // Compute where callee-saves are stored relative to current SP.
+        // At this point, SP is at the top of Tier0's frame (lowest address).
+        //
+        // The meaning of calleeSaveSpOffset varies by frame type:
+        // - Frame type 1/2: calleeSaveSpOffset is already the offset from final SP to callee-saves.
+        // - Frame type 3/4/5: calleeSaveSpOffset is the alignment padding within the callee-save area.
+        //   The callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from
+        //   current SP.
+        //
+        int osrCalleeSaveSpOffset;
+        if (tier0FrameType >= 3)
+        {
+            osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
+            JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n", tier0FrameType,
+                    tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
+        }
+        else
+        {
+            osrCalleeSaveSpOffset = calleeSaveSpOffset;
+            JITDUMP("    Frame type %d: osrCalleeSaveSpOffset = calleeSaveSpOffset = %d\n", tier0FrameType,
+                    osrCalleeSaveSpOffset);
+        }
 
-        // Restore Tier0's callee-saved registers (excluding FP/LR which are restored separately).
-        // These are the registers that Tier0 saved and the OSR method must restore when returning.
+        // Determine the strategy for restoring callee-saves and FP/LR based on their offsets.
+        // The LDP instruction can only encode offsets from -512 to +504 (signed 7-bit * 8).
+        //
+        // For frame types 1/2/3, FP/LR are at low offsets (fpLrSaveOffset) and callee-saves
+        // are at higher offsets. For frame types 4/5, FP/LR are at high offsets within the
+        // callee-save area.
+        //
+        // If callee-saves are at large offsets AND FP/LR are at small offsets (frame type 3),
+        // we need to restore FP/LR FIRST before we can pre-adjust SP enough to reach callee-saves.
         //
         regMaskTP regsToRestoreMask = tier0CalleeSaves & ~(RBM_FP | RBM_LR);
-        if (regsToRestoreMask != RBM_NONE)
-        {
-            // Restore the callee saves from the Tier0 frame.
-            // We don't adjust SP here (spDelta = 0) since we'll do that after restoring FP/LR.
-            //
-            // At this point, SP is at the top of Tier0's frame (lowest address).
-            // We need to compute the offset from current SP to where callee-saves are stored.
-            //
-            // The callee-save area layout varies by frame type:
-            // - Frame type 1/2/3: FP/LR are at the BOTTOM (lowest address) of the callee-save area,
-            //   followed by other callee-saves at higher addresses. So we need to skip past FP/LR
-            //   (16 bytes) to get to the other callee-saves. The offset is fpLrSaveOffset + 16.
-            // - Frame type 4/5: FP/LR are at the TOP (highest address) of the callee-save area,
-            //   so the other callee-saves start at calleeSaveSpOffset from where SP will be
-            //   after the frame is established.
-            //
-            int osrCalleeSaveSpOffset;
-            if (tier0FrameType >= 4)
-            {
-                // Frame type 4/5: FP/LR are at the top, callee-saves start at calleeSaveSpOffset
-                // Need to account for the frame structure: SP is currently at ambient SP,
-                // callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from SP
-                osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
-                JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n", tier0FrameType,
-                        tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
-            }
-            else
-            {
-                // Frame type 1/2/3: FP/LR are at the bottom of the callee-save area at fpLrSaveOffset.
-                // Non-FP/LR callee-saves start 16 bytes above FP/LR.
-                osrCalleeSaveSpOffset = fpLrSaveOffset + 2 * REGSIZE_BYTES;
-                JITDUMP("    Frame type %d: osrCalleeSaveSpOffset = fpLrSaveOffset(%d) + 16 = %d\n", tier0FrameType,
-                        fpLrSaveOffset, osrCalleeSaveSpOffset);
-            }
+        unsigned  numRegsToRestore  = genCountBits(regsToRestoreMask);
+        int       maxCalleeSaveSpOffset =
+            (regsToRestoreMask != RBM_NONE) ? osrCalleeSaveSpOffset + (int)(numRegsToRestore * REGSIZE_BYTES) : 0;
 
-            // The LDP instruction can only encode offsets up to 504 (63*8) bytes.
-            // For larger offsets, we first adjust SP to bring callee-saves within range.
-            // We need to check the maximum offset that will be used, which is:
-            //   osrCalleeSaveSpOffset + (numRegsToRestore * REGSIZE_BYTES) - REGSIZE_BYTES
-            // This is because genRestoreCalleeSavedRegistersHelp computes:
-            //   spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES
-            // and then decrements by slotSize (8 or 16) for each load.
-            //
-            unsigned numRegsToRestore      = genCountBits(regsToRestoreMask);
-            int      maxCalleeSaveSpOffset = osrCalleeSaveSpOffset + (int)(numRegsToRestore * REGSIZE_BYTES);
-            if (maxCalleeSaveSpOffset > 504)
+        // Check if FP/LR are at a small offset but callee-saves are at a large offset.
+        // In this case, restore FP/LR first so we can freely adjust SP for callee-saves.
+        bool restoreFpLrFirst =
+            (fpLrSaveOffset <= 504) && (maxCalleeSaveSpOffset > 504) && (fpLrSaveOffset + 512 < maxCalleeSaveSpOffset - 504);
+
+        JITDUMP("    fpLrSaveOffset=%d, maxCalleeSaveSpOffset=%d, restoreFpLrFirst=%s\n", fpLrSaveOffset,
+                maxCalleeSaveSpOffset, restoreFpLrFirst ? "true" : "false");
+
+        int totalPreAdjust = 0;
+
+        if (restoreFpLrFirst)
+        {
+            // Restore FP/LR first since they're at a small offset
+            JITDUMP("    Restoring FP/LR first at offset %d\n", fpLrSaveOffset);
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
+
+            // Now we can freely pre-adjust SP to bring callee-saves into range
+            if (regsToRestoreMask != RBM_NONE && maxCalleeSaveSpOffset > 504)
             {
-                // Adjust SP to bring all callee-save loads within the 504 byte limit.
-                // We want the new max offset to be <= 504, so:
-                //   newMaxOffset = maxCalleeSaveSpOffset - preAdjust <= 504
-                //   preAdjust >= maxCalleeSaveSpOffset - 504
-                // Round up to 16-byte alignment for SP adjustment.
                 int preAdjust = (maxCalleeSaveSpOffset - 504 + 15) & ~15;
-                JITDUMP("    Callee-save max offset %d exceeds 504, pre-adjusting SP by %d\n", maxCalleeSaveSpOffset,
-                        preAdjust);
+                JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range\n", preAdjust);
 
                 if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
                 {
@@ -352,69 +348,138 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                     m_compiler->unwindAllocStack(preAdjust);
                 }
 
-                // Track total pre-adjustment and adjust the offset
-                totalPreAdjust += preAdjust;
+                totalPreAdjust = preAdjust;
                 osrCalleeSaveSpOffset -= preAdjust;
             }
 
-            genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
-        }
-
-        // Restore FP/LR from Tier0's frame since we jumped (not called) to OSR method.
-        // FP/LR are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).
-        //
-        // The LDP instruction can only encode offsets up to 504 (63*8) bytes.
-        // For larger offsets, we first adjust SP, then load FP/LR with a smaller offset.
-        //
-        // Account for any SP pre-adjustment we made above for callee-save restoration.
-        //
-        int adjustedFpLrSaveOffset = fpLrSaveOffset - totalPreAdjust;
-        int spAdjust               = tier0FrameSize - totalPreAdjust;
-        if (adjustedFpLrSaveOffset >= 0 && adjustedFpLrSaveOffset <= 504)
-        {
-            // Offset fits in LDP encoding - use it directly
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, adjustedFpLrSaveOffset);
-        }
-        else
-        {
-            // Offset too large (or negative) for LDP - adjust SP first to bring FP/LR within range
-            // Add adjustedFpLrSaveOffset to SP, then load FP/LR from [SP], then adjust SP by remainder
-            int preAdjust = adjustedFpLrSaveOffset;
-            if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+            // Restore callee-saves
+            if (regsToRestoreMask != RBM_NONE)
             {
-                const int lowPart  = preAdjust & 0xFFF;
-                const int highPart = preAdjust - lowPart;
+                genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
+            }
+
+            // Final SP adjustment (FP/LR already restored)
+            int spAdjust = tier0FrameSize - totalPreAdjust;
+            if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
+            {
+                const int lowPart  = spAdjust & 0xFFF;
+                const int highPart = spAdjust - lowPart;
                 assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
                 GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
                 m_compiler->unwindAllocStack(highPart);
-                preAdjust = lowPart;
+                spAdjust = lowPart;
             }
-            if (preAdjust > 0)
+            if (spAdjust > 0)
             {
-                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
-                m_compiler->unwindAllocStack(preAdjust);
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+                m_compiler->unwindAllocStack(spAdjust);
             }
-            // Now FP/LR are at [SP]
-            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
-            // Adjust spAdjust to account for what we already added
-            spAdjust -= adjustedFpLrSaveOffset;
         }
-
-        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
-        // use a scratch reg. So just do two subtracts if necessary.
-        //
-        if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
+        else
         {
-            const int lowPart  = spAdjust & 0xFFF;
-            const int highPart = spAdjust - lowPart;
-            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
-            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
-            m_compiler->unwindAllocStack(highPart);
-            spAdjust = lowPart;
+            // Standard order: restore callee-saves first, then FP/LR
+            if (regsToRestoreMask != RBM_NONE)
+            {
+                // Check if we need to pre-adjust SP to bring callee-saves into LDP range
+                if (maxCalleeSaveSpOffset > 504)
+                {
+                    // Adjust SP to bring all callee-save loads within the 504 byte limit.
+                    // Ensure the resulting FP/LR offset stays within LDP's range (-512 to +504).
+                    int preAdjust    = (maxCalleeSaveSpOffset - 504 + 15) & ~15;
+                    int maxPreAdjust = fpLrSaveOffset + 512;
+                    if (preAdjust > maxPreAdjust)
+                    {
+                        preAdjust = maxPreAdjust & ~15;
+                    }
+
+                    if (preAdjust > 0)
+                    {
+                        JITDUMP("    Callee-save max offset %d exceeds 504, pre-adjusting SP by %d\n",
+                                maxCalleeSaveSpOffset, preAdjust);
+
+                        if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                        {
+                            const int lowPart  = preAdjust & 0xFFF;
+                            const int highPart = preAdjust - lowPart;
+                            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                            m_compiler->unwindAllocStack(highPart);
+                            if (lowPart > 0)
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
+                                m_compiler->unwindAllocStack(lowPart);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                            m_compiler->unwindAllocStack(preAdjust);
+                        }
+
+                        totalPreAdjust = preAdjust;
+                        osrCalleeSaveSpOffset -= preAdjust;
+                    }
+                }
+
+                genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
+            }
+
+            // Restore FP/LR from Tier0's frame
+            int adjustedFpLrSaveOffset = fpLrSaveOffset - totalPreAdjust;
+            int spAdjust               = tier0FrameSize - totalPreAdjust;
+
+            JITDUMP("    FP/LR restore: fpLrSaveOffset=%d, totalPreAdjust=%d, adjustedFpLrSaveOffset=%d\n",
+                    fpLrSaveOffset, totalPreAdjust, adjustedFpLrSaveOffset);
+
+            if (adjustedFpLrSaveOffset >= -512 && adjustedFpLrSaveOffset <= 504)
+            {
+                // Offset fits in LDP encoding - use it directly
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                              adjustedFpLrSaveOffset);
+            }
+            else if (adjustedFpLrSaveOffset > 504)
+            {
+                // Positive offset too large for LDP - adjust SP forward first
+                int preAdjust = adjustedFpLrSaveOffset;
+                if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                {
+                    const int lowPart  = preAdjust & 0xFFF;
+                    const int highPart = preAdjust - lowPart;
+                    assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                    m_compiler->unwindAllocStack(highPart);
+                    preAdjust = lowPart;
+                }
+                if (preAdjust != 0)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                    m_compiler->unwindAllocStack(preAdjust);
+                }
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+                spAdjust -= adjustedFpLrSaveOffset;
+            }
+            else
+            {
+                // Negative offset - shouldn't happen with current logic, but handle it
+                assert(!"Unexpected negative FP/LR offset in OSR epilog");
+            }
+
+            // Final SP adjustment
+            if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
+            {
+                const int lowPart  = spAdjust & 0xFFF;
+                const int highPart = spAdjust - lowPart;
+                assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                m_compiler->unwindAllocStack(highPart);
+                spAdjust = lowPart;
+            }
+            if (spAdjust > 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+                m_compiler->unwindAllocStack(spAdjust);
+            }
         }
-        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
-        m_compiler->unwindAllocStack(spAdjust);
     }
 }
 
