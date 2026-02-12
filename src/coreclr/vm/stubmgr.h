@@ -643,6 +643,54 @@ class ILStubManager : public StubManager
 #endif
 };
 
+//
+// This is the stub manager for PInvoke stubs.
+// It handles addresses that map to a PInvokeMethodDesc.
+//
+typedef VPTR(class PInvokeStubManager) PTR_PInvokeStubManager;
+
+class PInvokeStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(PInvokeStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    PInvokeStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~PInvokeStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "PInvokeStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("PInvokeStub"); }
+#endif
+};
+
 // This is used to recognize
 //   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()

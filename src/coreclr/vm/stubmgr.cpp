@@ -1861,6 +1861,75 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 }
 #endif //!DACCESS_COMPILE
 
+//
+// This is the stub manager for PInvoke stubs.
+//
+
+#ifndef DACCESS_COMPILE
+
+/* static */
+void PInvokeStubManager::Init()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    StubManager::AddStubManager(new PInvokeStubManager());
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
+BOOL PInvokeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+
+    return (pMD != NULL) && pMD->IsPInvoke();
+}
+
+BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
+                                     TraceDestination *trace)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LOG((LF_CORDB, LL_EVERYTHING, "PInvokeStubManager::DoTraceStub called\n"));
+
+#ifndef DACCESS_COMPILE
+
+    MethodDesc* pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+    if (pMD == NULL || !pMD->IsPInvoke())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "PISM::DoTraceStub: Not a PInvoke stub\n"));
+        return FALSE;
+    }
+
+    PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+    // Note: The PInvoke target may not yet be resolved if it uses lazy binding
+    // (PRECODE_PINVOKE_IMPORT). In that case, GetPInvokeTarget() returns the
+    // precode address. There is a narrow race where the target gets resolved
+    // between this read and the debugger setting a breakpoint, but this is
+    // low priority to address.
+    PCODE target = (PCODE)pNMD->GetPInvokeTarget();
+    LOG((LF_CORDB, LL_INFO10000, "PISM::DoTraceStub: PInvoke target 0x%p\n", target));
+    trace->InitForUnmanaged(target);
+
+    LOG_TRACE_DESTINATION(trace, target, "PInvokeStubManager::DoTraceStub");
+
+    return TRUE;
+
+#else // !DACCESS_COMPILE
+    trace->InitForOther((PCODE)NULL);
+    return FALSE;
+
+#endif // !DACCESS_COMPILE
+}
+
 // This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
 #ifndef DACCESS_COMPILE
@@ -2289,6 +2358,15 @@ ILStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p ILStubManager\n", dac_cast<TADDR>(this)));
+}
+
+void
+PInvokeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    WRAPPER_NO_CONTRACT;
+    DAC_ENUM_VTHIS();
+    EMEM_OUT(("MEM: %p PInvokeStubManager\n", dac_cast<TADDR>(this)));
 }
 
 void
