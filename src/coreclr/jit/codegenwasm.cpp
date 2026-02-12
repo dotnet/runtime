@@ -546,6 +546,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
+        case GT_MEMORYBARRIER:
+            // No-op for single-threaded wasm.
+            assert(!WASM_THREAD_SUPPORT);
+            JITDUMP("Ignoring GT_MEMORYBARRIER; single-threaded codegen\n");
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
