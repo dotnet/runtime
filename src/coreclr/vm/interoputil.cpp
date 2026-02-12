@@ -259,6 +259,8 @@ ErrExit:
     return iLCIDParam;
 }
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
@@ -315,6 +317,8 @@ void SetCurrentCulture(OBJECTREF* CultureObj, BOOL bUICulture)
     UnmanagedCallersOnlyCaller propSet(METHOD__CULTUREINFOMARSHALER__SET_CURRENT_CULTURE);
     propSet.InvokeThrowing(CLR_BOOL_ARG(bUICulture), CultureObj);
 }
+
+#endif // FEATURE_COMINTEROP
 
 
 //---------------------------------------------------------------------------
