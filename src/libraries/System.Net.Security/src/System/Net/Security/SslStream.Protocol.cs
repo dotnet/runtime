@@ -167,7 +167,9 @@ namespace System.Net.Security
 
         internal void CloseContext()
         {
-            if (!_remoteCertificateExposed)
+            // If a RemoteCertificateValidationCallback was supplied, the remote certificate instance
+            // is exposed to user code via that callback and must not be disposed by SslStream.
+            if (!_remoteCertificateExposed && _sslAuthenticationOptions.CertValidationDelegate is null)
             {
                 _remoteCertificate?.Dispose();
                 _remoteCertificate = null;

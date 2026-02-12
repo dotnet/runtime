@@ -314,7 +314,7 @@ namespace System.Net.Security.Tests
                 using (server)
                 {
                     bool shouldRebuildChain = i == 1;
-                    
+
                     SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                     {
                         TargetHost = "localhost",
@@ -377,6 +377,44 @@ namespace System.Net.Security.Tests
             {
                 Assert.NotEqual(IntPtr.Zero, chainCert.Handle);
             }
+        }
+
+        [Fact]
+        public async Task RemoteCertificateValidationCallback_RemoteCertificate_NotDisposed()
+        {
+            X509Certificate2? capturedRemoteCertificate = null;
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            using (client)
+            using (server)
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                    {
+                        capturedRemoteCertificate = (X509Certificate2)cert!;
+                        return true;
+                    },
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None),
+                    server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None));
+            }
+
+            Assert.NotNull(capturedRemoteCertificate);
+
+            string subject = capturedRemoteCertificate.Subject;
+            Assert.NotEmpty(subject);
+
+            capturedRemoteCertificate.Dispose();
         }
     }
 }
