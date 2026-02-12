@@ -252,6 +252,7 @@ namespace System.Diagnostics
 
 #if WINDOWS
         private static string? s_cachedSystemDirectory;
+        private static string? s_cachedWindowsDirectory;
 
         private static string? GetSystemDirectory()
         {
@@ -269,15 +270,16 @@ namespace System.Diagnostics
 
         private static string? GetWindowsDirectory()
         {
-            // We don't cache the Windows directory; GetWindowsDirectoryW returns a stable system-wide path,
-            // and this method is not expected to be called frequently enough to warrant additional caching.
-            Span<char> buffer = stackalloc char[260]; // MAX_PATH
-            uint length = Interop.Kernel32.GetWindowsDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
-            if (length > 0 && length < buffer.Length)
+            if (s_cachedWindowsDirectory == null)
             {
-                return new string(buffer.Slice(0, (int)length));
+                Span<char> buffer = stackalloc char[260]; // MAX_PATH
+                uint length = Interop.Kernel32.GetWindowsDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
+                if (length > 0 && length < buffer.Length)
+                {
+                    s_cachedWindowsDirectory = new string(buffer.Slice(0, (int)length));
+                }
             }
-            return null;
+            return s_cachedWindowsDirectory;
         }
 #endif
     }
