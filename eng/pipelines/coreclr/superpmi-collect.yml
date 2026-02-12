@@ -25,6 +25,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: UseLegacyNugetAuth
+    value: true
 
 extends:
   template: /eng/pipelines/coreclr/templates/superpmi-collect-pipeline.yml
