@@ -40,7 +40,7 @@ az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 --org $org -p $p
 
 ### Step 2: Map builds to the PR's head commit
 
-Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. Extract it from the `get_builds` response or the `az` JSON output.
+Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. Extract it from the `azure-devops-pipelines_get_builds` response or the `az` JSON output.
 
 > ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
 

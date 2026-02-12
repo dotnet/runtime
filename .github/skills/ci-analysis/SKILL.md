@@ -130,7 +130,7 @@ When an AzDO job is canceled (timeout) or Helix work items show `Crash` (exit co
 
 1. **Find the Helix job IDs** — Read the AzDO "Send to Helix" step log (use `azure-devops-pipelines_get_build_log_by_id`) and search for lines containing `Sent Helix Job`. Extract the job GUIDs.
 
-2. **Check Helix job status** — Use `hlx_batch_status` (batches of 4) or `hlx_status` per job. Look at `failedCount` vs `passedCount`.
+2. **Check Helix job status** — Use `hlx_batch_status` (accepts comma-separated job IDs) or `hlx_status` per job. Look at `failedCount` vs `passedCount`.
 
 3. **For work items marked Crash/Failed** — Use `hlx_files` to check if `testResults.xml` was uploaded. If it exists:
    - Download it with `hlx_download_url`

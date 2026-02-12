@@ -113,7 +113,7 @@ Return JSON: { "buildId": N, "targetHead": "abc1234", "mergeCommit": "def5678" }
 Or: { "buildId": N, "targetHead": null, "error": "merge line not found in log 5" }
 ```
 
-Launch one per build in parallel. The main agent combines with `get_builds` results to build the full progression table.
+Launch one per build in parallel. The main agent combines with `azure-devops-pipelines_get_builds` results to build the full progression table.
 
 ## General Guidelines
 

@@ -2221,6 +2221,7 @@ $summary = [ordered]@{
     } }
     failedJobNames = @($allFailedJobNames)
     failedJobDetails = @($allFailedJobDetails)
+    failedJobDetailsTruncated = ($allFailedJobNames.Count -gt $allFailedJobDetails.Count)
     canceledJobNames = @($allCanceledJobNames)
     knownIssues = @($knownIssuesFromBuildAnalysis | ForEach-Object {
         [ordered]@{ number = $_.Number; title = $_.Title; url = $_.Url }
