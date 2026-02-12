@@ -4068,7 +4068,8 @@ void CSE_Heuristic::Initialize()
         }
 #endif // TARGET_X86
 
-        if (onStack)
+        // TODO-SVE: What are the consequences of excluding Vector<T> here?
+        if (onStack && !varTypeHasUnknownSize(varDsc))
         {
             frameSize += m_compiler->lvaLclStackHomeSize(lclNum);
         }
