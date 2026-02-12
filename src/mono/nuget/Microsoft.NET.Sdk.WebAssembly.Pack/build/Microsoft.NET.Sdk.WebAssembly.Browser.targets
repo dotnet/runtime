@@ -357,6 +357,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ConvertDllsToWebCil>
 
     <ItemGroup>
+      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
+      <_WebCilAssetsCandidates Update="@(_WebCilAssetsCandidates)" ContentRoot="%(RootDir)%(Directory)" />
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
@@ -371,7 +373,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetRole="Primary"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="Never"
-      ContentRoot="$(IntermediateOutputPath)"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
       BasePath="$(StaticWebAssetBasePath)"
@@ -717,6 +718,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata
         Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
+      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
+      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata Update="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata)" ContentRoot="%(RootDir)%(Directory)" />
+      <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" />
     </ItemGroup>
 
     <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
