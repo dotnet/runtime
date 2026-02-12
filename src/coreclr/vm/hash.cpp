@@ -16,7 +16,6 @@ Module Name:
 
 #include "excep.h"
 
-#include "syncclean.hpp"
 #include "ebr.h"
 
 #include "threadsuspend.h"
