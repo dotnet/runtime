@@ -404,6 +404,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 if (sig->isAsyncCall())
                 {
                     impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+
+                    if (compDonotInline())
+                    {
+                        return TYP_UNDEF;
+                    }
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -716,6 +721,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (sig->isAsyncCall())
     {
         impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+
+        if (compDonotInline())
+        {
+            return TYP_UNDEF;
+        }
 
         if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
         {
@@ -3388,6 +3398,17 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // (it would be overridden if we left this up to the rest of this function).
         *pIntrinsicName = ni;
         return nullptr;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait)
+    {
+        if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+        {
+            BADCODE("TailAwait is not supported in async methods that capture contexts");
+        }
+
+        m_nextAwaitIsTail = true;
+        return gtNewNothingNode();
     }
 
     bool betterToExpand = false;
@@ -6868,6 +6889,12 @@ void Compiler::impCheckForPInvokeCall(
 //
 void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
+    if (compIsForInlining())
+    {
+        compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+        return;
+    }
+
     AsyncCallInfo asyncInfo;
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
@@ -6898,6 +6925,13 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     else
     {
         JITDUMP("Call is an async non-task await\n");
+    }
+
+    if (m_nextAwaitIsTail)
+    {
+        asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
+        asyncInfo.IsTailAwait                 = true;
+        m_nextAwaitIsTail                     = false;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
@@ -8120,14 +8154,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
-        return;
-    }
-
-    if (call->IsAsync() && (call->GetAsyncInfo().ContinuationContextHandling != ContinuationContextHandling::None))
-    {
-        // Cannot currently handle moving to captured context/thread pool when logically returning from inlinee.
-        //
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_CONTINUATION_HANDLING);
         return;
     }
 
@@ -10898,6 +10924,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "AsyncCallContinuation") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
+                            else if (strcmp(methodName, "TailAwait") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
