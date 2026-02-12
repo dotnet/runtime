@@ -4363,6 +4363,10 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Tail awaits do not generate suspension points and the JIT instead
+    // directly returns the callee's continuation to the caller.
+    bool IsTailAwait = false;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -5275,8 +5279,13 @@ struct GenTreeCall final : public GenTree
     }
     bool IsGenericVirtual(Compiler* compiler) const
     {
-        return (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+        return (gtCallType == CT_INDIRECT &&
+                (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                 gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+#ifdef FEATURE_READYTORUN
+                 || gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+#endif
+                     ));
     }
 
     bool IsDevirtualizationCandidate(Compiler* compiler) const;
