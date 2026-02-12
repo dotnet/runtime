@@ -499,9 +499,9 @@ namespace System.Runtime.CompilerServices
                 while (true)
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
+                    Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
                     try
                     {
-                        Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
                         Continuation? nextContinuation = curContinuation.Next;
                         asyncDispatcherInfo.NextContinuation = nextContinuation;
 
