@@ -248,7 +248,7 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
 
 void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 {
-    syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1);
+    syscall(SYS_futex, address, FUTEX_WAKE_PRIVATE, 1, NULL, NULL, 0);
 }
 #else// TARGET_LINUX
 

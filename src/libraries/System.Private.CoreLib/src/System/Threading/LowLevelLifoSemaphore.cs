@@ -376,11 +376,12 @@ namespace System.Threading
             if (top != null)
             {
                 _blockerStack = top._next;
+                top._next = null;
             }
             else
             {
                 _pendingSignals++;
-                // the upper bound is the same as for overal signal/waiter/wake counts,
+                // the upper bound is the same as for overall signal/waiter/wake counts,
                 // although this should be typically much smaller.
                 Debug.Assert(_pendingSignals != ushort.MaxValue);
             }
@@ -399,6 +400,7 @@ namespace System.Threading
             if (current == node)
             {
                 _blockerStack = node._next;
+                node._next = null;
                 removed = true;
             }
             else
@@ -407,7 +409,8 @@ namespace System.Threading
                 {
                     if (current._next == node)
                     {
-                        current._next = current._next!._next;
+                        current._next = node._next;
+                        node._next = null;
                         removed = true;
                         break;
                     }
