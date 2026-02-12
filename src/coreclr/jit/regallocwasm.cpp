@@ -298,13 +298,8 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 {
     ExceptionSetFlags exSetFlags = divModNode->OperExceptions(m_compiler);
 
-    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
-    {
-        // TODO-WASM-CQ: improve the case of a constant dividend (no need for an internal reg in that case).
-        RequestInternalRegForOperand(divModNode, divModNode->gtGetOp1() DEBUGARG("div/mod overflow check - dividend"));
-        RequestInternalRegForOperand(divModNode, divModNode->gtGetOp2() DEBUGARG("div/mod overflow check - divisor"));
-    }
-    else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+    // TODO-WASM: implement overflow checking.
+    if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
         RequestInternalRegForOperand(divModNode, divModNode->gtGetOp2() DEBUGARG("div by zero check - divisor"));
     }

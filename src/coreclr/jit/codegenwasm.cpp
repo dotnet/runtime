@@ -1000,36 +1000,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
         }
 
         // (MinInt / -1) => ArithmeticException.
-        GenTree*  dividend    = treeNode->gtGetOp1();
-        regNumber dividendReg = REG_NA;
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            // First, push "divisor == -1".
-            if (divisorReg == REG_NA)
-            {
-                divisorReg = MakeOperandMultiUse(treeNode, divisor);
-            }
-            else
-            {
-                GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
-            }
-            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, -1);
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
-
-            // Second, push "dividend == MinInt".
-            dividendReg = MakeOperandMultiUse(treeNode, dividend);
-            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, size, is64BitOp ? INT64_MIN : INT32_MIN);
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_eq : INS_i32_eq);
-
-            // Finally, do the and.
-            GetEmitter()->emitIns(is64BitOp ? INS_i64_and : INS_i32_and);
-            genJumpToThrowHlpBlk(SCK_ARITH_EXCPN);
+            // TODO-WASM: implement overflow checking.
         }
 
-        if (dividendReg != REG_NA)
-        {
-            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(dividendReg));
-        }
         if (divisorReg != REG_NA)
         {
             GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
