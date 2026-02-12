@@ -45,10 +45,6 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
 		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
-
-        if [[ "$JS_ENGINE" == "--engine=V8" ]] ; then
-            JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
-        fi
 	fi
 else
 	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
