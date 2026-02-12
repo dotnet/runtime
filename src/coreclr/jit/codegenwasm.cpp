@@ -479,6 +479,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_RETURN:
+        case GT_RETFILT:
             genReturn(treeNode);
             break;
 
