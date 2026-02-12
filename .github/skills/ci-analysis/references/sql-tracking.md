@@ -96,7 +96,7 @@ WHERE body LIKE '%PTAL%' OR body LIKE '%could you%look%';
 |-----------|----------|
 | 1-2 failed jobs, all match known issues | No — straightforward, hold in context |
 | 3+ failed jobs across multiple builds | Yes — prevents missed matches |
-| Build progression with 5+ builds | Yes — see build-progression-analysis.md |
+| Build progression with 5+ builds | Yes — see [build-progression-analysis.md](build-progression-analysis.md) |
 | Crash recovery across multiple work items | Yes — cache testResults.xml findings |
 | Single build, single failure | No — overkill |
 | PR chain or long-lived PR with extensive triage comments | Yes — preserves diagnosis context across tool calls |

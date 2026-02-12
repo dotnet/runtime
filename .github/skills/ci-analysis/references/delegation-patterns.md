@@ -37,7 +37,7 @@ Steps:
    github-mcp-server-search_pull_requests query:"is:merged base:{TARGET_BRANCH}" owner:dotnet repo:{REPO}
 2. Run: ./scripts/Get-CIStatus.ps1 -PRNumber {MERGED_PR} -Repository "dotnet/{REPO}"
 3. Find the build with same job name that passed
-4. Locate the Helix job ID (may need artifact download — see azure-cli.md)
+4. Locate the Helix job ID (may need artifact download — see [azure-cli.md](azure-cli.md))
 
 Return JSON: { "found": true, "buildId": N, "helixJob": "...", "workItem": "...", "result": "Pass" }
 Or: { "found": false, "reason": "no passing build in last 5 merged PRs" }
@@ -73,7 +73,7 @@ Return JSON: { "totalFiles": N, "files": [{ "path": "...", "changeType": "modifi
 Download and analyze binlog from AzDO build {BUILD_ID}, artifact {ARTIFACT_NAME}.
 
 Steps:
-1. Download the artifact (see azure-cli.md)
+1. Download the artifact (see [azure-cli.md](azure-cli.md))
 2. Load: mcp-binlog-tool-load_binlog path:"{BINLOG_PATH}"
 3. Find tasks: mcp-binlog-tool-search_tasks_by_name taskName:"Csc"
 4. Get task parameters: mcp-binlog-tool-get_task_info
