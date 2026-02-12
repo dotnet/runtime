@@ -30,7 +30,7 @@ namespace System.Runtime.Serialization.Json
             DataContractSerializer dataContractSerializer = new DataContractSerializer(TraditionalDataContract.UnderlyingType,
                 GetKnownTypesFromContext(context, context?.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
-            Stream memoryStream = new StringStream(xmlContent, Encoding.UTF8);
+            Stream memoryStream = Stream.FromText(xmlContent, Encoding.UTF8);
             object? xmlValue;
             XmlDictionaryReaderQuotas? quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
             if (quotas == null)

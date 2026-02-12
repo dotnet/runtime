@@ -32,13 +32,13 @@ namespace System.Net.Http
         }
 
         protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
-            new ReadOnlyMemoryStream(_content);
+            Stream.FromReadOnlyData(_content);
 
         protected override Task<Stream> CreateContentReadStreamAsync() =>
-            Task.FromResult<Stream>(new ReadOnlyMemoryStream(_content));
+            Task.FromResult(Stream.FromReadOnlyData(_content));
 
         internal override Stream TryCreateContentReadStream() =>
-            new ReadOnlyMemoryStream(_content);
+            Stream.FromReadOnlyData(_content);
 
         internal override bool AllowDuplex => false;
     }
