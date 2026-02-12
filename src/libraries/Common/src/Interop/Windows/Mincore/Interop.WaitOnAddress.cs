@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Kernel32
+    internal static partial class Mincore
     {
-        [LibraryImport("api-ms-win-core-synch-l1-2-0.dll", SetLastError = true)]
+        [LibraryImport(Libraries.Synch, SetLastError = true)]
         internal static unsafe partial BOOL WaitOnAddress(void* Address, void* CompareAddress, nint AddressSize, int dwMilliseconds);
 
         [SuppressGCTransition]
-        [LibraryImport("api-ms-win-core-synch-l1-2-0.dll")]
+        [LibraryImport(Libraries.Synch)]
         internal static unsafe partial void WakeByAddressSingle(void* Address);
     }
 }

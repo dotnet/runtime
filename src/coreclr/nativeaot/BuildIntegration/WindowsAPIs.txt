@@ -283,6 +283,8 @@ advapi32!TraceMessage
 advapi32!TraceMessageVa
 advapi32!TraceSetInformation
 advapi32!UnregisterTraceGuids
+api-ms-win-core-synch-l1-2-0!WaitOnAddress
+api-ms-win-core-synch-l1-2-0!WakeByAddressSingle
 bcrypt!BCryptAddContextFunction
 bcrypt!BCryptCloseAlgorithmProvider
 bcrypt!BCryptConfigureContext

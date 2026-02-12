@@ -14,14 +14,14 @@ namespace System.Threading
     {
         internal static void WaitOnAddress(int* address, int comparand)
         {
-            Interop.BOOL result = Interop.Kernel32.WaitOnAddress(address, &comparand, sizeof(int), -1);
+            Interop.BOOL result = Interop.Mincore.WaitOnAddress(address, &comparand, sizeof(int), -1);
             // assert success, but in release treat unexpected results as spurious wakes
             Debug.Assert(result == Interop.BOOL.TRUE);
         }
 
         internal static bool WaitOnAddressTimeout(int* address, int comparand, int milliseconds)
         {
-            Interop.BOOL result = Interop.Kernel32.WaitOnAddress(address, &comparand, sizeof(int), milliseconds);
+            Interop.BOOL result = Interop.Mincore.WaitOnAddress(address, &comparand, sizeof(int), milliseconds);
             if (result == Interop.BOOL.TRUE)
             {
                 // normal or spurious wake
@@ -42,7 +42,7 @@ namespace System.Threading
 
         internal static void WakeByAddressSingle(int* address)
         {
-            Interop.Kernel32.WakeByAddressSingle(address);
+            Interop.Mincore.WakeByAddressSingle(address);
         }
     }
 }
