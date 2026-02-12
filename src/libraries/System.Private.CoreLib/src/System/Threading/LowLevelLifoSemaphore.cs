@@ -380,6 +380,9 @@ namespace System.Threading
             else
             {
                 _pendingSignals++;
+                // the upper bound is the same as for overal signal/waiter/wake counts,
+                // although this should be typically much smaller.
+                Debug.Assert(_pendingSignals != ushort.MaxValue);
             }
 
             _stackLock.Release();
