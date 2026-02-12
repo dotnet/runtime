@@ -2213,9 +2213,7 @@ namespace System
         {
             try
             {
-                RuntimeType? result = (*pResolver).GetJitContext(out int flags);
-                *pSecurityControlFlags = flags;
-                *ppResult = result;
+                *ppResult = pResolver->GetJitContext(out *pSecurityControlFlags);
             }
             catch (Exception ex)
             {
@@ -2228,11 +2226,7 @@ namespace System
         {
             try
             {
-                byte[] result = (*pResolver).GetCodeInfo(out int stackSize, out int initLocals, out int ehCount);
-                *pStackSize = stackSize;
-                *pInitLocals = initLocals;
-                *pEHCount = ehCount;
-                *ppResult = result;
+                *ppResult = pResolver->GetCodeInfo(out *pStackSize, out *pInitLocals, out *pEHCount);
             }
             catch (Exception ex)
             {
@@ -2245,7 +2239,7 @@ namespace System
         {
             try
             {
-                *ppResult = (*pResolver).GetLocalsSignature();
+                *ppResult = pResolver->GetLocalsSignature();
             }
             catch (Exception ex)
             {
@@ -2258,7 +2252,7 @@ namespace System
         {
             try
             {
-                *ppResult = (*pResolver).GetStringLiteral(token);
+                *ppResult = pResolver->GetStringLiteral(token);
             }
             catch (Exception ex)
             {
