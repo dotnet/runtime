@@ -470,7 +470,7 @@ namespace System.Net
             if (IsReservedName(hostName, "invalid"))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Returning NXDOMAIN for 'invalid' domain");
-                exception = CreateException(SocketError.HostNotFound, 0);
+                exception = new SocketException((int)SocketError.HostNotFound);
                 return true;
             }
 
