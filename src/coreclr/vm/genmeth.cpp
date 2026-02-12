@@ -248,19 +248,20 @@ static MethodDesc * FindTightlyBoundWrappedMethodDesc_DEBUG(MethodDesc * pMD)
     Module *pModule = pMD->GetModule();
     bool isAsyncVariantMethod = pMD->IsAsyncVariantMethod();
 
-    // Use IntroducedMethodIterator (chunk-based) rather than MethodIterator (slot-based)
-    // because unboxing stubs on value types implementing interfaces may not have their own
-    // vtable slots and would be invisible to the slot-based iterator.
-    MethodTable::IntroducedMethodIterator it(pMD->GetCanonicalMethodTable());
-    for (; it.IsValid(); it.Next()) {
-        MethodDesc* pCurMethod = it.GetMethodDesc();
+    MethodTable::MethodIterator it(pMD->GetCanonicalMethodTable());
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev()) {
+        if (!it.IsVirtual()) {
+            // Get the MethodDesc for current method
+            MethodDesc* pCurMethod = it.GetMethodDesc();
 
-        if (pCurMethod && !pCurMethod->IsUnboxingStub()) {
-            if ((pCurMethod->GetMemberDef() == methodDef) &&
-                (pCurMethod->GetModule() == pModule) &&
-                (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod))
-            {
-                return pCurMethod;
+            if (pCurMethod && !pCurMethod->IsUnboxingStub()) {
+                if ((pCurMethod->GetMemberDef() == methodDef)  &&
+                    (pCurMethod->GetModule() == pModule) &&
+                    (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod))
+                {
+                    return pCurMethod;
+                }
             }
         }
     }
@@ -287,17 +288,17 @@ static MethodDesc * FindTightlyBoundUnboxingStub_DEBUG(MethodDesc * pMD)
     Module *pModule = pMD->GetModule();
     bool isAsyncVariantMethod = pMD->IsAsyncVariantMethod();
 
-    // Use IntroducedMethodIterator (chunk-based) rather than MethodIterator (slot-based)
-    // because unboxing stubs on value types implementing interfaces may not have their own
-    // vtable slots and would be invisible to the slot-based iterator.
-    MethodTable::IntroducedMethodIterator it(pMD->GetCanonicalMethodTable());
-    for (; it.IsValid(); it.Next()) {
-        MethodDesc* pCurMethod = it.GetMethodDesc();
-        if (pCurMethod && pCurMethod->IsUnboxingStub()) {
-            if ((pCurMethod->GetMemberDef() == methodDef) &&
-                (pCurMethod->GetModule() == pModule) &&
-                (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod)) {
-                return pCurMethod;
+    MethodTable::MethodIterator it(pMD->GetCanonicalMethodTable());
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev()) {
+        if (it.IsVirtual()) {
+            MethodDesc* pCurMethod = it.GetMethodDesc();
+            if (pCurMethod && pCurMethod->IsUnboxingStub()) {
+                if ((pCurMethod->GetMemberDef() == methodDef) &&
+                    (pCurMethod->GetModule() == pModule) &&
+                    (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod)) {
+                    return pCurMethod;
+                }
             }
         }
     }
@@ -863,10 +864,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             // First search for the unboxing MD in the shared vtable for the value type
             pResultMD = FindTightlyBoundUnboxingStub(pMDescInCanonMT);
 
-            // Verify that we get the same result by alternative method. There is a possibility
-            // that there is no associated unboxing stub, and FindTightlyBoundUnboxingStub takes
-            // this into account but the _DEBUG version does not, so only use it if the method
-            // returned is actually different.
             // Verify that we get the same result by alternative method. There is a possibility
             // that there is no associated unboxing stub, and FindTightlyBoundUnboxingStub takes
             // this into account but the _DEBUG version does not, so only use it if the method

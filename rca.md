@@ -1,3 +1,0 @@
-Root cause: FindTightlyBoundUnboxingStub_DEBUG and FindTightlyBoundWrappedMethodDesc_DEBUG used MethodTable::MethodIterator (slot-based), which iterates vtable slots. Unboxing stubs on value types that implement interfaces (like Int32.TryFormat implementing ISpanFormattable) don't have their own vtable slots, so the iterator never enumerated them. The production FindTightlyBoundUnboxingStub correctly finds them by walking the chunk (physical adjacency).
-
-Fix: Replaced MethodTable::MethodIterator with MethodTable::IntroducedMethodIterator (chunk-based) in both _DEBUG functions, which walks all introduced method descs including those without vtable slots.

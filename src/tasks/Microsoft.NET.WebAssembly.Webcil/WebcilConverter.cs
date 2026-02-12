@@ -87,7 +87,6 @@ public class WebcilConverter
     {
         WriteHeader(outputStream, wcInfo.Header);
         WriteSectionHeaders(outputStream, wcInfo.SectionHeaders);
-        WriteSectionDataPadding(outputStream, wcInfo);
         CopySections(outputStream, inputStream, peInfo.SectionHeaders);
         if (wcInfo.Header.pe_debug_size != 0 && wcInfo.Header.pe_debug_rva != 0)
         {
@@ -133,17 +132,7 @@ public class WebcilConverter
         // position of the current section in the output file
         // initially it's after all the section headers
         FilePosition curSectionPos = pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections;
-
-        // Align section data start to 8 bytes so that RVA static fields whose
-        // original PE alignment was up to 8 retain their alignment in WebCIL.
-        // Without this, the compact WebCIL header+section-table (whose size is
-        // not a multiple of 8) would shift all section data, breaking alignment
-        // assumptions in RuntimeHelpers.GetSpanDataFrom and similar code.
-        int sectionDataAlignment = 8;
-        int aligned = (curSectionPos.Position + sectionDataAlignment - 1) & ~(sectionDataAlignment - 1);
-        curSectionPos = aligned;
-
-        // The first WC section is immediately after any alignment padding
+        // The first WC section is immediately after the section directory
         FilePosition firstWCSection = curSectionPos;
 
         FilePosition firstPESection = 0;
@@ -206,21 +195,6 @@ public class WebcilConverter
         foreach (var sectionHeader in sectionsHeaders)
         {
             WriteSectionHeader(s, sectionHeader);
-        }
-    }
-
-    /// <summary>
-    /// Writes zero-padding between the section directory and the first section data
-    /// so that section data starts at the aligned offset computed in <see cref="GatherInfo"/>.
-    /// </summary>
-    private static void WriteSectionDataPadding(Stream s, WCFileInfo wcInfo)
-    {
-        long currentPos = s.Position;
-        int targetPos = wcInfo.SectionStart.Position;
-        int paddingBytes = targetPos - (int)currentPos;
-        if (paddingBytes > 0)
-        {
-            s.Write(new byte[paddingBytes], 0, paddingBytes);
         }
     }
 
