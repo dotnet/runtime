@@ -789,7 +789,7 @@ void EEStartupHelper()
 
         // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
         // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
-        g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending, 1024 * 1024);
+        g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending, /* memoryBudgetInBytes */ 1024 * 1024);
 
         StubManager::InitializeStubManagers();
 

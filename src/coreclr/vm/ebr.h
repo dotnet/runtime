@@ -51,22 +51,23 @@ struct EbrPendingEntry
 //
 // A single collector instance is typically shared across all threads that
 // access a particular set of shared data structures.
-class EbrCollector
+class EbrCollector final
 {
 public:
     EbrCollector() = default;
     ~EbrCollector() = default;
 
-    // Non-copyable
     EbrCollector(const EbrCollector&) = delete;
     EbrCollector& operator=(const EbrCollector&) = delete;
+    EbrCollector(EbrCollector&&) = delete;
+    EbrCollector& operator=(EbrCollector&&) = delete;
 
     // Initialize the collector.
     //   crstThreadList: Crst type for the thread list lock
     //   crstPending:    Crst type for the pending deletion queue lock
-    //   memoryBudget:   approximate byte threshold of pending deletions before
-    //                   attempting reclamation
-    void Init(CrstType crstThreadList, CrstType crstPending, size_t memoryBudget);
+    //   memoryBudgetInBytes:   approximate byte threshold of pending deletions before
+    //                          attempting reclamation
+    void Init(CrstType crstThreadList, CrstType crstPending, size_t memoryBudgetInBytes);
 
     // Shutdown the collector, draining all pending deletions.
     // All threads should have exited their critical regions before calling.
@@ -104,7 +105,7 @@ private:
     void TryReclaim();
 
     // Configuration
-    size_t           m_memoryBudget = 0;
+    size_t           m_memoryBudgetInBytes = 0;
     bool             m_initialized = false;
 
     // Global epoch counter [0, EBR_EPOCHS-1]
@@ -117,7 +118,7 @@ private:
     // Pending deletion queues, one per epoch slot (protected by m_pendingLock)
     CrstStatic       m_pendingLock;
     EbrPendingEntry* m_pPendingHeads[EBR_EPOCHS] = {};
-    Volatile<size_t> m_pendingSize;
+    Volatile<size_t> m_pendingSizeInBytes;
 };
 
 // Global EBR collector for HashMap's async mode.
@@ -125,7 +126,7 @@ extern EbrCollector g_HashMapEbr;
 
 // RAII holder for EBR critical regions, analogous to GCX_COOP pattern.
 // When fEnable is false, the holder is a no-op.
-class EbrCriticalRegionHolder
+class EbrCriticalRegionHolder final
 {
 public:
     EbrCriticalRegionHolder(EbrCollector* pCollector, bool fEnable)
@@ -141,9 +142,10 @@ public:
             m_pCollector->ExitCriticalRegion();
     }
 
-    // Non-copyable
     EbrCriticalRegionHolder(const EbrCriticalRegionHolder&) = delete;
     EbrCriticalRegionHolder& operator=(const EbrCriticalRegionHolder&) = delete;
+    EbrCriticalRegionHolder(EbrCriticalRegionHolder&&) = delete;
+    EbrCriticalRegionHolder& operator=(EbrCriticalRegionHolder&&) = delete;
 
 private:
     EbrCollector* m_pCollector;

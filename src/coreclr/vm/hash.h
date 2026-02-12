@@ -793,15 +793,4 @@ public:
 #endif // DACCESS_COMPILE
 };
 
-//---------------------------------------------------------------------
-//  inline Bucket*& NextObsolete (Bucket* rgBuckets)
-//  get the next obsolete bucket in the chain
-inline
-Bucket*& NextObsolete (Bucket* rgBuckets)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return *(Bucket**)&((size_t*)rgBuckets)[1];
-}
-
 #endif // !_HASH_H_

@@ -95,12 +95,22 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
 
 #endif // !DACCESS_COMPILE
 
+//---------------------------------------------------------------------
+//  inline Bucket*& NextObsolete (Bucket* rgBuckets)
+//  get the next obsolete bucket in the chain
+static Bucket*& NextObsolete(Bucket* rgBuckets)
+{
+    LIMITED_METHOD_CONTRACT;
+    return *(Bucket**)&((size_t*)rgBuckets)[1];
+}
+
 // Static helper for EBR deferred deletion of obsolete bucket arrays.
 static void DeleteObsoleteBuckets(void* p)
 {
     LIMITED_METHOD_CONTRACT;
     Bucket* pBucket = (Bucket*)p;
-    while (pBucket) {
+    while (pBucket)
+    {
         Bucket* pNextBucket = NextObsolete(pBucket);
         delete [] pBucket;
         pBucket = pNextBucket;
@@ -491,8 +501,7 @@ void HashMap::InsertValue (UPTR key, UPTR value)
     _ASSERTE (OwnLock());
 
     // Enter EBR critical region to protect against concurrent bucket array
-    // replacement during async mode. Replaces the former COOP transition
-    // which caused deadlocks with DebuggerController lock ordering.
+    // replacement during async mode.
     EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
@@ -558,9 +567,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     _ASSERTE (m_fAsyncMode || OwnLock());
 
     // Enter EBR critical region to protect against concurrent bucket array
-    // replacement during async mode. This replaces the former COOP transition
-    // (GCX_MAYBE_COOP_NO_THREAD_BROKEN) which caused a deadlock when called
-    // while holding the DebuggerController lock. The GC thread is excluded
+    // replacement during async mode. The GC thread is excluded
     // since it cannot race with itself on RestartEE.
     EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode && !IsGCThread());
 
@@ -1009,14 +1016,8 @@ LDone:
     }
     else
     {
-        Bucket* pBucket = pObsoleteTables;
-        while (pBucket) {
-            Bucket* pNextBucket = NextObsolete(pBucket);
-            delete [] pBucket;
-            pBucket = pNextBucket;
-        }
+        DeleteObsoleteBuckets(pObsoleteTables);
     }
-
 }
 
 //---------------------------------------------------------------------

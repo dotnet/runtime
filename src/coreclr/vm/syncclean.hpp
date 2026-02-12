@@ -10,10 +10,9 @@
 // mode.
 
 struct EEHashEntry;
-class Crst;
-class CrstStatic;
 
-class SyncClean {
+class SyncClean final
+{
 public:
     static void Terminate ();
 
