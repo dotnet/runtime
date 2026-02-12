@@ -88,14 +88,14 @@ jobs:
             displayName: Download Wasm.Build.Tests
             inputs:
               buildType: current
-              artifactName: WasmBuildTests_$(_hostedOs)_AllSubsets_CoreCLR
+              artifactName: WasmBuildTests_$(_hostedOs)_CoreCLR_ReleaseLibraries
               downloadType: single
               downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
           - task: CopyFiles@2
             displayName: Copy Wasm.Build.Tests archive
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_AllSubsets_CoreCLR'
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/WasmBuildTests_$(_hostedOs)_CoreCLR_ReleaseLibraries'
               Contents: helix/**
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
