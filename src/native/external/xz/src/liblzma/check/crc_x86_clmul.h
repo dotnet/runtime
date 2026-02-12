@@ -344,7 +344,7 @@ is_arch_extension_supported(void)
 #if defined(_MSC_VER)
 	// This needs <intrin.h> with MSVC. ICC has it as a built-in
 	// on all platforms.
-	__cpuid(r, 1);
+	__cpuid((int *)r, 1);
 #elif defined(HAVE_CPUID_H)
 	// Compared to just using __asm__ to run CPUID, this also checks
 	// that CPUID is supported and saves and restores ebx as that is
