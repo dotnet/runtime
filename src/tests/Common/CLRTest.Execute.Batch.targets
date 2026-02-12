@@ -197,7 +197,7 @@ REM Usage: set "__RunCmd=<command>" then call :RunWithTimeout <timeout_ms>
 REM Runs __RunCmd with a timeout, kills the process on timeout,
 REM and returns exit code 99 on timeout.
 REM Use PowerShell for reliable process management and timeout
-powershell -NoProfile -Command "& { $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c !__RunCmd!' -NoNewWindow -PassThru; if (-not $p.WaitForExit(%~1)) { try { $p.Kill() } catch {} ; exit 99 } else { exit $p.ExitCode } }"
+powershell -NoProfile -Command "& { $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c !__RunCmd!' -NoNewWindow -PassThru; if (-not $p.WaitForExit(%~1)) { try { $p.Kill() } catch {} ; try { taskkill /T /F /PID $p.Id 2>$null } catch {} ; exit 99 } else { exit $p.ExitCode } }"
 Exit /b !ERRORLEVEL!
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
