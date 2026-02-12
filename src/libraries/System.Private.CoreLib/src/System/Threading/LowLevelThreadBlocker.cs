@@ -44,10 +44,7 @@ namespace System.Threading
 
         ~LowLevelThreadBlocker()
         {
-            if (_pState != null)
-            {
-                Dispose();
-            }
+            Dispose();
         }
 
         public void Dispose()
