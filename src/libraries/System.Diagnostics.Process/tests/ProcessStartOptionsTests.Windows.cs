@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tests
         {
             // "If the file name ends in a period (.) with no extension, .exe is not appended."
             // This should fail since "notepad." won't exist
-            Assert.Throws<FileNotFoundException>(() => new("notepad."));
+            Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions("notepad."));
         }
 
         [Fact]

@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartOptions options = new("sh");
             Assert.True(File.Exists(options.FileName));
-            Assert.Equal(Path.GetFullPath("/bin/sh"), options.FileName);
+            Assert.Equal(ResolveTarget("/bin/sh"), options.FileName);
         }
 
         [Fact]
@@ -23,7 +23,13 @@ namespace System.Diagnostics.Tests
             // sh should be findable in PATH on all Unix systems
             ProcessStartOptions options = new("sh");
             Assert.True(File.Exists(options.FileName));
-            Assert.EndsWith("sh", options.FileName);
+            Assert.Equal(ResolveTarget("/bin/sh"), options.FileName);
+        }
+
+        private static string ResolveTarget(string path)
+        {
+            FileSystemInfo? target = File.ResolveLinkTarget(path, returnFinalTarget: true);
+            return target?.FullName ?? path;
         }
 
         [Fact]
