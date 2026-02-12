@@ -928,8 +928,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 }
 
 #ifdef HOST_ANDROID
-#include <minipal/log.h>
-
 static Volatile<LONG> s_callstackForFatalErrorLogged = FALSE;
 
 // Logs the callstack for a fatal error. Should only be called once.
@@ -942,12 +940,7 @@ void EEPolicy::LogCallstackForFatalErrorOnce()
         return;
     }
 
-    minipal_log_write_fatal("Fatal error.\n");
-    Thread *pThread = GetThreadNULLOk();
-    if (pThread != NULL)
-    {
-        LogCallstackForLogWorker(pThread, NULL);
-    }
+    LogInfoForFatalError(0, W("Native crash"), nullptr, nullptr, nullptr);
 }
 
 void EEPolicy::CallstackForFatalErrorLogged()
