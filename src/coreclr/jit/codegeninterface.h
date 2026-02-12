@@ -60,7 +60,7 @@ public:
 
     Compiler* GetCompiler() const
     {
-        return compiler;
+        return m_compiler;
     }
 
 #if defined(TARGET_AMD64)
@@ -153,7 +153,7 @@ public:
 #endif
 
 protected:
-    Compiler* compiler;
+    Compiler* m_compiler;
     bool      m_genAlignLoops;
 
 private:
@@ -373,6 +373,16 @@ public:
     }
 
 #endif // !DOUBLE_ALIGN
+
+#ifdef TARGET_WASM
+    struct WasmLocalsDecl
+    {
+        WasmValueType Type;
+        unsigned      Count;
+    };
+
+    jitstd::vector<WasmLocalsDecl> WasmLocalsDecls;
+#endif
 
 #ifdef DEBUG
     // The following is used to make sure the value of 'GetInterruptible()' isn't
@@ -805,7 +815,7 @@ public:
         unsigned int m_LiveDscCount;  // count of args, special args, and IL local variables to report home
         unsigned int m_LiveArgsCount; // count of arguments to report home
 
-        Compiler* m_Compiler;
+        Compiler* m_compiler;
 
         VariableLiveDescriptor* m_vlrLiveDsc; // Array of descriptors that manage VariableLiveRanges.
                                               // Its indices correspond to lvaTable indexes (or lvSlotNum).

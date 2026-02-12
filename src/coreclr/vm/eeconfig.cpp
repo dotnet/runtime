@@ -451,7 +451,7 @@ HRESULT EEConfig::sync()
     pReadyToRunExcludeList = NULL;
 
 #ifdef FEATURE_INTERPRETER
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     LPWSTR interpreterConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
     if (interpreterConfig == NULL)
@@ -467,7 +467,7 @@ HRESULT EEConfig::sync()
     }
 #else
     enableInterpreter = true;
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 #endif // FEATURE_INTERPRETER
 
     enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);

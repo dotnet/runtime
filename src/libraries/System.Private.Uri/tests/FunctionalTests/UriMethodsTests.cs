@@ -7,7 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.Tests
+namespace System.PrivateUri.Tests
 {
     public class UriMethodTests
     {

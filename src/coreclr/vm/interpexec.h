@@ -125,4 +125,7 @@ struct UnmanagedMethodWithTransitionParam
     PCODE callTarget;
 };
 
+void InterpDispatchCache_ReclaimAll();
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
+
 #endif // _INTERPEXEC_H_
