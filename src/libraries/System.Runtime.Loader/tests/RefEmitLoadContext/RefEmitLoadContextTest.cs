@@ -66,7 +66,7 @@ namespace System.Runtime.Loader.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
-        [ActiveIssue("TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void LoadRefEmitAssembly()
         {
             Init();

@@ -12,7 +12,7 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
-        [ActiveIssue("TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public void Clear()
         {
             ProjectData.ClearProjectError();
