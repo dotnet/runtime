@@ -51,7 +51,7 @@ namespace System.Reflection
         /// <exception cref="System.ArgumentException">
         /// <para><paramref name="interfaceType"/> is a class.</para>
         /// <para>-or-</para>
-        /// <para><paramref name="proxyType"/> is sealed or abstract, or doesn't inherit from the <see cref="System.Reflection.DispatchProxy"/> type or has a parameterless constructor.</para>
+        /// <para><paramref name="proxyType"/> is sealed or abstract, or doesn't inherit from the <see cref="System.Reflection.DispatchProxy"/> type or does not have a parameterless constructor.</para>
         /// </exception>
         [RequiresDynamicCode("Creating a proxy instance requires generating code at runtime")]
         public static object Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyType)
