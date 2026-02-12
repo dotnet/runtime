@@ -357,6 +357,8 @@ public:
 
     bool IsFloatHfa() const;
 
+    bool IsVectorT() const;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT

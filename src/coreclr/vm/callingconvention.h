@@ -575,6 +575,12 @@ public:
 #ifdef TARGET_AMD64
         return IsArgPassedByRef(size);
 #elif defined(TARGET_ARM64)
+        // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+        if (th.IsVectorT() && ExecutionManager::GetEEJitManager()->UseScalableVectorT())
+        {
+            return TRUE;
+        }
+
         // Composites greater than 16 bytes are passed by reference
         return ((size > ENREGISTERED_PARAMTYPE_MAXSIZE) && !th.IsHFA());
 #elif defined(TARGET_LOONGARCH64)
@@ -633,7 +639,14 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
+
+            // TODO-SVE: This should be removed when Vector<T> has an HFA type.
+            if (m_argTypeHandle.IsVectorT() && ExecutionManager::GetEEJitManager()->UseScalableVectorT())
+            {
+                return TRUE;
+            }
+
+            return (((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg())));
         }
         return FALSE;
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

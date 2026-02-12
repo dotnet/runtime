@@ -456,6 +456,12 @@ bool TypeHandle::IsFloatHfa() const
     return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
 }
 
+bool TypeHandle::IsVectorT() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return AsMethodTable() == CoreLibBinder::GetClass(CLASS__VECTORT);
+}
+
 
 #ifdef FEATURE_64BIT_ALIGNMENT
 bool TypeHandle::RequiresAlign8() const
