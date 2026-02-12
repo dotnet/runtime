@@ -100,7 +100,7 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
+          - windows_x64
           - windows_x86
           helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
