@@ -52,7 +52,10 @@ namespace System.Threading
 
         public void Dispose()
         {
-            Debug.Assert(_pState != null);
+            if (_pState == null)
+            {
+                return;
+            }
 
             NativeMemory.AlignedFree(_pState);
             _pState = null;
