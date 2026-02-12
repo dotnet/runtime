@@ -43,7 +43,7 @@ SELECT job_name, error_snippet FROM failed_jobs WHERE is_pr_correlated = TRUE;
 
 ### Workflow
 
-1. After the script runs, insert one row per failed job from `failedJobDetails`
+1. After the script runs, insert one row per failed job from `failedJobDetails` (each entry includes `buildId`)
 2. For each known issue from `knownIssues`, UPDATE matching rows with the issue URL
 3. Query for unmatched failures — these need investigation
 4. For crash/canceled jobs, update `recovery_status` after checking Helix results

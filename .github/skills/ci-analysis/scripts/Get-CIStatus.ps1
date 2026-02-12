@@ -1969,6 +1969,7 @@ try {
                 # Track per-job failure details for JSON summary
                 $jobDetail = [ordered]@{
                     jobName = $job.name
+                    buildId = $currentBuildId
                     errorSnippet = ""
                     helixWorkItems = @()
                     errorCategory = "unclassified"
@@ -2030,7 +2031,7 @@ try {
                                             # Categorize failure from log content
                                             if ($failureInfo -match 'Timed Out \(timeout') {
                                                 $jobDetail.errorCategory = "test-timeout"
-                                            } elseif ($failureInfo -match 'Exit Code:\s*(139|134)' -or $failureInfo -match 'createdump') {
+                                            } elseif ($failureInfo -match 'Exit Code:\s*(139|134|-4)' -or $failureInfo -match 'createdump') {
                                                 # Crash takes highest precedence — don't downgrade
                                                 if ($jobDetail.errorCategory -notin @("crash")) {
                                                     $jobDetail.errorCategory = "crash"

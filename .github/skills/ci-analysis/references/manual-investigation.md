@@ -77,7 +77,7 @@ Binlogs contain detailed MSBuild execution traces for diagnosing:
 ```
 mcp-binlog-tool-load_binlog path:"path/to/build.binlog"
 mcp-binlog-tool-get_diagnostics binlog_file:"path/to/build.binlog"
-mcp-binlog-tool-search_binlog binlog_file:"path/to/build.binlog" query:"$error"
+mcp-binlog-tool-search_binlog binlog_file:"path/to/build.binlog" query:"error"
 ```
 
 **Manual Analysis:**
