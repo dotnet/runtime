@@ -52,12 +52,7 @@ endif()
 #
 # silence the warnings for now, we will need to fix these in code and upstream the fixes
 #
-if(MSVC)
-    target_compile_definitions(liblzma PRIVATE _CRT_SECURE_NO_WARNINGS)
-endif()
-
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4267>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>)
 target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4057>)
-target_compile_options(liblzma PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4996>)
