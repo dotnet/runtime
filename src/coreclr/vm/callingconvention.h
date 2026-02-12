@@ -579,7 +579,7 @@ public:
         return IsArgPassedByRef(size);
 #elif defined(TARGET_ARM64)
         // TODO-SVE: This should be removed when Vector<T> has an HFA type.
-        if (th.IsVectorT() && ExecutionManager::GetEEJitManager()->UseScalableVectorT())
+        if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && th.IsVectorT())
         {
             return TRUE;
         }
@@ -644,7 +644,7 @@ public:
             _ASSERTE(!m_argTypeHandle.IsNull());
 
             // TODO-SVE: This should be removed when Vector<T> has an HFA type.
-            if (m_argTypeHandle.IsVectorT() && ExecutionManager::GetEEJitManager()->UseScalableVectorT())
+            if (ExecutionManager::GetEEJitManager()->UseScalableVectorT() && m_argTypeHandle.IsVectorT())
             {
                 return TRUE;
             }
