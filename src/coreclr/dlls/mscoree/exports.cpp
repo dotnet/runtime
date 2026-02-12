@@ -298,7 +298,7 @@ int coreclr_initialize(
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
 
 #ifdef TARGET_UNIX
-    if (Configuration::GetKnobBooleanValue(W("CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
+    if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
     {
         PAL_EnableCrashReportBeforeSignalChaining();
     }

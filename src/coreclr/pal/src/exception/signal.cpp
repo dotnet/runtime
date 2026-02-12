@@ -145,7 +145,8 @@ Abstract:
 PALIMPORT
 VOID
 PALAPI
-PAL_EnableCrashReportBeforeSignalChaining()
+PAL_EnableCrashReportBeforeSignalChaining(
+    void)
 {
     g_crash_report_before_signal_chaining = true;
 }
@@ -469,6 +470,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     if (g_crash_report_before_signal_chaining)
     {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
 
@@ -485,9 +487,9 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         action->sa_handler(code);
     }
 
-    PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
     if (!g_crash_report_before_signal_chaining)
     {
+        PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
 }
