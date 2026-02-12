@@ -76,9 +76,47 @@ $log = Invoke-RestMethod -Uri $logUrl -Headers $headers
 
 Note: a PR may have more unique `pr.sourceSha` values than commits visible on GitHub, because force-pushes replace the commit history. Each force-push triggers a new build with a new merge commit and a new `pr.sourceSha`.
 
-### Step 3: Build a progression table
+### Step 3: Store progression in SQL
 
-Include the target branch HEAD to catch baseline shifts:
+Use the SQL tool to track builds as you discover them. This avoids losing context and enables queries across the full history:
+
+```sql
+CREATE TABLE IF NOT EXISTS build_progression (
+  build_id INT PRIMARY KEY,
+  pr_sha TEXT,
+  target_sha TEXT,
+  result TEXT,       -- passed, failed, canceled
+  queued_at TEXT,
+  failed_jobs TEXT,  -- comma-separated job names
+  notes TEXT
+);
+```
+
+Insert rows as you extract data from each build:
+
+```sql
+INSERT INTO build_progression VALUES
+  (1283986, '7af79ad', '2d638dc', 'failed', '2026-02-08T10:00:00Z', 'WasmBuildTests', 'Initial commits'),
+  (1284169, '28ec8a0', '0b691ba', 'failed', '2026-02-08T14:00:00Z', 'WasmBuildTests', 'Iteration 2'),
+  (1284433, '39dc0a6', '18a3069', 'passed', '2026-02-09T09:00:00Z', NULL, 'Iteration 3');
+```
+
+Then query to find the pass→fail transition:
+
+```sql
+-- Find where it went from passing to failing
+SELECT * FROM build_progression ORDER BY queued_at;
+
+-- Did the target branch move between pass and fail?
+SELECT pr_sha, target_sha, result FROM build_progression
+WHERE result IN ('passed', 'failed') ORDER BY queued_at;
+
+-- Which builds share the same PR SHA? (force-push detection)
+SELECT pr_sha, COUNT(*) as builds, GROUP_CONCAT(result) as results
+FROM build_progression GROUP BY pr_sha HAVING builds > 1;
+```
+
+Present the table to the user:
 
 | PR HEAD | Target HEAD | Builds | Result | Notes |
 |---------|-------------|--------|--------|-------|
