@@ -1525,7 +1525,7 @@ namespace Internal.JitInterface
                 impl.IsCanonicalMethod(CanonicalFormKind.Specific))
             {
 #if READYTORUN
-                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, resolver.GetModuleTokenForMethod(originalImpl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: false), null, false, null, null);
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, originalImplWithToken));
 #else
                 // TODO: Implement generic virtual method devirtualization constant lookup for NativeAOT
