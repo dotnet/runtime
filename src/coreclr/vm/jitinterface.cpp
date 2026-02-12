@@ -14156,7 +14156,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 default:
                     STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown READYTORUN_HELPER %d\n", helperNum);
-                    printf("Unknown READYTORUN_HELPER %d", helperNum);
                     _ASSERTE(!"Unknown READYTORUN_HELPER");
                     return FALSE;
                 }
