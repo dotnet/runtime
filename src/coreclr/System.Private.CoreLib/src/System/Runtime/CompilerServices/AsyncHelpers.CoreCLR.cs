@@ -169,7 +169,7 @@ namespace System.Runtime.CompilerServices
         // The runtime async Task being dispatched.
         // This is used by debuggers in the case of nested dispatcher info (multiple runtime-async Tasks on the same thread)
         // to match an inflight Task to the corresponding Continuation chain.
-        public Task Task;
+        public Task? CurrentTask;
 
         // Information about current task dispatching, to be used for async
         // stackwalking.
@@ -471,14 +471,12 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-#pragma warning disable IDE0060 // Remove unused parameter
 #pragma warning disable CA1822 // Mark members as static
             [MethodImpl(MethodImplOptions.NoOptimization)]
             public void NotifyDebuggerOfRuntimeAsyncState()
             {
             }
 #pragma warning restore CA1822
-#pragma warning restore IDE0060
 
             [StackTraceHidden]
             private unsafe void DispatchContinuations()
@@ -489,7 +487,7 @@ namespace System.Runtime.CompilerServices
                 AsyncDispatcherInfo asyncDispatcherInfo;
                 asyncDispatcherInfo.Next = AsyncDispatcherInfo.t_current;
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
-                asyncDispatcherInfo.Task = this;
+                asyncDispatcherInfo.CurrentTask = this;
                 AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
                 bool isTplEnabled = TplEventSource.Log.IsEnabled();
 
@@ -538,6 +536,10 @@ namespace System.Runtime.CompilerServices
                     }
                     catch (Exception ex)
                     {
+                        if (Task.s_asyncDebuggingEnabled)
+                        {
+                            Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
+                        }
                         Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex);
                         if (handlerContinuation == null)
                         {
