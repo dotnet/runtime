@@ -52,6 +52,10 @@ SELECT job_name, error_snippet FROM failed_jobs WHERE is_pr_correlated = TRUE;
 
 See [build-progression-analysis.md](build-progression-analysis.md) for the `build_progression` and `build_failures` tables that track pass/fail across multiple builds.
 
+> **`failed_jobs` vs `build_failures` — when to use each:**
+> - `failed_jobs` (above): **Job-level** — maps each failed AzDO job to a known issue. Use for single-build triage ("are all failures accounted for?").
+> - `build_failures` (build-progression-analysis.md): **Test-level** — tracks individual test names across builds. Use for progression analysis ("which tests started failing after commit X?").
+
 ## PR Comment Tracking
 
 For deep-dive analysis — especially across a chain of related PRs (e.g., dependency flow failures, sequential merge PRs, or long-lived PRs with weeks of triage) — store PR comments so you can query them without re-fetching:

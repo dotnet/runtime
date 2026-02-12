@@ -75,7 +75,7 @@ The script operates in three distinct modes depending on what information you ha
 ## What the Script Does
 
 ### PR Analysis Mode (`-PRNumber`)
-1. Discovers all AzDO builds associated with the PR
+1. Discovers AzDO builds associated with the PR (via `gh pr checks` — finds failing builds and one non-failing build as fallback; for full build history, use `azure-devops-pipelines_get_builds`)
 2. Fetches Build Analysis for known issues
 3. Gets failed jobs from Azure DevOps timeline
 4. **Separates canceled jobs from failed jobs** (canceled may be dependency-canceled or timeout-canceled)

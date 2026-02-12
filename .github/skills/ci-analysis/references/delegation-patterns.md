@@ -117,7 +117,7 @@ Launch one per build in parallel. The main agent combines with `azure-devops-pip
 
 ## General Guidelines
 
-- **Use `general-purpose` agent type** — it has shell + MCP access (hlx-*, azure-devops-*, mcp-binlog-tool-*)
+- **Use `general-purpose` agent type** — it has shell + MCP access (`hlx_status`, `azure-devops-pipelines_get_builds`, `mcp-binlog-tool-load_binlog`, etc.)
 - **Run independent tasks in parallel** — the whole point of delegation
 - **Include script paths** — subagents don't inherit skill context
 - **Require structured JSON output** — enables comparison across subagents
