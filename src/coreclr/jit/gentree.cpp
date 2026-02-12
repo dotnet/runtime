@@ -7554,6 +7554,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
 
     switch (OperGet())
     {
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
         case GT_ARR_ADDR:
         case GT_BOUNDS_CHECK:
         case GT_IND:
