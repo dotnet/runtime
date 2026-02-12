@@ -39,8 +39,8 @@ powerpc_code(void *simple lzma_attribute((__unused__)),
 				dest = src - (now_pos + (uint32_t)(i));
 
 			buffer[i + 0] = 0x48 | ((dest >> 24) &  0x03);
-			buffer[i + 1] = (dest >> 16);
-			buffer[i + 2] = (dest >> 8);
+			buffer[i + 1] = (uint8_t)(dest >> 16);
+			buffer[i + 2] = (uint8_t)(dest >> 8);
 			buffer[i + 3] &= 0x03;
 			buffer[i + 3] |= dest;
 		}

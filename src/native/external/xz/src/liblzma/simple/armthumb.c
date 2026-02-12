@@ -42,7 +42,7 @@ armthumb_code(void *simple lzma_attribute((__unused__)),
 
 			dest >>= 1;
 			buffer[i + 1] = 0xF0 | ((dest >> 19) & 0x7);
-			buffer[i + 0] = (dest >> 11);
+			buffer[i + 0] = (uint8_t)(dest >> 11);
 			buffer[i + 3] = 0xF8 | ((dest >> 8) & 0x7);
 			buffer[i + 2] = (uint8_t)(dest);
 			i += 2;

@@ -126,7 +126,7 @@ lzma_delta_props_encode(const void *options, uint8_t *out)
 		return LZMA_PROG_ERROR;
 
 	const lzma_options_delta *opt = options;
-	out[0] = opt->dist - LZMA_DELTA_DIST_MIN;
+	out[0] = (uint8_t)(opt->dist - LZMA_DELTA_DIST_MIN);
 
 	return LZMA_OK;
 }

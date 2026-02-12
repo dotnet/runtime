@@ -753,7 +753,7 @@ lzma_lzma_lclppb_encode(const lzma_options_lzma *options, uint8_t *byte)
 	if (!is_lclppb_valid(options))
 		return true;
 
-	*byte = (options->pb * 5 + options->lp) * 9 + options->lc;
+	*byte = (uint8_t)((options->pb * 5 + options->lp) * 9 + options->lc);
 	assert(*byte <= (4 * 5 + 4) * 9 + 8);
 
 	return false;

@@ -394,7 +394,7 @@ lzma_lzma2_props_encode(const void *options, uint8_t *out)
 	if (d == UINT32_MAX)
 		out[0] = 40;
 	else
-		out[0] = get_dist_slot(d + 1) - 24;
+		out[0] = (uint8_t)(get_dist_slot(d + 1) - 24);
 
 	return LZMA_OK;
 }
