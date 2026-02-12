@@ -332,7 +332,7 @@ fi
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
 run_with_timeout() {
-  local timeout=$1
+  local timeout_sec=$(( $1 / 1000 ))
   shift
   local cmd=("$@")
 
@@ -342,7 +342,7 @@ run_with_timeout() {
 
   # Start a watchdog that will kill the process if it exceeds timeout
   (
-    sleep "$(( timeout / 1000 ))"
+    sleep "$timeout_sec"
     if kill -0 "$pid" 2>/dev/null; then
       kill -9 "$pid" 2>/dev/null
     fi
