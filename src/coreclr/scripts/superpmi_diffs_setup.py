@@ -208,11 +208,14 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
         return 1
 
 def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
-    mcs_path = os.path.join(bin_path, "mcs.exe" if is_windows else "mcs")
-    if is_macos:
-        # Hack: the target is arm64, but the build machine is x64. We build SPMI for x64 because of that,
-        # but it exists at a different path.
+    if is_windows:
+        mcs_path = os.path.join(bin_path, "mcs.exe")
+    elif is_macos:
+        # The build machine is x64 always
         mcs_path = os.path.join(bin_path, "..", "osx.x64.Checked", "mcs")
+    else:
+        # Like above
+        mcs_path = os.path.join(bin_path, "..", "linux.x64.Checked", "mcs")
     assert(os.path.exists(mcs_path))
 
     command = [mcs_path, "-printJITEEVersion"]
