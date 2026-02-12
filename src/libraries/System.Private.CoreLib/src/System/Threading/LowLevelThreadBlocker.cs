@@ -44,15 +44,15 @@ namespace System.Threading
 
         ~LowLevelThreadBlocker()
         {
-            Dispose();
+            if (_pState != null)
+            {
+                Dispose();
+            }
         }
 
         public void Dispose()
         {
-            if (_pState == null)
-            {
-                return;
-            }
+            Debug.Assert(_pState != null);
 
             NativeMemory.AlignedFree(_pState);
             _pState = null;
