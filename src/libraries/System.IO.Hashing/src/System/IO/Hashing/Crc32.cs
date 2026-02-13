@@ -156,8 +156,8 @@ namespace System.IO.Hashing
         /// <summary>
         ///   Computes the CRC-32 hash value for the provided data using the specified parameter set.
         /// </summary>
-        /// <param name="source">The data to hash.</param>
         /// <param name="parameterSet">The parameters to use for the CRC computation.</param>
+        /// <param name="source">The data to hash.</param>
         /// <returns>The CRC-32 hash of the provided data.</returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="parameterSet"/> is <see langword="null"/>.
