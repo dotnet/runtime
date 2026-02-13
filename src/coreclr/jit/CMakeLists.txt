@@ -134,6 +134,7 @@ set( JIT_SOURCES
   inline.cpp
   inlinepolicy.cpp
   instr.cpp
+  integralrange.cpp
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
@@ -178,6 +179,7 @@ set( JIT_SOURCES
   treelifeupdater.cpp
   utils.cpp
   valuenum.cpp
+  vnbasedmorph.cpp
 )
 
 set ( JIT_NATIVE_TARGET_SOURCES
