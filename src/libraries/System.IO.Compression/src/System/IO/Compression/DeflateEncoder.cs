@@ -126,7 +126,8 @@ namespace System.IO.Compression
             _zlibCompressionLevel = (ZLibNative.CompressionLevel)options.CompressionLevel;
             _strategy = options.CompressionStrategy;
 
-            int windowLog = options.WindowLog;
+            // -1 means use the default window log
+            int windowLog = options.WindowLog == -1 ? DefaultWindowLog : options.WindowLog;
 
             // Compute windowBits based on the compression format:
             int windowBits = format switch
@@ -212,10 +213,11 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="inputLength">The input size to get the maximum expected compressed length from.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative or exceeds <see cref="uint.MaxValue"/>.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, uint.MaxValue);
 
             return (long)Interop.ZLib.compressBound((uint)inputLength);
         }
