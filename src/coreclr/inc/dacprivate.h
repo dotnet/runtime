@@ -226,6 +226,7 @@ struct MSLAYOUT DacpThreadLocalModuleData
     CLRDATA_ADDRESS pNonGCStaticDataStart = 0;
 };
 
+enum ModuleFlags {IS_REFLECTION_EMIT = 0x00000040};
 
 struct MSLAYOUT DacpModuleData
 {

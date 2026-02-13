@@ -2494,7 +2494,7 @@ public sealed unsafe partial class SOSDacImpl
             bool isReflectionEmit = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit);
             data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
             data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
-            data->dwTransientFlags = (uint)flags;
+            data->dwTransientFlags = (uint)(flags & Contracts.ModuleFlags.ReflectionEmit);
 
             data->ilBase = contract.GetILBase(handle).ToClrDataAddress(_target);
 
