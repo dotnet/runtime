@@ -25,7 +25,7 @@
 
   <Target Name="_PrepareNetworkSecurityConfig"
           BeforeTargets="_AndroidGenerateAppBundle"
-          DependsOnTargets="Publish">
+          DependsOnTargets="CopyFilesToOutputDirectory">
     <PropertyGroup>
       <!-- Extract root CA from PKCS#7 bundle (contains root) -->
       <_CaCertP7bPath>$(OutputPath)TestData/contoso.com.p7b</_CaCertP7bPath>
