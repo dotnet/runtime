@@ -52,9 +52,9 @@ namespace System.Diagnostics.Tests
                 
                 Directory.SetCurrentDirectory(tempDir);
                 ProcessStartOptions options = new(fileName);
-                // options.FileName is already the resolved full path
-                // Use Path.GetFullPath to canonicalize fullPath (handles /tmp -> /private/tmp on macOS)
-                Assert.Equal(Path.GetFullPath(fullPath), options.FileName);
+                // Path.GetFullPath resolves symlinks in the path (e.g., /tmp -> /private/tmp on macOS)
+                // options.FileName is already fully resolved by ProcessStartOptions
+                Assert.Equal(Path.GetFullPath(fullPath), Path.GetFullPath(options.FileName));
             }
             finally
             {
@@ -128,7 +128,7 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartOptions options = new(utilName);
             Assert.True(File.Exists(options.FileName), $"{utilName} should be found and exist");
-            Assert.Contains(utilName, options.FileName);
+            Assert.EndsWith(utilName, options.FileName);
         }
 
         [Fact]

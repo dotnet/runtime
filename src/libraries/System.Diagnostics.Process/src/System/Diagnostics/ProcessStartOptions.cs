@@ -192,7 +192,7 @@ namespace System.Diagnostics
             // Windows-specific search locations (from CreateProcessW documentation)
 
             // Check the system directory (e.g., System32)
-            path = GetSystemDirectory();
+            path = s_cachedSystemDirectory ??= System.Environment.SystemDirectory;
             if (path != null)
             {
                 path = Path.Combine(path, filename);
