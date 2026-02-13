@@ -98,11 +98,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (input is null || output is null || error is null)
             {
-                nullHandle = File.OpenHandle(
-                    OperatingSystem.IsWindows() ? "NUL" : "/dev/null",
-                    FileMode.Open,
-                    FileAccess.ReadWrite,
-                    FileShare.ReadWrite);
+                nullHandle = File.OpenNullHandle();
 
                 input ??= nullHandle;
                 output ??= nullHandle;

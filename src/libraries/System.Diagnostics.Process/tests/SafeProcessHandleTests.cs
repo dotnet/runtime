@@ -14,6 +14,8 @@ namespace System.Diagnostics.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
+        private static ProcessStartOptions CreateTenSecondSleep() => new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
+
         [Fact]
         public static void GetProcessId_ReturnsValidPid()
         {
@@ -35,12 +37,10 @@ namespace System.Diagnostics.Tests
             Assert.False(exitStatus.Canceled);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void Kill_KillsRunningProcess()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             bool wasKilled = processHandle.Kill();
             Assert.True(wasKilled);
@@ -50,12 +50,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(-1, exitStatus.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void Kill_CanBeCalledMultipleTimes()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             bool firstKill = processHandle.Kill();
             Assert.True(firstKill);
@@ -66,12 +64,10 @@ namespace System.Diagnostics.Tests
             Assert.False(secondKill);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void WaitForExit_Called_After_Kill_ReturnsExitCodeImmediately()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             bool wasKilled = processHandle.Kill();
             Assert.True(wasKilled);
@@ -98,12 +94,10 @@ namespace System.Diagnostics.Tests
             Assert.False(wasKilled);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void WaitForExitOrKillOnTimeout_KillsOnTimeout()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
@@ -145,12 +139,10 @@ namespace System.Diagnostics.Tests
             Assert.Null(exitStatus.Signal);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void TryWaitForExit_ReturnsFalseWhenProcessDoesNotExitBeforeTimeout()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             try
             {
@@ -183,12 +175,10 @@ namespace System.Diagnostics.Tests
             Assert.Null(exitStatus.Signal);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void WaitForExitOrKillOnTimeout_KillsAndWaitsWhenTimeoutOccurs()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
@@ -200,12 +190,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(-1, exitStatus.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static async Task WaitForExitOrKillOnCancellationAsync_KillsOnCancellation()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 5" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             Stopwatch stopwatch = Stopwatch.StartNew();
             using CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(300));
@@ -217,12 +205,10 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static async Task WaitForExitAsync_ThrowsOnCancellation()
         {
-            ProcessStartOptions options = new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 5" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             try
             {

@@ -11,10 +11,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial IntPtr CreateJobObjectW(IntPtr lpJobAttributes, IntPtr lpName);
 
-        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
-
         internal const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
 
         internal enum JOBOBJECTINFOCLASS

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Text;
 
 namespace System.Diagnostics
@@ -25,33 +24,6 @@ namespace System.Diagnostics
                 PasteArguments.AppendArgument(ref commandLine, argument);
             }
             commandLine.NullTerminate();
-        }
-
-        internal static string GetEnvironmentVariablesBlock(IDictionary<string, string?> sd)
-        {
-            // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
-            // "All strings in the environment block must be sorted alphabetically by name. The sort is
-            //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
-            //  separator, it must not be used in the name of an environment variable."
-
-            var keys = new string[sd.Count];
-            sd.Keys.CopyTo(keys, 0);
-            Array.Sort(keys, StringComparer.OrdinalIgnoreCase);
-
-            // Join the null-terminated "key=val\0" strings
-            var result = new StringBuilder(8 * keys.Length);
-            foreach (string key in keys)
-            {
-                string? value = sd[key];
-
-                // Ignore null values for consistency with Environment.SetEnvironmentVariable
-                if (value != null)
-                {
-                    result.Append(key).Append('=').Append(value).Append('\0');
-                }
-            }
-
-            return result.ToString();
         }
     }
 }

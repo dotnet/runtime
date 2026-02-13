@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
             IntPtr jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
             if (jobHandle == IntPtr.Zero)
             {
-                throw new Win32Exception(Marshal.GetLastPInvokeError(), SR.Format(SR.CouldNotCreateJobObject));
+                throw new Win32Exception();
             }
 
             Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION limitInfo = default;
@@ -61,9 +61,8 @@ namespace Microsoft.Win32.SafeHandles
                 ref limitInfo,
                 (uint)Marshal.SizeOf<Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
             {
-                int error = Marshal.GetLastPInvokeError();
                 Interop.Kernel32.CloseHandle(jobHandle);
-                throw new Win32Exception(error, SR.Format(SR.CouldNotSetJobObjectInfo));
+                throw new Win32Exception();
             }
 
             return jobHandle;
@@ -88,11 +87,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (!Interop.Kernel32.GetExitCodeProcess(this, out int exitCode))
             {
-                throw new InvalidOperationException(SR.CouldNotGetExitCode);
+                throw new Win32Exception();
             }
             else if (exitCode == Interop.Kernel32.HandleOptions.STILL_ACTIVE)
             {
-                throw new InvalidOperationException(SR.ProcessNotExited);
+                throw new InvalidOperationException();
             }
 
             return exitCode;
@@ -108,10 +107,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
         {
-            ValueStringBuilder applicationName = new(stackalloc char[256]);
-            ValueStringBuilder commandLine = new(stackalloc char[256]);
-            ProcessUtils.BuildArgs(options, ref applicationName, ref commandLine);
-
             Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
@@ -151,7 +146,7 @@ namespace Microsoft.Win32.SafeHandles
                     processGroupJobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
                     if (processGroupJobHandle == IntPtr.Zero)
                     {
-                        throw new Win32Exception(Marshal.GetLastPInvokeError(), SR.Format(SR.CouldNotCreateJobObject));
+                        throw new Win32Exception();
                     }
                 }
 
@@ -202,7 +197,7 @@ namespace Microsoft.Win32.SafeHandles
                         null,
                         IntPtr.Zero))
                     {
-                        throw new Win32Exception(Marshal.GetLastPInvokeError());
+                        throw new Win32Exception();
                     }
                 }
 
@@ -221,30 +216,42 @@ namespace Microsoft.Win32.SafeHandles
                 if (options.HasEnvironmentBeenAccessed)
                 {
                     creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
-                    environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(options.Environment);
+                    environmentBlock = Process.GetEnvironmentVariablesBlock(options.Environment);
                 }
 
                 string? workingDirectory = options.WorkingDirectory;
                 int errorCode = 0;
 
-                fixed (char* environmentBlockPtr = environmentBlock)
-                fixed (char* applicationNamePtr = &applicationName.GetPinnableReference())
-                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                ValueStringBuilder applicationName = new(stackalloc char[256]);
+                ValueStringBuilder commandLine = new(stackalloc char[256]);
+                try
                 {
-                    bool retVal = Interop.Kernel32.CreateProcess(
-                        applicationNamePtr,
-                        commandLinePtr,
-                        ref unused_SecAttrs,
-                        ref unused_SecAttrs,
-                        true,
-                        creationFlags,
-                        environmentBlockPtr,
-                        workingDirectory,
-                        ref startupInfoEx,
-                        ref processInfo
-                    );
-                    if (!retVal)
-                        errorCode = Marshal.GetLastPInvokeError();
+                    ProcessUtils.BuildArgs(options, ref applicationName, ref commandLine);
+
+                    fixed (char* environmentBlockPtr = environmentBlock)
+                    fixed (char* applicationNamePtr = &applicationName.GetPinnableReference())
+                    fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                    {
+                        bool retVal = Interop.Kernel32.CreateProcess(
+                            applicationNamePtr,
+                            commandLinePtr,
+                            ref unused_SecAttrs,
+                            ref unused_SecAttrs,
+                            true,
+                            creationFlags,
+                            environmentBlockPtr,
+                            workingDirectory,
+                            ref startupInfoEx,
+                            ref processInfo
+                        );
+                        if (!retVal)
+                            errorCode = Marshal.GetLastPInvokeError();
+                    }
+                }
+                finally
+                {
+                    applicationName.Dispose();
+                    commandLine.Dispose();
                 }
 
                 if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
@@ -341,7 +348,7 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         if (!Interop.Kernel32.GetHandleInformation(handlePtr, out int flags))
                         {
-                            throw new Win32Exception(Marshal.GetLastPInvokeError());
+                            throw new Win32Exception();
                         }
 
                         if ((flags & Interop.Kernel32.HandleOptions.HANDLE_FLAG_INHERIT) == 0)
@@ -351,7 +358,7 @@ namespace Microsoft.Win32.SafeHandles
                                 Interop.Kernel32.HandleOptions.HANDLE_FLAG_INHERIT,
                                 Interop.Kernel32.HandleOptions.HANDLE_FLAG_INHERIT))
                             {
-                                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                                throw new Win32Exception();
                             }
                         }
 
@@ -508,8 +515,7 @@ namespace Microsoft.Win32.SafeHandles
             int result = Interop.Kernel32.ResumeThread(_threadHandle);
             if (result == -1)
             {
-                int error = Marshal.GetLastPInvokeError();
-                throw new Win32Exception(error);
+                throw new Win32Exception();
             }
         }
 
@@ -530,8 +536,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (!Interop.Kernel32.GenerateConsoleCtrlEvent(ctrlEvent, ProcessId))
             {
-                int error = Marshal.GetLastPInvokeError();
-                throw new Win32Exception(error);
+                throw new Win32Exception();
             }
         }
 

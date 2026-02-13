@@ -342,18 +342,6 @@
   <data name="InvalidProcessHandle" xml:space="preserve">
     <value>Invalid process handle.</value>
   </data>
-  <data name="CouldNotCreateJobObject" xml:space="preserve">
-    <value>Failed to create job object.</value>
-  </data>
-  <data name="CouldNotSetJobObjectInfo" xml:space="preserve">
-    <value>Failed to set job object information.</value>
-  </data>
-  <data name="CouldNotGetExitCode" xml:space="preserve">
-    <value>Failed to get exit code of the process.</value>
-  </data>
-  <data name="ProcessNotExited" xml:space="preserve">
-    <value>Process has not exited yet.</value>
-  </data>
   <data name="KillProcessGroupWithoutNewProcessGroup" xml:space="preserve">
     <value>Cannot terminate entire process group because the process was not started with CreateNewProcessGroup=true.</value>
   </data>

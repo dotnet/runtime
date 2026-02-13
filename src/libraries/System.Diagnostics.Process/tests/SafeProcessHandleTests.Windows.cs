@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -11,11 +10,6 @@ namespace System.Diagnostics.Tests
 {
     public partial class SafeProcessHandleTests
     {
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
-
-        private const int STD_INPUT_HANDLE = -10;
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SendSignal_SIGINT_TerminatesProcessInNewProcessGroup()
         {
@@ -30,7 +24,7 @@ namespace System.Diagnostics.Tests
                 CreateNewProcessGroup = true
             };
 
-            using SafeFileHandle stdin = new(GetStdHandle(STD_INPUT_HANDLE), ownsHandle: false);
+            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
 
             bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
@@ -57,7 +51,7 @@ namespace System.Diagnostics.Tests
                 CreateNewProcessGroup = true
             };
 
-            using SafeFileHandle stdin = new(GetStdHandle(STD_INPUT_HANDLE), ownsHandle: false);
+            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
 
             bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
@@ -84,7 +78,7 @@ namespace System.Diagnostics.Tests
                 CreateNewProcessGroup = true
             };
 
-            using SafeFileHandle stdin = new(GetStdHandle(STD_INPUT_HANDLE), ownsHandle: false);
+            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
 
             try
@@ -128,7 +122,7 @@ namespace System.Diagnostics.Tests
                 CreateNewProcessGroup = false
             };
 
-            using SafeFileHandle stdin = new(GetStdHandle(STD_INPUT_HANDLE), ownsHandle: false);
+            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
 
             Assert.Throws<InvalidOperationException>(() => processHandle.KillProcessGroup());

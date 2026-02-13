@@ -861,7 +861,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
+        internal static string GetEnvironmentVariablesBlock(IDictionary<string, string?> sd)
         {
             // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
             // "All strings in the environment block must be sorted alphabetically by name. The sort is
