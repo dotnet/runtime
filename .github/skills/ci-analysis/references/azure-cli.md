@@ -1,5 +1,7 @@
 # Deep Investigation with Azure CLI
 
+The AzDO MCP tools (`azure-devops-pipelines_*`) handle most pipeline queries directly. This reference covers the Azure CLI fallback for cases where MCP tools are unavailable or the endpoint isn't exposed (e.g., downloading artifacts, inspecting pipeline definitions).
+
 When the CI script and GitHub APIs aren't enough (e.g., investigating internal pipeline definitions or downloading build artifacts), use the Azure CLI with the `azure-devops` extension.
 
 > 💡 **Prefer `az pipelines` / `az devops` commands over raw REST API calls.** The CLI handles authentication, pagination, and JSON output formatting. Only fall back to manual `Invoke-RestMethod` calls when the CLI doesn't expose the endpoint you need (e.g., build timelines). The CLI's `--query` (JMESPath) and `-o table` flags are powerful for filtering without extra scripting.
