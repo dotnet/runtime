@@ -13,7 +13,7 @@ namespace System
 {
     public partial class Uri
     {
-        /// <summary>Helper called by all constructos to construct the Uri.</summary>
+        /// <summary>Helper called by all constructors to construct the Uri.</summary>
         [MemberNotNull(nameof(_string))]
         private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
@@ -150,6 +150,7 @@ namespace System
             }
 
             // We have a valid absolute Uri.
+            DebugSetLeftCtor();
             return null;
 
         SwitchToRelativeUri:
@@ -165,6 +166,7 @@ namespace System
                 _string = vsb.ToString();
             }
 
+            DebugSetLeftCtor();
             return null;
         }
 
@@ -221,7 +223,6 @@ namespace System
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             result = CreateHelper(uriString, false, uriKind);
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -235,7 +236,6 @@ namespace System
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             result = CreateHelper(uriString, false, UriKind.Absolute, in creationOptions);
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -284,7 +284,6 @@ namespace System
             result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute);
             Debug.Assert(result is null || result.IsAbsoluteUri);
 
-            result?.DebugSetLeftCtor();
             return result is not null;
         }
 
@@ -890,6 +889,7 @@ namespace System
         private void CreateThisFromUri(Uri otherUri)
         {
             DebugAssertInCtor();
+            Debug.Assert((otherUri._flags & Flags.Debug_LeftConstructor) != 0);
 
             _flags = otherUri._flags;
 
