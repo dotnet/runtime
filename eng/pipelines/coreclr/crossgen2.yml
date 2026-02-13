@@ -112,7 +112,6 @@ extends:
             buildArgs: -s clr+libs+libs.tests
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
-                       /p:TestRuntimeAsync=true
                        /p:UseRuntimeAsync=true
                        /p:ArchiveTests=true
             nameSuffix: TestReadyToRun_RuntimeAsync_Libraries
