@@ -216,7 +216,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      # - maccatalyst_x64 TODO: https://github.com/dotnet/runtime/issues/120055
+      # - maccatalyst_x64 TODO: https://github.com/dotnet/runtime/issues/124344
       - maccatalyst_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -259,7 +259,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
     platforms:
-      # - maccatalyst_x64 TODO: https://github.com/dotnet/runtime/issues/120055
+      # - maccatalyst_x64 TODO: https://github.com/dotnet/runtime/issues/124344
       - maccatalyst_arm64
     variables:
       # map dependencies variables to local variables

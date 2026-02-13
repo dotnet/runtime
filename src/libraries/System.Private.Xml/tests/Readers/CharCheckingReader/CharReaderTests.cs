@@ -11,6 +11,7 @@ namespace System.Xml.CharCheckingReaderTests
     {
         [Theory]
         [XmlTests(nameof(Create))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public void RunTests(XunitTestCase testCase)
         {
             testCase.Run();
