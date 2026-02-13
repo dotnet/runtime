@@ -239,21 +239,12 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--profile", "Localhost",
         "--scenario", scenario_name,
         
-        # "--application.framework", framework,
-        # "--application.Channel", "edge",
-        # "--application.noGlobalJson", "false",
-
-        # TODO: unpin once it's working again.
-        "--application.framework", "net10.0",
-        "--application.aspNetCoreVersion", "10.0.0-rtm.25513.102",
-        "--application.runtimeVersion", "10.0.0-rtm.25513.102",
-        "--application.sdkVersion", "10.0.100-rtm.25513.102",
+        "--application.framework", framework,
+        "--application.noGlobalJson", "false",
 
         "--application.collectDependencies", "false",
         "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "45",
-        "--load.variables.warmup", "15",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
     ]
     
@@ -361,7 +352,6 @@ def main():
         # Define the environment variable sets to run for each scenario
         env_var_sets = [
             {"Dummy": "0"},
-            {"TieredPGO": "1", "ReadyToRun": "0"},
             {"TieredCompilation": "0", "ReadyToRun": "0"},
             {"TC_PartialCompilation": "1"},
         ]
