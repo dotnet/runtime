@@ -140,9 +140,9 @@ namespace System.Diagnostics.Tests
 
             Assert.True(exited);
             Assert.NotNull(exitStatus);
-            Assert.Equal(0, exitStatus.Value.ExitCode);
-            Assert.False(exitStatus.Value.Canceled);
-            Assert.Null(exitStatus.Value.Signal);
+            Assert.Equal(0, exitStatus.ExitCode);
+            Assert.False(exitStatus.Canceled);
+            Assert.Null(exitStatus.Signal);
         }
 
         [Fact]
