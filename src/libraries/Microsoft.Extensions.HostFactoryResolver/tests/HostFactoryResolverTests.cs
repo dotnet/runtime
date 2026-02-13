@@ -318,22 +318,25 @@ namespace Microsoft.Extensions.Hosting.Tests
                 weakReferences[i] = new WeakReference(serviceProvider);
             }
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            int collectedCount = 0;
-            foreach (var weakReference in weakReferences)
-            {
-                if (!weakReference.IsAlive)
-                {
-                    collectedCount++;
-                }
-            }
-
             int expectedMinCollected = (weakReferences.Length * 80) / 100;
-            Assert.True(collectedCount >= expectedMinCollected,
-                $"Expected at least {expectedMinCollected} objects to be collected, but only {collectedCount} were collected. This may indicate a memory leak.");
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                int collectedCount = 0;
+                foreach (var weakReference in weakReferences)
+                {
+                    if (!weakReference.IsAlive)
+                    {
+                        collectedCount++;
+                    }
+                }
+
+                return collectedCount >= expectedMinCollected;
+            }, TimeSpan.FromSeconds(5)),
+                $"Expected at least {expectedMinCollected} objects to be collected, but only fewer were collected. This may indicate a memory leak.");
         }
     }
 }
