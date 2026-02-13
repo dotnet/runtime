@@ -28,7 +28,6 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool LowLevelMonitor_TimedWait(IntPtr monitor, int timeoutMilliseconds);
 
-        [SuppressGCTransition]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_Signal_Release")]
         internal static partial void LowLevelMonitor_Signal_Release(IntPtr monitor);
     }

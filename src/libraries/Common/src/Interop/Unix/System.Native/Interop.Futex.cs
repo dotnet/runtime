@@ -15,7 +15,6 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool LowLevelFutex_WaitOnAddressTimeout(int* address, int comparand, int timeoutMilliseconds);
 
-        [SuppressGCTransition]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelFutex_WakeByAddressSingle")]
         internal static unsafe partial void LowLevelFutex_WakeByAddressSingle(int* address);
     }

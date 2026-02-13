@@ -11,7 +11,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.Synch, SetLastError = true)]
         internal static unsafe partial BOOL WaitOnAddress(void* Address, void* CompareAddress, nint AddressSize, int dwMilliseconds);
 
-        [SuppressGCTransition]
         [LibraryImport(Libraries.Synch)]
         internal static unsafe partial void WakeByAddressSingle(void* Address);
     }
