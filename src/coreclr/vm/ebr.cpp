@@ -57,7 +57,7 @@ EbrCollector::Init(CrstType crstThreadList, CrstType crstPending, size_t memoryB
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
