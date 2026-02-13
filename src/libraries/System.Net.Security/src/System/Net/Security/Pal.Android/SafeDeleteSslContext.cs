@@ -284,10 +284,10 @@ namespace System.Net
                 // 1. CertificateChainPolicy.CustomTrustStore (when TrustMode is CustomRootTrust)
                 // 2. SslCertificateTrust (via CertificateContext.Trust) — older API
                 //
-                // Note: for CertificateChainPolicy.CustomRootTrust, the platform may still
-                // fail validation (e.g. missing intermediates that are only in ExtraStore),
-                // so the managed chain builder's verdict is authoritative in that case
-                // (see VerifyRemoteCertificate in SslStream.Android.cs).
+                // Note: CertificateChainPolicy.ExtraStore intermediates are NOT passed to the
+                // platform because Java's KeyStore.setCertificateEntry would elevate them to
+                // trust anchors. When ExtraStore is populated, the managed chain builder is
+                // authoritative (see VerifyRemoteCertificate in SslStream.Android.cs).
                 X509Certificate2Collection? certs;
                 if (authOptions.CertificateChainPolicy is not null)
                 {

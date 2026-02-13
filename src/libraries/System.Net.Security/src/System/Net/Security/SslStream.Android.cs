@@ -17,22 +17,25 @@ namespace System.Net.Security
             // accepts the chain, managed validation (X509Chain.Build) can still independently
             // introduce RemoteCertificateChainErrors.
             //
-            // Exception: when CertificateChainPolicy specifies CustomRootTrust without
-            // SslCertificateTrust, the platform's verdict is ignored because it lacks the
-            // intermediate certs from ExtraStore and would produce false rejections. The managed
-            // chain builder — which has access to both CustomTrustStore and ExtraStore — is
-            // authoritative in this case.
+            // The platform's verdict is ignored when the user provided intermediate certificates
+            // via CertificateChainPolicy.ExtraStore. The platform does not have access to these
+            // intermediates (Java's KeyStore.setCertificateEntry would elevate them to trust
+            // anchors) and may produce false rejections for chains that require them. The managed
+            // chain builder has full access to ExtraStore and is authoritative in this case.
             //
-            // TODO: Investigate whether we can avoid this bypass by also passing ExtraStore
-            // intermediates to the platform's KeyStore (without elevating them to trust anchors),
-            // or by implementing a custom X509TrustManager that performs AIA fetching.
-            bool managedTrustOnly =
-                _sslAuthenticationOptions.CertificateContext?.Trust is null
-                && _sslAuthenticationOptions.CertificateChainPolicy?.TrustMode == X509ChainTrustMode.CustomRootTrust;
+            // Note: ExtraStore is also populated later (in SslStream.Protocol.cs) with peer
+            // certificates received during the TLS handshake. Those are the same certificates
+            // the platform already has, so they don't affect this decision. At this point,
+            // ExtraStore.Count reflects only user-provided certificates because
+            // SslAuthenticationOptions.UpdateOptions clones the user's CertificateChainPolicy
+            // for each handshake — peer certs from previous handshakes are never carried over.
+            bool managedTrustOnly = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count > 0;
 
-            SslPolicyErrors sslPolicyErrors = chainTrustedByPlatform || managedTrustOnly
-                ? SslPolicyErrors.None
-                : SslPolicyErrors.RemoteCertificateChainErrors;
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            if (!managedTrustOnly && !chainTrustedByPlatform)
+            {
+                sslPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            }
 
             ProtocolToken alertToken = default;
 
