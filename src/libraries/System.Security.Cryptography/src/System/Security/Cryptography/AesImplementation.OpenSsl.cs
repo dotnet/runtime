@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
                     Debug.Assert(written > 0);
                 }
 
-                // Experimentation and code insepection show that EVP_CipherFinal_ex is not needed here,
+                // Experimentation and code inspection show that EVP_CipherFinal_ex is not needed here,
                 // the work is done in EVP_CipherUpdate.
                 // Since AES-KW(P) involves multiple passes over the data, where the end of each pass
                 // stores a tag/checksum back in the beginning of the buffer, it makes sense that only
