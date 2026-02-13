@@ -23,7 +23,7 @@ private:
     void DumpLifeDelta(GenTree* tree);
 
 private:
-    Compiler* compiler;
+    Compiler* m_compiler;
 #ifdef DEBUG
     unsigned  epoch; // VarSets epoch when the class was created, must stay the same during its using.
     VARSET_TP oldLife;
