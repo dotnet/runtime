@@ -124,7 +124,7 @@ namespace System.Diagnostics
         /// Returns a <see cref="FileVersionInfo" /> representing the version information associated with the specified file.
         /// </summary>
         /// <param name="fileName">The fully qualified path and name of the file to retrieve the version information for.</param>
-        /// <returns>A <see cref="FileVersionInfo" /> containing information about the file.</returns>
+        /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
         public static System.Diagnostics.FileVersionInfo GetVersionInfo(string fileName) { throw null; }
         /// <summary>
         /// Returns a partial list of properties in the <see cref="FileVersionInfo" /> and their values.
