@@ -623,6 +623,33 @@ fi
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
+# Enable sccache for linux-x64 builds if the binary is present in the repo root.
+if [[ "${USE_SCCACHE:-}" != "true" && "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
+    export PATH="$scriptroot/..:$PATH"
+    export USE_SCCACHE=true
+    export SCCACHE_AZURE_BLOB_CONTAINER=runtime-cache
+    export SCCACHE_AZURE_CONNECTION_STRING="BlobEndpoint=https://runsccache.blob.core.windows.net"
+    export SCCACHE_AZURE_NO_CREDENTIALS=true
+
+    sccache --stop-server || true
+
+    # Disable idle timeout so the server stays alive across long managed-build
+    # phases that separate native-compilation steps (e.g. clr then libs).
+    export SCCACHE_IDLE_TIMEOUT=0
+
+    # Write sccache logs to the AzDO artifact staging directory so they get published.
+    # Fall back to the local artifacts/log directory if not running in CI.
+    if [[ -n "${BUILD_ARTIFACTSTAGINGDIRECTORY:-}" ]]; then
+        __sccacheLogDir="$BUILD_ARTIFACTSTAGINGDIRECTORY/artifacts/log"
+    else
+        __sccacheLogDir="$scriptroot/../artifacts/log"
+    fi
+    mkdir -p "$__sccacheLogDir"
+    SCCACHE_ERROR_LOG="$__sccacheLogDir/sccache_debug.log" SCCACHE_LOG=debug sccache --start-server
+    echo "sccache enabled for linux-x64 build"
+    sccache -s
+fi
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
@@ -660,3 +687,7 @@ if [[ "$bootstrap" == "1" ]]; then
 fi
 
 "$scriptroot/common/build.sh" ${arguments[@]+"${arguments[@]}"}
+
+if [[ "$os" == "linux" && "$arch" == "x64" && -f "$scriptroot/../sccache" ]]; then
+    sccache -s
+fi
