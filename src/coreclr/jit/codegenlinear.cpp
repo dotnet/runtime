@@ -961,7 +961,7 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
     emitter::dataSection* asyncResumeInfo;
     genEmitAsyncResumeInfoTable(&asyncResumeInfo);
 
-    ((emitLocation*)asyncResumeInfo->dsCont)[index] = emitLocation(GetEmitter());
+    asyncResumeInfo->dsLocations[index] = emitLocation(GetEmitter());
 }
 
 /*

@@ -3554,11 +3554,12 @@ public:
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
-
-        // variable-sized array used to store the constant data, BasicBlock*
-        // array in the block cases, or emitLocation for the asyncResumeInfo
-        // case.
-        BYTE dsCont[0];
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
     };
 
     /* These describe the entire initialized/uninitialized data sections */
