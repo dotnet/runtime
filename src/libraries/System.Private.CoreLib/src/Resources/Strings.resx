@@ -403,12 +403,6 @@
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
     <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
-  <data name="Arg_HandleNotAsync" xml:space="preserve">
-    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
-  </data>
-  <data name="Arg_HandleNotSync" xml:space="preserve">
-    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
-  </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>
@@ -3091,9 +3085,6 @@
   </data>
   <data name="NotSupported_MustBeModuleBuilder" xml:space="preserve">
     <value>Module argument must be a ModuleBuilder.</value>
-  </data>
-  <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
-    <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
   </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>

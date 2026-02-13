@@ -5,6 +5,7 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
+#include <algorithm>
 #include <inttypes.h>
 
 #include <new> // for std::bad_alloc
@@ -1097,13 +1098,21 @@ void InterpCompiler::EmitCode()
         getEHinfo(m_methodInfo, i, &clause);
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
+            if (bb->isLeaveChainIsland && clause.HandlerOffset == (uint32_t)bb->ilOffset)
+            {
+                // Leave chain islands are not part of any EH clause, but their IL offset may be
+               continue;
+            }
+
             if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
             {
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (handler)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
 
             if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && clause.FilterOffset <= (uint32_t)bb->ilOffset && clause.HandlerOffset > (uint32_t)bb->ilOffset)
             {
+                INTERP_DUMP("BB %d with ilOffset %x overlaps EH clause %d (filter)\n", bb->index, bb->ilOffset, i);
                 bb->overlappingEHClauseCount++;
             }
         }
@@ -1569,6 +1578,7 @@ void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t en
     assert(pStartBB != NULL);
 
     InterpBasicBlock* pEndBB = pStartBB;
+
     for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
     {
         if (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount)
@@ -1682,6 +1692,18 @@ void InterpCompiler::BuildEHInfo()
     m_compHnd->setEHcount(nativeEHCount);
 
     unsigned int nativeEHIndex = 0;
+
+#ifdef DEBUG
+    INTERP_DUMP("   BB overlapping EH clause counts:\n");
+    if (t_interpDump)
+    {
+        for (InterpBasicBlock* pBB = GetBB(0); (pBB != NULL); pBB = pBB->pNextBB)
+        {
+            INTERP_DUMP("BB:%d has overlappingEHClauseCount=%d and ilOffset=%x\n", pBB->index, pBB->overlappingEHClauseCount, pBB->ilOffset);
+        }
+    }
+#endif
+
     for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
     {
         CORINFO_EH_CLAUSE clause;
@@ -2002,18 +2024,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
     if (interpType == InterpTypeVT)
     {
         size = m_compHnd->getClassSize(clsHnd);
-        align = m_compHnd->getClassAlignmentRequirement(clsHnd);
 
-        // All vars are stored at 8 byte aligned offsets
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-
+        // All vars are stored at least at 8 byte aligned offsets
         // We do not align beyond the stack alignment
         // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
-        if (align > INTERP_STACK_ALIGNMENT)
-            align = INTERP_STACK_ALIGNMENT;
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {
@@ -2272,8 +2289,9 @@ void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* meth
 
         if (pLeaveChainIslandBB == NULL)
         {
-            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset);
             pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            pLeaveChainIslandBB->isLeaveChainIsland = true;
             *ppLastBBNext = pLeaveChainIslandBB;
         }
 
@@ -3646,6 +3664,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             // These intrinsics are handled in the il peeps path, and do not need to produce warnings here.
             return false;
 
+        case NI_System_StubHelpers_NextCallReturnAddress:
+            // This intrinsic can only reach here if it is not followed by a POP, and in that case it is not supported by the interpreter.
+            // So we must skip compiling it. It should only appear in the case of tail-call stubs, and those are currently only supported by the JIT, so
+            // we presumably have a JIT available to implement this intrinsic.
+            SKIPCODE("NextCallReturnAddress intrinsic not supported in interpreter when not followed by POP");
+            return false;
+
         default:
         {
             FAIL_TO_EXPAND_INTRINSIC:
@@ -4072,6 +4097,8 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121955
+#ifndef TARGET_WASM
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4142,6 +4169,7 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
+#endif // !TARGET_WASM
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {
@@ -4244,6 +4272,10 @@ public:
 
     bool FindAndApplyPeep(InterpCompiler* compiler)
     {
+#ifdef DEBUG
+        if (!InterpConfig.JitOptimizeAwait())
+            return false;
+#endif // DEBUG
         return compiler->FindAndApplyPeep(Peeps);
     }
 } AsyncCallPeeps;
@@ -4358,6 +4390,24 @@ void InterpCompiler::EmitLoadPointer(intptr_t ptrValue)
         m_pLastNewIns->data[1] = (int32_t)((ptrValue >> 32) & 0xFFFFFFFF);
         PushStackType(StackTypeI8, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
+}
+
+void InterpCompiler::CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd)
+{
+    if (sigInfo->numArgs == 0)
+    {
+        CorInfoCallConv callConv = (CorInfoCallConv)(sigInfo->callConv & IMAGE_CEE_CS_CALLCONV_MASK);
+        bool isPInvoke = methodHnd != NULL || (callConv != CORINFO_CALLCONV_DEFAULT && callConv != CORINFO_CALLCONV_VARARG);
+        if (isPInvoke)
+        {
+            bool suppressGCTransition = false;
+            CorInfoCallConvExtension unmanagedCallConv = m_compHnd->getUnmanagedCallConv(methodHnd, sigInfo, &suppressGCTransition);
+            if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+            {
+                BADCODE("thiscall with 0 arguments");
+            }
+        }
     }
 }
 
@@ -4491,6 +4541,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         {
             BADCODE("Vararg methods are not supported in interpreted code");
         }
+
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, NULL);
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -4645,6 +4697,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             // Otherwise, we have to treat it as a marshaled pinvoke
             isMarshaledPInvoke = true;
         }
+    }
+
+    if (isPInvoke && !isMarshaledPInvoke)
+    {
+        CheckForPInvokeThisCallWithNoArgs(&callInfo.sig, callInfo.hMethod);
     }
 
     // Process sVars
@@ -4895,8 +4952,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pStackPointer--;
         int32_t continuationArg = m_pStackPointer[0].var;
 
-        AddIns(INTOP_LDNULL);
-        m_pLastNewIns->SetDVar(continuationArg);
+        if (m_nextCallAsyncContinuationVar == -1)
+        {
+            AddIns(INTOP_LDNULL);
+            m_pLastNewIns->SetDVar(continuationArg);
+        }
+        else
+        {
+            AddIns(INTOP_MOV_P);
+            m_pLastNewIns->SetSVar(m_nextCallAsyncContinuationVar);
+            m_pLastNewIns->SetDVar(continuationArg);
+            m_nextCallAsyncContinuationVar = -1;
+        }
         callArgs[continuationArgLocation] = continuationArg;
     }
 
@@ -5115,11 +5182,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
+        {
             // Traditional virtual call. In theory we could optimize this to using the vtable
             AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            // Reserved slots for caching DispatchToken and its hash
+            m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+            int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+            assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             break;
-
+        }
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
             if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(m_compHnd->getMethodClass(callInfo.hMethod)) & CORINFO_FLG_SHAREDINST))
             {
@@ -5150,6 +5224,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+                m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+                int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+                assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             }
             break;
 
@@ -5216,6 +5295,110 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
         EmitSuspend(callInfo, continuationContextHandling);
+    }
+}
+
+void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
+{
+    CORINFO_SIG_INFO sig = methodInfo->args;
+    InterpType retType = GetInterpType(sig.retType);
+
+    if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
+    {
+        CheckStackExact(1);
+        m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    }
+
+    if ((m_isSynchronized || m_isAsyncMethodWithContextSaveRestore) && m_currentILOffset < m_ILCodeSizeFromILHeader)
+    {
+        // We are in a synchronized/async method, but we need to go through the finally/fault first
+        int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
+        int32_t target = m_synchronizedOrAsyncPostFinallyOffset;
+
+        if (retType != InterpTypeVoid)
+        {
+            CheckStackExact(1);
+            if (m_synchronizedOrAsyncRetValVarIndex == -1)
+            {
+                PushInterpType(retType, m_pVars[m_pStackPointer[-1].var].clsHnd);
+                m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+                m_pStackPointer--;
+                INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
+            }
+            INTERP_DUMP("Store to ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
+            EmitStoreVar(m_synchronizedOrAsyncRetValVarIndex);
+        }
+        else
+        {
+            CheckStackExact(0);
+        }
+        EmitLeave(ilOffset, target);
+        return;
+    }
+
+    if (m_methodInfo->args.isAsyncCall())
+    {
+        // We're doing a standard return. Set the continuation return to NULL.
+        AddIns(INTOP_SET_CONTINUATION_NULL);
+    }
+
+    if (retType == InterpTypeVoid)
+    {
+        CheckStackExact(0);
+        AddIns(INTOP_RET_VOID);
+    }
+    else if (retType == InterpTypeVT)
+    {
+        CheckStackExact(1);
+        AddIns(INTOP_RET_VT);
+        m_pStackPointer--;
+        int32_t retVar = m_pStackPointer[0].var;
+        m_pLastNewIns->SetSVar(retVar);
+        m_pLastNewIns->data[0] = m_pVars[retVar].size;
+    }
+    else
+    {
+        CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+        // nint and int32 can be used interchangeably. Add implicit conversions.
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+            EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+        else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+            EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+        if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
+        {
+            StackType retStackType = g_stackTypeFromInterpType[retType];
+            StackType stackType = m_pStackPointer[-1].GetStackType();
+
+            if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+            {
+                // Allow implicit conversion from nint to ref or byref
+            }
+            else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+            {
+                // Allow implicit conversion from ref or byref to nint
+            }
+#ifdef TARGET_64BIT
+            else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
+            {
+                // nint and int32 can be used interchangeably. Add implicit conversions.
+                // Allow implicit conversion from int64 to int32 which is just a truncation
+            }
+#endif
+            else
+            {
+                BADCODE("return type mismatch");
+            }
+        }
+
+        AddIns(GetRetForType(retType));
+        m_pStackPointer--;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
     }
 }
 
@@ -5496,7 +5679,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
-    suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
+    suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
@@ -5973,6 +6156,10 @@ void InterpCompiler::EmitStelem(InterpType interpType)
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
 }
 
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+// WORKAROUND: https://developercommunity.visualstudio.com/t/noreturn-function-called-from-a-function/11035707
+#pragma optimize("", off)
+#endif
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
     bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
@@ -6063,6 +6250,15 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_STATIC_ADDR_HELPER:
+        {
+            AddIns(INTOP_CALL_HELPER_P_P);
+            m_pLastNewIns->data[0] = GetDataForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(pResolvedToken->hField);
+            PushInterpType(InterpTypeByRef, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            break;
+        }
         default:
             BADCODE("Unsupported static field accessor");
             break;
@@ -6087,6 +6283,10 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
     }
 }
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+// WORKAROUND: https://developercommunity.visualstudio.com/t/noreturn-function-called-from-a-function/11035707
+#pragma optimize( "", on )
+#endif
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
 {
@@ -6539,6 +6739,14 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
+bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
+{
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
+    return m_resolvedAsyncCallToken.hMethod != NULL;
+}
+
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     CORINFO_RESOLVED_TOKEN awaitResolvedToken;
@@ -6549,8 +6757,7 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
+    if (!ResolveAsyncCallToken(ip))
     {
         return false;
     }
@@ -6618,12 +6825,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6693,12 +6895,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6731,12 +6928,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
@@ -8085,108 +8277,7 @@ retry_emit:
 
             case CEE_RET:
             {
-                CORINFO_SIG_INFO sig = methodInfo->args;
-                InterpType retType = GetInterpType(sig.retType);
-
-                if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
-                {
-                    CheckStackExact(1);
-                    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
-                }
-
-                if ((m_isSynchronized || m_isAsyncMethodWithContextSaveRestore) && m_currentILOffset < m_ILCodeSizeFromILHeader)
-                {
-                    // We are in a synchronized/async method, but we need to go through the finally/fault first
-                    int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
-                    int32_t target = m_synchronizedOrAsyncPostFinallyOffset;
-
-                    if (retType != InterpTypeVoid)
-                    {
-                        CheckStackExact(1);
-                        if (m_synchronizedOrAsyncRetValVarIndex == -1)
-                        {
-                            PushInterpType(retType, m_pVars[m_pStackPointer[-1].var].clsHnd);
-                            m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
-                            m_pStackPointer--;
-                            INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-                        }
-                        INTERP_DUMP("Store to ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-                        EmitStoreVar(m_synchronizedOrAsyncRetValVarIndex);
-                    }
-                    else
-                    {
-                        CheckStackExact(0);
-                    }
-                    EmitLeave(ilOffset, target);
-                    linkBBlocks = false;
-                    m_ip++;
-                    break;
-                }
-
-                if (m_methodInfo->args.isAsyncCall())
-                {
-                    // We're doing a standard return. Set the continuation return to NULL.
-                    AddIns(INTOP_SET_CONTINUATION_NULL);
-                }
-
-                if (retType == InterpTypeVoid)
-                {
-                    CheckStackExact(0);
-                    AddIns(INTOP_RET_VOID);
-                }
-                else if (retType == InterpTypeVT)
-                {
-                    CheckStackExact(1);
-                    AddIns(INTOP_RET_VT);
-                    m_pStackPointer--;
-                    int32_t retVar = m_pStackPointer[0].var;
-                    m_pLastNewIns->SetSVar(retVar);
-                    m_pLastNewIns->data[0] = m_pVars[retVar].size;
-                }
-                else
-                {
-                    CheckStackExact(1);
-
-#ifdef TARGET_64BIT
-                    // nint and int32 can be used interchangeably. Add implicit conversions.
-                    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
-                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
-#endif
-                    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
-                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-                    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
-                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
-
-                    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
-                    {
-                        StackType retStackType = g_stackTypeFromInterpType[retType];
-                        StackType stackType = m_pStackPointer[-1].GetStackType();
-
-                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
-                        {
-                            // Allow implicit conversion from nint to ref or byref
-                        }
-                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
-                        {
-                            // Allow implicit conversion from ref or byref to nint
-                        }
-#ifdef TARGET_64BIT
-                        else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
-                        {
-                            // nint and int32 can be used interchangeably. Add implicit conversions.
-                            // Allow implicit conversion from int64 to int32 which is just a truncation
-                        }
-#endif
-                        else
-                        {
-                            BADCODE("return type mismatch");
-                        }
-                    }
-
-                    AddIns(GetRetForType(retType));
-                    m_pStackPointer--;
-                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                }
+                EmitRet(methodInfo);
                 m_ip++;
                 linkBBlocks = false;
                 break;
@@ -9321,7 +9412,13 @@ retry_emit:
                     // CEE_JMP inside a funclet is not allowed
                     BADCODE("CEE_JMP inside funclet");
                 }
+                if (m_isSynchronized || m_isAsyncMethodWithContextSaveRestore)
+                {
+                    BADCODE("CEE_JMP in synchronized or async method");
+                }
                 EmitCall(m_pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a 
+                           // tail-call, so inject the ret logic here to cover that case.
                 linkBBlocks = false;
                 break;
             }
@@ -9377,6 +9474,16 @@ retry_emit:
                     m_pStackPointer--;
                     EmitStaticFieldAddress(&fieldInfo, &resolvedToken);
                 }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                }
                 else
                 {
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
@@ -9412,6 +9519,17 @@ retry_emit:
                     // Pop unused object reference
                     m_pStackPointer--;
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, true);
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    m_pStackPointer--;
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitLdind(interpFieldType, fieldInfo.structType, 0);
                 }
                 else
                 {
@@ -9481,6 +9599,17 @@ retry_emit:
                 {
                     EmitStaticFieldAccess(interpFieldType, &fieldInfo, &resolvedToken, false);
                     // Pop the unused object reference
+                    m_pStackPointer--;
+                }
+                else if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER)
+                {
+                    AddIns(INTOP_CALL_HELPER_P_SP);
+                    m_pLastNewIns->data[0] = GetDataForHelperFtn(fieldInfo.helper);
+                    m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hField);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[-2].var);
+                    PushInterpType(InterpTypeByRef, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                    EmitStind(interpFieldType, fieldInfo.structType, 0, true, true /* enableImplicitArgConversionRules */);
                     m_pStackPointer--;
                 }
                 else

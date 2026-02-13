@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
@@ -76,6 +77,7 @@
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\Interop\OSReleaseTests.cs" />
     <Compile Include="Tests\SourceGenerators\SourceWriterTests.cs" />
+    <Compile Include="Tests\System\Buffers\SearchValuesPolyfillTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
@@ -123,8 +125,6 @@
              Link="System\PasteArguments.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />

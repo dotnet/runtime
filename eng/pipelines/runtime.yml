@@ -106,7 +106,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Debug
+          buildConfig: Release
           platforms:
           - browser_wasm
           - browser_wasm_win
@@ -646,7 +646,7 @@ extends:
           platforms:
           - linux_x64
           - windows_x64
-          - osx_x64
+          - osx_arm64
           - linux_arm64
           - windows_arm64
           variables:
@@ -862,6 +862,18 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
+      # WebAssembly CoreCLR
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: true
+          # TODO consider shouldContinueOnError: true
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          scenarios:
+            - WasmTestOnChrome
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -1035,7 +1047,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - ios_arm64
-            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1047,7 +1059,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_Smoke
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1057,12 +1069,12 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            # TODO: Re-enable build on helix https://github.com/dotnet/runtime/issues/121967
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1081,7 +1093,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1126,7 +1138,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
+            - tvos_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1608,29 +1620,10 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
+          - osx_x64
           - linux_x64
           - linux_arm64
           - windows_x64
-          helixQueueGroup: pr
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: innerloop
-            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
-            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_x64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
@@ -1843,29 +1836,3 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-
-    - stage: SourceBuild
-      displayName: Source Build Validation
-      dependsOn: []
-      condition: eq(variables['isRollingBuild'], true)
-      jobs:
-        #
-        # Sourcebuild legs
-        # We have 3 important legs for source-build:
-        # - Centos.9 (ensures that known non-portable RID is working)
-        # - Linux-x64 portable (used for dependency flow and downstream PR verification)
-        # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
-        #
-        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.9 in rolling CI,
-        # Run Linux-x64 in PR.
-        - template: /eng/common/templates/jobs/source-build.yml
-          parameters:
-            platforms:
-              - name: CentOS9
-                targetRID: centos.9-x64
-                portableBuild: false
-                container: SourceBuild_centos_x64
-              - name: NonexistentRID
-                targetRID: banana.24-x64
-                portableBuild: false
-                container: SourceBuild_centos_x64

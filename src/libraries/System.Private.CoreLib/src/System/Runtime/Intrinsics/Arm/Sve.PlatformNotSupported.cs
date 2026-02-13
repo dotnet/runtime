@@ -2090,6 +2090,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
+        public static Vector<double> CreateBreakAfterMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
         public static Vector<byte> CreateBreakAfterMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -2134,8 +2140,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakAfterMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
+
 
         // Break after first true condition, propagating from previous partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPA Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakAfterPropagateMask(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2185,8 +2203,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakAfterPropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkpa[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPA Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakAfterPropagateMask(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
 
         // Break before first true condition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakBeforeMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
@@ -2236,8 +2266,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
+        ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakBeforeMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
+
 
         // Break before first true condition, propagating from previous partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPB Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakBeforePropagateMask(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2287,8 +2329,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> CreateBreakBeforePropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>svbool_t svbrkpb[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKPB Presult.B, Pg/Z, Pop1.B, Pop2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakBeforePropagateMask(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
 
         // Propagate break to next partition
+
+        /// <summary>
+        ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
+        /// </summary>
+        public static Vector<double> CreateBreakPropagateMask(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
@@ -2337,6 +2391,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
         /// </summary>
         public static Vector<ulong> CreateBreakPropagateMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)</para>
+        ///   <para>  BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B</para>
+        /// </summary>
+        public static Vector<float> CreateBreakPropagateMask(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Set all predicate elements to false
@@ -2435,6 +2495,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
+        public static Vector<double> CreateMaskForFirstActiveElement(Vector<double> totalMask, Vector<double> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
+        ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
+        /// </summary>
         public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -2478,6 +2544,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
         public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
+        ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
+        /// </summary>
+        public static Vector<float> CreateMaskForFirstActiveElement(Vector<float> totalMask, Vector<float> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Find next active predicate
@@ -5345,6 +5417,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svrdffr()</para>
         ///   <para>  RDFFR Presult.B</para>
         /// </summary>
+        public static Vector<double> GetFfrDouble() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svrdffr()</para>
+        ///   <para>  RDFFR Presult.B</para>
+        /// </summary>
         public static Vector<short> GetFfrInt16() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -5364,6 +5442,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  RDFFR Presult.B</para>
         /// </summary>
         public static Vector<sbyte> GetFfrSByte() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svbool_t svrdffr()</para>
+        ///   <para>  RDFFR Presult.B</para>
+        /// </summary>
+        public static Vector<float> GetFfrSingle() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svrdffr()</para>
@@ -9158,6 +9242,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svwrffr(svbool_t op)</para>
         ///   <para>  WRFFR Pop.B</para>
         /// </summary>
+        public static void SetFfr(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>void svwrffr(svbool_t op)</para>
+        ///   <para>  WRFFR Pop.B</para>
+        /// </summary>
         public static void SetFfr(Vector<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -9201,6 +9291,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  WRFFR Pop.B</para>
         /// </summary>
         public static void SetFfr(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>void svwrffr(svbool_t op)</para>
+        ///   <para>  WRFFR Pop.B</para>
+        /// </summary>
+        public static void SetFfr(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
         // Logical shift left
@@ -10173,6 +10269,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
+        public static bool TestAnyTrue(Vector<double> mask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
         public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -10217,8 +10319,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestAnyTrue(Vector<float> mask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
+
 
         // Test whether the first active element is true
+
+        /// <summary>
+        ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestFirstTrue(Vector<double> leftMask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
@@ -10268,8 +10382,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
+        /// <summary>
+        ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestFirstTrue(Vector<float> leftMask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
+
 
         // Test whether the last active element is true
+
+        /// <summary>
+        ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestLastTrue(Vector<double> leftMask, Vector<double> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
@@ -10318,6 +10444,12 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  PTEST</para>
         /// </summary>
         public static bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
+        ///   <para>  PTEST</para>
+        /// </summary>
+        public static bool TestLastTrue(Vector<float> leftMask, Vector<float> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Interleave even elements from two inputs

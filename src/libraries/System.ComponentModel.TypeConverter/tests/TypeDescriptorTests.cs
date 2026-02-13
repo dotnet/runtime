@@ -1581,6 +1581,7 @@ namespace System.ComponentModel.Tests
         // loaded in the default ALC, which causes problems for this test.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMobile))]
         [ActiveIssue("34072", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void TypeDescriptor_WithDefaultProvider_UnloadsUnloadableTypes()
         {
             ExecuteAndUnload("UnloadableTestTypes.dll",

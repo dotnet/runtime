@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
 
-            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil
+            UseWebcil = EnvironmentVariables.UseWebcil && EnvironmentVariables.RuntimeFlavor != "CoreCLR"; // TODO-WASM: CoreCLR support for Webcil https://github.com/dotnet/runtime/issues/120248
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { Assets, LoaderConfig, LoaderConfigInternal } from "./types";
+import { browserVirtualAppBase } from "./per-module";
 
 export const loaderConfig: LoaderConfigInternal = {};
 
@@ -18,9 +19,8 @@ export function validateLoaderConfig(): void {
     }
 }
 
-
 export function mergeLoaderConfig(source: Partial<LoaderConfigInternal>): void {
-    normalizeConfig(loaderConfig);
+    defaultConfig(loaderConfig);
     normalizeConfig(source);
     mergeConfigs(loaderConfig, source);
 }
@@ -40,6 +40,7 @@ function mergeConfigs(target: LoaderConfigInternal, source: Partial<LoaderConfig
     source.diagnosticTracing = source.diagnosticTracing !== undefined ? source.diagnosticTracing : target.diagnosticTracing;
     source.environmentVariables = { ...target.environmentVariables, ...source.environmentVariables };
     source.runtimeOptions = [...target.runtimeOptions!, ...source.runtimeOptions!];
+    source.runtimeConfig!.runtimeOptions!.configProperties = { ...target.runtimeConfig!.runtimeOptions!.configProperties!, ...source.runtimeConfig!.runtimeOptions!.configProperties! };
     Object.assign(target, source);
     return target;
 }
@@ -70,19 +71,30 @@ function mergeResources(target: Assets, source: Assets): Assets {
     return Object.assign(target, source);
 }
 
-
-function normalizeConfig(target: LoaderConfigInternal) {
-    if (!target.resources) target.resources = {} as any;
-    normalizeResources(target.resources!);
-    if (!target.environmentVariables) target.environmentVariables = {};
-    if (!target.runtimeOptions) target.runtimeOptions = [];
+function defaultConfig(target: LoaderConfigInternal) {
     if (target.appendElementOnExit === undefined) target.appendElementOnExit = false;
     if (target.logExitCode === undefined) target.logExitCode = false;
     if (target.exitOnUnhandledError === undefined) target.exitOnUnhandledError = false;
     if (target.loadAllSatelliteResources === undefined) target.loadAllSatelliteResources = false;
     if (target.debugLevel === undefined) target.debugLevel = 0;
     if (target.diagnosticTracing === undefined) target.diagnosticTracing = false;
-    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = "/";
+    if (target.virtualWorkingDirectory === undefined) target.virtualWorkingDirectory = browserVirtualAppBase;
+    if (target.maxParallelDownloads === undefined) target.maxParallelDownloads = 16;
+    normalizeConfig(target);
+}
+
+function normalizeConfig(target: LoaderConfigInternal) {
+    if (!target.resources) target.resources = {} as any;
+    normalizeResources(target.resources!);
+    if (!target.environmentVariables) target.environmentVariables = {};
+    if (!target.runtimeOptions) target.runtimeOptions = [];
+    if (!target.runtimeConfig) {
+        target.runtimeConfig = { runtimeOptions: { configProperties: {} }, };
+    } else if (!target.runtimeConfig.runtimeOptions) {
+        target.runtimeConfig.runtimeOptions = { configProperties: {} };
+    } else if (!target.runtimeConfig.runtimeOptions.configProperties) {
+        target.runtimeConfig.runtimeOptions.configProperties = {};
+    }
 }
 
 function normalizeResources(target: Assets) {

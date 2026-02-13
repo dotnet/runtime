@@ -188,6 +188,28 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: 16, actual: await t);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop] // stress test with many iterations
+        public async Task TestConcurrentPostAndReceiveAsync()
+        {
+            // Test for race condition where ReceiveAsync could return default value
+            // instead of the posted value when Post and ReceiveAsync are called concurrently.
+            for (int iteration = 0; iteration < 10_000; iteration++)
+            {
+                var wob = new WriteOnceBlock<object>(a => a);
+                var postedValue = new object();
+
+                Task postTask = Task.Run(() => wob.Post(postedValue));
+                Task<object> receiveTask = Task.Run(() => wob.ReceiveAsync());
+
+                await postTask;
+                object receivedValue = await receiveTask;
+
+                Assert.NotNull(receivedValue);
+                Assert.Same(postedValue, receivedValue);
+            }
+        }
+
         [Fact]
         public async Task TestTryReceiveWithFilter()
         {

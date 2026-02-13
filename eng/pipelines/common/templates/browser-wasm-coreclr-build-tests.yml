@@ -15,7 +15,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      buildConfig: Debug
+      buildConfig: Release
       runtimeFlavor: CoreCLR
       platforms:
         - ${{ platform }}
@@ -42,9 +42,9 @@ jobs:
       jobParameters:
         dependsOn:
           - ${{ if eq(platform, 'browser_wasm') }}:
-            - build_browser_wasm_linux_Debug_AllSubsets_CoreCLR
+            - build_browser_wasm_linux_Release_AllSubsets_CoreCLR
           - ${{ if eq(platform, 'browser_wasm_win') }}:
-            - build_browser_wasm_windows_Debug_AllSubsets_CoreCLR
+            - build_browser_wasm_windows_Release_AllSubsets_CoreCLR
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
         nameSuffix: CoreCLR_WasmBuildTests
@@ -55,14 +55,14 @@ jobs:
             displayName: Download built nugets for singlethreaded runtime
             inputs:
               buildType: current
-              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Debug_AllSubsets_CoreCLR'
+              artifactName: 'BuildArtifacts_browser_wasm_$(_hostedOs)_Release_AllSubsets_CoreCLR'
               downloadType: single
               downloadPath: '$(Build.SourcesDirectory)/artifacts'
 
           - task: CopyFiles@2
             displayName: Copy single threaded assets
             inputs:
-              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Debug_AllSubsets_CoreCLR'
+              SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_AllSubsets_CoreCLR'
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
