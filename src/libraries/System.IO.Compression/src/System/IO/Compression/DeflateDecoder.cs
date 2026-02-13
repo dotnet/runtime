@@ -68,6 +68,11 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
             }
 
+            if (destination.IsEmpty && source.Length > 0)
+            {
+                return OperationStatus.DestinationTooSmall;
+            }
+
             unsafe
             {
                 fixed (byte* inputPtr = &MemoryMarshal.GetReference(source))
