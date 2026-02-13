@@ -468,7 +468,7 @@ public partial class ApkBuilder
         if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir) && string.IsNullOrEmpty(NetworkSecurityConfig))
         {
             throw new ArgumentException(
-                $"'{nameof(NetworkSecurityConfigResourcesDir)}' is set but '{nameof(NetworkSecurityConfig)}' is not. Both properties must be set together.");
+                $"'{nameof(NetworkSecurityConfigResourcesDir)}' cannot be set without '{nameof(NetworkSecurityConfig)}'. Set '{nameof(NetworkSecurityConfig)}' first.");
         }
         if (!string.IsNullOrEmpty(NetworkSecurityConfig))
         {
