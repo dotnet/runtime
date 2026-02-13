@@ -129,7 +129,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns a partial list of properties in the <see cref="FileVersionInfo" /> and their values.
         /// </summary>
-        /// <returns>A list of properties and their values.</returns>
+        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, this list will contain only the name of the requested file. Boolean values will be <see langword="false" />, and all other entries will be <see langword="null" />.</returns>
         public override string ToString() { throw null; }
     }
 }
