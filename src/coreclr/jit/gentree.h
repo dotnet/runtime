@@ -5862,7 +5862,7 @@ public:
 
     GenTree** GetCallCookieAddr()
     {
-        assert(gtCallDataKind == CallDataKind::CallCookie);
+        assert(gtCallDataKind == CallDataKind::CallCookie || gtCallDataKind == CallDataKind::None);
         return &gtCallCookie;
     }
 
@@ -5874,7 +5874,7 @@ public:
 
     void SetCallCookie(GenTree* cookie)
     {
-        INDEBUG(gtCallDataKind = CallDataKind::CallCookie);
+        INDEBUG(gtCallDataKind = (cookie == nullptr) ? CallDataKind::None : CallDataKind::CallCookie);
         gtCallCookie = cookie;
     }
 
