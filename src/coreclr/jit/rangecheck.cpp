@@ -1052,6 +1052,14 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                         GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
                     limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
                 }
+                // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
+                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                {
+                    // Since we are swapping the operands, we also need to swap the comparison operator
+                    cmpOper =
+                        GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                    limit = Limit(Limit::keBinOpArray, curAssertion.GetOp1().GetVN(), 0);
+                }
                 else
                 {
                     continue;
