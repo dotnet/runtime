@@ -463,6 +463,7 @@ namespace System.Collections.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Add_AfterRemovingAnyValue(int count)
@@ -487,6 +488,7 @@ namespace System.Collections.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Add_AfterRemovingAllItems(int count)
@@ -973,6 +975,7 @@ namespace System.Collections.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void IList_NonGeneric_Remove_EveryValue(int count)

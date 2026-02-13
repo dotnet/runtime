@@ -170,6 +170,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchLastIndexOfAny_ThreeByte()
         {
@@ -306,6 +307,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchLastIndexOfAny_ManyByte()
         {
@@ -498,6 +500,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchLastIndexOfAny_String_TwoByte()
         {
@@ -631,6 +634,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchLastIndexOfAny_String_ThreeByte()
         {
@@ -768,6 +772,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchLastIndexOfAny_String_ManyByte()
         {

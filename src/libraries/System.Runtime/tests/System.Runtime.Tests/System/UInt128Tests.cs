@@ -49,6 +49,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CompareTo_Other_ReturnsExpected_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void CompareTo_Other_ReturnsExpected(UInt128 i, object value, int expected)
         {
             if (value is UInt128 UInt128Value)

@@ -10,6 +10,7 @@ namespace System.Collections.Immutable.Tests
 {
     public class ImmutableHashSetBuilderTest : ImmutablesTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void CreateBuilder()
         {

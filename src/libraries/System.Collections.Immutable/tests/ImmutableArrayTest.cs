@@ -843,6 +843,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(ContainsNullData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ContainsNull<T>(IEnumerable<T> source) where T : class
         {
             bool expected = source.Contains(null, EqualityComparer<T>.Default);
@@ -979,6 +980,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(EnumeratorTraversalNullData))]
         public void EnumeratorTraversalNull<T>(IEnumerable<T> source) where T : class
         {
@@ -1137,6 +1139,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(underlyingArray?.GetHashCode() ?? 0, array.GetHashCode());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(AddData))]
         public void Add(IEnumerable<int> source, IEnumerable<int> items)
@@ -1479,6 +1482,7 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(RemoveData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Remove<T>(IEnumerable<T> source, T item, IEqualityComparer<T> comparer)
         {
             ImmutableArray<T> array = source.ToImmutableArray();
@@ -1732,6 +1736,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveAll(i => false));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ReplaceData))]
         public void Replace<T>(IEnumerable<T> source, T oldValue, T newValue, IEqualityComparer<T> comparer)
@@ -1811,6 +1816,7 @@ namespace System.Collections.Immutable.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(SetItemData))]
         public void SetItem<T>(IEnumerable<T> source, int index, T item)
@@ -2543,6 +2549,7 @@ namespace System.Collections.Immutable.Tests
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         [MemberData(nameof(Int32EnumerableData))]
         public void DebuggerAttributesValid_AdditionalCases(IEnumerable<int> source)

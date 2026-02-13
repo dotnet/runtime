@@ -18,6 +18,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
             // Just verify parser is implemented correctly. Don't try to test syntax parsed by CacheControlHeaderValue.

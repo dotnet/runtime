@@ -2265,6 +2265,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ICollection<int> Property { get; } = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt()
     {
@@ -2276,6 +2277,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructCollectionOfInt));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructCollectionOfInt()
     {
@@ -2286,6 +2288,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt_PropertyOccurringMultipleTimes()
     {
@@ -2304,6 +2307,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructCollection<int> Property { get; set; } = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructCollectionOfInt()
     {
@@ -2314,6 +2318,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructCollectionOfInt()
     {
@@ -2331,6 +2336,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructCollectionOfInt()
     {
@@ -2360,6 +2366,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructCollection<int> Property { get; set; } = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
@@ -2371,6 +2378,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandling));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
@@ -2390,6 +2398,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructCollection<int> Field = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
@@ -2400,6 +2409,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
@@ -2417,6 +2427,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
@@ -2448,6 +2459,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructCollection<int> Field = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt()
     {
@@ -2459,6 +2471,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructCollectionOfInt));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_NullableStructCollectionOfInt()
     {
@@ -2469,6 +2482,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt_FieldOccurringMultipleTimes()
     {
@@ -2479,6 +2493,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt_FieldOccurringMultipleTimes_NullInBetween()
     {
@@ -2504,6 +2519,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructCollection<int>? Field = new StructCollection<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_NullableStructCollectionOfInt()
     {
@@ -2514,6 +2530,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_NullableStructCollectionOfInt()
     {
@@ -2531,6 +2548,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_NullableStructCollectionOfInt()
     {
@@ -2908,6 +2926,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public ISet<int> Property { get; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt()
     {
@@ -2919,6 +2938,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructSetOfInt));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructSetOfInt()
     {
@@ -2929,6 +2949,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt_PropertyOccurringMultipleTimes()
     {
@@ -2945,6 +2966,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructSet<int> Property { get; set; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructSetOfInt()
     {
@@ -2955,6 +2977,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructSetOfInt()
     {
@@ -2972,6 +2995,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructSetOfInt()
     {
@@ -2997,6 +3021,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructSet<int> Property { get; set; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
@@ -3008,6 +3033,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandling));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
@@ -3027,6 +3053,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructSet<int> Property { get; set; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
@@ -3037,6 +3064,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
@@ -3054,6 +3082,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Property.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
@@ -3085,6 +3114,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructSet<int> Property { get; set; } = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt()
     {
@@ -3096,6 +3126,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         CheckTypeHasSinglePropertyWithPopulateHandling(options, typeof(StructWithWritableFieldNullableStructSetOfInt));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_NullableStructSetOfInt()
     {
@@ -3106,6 +3137,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt_FieldOccurringMultipleTimes()
     {
@@ -3116,6 +3148,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt_FieldOccurringMultipleTimes_NullInBetween()
     {
@@ -3143,6 +3176,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         public StructSet<int>? Field = new StructSet<int>() { 1, 2, 3 };
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_NullableStructSetOfInt()
     {
@@ -3153,6 +3187,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_NullableStructSetOfInt()
     {
@@ -3170,6 +3205,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         obj.Field.Value.Validate();
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_NullableStructSetOfInt()
     {

@@ -13,6 +13,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(true, -1)]
         [InlineData(false, 0)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FromBoolean(bool value, decimal expected)
         {
             Assert.Equal(expected, DecimalType.FromBoolean(value));
@@ -61,6 +62,7 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData("123", 123)]
         [InlineData("\u00A4123", 123)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Parse(string value, decimal expected)
         {
             Assert.Equal(expected, DecimalType.Parse(value, CultureInfo.InvariantCulture.NumberFormat));
