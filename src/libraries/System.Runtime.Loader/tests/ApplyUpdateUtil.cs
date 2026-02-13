@@ -110,7 +110,7 @@ namespace System.Reflection.Metadata
             {
                 AppendEnvironmentVariable(options.StartInfo.EnvironmentVariables, "MONO_DEBUG", "gen-seq-points");
                 string monoEnvOptions = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
-                if (!string.IsNullOrEmpty(monoEnvOptions))
+                if (!string.IsNullOrEmpty(monoEnvOptions) && !options.StartInfo.EnvironmentVariables.ContainsKey("MONO_ENV_OPTIONS"))
                     options.StartInfo.EnvironmentVariables.Add("MONO_ENV_OPTIONS", monoEnvOptions);
             }
         }
