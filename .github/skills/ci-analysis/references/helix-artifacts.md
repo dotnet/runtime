@@ -184,6 +184,100 @@ Get-ChildItem -Path $extractPath -Filter "*.binlog" -Recurse | ForEach-Object {
 
 If a test runs `dotnet build` internally (like SDK end-to-end tests), both sources may have relevant binlogs.
 
+## Downloaded Artifact Layout
+
+When you download artifacts via MCP tools or manually, the directory structure can be confusing. Here's what to expect.
+
+### Helix Work Item Downloads
+
+Two MCP tools download Helix artifacts:
+- **`hlx_download`** — downloads multiple files from a work item, with optional glob `pattern` (e.g., `pattern:"*.binlog"`). Returns local file paths.
+- **`hlx_download_url`** — downloads a single file by direct URI (from `hlx_files` output). Use when you know exactly which file you need.
+
+`hlx_download` saves files to a temp directory. The structure is **flat** — all files from the work item land in one directory:
+
+```
+C:\...\Temp\helix-{hash}\
+├── console.d991a56d.log          # Console output
+├── testResults.xml               # Test pass/fail details
+├── msbuild.binlog                # Only if test invoked MSBuild
+├── publish.msbuild.binlog        # Only if test did a publish
+├── msbuild0.binlog               # Numbered: first test's build
+├── msbuild1.binlog               # Numbered: second test's build
+└── core.1000.34                  # Only on crash
+```
+
+**Key confusion point:** Numbered binlogs (`msbuild0.binlog`, `msbuild1.binlog`) correspond to individual test cases within the work item, not to build phases. A work item like `Microsoft.NET.Build.Tests.dll.18` runs dozens of tests, each invoking MSBuild separately. To map a binlog to a specific test:
+1. Load it with `mcp-binlog-tool-load_binlog`
+2. Check the project paths inside — they usually contain the test name
+3. Or check `testResults.xml` to correlate test execution order with binlog numbering
+
+### AzDO Build Artifact Downloads
+
+AzDO artifacts download as **ZIP files** with nested directory structures:
+
+```
+$env:TEMP\TestBuild_linux_x64\
+└── TestBuild_linux_x64\          # Artifact name repeated as subfolder
+    └── log\Release\
+        ├── Build.binlog           # Main build
+        ├── TestBuildTests.binlog   # Test build verification
+        ├── ToolsetRestore.binlog   # Toolset restore
+        └── SendToHelix.binlog     # Contains Helix job GUIDs
+```
+
+**Key confusion point:** The artifact name appears twice in the path (extract folder + subfolder inside the ZIP). Use the full nested path with `mcp-binlog-tool-load_binlog`.
+
+### Mapping Binlogs to Failures
+
+This table shows the **typical** source for each binlog type. The boundaries aren't absolute — some repos run tests on the build agent (producing test binlogs in AzDO artifacts), and Helix work items for SDK/Blazor tests invoke `dotnet build` internally (producing build binlogs as Helix artifacts).
+
+| You want to investigate... | Look here first | But also check... |
+|---------------------------|-----------------|-------------------|
+| Why a test's internal `dotnet build` failed | Helix work item (`msbuild{N}.binlog`) | AzDO artifact if tests ran on agent |
+| Why the CI build itself failed to compile | AzDO build artifact (`Build.binlog`) | — |
+| Which Helix jobs were dispatched | AzDO build artifact (`SendToHelix.binlog`) | — |
+| AOT compilation failure | Helix work item (`AOTBuild.binlog`) | — |
+| Test build/publish behavior | Helix work item (`publish.msbuild.binlog`) | AzDO artifact (`TestBuildTests.binlog`) |
+
+> **Rule of thumb:** If the failing job name contains "Helix" or "Send to Helix", the test binlogs are in Helix. If the job runs tests directly (common in dotnet/sdk), check AzDO artifacts.
+
+### Tracking Downloaded Artifacts with SQL
+
+When downloading from multiple work items (e.g., binlog comparison between passing and failing builds), use SQL to avoid losing track of what's where:
+
+```sql
+CREATE TABLE IF NOT EXISTS downloaded_artifacts (
+  local_path TEXT PRIMARY KEY,
+  helix_job TEXT,
+  work_item TEXT,
+  build_id INT,
+  artifact_source TEXT,  -- 'helix' or 'azdo'
+  file_type TEXT,        -- 'binlog', 'testResults', 'console', 'crash'
+  notes TEXT             -- e.g., 'passing baseline', 'failing PR build'
+);
+```
+
+Key queries:
+```sql
+-- Find the pair of binlogs for comparison
+SELECT local_path, notes FROM downloaded_artifacts
+WHERE file_type = 'binlog' ORDER BY notes;
+
+-- What have I downloaded from a specific work item?
+SELECT local_path, file_type FROM downloaded_artifacts
+WHERE work_item = 'Microsoft.NET.Build.Tests.dll.18';
+```
+
+Use this whenever you're juggling artifacts from 2+ Helix jobs (especially during the binlog comparison pattern in [binlog-comparison.md](binlog-comparison.md)).
+
+### Tips
+
+- **Multiple binlogs ≠ multiple builds.** A single work item can produce several binlogs if the test suite runs multiple `dotnet build`/`dotnet publish` commands.
+- **Helix and AzDO binlogs can overlap.** Helix binlogs are *usually* from test execution and AzDO binlogs from the build phase, but SDK/Blazor tests invoke MSBuild inside Helix (producing build-like binlogs), and some repos run tests directly on the build agent (producing test binlogs in AzDO). Check both sources if you can't find what you need.
+- **Not all work items have binlogs.** Standard unit tests only produce `testResults.xml` and console logs.
+- **Use `hlx_download` with `pattern:"*.binlog"`** to filter downloads and avoid pulling large console logs.
+
 ## Artifact Retention
 
 Helix artifacts are retained for a limited time (typically 30 days). Download important artifacts promptly if needed for long-term analysis.

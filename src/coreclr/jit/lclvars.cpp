@@ -2910,6 +2910,22 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     assert(varNum < lvaCount);
     return lvaGetDesc(varNum)->lvExactSize();
 }
+
+//------------------------------------------------------------------------
+// lvaLclValueSize: Return the ValueSize for the given local variable.
+//
+// The ValueSize is a representation of the size of the variable that allows
+// for symbolic representations of sizes that may be unknown to the compiler
+// at the time of compilation, such as the length of a hardware vector on ARM64.
+//
+// Arguments:
+//    varNum -- number of the variable.
+//
+ValueSize Compiler::lvaLclValueSize(unsigned varNum)
+{
+    assert(varNum < lvaCount);
+    return lvaGetDesc(varNum)->lvValueSize();
+}
 //------------------------------------------------------------------------
 // lvExactSize: Get the exact size of the type of this local.
 //
@@ -2919,7 +2935,20 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //
 unsigned LclVarDsc::lvExactSize() const
 {
-    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
+    assert(!varTypeHasUnknownSize(lvType));
+    return lvValueSize().GetExact();
+}
+
+//------------------------------------------------------------------------
+// lvValueSize: Get the value size of the type of this local.
+//
+// Return Value:
+//    The value size container for this local. This either contains an exact
+//    size or a compile-time unknown size.
+//
+ValueSize LclVarDsc::lvValueSize() const
+{
+    return (lvType == TYP_STRUCT) ? ValueSize(GetLayout()->GetSize()) : ValueSize::FromJitType(lvType);
 }
 
 //------------------------------------------------------------------------
