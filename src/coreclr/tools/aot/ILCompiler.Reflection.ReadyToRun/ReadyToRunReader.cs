@@ -1281,9 +1281,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 return new Guid(mvidBytes);
             }
+            else if (assemblyIndex != 0)
+            {
+                // It's possible to have an index for an assembly in a non-composite image in one case:
+                // If the assembly index is only used for a module fixup, then we won't have an MVID for it
+                // as we haven't taken a dependency on any image details, just existence of the assembly.
+                return default(Guid);
+            }
             else
             {
-                Debug.Assert(assemblyIndex == 0);
                 MetadataReader mdReader = GetGlobalMetadata().MetadataReader;
                 return mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
             }
