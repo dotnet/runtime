@@ -514,111 +514,88 @@ namespace {lc.Namespace}
 
             private void GenMethodDocumentation(LoggerMethod lm, string nestedIndentation)
             {
-                string levelName = GetLogLevelName(lm);
-                string message = EscapeXml(lm.Message);
-
                 _builder.Append($@"
         {nestedIndentation}/// <summary>
-        {nestedIndentation}/// <para><b>Message:</b> {message}</para>");
+        {nestedIndentation}/// <para><b>Message:</b> {EscapeForXmlDoc(lm.Message)}</para>");
 
-                if (!string.IsNullOrEmpty(levelName))
+                if (lm.Level != null)
                 {
                     _builder.Append($@"
-        {nestedIndentation}/// <para><b>Level:</b> {levelName}</para>");
+        {nestedIndentation}/// <para><b>Level:</b> {GetLogLevelName(lm.Level.Value)}</para>");
                 }
 
                 _builder.Append($@"
         {nestedIndentation}/// </summary>");
             }
 
-            private static string EscapeXml(string text)
+            private static string EscapeForXmlDoc(string text)
             {
                 if (string.IsNullOrEmpty(text))
                 {
                     return text;
                 }
 
-                // Check if escaping is needed
-                bool needsEscaping = false;
                 foreach (char c in text)
                 {
-                    if (c == '<' || c == '>' || c == '&' || c == '"' || c == '\'' || c == '\n' || c == '\r')
+                    if (c is '<' or '>' or '&' or '"' or '\'' or '\n' or '\r')
                     {
-                        needsEscaping = true;
-                        break;
+                        return PerformEscaping(text);
                     }
                 }
 
-                if (!needsEscaping)
-                {
-                    return text;
-                }
+                return text;
 
-                // Perform escaping
-                var sb = new StringBuilder(text.Length + 20);
-                foreach (char c in text)
+                static string PerformEscaping(string text)
                 {
-                    switch (c)
+                    var sb = new StringBuilder(text.Length + 20);
+                    foreach (char c in text)
                     {
-                        case '<':
-                            sb.Append("&lt;");
-                            break;
-                        case '>':
-                            sb.Append("&gt;");
-                            break;
-                        case '&':
-                            sb.Append("&amp;");
-                            break;
-                        case '"':
-                            sb.Append("&quot;");
-                            break;
-                        case '\'':
-                            sb.Append("&apos;");
-                            break;
-                        case '\n':
-                            sb.Append("&#10;");
-                            break;
-                        case '\r':
-                            sb.Append("&#13;");
-                            break;
-                        default:
-                            sb.Append(c);
-                            break;
+                        switch (c)
+                        {
+                            case '<':
+                                sb.Append("&lt;");
+                                break;
+                            case '>':
+                                sb.Append("&gt;");
+                                break;
+                            case '&':
+                                sb.Append("&amp;");
+                                break;
+                            case '"':
+                                sb.Append("&quot;");
+                                break;
+                            case '\'':
+                                sb.Append("&apos;");
+                                break;
+                            case '\n':
+                                sb.Append("&#10;");
+                                break;
+                            case '\r':
+                                sb.Append("&#13;");
+                                break;
+                            default:
+                                sb.Append(c);
+                                break;
+                        }
                     }
+                    return sb.ToString();
                 }
-
-                return sb.ToString();
             }
 
-            private static string GetLogLevelName(LoggerMethod lm)
+            private static string GetLogLevelName(int level)
             {
-                if (lm.Level == null)
+                return level switch
                 {
-                    // Dynamic log level - don't include in documentation
-                    return string.Empty;
-                }
-
-                // Map level to simple name using array lookup for standard levels
-                int level = lm.Level.Value;
-                if (level >= 0 && level < s_logLevelNames.Length)
-                {
-                    return s_logLevelNames[level];
-                }
-
-                // For unknown levels, return the numeric value
-                return level.ToString();
+                    0 => "Trace",
+                    1 => "Debug",
+                    2 => "Information",
+                    3 => "Warning",
+                    4 => "Error",
+                    5 => "Critical",
+                    6 => "None",
+                    _ => level.ToString(),
+                };
             }
-
-            private static readonly string[] s_logLevelNames = new[]
-            {
-                "Trace",        // 0
-                "Debug",        // 1
-                "Information",  // 2
-                "Warning",      // 3
-                "Error",        // 4
-                "Critical",     // 5
-                "None",         // 6
-            };
 
             private static string GetLogLevelFullName(int level)
             {
