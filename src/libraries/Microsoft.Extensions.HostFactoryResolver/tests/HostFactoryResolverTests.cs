@@ -337,9 +337,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                 }
             }
 
-            // We expect at least half to be collected, but allow some to remain due to GC non-determinism
-            Assert.True(collectedCount >= weakRefs.Length / 2, 
-                $"Expected at least {weakRefs.Length / 2} objects to be collected, but only {collectedCount} were collected. This may indicate a memory leak.");
+            // We expect most objects to be collected, but allow some to remain due to GC non-determinism
+            // Using 80% threshold to reliably catch memory leaks while accounting for GC behavior
+            int expectedMinCollected = (weakRefs.Length * 80) / 100;
+            Assert.True(collectedCount >= expectedMinCollected, 
+                $"Expected at least {expectedMinCollected} objects to be collected, but only {collectedCount} were collected. This may indicate a memory leak.");
         }
     }
 }
