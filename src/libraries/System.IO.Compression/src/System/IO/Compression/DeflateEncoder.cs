@@ -199,15 +199,6 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        private void EnsureInitialized()
-        {
-            EnsureNotDisposed();
-            if (_state is null)
-            {
-                throw new InvalidOperationException(SR.DeflateEncoder_NotInitialized);
-            }
-        }
-
         /// <summary>
         /// Gets the maximum expected compressed length for the provided input size.
         /// </summary>
@@ -233,7 +224,7 @@ namespace System.IO.Compression
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
         public OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
             Debug.Assert(_state is not null);
 
             bytesConsumed = 0;
@@ -297,7 +288,7 @@ namespace System.IO.Compression
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         public OperationStatus Flush(Span<byte> destination, out int bytesWritten)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
             Debug.Assert(_state is not null);
 
             bytesWritten = 0;

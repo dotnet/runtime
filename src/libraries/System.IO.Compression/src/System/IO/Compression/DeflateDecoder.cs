@@ -47,15 +47,6 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        private void EnsureInitialized()
-        {
-            EnsureNotDisposed();
-            if (_state is null)
-            {
-                throw new InvalidOperationException(SR.DeflateDecoder_NotInitialized);
-            }
-        }
-
         /// <summary>
         /// Decompresses a read-only byte span into a destination span.
         /// </summary>
@@ -66,7 +57,7 @@ namespace System.IO.Compression
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
             Debug.Assert(_state is not null);
 
             bytesConsumed = 0;
