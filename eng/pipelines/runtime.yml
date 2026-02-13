@@ -113,7 +113,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
@@ -140,7 +140,7 @@ extends:
           - browser_wasm
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
@@ -190,7 +190,7 @@ extends:
           - browser_wasm_win
           jobParameters:
             nameSuffix: CoreCLR_ReleaseLibraries
-            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
