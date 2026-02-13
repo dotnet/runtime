@@ -248,20 +248,16 @@ static MethodDesc * FindTightlyBoundWrappedMethodDesc_DEBUG(MethodDesc * pMD)
     Module *pModule = pMD->GetModule();
     bool isAsyncVariantMethod = pMD->IsAsyncVariantMethod();
 
-    MethodTable::MethodIterator it(pMD->GetCanonicalMethodTable());
-    it.MoveToEnd();
-    for (; it.IsValid(); it.Prev()) {
-        if (!it.IsVirtual()) {
-            // Get the MethodDesc for current method
-            MethodDesc* pCurMethod = it.GetMethodDesc();
+    MethodTable::IntroducedMethodIterator it(pMD->GetCanonicalMethodTable());
+    for (; it.IsValid(); it.Next()) {
+        MethodDesc* pCurMethod = it.GetMethodDesc();
 
-            if (pCurMethod && !pCurMethod->IsUnboxingStub()) {
-                if ((pCurMethod->GetMemberDef() == methodDef)  &&
-                    (pCurMethod->GetModule() == pModule) &&
-                    (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod))
-                {
-                    return pCurMethod;
-                }
+        if (pCurMethod && !pCurMethod->IsUnboxingStub()) {
+            if ((pCurMethod->GetMemberDef() == methodDef)  &&
+                (pCurMethod->GetModule() == pModule) &&
+                (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod))
+            {
+                return pCurMethod;
             }
         }
     }
@@ -288,17 +284,14 @@ static MethodDesc * FindTightlyBoundUnboxingStub_DEBUG(MethodDesc * pMD)
     Module *pModule = pMD->GetModule();
     bool isAsyncVariantMethod = pMD->IsAsyncVariantMethod();
 
-    MethodTable::MethodIterator it(pMD->GetCanonicalMethodTable());
-    it.MoveToEnd();
-    for (; it.IsValid(); it.Prev()) {
-        if (it.IsVirtual()) {
-            MethodDesc* pCurMethod = it.GetMethodDesc();
-            if (pCurMethod && pCurMethod->IsUnboxingStub()) {
-                if ((pCurMethod->GetMemberDef() == methodDef) &&
-                    (pCurMethod->GetModule() == pModule) &&
-                    (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod)) {
-                    return pCurMethod;
-                }
+    MethodTable::IntroducedMethodIterator it(pMD->GetCanonicalMethodTable());
+    for (; it.IsValid(); it.Next()) {
+        MethodDesc* pCurMethod = it.GetMethodDesc();
+        if (pCurMethod && pCurMethod->IsUnboxingStub()) {
+            if ((pCurMethod->GetMemberDef() == methodDef) &&
+                (pCurMethod->GetModule() == pModule) &&
+                (pCurMethod->IsAsyncVariantMethod() == isAsyncVariantMethod)) {
+                return pCurMethod;
             }
         }
     }
