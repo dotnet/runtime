@@ -3554,12 +3554,33 @@ public:
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
+
+    private:
         union
         {
             BYTE*         dsData;      // for data blobs
             BasicBlock**  dsBlocks;    // for block-based sections
             emitLocation* dsLocations; // for async resume info
         };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */

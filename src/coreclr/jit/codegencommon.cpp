@@ -6831,7 +6831,7 @@ void CodeGen::genReportAsyncDebugInfo()
         uint32_t diagNativeOffset = 0;
         if (genAsyncResumeInfoTable != nullptr)
         {
-            emitLocation& emitLoc = genAsyncResumeInfoTable->dsLocations[i];
+            emitLocation& emitLoc = genAsyncResumeInfoTable->Locations()[i];
             if (emitLoc.Valid())
             {
                 diagNativeOffset = emitLoc.CodeOffset(GetEmitter());
