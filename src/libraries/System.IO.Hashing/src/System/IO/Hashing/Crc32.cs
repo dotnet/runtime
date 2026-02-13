@@ -129,7 +129,7 @@ namespace System.IO.Hashing
         }
 
         /// <summary>
-        ///   Computes the CRC32 hash value for the provided data using the specified parameter set.
+        ///   Computes the CRC-32 hash value for the provided data using the specified parameter set.
         /// </summary>
         /// <param name="parameterSet">The parameters to use for the CRC computation.</param>
         /// <param name="source">The data to hash.</param>
@@ -154,7 +154,7 @@ namespace System.IO.Hashing
             HashCore(Crc32ParameterSet.Crc32, source);
 
         /// <summary>
-        ///   Computes the CRC32 hash value for the provided data using the specified parameter set.
+        ///   Computes the CRC-32 hash value for the provided data using the specified parameter set.
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="parameterSet">The parameters to use for the CRC computation.</param>

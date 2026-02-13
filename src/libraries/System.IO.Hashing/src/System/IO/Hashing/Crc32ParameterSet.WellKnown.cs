@@ -69,7 +69,21 @@ namespace System.IO.Hashing
             {
                 if (System.Runtime.Intrinsics.X86.Sse42.IsSupported)
                 {
-                    ReadOnlySpan<uint> uintData = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(source);
+                    if (System.Runtime.Intrinsics.X86.Sse42.X64.IsSupported)
+                    {
+                        ReadOnlySpan<ulong> ulongData = MemoryMarshal.Cast<byte, ulong>(source);
+                        ulong crc64 = crc;
+
+                        foreach (ulong value in ulongData)
+                        {
+                            crc64 = System.Runtime.Intrinsics.X86.Sse42.X64.Crc32(crc64, value);
+                        }
+
+                        crc = (uint)crc64;
+                        source = source.Slice(ulongData.Length * sizeof(ulong));
+                    }
+
+                    ReadOnlySpan<uint> uintData = MemoryMarshal.Cast<byte, uint>(source);
 
                     foreach (uint value in uintData)
                     {

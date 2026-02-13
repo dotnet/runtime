@@ -5,6 +5,16 @@ using System.Buffers.Binary;
 
 namespace System.IO.Hashing
 {
+    /// <summary>
+    ///   Represents a set of parameters that define the behavior of a CRC-32 hash algorithm.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     The parameter-set instance precomputes values to be used in the CRC calculation.
+    ///     As such, callers are expected to create a single instance of the parameter set and
+    ///     reuse it for multiple hash calculations.
+    ///   </para>
+    /// </remarks>
     public partial class Crc32ParameterSet
     {
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
@@ -56,13 +66,9 @@ namespace System.IO.Hashing
             uint finalXorValue,
             bool reflectValues)
         {
-            Crc32ParameterSet set = reflectValues switch
-            {
-                false => new ForwardTableBasedCrc32(polynomial, initialValue, finalXorValue),
-                _ => new ReflectedTableBasedCrc32(polynomial, initialValue, finalXorValue),
-            };
-
-            return set;
+            return reflectValues ?
+                new ReflectedTableBasedCrc32(polynomial, initialValue, finalXorValue) :
+                new ForwardTableBasedCrc32(polynomial, initialValue, finalXorValue);
         }
 
         internal void WriteCrcToSpan(uint crc, Span<byte> destination)
@@ -92,11 +98,18 @@ namespace System.IO.Hashing
 
         private static uint ReverseBits(uint value)
         {
+#if NET
+            if (System.Runtime.Intrinsics.Arm.ArmBase.IsSupported)
+            {
+                return System.Runtime.Intrinsics.Arm.ArmBase.ReverseElementBits(value);
+            }
+#endif
+
             value = ((value & 0xAAAAAAAA) >> 1) | ((value & 0x55555555) << 1);
             value = ((value & 0xCCCCCCCC) >> 2) | ((value & 0x33333333) << 2);
             value = ((value & 0xF0F0F0F0) >> 4) | ((value & 0x0F0F0F0F) << 4);
-            value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
-            return (value >> 16) | (value << 16);
+
+            return BinaryPrimitives.ReverseEndianness(value);
         }
     }
 }

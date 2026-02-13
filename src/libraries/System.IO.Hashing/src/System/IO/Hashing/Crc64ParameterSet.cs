@@ -5,6 +5,16 @@ using System.Buffers.Binary;
 
 namespace System.IO.Hashing
 {
+    /// <summary>
+    ///   Represents a set of parameters that define the behavior of a CRC-64 hash algorithm.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     The parameter-set instance precomputes values to be used in the CRC calculation.
+    ///     As such, callers are expected to create a single instance of the parameter set and
+    ///     reuse it for multiple hash calculations.
+    ///   </para>
+    /// </remarks>
     public partial class Crc64ParameterSet
     {
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
@@ -56,13 +66,9 @@ namespace System.IO.Hashing
             ulong finalXorValue,
             bool reflectValues)
         {
-            Crc64ParameterSet set = reflectValues switch
-            {
-                false => new ForwardTableBasedCrc64(polynomial, initialValue, finalXorValue),
-                _ => new ReflectedTableBasedCrc64(polynomial, initialValue, finalXorValue),
-            };
-
-            return set;
+            return reflectValues ?
+                new ReflectedTableBasedCrc64(polynomial, initialValue, finalXorValue) :
+                new ForwardTableBasedCrc64(polynomial, initialValue, finalXorValue);
         }
 
         internal void WriteCrcToSpan(ulong crc, Span<byte> destination)
@@ -92,12 +98,18 @@ namespace System.IO.Hashing
 
         private static ulong ReverseBits(ulong value)
         {
+#if NET
+            if (System.Runtime.Intrinsics.Arm.ArmBase.Arm64.IsSupported)
+            {
+                return System.Runtime.Intrinsics.Arm.ArmBase.Arm64.ReverseElementBits(value);
+            }
+#endif
+
             value = ((value & 0xAAAAAAAAAAAAAAAA) >> 1) | ((value & 0x5555555555555555) << 1);
             value = ((value & 0xCCCCCCCCCCCCCCCC) >> 2) | ((value & 0x3333333333333333) << 2);
             value = ((value & 0xF0F0F0F0F0F0F0F0) >> 4) | ((value & 0x0F0F0F0F0F0F0F0F) << 4);
-            value = ((value & 0xFF00FF00FF00FF00) >> 8) | ((value & 0x00FF00FF00FF00FF) << 8);
-            value = ((value & 0xFFFF0000FFFF0000) >> 16) | ((value & 0x0000FFFF0000FFFF) << 16);
-            return (value >> 32) | (value << 32);
+
+            return BinaryPrimitives.ReverseEndianness(value);
         }
     }
 }
