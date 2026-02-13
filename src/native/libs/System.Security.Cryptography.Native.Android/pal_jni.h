@@ -514,6 +514,8 @@ extern jclass g_X509TrustManager;
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;
+extern jmethodID g_DotnetProxyTrustManagerIsCleartextTrafficPermitted;
+extern jmethodID g_DotnetProxyTrustManagerIsCertificateTrustedForHost;
 
 // net/dot/android/crypto/DotnetX509KeyManager
 extern jclass    g_DotnetX509KeyManager;

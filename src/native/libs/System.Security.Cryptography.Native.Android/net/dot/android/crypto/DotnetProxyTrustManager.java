@@ -87,4 +87,43 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
     }
 
     static native boolean verifyRemoteCertificate(long sslStreamProxyHandle, boolean chainTrustedByPlatform);
+
+    /**
+     * Checks if cleartext traffic is permitted for the given hostname
+     * according to the platform's NetworkSecurityPolicy (reads network_security_config.xml).
+     */
+    public static boolean isCleartextTrafficPermitted(String hostname) {
+        return android.security.NetworkSecurityPolicy.getInstance()
+            .isCleartextTrafficPermitted(hostname);
+    }
+
+    /**
+     * Checks whether the given DER-encoded certificate is trusted for the given hostname
+     * by the platform's default trust manager (from network_security_config.xml).
+     */
+    public static boolean isCertificateTrustedForHost(byte[] certDer, String hostname) {
+        try {
+            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
+            java.security.cert.X509Certificate cert = (java.security.cert.X509Certificate)
+                cf.generateCertificate(new java.io.ByteArrayInputStream(certDer));
+
+            javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init((java.security.KeyStore) null);
+            javax.net.ssl.TrustManager[] tms = tmf.getTrustManagers();
+            for (javax.net.ssl.TrustManager tm : tms) {
+                if (tm instanceof X509TrustManager) {
+                    X509TrustManagerExtensions ext = new X509TrustManagerExtensions((X509TrustManager) tm);
+                    ext.checkServerTrusted(
+                        new java.security.cert.X509Certificate[] { cert },
+                        "RSA",
+                        hostname);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            // rejected
+        }
+        return false;
+    }
 }

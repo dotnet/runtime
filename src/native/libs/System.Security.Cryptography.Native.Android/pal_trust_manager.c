@@ -144,6 +144,36 @@ cleanup:
     return trustManagers;
 }
 
+int32_t AndroidCryptoNative_IsCleartextTrafficPermitted(const char* hostname)
+{
+    JNIEnv* env = GetJNIEnv();
+    jstring hostnameStr = make_java_string(env, hostname);
+    jboolean result = (*env)->CallStaticBooleanMethod(
+        env,
+        g_DotnetProxyTrustManager,
+        g_DotnetProxyTrustManagerIsCleartextTrafficPermitted,
+        hostnameStr);
+    ReleaseLRef(env, hostnameStr);
+    return (int32_t)result;
+}
+
+int32_t AndroidCryptoNative_IsCertificateTrustedForHost(const uint8_t* certDer, int32_t certDerLen, const char* hostname)
+{
+    JNIEnv* env = GetJNIEnv();
+    jbyteArray certArray = make_java_byte_array(env, certDerLen);
+    (*env)->SetByteArrayRegion(env, certArray, 0, certDerLen, (const jbyte*)certDer);
+    jstring hostnameStr = make_java_string(env, hostname);
+    jboolean result = (*env)->CallStaticBooleanMethod(
+        env,
+        g_DotnetProxyTrustManager,
+        g_DotnetProxyTrustManagerIsCertificateTrustedForHost,
+        certArray,
+        hostnameStr);
+    ReleaseLRef(env, certArray);
+    ReleaseLRef(env, hostnameStr);
+    return (int32_t)result;
+}
+
 // JNI entry point called from DotnetProxyTrustManager.verifyRemoteCertificate().
 // Forwards the platform's trust verdict to the managed SslStream validation callback.
 // The managed side combines this with its own X509Chain.Build result — the callback

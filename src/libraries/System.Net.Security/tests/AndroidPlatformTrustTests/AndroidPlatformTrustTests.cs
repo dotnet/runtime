@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -30,10 +31,12 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_CertificateSignedByTrustedCA_NoChainErrors()
         {
-            // The server uses testservereku.contoso.com.pfx which is signed by the NDX Test Root CA.
+            // The server uses testservereku.contoso.com.pfx signed by the NDX Test Root CA.
             // The network_security_config.xml trusts that root CA for "testservereku.contoso.com".
-            // The platform trust manager should accept this chain, so no chain errors are reported.
+            // CustomRootTrust is configured with the NDX root so that managed validation also accepts.
+            // If network_security_config.xml is effective, the platform accepts too → no chain errors.
 
+            using X509Certificate2 rootCertificate = GetRootCertificate();
             SslPolicyErrors? reportedErrors = null;
 
             (SslStream client, SslStream server) = GetConnectedSslStreams();
@@ -53,7 +56,13 @@ namespace System.Net.Security.Tests
                     {
                         reportedErrors = sslPolicyErrors;
                         return true;
-                    }
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCertificate },
+                    },
                 };
 
                 await Task.WhenAll(
@@ -63,6 +72,53 @@ namespace System.Net.Security.Tests
 
             Assert.NotNull(reportedErrors);
             Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
+        [Fact]
+        public void NetworkSecurityConfig_CleartextTrafficBlocked_ForConfiguredDomain()
+        {
+            // Simplest possible test of network_security_config.xml:
+            // The config sets cleartextTrafficPermitted="false" for "blocked.example.com"
+            // and the base-config allows cleartext. If the config is loaded,
+            // isCleartextTrafficPermitted("blocked.example.com") must return false.
+            //
+            // Note: the AndroidManifest.xml template sets usesCleartextTraffic="true" globally,
+            // but network_security_config.xml takes precedence when present (per Android docs).
+            // This test implicitly verifies that override behavior.
+
+            bool blockedAllowed = IsCleartextTrafficPermitted("blocked.example.com");
+            bool otherAllowed = IsCleartextTrafficPermitted("other.example.com");
+
+            Assert.False(blockedAllowed, "Cleartext should be blocked for blocked.example.com per network_security_config.xml");
+            Assert.True(otherAllowed, "Cleartext should be allowed for other.example.com (base-config allows it)");
+        }
+
+        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_IsCleartextTrafficPermitted")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool IsCleartextTrafficPermitted([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] string hostname);
+
+        [System.Runtime.InteropServices.DllImport("System.Security.Cryptography.Native.Android", EntryPoint = "AndroidCryptoNative_IsCertificateTrustedForHost")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool IsCertificateTrustedForHost(byte[] certDer, int certDerLen, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] string hostname);
+
+        [Fact]
+        public void NetworkSecurityConfig_TrustAnchors_RootCATrustedForConfiguredDomain()
+        {
+            // The network_security_config.xml trusts our NDX root CA for "testservereku.contoso.com".
+            // This test checks directly (via the platform TrustManager) whether the root CA
+            // is trusted for that domain vs. an unconfigured domain.
+
+            using X509Certificate2 rootCert = GetRootCertificate();
+            byte[] rootDer = rootCert.RawData;
+
+            bool trustedForConfiguredDomain = IsCertificateTrustedForHost(rootDer, rootDer.Length, "testservereku.contoso.com");
+            bool trustedForOtherDomain = IsCertificateTrustedForHost(rootDer, rootDer.Length, "other.example.com");
+            bool trustedForDotNet = IsCertificateTrustedForHost(rootDer, rootDer.Length, "dot.net");
+
+            // If XML trust anchors work, root should be trusted for testservereku.contoso.com but not for others
+            Assert.True(trustedForConfiguredDomain, "NDX root should be trusted for testservereku.contoso.com per network_security_config.xml");
+            Assert.False(trustedForOtherDomain, "NDX root should NOT be trusted for other.example.com");
+            Assert.False(trustedForDotNet, "NDX root should NOT be trusted for dot.net");
         }
 
         [Fact]
@@ -393,6 +449,25 @@ namespace System.Net.Security.Tests
             leafCert = leafCert.CopyWithPrivateKey(leafKey);
 
             return (X509CertificateLoader.LoadCertificate(rootCert.Export(X509ContentType.Cert)), X509CertificateLoader.LoadCertificate(intermediateCert.Export(X509ContentType.Cert)), leafCert);
+        }
+
+        /// <summary>
+        /// Extracts the NDX Test Root CA (self-signed) from the contoso.com.p7b PKCS#7 bundle.
+        /// </summary>
+        private static X509Certificate2 GetRootCertificate()
+        {
+#pragma warning disable SYSLIB0057 // X509Certificate2Collection.Import is obsolete
+            var collection = new X509Certificate2Collection();
+            collection.Import(File.ReadAllBytes(Path.Combine("TestData", "contoso.com.p7b")));
+#pragma warning restore SYSLIB0057
+            foreach (X509Certificate2 cert in collection)
+            {
+                if (cert.Subject == cert.Issuer)
+                    return cert;
+                cert.Dispose();
+            }
+
+            throw new InvalidOperationException("Root CA not found in contoso.com.p7b");
         }
 
         private static (SslStream client, SslStream server) GetConnectedSslStreams()
