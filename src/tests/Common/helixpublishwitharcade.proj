@@ -269,6 +269,7 @@
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssemblyForStress" />
+      <_MergedWrapperMarker Condition="'$(TargetsMobile)' == 'true'" Include="$(TestBinDir)**\*.StandaloneTestRunner" Exclude="$(TestBinDir)**\supportFiles\*.StandaloneTestRunner" />
 
       <_MergedWrapperMarker>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
@@ -424,12 +425,14 @@
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.(MergedTestAssembly(ForStress)?(\.\d+\.\d+)?|StandaloneTestRunner)$', ''))</_MergedWrapperName>
       <!-- Android package names can't have hyphens, so we replace them with underscores -->
       <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
+      <_ExpectedApkPath>$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/bin/$(_MergedApkName).apk</_ExpectedApkPath>
     </PropertyGroup>
 
-    <ItemGroup>
+    <!-- Skip markers that don't have a corresponding APK (SharedLibrary projects) -->
+    <ItemGroup Condition="Exists('$(_ExpectedApkPath)')">
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
       </_MergedPayloadGroups>
@@ -438,10 +441,11 @@
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" Condition="'@(_MergedPayloadFiles)' != ''" />
     <PatchExclusionListInApks
       ApkPaths="@(_MergedPayloadApkFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
-      ExcludedTests="@(FilteredTestExclusionList)" />
+      ExcludedTests="@(FilteredTestExclusionList)"
+      Condition="'@(_MergedPayloadApkFiles)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
@@ -496,7 +500,7 @@
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.(MergedTestAssembly(ForStress)?(\.\d+\.\d+)?|StandaloneTestRunner)$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -538,7 +542,7 @@
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.(MergedTestAssembly(ForStress)?(\.\d+\.\d+)?|StandaloneTestRunner)$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
@@ -564,7 +568,7 @@
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory"
-          AfterTargets="PrepareMergedTestPayloadDirectories"
+          AfterTargets="PreparePayloadDirectories"
           Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />

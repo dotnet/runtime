@@ -501,6 +501,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCast(treeNode->AsOp());
             break;
 
+        case GT_BITCAST:
+            genCodeForBitCast(treeNode->AsOp());
+            break;
+
         case GT_NEG:
         case GT_NOT:
             genCodeForNegNot(treeNode->AsOp());
@@ -1162,6 +1166,45 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(treeNode);
+}
+
+//----------------------------------------------------------------------
+// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
+//
+// Arguments
+//    tree - the GT_BITCAST for which we're generating code
+//
+void CodeGen::genCodeForBitCast(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BITCAST));
+    genConsumeOperands(tree);
+
+    var_types toType   = tree->TypeGet();
+    var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
+    assert(toType == genActualType(tree));
+
+    instruction ins = INS_none;
+    switch (PackTypes(toType, fromType))
+    {
+        case PackTypes(TYP_INT, TYP_FLOAT):
+            ins = INS_i32_reinterpret_f32;
+            break;
+        case PackTypes(TYP_FLOAT, TYP_INT):
+            ins = INS_f32_reinterpret_i32;
+            break;
+        case PackTypes(TYP_LONG, TYP_DOUBLE):
+            ins = INS_i64_reinterpret_f64;
+            break;
+        case PackTypes(TYP_DOUBLE, TYP_LONG):
+            ins = INS_f64_reinterpret_i64;
+            break;
+        default:
+            unreached();
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

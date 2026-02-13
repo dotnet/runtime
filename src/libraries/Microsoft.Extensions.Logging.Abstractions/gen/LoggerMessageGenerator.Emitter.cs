@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal sealed class Emitter(Compilation compilation)
+        internal sealed class Emitter
         {
             // The maximum arity of LoggerMessage.Define.
             private const int MaxLoggerMessageDefineArguments = 6;
@@ -32,15 +32,14 @@ namespace Microsoft.Extensions.Logging.Generators
                 "global::System.ComponentModel.EditorBrowsableAttribute(" +
                 "global::System.ComponentModel.EditorBrowsableState.Never)";
 
-            private readonly bool _hasStringCreate =
-                compilation.GetSpecialType(SpecialType.System_String).GetMembers("Create").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic &&
-                              m.Parameters.Length == 2 &&
-                              m.Parameters[0].Type.Name == "IFormatProvider" &&
-                              m.Parameters[1].RefKind == RefKind.Ref);
-
+            private readonly bool _hasStringCreate;
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
             private bool _needEnumerationHelper;
+
+            public Emitter(bool hasStringCreate)
+            {
+                _hasStringCreate = hasStringCreate;
+            }
 
             public string Emit(IReadOnlyList<LoggerClass> logClasses, CancellationToken cancellationToken)
             {

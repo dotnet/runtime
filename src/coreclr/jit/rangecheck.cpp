@@ -718,6 +718,7 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
             case VNF_LSH:
             case VNF_ADD:
             case VNF_MUL:
+            case VNF_SUB:
             case VNF_AND:
             case VNF_OR:
             case VNF_RSH:
@@ -735,6 +736,9 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
                         break;
                     case VNF_MUL:
                         binOpResult = RangeOps::Multiply(r1, r2);
+                        break;
+                    case VNF_SUB:
+                        binOpResult = RangeOps::Subtract(r1, r2);
                         break;
                     case VNF_AND:
                         binOpResult = RangeOps::And(r1, r2);
@@ -910,23 +914,43 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         bool       isUnsigned = false;
 
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
-        if (canUseCheckedBounds &&
-            curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
+        if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
             curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS))
         {
-            if (normalLclVN == curAssertion.GetOp1().GetVN())
+            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(),
                                 curAssertion.GetOp2().GetCheckedBoundConstant());
             }
-            // Check if it's "checkedBndVN1 <relop> (checkedBndVN2 + 0)" and normalLclVN is checkedBndVN2
             else if ((normalLclVN == curAssertion.GetOp2().GetCheckedBound()) &&
                      (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
             {
-                cmpOper =
-                    GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
-                limit = Limit(Limit::keBinOpArray, curAssertion.GetOp1().GetVN(), 0);
+                // Check if it's "Const <relop> (checkedBndVN + 0)" or in other words "Const <relop> checkedBndVN"
+                // If normalLclVN == checkedBndVN, then we can deduce "normalLclVN <relop> Const"
+                //
+                // Example: We created "O1K_VN(vn1) - OAK_GT - O2K_CHECKED_BOUND_ADD_CNS(vn2, 0)"
+                // if vn1 is a constant (say, 100) and vn2 is our normalLclVN, we can deduce "normalLclVN < 100"
+                //
+                if (comp->vnStore->IsVNInt32Constant(curAssertion.GetOp1().GetVN()))
+                {
+                    // Since we are swapping the operands, we also need to swap the comparison operator
+                    cmpOper =
+                        GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                    limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
+                }
+                // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
+                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                {
+                    // Since we are swapping the operands, we also need to swap the comparison operator
+                    cmpOper =
+                        GenTree::SwapRelop(Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned));
+                    limit = Limit(Limit::keBinOpArray, curAssertion.GetOp1().GetVN(), 0);
+                }
+                else
+                {
+                    continue;
+                }
             }
             else
             {
