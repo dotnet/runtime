@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Hosting
             private IDisposable? _disposable;
             private readonly Action<object>? _configure;
             private readonly Action<Exception?>? _entrypointCompleted;
-            private static readonly AsyncLocal<HostingListener> _currentListener = new();
+            private readonly AsyncLocal<HostingListener> _currentListener = new();
 
             public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Action<Exception?>? entrypointCompleted)
             {

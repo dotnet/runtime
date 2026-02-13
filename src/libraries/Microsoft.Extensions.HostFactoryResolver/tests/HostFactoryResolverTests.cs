@@ -301,5 +301,39 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.IsAssignableFrom<IServiceProvider>(t.Result);
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPattern_DoesNotLeakMemory()
+        {
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+            Assert.NotNull(factory);
+
+            var weakReferences = new WeakReference[10];
+
+            for (int i = 0; i < weakReferences.Length; i++)
+            {
+                var serviceProvider = factory(Array.Empty<string>());
+                Assert.NotNull(serviceProvider);
+                weakReferences[i] = new WeakReference(serviceProvider);
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            int collectedCount = 0;
+            foreach (var weakReference in weakReferences)
+            {
+                if (!weakReference.IsAlive)
+                {
+                    collectedCount++;
+                }
+            }
+
+            int expectedMinCollected = (weakReferences.Length * 80) / 100;
+            Assert.True(collectedCount >= expectedMinCollected,
+                $"Expected at least {expectedMinCollected} objects to be collected, but only {collectedCount} were collected. This may indicate a memory leak.");
+        }
     }
 }
