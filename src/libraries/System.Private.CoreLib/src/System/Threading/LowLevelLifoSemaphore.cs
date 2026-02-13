@@ -119,11 +119,12 @@ namespace System.Threading
             int active = activeThreadCount + 1;
             int available = _procCount - active;
             int spinStep = _maxSpinCount * 2 / _procCount;
-            int spinsRemaining = (available - _procCount / 4) * spinStep;
+            // With activeThreadCount arbitrarily large and _procCount arbitrarily small
+            // we can, in theory, overflow int, so just use long here.
+            long spinsRemainingLong = (available - _procCount / 4) * (long)spinStep;
 
             // clamp to [0, _maxSpinCount] range.
-            spinsRemaining = Math.Max(spinsRemaining, 0);
-            spinsRemaining = Math.Min(spinsRemaining, _maxSpinCount);
+            int spinsRemaining = (int)Math.Clamp(spinsRemainingLong, 0, _maxSpinCount);
 
             uint iteration = 0;
             while (spinsRemaining > 0)
