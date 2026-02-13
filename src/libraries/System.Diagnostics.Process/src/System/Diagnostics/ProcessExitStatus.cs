@@ -27,8 +27,6 @@ namespace System.Diagnostics
         /// Gets the exit code of the process.
         /// </summary>
         /// <remarks>
-        /// <para>On Windows, this is the value passed to ExitProcess or returned from main().</para>
-        /// <para>On Unix, if the process exited normally, this is the value passed to exit() or returned from main().</para>
         /// <para>
         /// If the process was terminated by a signal on Unix, this is 128 + the signal number.
         /// Use <see cref="Signal"/> to get the actual signal.
