@@ -229,16 +229,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite != null)
                 {
                     OnCreate(callSite);
-
-                    // For singleton services, actually resolve them to detect circular dependencies
-                    // that can occur through factory functions. This addresses issue #88390 where
-                    // factory-based circular dependencies cause deadlocks at runtime.
-                    if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
-                    {
-                        // Attempt to resolve the service. If there's a circular dependency through
-                        // a factory function, it will be detected during resolution and throw.
-                        CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    }
                 }
             }
             catch (Exception e)
