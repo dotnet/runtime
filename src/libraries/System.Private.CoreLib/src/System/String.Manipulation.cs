@@ -2294,12 +2294,7 @@ namespace System
 
         public string Substring(int startIndex, int length)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
-#else
             if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
-#endif
             {
                 ThrowSubstringArgumentOutOfRange(startIndex, length);
             }
