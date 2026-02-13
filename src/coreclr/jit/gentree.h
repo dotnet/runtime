@@ -5704,13 +5704,14 @@ struct GenTreeCall final : public GenTree
         if (gtInlineInfoCount == 0)
         {
             assert(!IsInlineCandidate());
-            assert(gtInlineCandidateInfo == nullptr);
+            assert(gtCallDataKind == CallDataKind::None || gtCallDataKind == CallDataKind::CallCookie);
             return nullptr;
         }
         else if (gtInlineInfoCount > 1)
         {
             assert(!"Call has multiple inline candidates");
         }
+        assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
         return gtInlineCandidateInfo;
     }
 
@@ -5815,6 +5816,20 @@ struct GenTreeCall final : public GenTree
         CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
         IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
+
+    // Identifies which member of gtCallData is currently active.
+    enum class CallDataKind : uint8_t
+    {
+        None,                              // No data stored
+        CallCookie,                        // gtCallCookie - only for CALLI unmanaged calls (CT_INDIRECT)
+        InlineCandidateInfo,               // gtInlineCandidateInfo - single inline candidate
+        InlineCandidateInfoList,           // gtInlineCandidateInfoList - multiple GDV candidates
+        HandleHistogramProfileCandidateInfo, // gtHandleHistogramProfileCandidateInfo - for PGO
+        CompileTimeHelperArgumentHandle,   // compileTimeHelperArgumentHandle - type handle for dynamic helpers
+        DirectCallAddress,                 // gtDirectCallAddress - direct call address for codegen
+    };
+
+    CallDataKind gtCallDataKind;
 
     union
     {

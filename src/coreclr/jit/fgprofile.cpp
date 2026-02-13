@@ -1879,6 +1879,7 @@ public:
         GenTree* const node = *use;
         if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
+            assert(node->AsCall()->gtCallDataKind == GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
             assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
             m_functor(m_compiler, node->AsCall());
         }

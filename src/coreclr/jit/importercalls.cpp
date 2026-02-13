@@ -1402,6 +1402,7 @@ DONE_CALL:
                 pInfo->ilOffset                                       = rawILOffset;
                 pInfo->probeIndex                                     = 0;
                 call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                call->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo;
                 compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
@@ -1565,6 +1566,7 @@ DONE_CALL:
                         pInfo->ilOffset                                       = rawILOffset;
                         pInfo->probeIndex                                     = 0;
                         call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+                        call->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo;
                         compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
                 }
@@ -2712,6 +2714,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             return nullptr;
     }
 
+    assert(newArrayCall->AsCall()->gtCallDataKind == GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)newArrayCall->AsCall()->compileTimeHelperArgumentHandle;
 
     //
@@ -9388,6 +9391,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     pInfo->ilOffset                             = ilOffset;
     pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
     call->gtHandleHistogramProfileCandidateInfo = pInfo;
+    call->gtCallDataKind                        = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo;
 
     // Flag block as needing scrutiny
     //
