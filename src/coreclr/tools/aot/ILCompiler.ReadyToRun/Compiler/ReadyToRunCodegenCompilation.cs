@@ -703,8 +703,8 @@ namespace ILCompiler
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
 
-                        if (!CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method)
-                            && method.IsAsyncCall())
+                        if (method.IsAsyncCall()
+                            && !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method))
                         {
                             AddNecessaryAsyncReferences(method);
                         }
@@ -982,10 +982,8 @@ namespace ILCompiler
 
             // Keep in sync with CorInfoImpl.getAsyncInfo()
             DefType continuation = TypeSystemContext.ContinuationType;
-            var asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-            // AsyncHelpers should already be referenced in the module for the call to Await()
-            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(asyncHelpers, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
-            TypeDesc[] requiredTypes = [continuation];
+            TypeDesc asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            TypeDesc[] requiredTypes = [asyncHelpers, continuation];
             FieldDesc[] requiredFields =
             [
                 // For CorInfoImpl.getAsyncInfo

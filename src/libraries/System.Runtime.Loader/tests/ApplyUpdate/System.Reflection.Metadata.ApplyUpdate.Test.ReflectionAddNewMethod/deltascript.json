@@ -1,6 +1,8 @@
 {
-    "changes": [
-        {"document": "ReflectionAddNewMethod.cs", "update": "ReflectionAddNewMethod_v1.cs"},
-    ]
+  "changes": [
+    {
+      "document": "ReflectionAddNewMethod.cs",
+      "update": "ReflectionAddNewMethod_v1.cs"
+    }
+  ]
 }
-
