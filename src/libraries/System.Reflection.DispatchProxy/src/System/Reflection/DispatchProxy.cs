@@ -10,6 +10,9 @@ namespace System.Reflection
     /// </summary>
     public abstract class DispatchProxy
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DispatchProxy"/> class.
+        /// </summary>
         protected DispatchProxy()
         {
         }
