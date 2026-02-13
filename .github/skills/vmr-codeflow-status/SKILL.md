@@ -1,6 +1,15 @@
 ---
 name: vmr-codeflow-status
-description: Analyze VMR codeflow PR status for dotnet repositories. Use when investigating stale codeflow PRs, checking if fixes have flowed through the VMR pipeline, debugging dependency update issues in PRs authored by dotnet-maestro[bot], checking overall flow status for a repo, or diagnosing why backflow PRs are missing or blocked.
+description: >
+  Analyze VMR codeflow PR status for dotnet repositories.
+  USE FOR: investigating stale codeflow PRs, checking if fixes have flowed
+  through the VMR pipeline, debugging dependency update issues in PRs authored
+  by dotnet-maestro[bot], checking overall flow status for a repo, diagnosing
+  why backflow PRs are missing or blocked, URLs containing dotnet-maestro or
+  "Source code updates from dotnet/dotnet".
+  DO NOT USE FOR: CI build failures (use ci-analysis skill), code review
+  (use code-review skill), general PR investigation without codeflow context.
+  INVOKES: Get-CodeflowStatus.ps1 script via powershell.
 ---
 
 # VMR Codeflow Status
@@ -13,10 +22,14 @@ Analyze the health of VMR codeflow PRs in both directions:
 
 **Workflow**: Run the script → read the human-readable output + `[CODEFLOW_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
 
+> 📎 **Presenting PRs**: Script output references PRs by number (e.g., `#53001`). When presenting to the user, always render as markdown links to the correct repo: `[dotnet/sdk#53001](https://github.com/dotnet/sdk/pull/53001)`. The `-Repository` parameter and script context tell you which repo each PR belongs to — backflow PRs are in the product repo, forward flow PRs are in `dotnet/dotnet`.
+
 ## Prerequisites
 
 - **GitHub CLI (`gh`)** — must be installed and authenticated (`gh auth login`)
 - Run scripts **from the skill directory** or use the full path to the script
+
+> 💡 **GitHub MCP tools** are available for simple queries (e.g., listing PRs, reading file contents). The script remains the primary tool for comprehensive codeflow analysis — it correlates multiple API calls, cross-references timestamps, and emits structured JSON that individual MCP calls can't replicate.
 
 ## When to Use This Skill
 
@@ -27,14 +40,27 @@ Use this skill when:
 - You need to understand what manual commits would be lost if a codeflow PR is closed
 - You want to check the overall state of flow for a repo (backflow and forward flow health)
 - You need to know why backflow PRs are missing or when the last VMR build was published
-- You're asked questions like "is this codeflow PR up to date", "has the runtime revert reached this PR", "why is the codeflow blocked", "what is the state of flow for the sdk", "what's the flow status for net11"
+- You're asked questions like "is this codeflow PR up to date", "has the runtime revert reached this PR", "why is the codeflow blocked", "what is the state of flow for the sdk", "what's the flow status for net11", "why are builds stale", "how far behind is the backflow"
 
 ## Two Modes
 
 | Mode | Use When | Required Params |
 |------|----------|-----------------|
-| **PR analysis** | Investigating a specific codeflow PR | `-PRNumber` (and optionally `-Repository`) |
-| **Flow health** (`-CheckMissing`) | Checking overall repo flow status | `-CheckMissing` (optional: `-Repository`, `-Branch`) |
+| **PR analysis** | Investigating a specific codeflow PR | `-PRNumber -Repository` |
+| **Flow health** (`-CheckMissing`) | Checking overall repo flow status | `-CheckMissing -Repository` (optional: `-Branch`) |
+
+> ⚠️ **Branch names differ across repos.** The `-Branch` parameter is the **product repo** branch name, not the VMR branch. When the user says "net10", map to the correct branch per repo:
+> - `dotnet/runtime`, `dotnet/aspnetcore`, `dotnet/efcore`, `dotnet/winforms`, `dotnet/wpf` → `release/10.0`
+> - `dotnet/sdk`, `dotnet/msbuild` → `release/10.0.1xx` (or `10.0.2xx`, `10.0.3xx` for other bands)
+> - `dotnet/roslyn` → `release/dev18.0` (Roslyn uses VS version numbering)
+>
+> **When the user asks about a major version** (e.g., "net10 flow", "net11 status"), **omit `-Branch`** and let the script discover all branches. Don't ask for clarification — check everything and present a consolidated view. Only narrow to a specific band if the user explicitly mentions one (e.g., "10.0.2xx").
+
+> 📋 **Discovering repos to check.** When the user asks about flow status across "all repos" or a major version, use `darc` to get the authoritative list of repos with active backflow subscriptions:
+> ```
+> darc get-subscriptions --source-repo dotnet/dotnet --channel "11.0.1xx"
+> ```
+> This returns all repos subscribed to backflow from the VMR for that channel. Run `-CheckMissing` (omitting `-Branch`) against each target repo. If darc isn't installed or authenticated, fall back to the core product repos: `runtime`, `sdk`, `aspnetcore`, `roslyn`, `efcore`, `winforms`, `wpf`, `msbuild`, `fsharp`.
 
 > ⚠️ **Common mistake**: Don't use `-PRNumber` and `-CheckMissing` together — they are separate modes. `-CheckMissing` scans branches discovered from open and recent backflow PRs (unless `-Branch` is provided), not a specific PR.
 
@@ -62,7 +88,7 @@ Use this skill when:
 | Parameter | Required | Default | Description |
 |-----------|----------|---------|-------------|
 | `-PRNumber` | Yes (unless `-CheckMissing`) | — | GitHub PR number to analyze |
-| `-Repository` | No | `dotnet/sdk` | Target repo in `owner/repo` format |
+| `-Repository` | Yes | — | Target repo in `owner/repo` format |
 | `-TraceFix` | No | — | Trace a repo PR through the pipeline. Format: `owner/repo#number` (e.g., `dotnet/runtime#123974`) |
 | `-ShowCommits` | No | `$false` | Show individual VMR commits between PR snapshot and branch HEAD |
 | `-CheckMissing` | No | `$false` | Check overall flow health: missing backflow PRs, forward flow status, and official build freshness |
@@ -91,6 +117,7 @@ Use this skill when:
 2. **Scans backflow PRs** — Finds branches where a backflow PR should exist but doesn't, and checks health of open PRs (conflict/staleness/resolved status)
 3. **Scans forward flow** — Checks open forward flow PRs into `dotnet/dotnet` for staleness and conflicts
 4. **Produces summary** — Counts healthy/blocked/missing PRs across both directions
+5. **Emits structured summary** — `[CODEFLOW_SUMMARY]` JSON block with backflow/forward flow counts and build freshness
 
 > ❌ **Never assume "Unknown" health means healthy.** When `gh` API calls fail (auth, rate limiting), the script returns "Unknown" status — this is explicitly excluded from healthy/covered counts.
 
@@ -125,6 +152,18 @@ Use this skill when:
 ### Manual Commits
 Manual commits on the PR branch are at risk if the PR is closed or force-triggered. The script lists them so you can decide whether to preserve them.
 
+### Subscription Health (darc cross-reference)
+When darc is available and a backflow PR is missing, the script cross-references subscription state against the latest build. The `subscriptionHealth` array in the JSON contains:
+- `diagnostic`: `maestro-stuck` | `subscription-disabled` | `subscription-missing` | `channel-frozen` | `frequency-limited` | `healthy`
+- `subscriptionId`: for use with `darc trigger-subscriptions --id <id>`
+- `message`: human-readable summary with build numbers
+
+Key diagnostics:
+- **`maestro-stuck`**: Subscription enabled, but `Last Build` is older than latest published build — Maestro isn't processing new builds. Verify by comparing build numbers and dates. If confirmed, `darc trigger-subscriptions` can remediate (see Remediation Commands below).
+- **`subscription-missing`**: No subscription exists for this repo/branch — expected for shipped previews, unexpected for active branches
+- **`channel-frozen`**: Latest build is `Released` (preview shipped), subscription is up to date — no action needed
+- **`subscription-disabled`**: Subscription exists but is turned off
+
 ### Fix Tracing
 When using `-TraceFix`:
 - **✅ Fix is in VMR manifest**: The fix has flowed to the VMR
@@ -158,8 +197,11 @@ Then layer in context from `warnings`, `freshness`, and `commits`:
 - **Staleness warning active** (`stalenessCount > 0`, `stalenessMayBeResolved = false`): Codeflow is blocked. Options: merge as-is, force trigger, or close & reopen.
 - **Manual commits present** (`commits.manual > 0`): Warn that force-trigger or close will lose them. If `commits.codeflowLikeManual > 0`, note the freshness gap may be partially covered.
 - **Behind on freshness** (`freshness.aheadBy > 0`): Mention the PR is missing updates. If staleness is blocking, a force trigger is needed. Otherwise, Maestro should auto-update.
+- **Subscription health** (`subscriptionHealth` array present): Use the `diagnostic` field to explain *why* a backflow PR is missing — don't just say "missing", say whether Maestro is stuck, the subscription is disabled, or the channel is frozen. For `channel-frozen` or `subscription-missing` on preview branches, this is expected — don't alarm the user.
 
 ### Darc commands to include
+
+### Remediation Commands
 
 When recommending actions, include the relevant `darc` command with the actual `subscriptionId` from the summary. Be precise about what each command does:
 
@@ -175,54 +217,35 @@ When recommending actions, include the relevant `darc` command with the actual `
 
 Be direct. Lead with the most important action. Use 2-4 bullet points, not long paragraphs. Include the darc command inline so the user can copy-paste.
 
-## Darc Commands for Remediation
+## Deep Analysis with SQL
 
-After analyzing the codeflow status, common next steps involve `darc` commands:
+For cross-repo or multi-run analysis, store each `[CODEFLOW_SUMMARY]` JSON in SQL after the script runs:
 
-```bash
-# Force trigger the subscription to get a fresh codeflow update
-darc trigger-subscriptions --id <subscription-id> --force
+```sql
+CREATE TABLE IF NOT EXISTS codeflow_status (
+    id TEXT PRIMARY KEY,           -- e.g., 'dotnet/sdk#52727' or 'dotnet/sdk/main'
+    mode TEXT,                     -- 'pr-analysis' or 'flow-health'
+    repository TEXT,
+    data TEXT,                     -- full JSON summary
+    checked_at TEXT DEFAULT (datetime('now'))
+);
 
-# Normal trigger (only works if not stale)
-darc trigger-subscriptions --id <subscription-id>
-
-# Check subscription details
-darc get-subscriptions --target-repo dotnet/sdk --source-repo dotnet/dotnet
-
-# Get BAR build details
-darc get-build --id <bar-build-id>
-
-# Resolve codeflow conflicts locally
-darc vmr resolve-conflict --subscription <subscription-id>
+-- After each script run, parse the JSON and insert:
+INSERT OR REPLACE INTO codeflow_status (id, mode, repository, data)
+VALUES ('dotnet/sdk/main', 'flow-health', 'dotnet/sdk', '<json>');
 ```
 
-Install darc via `eng\common\darc-init.ps1` in any arcade-enabled repository.
+**When to use**: Checking flow health across multiple repos (run `-CheckMissing` for each, store results, then query). Example:
 
-### When the script reports "Maestro may be stuck"
-
-When the script shows a missing backflow PR with "Maestro may be stuck" (builds are fresh but no PR was created), follow these diagnostic steps:
-
-1. **Check the subscription** to find when it last consumed a build:
-   ```bash
-   darc get-subscriptions --target-repo <repo> --source-repo dotnet/dotnet
-   ```
-   Look at the `Last Build` field — if it's weeks old while the channel has newer builds, the subscription is stuck.
-
-2. **Compare against the latest channel build** to confirm the gap:
-   ```bash
-   darc get-latest-build --repo dotnet/dotnet --channel "<channel-name>"
-   ```
-   Channel names follow patterns like `.NET 11.0.1xx SDK`, `.NET 10.0.1xx SDK`, `.NET 11.0.1xx SDK Preview 1`.
-
-3. **Trigger the subscription manually** to unstick it:
-   ```bash
-   darc trigger-subscriptions --id <subscription-id>
-   ```
-
-4. **If triggering doesn't produce a PR within a few minutes**, the issue may be deeper — check Maestro health or open an issue on `dotnet/arcade`.
+```sql
+-- Find all repos with missing backflow
+SELECT repository, json_extract(data, '$.backflow.missing') as missing,
+       json_extract(data, '$.buildsAreStale') as builds_stale
+FROM codeflow_status WHERE mode = 'flow-health' AND json_extract(data, '$.backflow.missing') > 0;
+```
 
 ## References
 
-- **VMR codeflow concepts**: See [references/vmr-codeflow-reference.md](references/vmr-codeflow-reference.md)
+- **VMR codeflow concepts & darc commands**: See [references/vmr-codeflow-reference.md](references/vmr-codeflow-reference.md)
 - **VMR build topology & staleness diagnosis**: See [references/vmr-build-topology.md](references/vmr-build-topology.md) — explains how to diagnose widespread backflow staleness by checking VMR build health, the bootstrap chicken-and-egg problem, and the channel/subscription flow
 - **Codeflow PR documentation**: [dotnet/dotnet Codeflow-PRs.md](https://github.com/dotnet/dotnet/blob/main/docs/Codeflow-PRs.md)

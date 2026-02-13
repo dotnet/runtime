@@ -99,13 +99,17 @@ then Maestro already fired — no newer builds exist.
 
 ### Channel-to-branch mapping
 
-| Channel | VMR branch | Backflow targets |
+Channel names follow the pattern `{major}.0.{band}xx` where `{band}` is typically `1`, `2`, or `3`.
+The major version tracks .NET version = current year - 2015 (e.g., 2026 → .NET 11).
+
+| Channel Pattern | VMR branch | Notes |
 |---------|-----------|-----------------|
-| `11.0.1xx` | `main` | runtime, sdk, aspnetcore (main) |
-| `11.0.1xx-preview1` | `release/11.0.1xx-preview1` | runtime, sdk, aspnetcore (preview) |
-| `10.0.3xx` | `release/10.0.3xx` | sdk (release/10.0.3xx) |
-| `10.0.2xx` | `release/10.0.2xx` | sdk (release/10.0.2xx) |
-| `10.0.1xx` | `release/10.0.1xx` | runtime, sdk, aspnetcore (release/10.0) |
+| `{N}.0.1xx` | `main` (during development) | Primary SDK band, runtime + sdk + aspnetcore |
+| `{N}.0.1xx-preview{X}` | `release/{N}.0.1xx-preview{X}` | Preview branches |
+| `{N}.0.{band}xx` | `release/{N}.0.{band}xx` | Servicing bands (2xx, 3xx) |
+| `{N-1}.0.{band}xx` | `release/{N-1}.0.{band}xx` | Previous major servicing |
+
+Example (2026): `11.0.1xx` → `main`, `10.0.3xx` → `release/10.0.3xx`
 
 ### Cross-referencing with Version.Details.xml and PR metadata
 

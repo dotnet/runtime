@@ -142,3 +142,21 @@ Base URL: `https://maestro.dot.net`
 **Symptoms**: Developers added manual fixes to unblock the PR (baseline updates, workarounds).
 **Diagnosis**: Analyze PR commits to identify non-maestro commits.
 **Risk**: Closing the PR loses these. Force-triggering may revert them.
+
+### 4. Script reports "Maestro may be stuck"
+**Symptoms**: Builds are fresh (aka.ms shows recent publish) but no backflow PR was created.
+**Diagnosis**:
+1. Check the subscription to find when it last consumed a build:
+   ```bash
+   darc get-subscriptions --target-repo <repo> --source-repo dotnet/dotnet
+   ```
+   Look at the `Last Build` field — if it's weeks old while the channel has newer builds, the subscription is stuck.
+2. Compare against the latest channel build:
+   ```bash
+   darc get-latest-build --repo dotnet/dotnet --channel "<channel-name>"
+   ```
+3. Trigger the subscription manually:
+   ```bash
+   darc trigger-subscriptions --id <subscription-id>
+   ```
+4. If triggering doesn't produce a PR within a few minutes, check Maestro health or open an issue on `dotnet/arcade`.

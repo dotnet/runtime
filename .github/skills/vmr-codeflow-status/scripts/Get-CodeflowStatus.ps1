@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Analyzes VMR codeflow PR status for dotnet repositories.
 
@@ -13,7 +13,7 @@
     GitHub PR number to analyze. Required unless -CheckMissing is used.
 
 .PARAMETER Repository
-    Target repository (default: dotnet/sdk). Format: owner/repo.
+    Target repository (required). Format: owner/repo.
 
 .PARAMETER TraceFix
     Optional. A repo PR to trace through the pipeline (e.g., "dotnet/runtime#123974").
@@ -46,7 +46,8 @@
 param(
     [int]$PRNumber,
 
-    [string]$Repository = "dotnet/sdk",
+    [Parameter(Mandatory=$true)]
+    [string]$Repository,
 
     [string]$TraceFix,
 
@@ -57,7 +58,49 @@ param(
     [string]$Branch
 )
 
-$ErrorActionPreference = "Stop"
+# Use Continue for native command compat (PS 5.1 treats gh stderr as terminating with Stop)
+$ErrorActionPreference = "Continue"
+
+# --- Parallel support detection ---
+$script:canParallel = $null -ne (Get-Command Start-ThreadJob -ErrorAction SilentlyContinue)
+
+# --- Darc support detection ---
+$script:hasDarc = (-not $env:CODEFLOW_NO_DARC) -and ($null -ne (Get-Command darc -ErrorAction SilentlyContinue))
+
+# Start a background gh api call (returns Job if parallel, $null if not).
+# Caller collects result with Complete-AsyncJob.
+function Start-AsyncGitHubApi {
+    param([string]$Endpoint, [switch]$Raw)
+    if (-not $script:canParallel) { return $null }
+    return Start-ThreadJob -ScriptBlock {
+        param($ep, $isRaw)
+        $ghArgs = @($ep)
+        if ($isRaw) { $ghArgs += '-H'; $ghArgs += 'Accept: application/vnd.github.raw' }
+        $result = gh api @ghArgs 2>$null
+        if ($LASTEXITCODE -ne 0) { return $null }
+        return ($result -join "`n")
+    } -ArgumentList $Endpoint, [bool]$Raw
+}
+
+# Start a background gh CLI call with arbitrary arguments.
+function Start-AsyncGh {
+    param([string[]]$GhArgs)
+    if (-not $script:canParallel) { return $null }
+    return Start-ThreadJob -ScriptBlock {
+        param($args_)
+        $result = gh @args_ 2>$null
+        if ($LASTEXITCODE -ne 0) { return $null }
+        return ($result -join "`n")
+    } -ArgumentList (,@($GhArgs))
+}
+
+# Collect result from an async job, or run synchronously if parallel isn't available.
+# $FallbackBlock is invoked when $Job is $null (sequential fallback).
+function Complete-AsyncJob {
+    param($Job, [scriptblock]$FallbackBlock)
+    if ($Job) { return Receive-Job -Job $Job -Wait -AutoRemoveJob }
+    return & $FallbackBlock
+}
 
 # --- Helpers ---
 
@@ -67,12 +110,12 @@ function Invoke-GitHubApi {
         [switch]$Raw
     )
     try {
-        $args = @($Endpoint)
+        $ghArgs = @($Endpoint)
         if ($Raw) {
-            $args += '-H'
-            $args += 'Accept: application/vnd.github.raw'
+            $ghArgs += '-H'
+            $ghArgs += 'Accept: application/vnd.github.raw'
         }
-        $result = gh api @args 2>$null
+        $result = gh api @ghArgs 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "GitHub API call failed: $Endpoint"
             return $null
@@ -201,6 +244,238 @@ function Get-CodeflowPRHealth {
 function Get-VMRBuildFreshness {
     param([string]$VMRBranch)
 
+    # Try darc first — gives exact commit, build date, build link
+    if ($script:hasDarc) {
+        $result = Get-VMRBuildFreshnessDarc -VMRBranch $VMRBranch
+        if ($result) { return $result }
+    }
+    return Get-VMRBuildFreshnessAkaMs -VMRBranch $VMRBranch
+}
+
+function Get-VMRBuildFreshnessDarc {
+    param([string]$VMRBranch)
+
+    # Map VMR branch to channel name
+    # Channels: ".NET 11.0.1xx SDK", ".NET 11.0.1xx SDK Preview 1"
+    $channelName = $null
+    if ($VMRBranch -eq "main") {
+        $currentMajor = [DateTime]::UtcNow.Year - 2015
+        $channelName = ".NET $currentMajor.0.1xx SDK"
+    }
+    elseif ($VMRBranch -match 'release/(\d+\.\d+\.\d+xx)-preview\.?(\d+)') {
+        $channelName = ".NET $($Matches[1]) SDK Preview $($Matches[2])"
+    }
+    elseif ($VMRBranch -match 'release/(\d+\.\d+\.\d+xx)') {
+        $channelName = ".NET $($Matches[1]) SDK"
+    }
+    if (-not $channelName) { return $null }
+
+    try {
+        $output = darc get-latest-build --repo dotnet/dotnet --channel $channelName 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $output) { return $null }
+        $text = $output -join "`n"
+
+        $commit = if ($text -match 'Commit:\s+(\S+)') { $Matches[1] } else { $null }
+        $buildNum = if ($text -match 'Build Number:\s+(\S+)') { $Matches[1] } else { $null }
+        $buildLink = if ($text -match 'Build Link:\s+(\S+)') { $Matches[1] } else { $null }
+        $dateStr = if ($text -match 'Date Produced:\s+(.+)') { $Matches[1].Trim() } else { $null }
+
+        if (-not $dateStr) { return $null }
+        $published = [DateTime]::Parse($dateStr, [System.Globalization.CultureInfo]::InvariantCulture).ToUniversalTime()
+
+        # Extract channel short name for display (e.g., "11.0.1xx" or "11.0.1xx-preview1")
+        $channelShort = if ($VMRBranch -eq "main") { "$([DateTime]::UtcNow.Year - 2015).0.1xx" }
+                        elseif ($VMRBranch -match 'release/(\d+\.\d+\.\d+xx(?:-preview\.?\d+)?)') { $Matches[1] }
+                        else { $channelName }
+
+        $released = if ($text -match 'Released:\s+(True|False)') { $Matches[1] -eq 'True' } else { $false }
+
+        return @{
+            Channel   = $channelShort
+            Version   = $buildNum
+            Published = $published
+            Age       = [DateTime]::UtcNow - $published
+            Commit    = $commit
+            BuildLink = $buildLink
+            Released  = $released
+            Source    = "darc"
+        }
+    } catch { return $null }
+}
+
+function Get-SubscriptionHealth {
+    param(
+        [string]$TargetRepo,
+        [string]$TargetBranch,
+        [hashtable]$BuildFreshness  # optional — reuse if already fetched
+    )
+
+    if (-not $script:hasDarc) { return $null }
+
+    try {
+        # Get subscriptions for this repo from dotnet/dotnet
+        $subOutput = darc get-subscriptions --source-repo dotnet/dotnet --target-repo $TargetRepo 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $subOutput) { return $null }
+
+        # Parse subscription blocks — each starts with the header line
+        # "https://...dotnet/dotnet (channel) ==> 'target' ('branch')"
+        $subText = $subOutput -join "`n"
+        $blocks = $subText -split '(?=https://github\.com/dotnet/dotnet\s+\()'
+        $blocks = $blocks | Where-Object { $_.Trim() }
+
+        # Find the subscription matching our target branch
+        $matchedBlock = $null
+        foreach ($block in $blocks) {
+            if ($block -match "==>\s+'[^']+'\s+\('([^']+)'\)") {
+                $subBranch = $Matches[1]
+                if ($subBranch -eq $TargetBranch) {
+                    $matchedBlock = $block
+                    break
+                }
+            }
+        }
+
+        if (-not $matchedBlock) {
+            return @{
+                Diagnostic = "subscription-missing"
+                Message    = "No subscription found for $TargetRepo/$TargetBranch"
+            }
+        }
+
+        # Parse subscription fields
+        $subId = if ($matchedBlock -match 'Id:\s+(\S+)') { $Matches[1] } else { $null }
+        $enabled = if ($matchedBlock -match 'Enabled:\s+(True|False)') { $Matches[1] -eq 'True' } else { $true }
+        $updateFreq = if ($matchedBlock -match 'Update Frequency:\s+(\S+)') { $Matches[1] } else { "Unknown" }
+        $lastBuildNum = $null; $lastBuildCommit = $null
+        if ($matchedBlock -match 'Last Build:\s+(\S+)\s+\((\S+)\)') {
+            $lastBuildNum = $Matches[1]
+            $lastBuildCommit = $Matches[2]
+        }
+
+        # Extract channel name from header
+        $channelName = $null
+        if ($matchedBlock -match 'dotnet/dotnet\s+\(([^)]+)\)') {
+            $channelName = $Matches[1]
+        }
+
+        if (-not $enabled) {
+            return @{
+                Diagnostic     = "subscription-disabled"
+                SubscriptionId = $subId
+                Channel        = $channelName
+                UpdateFrequency = $updateFreq
+                Message        = "Subscription $subId is disabled"
+            }
+        }
+
+        # Get latest build for comparison (reuse if provided)
+        $latestBuild = $BuildFreshness
+        if (-not $latestBuild -and $channelName) {
+            $latestBuild = try {
+                $bOutput = darc get-latest-build --repo dotnet/dotnet --channel $channelName 2>$null
+                if ($LASTEXITCODE -eq 0 -and $bOutput) {
+                    $bText = $bOutput -join "`n"
+                    $bCommit = if ($bText -match 'Commit:\s+(\S+)') { $Matches[1] } else { $null }
+                    $bNum = if ($bText -match 'Build Number:\s+(\S+)') { $Matches[1] } else { $null }
+                    $bReleased = if ($bText -match 'Released:\s+(True|False)') { $Matches[1] -eq 'True' } else { $false }
+                    $bDateStr = if ($bText -match 'Date Produced:\s+(.+)') { $Matches[1].Trim() } else { $null }
+                    $bDate = if ($bDateStr) { [DateTime]::Parse($bDateStr, [System.Globalization.CultureInfo]::InvariantCulture).ToUniversalTime() } else { $null }
+                    @{ Commit = $bCommit; Version = $bNum; Released = $bReleased; Published = $bDate }
+                }
+            } catch { $null }
+        }
+
+        if (-not $latestBuild) {
+            return @{
+                Diagnostic     = "unknown"
+                SubscriptionId = $subId
+                Channel        = $channelName
+                UpdateFrequency = $updateFreq
+                LastBuild      = $lastBuildNum
+                Message        = "Could not fetch latest build for channel $channelName"
+            }
+        }
+
+        # Check if channel is frozen (released preview)
+        if ($latestBuild.Released -and $lastBuildCommit -and $latestBuild.Commit -and
+            $lastBuildCommit -eq $latestBuild.Commit) {
+            return @{
+                Diagnostic     = "channel-frozen"
+                SubscriptionId = $subId
+                Channel        = $channelName
+                UpdateFrequency = $updateFreq
+                LastBuild      = $lastBuildNum
+                LatestBuild    = $latestBuild.Version
+                Message        = "Channel frozen — latest build is released, subscription is up to date"
+            }
+        }
+
+        # Check if Maestro is stuck (last-flowed build != latest build)
+        if ($lastBuildCommit -and $latestBuild.Commit -and $lastBuildCommit -ne $latestBuild.Commit) {
+            $behindMsg = "LastBuild=$lastBuildNum but latest=$($latestBuild.Version)"
+            # Check if frequency-limited — only applies when the gap is small
+            # Build numbers are date-based (YYYYMMDD.N), so we can compare dates
+            if ($updateFreq -eq "EveryDay" -and $latestBuild.Published -and $lastBuildNum) {
+                $buildAge = [DateTime]::UtcNow - $latestBuild.Published
+                # Only frequency-limited if last-flowed build is from the previous day or two
+                $lastBuildDate = $null
+                if ($lastBuildNum -match '^(\d{4})(\d{2})(\d{2})\.') {
+                    try { $lastBuildDate = [DateTime]::SpecifyKind([DateTime]::new([int]$Matches[1], [int]$Matches[2], [int]$Matches[3]), [DateTimeKind]::Utc) } catch {}
+                }
+                $lastBuildAge = if ($lastBuildDate) { ([DateTime]::UtcNow - $lastBuildDate).TotalDays } else { 999 }
+                if ($buildAge.TotalHours -lt 24 -and $lastBuildAge -lt 3) {
+                    return @{
+                        Diagnostic     = "frequency-limited"
+                        SubscriptionId = $subId
+                        Channel        = $channelName
+                        UpdateFrequency = $updateFreq
+                        LastBuild      = $lastBuildNum
+                        LatestBuild    = $latestBuild.Version
+                        Message        = "EveryDay subscription — latest build is $([math]::Round($buildAge.TotalHours,1))h old, next update within 24h"
+                    }
+                }
+            }
+            return @{
+                Diagnostic     = "maestro-stuck"
+                SubscriptionId = $subId
+                Channel        = $channelName
+                UpdateFrequency = $updateFreq
+                LastBuild      = $lastBuildNum
+                LastBuildCommit = $lastBuildCommit
+                LatestBuild    = $latestBuild.Version
+                LatestCommit   = $latestBuild.Commit
+                Message        = "Maestro stuck — $behindMsg"
+            }
+        }
+
+        # No Last Build data — can't determine health
+        if (-not $lastBuildCommit) {
+            return @{
+                Diagnostic     = "unknown"
+                SubscriptionId = $subId
+                Channel        = $channelName
+                UpdateFrequency = $updateFreq
+                LastBuild      = $lastBuildNum
+                Message        = "No Last Build data — subscription health unknown"
+            }
+        }
+
+        # Subscription is healthy
+        return @{
+            Diagnostic     = "healthy"
+            SubscriptionId = $subId
+            Channel        = $channelName
+            UpdateFrequency = $updateFreq
+            LastBuild      = $lastBuildNum
+            LatestBuild    = $latestBuild.Version
+            Message        = "Subscription is up to date"
+        }
+    } catch { return $null }
+}
+
+function Get-VMRBuildFreshnessAkaMs {
+    param([string]$VMRBranch)
+
     # Map VMR branch to aka.ms channel
     $channel = $null
     $blobUrl = $null
@@ -213,7 +488,11 @@ function Get-VMRBuildFreshness {
 
     try {
         if ($VMRBranch -eq "main") {
-            $tryChannels = @("11.0.1xx", "12.0.1xx", "10.0.1xx")
+            # Dynamically generate candidate channels. Try current major first,
+            # then next (for early-year transitions), then previous as fallback.
+            # .NET version = current year - 2015 (e.g., 2026 → 11, 2027 → 12)
+            $currentMajor = [DateTime]::UtcNow.Year - 2015
+            $tryChannels = @("$currentMajor.0.1xx", "$($currentMajor+1).0.1xx", "$($currentMajor-1).0.1xx")
             foreach ($ch in $tryChannels) {
                 try {
                     $resp = $client.GetAsync("https://aka.ms/dotnet/$ch/daily/dotnet-sdk-win-x64.zip").Result
@@ -317,10 +596,11 @@ if ($CheckMissing) {
                 }
             }
         }
+        $checkedChannels = @{}
+        $anyVeryStale = $false
         if ($vmrBranches.Count -gt 0) {
-            Write-Section "Official Build Freshness (via aka.ms)"
-            $checkedChannels = @{}
-            $anyVeryStale = $false
+            $freshnessSource = if ($script:hasDarc) { "darc" } else { "aka.ms" }
+            Write-Section "Official Build Freshness (via $freshnessSource)"
             foreach ($entry in $vmrBranches.GetEnumerator()) {
                 $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
                 if ($freshness -and -not $checkedChannels.ContainsKey($freshness.Channel)) {
@@ -341,6 +621,27 @@ if ($CheckMissing) {
                 Write-Host "    See also: https://github.com/dotnet/dotnet/issues?q=is:issue+is:open+%22Operational+Issue%22" -ForegroundColor DarkGray
             }
         }
+
+        # Emit structured summary for dotnet/dotnet
+        $vmrSummary = [ordered]@{
+            mode        = "flow-health"
+            repository  = $Repository
+            backflow    = [ordered]@{ covered = 0; upToDate = 0; blocked = 0; missing = 0 }
+            forwardFlow = [ordered]@{ healthy = 0; stale = 0; conflicted = 0 }
+            buildFreshness = @($checkedChannels.Values | ForEach-Object {
+                $entry = [ordered]@{ channel = $_.Channel; version = $_.Version; ageDays = [math]::Round($_.Age.TotalDays, 1); published = $_.Published.ToString("o") }
+                if ($_.Commit) { $entry.commit = $_.Commit }
+                if ($_.BuildLink) { $entry.buildLink = $_.BuildLink }
+                if ($_.Source) { $entry.source = $_.Source }
+                $entry
+            })
+            buildsAreStale = $anyVeryStale
+        }
+        Write-Host ""
+        Write-Host "[CODEFLOW_SUMMARY]"
+        Write-Host ($vmrSummary | ConvertTo-Json -Depth 4 -Compress)
+        Write-Host "[/CODEFLOW_SUMMARY]"
+
         return
     }
 
@@ -421,14 +722,29 @@ if ($CheckMissing) {
     $blockedCount = 0
     $vmrBranchesFound = @{}
     $cachedPRBodies = @{}
+    $subscriptionDiagnostics = @()
 
     # First pass: collect VMR branch mappings from merged PRs (needed for build freshness)
+    # Fetch all PR bodies in parallel (falls back to sequential on PS 5.1)
+    $prBodyJobs = @{}
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
         if ($openBranches.ContainsKey($branchName)) { continue }
         $lastPR = $branchLastMerged[$branchName]
-        $prDetailJson = gh pr view $lastPR.number -R $Repository --json body 2>$null
-        if ($LASTEXITCODE -ne 0) { continue }
-        try { $prDetail = ($prDetailJson -join "`n") | ConvertFrom-Json } catch { continue }
+        $prBodyJobs[$branchName] = Start-AsyncGh @('pr', 'view', $lastPR.number.ToString(), '-R', $Repository, '--json', 'body')
+    }
+
+    foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
+        if ($openBranches.ContainsKey($branchName)) { continue }
+        $lastPR = $branchLastMerged[$branchName]
+        $result = Complete-AsyncJob $prBodyJobs[$branchName] {
+            try {
+                $json = gh pr view $lastPR.number -R $Repository --json body 2>$null
+                if ($LASTEXITCODE -ne 0) { return $null }
+                return ($json -join "`n")
+            } catch { return $null }
+        }
+        if (-not $result) { continue }
+        try { $prDetail = $result | ConvertFrom-Json } catch { continue }
         $cachedPRBodies[$branchName] = $prDetail
         $vmrBranchFromPR = $null
         if ($prDetail.body -match '\*\*Branch\*\*:\s*\[([^\]]+)\]') { $vmrBranchFromPR = $Matches[1] }
@@ -438,7 +754,8 @@ if ($CheckMissing) {
     # --- Official build freshness check (shown first for context) ---
     $buildsAreStale = $false
     if ($vmrBranchesFound.Count -gt 0) {
-        Write-Section "Official Build Freshness (via aka.ms)"
+        $freshnessSource = if ($script:hasDarc) { "darc" } else { "aka.ms" }
+        Write-Section "Official Build Freshness (via $freshnessSource)"
         $checkedChannels = @{}
         foreach ($entry in $vmrBranchesFound.GetEnumerator()) {
             $freshness = Get-VMRBuildFreshness -VMRBranch $entry.Value
@@ -447,10 +764,18 @@ if ($CheckMissing) {
                 $ageDays = $freshness.Age.TotalDays
                 $ageStr = if ($ageDays -ge 1) { "$([math]::Round($ageDays, 1))d" } else { "$([math]::Round($freshness.Age.TotalHours, 1))h" }
                 $color = if ($ageDays -gt 3) { 'Red' } elseif ($ageDays -gt 1) { 'Yellow' } else { 'Green' }
+                $isPreviewChannel = $freshness.Channel -match 'preview'
+                # Preview channels with old builds are expected post-release — don't flag as stale
+                if ($isPreviewChannel -and $ageDays -gt 14) {
+                    $color = 'DarkGray'
+                    $ageStr = "$ageStr (preview likely released)"
+                }
+                elseif (-not $isPreviewChannel -and $ageDays -gt 3) {
+                    $buildsAreStale = $true
+                }
                 $versionStr = if ($freshness.Version) { $freshness.Version } else { "unknown" }
                 $branchLabel = "$($entry.Key) → $($freshness.Channel)"
                 Write-Host "  $($branchLabel.PadRight(40)) $($versionStr.PadRight(48)) $($freshness.Published.ToString('yyyy-MM-dd HH:mm')) UTC  ($ageStr ago)" -ForegroundColor $color
-                if ($ageDays -gt 3) { $buildsAreStale = $true }
             }
         }
         if ($buildsAreStale) {
@@ -463,6 +788,57 @@ if ($CheckMissing) {
     }
 
     # --- Per-branch backflow analysis ---
+    # Pre-fetch VMR branch HEADs in parallel for branches without open PRs
+    $vmrHeadJobs = @{}
+    $vmrHeadBranches = @{}  # Track which branches we need to fetch
+    foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
+        if ($openBranches.ContainsKey($branchName)) { continue }
+        $vmrBranchFromPR = $vmrBranchesFound[$branchName]
+        if (-not $vmrBranchFromPR) { continue }
+        $prDetail = $cachedPRBodies[$branchName]
+        if (-not $prDetail) { continue }
+        if ($prDetail.body -notmatch '\*\*Commit\*\*:\s*\[([a-fA-F0-9]+)\]') { continue }
+        $encodedVmrBranch = [uri]::EscapeDataString($vmrBranchFromPR)
+        $vmrHeadBranches[$branchName] = $encodedVmrBranch
+        $vmrHeadJobs[$branchName] = Start-AsyncGitHubApi -Endpoint "/repos/dotnet/dotnet/commits/$encodedVmrBranch"
+    }
+
+    # Also pre-fetch health for open backflow PRs in parallel
+    $healthJobs = @{}
+    foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
+        if ($openBranches.ContainsKey($branchName)) {
+            $healthJobs[$branchName] = Start-AsyncGh @('pr', 'view', $openBranches[$branchName].ToString(), '-R', $Repository, '--json', 'body,comments,updatedAt,mergeable')
+        }
+    }
+
+    # Collect VMR HEAD results
+    $cachedVmrHeads = @{}
+    foreach ($branchName in $vmrHeadBranches.Keys) {
+        $result = Complete-AsyncJob $vmrHeadJobs[$branchName] {
+            try {
+                $json = gh api "/repos/dotnet/dotnet/commits/$($vmrHeadBranches[$branchName])" 2>$null
+                if ($LASTEXITCODE -ne 0) { return $null }
+                return ($json -join "`n")
+            } catch { return $null }
+        }
+        if ($result) {
+            try { $cachedVmrHeads[$branchName] = $result | ConvertFrom-Json } catch { }
+        }
+    }
+
+    # Collect health results
+    $cachedHealthData = @{}
+    foreach ($branchName in $healthJobs.Keys) {
+        $result = Complete-AsyncJob $healthJobs[$branchName] {
+            try {
+                $json = gh pr view $openBranches[$branchName] -R $Repository --json body,comments,updatedAt,mergeable 2>$null
+                if ($LASTEXITCODE -ne 0) { return $null }
+                return ($json -join "`n")
+            } catch { return $null }
+        }
+        if ($result) { $cachedHealthData[$branchName] = $result }
+    }
+
     Write-Section "Backflow status ($Repository ← dotnet/dotnet)"
 
     foreach ($branchName in ($branchLastMerged.Keys | Sort-Object)) {
@@ -471,7 +847,27 @@ if ($CheckMissing) {
         Write-Host "  Branch: $branchName" -ForegroundColor White
 
         if ($openBranches.ContainsKey($branchName)) {
-            $bfHealth = Get-CodeflowPRHealth -PRNumber $openBranches[$branchName] -Repo $Repository
+            # Use pre-fetched health data — simplified check (no mergeable/verification probes)
+            $bfHealth = @{ Status = "⚠️  Unknown"; Color = "Yellow"; HasConflict = $false; HasStaleness = $false; WasResolved = $false }
+            $healthJson = $cachedHealthData[$branchName]
+            if ($healthJson) {
+                try {
+                    $prDetailH = $healthJson | ConvertFrom-Json
+                    $bfHealth.Status = "✅ Healthy"; $bfHealth.Color = "Green"
+                    # Check mergeable state if available
+                    if ($prDetailH.mergeable -eq 'CONFLICTING') { $bfHealth.HasConflict = $true }
+                    if ($prDetailH.comments) {
+                        foreach ($comment in $prDetailH.comments) {
+                            if ($comment.author.login -match '^dotnet-maestro') {
+                                if ($comment.body -match 'codeflow cannot continue|the source repository has received code changes') { $bfHealth.HasStaleness = $true }
+                                if ($comment.body -match 'Conflict detected') { $bfHealth.HasConflict = $true }
+                            }
+                        }
+                    }
+                    if ($bfHealth.HasConflict) { $bfHealth.Status = "🔴 Conflict"; $bfHealth.Color = "Red" }
+                    elseif ($bfHealth.HasStaleness) { $bfHealth.Status = "⚠️  Stale"; $bfHealth.Color = "Yellow" }
+                } catch { }
+            }
             Write-Host "    Open backflow PR #$($openBranches[$branchName]): $($bfHealth.Status)" -ForegroundColor $bfHealth.Color
             if ($bfHealth.HasConflict -or $bfHealth.HasStaleness) { $blockedCount++ }
             elseif ($bfHealth.Status -notlike '*Unknown*') { $coveredCount++ }
@@ -506,9 +902,8 @@ if ($CheckMissing) {
         Write-Host "    VMR branch: $vmrBranchFromPR" -ForegroundColor DarkGray
         Write-Host "    VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
 
-        # Get current VMR branch HEAD
-        $encodedVmrBranch = [uri]::EscapeDataString($vmrBranchFromPR)
-        $vmrHead = Invoke-GitHubApi "/repos/dotnet/dotnet/commits/$encodedVmrBranch"
+        # Get current VMR branch HEAD (from pre-fetched cache)
+        $vmrHead = $cachedVmrHeads[$branchName]
         if (-not $vmrHead) {
             Write-Host "    ⚠️  Could not fetch VMR branch HEAD for $vmrBranchFromPR" -ForegroundColor Yellow
             continue
@@ -522,30 +917,58 @@ if ($CheckMissing) {
             $upToDateCount++
         }
         else {
-            # Check how far ahead
-            $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$vmrCommitFromPR...$vmrHeadSha"
-            $ahead = if ($compare) { $compare.ahead_by } else { "?" }
-
-            Write-Host "    🔴 MISSING BACKFLOW PR" -ForegroundColor Red
-            Write-Host "    VMR is $ahead commit(s) ahead since last merged PR" -ForegroundColor Yellow
-            Write-Host "    VMR HEAD: $(Get-ShortSha $vmrHeadSha) ($vmrHeadDate)" -ForegroundColor DarkGray
-            Write-Host "    Last merged VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
-
-            # Check how long ago the last PR merged
+            # Check if this is a released preview branch (expected to stop flowing)
             $mergedTime = [DateTimeOffset]::Parse($lastPR.closedAt).UtcDateTime
             $elapsed = [DateTime]::UtcNow - $mergedTime
-            if ($elapsed.TotalHours -gt 6) {
-                if ($buildsAreStale) {
-                    Write-Host "    ℹ️  No new official build available — backflow blocked upstream" -ForegroundColor DarkGray
+            $isReleasedPreview = $false
+            $vmrBranchFromPR = $vmrBranchesFound[$branchName]
+            if (($vmrBranchFromPR -match 'preview') -and ($elapsed.TotalDays -gt 14)) {
+                $isReleasedPreview = $true
+            }
+
+            if ($isReleasedPreview) {
+                Write-Host "    ℹ️  Preview likely released — no further backflow expected" -ForegroundColor DarkGray
+                if ($script:hasDarc) {
+                    $subHealth = Get-SubscriptionHealth -TargetRepo $Repository -TargetBranch $branchName
+                    if ($subHealth) {
+                        $subscriptionDiagnostics += [ordered]@{ branch = $branchName; diagnostic = $subHealth.Diagnostic; subscriptionId = $subHealth.SubscriptionId; channel = $subHealth.Channel; lastBuild = $subHealth.LastBuild; latestBuild = $subHealth.LatestBuild; message = $subHealth.Message }
+                        Write-Host "    📋 Subscription: $($subHealth.Message)" -ForegroundColor DarkGray
+                    }
                 }
-                else {
-                    Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
-                }
+                $upToDateCount++
             }
             else {
-                Write-Host "    ℹ️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may still be processing" -ForegroundColor DarkGray
+                # Check how far ahead
+                $compare = Invoke-GitHubApi "/repos/dotnet/dotnet/compare/$vmrCommitFromPR...$vmrHeadSha"
+                $ahead = if ($compare) { $compare.ahead_by } else { "?" }
+
+                Write-Host "    🔴 MISSING BACKFLOW PR" -ForegroundColor Red
+                Write-Host "    VMR is $ahead commit(s) ahead since last merged PR" -ForegroundColor Yellow
+                Write-Host "    VMR HEAD: $(Get-ShortSha $vmrHeadSha) ($vmrHeadDate)" -ForegroundColor DarkGray
+                Write-Host "    Last merged VMR commit: $(Get-ShortSha $vmrCommitFromPR)" -ForegroundColor DarkGray
+
+                if ($elapsed.TotalHours -gt 6) {
+                    if ($buildsAreStale) {
+                        Write-Host "    ℹ️  No new official build available — backflow blocked upstream" -ForegroundColor DarkGray
+                    }
+                    else {
+                        Write-Host "    ⚠️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may be stuck" -ForegroundColor Yellow
+                        # Cross-reference with darc subscription data
+                        if ($script:hasDarc) {
+                            $subHealth = Get-SubscriptionHealth -TargetRepo $Repository -TargetBranch $branchName
+                            if ($subHealth) {
+                                $subscriptionDiagnostics += [ordered]@{ branch = $branchName; diagnostic = $subHealth.Diagnostic; subscriptionId = $subHealth.SubscriptionId; channel = $subHealth.Channel; lastBuild = $subHealth.LastBuild; latestBuild = $subHealth.LatestBuild; message = $subHealth.Message }
+                                $diagColor = if ($subHealth.Diagnostic -in @("maestro-stuck","subscription-disabled","subscription-missing")) { "Yellow" } else { "DarkGray" }
+                                Write-Host "    📋 Subscription: $($subHealth.Message)" -ForegroundColor $diagColor
+                            }
+                        }
+                    }
+                }
+                else {
+                    Write-Host "    ℹ️  Last PR merged $([math]::Round($elapsed.TotalHours, 1)) hours ago — Maestro may still be processing" -ForegroundColor DarkGray
+                }
+                $missingCount++
             }
-            $missingCount++
         }
     }
 
@@ -618,6 +1041,43 @@ if ($CheckMissing) {
         if ($fwdStale -gt 0) { Write-Host "    Stale: $fwdStale" -ForegroundColor Yellow }
         if ($fwdConflict -gt 0) { Write-Host "    Conflicted: $fwdConflict" -ForegroundColor Red }
     }
+
+    # Emit structured summary for CheckMissing mode
+    $buildFreshnessData = @()
+    if ($checkedChannels) {
+        $buildFreshnessData = @($checkedChannels.Values | ForEach-Object {
+            $entry = [ordered]@{ channel = $_.Channel; version = $_.Version; ageDays = [math]::Round($_.Age.TotalDays, 1); published = $_.Published.ToString("o") }
+            if ($_.Commit) { $entry.commit = $_.Commit }
+            if ($_.BuildLink) { $entry.buildLink = $_.BuildLink }
+            if ($_.Source) { $entry.source = $_.Source }
+            $entry
+        })
+    }
+    $flowSummary = [ordered]@{
+        mode        = "flow-health"
+        repository  = $Repository
+        backflow    = [ordered]@{
+            covered   = $coveredCount
+            upToDate  = $upToDateCount
+            blocked   = $blockedCount
+            missing   = $missingCount
+        }
+        forwardFlow = [ordered]@{
+            healthy    = $fwdHealthy
+            stale      = $fwdStale
+            conflicted = $fwdConflict
+        }
+        buildsAreStale   = $buildsAreStale
+        buildFreshness   = $buildFreshnessData
+    }
+    if ($subscriptionDiagnostics.Count -gt 0) {
+        $flowSummary.subscriptionHealth = $subscriptionDiagnostics
+    }
+    Write-Host ""
+    Write-Host "[CODEFLOW_SUMMARY]"
+    Write-Host ($flowSummary | ConvertTo-Json -Depth 4 -Compress)
+    Write-Host "[/CODEFLOW_SUMMARY]"
+
     return
 }
 
@@ -675,23 +1135,32 @@ if ($isEmptyDiff) {
     Write-Host "  📭 Empty diff: 0 changed files, 0 additions, 0 deletions" -ForegroundColor Yellow
 }
 
-# Check PR timeline for force pushes
-$forcePushEvents = @()
+# Kick off parallel fetches for timeline + Version.Details.xml (both independent of each other)
 $owner, $repo = $Repository -split '/'
-$forcePushFetchSucceeded = $false
+$timelineJob = Start-AsyncGh @('api', "repos/$owner/$repo/issues/$PRNumber/timeline", '--paginate', '--slurp', '--jq', 'map(.[] | select(.event == "head_ref_force_pushed"))')
+
+$vdJob = $null
+if (-not $isForwardFlow) {
+    $encodedRef = [System.Uri]::EscapeDataString($pr.headRefName)
+    $vdJob = Start-AsyncGitHubApi -Endpoint "/repos/$Repository/contents/eng/Version.Details.xml?ref=$encodedRef" -Raw
+}
+
+# Collect timeline results
+$forcePushEvents = @()
 try {
-    $timelineJson = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --slurp --jq 'map(.[] | select(.event == "head_ref_force_pushed"))' 2>$null
-    if ($LASTEXITCODE -eq 0 -and $timelineJson) {
+    $timelineJson = Complete-AsyncJob $timelineJob {
+        try {
+            $json = gh api "repos/$owner/$repo/issues/$PRNumber/timeline" --paginate --slurp --jq 'map(.[] | select(.event == "head_ref_force_pushed"))' 2>$null
+            if ($LASTEXITCODE -ne 0 -or -not $json) { return "[]" }
+            return ($json -join "`n")
+        } catch { return "[]" }
+    }
+    if ($timelineJson -and $timelineJson -ne "[]") {
         $forcePushEvents = @($timelineJson | ConvertFrom-Json)
-        $forcePushFetchSucceeded = $true
-    } elseif ($LASTEXITCODE -ne 0) {
-        Write-Warning "Could not fetch PR timeline for force push detection (gh api exit code $LASTEXITCODE). Current state assessment may be incomplete."
-    } else {
-        $forcePushFetchSucceeded = $true
     }
 }
 catch {
-    Write-Warning "Failed to parse timeline JSON for force push events: $($_.Exception.Message)"
+    Write-Verbose "Failed to parse timeline JSON for force push events: $($_.Exception.Message)"
     $forcePushEvents = @()
 }
 
@@ -831,7 +1300,9 @@ $versionDetailsVmrCommit = $null
 
 # First: check eng/Version.Details.xml on the PR branch (authoritative source)
 if (-not $isForwardFlow) {
-    $vdContent = Invoke-GitHubApi "/repos/$Repository/contents/eng/Version.Details.xml?ref=$([System.Uri]::EscapeDataString($pr.headRefName))" -Raw
+    $vdContent = Complete-AsyncJob $vdJob {
+        Invoke-GitHubApi "/repos/$Repository/contents/eng/Version.Details.xml?ref=$([System.Uri]::EscapeDataString($pr.headRefName))" -Raw
+    }
     if ($vdContent) {
         try {
             [xml]$vdXml = $vdContent
@@ -1076,6 +1547,8 @@ else {
 # Collect Maestro comment data (needed by PR Branch Analysis and Codeflow History)
 $stalenessWarnings = @()
 $lastStalenessComment = $null
+$conflictWarnings = @()
+$lastConflictComment = $null
 
 if ($pr.comments) {
     foreach ($comment in $pr.comments) {
@@ -1085,17 +1558,6 @@ if ($pr.comments) {
                 $stalenessWarnings += $comment
                 $lastStalenessComment = $comment
             }
-        }
-    }
-}
-
-$conflictWarnings = @()
-$lastConflictComment = $null
-
-if ($pr.comments) {
-    foreach ($comment in $pr.comments) {
-        $commentAuthor = $comment.author.login
-        if ($commentAuthor -eq "dotnet-maestro[bot]" -or $commentAuthor -eq "dotnet-maestro") {
             if ($comment.body -match "Conflict detected") {
                 $conflictWarnings += $comment
                 $lastConflictComment = $comment
@@ -1437,7 +1899,6 @@ $summary.freshness = [ordered]@{
 # Force pushes
 $summary.forcePushes = [ordered]@{
     count           = $forcePushEvents.Count
-    fetchSucceeded  = $forcePushFetchSucceeded
     lastActor       = if ($lastForcePushActor) { $lastForcePushActor } else { $null }
     lastTime        = if ($lastForcePushTime) { $lastForcePushTime.ToString("o") } else { $null }
 }
