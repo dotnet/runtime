@@ -309,13 +309,21 @@ namespace Microsoft.Extensions.Hosting.Tests
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
             Assert.NotNull(factory);
 
+            var contextMarker = new AsyncLocal<object>();
             var weakReferences = new WeakReference[10];
 
             for (int i = 0; i < weakReferences.Length; i++)
             {
-                var serviceProvider = factory(Array.Empty<string>());
-                Assert.NotNull(serviceProvider);
-                weakReferences[i] = new WeakReference(serviceProvider);
+                contextMarker.Value = new object();
+                ExecutionContext executionContext = ExecutionContext.Capture()!;
+                Assert.NotNull(executionContext);
+                int index = i;
+                ExecutionContext.Run(executionContext, _ =>
+                {
+                    var serviceProvider = factory(Array.Empty<string>());
+                    Assert.NotNull(serviceProvider);
+                    weakReferences[index] = new WeakReference(serviceProvider);
+                }, null);
             }
 
             int expectedMinCollected = (weakReferences.Length * 80) / 100;
