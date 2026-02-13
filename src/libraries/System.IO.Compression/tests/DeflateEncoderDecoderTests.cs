@@ -13,7 +13,7 @@ namespace System.IO.Compression
         protected override bool SupportsReset => false;
 
         protected override string WindowLogParamName => "windowLog";
-        protected override string InputLengthParamName => "inputSize";
+        protected override string InputLengthParamName => "inputLength";
 
         // Quality maps to zlib compression level (0-9)
         protected override int ValidQuality => 6;
