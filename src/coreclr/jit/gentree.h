@@ -5823,13 +5823,13 @@ struct GenTreeCall final : public GenTree
     // Identifies which member of the union below is currently active.
     enum class CallDataKind : uint8_t
     {
-        None,                              // No data stored
-        CallCookie,                        // gtCallCookie - only for CALLI unmanaged calls (CT_INDIRECT)
-        InlineCandidateInfo,               // gtInlineCandidateInfo - single inline candidate
-        InlineCandidateInfoList,           // gtInlineCandidateInfoList - multiple GDV candidates
+        None,                                // No data stored
+        CallCookie,                          // gtCallCookie - only for CALLI unmanaged calls (CT_INDIRECT)
+        InlineCandidateInfo,                 // gtInlineCandidateInfo - single inline candidate
+        InlineCandidateInfoList,             // gtInlineCandidateInfoList - multiple GDV candidates
         HandleHistogramProfileCandidateInfo, // gtHandleHistogramProfileCandidateInfo - for PGO
-        CompileTimeHelperArgumentHandle,   // compileTimeHelperArgumentHandle - type handle for dynamic helpers
-        DirectCallAddress,                 // gtDirectCallAddress - direct call address for codegen
+        CompileTimeHelperArgumentHandle,     // compileTimeHelperArgumentHandle - type handle for dynamic helpers
+        DirectCallAddress,                   // gtDirectCallAddress - direct call address for codegen
     };
 
     CallDataKind gtCallDataKind;

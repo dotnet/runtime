@@ -1402,7 +1402,8 @@ DONE_CALL:
                 pInfo->ilOffset                                       = rawILOffset;
                 pInfo->probeIndex                                     = 0;
                 call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                INDEBUG(call->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
+                INDEBUG(call->AsCall()->gtCallDataKind =
+                            GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
                 compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
@@ -1566,7 +1567,8 @@ DONE_CALL:
                         pInfo->ilOffset                                       = rawILOffset;
                         pInfo->probeIndex                                     = 0;
                         call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                        INDEBUG(call->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
+                        INDEBUG(call->AsCall()->gtCallDataKind =
+                                    GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
                         compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
                 }
