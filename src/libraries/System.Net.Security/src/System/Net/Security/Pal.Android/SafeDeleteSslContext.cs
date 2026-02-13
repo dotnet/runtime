@@ -209,12 +209,17 @@ namespace System.Net
 
         private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
+            // targetHost is passed to the platform's DotnetProxyTrustManager for hostname-aware
+            // certificate validation. IP literals are excluded because SNIHostName doesn't accept them.
             string? targetHost = !authOptions.IsServer
                 && !string.IsNullOrEmpty(authOptions.TargetHost)
                 && !IPAddress.IsValid(authOptions.TargetHost)
                     ? authOptions.TargetHost
                     : null;
 
+            // Custom trust roots are passed to the platform's TrustManagerFactory KeyStore.
+            // The platform's trust verdict is combined with managed validation to be more strict
+            // (see VerifyRemoteCertificate in SslStream.Android.cs).
             IntPtr[]? trustCerts = GetTrustCertHandles(authOptions);
             IntPtr keyManagers = authOptions.CertificateContext is not null
                 ? CreateKeyManagers(authOptions.CertificateContext)

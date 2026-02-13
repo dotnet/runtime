@@ -10,7 +10,10 @@ ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCa
 }
 
 // Gets the X509TrustManager from TrustManagerFactory, optionally initialized
-// with a custom KeyStore containing trusted certificates.
+// with a custom KeyStore containing trusted certificates. When customTrustKeyStore
+// is NULL, the system default trust store is used. When non-NULL, only the
+// certificates in the custom KeyStore are trusted (Java's KeyStore.setCertificateEntry
+// treats every entry as a trust anchor).
 static jobject GetX509TrustManager(JNIEnv* env, jobject customTrustKeyStore)
 {
     jobject result = NULL;
@@ -51,6 +54,10 @@ cleanup:
 }
 
 // Creates a KeyStore containing the given trusted certificates.
+// Every certificate added via setCertificateEntry becomes a trust anchor —
+// there is no Java equivalent of .NET's ExtraStore (chain-building helpers
+// that are NOT trust anchors). This is why only root certificates should be
+// passed here, not intermediates.
 // Returns NULL if trustCerts is NULL or trustCertsLen is 0.
 static jobject CreateTrustKeyStore(JNIEnv* env, jobject* trustCerts, int32_t trustCertsLen)
 {
@@ -92,6 +99,11 @@ error:
     return NULL;
 }
 
+// Creates a DotnetProxyTrustManager wrapping the platform's X509TrustManager.
+// The proxy consults Android's trust infrastructure first, then delegates to the
+// managed SslStream validation callback. The platform's verdict (chainTrustedByPlatform)
+// is passed to the managed side to be combined with managed validation — making
+// the overall result more strict, never less (see SslStream.Android.cs).
 jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle, const char* targetHost, jobject* trustCerts, int32_t trustCertsLen)
 {
     jobjectArray trustManagers = NULL;
@@ -132,6 +144,10 @@ cleanup:
     return trustManagers;
 }
 
+// JNI entry point called from DotnetProxyTrustManager.verifyRemoteCertificate().
+// Forwards the platform's trust verdict to the managed SslStream validation callback.
+// The managed side combines this with its own X509Chain.Build result — the callback
+// always receives the union of both assessments (more strict, never less).
 ARGS_NON_NULL_ALL jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jboolean chainTrustedByPlatform)
 {

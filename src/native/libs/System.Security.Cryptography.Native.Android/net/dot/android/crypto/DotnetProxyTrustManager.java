@@ -9,9 +9,20 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.X509TrustManager;
 
 /**
- * This class wraps the platform's default X509TrustManager to first consult
- * Android's trust infrastructure (which respects network-security-config.xml),
- * then delegates to the managed SslStream code for final validation.
+ * Wraps the platform's X509TrustManager so that Android's trust infrastructure
+ * (including network-security-config.xml) is consulted during TLS handshakes.
+ *
+ * Trust model: the platform's verdict is combined with managed (.NET) validation
+ * to be MORE strict, never less:
+ *
+ *  - Platform rejects the chain -> chainTrustedByPlatform=false is passed to the
+ *    managed callback, which pre-seeds sslPolicyErrors with RemoteCertificateChainErrors.
+ *    Managed validation cannot clear this flag.
+ *
+ *  - Platform accepts the chain -> chainTrustedByPlatform=true, but managed validation
+ *    (X509Chain.Build) still runs independently and can introduce its own errors.
+ *
+ * The RemoteCertificateValidationCallback always receives the union of both assessments.
  */
 public final class DotnetProxyTrustManager implements X509TrustManager {
     private final long sslStreamProxyHandle;
@@ -40,6 +51,12 @@ public final class DotnetProxyTrustManager implements X509TrustManager {
         }
     }
 
+    /**
+     * Checks the server's certificate chain against the platform trust manager.
+     * Returns true if the platform trusts the chain, false otherwise.
+     * A false result does NOT abort the handshake — it is forwarded to the managed
+     * SslStream validation code as the chainTrustedByPlatform flag.
+     */
     private boolean isServerTrustedByPlatformTrustManager(X509Certificate[] chain, String authType) {
         try {
             if (targetHost != null) {

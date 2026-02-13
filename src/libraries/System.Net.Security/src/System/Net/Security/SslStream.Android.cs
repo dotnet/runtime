@@ -11,15 +11,21 @@ namespace System.Net.Security
     {
         private JavaProxy.RemoteCertificateValidationResult VerifyRemoteCertificate(bool chainTrustedByPlatform)
         {
+            // The platform's trust verdict is combined with managed validation to be MORE strict,
+            // never less. If the platform rejects the chain, sslPolicyErrors is pre-seeded with
+            // RemoteCertificateChainErrors and managed validation cannot clear it. If the platform
+            // accepts the chain, managed validation (X509Chain.Build) can still independently
+            // introduce RemoteCertificateChainErrors.
+            //
+            // Exception: when CertificateChainPolicy specifies CustomRootTrust without
+            // SslCertificateTrust, the platform's verdict is ignored because it lacks the
+            // intermediate certs from ExtraStore and would produce false rejections. The managed
+            // chain builder — which has access to both CustomTrustStore and ExtraStore — is
+            // authoritative in this case.
+            //
             // TODO: Investigate whether we can avoid this bypass by also passing ExtraStore
             // intermediates to the platform's KeyStore (without elevating them to trust anchors),
             // or by implementing a custom X509TrustManager that performs AIA fetching.
-            // Currently, when CertificateChainPolicy specifies CustomRootTrust (without
-            // SslCertificateTrust), the platform may reject the chain because it doesn't have
-            // the intermediate certs (which are only in ExtraStore) or because the hostname
-            // verification flags differ from managed settings. The managed chain builder —
-            // which has access to both CustomTrustStore and ExtraStore — is authoritative
-            // in this case.
             bool managedTrustOnly =
                 _sslAuthenticationOptions.CertificateContext?.Trust is null
                 && _sslAuthenticationOptions.CertificateChainPolicy?.TrustMode == X509ChainTrustMode.CustomRootTrust;
