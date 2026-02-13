@@ -76,11 +76,8 @@ Binlogs contain detailed MSBuild execution traces for diagnosing:
 - Target execution order issues
 
 **Using MSBuild binlog MCP tools:**
-```
-mcp-binlog-tool-load_binlog path:"path/to/build.binlog"
-mcp-binlog-tool-get_diagnostics binlog_file:"path/to/build.binlog"
-mcp-binlog-tool-search_binlog binlog_file:"path/to/build.binlog" query:"error"
-```
+
+Load the binlog, then search for errors/diagnostics or specific queries. The binlog MCP tools handle loading, searching, and extracting task details.
 
 **Manual Analysis:**
 Use [MSBuild Structured Log Viewer](https://msbuildlog.com/) or https://live.msbuildlog.com/
