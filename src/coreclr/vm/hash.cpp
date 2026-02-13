@@ -1008,10 +1008,11 @@ LDone:
         // In async mode, readers may still be traversing the old bucket array.
         // Queue for deferred deletion via EBR. The buckets will be freed once
         // all threads have exited their critical regions.
+        size_t obsoleteSize = ((size_t*)pObsoleteTables)[0];
         g_HashMapEbr.QueueForDeletion(
             pObsoleteTables,
             DeleteObsoleteBuckets,
-            (GetSize(pObsoleteTables) + 1) * sizeof(Bucket));
+            (obsoleteSize + 1) * sizeof(Bucket));
     }
     else
     {

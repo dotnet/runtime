@@ -45,6 +45,9 @@ static thread_local EbrThreadData* t_pThreadData = nullptr;
 // Global EBR collector for HashMap's async mode.
 EbrCollector g_HashMapEbr;
 
+// Count of objects leaked due to OOM when queuing for deferred deletion.
+static LONG s_ebrLeakedDeletionCount = 0;
+
 // ============================================
 // EbrCollector implementation
 // ============================================
@@ -391,11 +394,11 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     EbrPendingEntry* pEntry = new (nothrow) EbrPendingEntry();
     if (pEntry == nullptr)
     {
-        // If we can't allocate, delete immediately. This is safe because we're
-        // in a critical region and hold the writer lock, so no readers can be
-        // referencing pObject (the writer just replaced it atomically).
-        // This is a degraded fallback, not the normal path.
-        pfnDelete(pObject);
+        // If we can't allocate, we must not delete pObject immediately, because
+        // EBR readers in async mode may still be traversing data structures that
+        // reference it. As a degraded fallback, intentionally leak pObject rather
+        // than risk a use-after-free. This path should be extremely rare.
+        InterlockedIncrement(&s_ebrLeakedDeletionCount);
         return;
     }
 
