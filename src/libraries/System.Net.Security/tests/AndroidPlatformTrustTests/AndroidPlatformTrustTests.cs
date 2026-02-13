@@ -3,6 +3,7 @@
 
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
@@ -245,6 +246,153 @@ namespace System.Net.Security.Tests
                 try { await serverTask.WaitAsync(TimeSpan.FromSeconds(5)); }
                 catch { }
             }
+        }
+
+        [Fact]
+        public async Task SslStream_CustomRootTrustWithoutExtraStore_PlatformRejects()
+        {
+            // Generate a dynamic PKI (root → intermediate → leaf) that is NOT in network_security_config.xml.
+            // CustomRootTrust has the dynamic root, but ExtraStore is empty — the intermediate is missing.
+            // The platform rejects because the dynamic root is not a trusted anchor in the config.
+            // managedTrustOnly is false (no ExtraStore) so the platform's rejection is honored.
+            // The managed chain builder also cannot build the chain (missing intermediate).
+            // Result: RemoteCertificateChainErrors reported.
+
+            (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (rootCert)
+            using (intermediateCert)
+            using (serverCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testservereku.contoso.com",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCert },
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.True(
+                (reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors) != 0,
+                $"Expected RemoteCertificateChainErrors but got: {reportedErrors.Value}");
+        }
+
+        [Fact]
+        public async Task SslStream_CustomRootTrustWithExtraStore_ManagedOverridesPlatform()
+        {
+            // Same dynamic PKI as above, but now ExtraStore contains the intermediate CA.
+            // The platform would reject (dynamic root not in network_security_config.xml),
+            // but managedTrustOnly is true (ExtraStore is non-empty) so the platform's verdict is bypassed.
+            // The managed chain builder has root (CustomTrustStore) + intermediate (ExtraStore) and succeeds.
+            // Result: no RemoteCertificateChainErrors — managed validation is authoritative.
+
+            (X509Certificate2 rootCert, X509Certificate2 intermediateCert, X509Certificate2 serverCert) = GenerateCertificateChain();
+
+            SslPolicyErrors? reportedErrors = null;
+
+            (SslStream client, SslStream server) = GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (rootCert)
+            using (intermediateCert)
+            using (serverCert)
+            {
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCert,
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "testservereku.contoso.com",
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                    {
+                        reportedErrors = sslPolicyErrors;
+                        return true;
+                    },
+                    CertificateChainPolicy = new X509ChainPolicy
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { rootCert },
+                        ExtraStore = { intermediateCert },
+                    },
+                };
+
+                await Task.WhenAll(
+                    client.AuthenticateAsClientAsync(clientOptions),
+                    server.AuthenticateAsServerAsync(serverOptions)).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.NotNull(reportedErrors);
+            Assert.Equal(SslPolicyErrors.None, reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors);
+        }
+
+        /// <summary>
+        /// Generates a certificate chain: root CA → intermediate CA → leaf cert.
+        /// The root is NOT the NDX Test Root CA from network_security_config.xml,
+        /// so the platform will not trust this chain.
+        /// </summary>
+        private static (X509Certificate2 root, X509Certificate2 intermediate, X509Certificate2 leaf) GenerateCertificateChain()
+        {
+            DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+            DateTimeOffset notAfter = DateTimeOffset.UtcNow.AddYears(1);
+            byte[] serialNumber = new byte[8];
+
+            using RSA rootKey = RSA.Create(2048);
+            var rootRequest = new CertificateRequest("CN=Test Root CA", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: true, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+            var rootSkid = new X509SubjectKeyIdentifierExtension(rootRequest.PublicKey, critical: false);
+            rootRequest.CertificateExtensions.Add(rootSkid);
+            X509Certificate2 rootCert = rootRequest.CreateSelfSigned(notBefore, notAfter);
+
+            using RSA intermediateKey = RSA.Create(2048);
+            var intermediateRequest = new CertificateRequest("CN=Test Intermediate CA", intermediateKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            intermediateRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: true, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+            var intermediateSkid = new X509SubjectKeyIdentifierExtension(intermediateRequest.PublicKey, critical: false);
+            intermediateRequest.CertificateExtensions.Add(intermediateSkid);
+            intermediateRequest.CertificateExtensions.Add(X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(rootSkid));
+            RandomNumberGenerator.Fill(serialNumber);
+            X509Certificate2 intermediateCert = intermediateRequest.Create(rootCert, notBefore, notAfter, serialNumber);
+            intermediateCert = intermediateCert.CopyWithPrivateKey(intermediateKey);
+
+            using RSA leafKey = RSA.Create(2048);
+            var leafRequest = new CertificateRequest("CN=testservereku.contoso.com", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            leafRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: false, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+            leafRequest.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, critical: false));
+            leafRequest.CertificateExtensions.Add(X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(intermediateSkid));
+            var sanBuilder = new SubjectAlternativeNameBuilder();
+            sanBuilder.AddDnsName("testservereku.contoso.com");
+            leafRequest.CertificateExtensions.Add(sanBuilder.Build());
+            RandomNumberGenerator.Fill(serialNumber);
+            X509Certificate2 leafCert = leafRequest.Create(intermediateCert, notBefore, notAfter, serialNumber);
+            leafCert = leafCert.CopyWithPrivateKey(leafKey);
+
+            return (X509CertificateLoader.LoadCertificate(rootCert.Export(X509ContentType.Cert)), X509CertificateLoader.LoadCertificate(intermediateCert.Export(X509ContentType.Cert)), leafCert);
         }
 
         private static (SslStream client, SslStream server) GetConnectedSslStreams()
