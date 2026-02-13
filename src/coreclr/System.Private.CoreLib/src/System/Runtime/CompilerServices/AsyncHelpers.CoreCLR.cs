@@ -465,10 +465,11 @@ namespace System.Runtime.CompilerServices
                     {
                         Task.RemoveFromActiveTasks(this);
                         Task.RemoveRuntimeAsyncTaskTimestamp(this);
-                        while (headContinuation != null)
+                        Continuation? nc = headContinuation;
+                        while (nc != null)
                         {
-                            Task.RemoveRuntimeAsyncContinuationTimestamp(headContinuation);
-                            headContinuation = headContinuation.Next;
+                            Task.RemoveRuntimeAsyncContinuationTimestamp(nc);
+                            nc = nc.Next;
                         }
                     }
 
