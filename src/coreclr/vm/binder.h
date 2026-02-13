@@ -318,7 +318,6 @@ template<>
 struct cdac_data<CoreLibBinder>
 {
     static constexpr size_t Classes = offsetof(CoreLibBinder, m_pClasses);
-    static constexpr size_t ClassDescriptions = offsetof(CoreLibBinder, m_classDescriptions);
 };
 
 //

@@ -169,5 +169,4 @@ struct ComHolder
         }
     }
 };
-
 #endif // _INTEROP_COMWRAPPERS_HPP_

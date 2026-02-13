@@ -524,8 +524,6 @@ InteropLib::OBJECTHANDLE ManagedObjectWrapper::GetTarget() const
     return _target;
 }
 
-
-#ifndef DACCESS_COMPILE
 using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
 namespace InteropLib { namespace ABI {
     struct ComInterfaceDispatch;
@@ -535,7 +533,3 @@ namespace InteropLib { namespace ABI {
         };
     }
 }
-#endif // DACCESS_COMPILE
-typedef DPTR(QueryInterfaceMethod) PTR_QueryInterfaceMethod;
-
-GARY_IMPL(PTR_QueryInterfaceMethod, InteropLib::ABI::g_knownQueryInterfaceImplementations, 2);

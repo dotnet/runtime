@@ -33,7 +33,12 @@ Global variables used:
 | --- | --- | --- |
 | `ComWrappersVtablePtrs` | TargetPointer | Pointer to struct containing ComWrappers-related function pointers |
 | `DispatchThisPtrMask` | TargetPointer | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
-| `NativeObjectWrapperClass` | ushort | The index of the native object wrapper class into the CoreLibBinder classes |
+
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `NativeObjectWrapperNamespace` | string | Namespace of System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper | `System.Runtime.InteropServices` |
+| `NativeObjectWrapperName` | string | Name of System.Runtime.InteropServices.ComWrappers+NativeObjectWrapper | `ComWrappers+NativeObjectWrapper` |
 
 Contracts used:
 | Contract Name |
@@ -99,9 +104,8 @@ public long GetMOWReferenceCount(TargetPointer mow)
 public bool IsComWrappersRCW(TargetPointer rcw)
 {
     // Get method table from rcw using Object contract GetMethodTableAddress
-    // Then look up the name and namespace of the native object wrapper class in corelibbinder using RuntimeTypeSystem.GetNameSpaceAndNameFromBinder
     // Find module from the system assembly
-    // Then use RuntimeTypeSystem contract to look up type handle by name/namespace/module
+    // Then use RuntimeTypeSystem contract to look up type handle by name/namespace/module hardcoded in contract
     // Then compare the rcw method table with the method table found by name/namespace/module
 }
 ```

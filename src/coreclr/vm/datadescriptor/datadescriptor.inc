@@ -1006,14 +1006,7 @@ CDAC_TYPE_END(InstMethodHashTable)
 CDAC_TYPE_BEGIN(CoreLibBinder)
 CDAC_TYPE_INDETERMINATE(CoreLibBinder)
 CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
-CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, ClassDescriptions, cdac_data<CoreLibBinder>::ClassDescriptions)
 CDAC_TYPE_END(CoreLibBinder)
-
-CDAC_TYPE_BEGIN(CoreLibClassDescription)
-CDAC_TYPE_SIZE(sizeof(CoreLibClassDescription))
-CDAC_TYPE_FIELD(CoreLibClassDescription, /*pointer*/, NameSpace, offsetof(CoreLibClassDescription, nameSpace))
-CDAC_TYPE_FIELD(CoreLibClassDescription, /*pointer*/, Name, offsetof(CoreLibClassDescription, name))
-CDAC_TYPE_END(CoreLibClassDescription)
 
 // this is an SHash type
 CDAC_TYPE_BEGIN(DynamicILBlobTable)
@@ -1024,12 +1017,12 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
-// #ifdef FEATURE_COMWRAPPERS
-// CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
-// CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, MowQueryInterface, offsetof(ComWrappersVtablePtrs, MowQueryInterface))
-// CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, TtQueryInterface, offsetof(ComWrappersVtablePtrs, TtQueryInterface))
-// CDAC_TYPE_END(ComWrappersVtablePtrs)
-// #endif
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, MowQueryInterface, 0)
+CDAC_TYPE_FIELD(ComWrappersVtablePtrs, /*pointer*/, TtQueryInterface, sizeof(uintptr_t))
+CDAC_TYPE_END(ComWrappersVtablePtrs)
+#endif
 
 CDAC_TYPES_END()
 
@@ -1138,7 +1131,6 @@ CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
-CDAC_GLOBAL(NativeObjectWrapperClass, uint32, CLASS__NATIVE_OBJECT_WRAPPER)
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)

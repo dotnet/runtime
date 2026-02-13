@@ -4097,7 +4097,10 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             if (managedObject != null)
+            {
+                *managedObject = 0;
                 *managedObject = comWrappersContract.GetComWrappersObjectFromMOW(managedObjectPtr).ToClrDataAddress(_target);
+            }
 
             if (refCount != null)
                 *refCount = (int)comWrappersContract.GetMOWReferenceCount(managedObjectPtr);
@@ -4140,8 +4143,8 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     TargetPointer rcwPtr = rcw.ToTargetPointer(_target) & ~_rcwMask;
                     *isComWrappersRCW = comWrappersContract.IsComWrappersRCW(rcwPtr) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                    hr = (*isComWrappersRCW != Interop.BOOL.FALSE) ? HResults.S_OK : HResults.S_FALSE;
                 }
+                hr = (*isComWrappersRCW != Interop.BOOL.FALSE) ? HResults.S_OK : HResults.S_FALSE;
             }
         }
         catch (System.Exception ex)

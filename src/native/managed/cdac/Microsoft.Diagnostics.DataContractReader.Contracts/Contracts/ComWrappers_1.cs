@@ -10,6 +10,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ComWrappers_1 : IComWrappers
 {
+    private const string NativeObjectWrapperNamespace = "System.Runtime.InteropServices";
+    private const string NativeObjectWrapperName = "ComWrappers+NativeObjectWrapper";
     private readonly Target _target;
 
     public ComWrappers_1(Target target)
@@ -71,11 +73,6 @@ internal readonly struct ComWrappers_1 : IComWrappers
     public bool IsComWrappersRCW(TargetPointer rcw)
     {
         TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
-        ushort typeCode = _target.ReadGlobal<ushort>(Constants.Globals.NativeObjectWrapperClass);
-
-        // get name and namespace from corelibbinder
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        rts.GetNameSpaceAndNameFromBinder(typeCode, out string nameSpace, out string name);
 
         // get system module
         ILoader loader = _target.Contracts.Loader;
@@ -83,7 +80,8 @@ internal readonly struct ComWrappers_1 : IComWrappers
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
 
         // lookup by name
-        TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(name, nameSpace, moduleHandle).Address;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(NativeObjectWrapperName, NativeObjectWrapperNamespace, moduleHandle).Address;
         return mt == typeHandlePtr;
     }
 }

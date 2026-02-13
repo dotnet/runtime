@@ -44,12 +44,12 @@ namespace ETW { class CEtwTracer; };
 namespace InteropLib { namespace ABI {
     struct ComInterfaceDispatch;
     using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
-    QueryInterfaceMethod g_knownQueryInterfaceImplementations[2];
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[2];
+#endif // !DACCESS_COMPILE
 } }
 
-using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
-typedef DPTR(QueryInterfaceMethod) PTR_QueryInterfaceMethod;
-GARY_DECL(PTR_QueryInterfaceMethod, g_knownQueryInterfaceImplementations, 2);
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, 2);
 
 #endif // FEATURE_COMWRAPPERS
 class DebugInterface;

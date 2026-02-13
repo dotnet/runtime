@@ -903,17 +903,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return (typeHandlePtr == TargetPointer.Null) ? new TypeHandle(TargetPointer.Null) : rts.GetTypeHandle(typeHandlePtr);
     }
 
-    void IRuntimeTypeSystem.GetNameSpaceAndNameFromBinder(ushort index, out string nameSpace, out string name)
-    {
-        TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
-        CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
-        var typeInfo = _target.GetTypeInfo(DataType.CoreLibClassDescription);
-        TargetPointer coreLibClassDescriptionPtr = coreLibData.ClassDescriptions + index * typeInfo.Size!.Value;
-        CoreLibClassDescription coreLibClassDescription = _target.ProcessedData.GetOrAdd<CoreLibClassDescription>(coreLibClassDescriptionPtr);
-        nameSpace = coreLibClassDescription.NameSpace;
-        name = coreLibClassDescription.Name;
-    }
-
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
     {
         module = TargetPointer.Null;

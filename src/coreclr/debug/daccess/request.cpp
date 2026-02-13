@@ -4361,10 +4361,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    PTR_QueryInterfaceMethod methods = dac_cast<PTR_QueryInterfaceMethod>(InteropLib::ABI::g_knownQueryInterfaceImplementations);
-
-    return (qiAddress == (TADDR)methods[0]
-        || qiAddress == (TADDR)methods[1]);
+    return (qiAddress == g_knownQueryInterfaceImplementations[0]
+        || qiAddress == g_knownQueryInterfaceImplementations[1]);
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)

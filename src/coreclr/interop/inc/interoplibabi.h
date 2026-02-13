@@ -80,11 +80,6 @@ namespace InteropLib
             ComInterfaceDispatch* entries = dispatch->_entries;
             return entries + (i % EntriesPerThisPtr);
         }
-
-        #ifndef DACCESS_COMPILE
-        using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
-        QueryInterfaceMethod g_knownQueryInterfaceImplementations[2];
-        #endif // DACCESS_COMPILE
     }
 }
 
