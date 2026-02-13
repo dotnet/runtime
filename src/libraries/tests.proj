@@ -643,6 +643,7 @@
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
 
+    <!-- https://github.com/dotnet/runtime/issues/124344 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Composition\tests\System.ComponentModel.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition\tests\System.Composition.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj" />
@@ -730,7 +731,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(UseMonoRuntime)' != 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">
     <!-- Only System.Runtime tests on iOS for now -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
 

@@ -86,7 +86,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73593", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void TestCustomAttributeDecoderUsingReflection()
         {
             Type type = typeof(HasAttributes);

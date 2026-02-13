@@ -9,7 +9,6 @@
     and '$(TargetOS)' != 'android'
     and '$(TargetsAppleMobile)' != 'true'
     and '$(RuntimeFlavor)' != 'Mono'
-    and '$(TargetsAppleMobile)' != 'true'
     and '$(UseRuntimeAsync)' != 'false'">
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
