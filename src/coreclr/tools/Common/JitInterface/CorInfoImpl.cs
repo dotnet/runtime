@@ -4185,6 +4185,12 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_CALL_PLT => RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT,
                 CorInfoReloc.RISCV64_PCREL_I => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I,
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
+                CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
+                CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
+                CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4423,7 +4429,12 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.IsAsyncCall())
+            if (this.MethodBeingCompiled.IsAsyncCall()
+#if !READYTORUN
+                || (_compilation.TypeSystemContext.IsSpecialUnboxingThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(this.MethodBeingCompiled).IsAsyncCall())
+                || (_compilation.TypeSystemContext.IsDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled).IsAsyncCall())
+#endif
+                )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }

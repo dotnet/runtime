@@ -16,7 +16,7 @@ import { mono_log_error } from "./logging";
 export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
-// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.js
+// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.mjs
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker

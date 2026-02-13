@@ -2088,12 +2088,18 @@ namespace System.Text.RegularExpressions
                                 loopChild = loopChild.Child(loopChild.ChildCount() - 1);
                             }
 
+                            // MakeLoopAtomic wraps the loop in an Atomic group, which discards all backtracking
+                            // state from within the body. CanBeMadeAtomic only proves that giving back iterations
+                            // is unnecessary, but the Atomic wrapper also prevents within-body backtracking from
+                            // being triggered by subsequent failures. That's only safe when the body has no
+                            // backtracking of its own and the last descendant is a type that won't be adversely
+                            // affected by seeing an Atomic ancestor.
                             if (loopChild.Kind is
-                                RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-                                RegexNodeKind.Multi or
-                                RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+                                    RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                                    RegexNodeKind.Multi or
+                                    RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set &&
+                                !MayContainBacktracking(node.Child(0)))
                             {
-                                // For types on the allow list, we can make the loop itself atomic.
                                 node.MakeLoopAtomic();
                             }
                             else if (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
@@ -2584,6 +2590,52 @@ namespace System.Text.RegularExpressions
                     break;
                 }
             }
+        }
+
+        /// <summary>Gets whether this node is itself a backtracking construct.</summary>
+        /// <remarks>
+        /// This checks the node in isolation (not its children). A node is a backtracking construct
+        /// if it's a variable-width loop or an alternation.
+        /// </remarks>
+        public bool IsBacktrackingConstruct => Kind switch
+        {
+            RegexNodeKind.Alternate => true,
+            RegexNodeKind.Loop or RegexNodeKind.Lazyloop when M != N => true,
+            RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or
+            RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or
+            RegexNodeKind.Setloop or RegexNodeKind.Setlazy when M != N => true,
+            _ => false,
+        };
+
+        /// <summary>
+        /// Checks whether a node tree may contain backtracking constructs (variable-width loops or alternations).
+        /// </summary>
+        private static bool MayContainBacktracking(RegexNode node)
+        {
+            // If we can't recur, just assume the worst and say that it may contain backtracking constructs.
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return true;
+            }
+
+            // If this node is a backtracking construct, then obviously it may contain backtracking constructs.
+            if (node.IsBacktrackingConstruct)
+            {
+                return true;
+            }
+
+            // Otherwise, we need to check the children to see if any of them may contain backtracking constructs.
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (MayContainBacktracking(node.Child(i)))
+                {
+                    return true;
+                }
+            }
+
+            // No backtracking is possible.
+            return false;
         }
 
         /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>

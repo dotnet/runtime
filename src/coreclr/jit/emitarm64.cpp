@@ -10222,7 +10222,7 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
     {
         // adrp x, [rel page addr] -- compute page address: current page addr + rel page addr
         assert(fmt == IF_LARGEADR);
-        ssize_t relPageAddr = computeRelPageAddr((size_t)dstAddr, (size_t)srcAddr);
+        ssize_t relPageAddr = id->idIsReloc() ? 0 : computeRelPageAddr((size_t)dstAddr, (size_t)srcAddr);
         dst                 = emitOutputShortAddress(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
         if (id->idIsReloc())
         {
@@ -10230,7 +10230,7 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         }
 
         // add x, x, page offs -- compute address = page addr + page offs
-        ssize_t imm12 = (ssize_t)dstAddr & 0xFFF; // 12 bits
+        ssize_t imm12 = id->idIsReloc() ? 0 : (ssize_t)dstAddr & 0xFFF; // 12 bits
         assert(isValidUimm<12>(imm12));
         code_t code =
             emitInsCode(INS_add, IF_DI_2A);  // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)

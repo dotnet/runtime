@@ -3552,11 +3552,7 @@ namespace System
             int colonOffset = uriString.AsSpan(i).IndexOf(':');
 
             // NB: A string must have at least 3 characters and at least 1 before ':'
-            if ((uint)(i + 2) >= (uint)uriString.Length ||
-                colonOffset == 0 ||
-                // Redundant checks to eliminate range checks below
-                (uint)i >= (uint)uriString.Length ||
-                (uint)(i + 1) >= (uint)uriString.Length)
+            if ((uint)(i + 2) >= (uint)uriString.Length || colonOffset == 0)
             {
                 err = ParsingError.BadFormat;
                 return 0;
