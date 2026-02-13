@@ -1081,13 +1081,39 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             break;
 
         case CORINFO_TOKENKIND_Await:
-            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-            // we cannot resolve to an Async variant in such case.
-            // return NULL, so that caller would re-resolve as a regular method call
-            pMD = pMD->ReturnsTaskOrValueTask() ?
-                pMD->GetAsyncVariant(/*allowInstParam*/FALSE):
-                NULL;
+        case CORINFO_TOKENKIND_AwaitVirtual:
+            {
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                // return NULL, so that caller would re-resolve as a regular method call
+                bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
+                if (allowAsyncVariant)
+                {
+                    bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
+                    if (!isDirect)
+                    {
+                        DWORD attrs = pMD->GetAttrs();
+                        if (pMD->GetMethodTable()->IsInterface())
+                        {
+                            isDirect = !IsMdVirtual(attrs);
+                        }
+                        else
+                        {
+                            isDirect = !IsMdVirtual(attrs) || IsMdFinal(attrs) || pMD->GetMethodTable()->IsSealed();
+                        }
+                    }
 
+                    if (isDirect && !pMD->IsAsyncThunkMethod())
+                    {
+                        // Async variant would be a thunk. Do not resolve direct calls
+                        // to async thunks. That just creates and JITs unnecessary
+                        // thunks, and the thunks are harder for the JIT to optimize.
+                        allowAsyncVariant = false;
+                    }
+                }
+
+                pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+            }
             break;
 
         default:
