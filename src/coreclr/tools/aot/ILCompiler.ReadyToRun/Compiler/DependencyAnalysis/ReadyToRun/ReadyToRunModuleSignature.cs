@@ -19,9 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            // Don't use ObjectDataSignatureBuilder as that validates cross-module references.
-            // For just the module helper fixup, we aren't bound by that restriction.
-            ObjectDataBuilder builder = new(factory, relocsOnly);
+            ObjectDataSignatureBuilder builder = new(factory, relocsOnly);
             builder.AddSymbol(this);
 
             if (relocsOnly)
@@ -29,6 +27,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return builder.ToObjectData();
             }
 
+            // Don't use EmitFixup as that validates cross-module references.
+            // For just the module helper fixup, we aren't bound by that restriction
+            // as the module helper's result is not affected by changes in the target module.
             if (Module == factory.SignatureContext)
             {
                 builder.EmitByte((byte)ReadyToRunFixupKind.Helper);
@@ -36,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 builder.EmitByte((byte)(ReadyToRunFixupKind.Helper | ReadyToRunFixupKind.ModuleOverride));
-                builder.EmitCompressedUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(Module));
+                builder.EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(Module));
             }
-            builder.EmitCompressedUInt((uint)ReadyToRunHelper.Module);
+            builder.EmitUInt((uint)ReadyToRunHelper.Module);
 
             return builder.ToObjectData();
         }
