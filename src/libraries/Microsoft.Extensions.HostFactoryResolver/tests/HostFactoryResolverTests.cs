@@ -301,5 +301,45 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.IsAssignableFrom<IServiceProvider>(t.Result);
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(NoSpecialEntryPointPattern.Program))]
+        public void NoSpecialEntryPointPattern_DoesNotLeakMemory()
+        {
+            // This test verifies that the AsyncLocal<HostingListener> fix prevents memory leaks
+            // by ensuring that service providers can be garbage collected after use
+            var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
+            Assert.NotNull(factory);
+
+            // Create weak references to track if objects are being collected
+            var weakRefs = new WeakReference[10];
+            
+            for (int i = 0; i < weakRefs.Length; i++)
+            {
+                var serviceProvider = factory(Array.Empty<string>());
+                Assert.NotNull(serviceProvider);
+                weakRefs[i] = new WeakReference(serviceProvider);
+            }
+
+            // Force garbage collection
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            // At least some of the service providers should have been collected
+            // If there's a memory leak via static AsyncLocal, they would all still be alive
+            int collectedCount = 0;
+            foreach (var weakRef in weakRefs)
+            {
+                if (!weakRef.IsAlive)
+                {
+                    collectedCount++;
+                }
+            }
+
+            // We expect at least half to be collected, but allow some to remain due to GC non-determinism
+            Assert.True(collectedCount >= weakRefs.Length / 2, 
+                $"Expected at least {weakRefs.Length / 2} objects to be collected, but only {collectedCount} were collected. This may indicate a memory leak.");
+        }
     }
 }
