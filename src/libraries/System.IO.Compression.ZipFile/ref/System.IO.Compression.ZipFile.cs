@@ -59,7 +59,7 @@ namespace System.IO.Compression
         public static System.IO.Compression.ZipArchive OpenRead(string archiveFileName) { throw null; }
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> OpenReadAsync(string archiveFileName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.ComponentModel.EditorBrowsableAttribute(1)]
     public static partial class ZipFileExtensions
     {
         public static System.IO.Compression.ZipArchiveEntry CreateEntryFromFile(this System.IO.Compression.ZipArchive destination, string sourceFileName, string entryName) { throw null; }
