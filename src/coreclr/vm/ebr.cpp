@@ -262,6 +262,27 @@ EbrCollector::InCriticalRegion()
     return pData->m_criticalDepth > 0;
 }
 
+void
+EbrCollector::ThreadDetach()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    EbrThreadData* pData = t_pThreadData;
+    if (pData == nullptr || pData->m_pCollector != this)
+        return;
+
+    _ASSERTE(!InCriticalRegion());
+
+    UnlinkThreadData(pData);
+    t_pThreadData = nullptr;
+    delete pData;
+}
+
 // ============================================
 // Epoch advancement
 // ============================================

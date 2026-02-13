@@ -83,6 +83,10 @@ public:
     // Returns true if the calling thread is currently in a critical region.
     bool InCriticalRegion();
 
+    // Detach the calling thread from this collector. Unlinks and frees per-thread
+    // EBR state. Should be called during thread shutdown.
+    void ThreadDetach();
+
 private:
     // Thread list management
     EbrThreadData* GetOrCreateThreadData();

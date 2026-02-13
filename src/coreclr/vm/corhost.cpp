@@ -37,6 +37,7 @@
 #endif // !TARGET_UNIX
 
 #include "nativelibrary.h"
+#include "ebr.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -1080,6 +1081,8 @@ void ThreadDetaching()
         _ASSERTE (!"should not have StressLog");
 #endif
     }
+
+    g_HashMapEbr.ThreadDetach();
 
 #ifdef ENABLE_CONTRACTS_IMPL
     if (t_pClrDebugState != NULL)
