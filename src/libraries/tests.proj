@@ -734,7 +734,7 @@
     <!-- Only System.Runtime tests on iOS for now -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
 
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\SimulatorCoreCLR\*.Test.csproj"
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
