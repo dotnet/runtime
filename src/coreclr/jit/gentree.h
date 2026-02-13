@@ -5704,9 +5704,7 @@ struct GenTreeCall final : public GenTree
         if (gtInlineInfoCount == 0)
         {
             assert(!IsInlineCandidate());
-#ifdef DEBUG
-            assert(GetCallDataKind() == CallDataKind::None || GetCallDataKind() == CallDataKind::CallCookie);
-#endif
+            assert(GetCallDataKind() == CallDataKind::None);
             return nullptr;
         }
         else if (gtInlineInfoCount > 1)
@@ -5870,7 +5868,8 @@ public:
 
     bool HasCallCookie() const
     {
-        return INDEBUG(gtCallDataKind == CallDataKind::CallCookie&&) gtCallCookie != nullptr;
+        assert(gtCallDataKind == CallDataKind::CallCookie);
+        return gtCallCookie != nullptr;
     }
 
     void SetCallCookie(GenTree* cookie)
@@ -5911,8 +5910,9 @@ public:
 
     bool HasHandleHistogramProfileCandidateInfo() const
     {
-        return INDEBUG(gtCallDataKind == CallDataKind::HandleHistogramProfileCandidateInfo&&)
-                   gtHandleHistogramProfileCandidateInfo != nullptr;
+        assert(gtCallDataKind == CallDataKind::HandleHistogramProfileCandidateInfo ||
+               gtCallDataKind == CallDataKind::None);
+        return gtHandleHistogramProfileCandidateInfo != nullptr;
     }
 
     void SetHandleHistogramProfileCandidateInfo(HandleHistogramProfileCandidateInfo* info)
