@@ -49,7 +49,7 @@ namespace System.Reflection
         /// <returns>An object instance that implements <paramref name="interfaceType"/>.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="interfaceType"/> or <paramref name="proxyType"/> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">
-        /// <para><paramref name="interfaceType"/> is a class.</para>
+        /// <para><paramref name="interfaceType"/> is not an interface type.</para>
         /// <para>-or-</para>
         /// <para><paramref name="proxyType"/> is sealed or abstract, or does not inherit from the <see cref="System.Reflection.DispatchProxy"/> type or does not have a parameterless constructor.</para>
         /// </exception>
