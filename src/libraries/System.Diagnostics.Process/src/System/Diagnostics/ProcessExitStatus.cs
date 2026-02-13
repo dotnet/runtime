@@ -37,10 +37,15 @@ namespace System.Diagnostics
         public int ExitCode { get; }
 
         /// <summary>
-        /// Gets the POSIX signal that terminated the process, or null if the process exited normally.
+        /// Gets the POSIX signal that terminated the process on Unix, or <see langword="null" /> if the process was not terminated by a signal.
         /// </summary>
         /// <remarks>
-        /// When produced by <see cref="Process"/> APIs on Windows, this property is always <see langword="null" />.
+        /// <para>
+        /// On Unix, a process can be terminated by a signal (e.g., SIGKILL, SIGTERM). When this happens,
+        /// the kernel reports "terminated by signal X" rather than an exit code. This property captures
+        /// that signal. When the process exits normally on Unix, or on Windows where signals do not exist,
+        /// this property is <see langword="null" />.
+        /// </para>
         /// </remarks>
         public PosixSignal? Signal { get; }
 
