@@ -87,7 +87,8 @@ EbrCollector::Shutdown()
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_initialized);
+    if (!m_initialized)
+        return;
 
     // Drain all pending queues unconditionally.
     {

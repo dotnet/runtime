@@ -125,7 +125,7 @@ PTR_Bucket HashMap::Buckets()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #if !defined(DACCESS_COMPILE)
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || g_HashMapEbr.InCriticalRegion() || IsGCThread());
+    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
 #endif
     return m_rgBuckets + 1;
 }
@@ -500,7 +500,7 @@ void HashMap::InsertValue (UPTR key, UPTR value)
     _ASSERTE (OwnLock());
 
     // Enter EBR critical region to protect against concurrent bucket array
-    // replacement during async mode.
+    // deletion during async mode.
     EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
@@ -565,10 +565,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
-    // Enter EBR critical region to protect against concurrent bucket array
-    // replacement during async mode. The GC thread is excluded
-    // since it cannot race with itself on RestartEE.
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode && !IsGCThread());
+    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -886,7 +883,7 @@ void HashMap::Rehash()
 
     EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
 
-    _ASSERTE (!g_fEEStarted || !m_fAsyncMode || GetThreadNULLOk() == NULL || g_HashMapEbr.InCriticalRegion());
+    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
     _ASSERTE (OwnLock());
 
     UPTR newPrimeIndex = NewSize();
@@ -1007,7 +1004,7 @@ LDone:
     {
         // In async mode, readers may still be traversing the old bucket array.
         // Queue for deferred deletion via EBR. The buckets will be freed once
-        // all threads have exited their critical regions.
+        // all threads have exited their critical regions or later.
         size_t obsoleteSize = ((size_t*)pObsoleteTables)[0];
         g_HashMapEbr.QueueForDeletion(
             pObsoleteTables,
