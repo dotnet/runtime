@@ -190,9 +190,11 @@ When you download artifacts via MCP tools or manually, the directory structure c
 
 ### Helix Work Item Downloads
 
-Two MCP tools download Helix artifacts:
-- **`hlx_download`** — downloads multiple files from a work item, with optional glob `pattern` (e.g., `pattern:"*.binlog"`). Returns local file paths.
+MCP tools for downloading Helix artifacts:
+- **`hlx_download`** — downloads multiple files from a work item. Returns local file paths.
 - **`hlx_download_url`** — downloads a single file by direct URI (from `hlx_files` output). Use when you know exactly which file you need.
+
+> 💡 **Prefer remote investigation first**: `hlx_test_results`, `hlx_search_file`, and `hlx_search_log` can answer most questions without downloading. Only download when you need to load binlogs or do offline analysis.
 
 `hlx_download` saves files to a temp directory. The structure is **flat** — all files from the work item land in one directory:
 

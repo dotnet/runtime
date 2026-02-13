@@ -13,7 +13,7 @@ Extract all unique test failures from these Helix work items:
 Job: {JOB_ID_1}, Work items: {ITEM_1}, {ITEM_2}
 Job: {JOB_ID_2}, Work items: {ITEM_3}
 
-For each, use hlx_logs with jobId and workItem to get console output.
+For each, use hlx_search_log with jobId, workItem, and pattern:"[FAIL]" to extract failures directly.
 If hlx MCP is not available, fall back to:
   ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB}" -WorkItem "{ITEM}"
 
@@ -86,8 +86,8 @@ Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 Check if canceled job "{JOB_NAME}" from build {BUILD_ID} has recoverable Helix results.
 
 Steps:
-1. Use hlx_files with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to find testResults.xml
-2. Download with hlx_download_url using the testResults.xml URI
+1. Use hlx_test_results with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to parse TRX test results directly
+2. If no TRX available, fall back to hlx_files + hlx_download_url for testResults.xml
 3. Parse the XML for pass/fail counts on the <assembly> element
 
 Return JSON: { "jobName": "...", "hasResults": true, "passed": N, "failed": N }

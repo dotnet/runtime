@@ -38,6 +38,8 @@ $logContent | Select-String -Pattern "error|FAIL" -Context 2,5
 
 ## Query Helix APIs
 
+> 💡 **Prefer MCP tools when available** — they handle most Helix queries without manual curl commands. Use the APIs below only as fallback.
+
 ```bash
 # Get job details
 curl -s "https://helix.dot.net/api/2019-06-17/jobs/JOB_ID"
