@@ -11,7 +11,7 @@
 
 // WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
 // The current approach has limitations with overloaded methods.
-extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
+extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
 static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = nullptr;
@@ -22,7 +22,7 @@ static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g_
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid)
     {
-        LookupMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
 }
@@ -33,7 +33,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
 }
@@ -51,7 +51,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "BindAssemblyExports", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "BindAssemblyExports", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
 }
@@ -69,7 +69,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallDelegate", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallDelegate", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
 }
@@ -87,7 +87,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallJSExport", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallJSExport", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
 }
@@ -105,7 +105,7 @@ static void Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHo
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.StartupHookProvider, System.Private.CoreLib", "CallStartupHook", &MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.StartupHookProvider, System.Private.CoreLib", "CallStartupHook", &MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
 }
@@ -118,7 +118,7 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
 }
@@ -131,7 +131,7 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
 }
@@ -144,7 +144,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CompleteTask", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CompleteTask", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
 }
@@ -162,7 +162,7 @@ static void Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid)
     {
-        LookupMethodByName("System.GC, System.Private.CoreLib", "ConfigCallback", &MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "ConfigCallback", &MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
 }
@@ -175,7 +175,7 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
 }
@@ -188,7 +188,7 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
 }
@@ -201,7 +201,7 @@ static void Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Reflection.LoaderAllocator, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Reflection.LoaderAllocator, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
 }
@@ -214,7 +214,7 @@ static void Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCa
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
 }
@@ -227,7 +227,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "GetClassFactoryForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "GetClassFactoryForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32);
     }
 
     int32_t result;
@@ -243,7 +243,7 @@ static void Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Resolver, System.Private.CoreLib", "GetCodeInfo", &MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetCodeInfo", &MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
 }
@@ -256,7 +256,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "GetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "GetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -272,7 +272,7 @@ static void Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I3
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Resolver, System.Private.CoreLib", "GetJitContext", &MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetJitContext", &MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
 }
@@ -285,7 +285,7 @@ static void Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Resolver, System.Private.CoreLib", "GetLocalsSignature", &MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetLocalsSignature", &MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
 }
@@ -298,7 +298,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
 }
@@ -316,7 +316,7 @@ static void Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Resolver, System.Private.CoreLib", "GetStringLiteral", &MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetStringLiteral", &MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
 }
@@ -329,7 +329,7 @@ static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_I
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid)
     {
-        LookupMethodByName("System.Diagnostics.Tracing.EventSource, System.Private.CoreLib", "InitializeDefaultEventSources", &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Diagnostics.Tracing.EventSource, System.Private.CoreLib", "InitializeDefaultEventSources", &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
 }
@@ -342,7 +342,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssembly", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssembly", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -358,7 +358,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyAndGetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyAndGetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -374,7 +374,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyBytes", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyBytes", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -390,7 +390,7 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32)
     {
-        LookupMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewExternalTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewExternalTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -406,7 +406,7 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32)
     {
-        LookupMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewProxyTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewProxyTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
     }
 
     int32_t result;
@@ -422,7 +422,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyLoad", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyLoad", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
 }
@@ -435,7 +435,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
 }
@@ -448,7 +448,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnResourceResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnResourceResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
 }
@@ -461,7 +461,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnTypeResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnTypeResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
 }
@@ -474,7 +474,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "RegisterClassForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "RegisterClassForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32);
     }
 
     int32_t result;
@@ -490,7 +490,7 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "ReleaseJSOwnedObjectByGCHandle", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "ReleaseJSOwnedObjectByGCHandle", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
 }
@@ -508,7 +508,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "Resolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "Resolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
 }
@@ -521,7 +521,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveSatelliteAssembly", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveSatelliteAssembly", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
 }
@@ -534,7 +534,7 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveUsingEvent", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveUsingEvent", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
 }
@@ -547,7 +547,7 @@ static void Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid)
     {
-        LookupMethodByName("System.AppContext, System.Private.CoreLib", "Setup", &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "Setup", &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
 }
@@ -558,7 +558,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+        LookupUnmanagedCallersOnlyMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
 }
@@ -576,7 +576,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32)
     {
-        LookupMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "UnregisterClassForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32);
+        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib", "UnregisterClassForTypeInternal", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32);
     }
 
     int32_t result;
