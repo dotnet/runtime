@@ -436,6 +436,7 @@ namespace Microsoft.Extensions.Caching.Memory
             private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
+            public int Index;
 
             public Stats(MemoryCache memoryCache)
             {
@@ -453,7 +454,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 _accumulatedHits += Volatile.Read(ref current.Hits);
                 _accumulatedMisses += Volatile.Read(ref current.Misses);
 
-                _allStats.Remove(current);
+                var searchStart = Math.Min(current.Index, _allStats.Count - 1);
+                var indexToRemove = _allStats.LastIndexOf(current, searchStart);
+                Debug.Assert(indexToRemove >= 0, "Stat items must always be at their original index or lower.");
+                _allStats.RemoveAt(indexToRemove);
                 _allStats.TrimExcess();
             }
         }
@@ -462,6 +466,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_allStats!)
             {
+                current.Index = _allStats.Count;
                 _allStats.Add(current);
             }
         }
