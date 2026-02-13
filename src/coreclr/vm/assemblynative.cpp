@@ -1549,6 +1549,7 @@ namespace
         PTR_Module pModule = pAssembly->GetModule();
         if (!pModule->IsReadyToRun())
         {
+            *pHasPrecachedInfo = false;
             return true;
         }
 
@@ -1718,7 +1719,9 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
         bool hasPrecachedInfo = false;
 
 #ifdef FEATURE_READYTORUN
-        if (!ProcessPrecachedTypeMapInfo(
+        // Only process the external type map if requested.
+        if (newExternalTypeEntry != nullptr
+            && !ProcessPrecachedTypeMapInfo(
             [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT); },
             [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedExternalTypeMap(context); },
             currAssembly,
@@ -1728,7 +1731,9 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             return;
         }
 
-        if (!ProcessPrecachedTypeMapInfo(
+        // Only process the proxy type map if requested.
+        if (newProxyTypeEntry != nullptr
+            && !ProcessPrecachedTypeMapInfo(
             [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
             [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
             currAssembly,
@@ -1738,6 +1743,9 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
             return;
         }
 
+        // Don't count having external assembly targets as having precached info.
+        // We don't want valid external assembly targets to make us mistakenly think that the pre-cached maps are valid when they are not.
+        bool hasExternalTypeMapAssemblyTargets;
         COUNT_T assemblyTargetCount = 0;
         ProcessPrecachedTypeMapInfo(
             [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
@@ -1755,7 +1763,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 return true;
              },
              currAssembly,
-            &hasPrecachedInfo
+            &hasExternalTypeMapAssemblyTargets
         );
 #endif // FEATURE_READYTORUN
 

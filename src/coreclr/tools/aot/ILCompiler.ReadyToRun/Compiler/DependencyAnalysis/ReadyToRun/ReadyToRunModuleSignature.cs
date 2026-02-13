@@ -36,8 +36,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 builder.EmitByte((byte)(ReadyToRunFixupKind.Helper | ReadyToRunFixupKind.ModuleOverride));
+                builder.EmitCompressedUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(Module));
             }
-            builder.EmitUInt((uint)ReadyToRunHelper.Module);
+            builder.EmitCompressedUInt((uint)ReadyToRunHelper.Module);
 
             return builder.ToObjectData();
         }

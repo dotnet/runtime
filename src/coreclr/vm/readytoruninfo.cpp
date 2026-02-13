@@ -1648,7 +1648,8 @@ bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
         TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
         if (typeHandle == TypeHandle(pGroupTypeMT))
         {
-            return true;
+            // A non-zero value next in the entry indicates that the table is valid.
+            return entryParser.GetUnsigned() != 0;
         }
     }
     return false;
@@ -1725,7 +1726,8 @@ bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
         TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
         if (typeHandle == TypeHandle(pGroupType))
         {
-            return true;
+            // A non-zero value next in the entry indicates that the table is valid.
+            return entryParser.GetUnsigned() != 0;
         }
     }
     return false;

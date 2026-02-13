@@ -49,12 +49,14 @@ namespace ILCompiler.ReadyToRun
 
             VertexHashtable typeMapHashTable = new();
 
+            Section typeMapEntriesSection = writer.NewSection();
+
             foreach ((string key, (TypeDesc type, _)) in map.TypeMap)
             {
                 Vertex keyVertex = writer.GetStringConstant(key);
                 Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
                 Vertex entry = writer.GetTuple(keyVertex, valueVertex);
-                typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), section.Place(entry));
+                typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(key), typeMapEntriesSection.Place(entry));
             }
 
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
