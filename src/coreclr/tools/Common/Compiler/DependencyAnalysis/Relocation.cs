@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -644,11 +645,11 @@ namespace ILCompiler.DependencyAnalysis
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
+                    DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    ILCompiler.ObjectWriter.DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
+                    DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
 
                 default:
@@ -747,10 +748,10 @@ namespace ILCompiler.DependencyAnalysis
                     return 0;
 
                 case RelocType.WASM_MEMORY_ADDR_LEB:
-                    return checked((long)ILCompiler.ObjectWriter.DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
+                    return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
 
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
-                    return ILCompiler.ObjectWriter.DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
+                    return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
 
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
