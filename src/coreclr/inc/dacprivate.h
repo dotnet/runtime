@@ -226,10 +226,13 @@ struct MSLAYOUT DacpThreadLocalModuleData
     CLRDATA_ADDRESS pNonGCStaticDataStart = 0;
 };
 
-enum DacpModuleFlags {IS_EDIT_AND_CONTINUE = 0x00000008};
-
 struct MSLAYOUT DacpModuleData
 {
+    enum TransientFlags
+    {
+        IS_EDIT_AND_CONTINUE = 0x00000208, // Flags for .NET Framework (0x00000200) and .NET Core (0x00000008)
+    };
+
     CLRDATA_ADDRESS Address = 0;
     CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS ilBase = 0;

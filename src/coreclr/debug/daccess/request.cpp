@@ -1785,7 +1785,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
-    ModuleData->dwTransientFlags = pModule->m_dwTransientFlags & IS_EDIT_AND_CONTINUE;
+    ModuleData->dwTransientFlags = (pModule->m_dwTransientFlags & DacpModuleData::IS_EDIT_AND_CONTINUE) ? DacpModuleData::IS_EDIT_AND_CONTINUE : 0;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
 
     EX_TRY
