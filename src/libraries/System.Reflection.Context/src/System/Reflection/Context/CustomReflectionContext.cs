@@ -65,6 +65,11 @@ namespace System.Reflection.Context
             _projector = new ReflectionContextProjector(this);
         }
 
+        /// <summary>
+        /// Gets the representation, in this reflection context, of an assembly that is represented by an object from another reflection context.
+        /// </summary>
+        /// <param name="assembly">The external representation of the assembly to represent in this context.</param>
+        /// <returns>The representation of the assembly in this reflection context.</returns>
         public override Assembly MapAssembly(Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -72,6 +77,11 @@ namespace System.Reflection.Context
             return _projector.ProjectAssemblyIfNeeded(assembly);
         }
 
+        /// <summary>
+        /// Gets the representation, in this reflection context, of a type represented by an object from another reflection context.
+        /// </summary>
+        /// <param name="type">The external representation of the type to represent in this context.</param>
+        /// <returns>The representation of the type in this reflection context.</returns>
         public override TypeInfo MapType(TypeInfo type)
         {
             ArgumentNullException.ThrowIfNull(type);
