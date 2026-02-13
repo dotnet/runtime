@@ -93,6 +93,9 @@ namespace System.Reflection.Context
         /// </summary>
         /// <param name="type">The type to add properties to.</param>
         /// <returns>A collection of additional properties for the specified type.</returns>
+        /// <remarks>
+        /// Override this method to specify which properties should be added to a given type. To create the properties, use the <see cref="CreateProperty(Type, string, Func{object, object?}?, Action{object, object?}?)"/> method.
+        /// </remarks>
         protected virtual IEnumerable<PropertyInfo> AddProperties(Type type)
         {
             // return an empty enumeration
@@ -107,6 +110,9 @@ namespace System.Reflection.Context
         /// <param name="getter">An object that represents the property's <see langword="get"/> accessor.</param>
         /// <param name="setter">An object that represents the property's <see langword="set"/> accessor.</param>
         /// <returns>An object that represents the property.</returns>
+        /// <remarks>
+        /// Objects that are returned by this method are not complete <see cref="PropertyInfo"/> objects, and should be used only in the context of the <see cref="AddProperties(Type)"/> method.
+        /// </remarks>
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
@@ -135,6 +141,9 @@ namespace System.Reflection.Context
         /// <param name="getterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="get"/> accessor.</param>
         /// <param name="setterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="set"/> accessor.</param>
         /// <returns>An object that represents the property.</returns>
+        /// <remarks>
+        /// Objects that are returned by this method are not complete <see cref="PropertyInfo"/> objects, and should be used only in the context of the <see cref="AddProperties(Type)"/> method.
+        /// </remarks>
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
