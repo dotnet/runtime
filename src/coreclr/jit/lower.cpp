@@ -3708,9 +3708,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         // Finally update the call target
         call->gtCallType = CT_INDIRECT;
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtCallAddr     = resolve;
-        call->gtCallCookie   = nullptr;
-        call->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie;
+        call->gtCallAddr   = resolve;
+        call->gtCallCookie = nullptr;
+        INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie);
 #ifdef FEATURE_READYTORUN
         call->gtEntryPoint.addr       = nullptr;
         call->gtEntryPoint.accessType = IAT_VALUE;
@@ -6335,7 +6335,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 // a direct call within range of hardware relative call instruction
                 // stash the address for codegen
                 call->gtDirectCallAddress = addr;
-                call->gtCallDataKind      = GenTreeCall::CallDataKind::DirectCallAddress;
+                INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::DirectCallAddress);
             }
             break;
 
@@ -7264,7 +7264,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                     // a direct call within range of hardware relative call instruction
                     // stash the address for codegen
                     call->gtDirectCallAddress = addr;
-                    call->gtCallDataKind      = GenTreeCall::CallDataKind::DirectCallAddress;
+                    INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::DirectCallAddress);
 #ifdef FEATURE_READYTORUN
                     call->gtEntryPoint.addr       = nullptr;
                     call->gtEntryPoint.accessType = IAT_VALUE;

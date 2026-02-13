@@ -2110,13 +2110,13 @@ void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInf
     {
         gtFlags |= GTF_CALL_INLINE_CANDIDATE;
         gtInlineInfoCount = 1;
-        gtCallDataKind    = CallDataKind::InlineCandidateInfo;
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
     }
     else
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        gtCallDataKind = CallDataKind::None;
+        INDEBUG(gtCallDataKind = CallDataKind::None);
     }
     gtInlineCandidateInfo = candidateInfo;
     ClearGuardedDevirtualizationCandidate();
@@ -2159,7 +2159,7 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
     {
         // Most calls are monomorphic, so we don't need to allocate a vector
         gtInlineCandidateInfo = candidateInfo;
-        gtCallDataKind        = CallDataKind::InlineCandidateInfo;
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
     }
     else if (gtInlineInfoCount == 1)
     {
@@ -2170,7 +2170,7 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
         gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
         gtInlineCandidateInfoList->push_back(firstCandidate);
         gtInlineCandidateInfoList->push_back(candidateInfo);
-        gtCallDataKind = CallDataKind::InlineCandidateInfoList;
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfoList);
     }
     else
     {
@@ -2213,7 +2213,7 @@ void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
     if (gtInlineInfoCount == 1)
     {
         gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
-        gtCallDataKind        = CallDataKind::InlineCandidateInfo;
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
     }
 }
 
@@ -8574,7 +8574,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     if (callType == CT_INDIRECT)
     {
         node->gtCallCookie = nullptr;
-        node->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie;
+        INDEBUG(node->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie);
     }
     else
     {
@@ -10195,7 +10195,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
         copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
     }
 
-    copy->gtCallDataKind             = tree->gtCallDataKind;
+    INDEBUG(copy->gtCallDataKind = tree->gtCallDataKind);
     copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 

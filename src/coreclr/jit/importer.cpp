@@ -3881,7 +3881,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     node = gtNewHelperCallNode(helper, TYP_REF, classHandle, gtNewIconNode(pCallInfo->sig.numArgs), node);
 
     node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
-    node->AsCall()->gtCallDataKind                  = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle;
+    INDEBUG(node->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
 
     // Remember that this function contains 'new' of a MD array.
     optMethodFlags |= OMF_HAS_MDNEWARRAY;
@@ -5681,7 +5681,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
                 pInfo->ilOffset                             = ilOffset;
                 pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
                 call->gtHandleHistogramProfileCandidateInfo = pInfo;
-                call->gtCallDataKind                        = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo;
+                INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
         }
@@ -9865,7 +9865,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
-                op1->AsCall()->gtCallDataKind                  = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle;
+                INDEBUG(op1->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;

@@ -5704,7 +5704,9 @@ struct GenTreeCall final : public GenTree
         if (gtInlineInfoCount == 0)
         {
             assert(!IsInlineCandidate());
+#ifdef DEBUG
             assert(gtCallDataKind == CallDataKind::None || gtCallDataKind == CallDataKind::CallCookie);
+#endif
             return nullptr;
         }
         else if (gtInlineInfoCount > 1)
@@ -5817,7 +5819,8 @@ struct GenTreeCall final : public GenTree
         IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
-    // Identifies which member of gtCallData is currently active.
+#ifdef DEBUG
+    // Identifies which member of the union below is currently active.
     enum class CallDataKind : uint8_t
     {
         None,                              // No data stored
@@ -5830,6 +5833,7 @@ struct GenTreeCall final : public GenTree
     };
 
     CallDataKind gtCallDataKind;
+#endif // DEBUG
 
     union
     {
