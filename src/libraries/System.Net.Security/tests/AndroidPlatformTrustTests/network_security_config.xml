@@ -10,4 +10,10 @@
             <certificates src="@raw/test_ca" />
         </trust-anchors>
     </domain-config>
+    <domain-config>
+        <domain includeSubdomains="true">dot.net</domain>
+        <pin-set expiration="2099-01-01">
+            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
+        </pin-set>
+    </domain-config>
 </network-security-config>

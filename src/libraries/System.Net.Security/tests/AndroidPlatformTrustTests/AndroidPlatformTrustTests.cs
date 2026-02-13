@@ -122,6 +122,39 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        public async Task NetworkSecurityConfig_CertificatePinning_BlocksConnectionWithWrongPin()
+        {
+            // The network_security_config.xml sets a bogus SHA-256 pin for "dot.net".
+            // When we connect to dot.net over TLS, the platform trust manager should
+            // reject the connection because the server's certificate chain doesn't
+            // match the configured pin — even though dot.net's certificate is signed
+            // by a trusted system CA.
+
+            SslPolicyErrors? reportedErrors = null;
+
+            using var tcp = new System.Net.Sockets.TcpClient();
+            await tcp.ConnectAsync("dot.net", 443);
+            using var sslStream = new SslStream(tcp.GetStream(), leaveInnerStreamOpen: false);
+
+            var options = new SslClientAuthenticationOptions
+            {
+                TargetHost = "dot.net",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    reportedErrors = sslPolicyErrors;
+                    return true;
+                }
+            };
+
+            await sslStream.AuthenticateAsClientAsync(options);
+
+            Assert.NotNull(reportedErrors);
+            Assert.True(
+                (reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors) != 0,
+                $"Expected RemoteCertificateChainErrors due to pin mismatch but got: {reportedErrors.Value}");
+        }
+
+        [Fact]
         public async Task SslStream_CertificateNotSignedByTrustedCA_ReportsChainErrors()
         {
             // The server uses a self-signed certificate that is NOT signed by the NDX Test Root CA.
