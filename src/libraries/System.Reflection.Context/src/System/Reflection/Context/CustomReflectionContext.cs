@@ -18,31 +18,7 @@ namespace System.Reflection.Context
     /// Represents a customizable reflection context.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// <see cref="CustomReflectionContext"/> provides a way for you to add or remove custom attributes from reflection objects, or add dummy properties to those objects, without re-implementing the complete reflection model. The default <see cref="CustomReflectionContext"/> simply wraps reflection objects without making any changes, but by subclassing and overriding the relevant methods, you can add, remove, or change the attributes that apply to any reflected parameter or member, or add new properties to a reflected type.
-    /// </para>
-    /// <para>
-    /// For example, suppose that your code follows the convention of applying a particular attribute to factory methods, but you are now required to work with third-party code that lacks attributes. You can use <see cref="CustomReflectionContext"/> to specify a rule for identifying the objects that should have attributes and to supply the objects with those attributes when they are viewed from your code.
-    /// </para>
-    /// <para>
-    /// To use <see cref="CustomReflectionContext"/> effectively, the code that uses the reflected objects must support the notion of specifying a reflection context, instead of assuming that all reflected objects are associated with the runtime reflection context. Many reflection methods in .NET provide a <see cref="ReflectionContext"/> parameter for this purpose.
-    /// </para>
-    /// <para>
-    /// To modify the attributes that are applied to a reflected parameter or member, override the <see cref="GetCustomAttributes(ParameterInfo, IEnumerable{object})"/> or <see cref="GetCustomAttributes(MemberInfo, IEnumerable{object})"/> method. These methods take the reflected object and the list of attributes under its current reflection context, and return the list of attributes it should have under the custom reflection context.
-    /// </para>
-    /// <note type="warning">
-    /// <see cref="CustomReflectionContext"/> methods should not access the list of attributes of a reflected object or method directly by calling the <see cref="MemberInfo.GetCustomAttributes(bool)"/> method on the provided <see cref="MemberInfo"/> or <see cref="ParameterInfo"/> instance, but should instead use the <c>declaredAttributes</c> list, which is passed as a parameter to the <see cref="GetCustomAttributes(MemberInfo, IEnumerable{object})"/> method overloads.
-    /// </note>
-    /// <para>
-    /// To add properties to a reflected type, override the <see cref="AddProperties(Type)"/> method. The method accepts a parameter that specifies the reflected type, and returns a list of additional properties. You should use the <see cref="CreateProperty(Type, string, Func{object, object?}?, Action{object, object?}?)"/> method to create property objects to return. You can specify delegates when creating the property that will serve as the property accessor, and you can omit one of the accessors to create a read-only or write-only property. Note that such dummy properties have no metadata or Common Intermediate Language (CIL) backing.
-    /// </para>
-    /// <note type="warning">
-    /// Be cautious about equality among reflected objects when you work with reflection contexts, because objects may represent the same reflected object in multiple contexts. You can use the <see cref="MapType(TypeInfo)"/> method to obtain a particular reflection context's version of a reflected object.
-    /// </note>
-    /// <note type="warning">
-    /// A <see cref="CustomReflectionContext"/> object alters the attributes returned by a particular reflection object, such as those obtained by the <see cref="MemberInfo.GetCustomAttributes(bool)"/> method. It does not alter the custom attribute data returned by the <see cref="MemberInfo.GetCustomAttributesData()"/> method, and these two lists will not match when you use a custom reflection context.
-    /// </note>
-    /// For more information, see https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-context-customreflectioncontext.md.
+    /// For more information about this API, see <see href="https://github.com/dotnet/docs/raw/main/docs/fundamentals/runtime-libraries/system-reflection-context-customreflectioncontext.md">CustomReflectionContext</see>.
     /// </remarks>
     public abstract partial class CustomReflectionContext : ReflectionContext
     {
@@ -117,9 +93,6 @@ namespace System.Reflection.Context
         /// </summary>
         /// <param name="type">The type to add properties to.</param>
         /// <returns>A collection of additional properties for the specified type.</returns>
-        /// <remarks>
-        /// Override this method to specify which properties should be added to a given type. To create the properties, use the <see cref="CreateProperty(Type, string, Func{object, object?}?, Action{object, object?}?)"/> method.
-        /// </remarks>
         protected virtual IEnumerable<PropertyInfo> AddProperties(Type type)
         {
             // return an empty enumeration
@@ -134,9 +107,6 @@ namespace System.Reflection.Context
         /// <param name="getter">An object that represents the property's <see langword="get"/> accessor.</param>
         /// <param name="setter">An object that represents the property's <see langword="set"/> accessor.</param>
         /// <returns>An object that represents the property.</returns>
-        /// <remarks>
-        /// Objects that are returned by this method are not complete <see cref="PropertyInfo"/> objects, and should be used only in the context of the <see cref="AddProperties(Type)"/> method.
-        /// </remarks>
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
@@ -165,9 +135,6 @@ namespace System.Reflection.Context
         /// <param name="getterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="get"/> accessor.</param>
         /// <param name="setterCustomAttributes">A collection of custom attributes to apply to the property's <see langword="set"/> accessor.</param>
         /// <returns>An object that represents the property.</returns>
-        /// <remarks>
-        /// Objects that are returned by this method are not complete <see cref="PropertyInfo"/> objects, and should be used only in the context of the <see cref="AddProperties(Type)"/> method.
-        /// </remarks>
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
