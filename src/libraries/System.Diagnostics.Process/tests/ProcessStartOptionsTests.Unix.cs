@@ -52,8 +52,9 @@ namespace System.Diagnostics.Tests
                 
                 Directory.SetCurrentDirectory(tempDir);
                 ProcessStartOptions options = new(fileName);
-                // Use Path.GetFullPath on both sides to handle symlinks (e.g., /tmp -> /private/tmp on macOS)
-                Assert.Equal(Path.GetFullPath(fullPath), Path.GetFullPath(options.FileName));
+                // options.FileName is already the resolved full path
+                // Use Path.GetFullPath to canonicalize fullPath (handles /tmp -> /private/tmp on macOS)
+                Assert.Equal(Path.GetFullPath(fullPath), options.FileName);
             }
             finally
             {

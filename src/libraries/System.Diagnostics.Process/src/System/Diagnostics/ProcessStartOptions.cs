@@ -256,16 +256,7 @@ namespace System.Diagnostics
 
         private static string? GetSystemDirectory()
         {
-            if (s_cachedSystemDirectory == null)
-            {
-                Span<char> buffer = stackalloc char[260]; // MAX_PATH
-                uint length = Interop.Kernel32.GetSystemDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
-                if (length > 0 && length < buffer.Length)
-                {
-                    s_cachedSystemDirectory = new string(buffer.Slice(0, (int)length));
-                }
-            }
-            return s_cachedSystemDirectory;
+            return s_cachedSystemDirectory ??= System.Environment.SystemDirectory;
         }
 
         private static string? GetWindowsDirectory()
