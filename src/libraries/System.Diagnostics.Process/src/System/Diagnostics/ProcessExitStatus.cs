@@ -15,7 +15,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="exitCode">The exit code of the process.</param>
         /// <param name="canceled">A value indicating whether the process has been terminated due to timeout or cancellation.</param>
-        /// <param name="signal">The POSIX signal that terminated the process, or null if the process exited normally.</param>
+        /// <param name="signal">On Unix, the POSIX signal that terminated the process, or null if the process exited normally.</param>
         public ProcessExitStatus(int exitCode, bool canceled, PosixSignal? signal = null)
         {
             ExitCode = exitCode;
