@@ -283,8 +283,6 @@ advapi32!TraceMessage
 advapi32!TraceMessageVa
 advapi32!TraceSetInformation
 advapi32!UnregisterTraceGuids
-api-ms-win-core-synch-l1-2-0!WaitOnAddress
-api-ms-win-core-synch-l1-2-0!WakeByAddressSingle
 bcrypt!BCryptAddContextFunction
 bcrypt!BCryptCloseAlgorithmProvider
 bcrypt!BCryptConfigureContext
@@ -2341,6 +2339,12 @@ ws2_32!WSCUnInstallNameSpace
 ws2_32!WSCUpdateProvider
 ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
+
+#
+# Synchronization.lib
+#
+api-ms-win-core-synch-l1-2-0!WaitOnAddress
+api-ms-win-core-synch-l1-2-0!WakeByAddressSingle
 
 #
 # Include all memory allocation APIs from ucrt to ensure that all of them use allocator
