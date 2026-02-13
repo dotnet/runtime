@@ -33,12 +33,8 @@ namespace System.Net
         /// </returns>
         /// <remarks>
         /// <para>
-        /// When the <c>HttpWebRequest</c> object is run, it may need to run the WPAD (Web Proxy Automatic Detection) protocol to detect whether a proxy is required for reaching the destination URL.
+        /// When the object is run, it might need to run the WPAD (Web Proxy Automatic Detection) protocol to detect whether a proxy is required for reaching the destination URL.
         /// During this process, the system downloads and compiles the PAC (Proxy Auto-Configuration) script in memory and tries to execute the FindProxyForURL function as per the PAC specification.
-        /// </para>
-        /// <para>
-        /// When doing so, the system creates an internal application domain inside the application which runs with minimal permissions, and, most importantly, it does not grant the UI permission to this new application domain.
-        /// The evaluation of a proxy and running the FindProxyForURL javascript function happens in the context of this new application domain and during this process the system may need to run several helper functions as per the PAC specification.
         /// </para>
         /// </remarks>
         string Run(string url, string host);

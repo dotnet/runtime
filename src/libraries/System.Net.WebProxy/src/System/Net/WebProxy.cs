@@ -18,7 +18,7 @@ namespace System.Net
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The <see cref="WebProxy"/> class contains the proxy settings that <c>HttpClient</c> instances use to determine whether a Web proxy is used to send requests.
+    /// The <see cref="WebProxy"/> class contains the proxy settings that <see cref="T:System.Net.Http.HttpClient"/> instances use to determine whether a Web proxy is used to send requests.
     /// Global Web proxy settings can be specified in machine and application configuration files, and applications can use instances of the <see cref="WebProxy"/> class to customize Web proxy use.
     /// The <see cref="WebProxy"/> class is the base implementation of the <see cref="IWebProxy"/> interface.
     /// </para>
@@ -28,7 +28,7 @@ namespace System.Net
     /// <list type="bullet">
     /// <item>The <see cref="WebProxy()"/> constructor.</item>
     /// <item>The <see cref="GetDefaultProxy"/> method.</item>
-    /// <item>The <c>GlobalProxySelection.Select</c> method.</item>
+    /// <item>The <see cref="T:System.Net.GlobalProxySelection.Select"/> method.</item>
     /// </list>
     /// <para>
     /// These methods each supply a <see cref="WebProxy"/> instance that you can further customize; the difference between them is how the instance is initialized before it is returned to your application.
@@ -39,7 +39,7 @@ namespace System.Net
     /// The <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
     /// </para>
     /// <para>
-    /// The <c>GlobalProxySelection.Select</c> method returns an instance of the <see cref="WebProxy"/> class with its properties set according to a combination of Internet and configuration file settings.
+    /// The <see cref="T:System.Net.GlobalProxySelection.Select"/> method returns an instance of the <see cref="WebProxy"/> class with its properties set according to a combination of Internet and configuration file settings.
     /// </para>
     /// <para>
     /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
@@ -68,7 +68,7 @@ namespace System.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="WebProxy" /> class from the specified <see cref="Uri" /> instance.
         /// </summary>
-        /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
+        /// <param name="Address">The address of the proxy server.</param>
         /// <remarks>
         /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to the <paramref name="Address"/> parameter.
         /// </remarks>
@@ -382,6 +382,14 @@ namespace System.Net
                 IsMatchInBypassList(host);
         }
 
+        /// <summary>
+        /// Initializes an instance of the <see cref="WebProxy" /> class using previously serialized content.
+        /// </summary>
+        /// <param name="serializationInfo">The serialization data.</param>
+        /// <param name="streamingContext">The context for the serialized data.</param>
+        /// <remarks>
+        /// This method is called by the system to deserialize a <see cref="WebProxy"/> instance; applications do not call it.
+        /// </remarks>
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
@@ -390,6 +398,11 @@ namespace System.Net
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
+        /// <summary>
+        /// Populates a <see cref="SerializationInfo"/> with the data that is needed to serialize the target object.
+        /// </summary>
+        /// <param name="serializationInfo">The <see cref="SerializationInfo"/> to populate with data.</param>
+        /// <param name="streamingContext">A <see cref="StreamingContext"/> that specifies the destination for this serialization.</param>
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
