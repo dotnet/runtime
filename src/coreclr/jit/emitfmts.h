@@ -12,6 +12,8 @@
 #include "emitfmtsloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "emitfmtsriscv64.h"
+#elif defined(TARGET_POWERPC64)
+#include "emitfmtsppc64le.h"
 #else
 #error Unsupported or unset target architecture
 #endif // target type

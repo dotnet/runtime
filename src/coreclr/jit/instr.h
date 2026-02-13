@@ -76,6 +76,11 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_POWERPC64) //TODO POWERPC64 -> Vikas 
+
+    #include "instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -258,7 +263,7 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_POWERPC64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -287,7 +292,7 @@ enum insBarrier : unsigned
 {
     INS_BARRIER_SY = 15
 };
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined (TARGET_POWERPC64)
 enum insOpts : unsigned
 {
     INS_OPTS_NONE,
@@ -551,6 +556,10 @@ enum emitAttr : unsigned
 #if defined(TARGET_ARM64)
                 EA_SCALABLE      = 0x020,
                 EA_SIZE_MASK     = 0x03F,
+#elif defined(TARGET_POWERPC64)
+		// TODO POWERPC64 VIKAS
+		EA_SCALABLE      = 0x020,
+		EA_SIZE_MASK     = 0x03F,
 #elif defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,
                 EA_64BYTE        = 0x040,

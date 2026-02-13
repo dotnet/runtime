@@ -145,6 +145,9 @@ REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 #elif defined(TARGET_RISCV64)
  #include "registerriscv64.h"
 
+#elif defined(TARGET_POWERPC64)
+ #include "registerppc64le.h"
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type

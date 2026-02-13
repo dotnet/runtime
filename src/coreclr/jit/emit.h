@@ -632,6 +632,9 @@ protected:
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
+#elif defined (TARGET_POWERPC64)
+	static_assert_no_msg(INS_count <= 2048); //TODO POWERPC64: Vikas : What should be the value of INS_count for ppc64le
+        instruction _idIns : 11; // TODO POWERPC64: Vikas: What is this ?
 #else
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
@@ -648,6 +651,9 @@ protected:
 #elif defined(TARGET_ARM64)
         static_assert_no_msg(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
+#elif defined(TARGET_POWERPC64)
+	static_assert_no_msg(IF_COUNT <= 1024); //TODO POWERPC64 : Vikas : What should be the value of INS_count for ppc64le
+        insFormat _idInsFmt : 10; //TODO POWERPC64: Vikas: What is this ?
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -716,7 +722,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
-
+	// ppc64le : 	21 bits //TODO POWERPC64 : Vikas
     private:
 #if defined(TARGET_XARCH)
         unsigned _idCodeSize : 4; // size of instruction in bytes. Max size of an Intel instruction is 15 bytes.
@@ -726,6 +732,9 @@ protected:
 #elif defined(TARGET_ARM64)
         opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
         insOpts _idInsOpt : 6; // options for instructions
+#elif defined (TARGET_POWERPC64)
+	opSize  _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16 // TODO POWERPC64 -> Vikas
+        insOpts _idInsOpt : 6; // options for instructions`		    // TODO POWERPC64 -> VIKAS
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
@@ -761,6 +770,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
+	// ppc64le:	46 bits //TODO POWERPC64 Vikas
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -808,6 +818,11 @@ protected:
         unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
+#ifdef TARGET_POWERPC64
+	unsigned _idLclVar     : 1; // access a local on stack // TODO POWERPC64 Vikas
+        unsigned _idLclVarPair : 1; // carries information for 2 GC lcl vars.  // TODO POWERPC64 Vikas
+#endif
+
 #ifdef TARGET_RISCV64
         // TODO-RISCV64: maybe delete on future
         opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
@@ -844,6 +859,8 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
+#define ID_EXTRA_BITFIELD_BITS (16)
+#elif defined(TARGET_POWERPC64)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
@@ -884,6 +901,7 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
+	// ppc64le: 	62/57 bits	//TODO POWERPC64 Vikas
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
@@ -900,6 +918,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
+	// ppc64le: 	2/7 bits	//TODO POWERPC64 Vikas
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -989,6 +1008,15 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
+#elif defined(TARGET_POWERPC64)
+	    struct
+	    {
+		// TODO POWERPC64 Vikas
+		unsigned       _idRegBit : 1; // Reg3 is scaled by idOpSize bits
+                GCtype         _idGCref2 : 2;
+                regNumber _idReg3 : REGNUM_BITS;
+		regNumber _idReg4 : REGNUM_BITS;
+	    };
 #elif defined(TARGET_ARM64)
             struct
             {
@@ -1129,7 +1157,17 @@ protected:
 
             return size;
         }
+#elif defined(TARGET_POWERPC64)
 
+	inline bool idIsEmptyAlign() const
+	{
+		_ASSERTE("NYI POWERPC64");
+	}
+
+	unsigned idCodeSize() const
+	{
+		_ASSERTE("NYI POWERPC64");
+	}
 #elif defined(TARGET_ARM)
 
         bool idInstrIsT1() const
@@ -1214,7 +1252,21 @@ protected:
             assert(reg == _idReg1);
         }
 
-#ifdef TARGET_ARM64
+#if defined (TARGET_POWERPC64)
+	GCtype idGCrefReg2() const
+	{
+            assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI POWERPC64");
+	    //return (GCtype)idAddr()->_idGCref2;
+        }
+        void idGCrefReg2(GCtype gctype)
+        {
+	    assert(!idIsSmallDsc());
+            _ASSERTE(!"NYI POWERPC64");
+            //idAddr()->_idGCref2 = gctype;
+	}
+#endif // TARGET_POWERPC64
+#if defined (TARGET_ARM64)
         GCtype idGCrefReg2() const
         {
             assert(!idIsSmallDsc());
@@ -1557,7 +1609,50 @@ protected:
         }
 
 #endif // TARGET_RISCV64
+#ifdef TARGET_POWERPC64
+	bool idReg3Scaled() const
+	{
+	    assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI POWERPC64");
+	    //return (idAddr()->_idRegBit == 1);
+	}
+	void idReg3Scaled(bool val)
+	{
+            assert(!idIsSmallDsc());
+	     _ASSERTE(!"NYI POWERPC64");
+            //idAddr()->_idRegBit = val ? 1 : 0;
+        }
+	insOpts idInsOpt() const
+	{
+	    _ASSERTE(!"NYI POWERPC64");
+	    //return (insOpts)_idInsOpt;
+        }
+	void idInsOpt(insOpts opt)
+	{
+            _idInsOpt = opt;
+	    assert(opt == _idInsOpt);
+	    _ASSERTE(!"NYI POWERPC64");
+        }
 
+        regNumber idReg3() const        {
+            assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI POWERPC64");
+            //return idAddr()->_idReg3;
+        }
+	regNumber idReg4() const
+        {
+            assert(!idIsSmallDsc());
+	    _ASSERTE(!"NYI POWERPC64");
+            //return idAddr()->_idReg4;
+        }
+	void idReg4(regNumber reg)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idReg4 = reg;
+            assert(reg == idAddr()->_idReg4);
+	    _ASSERTE(!"NYI POWERPC64");
+        }
+#endif //TARGET_POWERPC64
         inline static bool fitsInSmallCns(cnsval_ssize_t val)
         {
             return ((val >= ID_MIN_SMALL_CNS) && (val <= ID_MAX_SMALL_CNS));
@@ -1749,6 +1844,29 @@ protected:
         }
 #endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
+
+#if defined(TARGET_POWERPC64)
+	bool idIsLclVar() const
+	{
+	    _ASSERTE(!"NYI POWERPC64");
+            //return _idLclVar != 0;
+        }
+        bool idIsLclVarPair() const
+        {
+	    _ASSERTE(!"NYI POWERPC64");
+	    //return _idLclVarPair != 0;
+	}
+	void idSetIsLclVarPair()
+	{
+	    //_idLclVarPair = 1;
+	    _ASSERTE(!"NYI POWERPC64");
+	}
+	void idSetIsLclVar()
+	{
+	    //_idLclVar = 1;
+	    _ASSERTE(!"NYI POWERPC64");
+	}
+#endif //TARGET_POWERPC64
 
 #if defined(TARGET_ARM)
         bool idIsLclFPBase() const
@@ -1965,6 +2083,24 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
+#elif defined(TARGET_POWERPC64)
+
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
+
 #elif defined(TARGET_LOONGARCH64)
 // a read,write or modify from stack location, possible def to use latency from L0 cache
 #define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
@@ -2160,7 +2296,20 @@ protected:
         emitLclVarAddr iiaLclVar2;
     };
 #endif
+#ifdef TARGET_POWERPC64
+    struct instrDescLclVarPair : instrDesc // contains 2 gc vars to be tracked
+    {
+	instrDescLclVarPair() = delete;
 
+        emitLclVarAddr iiaLclVar2;
+    };
+    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
+    {
+        instrDescLclVarPairCns() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+#endif
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -2989,7 +3138,16 @@ private:
         return result;
     }
 #endif // TARGET_ARM64
-
+#if defined(TARGET_POWERPC64)
+    instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
+    {
+	_ASSERTE(!"NYI POWERPC64");
+    }
+    instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+	_ASSERTE(!"NYI POWERPC64");
+    }
+#endif //TARGET_POWERPC64
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
 #if EMITTER_STATS
@@ -3072,7 +3230,7 @@ private:
 #endif // TARGET_ARM
     instrDescJmp* emitNewInstrJmp();
 
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_POWERPC64)
     instrDescLbl* emitNewInstrLbl();
 #else
     instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
@@ -3725,7 +3883,7 @@ inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 }
 #endif
 
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined (TARGET_POWERPC64)
 inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();

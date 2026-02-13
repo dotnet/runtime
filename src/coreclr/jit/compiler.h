@@ -1849,7 +1849,7 @@ struct FuncInfoDsc
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
 
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
 
     UnwindInfo  uwi;     // Unwind information for this function/funclet's hot  section
     UnwindInfo* uwiCold; // Unwind information for this function/funclet's cold section
@@ -8403,6 +8403,15 @@ public:
 #elif defined(TARGET_RISCV64)
             reg     = REG_T5;
             regMask = RBM_T5;
+#elif defined(TARGET_POWERPC64)
+	    if (isNativeAOT)
+	    {
+		_ASSERTE(!"NYI POWERPC64");
+	    }
+	    else
+	    {
+		_ASSERTE(!"NYI POWERPC64");
+	    }
 #else
 #error Unsupported or unset target architecture
 #endif

@@ -262,6 +262,8 @@ set( JIT_S390X_SOURCES
 )
 
 set( JIT_POWERPC64_SOURCES
+  #emitppc64le.cpp
+  #targetppc64le.cpp
   # Not supported as JIT target
 )
 
@@ -438,6 +440,9 @@ set ( JIT_S390X_HEADERS
 )
 
 set ( JIT_POWERPC64_HEADERS
+
+  emitppc64le.h
+  instrsppc64le.h
   # Not supported as JIT target
 )
 
