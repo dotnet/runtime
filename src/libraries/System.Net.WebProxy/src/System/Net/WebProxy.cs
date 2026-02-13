@@ -13,19 +13,98 @@ using System.Threading;
 
 namespace System.Net
 {
+    /// <summary>
+    /// Contains HTTP proxy settings for the <see cref="System.Net.Http.HttpClient" /> class.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="WebProxy"/> class contains the proxy settings that <see cref="System.Net.Http.HttpClient"/> instances use to determine whether a Web proxy is used to send requests.
+    /// Global Web proxy settings can be specified in machine and application configuration files, and applications can use instances of the <see cref="WebProxy"/> class to customize Web proxy use.
+    /// The <see cref="WebProxy"/> class is the base implementation of the <see cref="IWebProxy"/> interface.
+    /// </para>
+    /// <para>
+    /// To obtain instances of the Web proxy class, you can use any of the following methods:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>The <see cref="WebProxy()"/> constructor.</item>
+    /// <item>The <see cref="GetDefaultProxy"/> method.</item>
+    /// <item>The <see cref="GlobalProxySelection.Select"/> method.</item>
+    /// </list>
+    /// <para>
+    /// These methods each supply a <see cref="WebProxy"/> instance that you can further customize; the difference between them is how the instance is initialized before it is returned to your application.
+    /// The <see cref="WebProxy()"/> constructor returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/> property set to <see langword="null"/>.
+    /// When a request uses a <see cref="WebProxy"/> instance in this state, no proxy is used to send the request.
+    /// </para>
+    /// <para>
+    /// The <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
+    /// </para>
+    /// <para>
+    /// The <see cref="GlobalProxySelection.Select"/> method returns an instance of the <see cref="WebProxy"/> class with it properties set according to a combination of Internet and configuration file settings.
+    /// </para>
+    /// <para>
+    /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
+    /// When using automatic proxy configuration, a configuration script, typically named Wpad.dat, must be located, downloaded, compiled, and run.
+    /// If these operations are successful, the script returns the proxies that can be used for a request.
+    /// </para>
+    /// </remarks>
     public partial class WebProxy : IWebProxy, ISerializable
     {
         private ChangeTrackingArrayList? _bypassList;
         private Regex[]? _regexBypassList;
 
+        /// <summary>
+        /// Initializes an empty instance of the <see cref="WebProxy" /> class.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The parameterless constructor initializes an empty instance of the <see cref="WebProxy"/> class with the <see cref="Address"/> property set to <see langword="null"/>.
+        /// </para>
+        /// <para>
+        /// When the <see cref="Address"/> property is <see langword="null"/>, the <see cref="IsBypassed"/> method returns <see langword="true"/> and the <see cref="GetProxy"/> method returns the destination address.
+        /// </para>
+        /// </remarks>
         public WebProxy() : this((Uri?)null, false, null, null) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class from the specified <see cref="Uri" /> instance.
+        /// </summary>
+        /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to the <paramref name="Address"/> parameter.
+        /// </remarks>
         public WebProxy(Uri? Address) : this(Address, false, null, null) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the <see cref="Uri" /> instance and bypass setting.
+        /// </summary>
+        /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/> and with the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified <see cref="Uri" /> instance, bypass setting, and list of URIs to bypass.
+        /// </summary>
+        /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, and the <see cref="BypassList"/> property set to <paramref name="BypassList"/>.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified <see cref="Uri" /> instance, bypass setting, list of URIs to bypass, and credentials.
+        /// </summary>
+        /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
+        /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, the <see cref="BypassList"/> property set to <paramref name="BypassList"/>, and the <see cref="Credentials"/> property set to <paramref name="Credentials"/>.
+        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
@@ -38,35 +117,100 @@ namespace System.Net
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified host and port number.
+        /// </summary>
+        /// <param name="Host">The name of the proxy host.</param>
+        /// <param name="Port">The port number on <paramref name="Host" /> to use.</param>
+        /// <exception cref="UriFormatException">The URI formed by combining <paramref name="Host" /> and <paramref name="Port" /> is not a valid URI.</exception>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance of the form <c>http://</c><paramref name="Host"/><c>:</c><paramref name="Port"/>.
+        /// </remarks>
         public WebProxy(string Host, int Port)
             : this(CreateProxyUri(Host, Port), false, null, null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified URI.
+        /// </summary>
+        /// <param name="Address">The URI of the proxy server.</param>
+        /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance containing <paramref name="Address"/>.
+        /// </remarks>
         public WebProxy(string? Address)
             : this(CreateProxyUri(Address), false, null, null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified URI and bypass setting.
+        /// </summary>
+        /// <param name="Address">The URI of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/> and the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal)
             : this(CreateProxyUri(Address), BypassOnLocal, null, null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified URI, bypass setting, and list of URIs to bypass.
+        /// </summary>
+        /// <param name="Address">The URI of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <param name="BypassList">An array of regular expression strings that contain the URIs of the servers to bypass.</param>
+        /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, and the <see cref="BypassList"/> property set to <paramref name="BypassList"/>.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebProxy" /> class with the specified URI, bypass setting, list of URIs to bypass, and credentials.
+        /// </summary>
+        /// <param name="Address">The URI of the proxy server.</param>
+        /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
+        /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
+        /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
+        /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
+        /// <remarks>
+        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, the <see cref="BypassList"/> property set to <paramref name="BypassList"/>, and the <see cref="Credentials"/> property set to <paramref name="Credentials"/>.
+        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
         }
 
+        /// <summary>
+        /// Gets or sets the address of the proxy server.
+        /// </summary>
+        /// <value>
+        /// A <see cref="Uri"/> instance that contains the address of the proxy server.
+        /// </value>
         public Uri? Address { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value that indicates whether to bypass the proxy server for local addresses.
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> to bypass the proxy server for local addresses; otherwise, <see langword="false"/>. The default value is <see langword="false"/>.
+        /// </value>
         public bool BypassProxyOnLocal { get; set; }
 
+        /// <summary>
+        /// Gets or sets an array of addresses that do not use the proxy server.
+        /// </summary>
+        /// <value>
+        /// An array of regular expression strings that contains the URIs of servers that should not use the proxy server when accessed.
+        /// </value>
         [AllowNull]
         public string[] BypassList
         {
@@ -88,16 +232,44 @@ namespace System.Net
             }
         }
 
+        /// <summary>
+        /// Gets or sets an <see cref="ArrayList"/> of addresses that do not use the proxy server.
+        /// </summary>
+        /// <value>
+        /// An <see cref="ArrayList"/> that contains a list of regular expressions that represents URIs that do not use the proxy server when accessed.
+        /// </value>
         public ArrayList BypassArrayList => _bypassList ??= new ChangeTrackingArrayList();
 
+        /// <summary>
+        /// Gets or sets the credentials to submit to the proxy server for authentication.
+        /// </summary>
+        /// <value>
+        /// An <see cref="ICredentials"/> instance that contains the credentials to submit to the proxy server for authentication.
+        /// </value>
+        /// <exception cref="InvalidOperationException">You attempted to set this property when the <see cref="UseDefaultCredentials"/> property was set to <see langword="true"/>.</exception>
         public ICredentials? Credentials { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value that controls whether the <see cref="CredentialCache.DefaultCredentials"/> are sent with requests.
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> if the default credentials are used; otherwise, <see langword="false"/>. The default value is <see langword="false"/>.
+        /// </value>
+        /// <exception cref="InvalidOperationException">You attempted to set this property when the <see cref="Credentials"/> property contains credentials other than the default credentials.</exception>
         public bool UseDefaultCredentials
         {
             get => Credentials == CredentialCache.DefaultCredentials;
             set => Credentials = value ? CredentialCache.DefaultCredentials : null;
         }
 
+        /// <summary>
+        /// Returns the URI of a proxy.
+        /// </summary>
+        /// <param name="destination">The <see cref="Uri"/> instance of the requested Internet resource.</param>
+        /// <returns>
+        /// The <see cref="Uri"/> instance of the Internet resource, if the resource is on the bypass list; otherwise, the <see cref="Uri"/> instance of the proxy.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">The <paramref name="destination"/> parameter is <see langword="null"/>.</exception>
         public Uri? GetProxy(Uri destination)
         {
             ArgumentNullException.ThrowIfNull(destination);
@@ -192,6 +364,14 @@ namespace System.Net
             return false;
         }
 
+        /// <summary>
+        /// Indicates whether to use the proxy server for the specified host.
+        /// </summary>
+        /// <param name="host">The <see cref="Uri"/> instance of the host to check for proxy use.</param>
+        /// <returns>
+        /// <see langword="true"/> if the proxy server should not be used for <paramref name="host"/>; otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">The <paramref name="host"/> parameter is <see langword="null"/>.</exception>
         public bool IsBypassed(Uri host)
         {
             ArgumentNullException.ThrowIfNull(host);
@@ -213,6 +393,13 @@ namespace System.Net
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
+        /// <summary>
+        /// Returns the proxy information configured by the system.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="WebProxy"/> instance that contains the nondynamic proxy settings from Internet options.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">On .NET Core.</exception>
         [Obsolete("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
         public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
