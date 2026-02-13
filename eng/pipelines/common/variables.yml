@@ -45,6 +45,12 @@ variables:
 - name: isNotSpecificPlatformOnlyBuild
   value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 
+# Set this variable when queuing a pipeline run to only execute specific jobs.
+# Use a comma-separated list of nameSuffix values (e.g., "CoreCLR_Libraries,Installer_Build_And_Test").
+# Leave empty to run all jobs (default behavior).
+- name: runOnlyJobs
+  value: ''
+
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
