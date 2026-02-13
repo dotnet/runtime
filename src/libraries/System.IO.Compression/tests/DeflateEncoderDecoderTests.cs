@@ -112,7 +112,12 @@ namespace System.IO.Compression
         public void DeflateEncoder_CompressionStrategies(ZLibCompressionStrategy strategy)
         {
             byte[] input = CreateTestData();
-            using var encoder = new DeflateEncoder(CompressionLevel.Optimal, strategy);
+            var options = new ZLibCompressionOptions
+            {
+                CompressionLevel = 6,
+                CompressionStrategy = strategy
+            };
+            using var encoder = new DeflateEncoder(options);
             byte[] destination = new byte[GetMaxCompressedLength(input.Length)];
 
             OperationStatus status = encoder.Compress(input, destination, out int consumed, out int written, isFinalBlock: true);
@@ -160,10 +165,10 @@ namespace System.IO.Compression
         {
             byte[] input = CreateTestData();
 
-            foreach (CompressionLevel level in Enum.GetValues<CompressionLevel>())
+            for (int quality = 0; quality <= 9; quality++)
             {
                 byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
-                using var encoder = new DeflateEncoder(level);
+                using var encoder = new DeflateEncoder(quality);
                 encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
 
                 byte[] decompressed = new byte[input.Length];
