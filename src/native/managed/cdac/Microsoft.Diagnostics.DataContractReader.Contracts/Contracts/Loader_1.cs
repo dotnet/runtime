@@ -12,7 +12,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
-    private const uint ASSEMBLY_LEVEL_LOADED = 4; // Assembly Level required to be considered Loaded
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
 
     private enum ModuleFlags_1 : uint
@@ -104,7 +103,7 @@ internal readonly struct Loader_1 : ILoader
                 // IncludeAvailableToProfilers contains some loaded AND loading
                 // assemblies.
             }
-            else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */)
+            else if (assembly.IsLoaded)
             {
                 if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
                     continue; // skip loaded assemblies
@@ -496,7 +495,7 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
-        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+        return assembly.IsLoaded;
     }
 
     TargetPointer ILoader.GetGlobalLoaderAllocator()

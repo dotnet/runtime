@@ -916,6 +916,17 @@ enum class CorInfoReloc
     RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
     RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
     RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
+
+    // Wasm relocs
+    WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
+    WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
+                                           //  i32.const instruction, e.g. taking the address of a function.
+    WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
+                                           //  e.g. directly loading from or storing to a C++ global.
+    WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
+                                           //  e.g. taking the address of a C++ global.
+    WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
+    WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 };
 
 enum CorInfoGCType
@@ -1476,6 +1487,7 @@ enum CorInfoTokenKind
 
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
+    CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
