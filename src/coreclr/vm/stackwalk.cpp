@@ -2159,9 +2159,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
         {
             PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
-            _ASSERTE(pInterpreterFrame == m_crawl.pFrame);
             pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
-            m_crawl.GotoNextFrame();
         }
 #endif // FEATURE_INTERPRETER
 
@@ -2218,6 +2216,14 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame))
         {
             pInlinedFrame = m_crawl.pFrame;
+#ifdef FEATURE_INTERPRETER
+            PTR_Frame pNextFrame = pInlinedFrame->PtrNextFrame();
+            if ((pNextFrame != FRAME_TOP) && (pNextFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                m_crawl.GotoNextFrame();
+                goto Cleanup;
+            }
+#endif // FEATURE_INTERPRETER
         }
 
         unsigned uFrameAttribs = m_crawl.pFrame->GetFrameAttribs();
@@ -2235,40 +2241,59 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             m_crawl.isIPadjusted = false;
         }
 
-        PCODE adr = m_crawl.pFrame->GetReturnAddress();
-        _ASSERTE(adr != (PCODE)POISONC);
-
-        _ASSERTE(!pInlinedFrame || adr);
-
-        if (adr)
+#ifdef FEATURE_INTERPRETER
+        if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
         {
-            ProcessIp(adr);
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n", m_crawl.pFrame));
+            ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(m_crawl.GetRegisterSet()->pCurrentContext);
+            SyncRegDisplayToCurrentContext(m_crawl.GetRegisterSet());
+            ProcessIp(GetControlPC(m_crawl.pRD));
 
-            _ASSERTE(m_crawl.GetCodeInfo()->IsValid() || !pInlinedFrame);
-
-            if (m_crawl.isFrameless)
+            _ASSERTE(m_crawl.GetCodeInfo()->IsValid());
+            if (m_crawl.GetRegisterSet()->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
             {
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+                m_crawl.isInterrupted = true;
+                m_crawl.hasFaulted = true;
+            }
+        }
+        else
+#endif // FEATURE_INTERPRETER
+        {
+            PCODE adr = m_crawl.pFrame->GetReturnAddress();
+            _ASSERTE(adr != (PCODE)POISONC);
 
-                CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
+            _ASSERTE(!pInlinedFrame || adr);
 
-                if (m_crawl.isFirst)
+            if (adr)
+            {
+                ProcessIp(adr);
+
+                _ASSERTE(m_crawl.GetCodeInfo()->IsValid() || !pInlinedFrame);
+
+                if (m_crawl.isFrameless)
                 {
-                    if (m_flags & THREAD_IS_SUSPENDED)
+                    m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+
+                    CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
+
+                    if (m_crawl.isFirst)
                     {
-                        _ASSERTE(m_crawl.isProfilerDoStackSnapshot);
+                        if (m_flags & THREAD_IS_SUSPENDED)
+                        {
+                            _ASSERTE(m_crawl.isProfilerDoStackSnapshot);
 
-                        // abort the stackwalk, we can't proceed without risking deadlock
-                        retVal = SWA_FAILED;
-                        goto Cleanup;
+                            // abort the stackwalk, we can't proceed without risking deadlock
+                            retVal = SWA_FAILED;
+                            goto Cleanup;
+                        }
+
+                        // we are about to unwind, which may take a lock, so the thread
+                        // better not be suspended.
+                        CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
+
+                        m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
+                        m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                     }
-
-                    // we are about to unwind, which may take a lock, so the thread
-                    // better not be suspended.
-                    CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
-
-                    m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
-                    m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
             }
         }
@@ -2412,30 +2437,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             m_frameState = SFITER_DONE;
             return;
         }
-
-#ifdef FEATURE_INTERPRETER
-        if (!m_crawl.isFrameless)
-        {
-            PREGDISPLAY pRD = m_crawl.GetRegisterSet();
-
-            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-            {
-                _ASSERTE(GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP);
-                // We have hit the InterpreterFrame while we were not processing the interpreter frames.
-                // Switch to walking the underlying interpreted frames.
-                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n", m_crawl.pFrame));
-                ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
-                if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
-                {
-                    m_crawl.isInterrupted = true;
-                    m_crawl.hasFaulted = true;
-                }
-
-                SyncRegDisplayToCurrentContext(pRD);
-                ProcessIp(GetControlPC(pRD));
-            }
-        }
-#endif // FEATURE_INTERPRETER
 
         if (m_crawl.isFrameless)
         {

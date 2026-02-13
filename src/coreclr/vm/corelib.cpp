@@ -74,6 +74,7 @@
 #endif //FEATURE_PERFTRACING
 
 #include "tailcallhelp.h"
+#include "interpexec.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -258,8 +259,6 @@ const CoreLibFieldDescription c_rgCoreLibFieldDescriptions[] =
     #include "corelib.h"
 };
 const USHORT c_nCoreLibFieldDescriptions = ARRAY_SIZE(c_rgCoreLibFieldDescriptions) + 1;
-
-extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(ContinuationObject* cont, uint8_t* resultStorage);
 
 ///////////////////////////////////////////////////////////////////////////////
 //

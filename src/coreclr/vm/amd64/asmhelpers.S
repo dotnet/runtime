@@ -2015,7 +2015,7 @@ NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
         // Pass TransitionBlock* as last (6th) argument
         // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
         // Original args: rdi=throwable, rsi=pHandler, rdx=pRD, rcx=pExInfo, r8=isFilter
-        
+
         lea     r9, [rsp + __PWTB_TransitionBlock]         // TransitionBlock* as 6th param (r9)
 
         // rdi, rsi, rdx, rcx, r8 remain unchanged (throwable, pHandler, pRD, pExInfo, isFilter)

@@ -1392,7 +1392,7 @@ NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
     sub         sp, sp, #8
 
     // Put TransitionBlock* as 6th param (2nd stack arg)
-    add         r12, sp, #8 + __PWTB_TransitionBlock  // TransitionBlock* 
+    add         r12, sp, #8 + __PWTB_TransitionBlock  // TransitionBlock*
     str         r12, [sp, #4]
 
     // Load isFilter from original stack location and store as 5th param (1st stack arg)
@@ -1417,10 +1417,8 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // The worker function will restore callee-saved registers from the
 // TransitionBlock.
 //
-// extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(
-//     ContinuationObject* cont,          // r0
-//     uint8_t* resultStorage             // r1
-// );
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 

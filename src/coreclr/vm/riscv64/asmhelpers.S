@@ -2612,10 +2612,8 @@ NESTED_END CallInterpreterFunclet, _TEXT
 // The worker function will restore callee-saved registers from the
 // TransitionBlock.
 //
-// extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuation(
-//     ContinuationObject* cont,          // x0
-//     uint8_t* resultStorage             // x1
-// );
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
 // ------------------------------------------------------------------
 NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
 

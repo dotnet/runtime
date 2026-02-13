@@ -1308,7 +1308,7 @@ NESTED_ENTRY CallInterpreterFunclet, _TEXT
         ; Pass TransitionBlock* as last (6th) argument on stack
         ; Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
         ; Original args: rcx=throwable, rdx=pHandler, r8=pRD, r9=pExInfo, [rsp+__PWTB_ArgumentRegisters+20h]=isFilter
-        
+
         ; Move isFilter to 5th param slot
         mov     rax, [rsp + __PWTB_ArgumentRegisters + 20h] ; isFilter (5th param from original caller)
         mov     [rsp + 20h], rax                            ; pass isFilter as 5th param on stack

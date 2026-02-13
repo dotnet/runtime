@@ -172,7 +172,6 @@ namespace System.Runtime.CompilerServices
     {
 #if FEATURE_INTERPRETER
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [StackTraceHidden]
         internal static extern Continuation? ResumeInterpreterContinuation(Continuation cont, ref byte resultStorage);
 #endif
 
