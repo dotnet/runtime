@@ -82,11 +82,12 @@ namespace System.Security.Cryptography
 
             using (ctx)
             {
-                // OpenSSL AES-KWP requires that the destination be at least as large as the source length.
-                // This is because when there is a depadding failure, it zeros the destination using the source's length.
-                // https://github.com/openssl/openssl/blob/eb962a78b5cda85b9ff80d2bd5981021a1a7b9cc/crypto/modes/wrap128.c#L296
-                // If the destination is too short then it will zero past the buffer on failure.
-                using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(source.Length, destination, skipClearIfNotRented: true))
+                // OpenSSL AES-KWP requires that the destination be at least as large as the source length plus the block size.
+                const int AesBlockSizeBytes = 16;
+                using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(
+                    checked(source.Length + AesBlockSizeBytes),
+                    destination,
+                    skipClearIfNotRented: true))
                 {
                     bool ret = Interop.Crypto.EvpCipherUpdate(
                         ctx,
