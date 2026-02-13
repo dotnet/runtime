@@ -3,16 +3,70 @@
 
 #pragma once
 
+class VirtualRegStack
+{
+    WasmValueType m_type;
+    unsigned      m_nextIndex = 0;
+
+public:
+    VirtualRegStack()
+        : m_type(WasmValueType::Invalid)
+    {
+    }
+    VirtualRegStack(WasmValueType type)
+        : m_type(type)
+    {
+    }
+
+    bool IsInitialized() const
+    {
+        return m_type != WasmValueType::Invalid;
+    }
+
+    WasmValueType GetType()
+    {
+        assert(IsInitialized());
+        return m_type;
+    }
+
+    unsigned Count() const
+    {
+        return m_nextIndex;
+    }
+
+    regNumber Push()
+    {
+        assert(IsInitialized());
+        return MakeWasmReg(m_nextIndex++, m_type);
+    }
+
+    void Pop()
+    {
+        assert(IsInitialized());
+        assert(m_nextIndex != 0);
+        m_nextIndex--;
+    }
+};
+
+struct VirtualRegReferences
+{
+    GenTreeLclVarCommon*  Nodes[16];
+    VirtualRegReferences* Prev = nullptr;
+};
+
 class WasmRegAlloc : public RegAllocInterface
 {
-    Compiler*   m_compiler;
-    BasicBlock* m_currentBlock;
+    Compiler*             m_compiler;
+    BasicBlock*           m_currentBlock;
+    VirtualRegStack       m_virtualRegs[static_cast<int>(WasmValueType::Count)];
+    unsigned              m_lastVirtualRegRefsCount = 0;
+    VirtualRegReferences* m_virtualRegRefs          = nullptr;
 
     // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
     // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
     // access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
-    regNumber m_spReg = REG_NA;
-    regNumber m_fpReg = REG_NA;
+    LclVarDsc* m_spVarDsc = nullptr;
+    regNumber  m_fpReg    = REG_NA;
 
 public:
     WasmRegAlloc(Compiler* compiler);
@@ -29,17 +83,21 @@ public:
     bool isContainableMemoryOp(GenTree* node);
 
 private:
-    Compiler*   GetCompiler() const;
     LIR::Range& CurrentRange();
 
-    void IdentifyCandidates();
+    void      IdentifyCandidates();
+    void      InitializeCandidate(LclVarDsc* varDsc);
+    regNumber AllocateStackPointer();
+    void      AllocateFramePointer();
+    regNumber AllocateVirtualRegister(var_types type);
 
-    void AllocateAndResolve();
-    void AllocateAndResolveBlock(BasicBlock* block);
-    void AllocateAndResolveNode(GenTree* node);
+    void CollectReferences();
+    void CollectReferencesForBlock(BasicBlock* block);
+    void CollectReferencesForNode(GenTree* node);
     void RewriteLocalStackStore(GenTreeLclVarCommon* node);
+    void CollectReference(GenTreeLclVarCommon* node);
 
-    regNumber AllocateFreeRegister(var_types type);
+    void ResolveReferences();
 
     void PublishAllocationResults();
 };

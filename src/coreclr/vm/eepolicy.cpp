@@ -311,6 +311,12 @@ public:
             }
         }
 
+        // Skip special formatting if it would make the output more verbose (add more lines)
+        if (largestCommonRepeat * largestCommonLength < 4)
+        {
+            largestCommonLength = 0;
+        }
+
         for (int i = 0; i < largestCommonStartOffset; i++)
         {
             PrintFrame(i, pWordAt);

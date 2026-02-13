@@ -264,6 +264,12 @@ PAL_SetLogCallstackForFatalErrorCallback(
     IN PLOGCALLSTACKFORFATALERROR_CALLBACK callback);
 
 PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
+PALIMPORT
 BOOL
 PALAPI
 PAL_GenerateCoreDump(

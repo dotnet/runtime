@@ -79,6 +79,12 @@ public sealed class GetGenerationTest {
 
 
     public static int Main(string[] args) {
+        if (!TestLibrary.PlatformDetection.IsMonoRuntime)
+        {
+            // https://github.com/dotnet/runtime/issues/5933
+            return 100;
+        }
+
         GetGenerationTest test = new GetGenerationTest();
         test.size = MemCheck.ParseSizeMBAndLimitByAvailableMem(args);
         if (test.RunTests()) {
