@@ -1879,8 +1879,7 @@ public:
         GenTree* const node = *use;
         if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
-            assert(node->AsCall()->gtCallDataKind == GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
-            assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
+            assert(node->AsCall()->GetHandleHistogramProfileCandidateInfo() != nullptr);
             m_functor(m_compiler, node->AsCall());
         }
 
@@ -1975,7 +1974,7 @@ public:
         schemaElem.InstrumentationKind = compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
-        schemaElem.ILOffset            = (int32_t)call->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.ILOffset            = (int32_t)call->GetHandleHistogramProfileCandidateInfo()->ilOffset;
         schemaElem.Offset              = 0;
 
         m_schema.push_back(schemaElem);
@@ -2011,7 +2010,7 @@ public:
         schemaElem.InstrumentationKind                   = compiler->opts.compCollect64BitCounts
                                                                ? ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount
                                                                : ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
-        schemaElem.ILOffset = (int32_t)call->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset;
+        schemaElem.ILOffset = (int32_t)call->AsCall()->GetHandleHistogramProfileCandidateInfo()->ilOffset;
         m_schema.push_back(schemaElem);
         m_schemaCount++;
 
@@ -2044,8 +2043,8 @@ public:
     void operator()(Compiler* compiler, GenTreeCall* call)
     {
         JITDUMP("Found call [%06u] with probe index %d and ilOffset 0x%X\n", compiler->dspTreeID(call),
-                call->gtHandleHistogramProfileCandidateInfo->probeIndex,
-                call->gtHandleHistogramProfileCandidateInfo->ilOffset);
+                call->GetHandleHistogramProfileCandidateInfo()->probeIndex,
+                call->GetHandleHistogramProfileCandidateInfo()->ilOffset);
 
         // We transform the call from (CALLVIRT obj, ... args ...) to
         //
@@ -2063,11 +2062,11 @@ public:
         void* methodHistogram = nullptr;
 
         bool is32;
-        ReadHistogramAndAdvance(call->gtHandleHistogramProfileCandidateInfo->ilOffset, &typeHistogram, &methodHistogram,
-                                &is32);
+        ReadHistogramAndAdvance(call->GetHandleHistogramProfileCandidateInfo()->ilOffset, &typeHistogram,
+                                &methodHistogram, &is32);
         bool secondIs32;
-        ReadHistogramAndAdvance(call->gtHandleHistogramProfileCandidateInfo->ilOffset, &typeHistogram, &methodHistogram,
-                                &secondIs32);
+        ReadHistogramAndAdvance(call->GetHandleHistogramProfileCandidateInfo()->ilOffset, &typeHistogram,
+                                &methodHistogram, &secondIs32);
 
         assert(((typeHistogram != nullptr) || (methodHistogram != nullptr)) &&
                "Expected at least one handle histogram when inserting probes");
@@ -2250,7 +2249,7 @@ public:
 
         const ICorJitInfo::PgoInstrumentationSchema& countEntry = m_schema[*m_currentSchemaIndex];
         if (countEntry.ILOffset !=
-            static_cast<int32_t>(node->AsCall()->gtHandleHistogramProfileCandidateInfo->ilOffset))
+            static_cast<int32_t>(node->AsCall()->GetHandleHistogramProfileCandidateInfo()->ilOffset))
         {
             return;
         }

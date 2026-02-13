@@ -1582,8 +1582,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
             {
                 // Direct call to a non-virtual user function.
-                assert(call->gtCallDataKind == GenTreeCall::CallDataKind::DirectCallAddress);
-                params.addr = call->gtDirectCallAddress;
+                params.addr = call->GetDirectCallAddress();
             }
 
             params.callType = EC_FUNC_TOKEN;

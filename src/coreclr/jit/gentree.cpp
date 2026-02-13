@@ -2110,15 +2110,14 @@ void GenTreeCall::SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInf
     {
         gtFlags |= GTF_CALL_INLINE_CANDIDATE;
         gtInlineInfoCount = 1;
-        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
+        SetInlineCandidateInfo(candidateInfo);
     }
     else
     {
         gtInlineInfoCount = 0;
         gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        INDEBUG(gtCallDataKind = CallDataKind::None);
+        ClearCallData();
     }
-    gtInlineCandidateInfo = candidateInfo;
     ClearGuardedDevirtualizationCandidate();
 }
 
@@ -2134,11 +2133,9 @@ InlineCandidateInfo* GenTreeCall::GetGDVCandidateInfo(uint8_t index)
     if (gtInlineInfoCount > 1)
     {
         // In this case we should access it through gtInlineCandidateInfoList
-        assert(gtCallDataKind == CallDataKind::InlineCandidateInfoList);
-        return gtInlineCandidateInfoList->at(index);
+        return GetInlineCandidateInfoList()->at(index);
     }
-    assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
-    return gtInlineCandidateInfo;
+    return GetInlineCandidateInfo();
 }
 
 //-------------------------------------------------------------------------
@@ -2158,24 +2155,21 @@ void GenTreeCall::AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candi
     if (gtInlineInfoCount == 0)
     {
         // Most calls are monomorphic, so we don't need to allocate a vector
-        gtInlineCandidateInfo = candidateInfo;
-        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
+        SetInlineCandidateInfo(candidateInfo);
     }
     else if (gtInlineInfoCount == 1)
     {
         // Upgrade gtInlineCandidateInfo to gtInlineCandidateInfoList (vector)
-        assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
-        CompAllocator        allocator      = comp->getAllocator(CMK_Inlining);
-        InlineCandidateInfo* firstCandidate = gtInlineCandidateInfo;
-        gtInlineCandidateInfoList           = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
-        gtInlineCandidateInfoList->push_back(firstCandidate);
-        gtInlineCandidateInfoList->push_back(candidateInfo);
-        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfoList);
+        CompAllocator                         allocator      = comp->getAllocator(CMK_Inlining);
+        InlineCandidateInfo*                  firstCandidate = GetInlineCandidateInfo();
+        jitstd::vector<InlineCandidateInfo*>* list = new (allocator) jitstd::vector<InlineCandidateInfo*>(allocator);
+        list->push_back(firstCandidate);
+        list->push_back(candidateInfo);
+        SetInlineCandidateInfoList(list);
     }
     else
     {
-        assert(gtCallDataKind == CallDataKind::InlineCandidateInfoList);
-        gtInlineCandidateInfoList->push_back(candidateInfo);
+        GetInlineCandidateInfoList()->push_back(candidateInfo);
     }
     gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT;
     gtInlineInfoCount++;
@@ -2199,21 +2193,20 @@ void GenTreeCall::RemoveGDVCandidateInfo(Compiler* comp, uint8_t index)
 
     if (gtInlineInfoCount == 1)
     {
-        assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
         // No longer have any inline candidates
         ClearInlineInfo();
         assert(gtInlineInfoCount == 0);
         return;
     }
-    assert(gtCallDataKind == CallDataKind::InlineCandidateInfoList);
-    gtInlineCandidateInfoList->erase(gtInlineCandidateInfoList->begin() + index);
+
+    jitstd::vector<InlineCandidateInfo*>* list = GetInlineCandidateInfoList();
+    list->erase(list->begin() + index);
     gtInlineInfoCount--;
 
     // Downgrade gtInlineCandidateInfoList to gtInlineCandidateInfo
     if (gtInlineInfoCount == 1)
     {
-        gtInlineCandidateInfo = gtInlineCandidateInfoList->at(0);
-        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
+        SetInlineCandidateInfo(list->at(0));
     }
 }
 
@@ -2372,7 +2365,7 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
         // R11 = Virtual stub param
         return 1;
     }
-    else if ((gtCallType == CT_INDIRECT) && (gtCallCookie != nullptr))
+    else if ((gtCallType == CT_INDIRECT) && HasCallCookie())
     {
         // R10 = PInvoke target param
         // R11 = PInvoke cookie param
@@ -6163,8 +6156,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
                 // or a non-tree if this is a managed call.
-                assert(call->IsVirtualStub() || (call->gtCallCookie == nullptr) ||
-                       call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
+                assert(call->IsVirtualStub() || !call->HasCallCookie() ||
+                       call->GetCallCookie()->OperIs(GT_CNS_INT, GT_IND));
 
                 GenTree* indirect = call->gtCallAddr;
 
@@ -6990,9 +6983,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (!call->IsVirtualStub() && (operand == call->gtCallCookie))
+                if (!call->IsVirtualStub() && call->HasCallCookie() && (operand == call->GetCallCookie()))
                 {
-                    *pUse = &call->gtCallCookie;
+                    *pUse = call->GetCallCookieAddr();
                     return true;
                 }
                 if (operand == call->gtCallAddr)
@@ -8573,8 +8566,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
 
     if (callType == CT_INDIRECT)
     {
-        node->gtCallCookie = nullptr;
-        INDEBUG(node->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie);
+        node->SetCallCookie(nullptr);
     }
     else
     {
@@ -10181,21 +10173,21 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     {
         if (tree->IsVirtualStub())
         {
-            copy->gtCallCookie = tree->gtCallCookie;
+            copy->SetCallCookie(tree->GetCallCookie());
         }
         else
         {
-            copy->gtCallCookie = tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie) : nullptr;
+            GenTree* cookie = tree->GetCallCookie();
+            copy->SetCallCookie(cookie ? gtCloneExpr(cookie) : nullptr);
         }
         copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr) : nullptr;
     }
     else
     {
-        copy->gtCallMethHnd         = tree->gtCallMethHnd;
-        copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
+        copy->gtCallMethHnd = tree->gtCallMethHnd;
+        copy->CopyCallData(tree);
     }
 
-    INDEBUG(copy->gtCallDataKind = tree->gtCallDataKind);
     copy->gtInlineInfoCount          = tree->gtInlineInfoCount;
     copy->gtLateDevirtualizationInfo = tree->gtLateDevirtualizationInfo;
 
@@ -10928,9 +10920,9 @@ void GenTreeUseEdgeIterator::AdvanceCall()
             assert(call->gtCallType == CT_INDIRECT);
 
             m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ADDRESS>;
-            if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
+            if (!call->IsVirtualStub() && call->HasCallCookie())
             {
-                m_edge = &call->gtCallCookie;
+                m_edge = call->GetCallCookieAddr();
                 return;
             }
             FALLTHROUGH;
@@ -13732,7 +13724,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             {
                 displayOperand(operand, "control expr", operandArc, indentStack, prefixIndent);
             }
-            else if (operand == call->gtCallCookie)
+            else if (call->HasCallCookie() && operand == call->GetCallCookie())
             {
                 displayOperand(operand, "cookie", operandArc, indentStack, prefixIndent);
             }
@@ -19566,8 +19558,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_NEWARR_1_ALIGN8:
         case CORINFO_HELP_READYTORUN_NEWARR_1:
         {
-            assert(call->gtCallDataKind == GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
-            CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
+            CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->GetCompileTimeHelperArgumentHandle();
 
             if (arrayHnd != NO_CLASS_HANDLE)
             {

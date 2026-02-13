@@ -3708,9 +3708,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         // Finally update the call target
         call->gtCallType = CT_INDIRECT;
         call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-        call->gtCallAddr   = resolve;
-        call->gtCallCookie = nullptr;
-        INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::CallCookie);
+        call->gtCallAddr = resolve;
+        call->SetCallCookie(nullptr);
 #ifdef FEATURE_READYTORUN
         call->gtEntryPoint.addr       = nullptr;
         call->gtEntryPoint.accessType = IAT_VALUE;
@@ -6334,8 +6333,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             {
                 // a direct call within range of hardware relative call instruction
                 // stash the address for codegen
-                call->gtDirectCallAddress = addr;
-                INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::DirectCallAddress);
+                call->SetDirectCallAddress(addr);
             }
             break;
 
@@ -6595,7 +6593,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
 {
 #ifdef TARGET_X86
-    if (call->gtCallCookie != nullptr)
+    if (call->HasCallCookie())
     {
         NYI_X86("Morphing indirect non-virtual call with non-standard args");
     }
@@ -6604,7 +6602,7 @@ GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
     // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
     // Hence we should never see this type of call in lower.
 
-    noway_assert(call->gtCallCookie == nullptr);
+    noway_assert(!call->HasCallCookie());
 
     return nullptr;
 }
@@ -7263,8 +7261,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                 {
                     // a direct call within range of hardware relative call instruction
                     // stash the address for codegen
-                    call->gtDirectCallAddress = addr;
-                    INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::DirectCallAddress);
+                    call->SetDirectCallAddress(addr);
 #ifdef FEATURE_READYTORUN
                     call->gtEntryPoint.addr       = nullptr;
                     call->gtEntryPoint.accessType = IAT_VALUE;

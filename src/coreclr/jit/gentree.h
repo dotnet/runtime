@@ -5705,7 +5705,7 @@ struct GenTreeCall final : public GenTree
         {
             assert(!IsInlineCandidate());
 #ifdef DEBUG
-            assert(gtCallDataKind == CallDataKind::None || gtCallDataKind == CallDataKind::CallCookie);
+            assert(GetCallDataKind() == CallDataKind::None || GetCallDataKind() == CallDataKind::CallCookie);
 #endif
             return nullptr;
         }
@@ -5713,8 +5713,7 @@ struct GenTreeCall final : public GenTree
         {
             assert(!"Call has multiple inline candidates");
         }
-        assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
-        return gtInlineCandidateInfo;
+        return GetInlineCandidateInfo();
     }
 
     void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
@@ -5820,7 +5819,7 @@ struct GenTreeCall final : public GenTree
     };
 
 #ifdef DEBUG
-    // Identifies which member of the union below is currently active.
+    // Identifies which member of the tagged union (gtCallData) is currently active.
     enum class CallDataKind : uint8_t
     {
         None,                                // No data stored
@@ -5831,7 +5830,10 @@ struct GenTreeCall final : public GenTree
         CompileTimeHelperArgumentHandle,     // compileTimeHelperArgumentHandle - type handle for dynamic helpers
         DirectCallAddress,                   // gtDirectCallAddress - direct call address for codegen
     };
+#endif // DEBUG
 
+private:
+#ifdef DEBUG
     CallDataKind gtCallDataKind;
 #endif // DEBUG
 
@@ -5850,6 +5852,119 @@ struct GenTreeCall final : public GenTree
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
+
+public:
+    // Accessors for the tagged union members
+
+    GenTree* GetCallCookie() const
+    {
+        assert(gtCallDataKind == CallDataKind::CallCookie);
+        return gtCallCookie;
+    }
+
+    GenTree** GetCallCookieAddr()
+    {
+        assert(gtCallDataKind == CallDataKind::CallCookie);
+        return &gtCallCookie;
+    }
+
+    bool HasCallCookie() const
+    {
+        return INDEBUG(gtCallDataKind == CallDataKind::CallCookie&&) gtCallCookie != nullptr;
+    }
+
+    void SetCallCookie(GenTree* cookie)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::CallCookie);
+        gtCallCookie = cookie;
+    }
+
+    InlineCandidateInfo* GetInlineCandidateInfo() const
+    {
+        assert(gtCallDataKind == CallDataKind::InlineCandidateInfo);
+        return gtInlineCandidateInfo;
+    }
+
+    void SetInlineCandidateInfo(InlineCandidateInfo* info)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfo);
+        gtInlineCandidateInfo = info;
+    }
+
+    jitstd::vector<InlineCandidateInfo*>* GetInlineCandidateInfoList() const
+    {
+        assert(gtCallDataKind == CallDataKind::InlineCandidateInfoList);
+        return gtInlineCandidateInfoList;
+    }
+
+    void SetInlineCandidateInfoList(jitstd::vector<InlineCandidateInfo*>* list)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::InlineCandidateInfoList);
+        gtInlineCandidateInfoList = list;
+    }
+
+    HandleHistogramProfileCandidateInfo* GetHandleHistogramProfileCandidateInfo() const
+    {
+        assert(gtCallDataKind == CallDataKind::HandleHistogramProfileCandidateInfo);
+        return gtHandleHistogramProfileCandidateInfo;
+    }
+
+    bool HasHandleHistogramProfileCandidateInfo() const
+    {
+        return INDEBUG(gtCallDataKind == CallDataKind::HandleHistogramProfileCandidateInfo&&)
+                   gtHandleHistogramProfileCandidateInfo != nullptr;
+    }
+
+    void SetHandleHistogramProfileCandidateInfo(HandleHistogramProfileCandidateInfo* info)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::HandleHistogramProfileCandidateInfo);
+        gtHandleHistogramProfileCandidateInfo = info;
+    }
+
+    CORINFO_GENERIC_HANDLE GetCompileTimeHelperArgumentHandle() const
+    {
+        assert(gtCallDataKind == CallDataKind::CompileTimeHelperArgumentHandle);
+        return compileTimeHelperArgumentHandle;
+    }
+
+    void SetCompileTimeHelperArgumentHandle(CORINFO_GENERIC_HANDLE handle)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::CompileTimeHelperArgumentHandle);
+        compileTimeHelperArgumentHandle = handle;
+    }
+
+    void* GetDirectCallAddress() const
+    {
+        assert(gtCallDataKind == CallDataKind::DirectCallAddress);
+        return gtDirectCallAddress;
+    }
+
+    void SetDirectCallAddress(void* addr)
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::DirectCallAddress);
+        gtDirectCallAddress = addr;
+    }
+
+    void ClearCallData()
+    {
+        INDEBUG(gtCallDataKind = CallDataKind::None);
+        gtCallCookie = nullptr;
+    }
+
+    // Copy the call data union from another call node (used for cloning)
+    void CopyCallData(const GenTreeCall* from)
+    {
+        INDEBUG(gtCallDataKind = from->gtCallDataKind);
+        // Copy the largest member to ensure all bytes are copied
+        gtCallCookie = from->gtCallCookie;
+    }
+
+#ifdef DEBUG
+    CallDataKind GetCallDataKind() const
+    {
+        return gtCallDataKind;
+    }
+#endif // DEBUG
 
     LateDevirtualizationInfo* gtLateDevirtualizationInfo; // Always available for user virtual calls
 

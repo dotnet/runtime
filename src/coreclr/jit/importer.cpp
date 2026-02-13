@@ -3880,8 +3880,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     node = gtNewHelperCallNode(helper, TYP_REF, classHandle, gtNewIconNode(pCallInfo->sig.numArgs), node);
 
-    node->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)pResolvedToken->hClass;
-    INDEBUG(node->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
+    node->AsCall()->SetCompileTimeHelperArgumentHandle((CORINFO_GENERIC_HANDLE)pResolvedToken->hClass);
 
     // Remember that this function contains 'new' of a MD array.
     optMethodFlags |= OMF_HAS_MDNEWARRAY;
@@ -5678,10 +5677,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             {
                 HandleHistogramProfileCandidateInfo* pInfo =
                     new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                             = ilOffset;
-                pInfo->probeIndex                           = info.compHandleHistogramProbeCount++;
-                call->gtHandleHistogramProfileCandidateInfo = pInfo;
-                INDEBUG(call->gtCallDataKind = GenTreeCall::CallDataKind::HandleHistogramProfileCandidateInfo);
+                pInfo->ilOffset   = ilOffset;
+                pInfo->probeIndex = info.compHandleHistogramProbeCount++;
+                call->SetHandleHistogramProfileCandidateInfo(pInfo);
                 compCurBB->SetFlags(BBF_HAS_HISTOGRAM_PROFILE);
             }
         }
@@ -9864,8 +9862,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewHelperCallNode(helper, TYP_REF, op1, op2);
                 }
 
-                op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
-                INDEBUG(op1->AsCall()->gtCallDataKind = GenTreeCall::CallDataKind::CompileTimeHelperArgumentHandle);
+                op1->AsCall()->SetCompileTimeHelperArgumentHandle((CORINFO_GENERIC_HANDLE)resolvedToken.hClass);
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
