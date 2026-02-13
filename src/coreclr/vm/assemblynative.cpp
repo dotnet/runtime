@@ -1812,7 +1812,7 @@ extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedExternalTypeMapEnt
     _ASSERTE(pModule != NULL);
     _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
 
-    TypeHandle resultTypeHnd;
+    TypeHandle resultTypeHnd{};
 
     BEGIN_QCALL;
 
@@ -1845,7 +1845,7 @@ extern "C" TADDR QCALLTYPE TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry(
     _ASSERTE(pModule != NULL);
     _ASSERTE(!pGroupType.AsTypeHandle().IsNull());
 
-    TypeHandle resultTypeHnd;
+    TypeHandle resultTypeHnd{};
 
     BEGIN_QCALL;
 
