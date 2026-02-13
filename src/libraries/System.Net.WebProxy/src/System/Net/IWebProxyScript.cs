@@ -33,7 +33,7 @@ namespace System.Net
         /// </returns>
         /// <remarks>
         /// <para>
-        /// When the <see cref="System.Net.HttpWebRequest"/> object is run, it may need to run the WPAD (Web Proxy Automatic Detection) protocol to detect whether a proxy is required for reaching the destination URL.
+        /// When the <c>HttpWebRequest</c> object is run, it may need to run the WPAD (Web Proxy Automatic Detection) protocol to detect whether a proxy is required for reaching the destination URL.
         /// During this process, the system downloads and compiles the PAC (Proxy Auto-Configuration) script in memory and tries to execute the FindProxyForURL function as per the PAC specification.
         /// </para>
         /// <para>

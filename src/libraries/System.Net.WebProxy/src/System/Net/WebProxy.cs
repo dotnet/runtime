@@ -14,11 +14,11 @@ using System.Threading;
 namespace System.Net
 {
     /// <summary>
-    /// Contains HTTP proxy settings for the <see cref="System.Net.Http.HttpClient" /> class.
+    /// Contains HTTP proxy settings for the <see cref="T:System.Net.Http.HttpClient" /> class.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The <see cref="WebProxy"/> class contains the proxy settings that <see cref="System.Net.Http.HttpClient"/> instances use to determine whether a Web proxy is used to send requests.
+    /// The <see cref="WebProxy"/> class contains the proxy settings that <c>HttpClient</c> instances use to determine whether a Web proxy is used to send requests.
     /// Global Web proxy settings can be specified in machine and application configuration files, and applications can use instances of the <see cref="WebProxy"/> class to customize Web proxy use.
     /// The <see cref="WebProxy"/> class is the base implementation of the <see cref="IWebProxy"/> interface.
     /// </para>
@@ -28,7 +28,7 @@ namespace System.Net
     /// <list type="bullet">
     /// <item>The <see cref="WebProxy()"/> constructor.</item>
     /// <item>The <see cref="GetDefaultProxy"/> method.</item>
-    /// <item>The <see cref="GlobalProxySelection.Select"/> method.</item>
+    /// <item>The <c>GlobalProxySelection.Select</c> method.</item>
     /// </list>
     /// <para>
     /// These methods each supply a <see cref="WebProxy"/> instance that you can further customize; the difference between them is how the instance is initialized before it is returned to your application.
@@ -39,7 +39,7 @@ namespace System.Net
     /// The <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
     /// </para>
     /// <para>
-    /// The <see cref="GlobalProxySelection.Select"/> method returns an instance of the <see cref="WebProxy"/> class with it properties set according to a combination of Internet and configuration file settings.
+    /// The <c>GlobalProxySelection.Select</c> method returns an instance of the <see cref="WebProxy"/> class with its properties set according to a combination of Internet and configuration file settings.
     /// </para>
     /// <para>
     /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
@@ -399,7 +399,7 @@ namespace System.Net
         /// <returns>
         /// A <see cref="WebProxy"/> instance that contains the nondynamic proxy settings from Internet options.
         /// </returns>
-        /// <exception cref="PlatformNotSupportedException">On .NET Core.</exception>
+        /// <exception cref="PlatformNotSupportedException">This method is not supported on .NET Core and will always throw <see cref="PlatformNotSupportedException"/>.</exception>
         [Obsolete("WebProxy.GetDefaultProxy has been deprecated. Use the proxy selected for you by default.")]
         public static WebProxy GetDefaultProxy() =>
             // The .NET Framework here returns a proxy that fetches IE settings and
