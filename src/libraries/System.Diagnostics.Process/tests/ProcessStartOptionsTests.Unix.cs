@@ -52,9 +52,10 @@ namespace System.Diagnostics.Tests
                 
                 Directory.SetCurrentDirectory(tempDir);
                 ProcessStartOptions options = new(fileName);
-                // Path.GetFullPath resolves symlinks in the path (e.g., /tmp -> /private/tmp on macOS)
-                // options.FileName is already fully resolved by ProcessStartOptions
-                Assert.Equal(Path.GetFullPath(fullPath), Path.GetFullPath(options.FileName));
+
+                Assert.True(File.Exists(options.FileName));
+                // on macOS, we need to handle /tmp/testscript.sh -> /private/tmp/testscript.sh
+                Assert.EndsWith(fullPath, options.FileName);
             }
             finally
             {
