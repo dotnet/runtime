@@ -108,6 +108,16 @@ namespace System.Diagnostics
         public bool KillOnParentExit { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether the <see cref="Environment"/> property has been accessed.
+        /// </summary>
+        internal bool HasEnvironmentBeenAccessed => _environment is not null;
+
+        /// <summary>
+        /// Gets a value indicating whether the <see cref="InheritedHandles"/> property has been accessed.
+        /// </summary>
+        internal bool HasInheritedHandlesBeenAccessed => _inheritedHandles is not null;
+
+        /// <summary>
         /// Gets or sets a value indicating whether to create the process in a new process group.
         /// </summary>
         /// <remarks>

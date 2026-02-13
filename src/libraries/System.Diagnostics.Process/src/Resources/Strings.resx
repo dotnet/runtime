@@ -339,4 +339,28 @@
   <data name="FileNotFoundResolvePath" xml:space="preserve">
     <value>Could not resolve the file.</value>
   </data>
+  <data name="InvalidProcessHandle" xml:space="preserve">
+    <value>Invalid process handle.</value>
+  </data>
+  <data name="CouldNotCreateJobObject" xml:space="preserve">
+    <value>Failed to create job object.</value>
+  </data>
+  <data name="CouldNotSetJobObjectInfo" xml:space="preserve">
+    <value>Failed to set job object information.</value>
+  </data>
+  <data name="CouldNotGetExitCode" xml:space="preserve">
+    <value>Failed to get exit code of the process.</value>
+  </data>
+  <data name="ProcessNotExited" xml:space="preserve">
+    <value>Process has not exited yet.</value>
+  </data>
+  <data name="KillProcessGroupWithoutNewProcessGroup" xml:space="preserve">
+    <value>Cannot terminate entire process group because the process was not started with CreateNewProcessGroup=true.</value>
+  </data>
+  <data name="CannotResumeNonSuspendedProcess" xml:space="preserve">
+    <value>Cannot resume a process that was not started with StartSuspended.</value>
+  </data>
+  <data name="SignalNotSupportedOnWindows" xml:space="preserve">
+    <value>Signal {0} is not supported on Windows. Only SIGINT, SIGQUIT, and SIGKILL are supported.</value>
+  </data>
 </root>

@@ -10,7 +10,21 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
+        public int ProcessId { get { throw null; } }
+        public bool Kill() { throw null; }
+        public bool KillProcessGroup() { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }
+        public void Resume() { }
+        public void Signal(System.Runtime.InteropServices.PosixSignal signal) { }
+        public void SignalProcessGroup(System.Runtime.InteropServices.PosixSignal signal) { }
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle StartSuspended(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
+        public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
+        public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Diagnostics.ProcessExitStatus WaitForExitOrKillOnTimeout(System.TimeSpan timeout) { throw null; }
     }
 }
 namespace System.Diagnostics
@@ -271,6 +285,17 @@ namespace System.Diagnostics
         public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> InheritedHandles { get { throw null; } set { } }
         public bool KillOnParentExit { get { throw null; } set { } }
         public string? WorkingDirectory { get { throw null; } set { } }
+    }
+    public readonly partial struct ProcessExitStatus : System.IEquatable<System.Diagnostics.ProcessExitStatus>
+    {
+        public bool Canceled { get { throw null; } }
+        public int ExitCode { get { throw null; } }
+        public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+        public bool Equals(System.Diagnostics.ProcessExitStatus other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Diagnostics.ProcessExitStatus left, System.Diagnostics.ProcessExitStatus right) { throw null; }
+        public static bool operator !=(System.Diagnostics.ProcessExitStatus left, System.Diagnostics.ProcessExitStatus right) { throw null; }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component

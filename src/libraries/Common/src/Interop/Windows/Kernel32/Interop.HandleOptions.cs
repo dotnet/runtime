@@ -10,6 +10,7 @@ internal static partial class Interop
             internal const int DUPLICATE_SAME_ACCESS = 2;
             internal const int STILL_ACTIVE = 0x00000103;
             internal const int TOKEN_ADJUST_PRIVILEGES = 0x20;
+            internal const int HANDLE_FLAG_INHERIT = 0x00000001;
         }
     }
 }
