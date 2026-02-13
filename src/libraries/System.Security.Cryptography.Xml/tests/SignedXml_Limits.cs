@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Xml.Tests
     {
         private const int MaxTransformsPerReference = 10;
         private const int DefaultMaxReferencesPerSignedInfo = 100;
-        private const string MaxReferencesPerSignedInfoAppContextSwitch = "System.Security.Cryptography.MaxReferencesPerSignedInfo";
+        private const string MaxReferencesPerSignedInfoAppContextSwitch = "System.Security.Cryptography.Xml.MaxReferencesPerSignedInfo";
 
         [Theory]
         [InlineData(1, 1, false)]

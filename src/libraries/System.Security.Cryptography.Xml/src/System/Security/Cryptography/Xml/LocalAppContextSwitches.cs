@@ -12,7 +12,7 @@ namespace System
         private static int InitializeMaxReferencesPerSignedInfo()
         {
             const int DefaultMaxReferencesPerSignedInfo = 100;
-            object? data = AppContext.GetData("System.Security.Cryptography.MaxReferencesPerSignedInfo");
+            object? data = AppContext.GetData("System.Security.Cryptography.Xml.MaxReferencesPerSignedInfo");
 
             if (data is null)
             {
