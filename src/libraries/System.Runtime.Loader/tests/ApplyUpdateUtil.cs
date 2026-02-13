@@ -104,15 +104,9 @@ namespace System.Reflection.Metadata
         {
             options = options ?? new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables.Add(DotNetModifiableAssembliesSwitch, DotNetModifiableAssembliesValue);
-            /* Ask mono to use .dpdb data to generate sequence points even without a debugger attached.
-               Also propagate MONO_ENV_OPTIONS so the child process runs in interpreter mode. */
+            /* Ask mono to use .dpdb data to generate sequence points even without a debugger attached */
             if (IsMonoRuntime)
-            {
                 AppendEnvironmentVariable(options.StartInfo.EnvironmentVariables, "MONO_DEBUG", "gen-seq-points");
-                string monoEnvOptions = Environment.GetEnvironmentVariable("MONO_ENV_OPTIONS");
-                if (!string.IsNullOrEmpty(monoEnvOptions) && !options.StartInfo.EnvironmentVariables.ContainsKey("MONO_ENV_OPTIONS"))
-                    options.StartInfo.EnvironmentVariables.Add("MONO_ENV_OPTIONS", monoEnvOptions);
-            }
         }
 
         private static void AppendEnvironmentVariable(System.Collections.Specialized.StringDictionary env, string key, string addedValue)
