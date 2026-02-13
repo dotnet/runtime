@@ -5856,7 +5856,7 @@ public:
 
     GenTree* GetCallCookie() const
     {
-        assert(gtCallDataKind == CallDataKind::CallCookie);
+        assert(gtCallDataKind == CallDataKind::CallCookie || gtCallDataKind == CallDataKind::None);
         return gtCallCookie;
     }
 
@@ -5868,7 +5868,7 @@ public:
 
     bool HasCallCookie() const
     {
-        assert(gtCallDataKind == CallDataKind::CallCookie);
+        assert(gtCallDataKind == CallDataKind::CallCookie || gtCallDataKind == CallDataKind::None);
         return gtCallCookie != nullptr;
     }
 

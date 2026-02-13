@@ -10173,7 +10173,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
     {
         if (tree->IsVirtualStub())
         {
-            copy->SetCallCookie(tree->GetCallCookie());
+            copy->CopyCallData(tree);
         }
         else
         {
