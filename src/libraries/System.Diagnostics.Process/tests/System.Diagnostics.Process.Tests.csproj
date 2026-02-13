@@ -35,6 +35,7 @@
     <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
+    <Compile Include="SafeProcessHandleTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
@@ -44,6 +45,7 @@
     <Compile Include="ProcessStartOptionsTests.Windows.cs" />
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
+    <Compile Include="SafeProcessHandleTests.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
              Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
