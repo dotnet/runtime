@@ -82,18 +82,36 @@ namespace System.Security.Cryptography
 
             using (ctx)
             {
-                bool ret = Interop.Crypto.EvpCipherUpdate(
-                    ctx,
-                    destination,
-                    out written,
-                    source);
-
-                if (!ret)
+                // OpenSSL AES-KWP requires that the destination be at least as large as the source length.
+                // This is because when there is a depadding failure, it zeros the destination using the source's length.
+                // https://github.com/openssl/openssl/blob/eb962a78b5cda85b9ff80d2bd5981021a1a7b9cc/crypto/modes/wrap128.c#L296
+                // If the destination is too short then it will zero past the buffer on failure.
+                using (CryptoPoolLease lease = CryptoPoolLease.RentConditionally(source.Length, destination, skipClearIfNotRented: true))
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+                    bool ret = Interop.Crypto.EvpCipherUpdate(
+                        ctx,
+                        lease.Span,
+                        out written,
+                        source);
 
-                Debug.Assert(written > 0);
+                    if (!ret)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (lease.IsRented)
+                    {
+                        if (written > destination.Length)
+                        {
+                            Debug.Fail("Wrote more bytes than expected");
+                            throw new CryptographicException();
+                        }
+
+                        lease.Span.Slice(0, written).CopyTo(destination);
+                    }
+
+                    Debug.Assert(written > 0);
+                }
 
                 // Experimentation and code insepection show that EVP_CipherFinal_ex is not needed here,
                 // the work is done in EVP_CipherUpdate.
