@@ -40,7 +40,7 @@ struct EbrPendingEntry
 // We support only a single collector per process; if multiple collectors
 // are needed this can be extended to a per-collector TLS map, but for the
 // HashMap use-case a single global collector suffices.
-static thread_local EbrThreadData* t_pThreadData = nullptr;
+static thread_local EbrThreadData t_pThreadData = {};
 
 // Global EBR collector for HashMap's async mode.
 EbrCollector g_HashMapEbr;
@@ -97,15 +97,14 @@ EbrCollector::Shutdown()
             DrainQueue(i);
     }
 
-    // Free any remaining thread data entries. Threads should have exited
-    // their critical regions by now. We walk the list and delete them.
+    // Threads should have exited their critical regions by now. We walk the list and clear them.
     {
         CrstHolder lock(&m_threadListLock);
         EbrThreadData* pCur = m_pThreadListHead;
         while (pCur != nullptr)
         {
             EbrThreadData* pNext = pCur->m_pNext;
-            delete pCur;
+            *pCur = {}; // Clear the data to prevent reuse after shutdown.
             pCur = pNext;
         }
         m_pThreadListHead = nullptr;
@@ -131,25 +130,14 @@ EbrCollector::GetOrCreateThreadData()
     }
     CONTRACTL_END;
 
-    EbrThreadData* pData = t_pThreadData;
-    if (pData != nullptr && pData->m_pCollector == this)
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector == this)
         return pData;
-
-    // Allocate new per-thread data.
-    pData = new (nothrow) EbrThreadData();
-    if (pData == nullptr)
-    {
-        _ASSERTE(!"EBR: failed to allocate thread data");
-        return nullptr;
-    }
 
     pData->m_pCollector = this;
     pData->m_localEpoch = 0;
     pData->m_criticalDepth = 0;
     pData->m_pNext = nullptr;
-
-    // Store in thread_local.
-    t_pThreadData = pData;
 
     // Link into the collector's thread list.
     {
@@ -205,8 +193,7 @@ EbrCollector::EnterCriticalRegion()
     _ASSERTE(m_initialized);
 
     EbrThreadData* pData = GetOrCreateThreadData();
-    if (pData == nullptr)
-        return;
+    _ASSERTE(pData != nullptr);
 
     pData->m_criticalDepth++;
 
@@ -236,8 +223,8 @@ EbrCollector::ExitCriticalRegion()
 
     _ASSERTE(m_initialized);
 
-    EbrThreadData* pData = t_pThreadData;
-    _ASSERTE(pData != nullptr && pData->m_pCollector == this);
+    EbrThreadData* pData = &t_pThreadData;
+    _ASSERTE(pData->m_pCollector == this);
     _ASSERTE(pData->m_criticalDepth > 0);
 
     pData->m_criticalDepth--;
@@ -256,8 +243,8 @@ EbrCollector::InCriticalRegion()
 {
     LIMITED_METHOD_CONTRACT;
 
-    EbrThreadData* pData = t_pThreadData;
-    if (pData == nullptr || pData->m_pCollector != this)
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector != this)
         return false;
     return pData->m_criticalDepth > 0;
 }
@@ -272,15 +259,14 @@ EbrCollector::ThreadDetach()
     }
     CONTRACTL_END;
 
-    EbrThreadData* pData = t_pThreadData;
-    if (pData == nullptr || pData->m_pCollector != this)
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector != this)
         return;
 
     _ASSERTE(!InCriticalRegion());
 
     UnlinkThreadData(pData);
-    t_pThreadData = nullptr;
-    delete pData;
+    t_pThreadData = {}; // Clear thread_local to prevent reuse after detach.
 }
 
 // ============================================
@@ -409,8 +395,8 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     _ASSERTE(pfnDelete != nullptr);
 
     // Must be in a critical region.
-    EbrThreadData* pData = t_pThreadData;
-    _ASSERTE(pData != nullptr && pData->m_pCollector == this && pData->m_criticalDepth > 0);
+    EbrThreadData* pData = &t_pThreadData;
+    _ASSERTE(pData->m_pCollector == this && pData->m_criticalDepth > 0);
 
     // Allocate pending entry.
     EbrPendingEntry* pEntry = new (nothrow) EbrPendingEntry();
