@@ -152,6 +152,8 @@ namespace ILCompiler
                     // If the pending map has a FileNotFoundException, it takes precedence over our existing exception stub, so use it instead.
                     _externalTypeMapExceptionStub = pendingMap._externalTypeMapExceptionStub;
                 }
+
+                _targetModules.AddRange(pendingMap._targetModules);
             }
 
             public IExternalTypeMapNode GetExternalTypeMapNode()
@@ -201,7 +203,7 @@ namespace ILCompiler
 
         public string DiagnosticName { get; }
 
-        public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, TypeSystemContext typeSystemContext, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
+        public static TypeMapMetadata CreateFromAssembly(EcmaAssembly assembly, ModuleDesc throwHelperEmitModule, TypeMapAssemblyTargetsMode assemblyTargetsMode)
         {
             Dictionary<TypeDesc, Map> typeMapStates = [];
             // The pendingMaps collection represents assemblies that have been scanned, but the provided assembly
@@ -233,6 +235,13 @@ namespace ILCompiler
                                 typeMapStates[currentTypeMapGroup] = typeMapState = new Map(currentTypeMapGroup);
                             }
                             typeMapState.MergePendingMap(pendingMap.map);
+                            foreach (ModuleDesc targetModule in pendingMap.map.TargetModules)
+                            {
+                                Debug.Assert(assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse, "We should only have pending maps with target modules when we're traversing for type map groups, as opposed to just recording targets.");
+                                // If the pending map has target modules,
+                                // then we need to ensure that they also get included in the metadata.
+                                assembliesToScan.Enqueue(((EcmaAssembly)targetModule, currentTypeMapGroup));
+                            }
                             pendingMaps.Remove((currentAssembly, currentTypeMapGroup));
                         }
                         // We've already scanned this assembly for this type map group.
@@ -363,19 +372,14 @@ namespace ILCompiler
                     }
 
                     EcmaAssembly targetAssembly = (EcmaAssembly)assembly.Context.ResolveAssembly(AssemblyNameInfo.Parse(assemblyName), throwIfNotFound: true);
+                    typeMapState.AddTargetModule(targetAssembly);
 
-                    switch (assemblyTargetsMode)
+                    if (assemblyTargetsMode == TypeMapAssemblyTargetsMode.Traverse
+                        && (currentTypeMapGroup is null || currentTypeMapGroup == typeMapState.TypeMapGroup))
                     {
-                        case TypeMapAssemblyTargetsMode.Traverse:
-                            assembliesToScan.Enqueue((targetAssembly, typeMapState.TypeMapGroup));
-                            // We will traverse the target assembly to include its type maps.
-                            break;
-                        case TypeMapAssemblyTargetsMode.Record:
-                            typeMapState.AddTargetModule(targetAssembly);
-                            return;
-                        default:
-                            Debug.Fail($"Unexpected TypeMapAssemblyTargetsMode: {assemblyTargetsMode}");
-                            return;
+                        // If we're traversing for the current type map group, enqueue the target to be scanned.
+                        // Otherwise, we'll pull the targets to be scanned when the pending group is scanned.
+                        assembliesToScan.Enqueue((targetAssembly, typeMapState.TypeMapGroup));
                     }
                 }
 
