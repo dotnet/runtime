@@ -63,7 +63,7 @@ static LONG s_ebrLeakedDeletionCount = 0;
 // ============================================
 
 void
-EbrCollector::Init(CrstType crstThreadList, CrstType crstPending, size_t memoryBudgetInBytes)
+EbrCollector::Init(CrstType crstThreadList, CrstType crstPending)
 {
     CONTRACTL
     {
@@ -74,7 +74,6 @@ EbrCollector::Init(CrstType crstThreadList, CrstType crstPending, size_t memoryB
 
     _ASSERTE(!m_initialized);
 
-    m_memoryBudgetInBytes = memoryBudgetInBytes;
     m_globalEpoch = 0;
     m_pendingSizeInBytes = 0;
     m_pThreadListHead = nullptr;
@@ -405,6 +404,13 @@ EbrCollector::TryReclaim()
     }
 }
 
+bool
+EbrCollector::CleanupRequested()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_initialized && (size_t)m_pendingSizeInBytes > 0;
+}
+
 void
 EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize)
 {
@@ -445,8 +451,4 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
         m_pPendingHeads[slot] = pEntry;
         m_pendingSizeInBytes = (size_t)m_pendingSizeInBytes + estimatedSize;
     }
-
-    // Try reclamation if over budget.
-    if ((size_t)m_pendingSizeInBytes > m_memoryBudgetInBytes)
-        TryReclaim();
 }

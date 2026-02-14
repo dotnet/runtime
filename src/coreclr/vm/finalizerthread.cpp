@@ -9,6 +9,7 @@
 #include "jithost.h"
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
+#include "ebr.h"
 #include "dn-stdio.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -151,7 +152,8 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || Thread::CleanupNeededForFinalizedThread()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
-        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
+        || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
+        || g_HashMapEbr.CleanupRequested();
 
 #endif // TARGET_WASM
 }
@@ -200,6 +202,11 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
     {
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
+    }
+
+    if (g_HashMapEbr.CleanupRequested())
+    {
+        g_HashMapEbr.TryReclaim();
     }
 }
 

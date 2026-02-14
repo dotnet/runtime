@@ -57,9 +57,7 @@ public:
     // Initialize the collector.
     //   crstThreadList: Crst type for the thread list lock
     //   crstPending:    Crst type for the pending deletion queue lock
-    //   memoryBudgetInBytes:   approximate byte threshold of pending deletions before
-    //                          attempting reclamation
-    void Init(CrstType crstThreadList, CrstType crstPending, size_t memoryBudgetInBytes);
+    void Init(CrstType crstThreadList, CrstType crstPending);
 
     // Shutdown the collector, draining all pending deletions.
     // All threads should have exited their critical regions before calling.
@@ -77,7 +75,7 @@ public:
     // threads have passed through a quiescent state.
     //   pObject:       the object to retire (must not be nullptr)
     //   pfnDelete:     function to call to delete the object
-    //   estimatedSize: approximate size in bytes (for budget tracking)
+    //   estimatedSize: approximate size in bytes (for tracking)
     void QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize);
 
     // Returns true if the calling thread is currently in a critical region.
@@ -86,6 +84,12 @@ public:
     // Detach the calling thread from this collector. Unlinks and frees per-thread
     // EBR state. Should be called during thread shutdown.
     void ThreadDetach();
+
+    // Returns true if there are pending deletions that may be reclaimable.
+    bool CleanupRequested();
+
+    // Attempt to advance the epoch and reclaim safe pending deletions.
+    void TryReclaim();
 
 private:
     // Thread list management
@@ -98,10 +102,8 @@ private:
 
     // Reclamation
     EbrPendingEntry* DetachQueue(uint32_t slot);
-    void TryReclaim();
 
-    // Configuration
-    size_t           m_memoryBudgetInBytes = 0;
+    // State
     bool             m_initialized = false;
 
     // Global epoch counter [0, EBR_EPOCHS-1]
