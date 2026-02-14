@@ -332,23 +332,11 @@ public class ComputeWasmPublishAssets : Task
 
     private TaskItem CreatePromotedAsset(ITaskItem asset)
     {
-        string newAssetItemSpec = asset.ItemSpec;
-        string newAssetRelativePath = asset.GetMetadata("RelativePath");
-
-        if (FingerprintAssets)
-        {
-            string assetDirectory = Path.GetDirectoryName(asset.ItemSpec);
-            string assetFileNameToFingerprint = Path.GetFileName(newAssetRelativePath);
-            string fingerprint = asset.GetMetadata("Fingerprint");
-            string newAssetFingerprintedFileName = assetFileNameToFingerprint.Replace("#[.{fingerprint}]!", $".{fingerprint}");
-            if (newAssetFingerprintedFileName != assetFileNameToFingerprint)
-            {
-                newAssetItemSpec = $"{assetDirectory}/{newAssetFingerprintedFileName}";
-            }
-        }
-
-        var newAsset = new TaskItem(newAssetItemSpec, asset.CloneCustomMetadata());
-        newAsset.SetMetadata("RelativePath", newAssetRelativePath);
+        // Keep ItemSpec pointing to the actual file on disk.
+        // DefineStaticWebAssets will resolve fingerprint placeholders in RelativePath
+        // and compute Fingerprint/Integrity from the real file.
+        var newAsset = new TaskItem(asset.ItemSpec, asset.CloneCustomMetadata());
+        newAsset.SetMetadata("RelativePath", asset.GetMetadata("RelativePath"));
 
         ApplyPublishProperties(newAsset);
         return newAsset;

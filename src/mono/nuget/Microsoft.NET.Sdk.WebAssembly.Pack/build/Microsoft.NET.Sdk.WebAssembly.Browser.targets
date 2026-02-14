@@ -718,9 +718,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata
         Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
-      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
+      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk.
+           Clear stale Fingerprint/Integrity so DefineStaticWebAssets recomputes from the actual file. -->
       <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata Update="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata)" ContentRoot="%(RootDir)%(Directory)" />
-      <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" />
+      <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" Fingerprint="" Integrity="" />
     </ItemGroup>
 
     <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
