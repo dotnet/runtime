@@ -105,7 +105,7 @@ public bool IsComWrappersRCW(TargetPointer rcw)
 {
     // Get method table from rcw using Object contract GetMethodTableAddress
     // Find module from the system assembly
-    // Then use RuntimeTypeSystem contract to look up type handle by name/namespace/module hardcoded in contract
+    // Then use RuntimeTypeSystem contract to look up type handle by name/namespace hardcoded in contract
     // Then compare the rcw method table with the method table found by name/namespace/module
 }
 ```
