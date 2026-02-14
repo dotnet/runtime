@@ -3919,13 +3919,8 @@ namespace System
                 if ((syntaxFlags & UriSyntaxFlags.AllowAnyOtherHost) != 0)
                 {
                     flags |= Flags.BasicHostType;
-                    for (endOfHost = i; (uint)endOfHost < (uint)str.Length; endOfHost++)
-                    {
-                        if (str[endOfHost] == '/' || str[endOfHost] == '?' || str[endOfHost] == '#')
-                        {
-                            break;
-                        }
-                    }
+                    int basicHostEnd = str.Slice(i).IndexOfAny('/', '?', '#');
+                    endOfHost = basicHostEnd >= 0 ? i + basicHostEnd : str.Length;
 
                     if (hasUnicode)
                     {
