@@ -183,13 +183,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-#ifdef HOST_ANDROID
-        // Android tracks native frames for its crash report in LogCallstackForFatalErrorCallback.
-        // Indicate them with nullptr MethodDesc.
-        *itemPtr = pCF->IsNativeMarker() ? nullptr : pCF->GetFunction();
-#else
         *itemPtr = pCF->GetFunction();
-#endif
 
         return SWA_CONTINUE;
     }
@@ -199,16 +193,6 @@ class CallStackLogger
         WRAPPER_NO_CONTRACT;
 
         MethodDesc* pMD = m_frames[index];
-
-#ifdef HOST_ANDROID
-        if (pMD == nullptr)
-        {
-            SString str(pWordAt);
-            str.Append(W("[Native Code]\n"));
-            PrintToStdErrW(str.GetUnicode());
-            return;
-        }
-#endif
 
         SString str(pWordAt);
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
@@ -261,14 +245,6 @@ public:
             int commonStartIndex = -1;
             largestCommonLength = 0;
             largestCommonRepeat = 0;
-
-#ifdef HOST_ANDROID
-            // Android includes nullptr frames to print native markers, don't start repetition search on those frames.
-            if (m_frames[largestCommonStartOffset] == nullptr)
-            {
-                continue;
-            }
-#endif
 
             for (int i = largestCommonStartOffset; i < m_frames.Count(); i++)
             {
@@ -378,15 +354,9 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 
     CallStackLogger logger(pExceptionInfo);
 
-    unsigned int flags = QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK;
-#ifdef HOST_ANDROID
-    flags |= NOTIFY_ON_U2M_TRANSITIONS;
-#endif
-
-    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, flags);
+    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
     logger.PrintStackTrace(WordAt.GetUnicode());
-
 #ifdef _DEBUG
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Exiting stack trace printing thread.\n");
