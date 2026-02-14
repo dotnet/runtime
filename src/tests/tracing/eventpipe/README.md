@@ -1,6 +1,6 @@
 # EventPipe Tests
 
-This directory contains tests for the EventPipe diagnostics subsystem. All
+This directory contains tests for the EventPipe diagnostics subsystem. Most
 tests use the shared `IpcTraceTest` infrastructure located in `common/`.
 
 ## How the tests work

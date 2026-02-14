@@ -173,24 +173,33 @@ src\tests\run.cmd checked
 
 **Build a single test project** (path is relative to the repo root):
 ```bash
-# Use -Priority 1 (or higher) for tests with <CLRTestPriority>1</CLRTestPriority>,
+# Linux / macOS — use -priority1 for tests with <CLRTestPriority>1</CLRTestPriority>,
 # otherwise the build silently reports "0 test projects" and builds nothing.
-src/tests/build.sh -Test tracing/eventpipe/eventsvalidation/GCEvents.csproj x64 Release -Priority 1
+src/tests/build.sh -Test tracing/eventpipe/eventsvalidation/GCEvents.csproj x64 Release -priority1
+```
+```cmd
+:: Windows — use -Priority 1 (the flag takes a numeric argument on Windows)
+src\tests\build.cmd -Test tracing\eventpipe\eventsvalidation\GCEvents.csproj x64 Release -Priority 1
 ```
 
-Other useful flags (run `src/tests/build.sh -h` for the full list):
+Other useful flags (run `src/tests/build.sh -h` or `src\tests\build.cmd /?` for the full list):
 
-| Flag | Purpose |
-|------|---------|
-| `-Test <path>` | Build one project (path relative to repo root) |
-| `-Dir <path>` | Build all projects in a directory |
-| `-Tree <path>` | Build all projects in a subtree recursively |
-| `-Priority <N>` | Include tests up to priority N (default: 0) |
-| `-GenerateLayoutOnly` | Only generate the Core_Root layout, skip building tests |
+| Flag | Linux / macOS (`build.sh`) | Windows (`build.cmd`) |
+|------|----------------------------|-----------------------|
+| Build one project | `-Test <path>` | `-Test <path>` |
+| Build all projects in a directory | `-Dir <path>` | `-Dir <path>` |
+| Build a subtree recursively | `-Tree <path>` | `-Tree <path>` |
+| Include priority 1 tests | `-priority1` | `-Priority 1` |
+| Generate Core_Root layout only | `-GenerateLayoutOnly` | `-GenerateLayoutOnly` |
 
 **Generate Core_Root layout** (required before running individual tests):
 ```bash
+# Linux / macOS
 src/tests/build.sh -GenerateLayoutOnly x64 Release
+```
+```cmd
+:: Windows
+src\tests\build.cmd -GenerateLayoutOnly x64 Release
 ```
 
 **Run a single test:**
@@ -221,7 +230,7 @@ Do not mark a regression test task as complete until both conditions are confirm
 | "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
 | "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
-| "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-Priority 1` (or the matching value) to the build command |
+| "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-priority1` (`build.sh`) or `-Priority 1` (`build.cmd`) to the build command |
 
 **When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
 
