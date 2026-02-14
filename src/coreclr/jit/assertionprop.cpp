@@ -4480,8 +4480,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         // We must not remove the normalization cast for NOL locals — VN-based range
         // assertions prove the logical value is in range but do not guarantee
         // the physical register bits are properly zero/sign-extended.
-        bool canDropCast = (genActualType(cast) == genActualType(lcl)) && lcl->OperIs(GT_LCL_VAR) &&
-                           !lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad();
+        bool canDropCast = (genActualType(cast) == genActualType(lcl)) && !(lcl->OperIs(GT_LCL_VAR) &&
+                           !lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad());
 
         if (!canDropCast && !cast->gtOverflow())
         {
