@@ -453,11 +453,16 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 _accumulatedHits += Volatile.Read(ref current.Hits);
                 _accumulatedMisses += Volatile.Read(ref current.Misses);
+                int indexToOverwrite = current.Index;
+                int lastIndex = _allStats.Count - 1;
 
-                var searchStart = Math.Min(current.Index, _allStats.Count - 1);
-                var indexToRemove = _allStats.LastIndexOf(current, searchStart);
-                Debug.Assert(indexToRemove >= 0, "Stat items must always be at their original index or lower.");
-                _allStats.RemoveAt(indexToRemove);
+                if (indexToOverwrite < lastIndex)
+                {
+                    _allStats[indexToOverwrite] = _allStats[lastIndex];
+                    _allStats[indexToOverwrite].Index = indexToOverwrite;
+                }
+
+                _allStats.RemoveAt(lastIndex);
                 _allStats.TrimExcess();
             }
         }
