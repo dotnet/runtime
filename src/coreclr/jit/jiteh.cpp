@@ -3473,18 +3473,20 @@ void Compiler::fgVerifyHandlerTab()
                         {
                             if (multipleBegBlockNormalizationDone)
                             {
-                                assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same
+                                // Two 'try' regions can't start at the same
                                 // block (by EH normalization).
+                                assert(bbNumOuterTryBeg < bbNumTryBeg);
                             }
                             else
                             {
                                 assert(bbNumOuterTryBeg <= bbNumTryBeg);
                             }
+
                             if (multipleLastBlockNormalizationDone)
                             {
-                                assert(bbNumTryLast < bbNumOuterTryLast); // Two 'try' regions can't end at the same
-                                                                          // block
-                                //(by EH normalization).
+                                // Two 'try' regions can't end at the same block
+                                // (by EH normalization).
+                                assert(bbNumTryLast < bbNumOuterTryLast);
                             }
                             else
                             {
@@ -3502,17 +3504,20 @@ void Compiler::fgVerifyHandlerTab()
                     // If we haven't created funclets trys should still be contiguous.
                     assert(!fgTrysNotContiguous());
 
+                    // Two 'try' regions can't start at the same block
+                    // (by EH normalization).
                     if (multipleBegBlockNormalizationDone)
                     {
-                        assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same block
-                                                                // (by EH normalization).
+                        assert(bbNumOuterTryBeg < bbNumTryBeg);
                     }
                     else
                     {
                         assert(bbNumOuterTryBeg <= bbNumTryBeg);
                     }
-                    assert(bbNumOuterTryBeg < bbNumHndBeg); // An inner handler can never start at the same
-                                                            // block as an outer 'try' (by IL rules).
+
+                    // An inner handler can never start at the same
+                    // block as an outer 'try' (by IL rules).
+                    assert(bbNumOuterTryBeg < bbNumHndBeg);
                     if (multipleLastBlockNormalizationDone)
                     {
                         // An inner EH region can't share a 'last' block with the outer 'try' (by EH normalization).

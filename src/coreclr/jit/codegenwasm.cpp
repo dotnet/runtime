@@ -1347,7 +1347,6 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GenTree* const index = node->Index();
 
     assert(varTypeIsIntegral(index->TypeGet()));
-    assert(!varTypeIsSmall(index->TypeGet()));
 
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
