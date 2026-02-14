@@ -122,36 +122,21 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async Task NetworkSecurityConfig_CertificatePinning_BlocksConnectionWithWrongPin()
+        public void NetworkSecurityConfig_CertificatePinning_BlocksConnectionWithWrongPin()
         {
-            // The network_security_config.xml sets a bogus SHA-256 pin for "dot.net".
-            // When we connect to dot.net over TLS, the platform trust manager should
-            // reject the connection because the server's certificate chain doesn't
-            // match the configured pin — even though dot.net's certificate is signed
-            // by a trusted system CA.
+            // The network_security_config.xml configures a domain that trusts test_ca
+            // and also sets an intentionally wrong pin for that same domain.
+            // The certificate is trusted for testservereku.contoso.com (no pin), but
+            // rejected for pinned.example.com because the configured pin does not match.
 
-            SslPolicyErrors? reportedErrors = null;
+            using X509Certificate2 rootCert = GetRootCertificate();
+            byte[] rootDer = rootCert.RawData;
 
-            using var tcp = new System.Net.Sockets.TcpClient();
-            await tcp.ConnectAsync("dot.net", 443);
-            using var sslStream = new SslStream(tcp.GetStream(), leaveInnerStreamOpen: false);
+            bool trustedForReferenceDomain = IsCertificateTrustedForHost(rootDer, rootDer.Length, "testservereku.contoso.com");
+            bool trustedForPinnedDomain = IsCertificateTrustedForHost(rootDer, rootDer.Length, "pinned.example.com");
 
-            var options = new SslClientAuthenticationOptions
-            {
-                TargetHost = "dot.net",
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
-                {
-                    reportedErrors = sslPolicyErrors;
-                    return true;
-                }
-            };
-
-            await sslStream.AuthenticateAsClientAsync(options);
-
-            Assert.NotNull(reportedErrors);
-            Assert.True(
-                (reportedErrors.Value & SslPolicyErrors.RemoteCertificateChainErrors) != 0,
-                $"Expected RemoteCertificateChainErrors due to pin mismatch but got: {reportedErrors.Value}");
+            Assert.True(trustedForReferenceDomain, "NDX root should be trusted for testservereku.contoso.com");
+            Assert.False(trustedForPinnedDomain, "NDX root should be rejected for pinned.example.com due to pin mismatch");
         }
 
         [Fact]
@@ -493,14 +478,32 @@ namespace System.Net.Security.Tests
             var collection = new X509Certificate2Collection();
             collection.Import(File.ReadAllBytes(Path.Combine("TestData", "contoso.com.p7b")));
 #pragma warning restore SYSLIB0057
-            foreach (X509Certificate2 cert in collection)
+            byte[]? rootRawData = null;
+            try
             {
-                if (cert.Subject == cert.Issuer)
-                    return cert;
-                cert.Dispose();
+                foreach (X509Certificate2 cert in collection)
+                {
+                    if (cert.Subject == cert.Issuer)
+                    {
+                        rootRawData = cert.Export(X509ContentType.Cert);
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                foreach (X509Certificate2 cert in collection)
+                {
+                    cert.Dispose();
+                }
             }
 
-            throw new InvalidOperationException("Root CA not found in contoso.com.p7b");
+            if (rootRawData is null)
+            {
+                throw new InvalidOperationException("Root CA not found in contoso.com.p7b");
+            }
+
+            return X509CertificateLoader.LoadCertificate(rootRawData);
         }
 
         private static (SslStream client, SslStream server) GetConnectedSslStreams()

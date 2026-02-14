@@ -60,19 +60,29 @@
       <Code Type="Fragment" Language="cs">
         <![CDATA[
         var collection = new X509Certificate2Collection();
-        collection.Import(P7bPath);
-        X509Certificate2 root = null;
-        foreach (var cert in collection)
+        byte[] rootRawData = null;
+        try
         {
-            if (cert.Subject == cert.Issuer)
+            collection.Import(P7bPath);
+            foreach (X509Certificate2 cert in collection)
             {
-                root = cert;
-                break;
+                if (cert.Subject == cert.Issuer)
+                {
+                    rootRawData = cert.Export(X509ContentType.Cert);
+                    break;
+                }
+            }
+            if (rootRawData == null)
+                throw new Exception("Root CA not found in " + P7bPath);
+            System.IO.File.WriteAllBytes(OutputPath, rootRawData);
+        }
+        finally
+        {
+            foreach (X509Certificate2 cert in collection)
+            {
+                cert.Dispose();
             }
         }
-        if (root == null)
-            throw new Exception("Root CA not found in " + P7bPath);
-        System.IO.File.WriteAllBytes(OutputPath, root.RawData);
         ]]>
       </Code>
     </Task>
