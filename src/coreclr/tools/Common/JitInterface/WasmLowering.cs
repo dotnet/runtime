@@ -82,7 +82,7 @@ namespace Internal.JitInterface
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
                     return CorInfoWasmType.CORINFO_WASM_TYPE_I32;
-                    
+
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
                     return CorInfoWasmType.CORINFO_WASM_TYPE_I64;
@@ -104,7 +104,7 @@ namespace Internal.JitInterface
                 case TypeFlags.Array:
                 case TypeFlags.SzArray:
                 case TypeFlags.ByRef:
-                    return (typeDesc.Context.Target.PointerSize == 4) ? CorInfoWasmType.CORINFO_WASM_TYPE_I32 :  CorInfoWasmType.CORINFO_WASM_TYPE_I64;
+                    return (typeDesc.Context.Target.PointerSize == 4) ? CorInfoWasmType.CORINFO_WASM_TYPE_I32 : CorInfoWasmType.CORINFO_WASM_TYPE_I64;
 
                 default:
                     return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
