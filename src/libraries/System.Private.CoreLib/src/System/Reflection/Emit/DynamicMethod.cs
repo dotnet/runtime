@@ -905,7 +905,7 @@ namespace System.Reflection.Emit
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="CreateAndInvoke" title="Getting the IL generator for a DynamicMethod" />
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="GetILGenerator" title="Getting the IL generator for a DynamicMethod" />
         /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         public ILGenerator GetILGenerator()

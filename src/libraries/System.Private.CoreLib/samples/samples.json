@@ -14,5 +14,9 @@
   "M:System.Reflection.Emit.DynamicMethod.ToString": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "ToString", "title": "Getting the string representation of a DynamicMethod" },
   "M:System.Reflection.Emit.DynamicMethod.GetParameters": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "GetParameters", "title": "Getting parameter info from a DynamicMethod" },
   "M:System.Reflection.Emit.DynamicMethod.DefineParameter(System.Int32,System.Reflection.ParameterAttributes,System.String)": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "DefineParameter", "title": "Defining parameters on a DynamicMethod" },
-  "M:System.Reflection.Emit.DynamicMethod.GetILGenerator": { "file": "System/Reflection/Emit/DynamicMethod.Overview.cs", "region": "CreateAndInvoke", "title": "Getting the IL generator for a DynamicMethod" }
+  "M:System.Reflection.Emit.DynamicMethod.GetILGenerator": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "GetILGenerator", "title": "Getting the IL generator for a DynamicMethod" },
+  "M:System.Reflection.Emit.DynamicMethod.GetILGenerator(System.Int32)": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "GetILGenerator", "title": "Getting the IL generator for a DynamicMethod" },
+  "M:System.Reflection.Emit.DynamicMethod.CreateDelegate(System.Type)": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "CreateDelegate", "title": "Creating a delegate from a DynamicMethod" },
+  "M:System.Reflection.Emit.DynamicMethod.CreateDelegate(System.Type,System.Object)": { "file": "System/Reflection/Emit/DynamicMethod.CtorOwnerType.cs", "region": "OwnerTypeAccess", "title": "Creating a bound delegate from a DynamicMethod" },
+  "M:System.Reflection.Emit.DynamicMethod.Invoke(System.Object,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object[],System.Globalization.CultureInfo)": { "file": "System/Reflection/Emit/DynamicMethod.Examples.cs", "region": "Invoke", "title": "Invoking a DynamicMethod via reflection" }
 }

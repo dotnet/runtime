@@ -100,19 +100,30 @@ if (!sig.Contains("Hello")) Fail("ToString", $"Expected signature to contain 'He
 
 // Emit a method body so we can test CreateDelegate and Invoke.
 MethodInfo writeString = typeof(Console).GetMethod("WriteLine", [typeof(string)])!;
+
+#region GetILGenerator
+// Get an ILGenerator to emit the method body.
 ILGenerator il = hello.GetILGenerator();
 il.Emit(OpCodes.Ldarg_0);
 il.EmitCall(OpCodes.Call, writeString, null);
 il.Emit(OpCodes.Ldarg_1);
 il.Emit(OpCodes.Ret);
+#endregion
 
-// Complete the method and execute it via delegate and reflection.
+#region CreateDelegate
+// Create a strongly-typed delegate for the dynamic method.
 Func<string, int, int> hi = hello.CreateDelegate<Func<string, int, int>>();
 int retval = hi("Hello from delegate!", 42);
+Console.WriteLine($"Delegate returned: {retval}");
+#endregion
 if (retval != 42) Fail("CreateDelegate", $"Expected 42, got {retval}");
 
+#region Invoke
+// Invoke the dynamic method via reflection (slower than a delegate).
 object? objRet = hello.Invoke(null, BindingFlags.ExactBinding, null,
     ["Hello from Invoke!", 99], CultureInfo.InvariantCulture);
+Console.WriteLine($"Invoke returned: {objRet}");
+#endregion
 if (objRet is not 99) Fail("Invoke", $"Expected 99, got {objRet}");
 
 if (failures > 0)
