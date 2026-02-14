@@ -1,0 +1,18 @@
+{
+  "T:System.Reflection.Emit.DynamicMethod": { "file": "DynamicMethod.Overview.cs", "region": "Snippet1" },
+  "M:System.Reflection.Emit.DynamicMethod.#ctor(System.String,System.Type,System.Type[],System.Reflection.Module)": { "file": "DynamicMethod.Overview.cs", "region": "Snippet1" },
+  "M:System.Reflection.Emit.DynamicMethod.#ctor(System.String,System.Type,System.Type[],System.Type)": { "file": "DynamicMethod.CtorOwnerType.cs", "region": "Snippet1" },
+  "P:System.Reflection.Emit.DynamicMethod.Name": { "file": "DynamicMethod.Examples.cs", "region": "Name" },
+  "P:System.Reflection.Emit.DynamicMethod.DeclaringType": { "file": "DynamicMethod.Examples.cs", "region": "DeclaringType" },
+  "P:System.Reflection.Emit.DynamicMethod.ReflectedType": { "file": "DynamicMethod.Examples.cs", "region": "ReflectedType" },
+  "P:System.Reflection.Emit.DynamicMethod.Module": { "file": "DynamicMethod.Examples.cs", "region": "Module" },
+  "P:System.Reflection.Emit.DynamicMethod.Attributes": { "file": "DynamicMethod.Examples.cs", "region": "Attributes" },
+  "P:System.Reflection.Emit.DynamicMethod.CallingConvention": { "file": "DynamicMethod.Examples.cs", "region": "CallingConvention" },
+  "P:System.Reflection.Emit.DynamicMethod.ReturnType": { "file": "DynamicMethod.Examples.cs", "region": "ReturnType" },
+  "P:System.Reflection.Emit.DynamicMethod.ReturnTypeCustomAttributes": { "file": "DynamicMethod.Examples.cs", "region": "ReturnTypeCustomAttributes" },
+  "P:System.Reflection.Emit.DynamicMethod.InitLocals": { "file": "DynamicMethod.Examples.cs", "region": "InitLocals" },
+  "M:System.Reflection.Emit.DynamicMethod.ToString": { "file": "DynamicMethod.Examples.cs", "region": "ToString" },
+  "M:System.Reflection.Emit.DynamicMethod.GetParameters": { "file": "DynamicMethod.Examples.cs", "region": "GetParameters" },
+  "M:System.Reflection.Emit.DynamicMethod.DefineParameter(System.Int32,System.Reflection.ParameterAttributes,System.String)": { "file": "DynamicMethod.Examples.cs", "region": "DefineParameter" },
+  "M:System.Reflection.Emit.DynamicMethod.GetILGenerator": { "file": "DynamicMethod.Overview.cs", "region": "Snippet1" }
+}
