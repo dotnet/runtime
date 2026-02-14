@@ -375,7 +375,6 @@ echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
 echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
 echo.
-echo -Exclude ^<xxx^>: Specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^).
 echo     Set to "" to disable default exclusion file.
 echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.
 echo     0: Build only priority 0 cases as essential testcases (default).

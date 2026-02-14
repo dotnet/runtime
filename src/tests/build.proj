@@ -291,7 +291,7 @@
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
       AfterTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
+      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
 
     <MSBuild
       Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
