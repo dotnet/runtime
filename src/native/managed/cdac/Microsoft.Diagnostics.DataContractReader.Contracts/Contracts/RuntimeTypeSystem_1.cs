@@ -823,9 +823,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         AssemblyName assemblyRefName = assemblyRef.GetAssemblyName();
         AssemblyName assemblyDefName = assemblyDef.GetAssemblyName();
-        return ((assemblyRefName.Name == assemblyDefName.Name) &&
-                (assemblyRefName.Version == assemblyDefName.Version) &&
-                (assemblyRefName.CultureName == assemblyDefName.CultureName));
+        if ((assemblyRefName.Name != assemblyDefName.Name) ||
+                (assemblyRefName.Version != assemblyDefName.Version) ||
+                (assemblyRefName.CultureName != assemblyDefName.CultureName))
+        {
+            return false;
+        }
+
+        ReadOnlySpan<byte> refToken = assemblyRefName.GetPublicKeyToken();
+        ReadOnlySpan<byte> defToken = assemblyDefName.GetPublicKeyToken();
+        return refToken.SequenceEqual(defToken);
     }
 
     private MetadataReader? LookForHandle(AssemblyReference exportedAssemblyRef)
@@ -912,7 +919,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 }
             }
             if (!found)
-                throw new NotImplementedException();
+                return new TypeHandle(TargetPointer.Null);
         }
 
         // 3. We have the handle, look up the type handle
@@ -923,7 +930,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (typeHandlePtr == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
         TypeHandle foundTypeHandle = rts.GetTypeHandle(typeHandlePtr);
-        _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);        
+        _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);
         return foundTypeHandle;
     }
 
