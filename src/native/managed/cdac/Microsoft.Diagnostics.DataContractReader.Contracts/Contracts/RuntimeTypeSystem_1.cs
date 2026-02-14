@@ -27,6 +27,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
+    private readonly Dictionary<TypeKeyByName, TypeHandle> _typeHandlesByName = new();
 
     internal struct MethodTable
     {
@@ -96,6 +97,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
             return hash;
         }
+    }
+
+    private readonly struct TypeKeyByName : IEquatable<TypeKeyByName>
+    {
+        public TypeKeyByName(string name, string namespaceName, TargetPointer module)
+        {
+            Name = name;
+            Namespace = namespaceName;
+            Module = module;
+        }
+        public string Name { get; }
+        public string Namespace { get; }
+        public TargetPointer Module { get; }
+        public bool Equals(TypeKeyByName other) => Name == other.Name && Namespace == other.Namespace && Module == other.Module;
+        public override bool Equals(object? obj) => obj is TypeKeyByName other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Name, Namespace, Module);
     }
 
     // Low order bits of TypeHandle address.
@@ -831,6 +848,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     TypeHandle IRuntimeTypeSystem.GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle)
     {
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer modulePtr = loader.GetModule(moduleHandle);
+        if (_typeHandlesByName.TryGetValue(new TypeKeyByName(name, nameSpace, modulePtr), out TypeHandle existing))
+            return existing;
         string[] parts = name.Split('+');
         string outerName = parts[0];
         MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
@@ -896,11 +917,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         // 3. We have the handle, look up the type handle
         int token = MetadataTokens.GetToken((EntityHandle)currentHandle);
-        ILoader loader = _target.Contracts.Loader;
         TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
         TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        return (typeHandlePtr == TargetPointer.Null) ? new TypeHandle(TargetPointer.Null) : rts.GetTypeHandle(typeHandlePtr);
+        if (typeHandlePtr == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
+        TypeHandle foundTypeHandle = rts.GetTypeHandle(typeHandlePtr);
+        _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);        
+        return foundTypeHandle;
     }
 
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
