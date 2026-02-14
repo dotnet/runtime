@@ -2988,16 +2988,14 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
     lvaSetStruct(resultTmp, nullableCls, false);
 
-    // Now do two stores:
-    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
-
     ClassLayout*         layout;
     CORINFO_CLASS_HANDLE valueStructCls;
     CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
     var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
 
-    // For SIMD types the layout carries the normalized type (e.g. TYP_SIMD8 for Vector2).
-    GenTree* valueStore = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
+    // Now do two stores:
+    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    GenTree* valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
 
     // ABI handling for struct values
     if (varTypeIsStruct(valueStore))
