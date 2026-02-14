@@ -16,6 +16,10 @@ namespace System.Reflection.Emit
     /// <remarks>
     /// For more information about this API, see <see href="/dotnet/fundamentals/runtime-libraries/system-reflection-emit-dynamicmethod">Supplemental API remarks for DynamicMethod</see>.
     /// </remarks>
+    /// <example>
+    /// The following example creates a dynamic method, emits a method body, and executes it via a delegate and via <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/>.
+    /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
+    /// </example>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/walkthrough-emitting-code-in-partial-trust-scenarios">Walkthrough: Emitting Code in Partial Trust Scenarios</related>
@@ -135,6 +139,7 @@ namespace System.Reflection.Emit
         /// The dynamic method created with this constructor has access to public and <c>internal</c> (<c>Friend</c> in Visual Basic) members of all the types contained in module <c>m</c>.
         /// >  For backward compatibility, this constructor demands <see cref="System.Security.Permissions.SecurityPermission"/> with the <see cref="System.Security.Permissions.SecurityPermissionFlag.ControlEvidence">ControlEvidence</see> flag if the following conditions are both true: <c>m</c> is a module other than the calling module, and the demand for <see cref="System.Security.Permissions.ReflectionPermission"/> with the <see cref="System.Security.Permissions.ReflectionPermissionFlag.MemberAccess">MemberAccess</see> flag has failed. If the demand for <see cref="System.Security.Permissions.SecurityPermission"/> succeeds, the operation is allowed.
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke%28System.Object%2CSystem.Reflection.BindingFlags%2CSystem.Reflection.Binder%2CSystem.Object%5B%5D%2CSystem.Globalization.CultureInfo%29"/> method.
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
         /// </remarks>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -268,6 +273,7 @@ namespace System.Reflection.Emit
         /// The example code then creates a <see cref="System.Reflection.Emit.DynamicMethod"/> that changes the private field of an instance of <c>Example</c> and returns the previous value.
         /// The example code creates an instance of <c>Example</c> and then creates two delegates. The first is of type <c>UseLikeStatic</c>, which has the same parameters as the dynamic method. The second is of type <c>UseLikeInstance</c>, which lacks the first parameter (of type <c>Example</c>). This delegate is created using the <see cref="System.Reflection.Emit.DynamicMethod.CreateDelegate%28System.Type%2CSystem.Object%29"/> method overload; the second parameter of that method overload is an instance of <c>Example</c>, in this case the instance just created, which is bound to the newly created delegate. Whenever that delegate is invoked, the dynamic method acts on the bound instance of <c>Example</c>.
         /// The <c>UseLikeStatic</c> delegate is invoked, passing in the instance of <c>Example</c> that is bound to the <c>UseLikeInstance</c> delegate. Then the <c>UseLikeInstance</c> delegate is invoked, so that both delegates act on the same instance of <c>Example</c>. The changes in the values of the internal field are displayed after each call. Finally, a <c>UseLikeInstance</c> delegate is bound to an instance of <c>DerivedFromExample</c>, and the delegate calls are repeated.
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.CtorOwnerType.cs" region="Snippet1" />
         /// </remarks>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -871,6 +877,7 @@ namespace System.Reflection.Emit
         /// </note>
         /// After a dynamic method has been completed, by calling the <see cref="System.Reflection.Emit.DynamicMethod.CreateDelegate"/> or <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method, any further attempt to add MSIL is ignored. No exception is thrown.
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method.
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
         /// </remarks>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         public ILGenerator GetILGenerator()
