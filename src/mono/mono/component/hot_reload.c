@@ -346,7 +346,7 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 	static gboolean inited = FALSE;
 	static int modifiable = MONO_MODIFIABLE_ASSM_UNSET;
 
-	gboolean result = FALSE;
+	static gboolean result = FALSE;
 	if (!inited) {
 		modifiable = hot_reload_update_enabled_slow_check (NULL);
 		inited = TRUE;
