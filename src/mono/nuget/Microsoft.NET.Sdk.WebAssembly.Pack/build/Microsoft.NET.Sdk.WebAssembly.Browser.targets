@@ -722,6 +722,14 @@ Copyright (c) .NET Foundation. All rights reserved.
            Clear stale Fingerprint/Integrity so DefineStaticWebAssets recomputes from the actual file. -->
       <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata Update="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata)" ContentRoot="%(RootDir)%(Directory)" />
       <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" Fingerprint="" Integrity="" />
+      <!-- Satellite (Culture) promoted assets are Related assets whose RelatedAsset points to a build-time path
+           that doesn't match any publish-time candidate. Promote them to Primary so DefineStaticWebAssets
+           processes them as standalone assets instead of trying to match a parent. -->
+      <_PromotedWasmPublishStaticWebAssets
+        Update="@(_PromotedWasmPublishStaticWebAssets)"
+        Condition="'%(_PromotedWasmPublishStaticWebAssets.AssetTraitName)' == 'Culture'"
+        AssetRole="Primary"
+        RelatedAsset="" />
     </ItemGroup>
 
     <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
