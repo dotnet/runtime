@@ -2978,8 +2978,6 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
 
     // We still make some assumptions about the layout of Nullable<T> in JIT
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
@@ -2993,9 +2991,10 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     // Now do two stores:
     GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
 
-    ClassLayout* layout;
-    CorInfoType  corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
-    var_types    valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+    ClassLayout*         layout;
+    CORINFO_CLASS_HANDLE valueStructCls;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
 
     // For SIMD types the layout carries the normalized type (e.g. TYP_SIMD8 for Vector2).
     GenTree* valueStore = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
@@ -3028,12 +3027,11 @@ void Compiler::impLoadNullableFields(GenTree*             nullableObj,
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
 
-    ClassLayout* valueLayout;
-    CorInfoType  corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
-    var_types    valueType  = TypeHandleToVarType(corFldType, valueStructCls, &valueLayout);
+    ClassLayout*         valueLayout;
+    CORINFO_CLASS_HANDLE valueStructCls;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &valueLayout);
 
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
