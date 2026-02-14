@@ -21,6 +21,8 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
 - When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
+- When adding new test files, examine the directory structure of sibling tests first. Some test directories use flat files (e.g., `GCEvents.cs` alongside `GCEvents.csproj`) while others use per-test subdirectories. Match the existing convention.
+- When working with tests, look for `README.md` files along the directory hierarchy (starting from the test's directory and walking up). These contain build, run, and authoring guidance specific to that test area.
 - When adding new unit tests, avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
@@ -59,16 +61,16 @@ Based on file paths you will modify:
 
 **First, checkout the `main` branch** to establish a known-good baseline, then run the appropriate build command:
 
-| Component | Command |
-|-----------|---------|
-| **CoreCLR** | `./build.sh clr+libs+host` |
-| **Mono** | `./build.sh mono+libs` |
-| **Libraries** | `./build.sh clr+libs -rc release` |
-| **WASM Libraries** | `./build.sh mono+libs -os browser` |
-| **Host** | `./build.sh clr+libs+host -rc release -lc release` |
-| **Tools** | `./build.sh clr+libs -rc release` |
-| **Build Tasks** | `./build.sh clr+libs -rc release` |
-| **Runtime Tests** | `./build.sh clr+libs -lc release -rc checked` |
+| Component | Linux / macOS | Windows |
+|-----------|---------------|---------|
+| **CoreCLR** | `./build.sh clr+libs+host` | `.\build.cmd clr+libs+host` |
+| **Mono** | `./build.sh mono+libs` | `.\build.cmd mono+libs` |
+| **Libraries** | `./build.sh clr+libs -rc release` | `.\build.cmd clr+libs -rc release` |
+| **WASM Libraries** | `./build.sh mono+libs -os browser` | `.\build.cmd mono+libs -os browser` |
+| **Host** | `./build.sh clr+libs+host -rc release -lc release` | `.\build.cmd clr+libs+host -rc release -lc release` |
+| **Tools** | `./build.sh clr+libs -rc release` | `.\build.cmd clr+libs -rc release` |
+| **Build Tasks** | `./build.sh clr+libs -rc release` | `.\build.cmd clr+libs -rc release` |
+| **Runtime Tests** | `./build.sh clr+libs -lc release -rc checked` | `.\build.cmd clr+libs -lc release -rc checked` |
 
 For System.Private.CoreLib changes, use `-rc checked` instead of `-rc release` for asserts.
 
@@ -76,9 +78,16 @@ For System.Private.CoreLib changes, use `-rc checked` instead of `-rc release` f
 
 ### Step 3: Configure Environment
 
+**Linux / macOS:**
 ```bash
 export PATH="$(pwd)/.dotnet:$PATH"
 dotnet --version  # Should match sdk.version in global.json
+```
+
+**Windows:**
+```cmd
+set PATH=%CD%\.dotnet;%PATH%
+dotnet --version
 ```
 
 **Only proceed with changes after the baseline build succeeds.** If it fails, report the failure and stop. After the baseline build, switch back to your working branch before making changes.
@@ -145,14 +154,64 @@ cd src/tests
 
 ### Runtime Tests
 
-**Build:**
+Subdirectories under `src/tests/` may contain `README.md` files with
+area-specific guidance (e.g., EventPipe test patterns).
+
+**Build all tests:**
 ```bash
+# Linux / macOS
 ./build.sh clr+libs -lc release -rc checked
 ./src/tests/build.sh checked
 ./src/tests/run.sh checked
 ```
+```cmd
+:: Windows
+.\build.cmd clr+libs -lc release -rc checked
+src\tests\build.cmd checked
+src\tests\run.cmd checked
+```
+
+**Build a single test project** (path is relative to the repo root):
+```bash
+# Use -Priority 1 (or higher) for tests with <CLRTestPriority>1</CLRTestPriority>,
+# otherwise the build silently reports "0 test projects" and builds nothing.
+src/tests/build.sh -Test tracing/eventpipe/eventsvalidation/GCEvents.csproj x64 Release -Priority 1
+```
+
+Other useful flags (run `src/tests/build.sh -h` for the full list):
+
+| Flag | Purpose |
+|------|---------|
+| `-Test <path>` | Build one project (path relative to repo root) |
+| `-Dir <path>` | Build all projects in a directory |
+| `-Tree <path>` | Build all projects in a subtree recursively |
+| `-Priority <N>` | Include tests up to priority N (default: 0) |
+| `-GenerateLayoutOnly` | Only generate the Core_Root layout, skip building tests |
+
+**Generate Core_Root layout** (required before running individual tests):
+```bash
+src/tests/build.sh -GenerateLayoutOnly x64 Release
+```
+
+**Run a single test:**
+```bash
+export CORE_ROOT=$(pwd)/artifacts/tests/coreclr/<os>.x64.Release/Tests/Core_Root
+cd artifacts/tests/coreclr/<os>.x64.Release/<test-path>/
+$CORE_ROOT/corerun <TestName>.dll
+# Exit code 100 = pass, any other value = fail.
+```
 
 ---
+
+## Adding new tests
+
+When creating a regression test for a bug fix:
+
+1. **Verify the test FAILS without the fix** — build and run against the unfixed code.
+2. **Verify the test PASSES with the fix** — apply the fix, rebuild, and run again.
+3. If the fix is not yet merged locally, manually apply the minimal changes from the PR/commit to verify.
+
+Do not mark a regression test task as complete until both conditions are confirmed.
 
 ## Troubleshooting
 
@@ -162,10 +221,9 @@ cd src/tests
 | "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
 | "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
+| "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-Priority 1` (or the matching value) to the build command |
 
 **When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
-
-**Windows:** Use `build.cmd` instead of `build.sh`. Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
 
 ---
 
