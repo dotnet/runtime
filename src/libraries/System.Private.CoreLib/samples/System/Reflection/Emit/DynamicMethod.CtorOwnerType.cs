@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-#:property PublishAot=false
-
 // Example: Create a DynamicMethod with an owner type to access private members.
 // Shows CreateDelegate with a bound instance (instance-style invocation).
 // Run: dotnet run DynamicMethod.CtorOwnerType.cs

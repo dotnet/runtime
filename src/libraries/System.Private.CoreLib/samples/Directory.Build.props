@@ -1,0 +1,11 @@
+<Project>
+  <!-- Stop inheriting repo-wide settings that break file-based app samples. -->
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <PublishAot>false</PublishAot>
+    <IsAotCompatible>false</IsAotCompatible>
+    <IsSourceProject>false</IsSourceProject>
+    <IsReferenceAssemblyProject>false</IsReferenceAssemblyProject>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

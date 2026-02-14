@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-#:property PublishAot=false
-
 // Runnable examples for DynamicMethod XML doc comments.
 // Each #region is referenced by <code> tags in DynamicMethod.cs.
 // Run: dotnet run DynamicMethod.Examples.cs

@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
-#:property PublishAot=false
-
 // Example: Create a DynamicMethod, emit IL, and execute via delegate and Invoke.
 // Referenced by DynamicMethod class overview and GetILGenerator/constructor docs.
 // Run: dotnet run DynamicMethod.Overview.cs
