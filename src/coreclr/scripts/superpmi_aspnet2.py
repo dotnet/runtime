@@ -152,6 +152,10 @@ def setup_and_run_crank_agent(workdir: Path):
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
     os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     os.environ['UseSharedCompilation'] = 'false'
+    os.environ['NUGET_PLUGINS_CACHE_PATH'] = str(workdir / "NUGET_PLUGINS_CACHE_PATH")
+    os.environ['NUGET_PACKAGES'] = str(workdir / "NUGET_PACKAGES")
+    os.environ['NUGET_HTTP_CACHE_PATH'] = str(workdir / "NUGET_HTTP_CACHE_PATH")
+    os.environ['NUGET_SCRATCH'] = str(workdir / "NUGET_SCRATCH")
 
     print("Installing tools ...")
     logs_dir.mkdir(parents=True, exist_ok=True)
@@ -212,6 +216,8 @@ profiles:
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
+            "--build-timeout", "30",
+            "--no-cleanup"
         ],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
@@ -238,14 +244,11 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--config", str(config_path),
         "--profile", "Localhost",
         "--scenario", scenario_name,
-        
         "--application.framework", framework,
         "--application.noGlobalJson", "false",
-
-        "--application.collectDependencies", "false",
-        "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
+        "--load.variables.connections", "16",
     ]
     
     # Only add SPMI collection environment variables and output files if not in dry run mode
@@ -351,9 +354,8 @@ def main():
 
         # Define the environment variable sets to run for each scenario
         env_var_sets = [
-            {"Dummy": "0"},
+            {"Dummy": "0"}, # Baseline with no environment variables set
             {"TieredCompilation": "0", "ReadyToRun": "0"},
-            {"TC_PartialCompilation": "1"},
         ]
 
         for entry in scenarios:
