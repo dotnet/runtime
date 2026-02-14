@@ -356,6 +356,7 @@ def main():
         env_var_sets = [
             {"Dummy": "0"}, # Baseline with no environment variables set
             {"TieredCompilation": "0", "ReadyToRun": "0"},
+            {"TC_PartialCompilation": "1"},
         ]
 
         for entry in scenarios:
