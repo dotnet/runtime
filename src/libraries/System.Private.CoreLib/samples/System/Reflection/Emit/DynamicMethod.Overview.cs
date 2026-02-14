@@ -10,7 +10,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-#region Snippet1
+#region CreateAndInvoke
 // Create a dynamic method with return type int and two parameters (string, int).
 DynamicMethod hello = new("Hello", typeof(int), [typeof(string), typeof(int)], typeof(string).Module);
 
@@ -32,7 +32,7 @@ Console.WriteLine($"Delegate returned: {retval}");
 // Execute via Invoke (slower — requires boxing and array allocation).
 object? objRet = hello.Invoke(null, ["Hello via Invoke!", 99]);
 Console.WriteLine($"Invoke returned: {objRet}");
-#endregion
+#endregion CreateAndInvoke
 
 // Verify results
 if (retval != 42 || objRet is not 99)

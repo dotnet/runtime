@@ -10,7 +10,7 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-#region Snippet1
+#region OwnerTypeAccess
 // A DynamicMethod associated with a type can access its private members.
 DynamicMethod changeID = new(
     "", typeof(int), [typeof(Example), typeof(int)], typeof(Example));
@@ -40,7 +40,7 @@ Console.WriteLine($"Previous id: {oldId}, new id: {ex.ID}");
 var setBound = (Func<int, int>)changeID.CreateDelegate(typeof(Func<int, int>), ex);
 oldId = setBound(2700);
 Console.WriteLine($"Previous id: {oldId}, new id: {ex.ID}");
-#endregion
+#endregion OwnerTypeAccess
 
 // Verify
 if (ex.ID != 2700)

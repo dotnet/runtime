@@ -20,7 +20,9 @@ namespace System.Reflection.Emit
     /// The following example creates a dynamic method, emits a method body, and executes it via a delegate and via <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/>.
     /// </example>
     /// <example>
-    /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Creating and invoking a DynamicMethod" />
+    /// </example>
+    /// <example>
+    /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="CreateAndInvoke" title="Creating and invoking a DynamicMethod" />
     /// </example>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -143,7 +145,9 @@ namespace System.Reflection.Emit
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke%28System.Object%2CSystem.Reflection.BindingFlags%2CSystem.Reflection.Binder%2CSystem.Object%5B%5D%2CSystem.Globalization.CultureInfo%29"/> method.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Creating a DynamicMethod associated with a module" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="CreateAndInvoke" title="Creating a DynamicMethod associated with a module" />
         /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -279,7 +283,9 @@ namespace System.Reflection.Emit
         /// The <c>UseLikeStatic</c> delegate is invoked, passing in the instance of <c>Example</c> that is bound to the <c>UseLikeInstance</c> delegate. Then the <c>UseLikeInstance</c> delegate is invoked, so that both delegates act on the same instance of <c>Example</c>. The changes in the values of the internal field are displayed after each call. Finally, a <c>UseLikeInstance</c> delegate is bound to an instance of <c>DerivedFromExample</c>, and the delegate calls are repeated.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.CtorOwnerType.cs" region="Snippet1" title="Creating a DynamicMethod with an owner type" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.CtorOwnerType.cs" region="OwnerTypeAccess" title="Creating a DynamicMethod with an owner type" />
         /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -512,7 +518,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.ToString"/> method of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ToString" title="Getting the string representation of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ToString" title="Getting the string representation of a DynamicMethod" />
         /// </example>
         public override string ToString()
         {
@@ -540,7 +548,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the name of a dynamic method. This code example is part of a larger example provided for  the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Name" title="Getting the name of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Name" title="Getting the name of a DynamicMethod" />
         /// </example>
         public override string Name => _name;
 
@@ -553,7 +563,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the declaring type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="DeclaringType" title="Getting the declaring type of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DeclaringType" title="Getting the declaring type of a DynamicMethod" />
         /// </example>
         public override Type? DeclaringType => null;
 
@@ -566,7 +578,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the reflected type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReflectedType" title="Getting the reflected type of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReflectedType" title="Getting the reflected type of a DynamicMethod" />
         /// </example>
         public override Type? ReflectedType => null;
 
@@ -579,7 +593,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.Module"/> property of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Module" title="Getting the module of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Module" title="Getting the module of a DynamicMethod" />
         /// </example>
         public override Module Module => _module;
 
@@ -600,7 +616,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the method attributes of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Attributes" title="Getting the attributes of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Attributes" title="Getting the attributes of a DynamicMethod" />
         /// </example>
         public override MethodAttributes Attributes => _attributes;
 
@@ -613,7 +631,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the calling convention of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="CallingConvention" title="Getting the calling convention of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="CallingConvention" title="Getting the calling convention of a DynamicMethod" />
         /// </example>
         public override CallingConventions CallingConvention => _callingConvention;
 
@@ -635,7 +655,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the parameters of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="GetParameters" title="Getting parameter info from a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="GetParameters" title="Getting parameter info from a DynamicMethod" />
         /// </example>
         public override ParameterInfo[] GetParameters() =>
             GetParametersAsSpan().ToArray();
@@ -834,7 +856,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the return type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReturnType" title="Getting the return type of a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnType" title="Getting the return type of a DynamicMethod" />
         /// </example>
         public override Type ReturnType => _returnType;
 
@@ -856,7 +880,9 @@ namespace System.Reflection.Emit
         /// The following code example shows how to display the custom attributes of the return type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" title="Getting return type custom attributes" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" title="Getting return type custom attributes" />
         /// </example>
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
@@ -878,7 +904,9 @@ namespace System.Reflection.Emit
         /// The following code example shows how to define parameter information for a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="DefineParameter" title="Defining parameters on a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DefineParameter" title="Defining parameters on a DynamicMethod" />
         /// </example>
         public ParameterBuilder? DefineParameter(int position, ParameterAttributes attributes, string? parameterName)
         {
@@ -907,7 +935,9 @@ namespace System.Reflection.Emit
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Getting the IL generator for a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="CreateAndInvoke" title="Getting the IL generator for a DynamicMethod" />
         /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         public ILGenerator GetILGenerator()
@@ -924,7 +954,9 @@ namespace System.Reflection.Emit
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.InitLocals"/> property of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
         /// </remarks>
         /// <example>
-        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="InitLocals" title="Checking InitLocals on a DynamicMethod" />
+        /// </example>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="InitLocals" title="Checking InitLocals on a DynamicMethod" />
         /// </example>
         public bool InitLocals
         {
