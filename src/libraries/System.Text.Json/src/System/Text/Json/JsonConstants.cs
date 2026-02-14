@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Text.Json
 {
     internal static partial class JsonConstants
@@ -48,8 +50,24 @@ namespace System.Text.Json
         // Used to search for the end of a number
         public static ReadOnlySpan<byte> Delimiters => ",}] \n\r\t/"u8;
 
+        /// <summary>
+        /// Fast inline check for JSON number delimiters, avoiding the overhead of
+        /// ReadOnlySpan.Contains() linear search on every digit.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsDelimiter(byte b) =>
+            b is (byte)',' or (byte)'}' or (byte)']' or (byte)'/' or (byte)' ' or (byte)'\n' or (byte)'\r' or (byte)'\t';
+
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
+
+        /// <summary>
+        /// Fast inline check for valid JSON escape characters, avoiding
+        /// ReadOnlySpan.IndexOf() linear search on every escape sequence.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsEscapableChar(byte b) =>
+            b is (byte)'"' or (byte)'n' or (byte)'r' or (byte)'t' or (byte)'/' or (byte)'u' or (byte)'b' or (byte)'f';
 
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
