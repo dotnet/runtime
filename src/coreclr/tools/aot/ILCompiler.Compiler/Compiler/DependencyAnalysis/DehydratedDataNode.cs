@@ -104,6 +104,8 @@ namespace ILCompiler.DependencyAnalysis
                 Array.Resize(ref relocSort, lastProfitableReloc);
             var relocs = new Dictionary<ISymbolNode, int>(relocSort);
 
+            ObjectDataBuilder.Reservation numRelocsReservation = builder.ReserveInt();
+
             // Walk all the ObjectDatas and generate the dehydrated instruction stream.
             byte[] buff = new byte[4];
             int dehydratedSegmentPosition = 0;
@@ -305,6 +307,8 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(sourcePosition == o.Data.Length);
                 dehydratedSegmentPosition += o.Data.Length;
             }
+
+            builder.EmitInt(numRelocsReservation, relocSort.Length);
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)

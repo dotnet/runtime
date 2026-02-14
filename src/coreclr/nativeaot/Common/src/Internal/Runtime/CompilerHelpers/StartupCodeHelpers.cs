@@ -249,9 +249,12 @@ namespace Internal.Runtime.CompilerHelpers
             // Destination for the hydrated data is in the first 32-bit relative pointer
             byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
 
+            // Next is the number of fixups at the end of the stream
+            int numFixups = *(int*)(dehydratedData + sizeof(int));
+
             // The dehydrated data follows
-            byte* pCurrent = (byte*)dehydratedData + sizeof(int);
-            byte* pEnd = (byte*)dehydratedData + length;
+            byte* pCurrent = (byte*)dehydratedData + sizeof(int) * 2;
+            byte* pEnd = (byte*)dehydratedData + length - (sizeof(int) * numFixups);
 
             // Fixup table immediately follows the command stream
             int* pFixups = (int*)pEnd;
