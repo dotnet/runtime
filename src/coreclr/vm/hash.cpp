@@ -91,29 +91,48 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
     SetCollision(); // otherwise set the collision bit
     return false;
 }
-
 #endif // !DACCESS_COMPILE
 
-//---------------------------------------------------------------------
-//  inline Bucket*& NextObsolete (Bucket* rgBuckets)
-//  get the next obsolete bucket in the chain
-static Bucket*& NextObsolete(Bucket* rgBuckets)
+static DWORD GetSize(PTR_Bucket rgBuckets)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PTR_size_t pSize = dac_cast<PTR_size_t>(rgBuckets - 1);
+    _ASSERTE(FitsIn<DWORD>(pSize[0]));
+    return static_cast<DWORD>(pSize[0]);
+}
+
+static void SetSize(Bucket* rgBuckets, size_t size)
 {
     LIMITED_METHOD_CONTRACT;
-    return *(Bucket**)&((size_t*)rgBuckets)[1];
+    ((size_t*)rgBuckets)[0] = size;
+}
+
+// Allocate a zero-initialized bucket array with space for 'size' buckets
+// plus a leading size_t header.
+static Bucket* AllocateBuckets(DWORD size)
+{
+    STATIC_CONTRACT_THROWS;
+    S_SIZE_T cbAlloc = (S_SIZE_T(size) + S_SIZE_T(1)) * S_SIZE_T(sizeof(Bucket));
+    if (cbAlloc.IsOverflow())
+        ThrowHR(COR_E_OVERFLOW);
+    Bucket* rgBuckets = (Bucket*) new BYTE[cbAlloc.Value()];
+    memset(rgBuckets, 0, cbAlloc.Value());
+    SetSize(rgBuckets, size);
+    return rgBuckets;
+}
+
+// Free a bucket array allocated by AllocateBuckets.
+static void FreeBuckets(Bucket* rgBuckets)
+{
+    LIMITED_METHOD_CONTRACT;
+    delete [] (BYTE*)rgBuckets;
 }
 
 // Static helper for EBR deferred deletion of obsolete bucket arrays.
 static void DeleteObsoleteBuckets(void* p)
 {
     LIMITED_METHOD_CONTRACT;
-    Bucket* pBucket = (Bucket*)p;
-    while (pBucket)
-    {
-        Bucket* pNextBucket = NextObsolete(pBucket);
-        delete [] pBucket;
-        pBucket = pNextBucket;
-    }
+    FreeBuckets((Bucket*)p);
 }
 
 //---------------------------------------------------------------------
@@ -129,19 +148,6 @@ PTR_Bucket HashMap::Buckets()
 #endif
     return m_rgBuckets + 1;
 }
-
-//---------------------------------------------------------------------
-//  inline size_t HashMap::GetSize(PTR_Bucket rgBuckets)
-//  get the number of buckets
-inline
-DWORD HashMap::GetSize(PTR_Bucket rgBuckets)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    PTR_size_t pSize = dac_cast<PTR_size_t>(rgBuckets - 1);
-    _ASSERTE(FitsIn<DWORD>(pSize[0]));
-    return static_cast<DWORD>(pSize[0]);
-}
-
 
 //---------------------------------------------------------------------
 //  inline size_t HashMap::HashFunction(UPTR key, UINT numBuckets, UINT &seed, UINT &incr)
@@ -165,16 +171,6 @@ void HashMap::HashFunction(const UPTR key, const UINT numBuckets, UINT &seed, UI
 }
 
 #ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------------
-//  inline void HashMap::SetSize(Bucket *rgBuckets, size_t size)
-//  set the number of buckets
-inline
-void HashMap::SetSize(Bucket *rgBuckets, size_t size)
-{
-    LIMITED_METHOD_CONTRACT;
-    ((size_t*)rgBuckets)[0] = size;
-}
 
 //---------------------------------------------------------------------
 //  HashMap::HashMap()
@@ -290,10 +286,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
     DWORD size = g_rgPrimes[m_iPrimeIndex];
     _ASSERTE(size < 0x7fffffff);
 
-    m_rgBuckets = new Bucket[size+1];
-
-    memset (m_rgBuckets, 0, (size+1)*sizeof(Bucket));
-    SetSize(m_rgBuckets, size);
+    m_rgBuckets = AllocateBuckets(size);
 
     m_pCompare = pCompare;
 
@@ -376,7 +369,7 @@ void HashMap::Clear()
     STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
-    delete [] m_rgBuckets;
+    FreeBuckets(m_rgBuckets);
 
     m_rgBuckets = NULL;
 }
@@ -902,14 +895,7 @@ void HashMap::Rehash()
     Bucket* rgBuckets = Buckets();
     UPTR cbCurrSize =   GetSize(rgBuckets);
 
-    S_SIZE_T cbNewBuckets = (S_SIZE_T(cbNewSize) + S_SIZE_T(1)) * S_SIZE_T(sizeof(Bucket));
-
-    if (cbNewBuckets.IsOverflow())
-        ThrowHR(COR_E_OVERFLOW);
-
-    Bucket* rgNewBuckets = (Bucket *) new BYTE[cbNewBuckets.Value()];
-    memset (rgNewBuckets, 0, cbNewBuckets.Value());
-    SetSize(rgNewBuckets, cbNewSize);
+    Bucket* rgNewBuckets = AllocateBuckets(cbNewSize);
 
     // current valid slots
     UPTR cbValidSlots = m_cbInserts-m_cbDeletes;
@@ -1241,10 +1227,10 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
 #ifdef HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
+    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
     table->DumpStatistics();
 #else // !HASHTABLE_PROFILE
-    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
+    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), GetSize(table->Buckets()));
 #endif // !HASHTABLE_PROFILE
 }
 #endif // !DACCESS_COMPILE

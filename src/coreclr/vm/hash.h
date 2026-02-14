@@ -350,8 +350,6 @@ private:
     UPTR            NewSize();
     // create a new bucket array and rehash the non-deleted entries
     void            Rehash();
-    static DWORD    GetSize(PTR_Bucket rgBuckets);
-    static void     SetSize(Bucket* rgBuckets, size_t size);
     PTR_Bucket      Buckets();
     UPTR            CompareValues(const UPTR value1, const UPTR value2);
 
