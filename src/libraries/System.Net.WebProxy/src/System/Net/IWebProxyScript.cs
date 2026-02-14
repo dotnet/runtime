@@ -16,20 +16,19 @@ namespace System.Net
         /// <summary>
         /// Loads a script.
         /// </summary>
-        /// <param name="scriptLocation">Internal only.</param>
-        /// <param name="script">Internal only.</param>
-        /// <param name="helperType">Internal only.</param>
+        /// <param name="scriptLocation">The URI that identifies the location of the proxy auto-configuration script.</param>
+        /// <param name="script">The script content to load and prepare for execution.</param>
+        /// <param name="helperType">The type that provides helper methods or services available to the script at runtime.</param>
         /// <returns>A <see cref="bool"/> indicating whether the script was successfully loaded.</returns>
         bool Load(Uri scriptLocation, string script, Type helperType);
 
         /// <summary>
         /// Runs a script.
         /// </summary>
-        /// <param name="url">Internal only.</param>
-        /// <param name="host">Internal only.</param>
+        /// <param name="url">The destination URL for which proxy information is requested.</param>
+        /// <param name="host">The host name associated with the destination URL.</param>
         /// <returns>
-        /// A <see cref="string"/>.
-        /// An internal-only value returned.
+        /// A <see cref="string"/> that describes how to connect to the destination, such as a proxy configuration directive (for example, <c>"DIRECT"</c> or <c>"PROXY host:port"</c>).
         /// </returns>
         /// <remarks>
         /// <para>

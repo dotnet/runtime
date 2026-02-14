@@ -28,7 +28,6 @@ namespace System.Net
     /// <list type="bullet">
     /// <item>The <see cref="WebProxy()"/> constructor.</item>
     /// <item>The <see cref="GetDefaultProxy"/> method.</item>
-    /// <item>The <see cref="T:System.Net.GlobalProxySelection.Select"/> method.</item>
     /// </list>
     /// <para>
     /// These methods each supply a <see cref="WebProxy"/> instance that you can further customize; the difference between them is how the instance is initialized before it is returned to your application.
@@ -36,10 +35,7 @@ namespace System.Net
     /// When a request uses a <see cref="WebProxy"/> instance in this state, no proxy is used to send the request.
     /// </para>
     /// <para>
-    /// The <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
-    /// </para>
-    /// <para>
-    /// The <see cref="T:System.Net.GlobalProxySelection.Select"/> method returns an instance of the <see cref="WebProxy"/> class with its properties set according to a combination of Internet and configuration file settings.
+    /// In .NET Framework, the <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
     /// </para>
     /// <para>
     /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
@@ -246,7 +242,6 @@ namespace System.Net
         /// <value>
         /// An <see cref="ICredentials"/> instance that contains the credentials to submit to the proxy server for authentication.
         /// </value>
-        /// <exception cref="InvalidOperationException">You attempted to set this property when the <see cref="UseDefaultCredentials"/> property was set to <see langword="true"/>.</exception>
         public ICredentials? Credentials { get; set; }
 
         /// <summary>
@@ -255,7 +250,6 @@ namespace System.Net
         /// <value>
         /// <see langword="true"/> if the default credentials are used; otherwise, <see langword="false"/>. The default value is <see langword="false"/>.
         /// </value>
-        /// <exception cref="InvalidOperationException">You attempted to set this property when the <see cref="Credentials"/> property contains credentials other than the default credentials.</exception>
         public bool UseDefaultCredentials
         {
             get => Credentials == CredentialCache.DefaultCredentials;
@@ -387,6 +381,7 @@ namespace System.Net
         /// </summary>
         /// <param name="serializationInfo">The serialization data.</param>
         /// <param name="streamingContext">The context for the serialized data.</param>
+        /// <exception cref="PlatformNotSupportedException">This method is not supported and will always throw <see cref="PlatformNotSupportedException"/>.</exception>
         /// <remarks>
         /// This method is called by the system to deserialize a <see cref="WebProxy"/> instance; applications do not call it.
         /// </remarks>
@@ -403,6 +398,7 @@ namespace System.Net
         /// </summary>
         /// <param name="serializationInfo">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="streamingContext">A <see cref="StreamingContext"/> that specifies the destination for this serialization.</param>
+        /// <exception cref="PlatformNotSupportedException">This method is not supported and will always throw <see cref="PlatformNotSupportedException"/>.</exception>
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
