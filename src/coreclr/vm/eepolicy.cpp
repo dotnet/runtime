@@ -930,7 +930,14 @@ void EEPolicy::LogCallstackForFatalErrorOnce(LPCWSTR errorMessage)
         return;
     }
 
-    LogInfoForFatalError(0, errorMessage, nullptr, nullptr, nullptr);
+    InlineSString<256> nativeCrashMessage;
+    nativeCrashMessage.Append(W("Got a "));
+    nativeCrashMessage.Append(errorMessage);
+    nativeCrashMessage.Append(W(" while executing native code. This usually indicates\n")
+                              W("a fatal error in the runtime or one of the native libraries\n")
+                              W("used by your application."));
+
+    LogInfoForFatalError(0, nativeCrashMessage.GetUnicode(), nullptr, nullptr, nullptr);
 }
 
 void EEPolicy::CallstackForFatalErrorLogged()

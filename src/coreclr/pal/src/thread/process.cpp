@@ -2766,8 +2766,8 @@ PROCLogCallstackForFatalError(int signal)
 {
     if (g_logCallstackForFatalErrorCallback != nullptr)
     {
-        LPCWSTR errorMessage = GetSignalName(signal);
-        g_logCallstackForFatalErrorCallback(errorMessage);
+        LPCWSTR signalName = GetSignalName(signal);
+        g_logCallstackForFatalErrorCallback(signalName);
     }
 }
 
