@@ -301,7 +301,7 @@ namespace NativeFormat
             offset = DecodeUnsigned(offset, &numBytes);
 
             uint endOffset = offset + numBytes;
-            if (endOffset < numBytes || offset > _size)
+            if (endOffset < numBytes || endOffset > _size)
                 ThrowBadImageFormatException();
 
             if (numBytes != valueLength)
