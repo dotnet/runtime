@@ -2743,6 +2743,7 @@ static LPCWSTR GetSignalName(int signal)
         case SIGFPE:  return W("SIGFPE");
         case SIGILL:  return W("SIGILL");
         case SIGABRT: return W("SIGABRT");
+        case SIGTRAP: return W("SIGTRAP");
         case SIGTERM: return W("SIGTERM");
         default:      return W("Unknown signal");
     }
