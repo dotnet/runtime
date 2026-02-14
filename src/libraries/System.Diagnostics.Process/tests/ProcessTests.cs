@@ -93,6 +93,10 @@ namespace System.Diagnostics.Tests
             {
                 foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
                 {
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be caught or ignored
+                    }
                     yield return new object[] { signal };
                 }
                 // Test a few raw signals.

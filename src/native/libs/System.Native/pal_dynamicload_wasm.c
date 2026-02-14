@@ -11,19 +11,19 @@
 
 void* SystemNative_LoadLibrary(const char* filename)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
     return NULL;
 }
 
 void* SystemNative_GetLoadLibraryError(void)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
     return NULL;
 }
 
 void* SystemNative_GetProcAddress(void* handle, const char* symbol)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
     return NULL;
 }
 
@@ -33,6 +33,6 @@ void SystemNative_FreeLibrary(void* handle)
 
 void* SystemNative_GetDefaultSearchOrderPseudoHandle(void)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
     return NULL;
 }
