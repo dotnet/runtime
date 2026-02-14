@@ -492,31 +492,25 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            long sizeRead = coherentState.Size;
-            for (int i = 0; i < 100; i++)
+            long delta = entry.Size;
+            if (priorEntry != null)
             {
-                long newSize = sizeRead + entry.Size;
-                if (priorEntry != null)
-                {
-                    Debug.Assert(entry.Key == priorEntry.Key);
-                    newSize -= priorEntry.Size;
-                }
-
-                if ((ulong)newSize > (ulong)sizeLimit)
-                {
-                    // Overflow occurred, return true without updating the cache size
-                    return true;
-                }
-
-                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
-                if (sizeRead == original)
-                {
-                    return false;
-                }
-                sizeRead = original;
+                Debug.Assert(entry.Key == priorEntry.Key);
+                delta -= priorEntry.Size;
             }
 
-            return true;
+            // Use Interlocked.Add (wait-free) instead of a CompareExchange retry loop
+            // to avoid CPU spikes under high concurrency. See https://github.com/dotnet/runtime/issues/111959
+            long newSize = Interlocked.Add(ref coherentState._cacheSize, delta);
+
+            if ((ulong)newSize > (ulong)sizeLimit)
+            {
+                // Exceeded capacity — roll back the optimistic addition
+                Interlocked.Add(ref coherentState._cacheSize, -delta);
+                return true;
+            }
+
+            return false;
         }
 
         private int lockFlag;
