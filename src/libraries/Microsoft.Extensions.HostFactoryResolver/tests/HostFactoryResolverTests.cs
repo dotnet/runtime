@@ -309,14 +309,16 @@ namespace Microsoft.Extensions.Hosting.Tests
             var factory = HostFactoryResolver.ResolveServiceProviderFactory(typeof(NoSpecialEntryPointPattern.Program).Assembly, s_WaitTimeout);
             Assert.NotNull(factory);
 
-            var contextMarker = new AsyncLocal<object>();
             var weakReferences = new WeakReference[10];
+            var contextMarker = new AsyncLocal<object>();
+            ExecutionContext[] executionContexts = new ExecutionContext[weakReferences.Length];
 
             for (int i = 0; i < weakReferences.Length; i++)
             {
                 contextMarker.Value = new object();
                 ExecutionContext executionContext = ExecutionContext.Capture()!;
                 Assert.NotNull(executionContext);
+                executionContexts[i] = executionContext;
                 int index = i;
                 ExecutionContext.Run(executionContext, _ =>
                 {
@@ -345,6 +347,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 return collectedCount >= expectedMinCollected;
             }, TimeSpan.FromSeconds(5)),
                 $"Expected at least {expectedMinCollected} objects to be collected, but only fewer were collected. This may indicate a memory leak.");
+
+            GC.KeepAlive(executionContexts);
         }
     }
 }
