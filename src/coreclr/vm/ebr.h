@@ -97,7 +97,7 @@ private:
     bool TryAdvanceEpoch();
 
     // Reclamation
-    size_t DrainQueue(uint32_t slot);
+    EbrPendingEntry* DetachQueue(uint32_t slot);
     void TryReclaim();
 
     // Configuration

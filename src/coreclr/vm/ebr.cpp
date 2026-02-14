@@ -28,8 +28,15 @@ struct EbrThreadData
 };
 
 // Singly-linked list node for pending deletions.
-struct EbrPendingEntry
+struct EbrPendingEntry final
 {
+    EbrPendingEntry(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize)
+        : m_pObject{ pObject }
+        , m_pfnDelete{ pfnDelete }
+        , m_estimatedSize{ estimatedSize }
+        , m_pNext{ nullptr }
+    {}
+
     void*            m_pObject;
     EbrDeleteFunc    m_pfnDelete;
     size_t           m_estimatedSize;
@@ -43,6 +50,9 @@ struct EbrPendingEntry
 static thread_local EbrThreadData t_pThreadData = {};
 
 // Global EBR collector for HashMap's async mode.
+// If you want to add another usage for Ebr in the future, please consider
+// the tradeoffs between creating multiple collectors or treating this as
+// a single shared global collector.
 EbrCollector g_HashMapEbr;
 
 // Count of objects leaked due to OOM when queuing for deferred deletion.
@@ -77,6 +87,24 @@ EbrCollector::Init(CrstType crstThreadList, CrstType crstPending, size_t memoryB
     m_initialized = true;
 }
 
+// Delete all entries in a detached pending list. Must be called outside m_pendingLock.
+// Returns the total estimated size freed.
+static size_t DeletePendingEntries(EbrPendingEntry* pEntry)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t freedSize = 0;
+    while (pEntry != nullptr)
+    {
+        EbrPendingEntry* pNext = pEntry->m_pNext;
+        pEntry->m_pfnDelete(pEntry->m_pObject);
+        freedSize += pEntry->m_estimatedSize;
+        delete pEntry;
+        pEntry = pNext;
+    }
+    return freedSize;
+}
+
 void
 EbrCollector::Shutdown()
 {
@@ -91,11 +119,14 @@ EbrCollector::Shutdown()
         return;
 
     // Drain all pending queues unconditionally.
+    EbrPendingEntry* pDetached[EBR_EPOCHS];
     {
         CrstHolder lock(&m_pendingLock);
         for (uint32_t i = 0; i < EBR_EPOCHS; i++)
-            DrainQueue(i);
+            pDetached[i] = DetachQueue(i);
     }
+    for (uint32_t i = 0; i < EBR_EPOCHS; i++)
+        DeletePendingEntries(pDetached[i]);
 
     // Threads should have exited their critical regions by now. We walk the list and clear them.
     {
@@ -329,26 +360,16 @@ EbrCollector::TryAdvanceEpoch()
 // Deferred deletion
 // ============================================
 
-size_t
-EbrCollector::DrainQueue(uint32_t slot)
+// Detach the pending list for a given slot. Must be called under m_pendingLock.
+// Returns the head of the detached list.
+EbrPendingEntry*
+EbrCollector::DetachQueue(uint32_t slot)
 {
     LIMITED_METHOD_CONTRACT;
 
-    size_t freedSize = 0;
-
-    EbrPendingEntry* pEntry = m_pPendingHeads[slot];
+    EbrPendingEntry* pHead = m_pPendingHeads[slot];
     m_pPendingHeads[slot] = nullptr;
-
-    while (pEntry != nullptr)
-    {
-        EbrPendingEntry* pNext = pEntry->m_pNext;
-        pEntry->m_pfnDelete(pEntry->m_pObject);
-        freedSize += pEntry->m_estimatedSize;
-        delete pEntry;
-        pEntry = pNext;
-    }
-
-    return freedSize;
+    return pHead;
 }
 
 void
@@ -363,14 +384,19 @@ EbrCollector::TryReclaim()
 
     if (TryAdvanceEpoch())
     {
-        CrstHolder lock(&m_pendingLock);
+        EbrPendingEntry* pDetached;
+        {
+            CrstHolder lock(&m_pendingLock);
 
-        // Objects retired 2 epochs ago are safe to delete. With 3 epochs
-        // and clock arithmetic, the safe slot is (current + 1) % 3.
-        uint32_t currentEpoch = m_globalEpoch;
-        uint32_t safeSlot = (currentEpoch + 1) % EBR_EPOCHS;
+            // Objects retired 2 epochs ago are safe to delete. With 3 epochs
+            // and clock arithmetic, the safe slot is (current + 1) % 3.
+            uint32_t currentEpoch = m_globalEpoch;
+            uint32_t safeSlot = (currentEpoch + 1) % EBR_EPOCHS;
 
-        size_t freed = DrainQueue(safeSlot);
+            pDetached = DetachQueue(safeSlot);
+        }
+
+        size_t freed = DeletePendingEntries(pDetached);
         if (freed > 0)
         {
             _ASSERTE((size_t)m_pendingSizeInBytes >= freed);
@@ -399,7 +425,7 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     _ASSERTE(pData->m_pCollector == this && pData->m_criticalDepth > 0);
 
     // Allocate pending entry.
-    EbrPendingEntry* pEntry = new (nothrow) EbrPendingEntry();
+    EbrPendingEntry* pEntry = new (nothrow) EbrPendingEntry(pObject, pfnDelete, estimatedSize);
     if (pEntry == nullptr)
     {
         // If we can't allocate, we must not delete pObject immediately, because
@@ -409,11 +435,6 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
         InterlockedIncrement(&s_ebrLeakedDeletionCount);
         return;
     }
-
-    pEntry->m_pObject = pObject;
-    pEntry->m_pfnDelete = pfnDelete;
-    pEntry->m_estimatedSize = estimatedSize;
-    pEntry->m_pNext = nullptr;
 
     // Insert into the current epoch's pending list.
     {
