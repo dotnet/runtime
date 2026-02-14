@@ -6,12 +6,6 @@
     <Target>T:Internal.Console</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute</Target>
-    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Resources.ResourceManager.BaseNameField</Target>
   </Suppression>
