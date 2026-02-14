@@ -322,6 +322,11 @@ def main():
     print(f"Using temp work directory: {work_dir_base}")
 
     work_dir_base = work_dir_base / "crank_data"
+    # delete crank_data if it already exists from a previous run to ensure a clean state
+    if work_dir_base.exists():
+        print(f"Cleaning existing work directory {work_dir_base} from previous run...")
+        shutil.rmtree(work_dir_base)
+
     work_dir_base.mkdir(parents=True, exist_ok=True)
 
     # Set current working directory to work_dir_base
