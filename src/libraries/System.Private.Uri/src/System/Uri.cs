@@ -3672,6 +3672,9 @@ namespace System
             return UriParser.FindOrFetchAsUnknownV1Syntax(UriHelper.SpanToLowerInvariantString(scheme));
         }
 
+        private static readonly SearchValues<char> s_userInfoEndChars =
+            SearchValues.Create(@"@?#\/");
+
         // Checks the syntax of an authority component. It may also get a userInfo if present
         // Returns an error if no/mailformed authority found
         // Does not NOT touch _info
@@ -3718,33 +3721,24 @@ namespace System
 
             if ((syntaxFlags & UriSyntaxFlags.MayHaveUserInfo) != 0)
             {
-                for (; (uint)i < (uint)str.Length; i++)
+                ReadOnlySpan<char> slice = str.Slice(i);
+                int userInfoLength = slice.IndexOfAny(s_userInfoEndChars);
+
+                // Check if the first delimiter is '@' and there's at least one character after it.
+                if ((uint)userInfoLength < (uint)slice.Length && slice[userInfoLength] == '@' && (uint)(++userInfoLength) < (uint)slice.Length)
                 {
-                    ch = str[i];
+                    ch = slice[userInfoLength];
+                    i += userInfoLength;
 
-                    if ((uint)(i + 1) >= (uint)str.Length || ch == '?' || ch == '#' || ch == '\\' || ch == '/')
+                    flags |= Flags.HasUserInfo;
+
+                    // Iri'ze userinfo
+                    if (hasUnicode)
                     {
-                        ch = str[startOffset];
-                        i = startOffset;
-                        break;
-                    }
-
-                    if (ch == '@')
-                    {
-                        flags |= Flags.HasUserInfo;
-
-                        // Iri'ze userinfo
-                        if (hasUnicode)
-                        {
-                            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                            IriHelper.EscapeUnescapeIri(ref vsb, str.Slice(startOffset, i - startOffset + 1), isQuery: false);
-                            newHost = string.Concat(newHost, vsb.AsSpan());
-                            vsb.Dispose();
-                        }
-
-                        ch = str[i + 1];
-                        i++;
-                        break;
+                        var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                        IriHelper.EscapeUnescapeIri(ref vsb, str.Slice(startOffset, userInfoLength), isQuery: false);
+                        newHost = string.Concat(newHost, vsb.AsSpan());
+                        vsb.Dispose();
                     }
                 }
             }
