@@ -641,47 +641,36 @@ namespace System
             // This parser will allow the relativeStr to be an absolute Uri with the different scheme
             // In fact this is strict violation of RFC2396
             //
-            for (int i = 0; i < relativeStr.Length; ++i)
+            int i = relativeStr.IndexOfAny(s_segmentSeparatorChars);
+
+            // Note we don't support one-letter Uri schemes (i > 1).
+            // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
+            if ((uint)i < (uint)relativeStr.Length && relativeStr[i] == ':' && i > 1)
             {
-                if (relativeStr[i] == '/' || relativeStr[i] == '\\' || relativeStr[i] == '?' || relativeStr[i] == '#')
-                {
-                    break;
-                }
-                else if (relativeStr[i] == ':')
-                {
-                    if (i < 2)
-                    {
-                        // Note we don't support one-letter Uri schemes.
-                        // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
-                        break;
-                    }
+                ParsingError error = ParsingError.None;
+                UriParser? syntax = CheckSchemeSyntax(relativeStr.AsSpan(0, i), ref error);
 
-                    ParsingError error = ParsingError.None;
-                    UriParser? syntax = CheckSchemeSyntax(relativeStr.AsSpan(0, i), ref error);
-
-                    if (error == ParsingError.None)
+                if (error == ParsingError.None)
+                {
+                    if (baseUri.Syntax == syntax)
                     {
-                        if (baseUri.Syntax == syntax)
+                        //Remove the scheme for backward Uri parsers compatibility
+                        if (i + 1 < relativeStr.Length)
                         {
-                            //Remove the scheme for backward Uri parsers compatibility
-                            if (i + 1 < relativeStr.Length)
-                            {
-                                relativeStr = relativeStr.Substring(i + 1);
-                            }
-                            else
-                            {
-                                relativeStr = string.Empty;
-                            }
+                            relativeStr = relativeStr.Substring(i + 1);
                         }
                         else
                         {
-                            // This is the place where we switch the scheme.
-                            // Return relative part as the result Uri.
-                            result = relativeStr;
-                            return;
+                            relativeStr = string.Empty;
                         }
                     }
-                    break;
+                    else
+                    {
+                        // This is the place where we switch the scheme.
+                        // Return relative part as the result Uri.
+                        result = relativeStr;
+                        return;
+                    }
                 }
             }
 
