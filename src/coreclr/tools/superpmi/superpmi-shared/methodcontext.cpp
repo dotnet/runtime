@@ -6447,6 +6447,26 @@ void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     }
 }
 
+void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType value)
+{
+    if (GetWasmLowering == nullptr)
+        GetWasmLowering = new LightWeightMap<DWORDLONG, DWORD>();
+    DWORDLONG key = CastHandle(structHnd);
+    GetWasmLowering->Add(key, (DWORD) value);
+    DEBUG_REC(dmpGetWasmLowering(key, value));
+}
+void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
+{
+    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d ", key, value);
+}
+CorInfoWasmType MethodContext::repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+    DWORD value = LookupByKeyOrMiss(GetWasmLowering, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetWasmLowering(key, value));
+    return (CorInfoWasmType) value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, CorInfoReloc result)
 {
     if (GetRelocTypeHint == nullptr)

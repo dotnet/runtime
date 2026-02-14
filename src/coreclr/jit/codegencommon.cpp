@@ -1876,18 +1876,12 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
+        printf(Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_64BIT)
-        printf("generic X64");
-#else
-        printf("generic X86");
-#endif
-
         // Check ISA directly here instead of using
         // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
         // us miss in SPMI
-
         if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf(" + VEX");
@@ -1902,21 +1896,11 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" + APX");
         }
-#elif defined(TARGET_ARM)
-        printf("generic ARM");
 #elif defined(TARGET_ARM64)
-        printf("generic ARM64");
-
         if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
         {
             printf(" + SVE");
         }
-#elif defined(TARGET_LOONGARCH64)
-        printf("generic LOONGARCH64");
-#elif defined(TARGET_RISCV64)
-        printf("generic RISCV64");
-#else
-        printf("unknown architecture");
 #endif
 
         if (TargetOS::IsWindows)
