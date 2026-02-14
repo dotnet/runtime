@@ -7,36 +7,36 @@
 using System.Reflection;
 using System.Reflection.Emit;
 
-#region CreateAndInvoke
-// Create a dynamic method with return type int and two parameters (string, int).
-DynamicMethod hello = new("Hello", typeof(int), [typeof(string), typeof(int)], typeof(string).Module);
-
-// Emit a body: print the string argument, then return the int argument.
-MethodInfo writeString = typeof(Console).GetMethod("WriteLine", [typeof(string)])!;
-ILGenerator il = hello.GetILGenerator();
-il.Emit(OpCodes.Ldarg_0);
-il.EmitCall(OpCodes.Call, writeString, null);
-il.Emit(OpCodes.Ldarg_1);
-il.Emit(OpCodes.Ret);
-
-// Create a delegate that represents the dynamic method.
-Func<string, int, int> hi = hello.CreateDelegate<Func<string, int, int>>();
-
-// Execute via delegate.
-int retval = hi("Hello, World!", 42);
-Console.WriteLine($"Delegate returned: {retval}");
-
-// Execute via Invoke (slower — requires boxing and array allocation).
-object? objRet = hello.Invoke(null, ["Hello via Invoke!", 99]);
-Console.WriteLine($"Invoke returned: {objRet}");
-#endregion CreateAndInvoke
-
-// Verify results
-if (retval != 42 || objRet is not 99)
-{
-    Console.Error.WriteLine("FAIL: unexpected return values");
-    return 1;
-}
+CreateAndInvoke();
 
 Console.WriteLine("Passed.");
 return 0;
+
+void CreateAndInvoke()
+{
+    // Create a dynamic method with return type int and two parameters (string, int).
+    DynamicMethod hello = new("Hello", typeof(int), [typeof(string), typeof(int)], typeof(string).Module);
+
+    // Emit a body: print the string argument, then return the int argument.
+    MethodInfo writeString = typeof(Console).GetMethod("WriteLine", [typeof(string)])!;
+    ILGenerator il = hello.GetILGenerator();
+    il.Emit(OpCodes.Ldarg_0);
+    il.EmitCall(OpCodes.Call, writeString, null);
+    il.Emit(OpCodes.Ldarg_1);
+    il.Emit(OpCodes.Ret);
+
+    // Create a delegate that represents the dynamic method.
+    Func<string, int, int> hi = hello.CreateDelegate<Func<string, int, int>>();
+
+    // Execute via delegate.
+    int retval = hi("Hello, World!", 42);
+    Console.WriteLine($"Delegate returned: {retval}");
+
+    // Execute via Invoke (slower — requires boxing and array allocation).
+    object? objRet = hello.Invoke(null, ["Hello via Invoke!", 99]);
+    Console.WriteLine($"Invoke returned: {objRet}");
+
+    // Verify results
+    if (retval != 42 || objRet is not 99)
+        throw new Exception("FAIL: unexpected return values");
+}
