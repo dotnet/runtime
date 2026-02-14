@@ -52,6 +52,10 @@ bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_
     if (!decompress_u32(&begin, &data_len, &byte_count))
         return false;
 
+    // A user string cannot extend beyond the end of the user string heap.
+    if (begin + byte_count > h->ptr + h->size)
+        return false;
+
     if (byte_count == 0)
     {
         memset(str, 0, sizeof(*str));

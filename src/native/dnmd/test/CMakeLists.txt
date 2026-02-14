@@ -2,11 +2,6 @@
 include(../configure.cmake)
 include(FindNetHost.cmake)
 
-if (POLICY CMP0135)
-  cmake_policy(SET CMP0135 NEW) # Set timestamps in downloaded archives to the time of download.
-endif()
-
-include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY
@@ -39,3 +34,6 @@ add_subdirectory(regpal)
 add_subdirectory(regperf)
 add_subdirectory(regtest)
 add_subdirectory(emit)
+if (DNMD_ENABLE_FUZZING)
+    add_subdirectory(regfuzz)
+endif()
