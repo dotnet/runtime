@@ -18,7 +18,9 @@ namespace System.Reflection.Emit
     /// </remarks>
     /// <example>
     /// The following example creates a dynamic method, emits a method body, and executes it via a delegate and via <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/>.
-    /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
+    /// </example>
+    /// <example>
+    /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Creating and invoking a DynamicMethod" />
     /// </example>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
     /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
@@ -139,8 +141,10 @@ namespace System.Reflection.Emit
         /// The dynamic method created with this constructor has access to public and <c>internal</c> (<c>Friend</c> in Visual Basic) members of all the types contained in module <c>m</c>.
         /// >  For backward compatibility, this constructor demands <see cref="System.Security.Permissions.SecurityPermission"/> with the <see cref="System.Security.Permissions.SecurityPermissionFlag.ControlEvidence">ControlEvidence</see> flag if the following conditions are both true: <c>m</c> is a module other than the calling module, and the demand for <see cref="System.Security.Permissions.ReflectionPermission"/> with the <see cref="System.Security.Permissions.ReflectionPermissionFlag.MemberAccess">MemberAccess</see> flag has failed. If the demand for <see cref="System.Security.Permissions.SecurityPermission"/> succeeds, the operation is allowed.
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke%28System.Object%2CSystem.Reflection.BindingFlags%2CSystem.Reflection.Binder%2CSystem.Object%5B%5D%2CSystem.Globalization.CultureInfo%29"/> method.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Creating a DynamicMethod associated with a module" />
+        /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
@@ -273,8 +277,10 @@ namespace System.Reflection.Emit
         /// The example code then creates a <see cref="System.Reflection.Emit.DynamicMethod"/> that changes the private field of an instance of <c>Example</c> and returns the previous value.
         /// The example code creates an instance of <c>Example</c> and then creates two delegates. The first is of type <c>UseLikeStatic</c>, which has the same parameters as the dynamic method. The second is of type <c>UseLikeInstance</c>, which lacks the first parameter (of type <c>Example</c>). This delegate is created using the <see cref="System.Reflection.Emit.DynamicMethod.CreateDelegate%28System.Type%2CSystem.Object%29"/> method overload; the second parameter of that method overload is an instance of <c>Example</c>, in this case the instance just created, which is bound to the newly created delegate. Whenever that delegate is invoked, the dynamic method acts on the bound instance of <c>Example</c>.
         /// The <c>UseLikeStatic</c> delegate is invoked, passing in the instance of <c>Example</c> that is bound to the <c>UseLikeInstance</c> delegate. Then the <c>UseLikeInstance</c> delegate is invoked, so that both delegates act on the same instance of <c>Example</c>. The changes in the values of the internal field are displayed after each call. Finally, a <c>UseLikeInstance</c> delegate is bound to an instance of <c>DerivedFromExample</c>, and the delegate calls are repeated.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.CtorOwnerType.cs" region="Snippet1" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.CtorOwnerType.cs" region="Snippet1" title="Creating a DynamicMethod with an owner type" />
+        /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/security-issues-in-reflection-emit">Security Issues in Reflection Emit</related>
         [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
@@ -504,8 +510,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// The signature includes only types and the method name, if any. Parameter names are not included.
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.ToString"/> method of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ToString" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ToString" title="Getting the string representation of a DynamicMethod" />
+        /// </example>
         public override string ToString()
         {
             var sbName = new ValueStringBuilder(MethodNameBufferSize);
@@ -530,8 +538,10 @@ namespace System.Reflection.Emit
         /// It is not necessary to name dynamic methods.
         /// </note>
         /// The following code example displays the name of a dynamic method. This code example is part of a larger example provided for  the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Name" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Name" title="Getting the name of a DynamicMethod" />
+        /// </example>
         public override string Name => _name;
 
         /// <summary>
@@ -541,8 +551,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// This property always returns <c>null</c> for dynamic methods. Even when a dynamic method is logically associated with a type, it is not declared by the type.
         /// The following code example displays the declaring type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DeclaringType" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="DeclaringType" title="Getting the declaring type of a DynamicMethod" />
+        /// </example>
         public override Type? DeclaringType => null;
 
         /// <summary>
@@ -552,8 +564,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// This property always returns <c>null</c> for dynamic methods.
         /// The following code example displays the reflected type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReflectedType" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReflectedType" title="Getting the reflected type of a DynamicMethod" />
+        /// </example>
         public override Type? ReflectedType => null;
 
         /// <summary>
@@ -563,8 +577,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// If a module was specified when the dynamic method was created, this property returns that module. If a type was specified as the owner when the dynamic method was created, this property returns the module that contains that type.
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.Module"/> property of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Module" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Module" title="Getting the module of a DynamicMethod" />
+        /// </example>
         public override Module Module => _module;
 
         // we cannot return a MethodHandle because we cannot track it via GC so this method is off limits
@@ -582,8 +598,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// Currently, the method attributes for a dynamic method are always <see cref="System.Reflection.MethodAttributes.Public"/> and <see cref="System.Reflection.MethodAttributes.Static"/>.
         /// The following code example displays the method attributes of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="Attributes" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="Attributes" title="Getting the attributes of a DynamicMethod" />
+        /// </example>
         public override MethodAttributes Attributes => _attributes;
 
         /// <summary>
@@ -593,8 +611,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// Currently, the calling convention for a dynamic method is always <see cref="System.Reflection.CallingConventions.Standard"/>.
         /// The following code example displays the calling convention of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="CallingConvention" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="CallingConvention" title="Getting the calling convention of a DynamicMethod" />
+        /// </example>
         public override CallingConventions CallingConvention => _callingConvention;
 
         /// <summary>
@@ -613,8 +633,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// The <see cref="System.Reflection.ParameterInfo"/> objects returned by this method are for information only. Use the <see cref="System.Reflection.Emit.DynamicMethod.DefineParameter"/> method to set or change the characteristics of the parameters.
         /// The following code example displays the parameters of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="GetParameters" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="GetParameters" title="Getting parameter info from a DynamicMethod" />
+        /// </example>
         public override ParameterInfo[] GetParameters() =>
             GetParametersAsSpan().ToArray();
 
@@ -810,8 +832,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// If <c>null</c> was specified for the return type when the dynamic method was created, this property returns <see cref="System.Void">Void</see>.
         /// The following code example displays the return type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnType" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReturnType" title="Getting the return type of a DynamicMethod" />
+        /// </example>
         public override Type ReturnType => _returnType;
 
         /// <summary>
@@ -830,8 +854,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// Custom attributes are not supported on the return type of a dynamic method, so the array of custom attributes returned by the <see cref="System.Reflection.ICustomAttributeProvider.GetCustomAttributes"/> method is always empty.
         /// The following code example shows how to display the custom attributes of the return type of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="ReturnTypeCustomAttributes" title="Getting return type custom attributes" />
+        /// </example>
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         //
@@ -850,8 +876,10 @@ namespace System.Reflection.Emit
         /// If <c>position</c> is 0, the <see cref="System.Reflection.Emit.DynamicMethod.DefineParameter"/> method refers to the return value. Setting parameter information has no effect on the return value.
         /// If the dynamic method has already been completed, by calling the <see cref="System.Reflection.Emit.DynamicMethod.CreateDelegate"/> or <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method, the <see cref="System.Reflection.Emit.DynamicMethod.DefineParameter"/> method has no effect. No exception is thrown.
         /// The following code example shows how to define parameter information for a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="DefineParameter" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="DefineParameter" title="Defining parameters on a DynamicMethod" />
+        /// </example>
         public ParameterBuilder? DefineParameter(int position, ParameterAttributes attributes, string? parameterName)
         {
             if (position < 0 || position > _parameterTypes.Length)
@@ -877,8 +905,10 @@ namespace System.Reflection.Emit
         /// </note>
         /// After a dynamic method has been completed, by calling the <see cref="System.Reflection.Emit.DynamicMethod.CreateDelegate"/> or <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method, any further attempt to add MSIL is ignored. No exception is thrown.
         /// The following code example creates a dynamic method that takes two parameters. The example emits a simple function body that prints the first parameter to the console, and the example uses the second parameter as the return value of the method. The example completes the method by creating a delegate, invokes the delegate with different parameters, and finally invokes the dynamic method using the <see cref="System.Reflection.Emit.DynamicMethod.Invoke"/> method.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Overview.cs" region="Snippet1" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Overview.cs" region="Snippet1" title="Getting the IL generator for a DynamicMethod" />
+        /// </example>
         /// <related type="Article" href="/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods">How to: Define and Execute Dynamic Methods</related>
         public ILGenerator GetILGenerator()
         {
@@ -892,8 +922,10 @@ namespace System.Reflection.Emit
         /// <remarks>
         /// If this property is set to <c>true</c>, the emitted Microsoft intermediate language (MSIL) includes initialization of local variables. If it is set to <c>false</c>, local variables are not initialized and the generated code is unverifiable.
         /// The following code example displays the <see cref="System.Reflection.Emit.DynamicMethod.InitLocals"/> property of a dynamic method. This code example is part of a larger example provided for the <see cref="System.Reflection.Emit.DynamicMethod"/> class.
-        /// <code lang="cs" source="../../../../samples/System/Reflection/Emit/DynamicMethod.Examples.cs" region="InitLocals" />
         /// </remarks>
+        /// <example>
+        /// <code lang="cs" source="../../../../samples/DynamicMethod.Examples.cs" region="InitLocals" title="Checking InitLocals on a DynamicMethod" />
+        /// </example>
         public bool InitLocals
         {
             get => _initLocals;
