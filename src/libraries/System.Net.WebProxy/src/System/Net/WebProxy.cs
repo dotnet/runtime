@@ -398,7 +398,6 @@ namespace System.Net
         /// </summary>
         /// <param name="serializationInfo">The <see cref="SerializationInfo"/> to populate with data.</param>
         /// <param name="streamingContext">A <see cref="StreamingContext"/> that specifies the destination for this serialization.</param>
-        /// <exception cref="PlatformNotSupportedException">This method is not supported on .NET Core and will always throw <see cref="PlatformNotSupportedException"/>.</exception>
         /// <exception cref="PlatformNotSupportedException">This method is not supported and will always throw <see cref="PlatformNotSupportedException"/>.</exception>
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
