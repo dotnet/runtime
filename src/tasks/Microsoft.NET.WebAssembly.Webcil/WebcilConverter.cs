@@ -22,8 +22,6 @@ public class WebcilConverter
         ImmutableArray<SectionHeader> SectionHeaders,
         // The location of the debug directory entries
         DirectoryEntry DebugTableDirectory,
-        // The file offset of the sections, following the section directory
-        FilePosition SectionStart,
         // The debug directory entries
         ImmutableArray<DebugDirectoryEntry> DebugDirectoryEntries
         );
@@ -150,21 +148,9 @@ public class WebcilConverter
         // The first WC section is immediately after the section directory (plus alignment padding)
         FilePosition firstWCSection = curSectionPos;
 
-        FilePosition firstPESection = 0;
-
         ImmutableArray<WebcilSectionHeader>.Builder headerBuilder = ImmutableArray.CreateBuilder<WebcilSectionHeader>(coffHeader.NumberOfSections);
         foreach (var sectionHeader in sections)
         {
-            // The first section is the one with the lowest file offset
-            if (firstPESection.Position == 0)
-            {
-                firstPESection = sectionHeader.PointerToRawData;
-            }
-            else
-            {
-                firstPESection = Math.Min(firstPESection.Position, sectionHeader.PointerToRawData);
-            }
-
             var newHeader = new WebcilSectionHeader
             (
                 virtualSize: sectionHeader.VirtualSize,
@@ -184,7 +170,6 @@ public class WebcilConverter
 
         peInfo = new PEFileInfo(SectionHeaders: sections,
                                 DebugTableDirectory: peHeader.DebugTableDirectory,
-                                SectionStart: firstPESection,
                                 DebugDirectoryEntries: debugDirectoryEntries);
 
         wcInfo = new WCFileInfo(Header: header,
@@ -312,40 +297,16 @@ public class WebcilConverter
         throw new InvalidOperationException("relative virtual address not in any section");
     }
 
-    // Given a physical file offset, return the section and the offset within the section.
-    private (WebcilSectionHeader section, int offset) GetSectionFromFileOffset(ImmutableArray<WebcilSectionHeader> peSections, FilePosition fileOffset)
+    // Make a new set of debug directory entries whose DataPointer fields
+    // are correct for the webcil layout.  DataPointer is a file offset, and
+    // the mapping from RVA→file-offset differs between PE and WebCIL because
+    // inter-section alignment padding may differ (PE uses FileAlignment, e.g.
+    // 512 bytes; WebCIL uses SectionAlignment, e.g. 16 bytes).  We therefore
+    // derive each entry's new DataPointer from its DataRelativeVirtualAddress
+    // (which is the same in both formats) rather than applying a single constant
+    // offset that is only correct when all per-section padding happens to match.
+    private static ImmutableArray<DebugDirectoryEntry> FixupDebugDirectoryEntries(PEFileInfo peInfo, WCFileInfo wcInfo)
     {
-        foreach (var section in peSections)
-        {
-            if (fileOffset.Position >= section.PointerToRawData && fileOffset.Position < section.PointerToRawData + section.SizeOfRawData)
-            {
-                return (section, fileOffset.Position - section.PointerToRawData);
-            }
-        }
-
-        throw new InvalidOperationException($"file offset not in any section (Webcil) for {InputPath}");
-    }
-
-    private void GetSectionFromFileOffset(ImmutableArray<SectionHeader> sections, FilePosition fileOffset)
-    {
-        foreach (var section in sections)
-        {
-            if (fileOffset.Position >= section.PointerToRawData && fileOffset.Position < section.PointerToRawData + section.SizeOfRawData)
-            {
-                return;
-            }
-        }
-
-        throw new InvalidOperationException($"file offset {fileOffset.Position} not in any section (PE) for {InputPath}");
-    }
-
-    // Make a new set of debug directory entries that
-    // have their data pointers adjusted to be relative to the start of the webcil file.
-    // This is necessary because the debug directory entires in the PE file are relative to the start of the PE file,
-    // and a PE header is bigger than a webcil header.
-    private ImmutableArray<DebugDirectoryEntry> FixupDebugDirectoryEntries(PEFileInfo peInfo, WCFileInfo wcInfo)
-    {
-        int dataPointerAdjustment = peInfo.SectionStart.Position - wcInfo.SectionStart.Position;
         ImmutableArray<DebugDirectoryEntry> entries = peInfo.DebugDirectoryEntries;
         ImmutableArray<DebugDirectoryEntry>.Builder newEntries = ImmutableArray.CreateBuilder<DebugDirectoryEntry>(entries.Length);
         foreach (var entry in entries)
@@ -358,12 +319,10 @@ public class WebcilConverter
             }
             else
             {
-                // the "DataPointer" field is a file offset in the PE file, adjust the entry wit the corresponding offset in the Webcil file
-                var newDataPointer = entry.DataPointer - dataPointerAdjustment;
+                // Map the entry's RVA to the corresponding file offset in the WebCIL layout.
+                int newDataPointer = GetPositionOfRelativeVirtualAddress(
+                    wcInfo.SectionHeaders, (uint)entry.DataRelativeVirtualAddress).Position;
                 newEntry = new DebugDirectoryEntry(entry.Stamp, entry.MajorVersion, entry.MinorVersion, entry.Type, entry.DataSize, entry.DataRelativeVirtualAddress, newDataPointer);
-                GetSectionFromFileOffset(peInfo.SectionHeaders, entry.DataPointer);
-                // validate that the new entry is in some section
-                GetSectionFromFileOffset(wcInfo.SectionHeaders, newDataPointer);
             }
             newEntries.Add(newEntry);
         }

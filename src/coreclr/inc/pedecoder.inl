@@ -593,6 +593,40 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
                 *pSize = 0;
             RETURN (TADDR)NULL;
         }
+
+        // Validate that the {rva, size} range falls within a section's
+        // backed data.  The normal PE path does this via CheckDirectoryEntry
+        // / CheckRva; for WebCIL we must check explicitly.
+        if (rva == 0)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        IMAGE_SECTION_HEADER *section = RvaToSection(rva);
+        if (section == NULL)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        // RvaToSection guarantees rva >= sectionBase, so the subtraction
+        // is safe.  Verify the full [rva, rva+size) range fits within the
+        // section's raw data (for flat/unmapped images) or virtual extent.
+        RVA sectionBase = VAL32(section->VirtualAddress);
+        COUNT_T sectionLimit = IsMapped()
+            ? VAL32(section->Misc.VirtualSize)
+            : VAL32(section->SizeOfRawData);
+        COUNT_T offsetInSection = rva - sectionBase;
+        if (size > sectionLimit - offsetInSection)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
         if (pSize != NULL)
             *pSize = size;
         RETURN GetRvaData(rva);
