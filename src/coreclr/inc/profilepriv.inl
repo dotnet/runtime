@@ -151,9 +151,11 @@ inline void ProfControlBlock::Init()
 
     mainProfilerInfo.ResetPerSessionStatus();
 
-    fProfControlBlockInitialized = TRUE;
-
     fProfilerRequestedRuntimeSuspend = FALSE;
+
+    fRejitOnAttachEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+
+    fProfControlBlockInitialized = TRUE;
 }
 
 

@@ -273,6 +273,8 @@ public:
 
     Volatile<BOOL> fProfilerRequestedRuntimeSuspend;
 
+    BOOL fRejitOnAttachEnabled;
+
     void Init();
     BOOL IsMainProfiler(EEToProfInterfaceImpl *pEEToProf);
     BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
