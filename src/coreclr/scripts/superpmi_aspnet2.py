@@ -55,8 +55,20 @@ def kill_port(port):
             if pid:
                 subprocess.run(["kill", "-9", pid], check=False)
         else: # Linux
-            # Linux: fuser is the most direct "vanilla" tool
-            subprocess.run(["fuser", "-k", f"{port}/tcp"], check=True)
+            # Linux: Prefer fuser if available; fall back to lsof
+            if shutil.which("fuser") is not None:
+                subprocess.run(["fuser", "-k", f"{port}/tcp"], check=True)
+            elif shutil.which("lsof") is not None:
+                pids_output = subprocess.check_output(
+                    ["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]
+                ).decode().strip()
+                if pids_output:
+                    for pid in pids_output.splitlines():
+                        os.system(f"kill -9 {pid}")
+            else:
+                raise FileNotFoundError(
+                    "Neither 'fuser' nor 'lsof' is available to kill processes by port."
+                )
         print(f"Port {port} cleared.")
     except Exception:
         print(f"Port {port} is already free or permission denied.")
