@@ -145,6 +145,8 @@ namespace System
         [Conditional("DEBUG")]
         private void DebugSetLeftCtor()
         {
+            DebugAssertInCtor();
+
             _flags |= Flags.Debug_LeftConstructor;
 
             AssertInvariants();
@@ -424,7 +426,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -438,7 +439,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, dontEscape, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -456,7 +456,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateUri(baseUri, relativeUri, dontEscape);
-            DebugSetLeftCtor();
         }
 
         //
@@ -467,7 +466,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, uriKind);
-            DebugSetLeftCtor();
         }
 
         /// <summary>
@@ -480,7 +478,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
-            DebugSetLeftCtor();
         }
 
         //
@@ -498,7 +495,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateUri(baseUri, relativeUri, false);
-            DebugSetLeftCtor();
         }
 
         //
@@ -515,7 +511,6 @@ namespace System
             if (uriString!.Length != 0)
             {
                 CreateThis(uriString, false, UriKind.Absolute);
-                DebugSetLeftCtor();
                 return;
             }
 
@@ -524,7 +519,6 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
             CreateThis(uriString, false, UriKind.Relative);
-            DebugSetLeftCtor();
         }
 
         //
@@ -617,7 +611,6 @@ namespace System
                     if (!ReferenceEquals(this, resolvedRelativeUri))
                         CreateThisFromUri(resolvedRelativeUri);
 
-                    DebugSetLeftCtor();
                     return;
                 }
             }
@@ -634,7 +627,6 @@ namespace System
             _syntax = null!;
             _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -3552,11 +3544,7 @@ namespace System
             int colonOffset = uriString.AsSpan(i).IndexOf(':');
 
             // NB: A string must have at least 3 characters and at least 1 before ':'
-            if ((uint)(i + 2) >= (uint)uriString.Length ||
-                colonOffset == 0 ||
-                // Redundant checks to eliminate range checks below
-                (uint)i >= (uint)uriString.Length ||
-                (uint)(i + 1) >= (uint)uriString.Length)
+            if ((uint)(i + 2) >= (uint)uriString.Length || colonOffset == 0)
             {
                 err = ParsingError.BadFormat;
                 return 0;
@@ -3867,7 +3855,7 @@ namespace System
             // Here we have checked the syntax up to the end of host
             // The only thing that can cause an exception is the port value
             // Spend some (duplicated) cycles on that.
-            else if (hostDelimiter == ':')
+            else if (hostDelimiter == ':' && hostLength != 0)
             {
                 if ((syntaxFlags & UriSyntaxFlags.MayHavePort) != 0)
                 {

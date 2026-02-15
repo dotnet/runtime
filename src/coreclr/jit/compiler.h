@@ -985,7 +985,8 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize() const;
+    unsigned  lvExactSize() const;
+    ValueSize lvValueSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -3679,8 +3680,8 @@ public:
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool early = false);
 
-    bool gtStoreDefinesField(
-        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
+    bool gtStoreMayDefineField(
+        LclVarDsc* fieldVarDsc, ssize_t offset, ValueSize size, ssize_t* pFieldRelativeOffset, ValueSize* pFieldAffectedBytes);
 
     void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr) const;
 
@@ -4204,6 +4205,7 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
+    ValueSize lvaLclValueSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -4985,6 +4987,8 @@ private:
 
     bool impCanReimport;
 
+    bool m_nextAwaitIsTail = false;
+
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum
 #ifdef DEBUG
@@ -5731,18 +5735,18 @@ public:
     void fgValueNumberLocalStore(GenTree*             storeNode,
                                  GenTreeLclVarCommon* lclDefNode,
                                  ssize_t              offset,
-                                 unsigned             storeSize,
+                                 ValueSize            storeSize,
                                  ValueNumPair         value,
                                  bool                 normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
-    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
+    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, ValueSize storeSize, ValueNum value);
 
     void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset);
 
     void fgValueNumberFieldStore(
-        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value);
+        GenTree* storeNode, GenTree* baseAddr, FieldSeq* fieldSeq, ssize_t offset, ValueSize storeSize, ValueNum value);
 
     static bool fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq);
 

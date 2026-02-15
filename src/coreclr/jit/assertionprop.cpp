@@ -1385,6 +1385,13 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
         {
             mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
                                                                 /* addIfNotFound */ canAddNewAssertions);
+
+            // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
+            ValueNum addOpVN;
+            if (vnStore->IsVNBinFuncWithConst<int>(newAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, nullptr))
+            {
+                mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
+            }
         }
 
         if (mayHaveDuplicates)
@@ -4589,7 +4596,7 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperIsIndir());
+    assert(tree->OperIsIndirOrArrMetaData());
 
     bool updated = optNonNullAssertionProp_Ind(assertions, tree);
     if (tree->OperIs(GT_STOREIND))
@@ -4776,14 +4783,14 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 //
 bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
 {
-    assert(indir->OperIsIndir());
+    assert(indir->OperIsIndirOrArrMetaData());
 
     if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }
 
-    if (optAssertionIsNonNull(indir->AsIndir()->Addr(), assertions))
+    if (optAssertionIsNonNull(indir->GetIndirOrArrMetaDataAddr(), assertions))
     {
         JITDUMP("Non-null assertion prop for indirection [%06d] in " FMT_BB ":\n", dspTreeID(indir), compCurBB->bbNum);
 
@@ -5295,6 +5302,17 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UMOD:
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
+
+        case GT_ARR_LENGTH:
+            // Unfortunately, doing this in LocalAP produces an asymmetry in exception sets between
+            // uses/defs that CSE does not manage to make good use of. As a result, some bounds checks are no longer
+            // removed.
+            // TODO-CSE: Allow CSE'ing uses with defs if the defs promise a superset of exceptions
+            if (!optLocalAssertionProp)
+            {
+                return optAssertionProp_Ind(assertions, tree, stmt);
+            }
+            return nullptr;
 
         case GT_BLK:
         case GT_IND:
