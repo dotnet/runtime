@@ -438,6 +438,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void MakeFunctionPointerType_FromSignatureType()
+        {
+            Type retType = Type.MakeFunctionPointerSignatureType(typeof(int), []);
+            Type fnPtrType = retType.MakeFunctionPointerType([typeof(bool)]);
+
+            Assert.True(fnPtrType.IsSignatureType);
+            Assert.True(fnPtrType.IsFunctionPointer);
+            AssertFunctionPointerTypesEqual(retType, fnPtrType.GetFunctionPointerReturnType());
+        }
+
+        [Fact]
         public static void MakeSignatureModifiedType()
         {
             Type t = Type.MakeModifiedSignatureType(typeof(List<int>), [], [typeof(IsVolatile)]);

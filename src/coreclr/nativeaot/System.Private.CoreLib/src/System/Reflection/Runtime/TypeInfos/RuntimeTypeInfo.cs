@@ -425,7 +425,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType is not RuntimeType rtType)
-                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+                    return Type.MakeFunctionPointerSignatureType(this.ToType(), parameterTypes, isUnmanaged);
 
                 if (rtType == typeof(void) || rtType.IsGenericTypeDefinition)
                     throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, rtType.ToString()), nameof(parameterTypes));

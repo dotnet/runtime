@@ -572,6 +572,19 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("parameterTypes", () => typeof(void).MakeFunctionPointerType(openGenericParam));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_WithSignatureTypeParameter()
+        {
+            Type paramType = Type.MakeGenericMethodParameter(0);
+            Type fnPtrType = typeof(int).MakeFunctionPointerType([paramType]);
+
+            Assert.True(fnPtrType.IsSignatureType);
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.Equal(typeof(int), fnPtrType.GetFunctionPointerReturnType());
+            Assert.Equal(paramType, fnPtrType.GetFunctionPointerParameterTypes()[0]);
+        }
+
         [Theory]
         [InlineData("System.Nullable`1[System.Int32]", typeof(int?))]
         [InlineData("System.Int32*", typeof(int*))]

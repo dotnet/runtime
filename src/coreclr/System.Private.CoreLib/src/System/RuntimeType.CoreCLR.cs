@@ -3738,7 +3738,7 @@ namespace System
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType is not RuntimeType)
-                    throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
 
                 if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
                     throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
