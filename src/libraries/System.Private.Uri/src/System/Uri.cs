@@ -3855,7 +3855,7 @@ namespace System
             // Here we have checked the syntax up to the end of host
             // The only thing that can cause an exception is the port value
             // Spend some (duplicated) cycles on that.
-            else if (hostDelimiter == ':')
+            else if (hostDelimiter == ':' && hostLength != 0)
             {
                 if ((syntaxFlags & UriSyntaxFlags.MayHavePort) != 0)
                 {

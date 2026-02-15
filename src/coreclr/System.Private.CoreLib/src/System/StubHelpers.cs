@@ -1628,6 +1628,54 @@ namespace System.StubHelpers
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP
+    internal static class CultureInfoMarshaler
+    {
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = bUICulture
+                    ? Globalization.CultureInfo.CurrentUICulture
+                    : Globalization.CultureInfo.CurrentCulture;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
+        {
+            try
+            {
+                if (bUICulture)
+                    Globalization.CultureInfo.CurrentUICulture = *pValue;
+                else
+                    Globalization.CultureInfo.CurrentCulture = *pValue;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
+        {
+            try
+            {
+                // Consider calling CultureInfo.GetCultureInfo that returns a cached instance to avoid this expensive creation.
+                *pResult = new Globalization.CultureInfo(culture);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+    }
+
     internal static class ColorMarshaler
     {
         private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
@@ -1656,6 +1704,32 @@ namespace System.StubHelpers
         internal static int ConvertToNative(object? managedColor)
         {
             return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(oleColor);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToNative(*pSrcObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 #endif

@@ -1840,6 +1840,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
@@ -2471,6 +2474,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
     </Compile>
@@ -2825,8 +2831,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'"  />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true')" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'" />
