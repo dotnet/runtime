@@ -161,7 +161,7 @@ namespace System.IO.Tests
             Assert.True(info.Exists);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
         public void CreateAsHardLink_InvalidatesExists()
         {
             string targetPath = GetTestFilePath();
