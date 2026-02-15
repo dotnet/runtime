@@ -41,15 +41,15 @@ _crank_agent_process = None
 
 # kill processes by port number
 def kill_port(port):
-    sys = platform.system()
+    system_name = platform.system()
     try:
-        if sys == "Windows":
+        if system_name == "Windows":
             # Windows: Find PID via netstat, then force kill
             out = subprocess.check_output(f'netstat -ano | findstr :{port}', shell=True).decode()
             pids = {line.split()[-1] for line in out.strip().split('\n') if line.strip()}
             for pid in pids:
-                subprocess.run(["taskkill", "/F", "/PID", pid], check=False)
-        elif sys == "Darwin": # macOS
+                os.system(f"taskkill /F /PID {pid}")
+        elif system_name == "Darwin": # macOS
             # macOS: Get PID using lsof -t (terse mode)
             pid = subprocess.check_output(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]).decode().strip()
             if pid:
