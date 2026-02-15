@@ -3725,7 +3725,7 @@ namespace System
                     if (hasUnicode)
                     {
                         var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                        IriHelper.EscapeUnescapeIri(ref vsb, str.Slice(startOffset, userInfoLength), isQuery: false);
+                        IriHelper.EscapeUnescapeIri(ref vsb, slice.Slice(0, userInfoLength), isQuery: false);
                         newHost = string.Concat(newHost, vsb.AsSpan());
                         vsb.Dispose();
                     }
