@@ -20,10 +20,26 @@ namespace System.Xml.Tests
         [InlineData("2007-04-05T24:00:00Z", XmlDateTimeSerializationMode.RoundtripKind, 2007, 4, 6, 0, 0, 0)]
         [InlineData("2007-04-05T24:00:00", XmlDateTimeSerializationMode.Utc, 2007, 4, 6, 0, 0, 0)]
         [InlineData("2007-04-05T24:00:00", XmlDateTimeSerializationMode.Unspecified, 2007, 4, 6, 0, 0, 0)]
+        [InlineData("0001-01-01T24:00:00", XmlDateTimeSerializationMode.RoundtripKind, 1, 1, 2, 0, 0, 0)] // earliest possible date
         public static void ToDateTime_EndOfDay_Valid(string input, XmlDateTimeSerializationMode mode, int year, int month, int day, int hour, int minute, int second)
         {
             DateTime result = XmlConvert.ToDateTime(input, mode);
-            Assert.Equal(new DateTime(year, month, day, hour, minute, second), new DateTime(result.Year, result.Month, result.Day, result.Hour, result.Minute, result.Second));
+            Assert.Equal(year, result.Year);
+            Assert.Equal(month, result.Month);
+            Assert.Equal(day, result.Day);
+            Assert.Equal(hour, result.Hour);
+            Assert.Equal(minute, result.Minute);
+            Assert.Equal(second, result.Second);
+        }
+
+        [Fact]
+        public static void ToDateTime_EndOfDay_Local_Valid()
+        {
+            DateTime result = XmlConvert.ToDateTime("2007-04-05T24:00:00", XmlDateTimeSerializationMode.Local);
+            Assert.Equal(DateTimeKind.Local, result.Kind);
+            Assert.Equal(0, result.Hour);
+            Assert.Equal(0, result.Minute);
+            Assert.Equal(0, result.Second);
         }
 
         [Theory]
@@ -59,6 +75,7 @@ namespace System.Xml.Tests
         [InlineData("2000-12-31T24:00:00", 2001, 1, 1, 0, 0, 0)]
         [InlineData("2000-02-28T24:00:00", 2000, 2, 29, 0, 0, 0)] // leap year
         [InlineData("2001-02-28T24:00:00", 2001, 3, 1, 0, 0, 0)] // non-leap year
+        [InlineData("0001-01-01T24:00:00", 1, 1, 2, 0, 0, 0)] // earliest possible date
         public static void ToDateTimeOffset_EndOfDay_Valid(string input, int year, int month, int day, int hour, int minute, int second)
         {
             DateTimeOffset result = XmlConvert.ToDateTimeOffset(input);
@@ -230,7 +247,12 @@ namespace System.Xml.Tests
         public static void ToDateTime_ExistingHours_StillWork(string input, int year, int month, int day, int hour, int minute, int second)
         {
             DateTime result = XmlConvert.ToDateTime(input, XmlDateTimeSerializationMode.RoundtripKind);
-            Assert.Equal(new DateTime(year, month, day, hour, minute, second), new DateTime(result.Year, result.Month, result.Day, result.Hour, result.Minute, result.Second));
+            Assert.Equal(year, result.Year);
+            Assert.Equal(month, result.Month);
+            Assert.Equal(day, result.Day);
+            Assert.Equal(hour, result.Hour);
+            Assert.Equal(minute, result.Minute);
+            Assert.Equal(second, result.Second);
         }
 
         [Theory]
