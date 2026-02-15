@@ -39,6 +39,29 @@ CRANK_PORT = 5010
 _crank_agent_process = None
 
 
+# kill processes by port number
+def kill_port(port):
+    sys = platform.system()
+    try:
+        if sys == "Windows":
+            # Windows: Find PID via netstat, then force kill
+            out = subprocess.check_output(f'netstat -ano | findstr :{port}', shell=True).decode()
+            pids = {line.split()[-1] for line in out.strip().split('\n') if line.strip()}
+            for pid in pids:
+                os.system(f"taskkill /F /PID {pid}")
+        elif sys == "Darwin": # macOS
+            # macOS: Get PID using lsof -t (terse mode)
+            pid = subprocess.check_output(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]).decode().strip()
+            if pid:
+                os.system(f"kill -9 {pid}")
+        else: # Linux
+            # Linux: fuser is the most direct "vanilla" tool
+            subprocess.run(["fuser", "-k", f"{port}/tcp"], check=True)
+        print(f"Port {port} cleared.")
+    except Exception:
+        print(f"Port {port} is already free or permission denied.")
+
+
 # Convert a filename to the appropriate native DLL name, e.g. "clrjit" -> "libclrjit.so" (on Linux)
 def native_dll(name: str) -> str:
     ext = ".dll" if sys.platform.startswith("win") else (".dylib" if sys.platform == "darwin" else ".so")
@@ -278,6 +301,7 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
 
 # Main entry point
 def main():
+    kill_port(CRANK_PORT)
     parser = argparse.ArgumentParser(description="Cross-platform crank runner.")
     parser.add_argument("--core_root", help="Path to built runtime bits (CORE_ROOT).")
     parser.add_argument("--tfm", default="net11.0", help="Target Framework Moniker (e.g., net11.0).")
