@@ -48,12 +48,12 @@ def kill_port(port):
             out = subprocess.check_output(f'netstat -ano | findstr :{port}', shell=True).decode()
             pids = {line.split()[-1] for line in out.strip().split('\n') if line.strip()}
             for pid in pids:
-                os.system(f"taskkill /F /PID {pid}")
+                subprocess.run(["taskkill", "/F", "/PID", pid], check=False)
         elif sys == "Darwin": # macOS
             # macOS: Get PID using lsof -t (terse mode)
             pid = subprocess.check_output(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]).decode().strip()
             if pid:
-                os.system(f"kill -9 {pid}")
+                subprocess.run(["kill", "-9", pid], check=False)
         else: # Linux
             # Linux: fuser is the most direct "vanilla" tool
             subprocess.run(["fuser", "-k", f"{port}/tcp"], check=True)
