@@ -24,11 +24,7 @@ When the failing work item's Helix job ID isn't visible (e.g., canceled jobs, or
    az pipelines runs artifact list --run-id $buildId --org "https://dev.azure.com/dnceng-public" -p public --query "[].name" -o tsv
    az pipelines runs artifact download --run-id $buildId --artifact-name "TestBuild_linux_x64" --path "$env:TEMP\artifact" --org "https://dev.azure.com/dnceng-public" -p public
    ```
-2. Load the binlog and search for job IDs:
-   ```
-   mcp-binlog-tool-load_binlog  path:"$env:TEMP\artifact\...\SendToHelix.binlog"
-   mcp-binlog-tool-search_binlog  binlog_file:"..."  query:"Sent Helix Job"
-   ```
+2. Load the `SendToHelix.binlog` and search for `Sent Helix Job` to find the GUIDs.
 3. Query each Helix job GUID with the CI script:
    ```
    ./scripts/Get-CIStatus.ps1 -HelixJob "{GUID}" -FindBinlogs
@@ -49,17 +45,9 @@ Launch two `task` subagents (can run in parallel), each with a prompt like:
 Download the msbuild.binlog from Helix job {JOB_ID} work item {WORK_ITEM}.
 Use the CI skill script to get the artifact URL:
   ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB_ID}" -WorkItem "{WORK_ITEM}"
-Download the binlog URL to $env:TEMP\{label}.binlog.
-Load it with the binlog MCP server (mcp-binlog-tool-load_binlog).
-Search for the {TASK_NAME} task (mcp-binlog-tool-search_tasks_by_name).
-Get full task details (mcp-binlog-tool-list_tasks_in_target) for the target containing the task.
-Extract the CommandLineArguments parameter value.
-Normalize paths:
-  - Replace Helix work dirs (/datadisks/disk1/work/XXXXXXXX) with {W}
-  - Replace runfile hashes (Program-[a-f0-9]+) with Program-{H}
-  - Replace temp dir names (dotnetSdkTests.[a-zA-Z0-9]+) with dotnetSdkTests.{T}
+Download the binlog, load it, find the {TASK_NAME} task, and extract CommandLineArguments.
+Normalize paths (see table below) and sort args.
 Parse into individual args using regex: (?:"[^"]+"|/[^\s]+|[^\s]+)
-Sort the list and return it.
 Report the total arg count prominently.
 ```
 
@@ -69,26 +57,13 @@ Report the total arg count prominently.
 
 With two normalized arg lists, `Compare-Object` instantly reveals the difference.
 
-## Useful Binlog MCP Queries
+## Common Binlog Search Patterns
 
-After loading a binlog with `mcp-binlog-tool-load_binlog`, use these queries (pass the loaded path as `binlog_file`):
+When investigating binlogs, these search query patterns are most useful:
 
-```
-# Find all invocations of a specific task
-mcp-binlog-tool-search_tasks_by_name  binlog_file:"$env:TEMP\my.binlog"  taskName:"Csc"
-
-# Search for a property value
-mcp-binlog-tool-search_binlog  binlog_file:"..."  query:"analysislevel"
-
-# Find what happened inside a specific target
-mcp-binlog-tool-search_binlog  binlog_file:"..."  query:"under($target AddGlobalAnalyzerConfigForPackage_MicrosoftCodeAnalysisNetAnalyzers)"
-
-# Get all properties matching a pattern
-mcp-binlog-tool-search_binlog  binlog_file:"..."  query:"GlobalAnalyzerConfig"
-
-# List tasks in a target (returns full parameter details including CommandLineArguments)
-mcp-binlog-tool-list_tasks_in_target  binlog_file:"..."  projectId:22  targetId:167
-```
+- Search for a property: `analysislevel`
+- Search within a target: `under($target AddGlobalAnalyzerConfigForPackage_MicrosoftCodeAnalysisNetAnalyzers)`
+- Find all properties matching a pattern: `GlobalAnalyzerConfig`
 
 ## Path Normalization
 
@@ -141,4 +116,4 @@ Same MSBuild property resolution + different files on disk = different build beh
 
 > ❌ **Don't assume the MSBuild property diff explains the behavior diff.** Two branches can compute identical property values but produce different outputs because of different files on disk, different NuGet packages, or different task assemblies. Compare the actual task invocation.
 
-> ❌ **Don't load large binlogs and browse them interactively in main context.** Use targeted searches: `mcp-binlog-tool-search_tasks_by_name` for a specific task, `mcp-binlog-tool-search_binlog` with a focused query. Get in, get the data, get out.
+> ❌ **Don't load large binlogs and browse them interactively in main context.** Use targeted searches rather than browsing interactively. Get in, get the data, get out.
