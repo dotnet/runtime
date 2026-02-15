@@ -146,6 +146,9 @@ namespace System.Xml.Schema
             bool isEndOfDay = hour == 24;
             if (isEndOfDay)
             {
+                Debug.Assert(parser.minute == 0, "minute must be zero when hour is 24");
+                Debug.Assert(parser.second == 0, "second must be zero when hour is 24");
+                Debug.Assert(parser.fraction == 0, "fraction must be zero when hour is 24");
                 hour = 0;
             }
 
