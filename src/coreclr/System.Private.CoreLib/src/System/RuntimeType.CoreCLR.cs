@@ -3734,10 +3734,14 @@ namespace System
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
+                Type paramType = parameterTypes[i];
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
-                if (parameterTypes[i] is not RuntimeType)
+                if (paramType is not RuntimeType)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
             }
 
             return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);

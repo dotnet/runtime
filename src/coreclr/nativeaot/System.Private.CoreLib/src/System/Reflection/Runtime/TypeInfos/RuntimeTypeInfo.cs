@@ -421,10 +421,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
+                Type paramType = parameterTypes[i];
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
-                if (parameterTypes[i] is not RuntimeType rtType)
+                if (paramType is not RuntimeType rtType)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(parameterTypes));
+
+                if (rtType == typeof(void) || rtType.IsGenericTypeDefinition)
+                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, rtType.ToString()), nameof(parameterTypes));
 
                 runtimeParameterTypes[i] = rtType.GetRuntimeTypeInfo();
             }

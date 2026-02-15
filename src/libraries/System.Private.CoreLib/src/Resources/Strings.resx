@@ -4447,4 +4447,10 @@
   <data name="ManagedFunctionPointer_CallingConventionsNotAllowed">
     <value>Unmanaged calling conventions cannot be specified for managed function pointers.</value>
   </data>
+  <data name="FunctionPointer_ParameterInvalid">
+    <value>'{0}' cannot be used as a parameter type for a function pointer.</value>
+  </data>
+  <data name="NotSupported_FunctionPointerSignature">
+    <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
+  </data>
 </root>

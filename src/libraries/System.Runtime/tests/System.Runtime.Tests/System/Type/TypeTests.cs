@@ -563,14 +563,13 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
-        public void MakeFunctionPointerType_GenericTypes_ContainsGenericParameters()
+        public void MakeFunctionPointerType_InvalidArgumentTypes()
         {
-            Type openGeneric = typeof(GenericClass<>);
-            Type fnPtrOpen = typeof(int).MakeFunctionPointerType([openGeneric]);
-            Type fnPtrClosed = typeof(int).MakeFunctionPointerType([typeof(GenericClass<int>)]);
+            Type[] voidParam = [typeof(void)];
+            Type[] openGenericParam = [typeof(List<>)];
 
-            Assert.True(fnPtrOpen.ContainsGenericParameters);
-            Assert.False(fnPtrClosed.ContainsGenericParameters);
+            Assert.Throws<ArgumentException>("parameterTypes", () => typeof(void).MakeFunctionPointerType(voidParam));
+            Assert.Throws<ArgumentException>("parameterTypes", () => typeof(void).MakeFunctionPointerType(openGenericParam));
         }
 
         [Theory]

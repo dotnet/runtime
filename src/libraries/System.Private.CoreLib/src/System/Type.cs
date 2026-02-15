@@ -664,7 +664,13 @@ namespace System
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 
             for (int i = 0; i < parameterTypes.Length; i++)
-                ArgumentNullException.ThrowIfNull(parameterTypes[i], nameof(parameterTypes));
+            {
+                Type paramType = parameterTypes[i];
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
+            }
 
             for (int i = 0; i < callingConventions.Length; i++)
                 ArgumentNullException.ThrowIfNull(callingConventions[i], nameof(callingConventions));
