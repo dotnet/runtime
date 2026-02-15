@@ -1555,6 +1555,8 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 OBJECTREF LCGMethodResolver::GetManagedResolver()
 {
     LIMITED_METHOD_CONTRACT;
+    if (m_managedResolver == NULL)
+        return NULL;
     return ObjectFromHandle(m_managedResolver);
 }
 
