@@ -602,12 +602,11 @@ namespace System.Reflection.Emit
             AddToken(clsToken);
         }
 
-        private unsafe void InternalAddRuntimeType(Type type, bool skipElementType = false)
+        private unsafe void InternalAddRuntimeType(Type type)
         {
             // Add a runtime type into the signature.
 
-            if (!skipElementType)
-                AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
+            AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
 
             IntPtr handle = type.TypeHandle.Value;
 
