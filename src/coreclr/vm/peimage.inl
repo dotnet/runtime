@@ -228,6 +228,12 @@ inline BOOL PEImage::HasNTHeaders()
     return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasNTHeaders();
 }
 
+inline BOOL PEImage::HasHeaders()
+{
+    WRAPPER_NO_CONTRACT;
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasHeaders();
+}
+
 inline BOOL PEImage::HasCorHeader()
 {
     WRAPPER_NO_CONTRACT;

@@ -18,7 +18,7 @@ public unsafe struct WebcilHeader
     public fixed byte id[4]; // 'W' 'b' 'I' 'L'
     // 4 bytes
     public ushort version_major; // 0
-    public ushort version_minor; // 0
+    public ushort version_minor; // 1
     // 8 bytes
 
     public ushort coff_sections;

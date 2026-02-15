@@ -84,7 +84,9 @@ void PEAssembly::EnsureLoaded()
     ValidatePEFileMachineType(this);
 
 #if !defined(TARGET_64BIT)
-    if (!GetPEImage()->Has32BitNTHeaders())
+    // WebCIL images don't have NT headers (HasNTHeaders() returns FALSE),
+    // so this guard correctly skips the check for WebCIL on 32-bit platforms.
+    if (GetPEImage()->HasNTHeaders() && !GetPEImage()->Has32BitNTHeaders())
     {
         // Tried to load 64-bit assembly on 32-bit platform.
         EEFileLoadException::Throw(this, COR_E_BADIMAGEFORMAT, NULL);
@@ -205,7 +207,7 @@ PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
     CONTRACT_END;
 
     if (IsReflectionEmit()
-         || !GetPEImage()->HasNTHeaders()
+         || !GetPEImage()->HasHeaders()
          || !GetPEImage()->HasCorHeader())
     {
         if (pSize != NULL)
@@ -234,7 +236,7 @@ PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
     CONTRACT_END;
 
     if (!HasLoadedPEImage()
-         || !GetLoadedLayout()->HasNTHeaders()
+         || !GetLoadedLayout()->HasHeaders()
          || !GetLoadedLayout()->HasCorHeader())
     {
         if (pSize != NULL)
@@ -386,7 +388,7 @@ void PEAssembly::OpenMDImport()
     if (m_pMDImport != NULL)
         return;
     if (!IsReflectionEmit()
-        && GetPEImage()->HasNTHeaders()
+        && GetPEImage()->HasHeaders()
             && GetPEImage()->HasCorHeader())
     {
         m_pMDImport=GetPEImage()->GetMDImport();

@@ -6,5 +6,5 @@ namespace Microsoft.NET.WebAssembly.Webcil.Internal;
 internal static unsafe class Constants
 {
     public const int WC_VERSION_MAJOR = 0;
-    public const int WC_VERSION_MINOR = 0;
+    public const int WC_VERSION_MINOR = 1;
 }

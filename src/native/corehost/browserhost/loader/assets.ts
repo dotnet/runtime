@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetNativeBrowserExports } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -20,7 +20,7 @@ export function setLoadBootResourceCallback(callback: LoadBootResourceCallback |
     loadBootResourceCallback = callback;
 }
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
-export const mainModulePromiseController = createPromiseCompletionSource<WebAssembly.Instance>();
+export const wasmMemoryPromiseController = createPromiseCompletionSource<WebAssembly.Memory>();
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
@@ -66,10 +66,11 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
 }
 
 export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true, true);
+    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true);
     onDownloadedAsset();
     successCallback(instance, module);
-    mainModulePromiseController.resolve(instance);
+    const memory = dotnetNativeBrowserExports.getWasmMemory();
+    wasmMemoryPromiseController.resolve(memory);
 }
 
 export async function fetchIcu(asset: IcuAsset): Promise<void> {
@@ -94,17 +95,26 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
-    assetInternal.behavior = "assembly";
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
         : browserVirtualAppBase + assetInternal.virtualPath;
+    if (assetInternal.virtualPath.endsWith(".wasm")) {
+        assetInternal.behavior = "webcil1";
+        const webCILPromise = loadResource(assetInternal);
 
-    const bytes = await fetchBytes(assetInternal);
-    await nativeModulePromiseController.promise;
+        const memory = await wasmMemoryPromiseController.promise;
+        const virtualPath = assetInternal.virtualPath.replace(/\.wasm$/, ".dll");
+        await dotnetBrowserHostExports.instantiateWebCILModule(webCILPromise, memory, virtualPath);
+        onDownloadedAsset();
+    } else {
+        assetInternal.behavior = "assembly";
+        const bytes = await fetchBytes(assetInternal);
+        onDownloadedAsset();
 
-    onDownloadedAsset();
-    if (bytes) {
-        dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath);
+        await nativeModulePromiseController.promise;
+        if (bytes) {
+            dotnetBrowserHostExports.registerDllBytes(bytes, assetInternal.virtualPath);
+        }
     }
 }
 
@@ -125,7 +135,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerPdbBytes(bytes, asset.virtualPath);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath);
     }
 }
 
@@ -159,7 +169,7 @@ async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null>
 }
 
 function loadResource(asset: AssetEntryInternal): Promise<Response> {
-    if ("dotnetwasm" === asset.behavior) {
+    if ("dotnetwasm" === asset.behavior || "webcil1" === asset.behavior) {
         // `response.arrayBuffer()` can't be called twice.
         return loadResourceFetch(asset);
     }
@@ -317,6 +327,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "vfs": "configuration",
     "manifest": "manifest",
     "dotnetwasm": "dotnetwasm",
+    "webcil1": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
@@ -331,4 +342,5 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "vfs": "application/octet-stream",
     "manifest": "application/json",
     "dotnetwasm": "application/wasm",
+    "webcil1": "application/wasm",
 };

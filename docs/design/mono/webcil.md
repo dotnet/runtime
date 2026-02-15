@@ -2,7 +2,7 @@
 
 ## Version
 
-This is version 0.0 of the Webcil payload format.
+This is version 0.1 of the Webcil payload format.
 This is version 0 of the WebAssembly module Webcil wrapper.
 
 ## Motivation
@@ -114,7 +114,7 @@ struct WebcilHeader {
 	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
 	uint16_t version_major; // 0
-	uint16_t version_minor; // 0
+	uint16_t version_minor; // 1
 	// 8 bytes
 	uint16_t coff_sections;
 	uint16_t reserved0; // 0
@@ -131,7 +131,7 @@ struct WebcilHeader {
 ```
 
 The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
-minor format (must be 0 and 0).  Then a count of the section headers and two reserved bytes.
+minor format (must be 0 and 1).  Then a count of the section headers and two reserved bytes.
 
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
 of the CLI header, as well as the directory entry for the PE debug directory.
@@ -158,7 +158,18 @@ struct SectionHeader {
 
 #### Sections
 
-Immediately following the section table are the sections.  These are copied verbatim from the PE file.
+The section data starts at the first 16-byte-aligned offset after the end of the
+section header table. Any gap between the last section header and the first section's
+raw data is filled with zero-valued padding bytes. Each subsequent section likewise
+begins at a 16-byte-aligned offset. This alignment guarantees that RVA static fields
+(such as those backing `ReadOnlySpan<T>` over types up to `Vector128<T>`) retain
+their natural alignment when the payload is loaded into memory at a 16-byte-aligned
+base address.
+
+Because PE `SizeOfRawData` is normally a multiple of the PE `FileAlignment` (≥ 512),
+the inter-section padding is almost always zero bytes. In the worst case a single
+assembly may gain up to ~30 bytes of padding total (header-to-first-section plus
+one boundary per additional section).
 
 ### Rationale
 

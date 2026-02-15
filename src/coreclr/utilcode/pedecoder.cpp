@@ -13,6 +13,10 @@
 #include "mdcommon.h"
 #include "nibblemapmacros.h"
 
+#ifdef TARGET_BROWSER
+#include "webcil.h"
+#endif
+
 CHECK PEDecoder::CheckFormat() const
 {
     CONTRACT_CHECK
@@ -25,7 +29,21 @@ CHECK PEDecoder::CheckFormat() const
 
     CHECK(HasContents());
 
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        if (HasCorHeader())
+        {
+            CHECK(CheckCorHeader());
+
+            if (IsILOnly())
+                CHECK(CheckILOnly());
+        }
+    }
+    else if (HasNTHeaders())
+#else // TARGET_BROWSER
     if (HasNTHeaders())
+#endif // TARGET_BROWSER
     {
         CHECK(CheckNTHeaders());
 
@@ -70,7 +88,7 @@ CHECK PEDecoder::CheckCORFormat() const
     CONTRACT_CHECK_END;
 
     CHECK(CheckFormat());
-    CHECK(HasNTHeaders());
+    CHECK(HasHeaders());
     CHECK(HasCorHeader());
 
     CHECK_OK;
@@ -89,7 +107,7 @@ CHECK PEDecoder::CheckILFormat() const
     CONTRACT_CHECK_END;
 
     CHECK(CheckFormat());
-    CHECK(HasNTHeaders());
+    CHECK(HasHeaders());
     CHECK(HasCorHeader());
 
     CHECK_OK;
@@ -108,7 +126,7 @@ CHECK PEDecoder::CheckILOnlyFormat() const
     CONTRACT_CHECK_END;
 
     CHECK(CheckFormat());
-    CHECK(HasNTHeaders());
+    CHECK(HasHeaders());
     CHECK(HasCorHeader());
     CHECK(IsILOnly());
 
@@ -196,6 +214,76 @@ BOOL PEDecoder::HasNTHeaders() const
 
     RETURN TRUE;
 }
+
+#ifdef TARGET_BROWSER
+BOOL PEDecoder::HasWebcilHeaders() const
+{
+    CONTRACT(BOOL)
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(HasContents());
+    }
+    CONTRACT_END;
+
+    if (m_flags & FLAG_WEBCIL)
+        RETURN TRUE;
+
+    if (m_size < sizeof(WebcilHeader))
+        RETURN FALSE;
+
+    const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+
+    if (pWC->id[0] != WEBCIL_MAGIC_W
+        || pWC->id[1] != WEBCIL_MAGIC_B
+        || pWC->id[2] != WEBCIL_MAGIC_I
+        || pWC->id[3] != WEBCIL_MAGIC_L)
+    {
+        RETURN FALSE;
+    }
+
+    if (VAL16(pWC->version_major) != WEBCIL_VERSION_MAJOR
+        || VAL16(pWC->version_minor) != WEBCIL_VERSION_MINOR)
+    {
+        RETURN FALSE;
+    }
+
+    if (VAL16(pWC->coff_sections) == 0)
+        RETURN FALSE;
+
+    S_SIZE_T cbHeaderAndSections(S_SIZE_T(sizeof(WebcilHeader)) +
+                                 S_SIZE_T(static_cast<SIZE_T>(VAL16(pWC->coff_sections))) * S_SIZE_T(sizeof(WebcilSectionHeader)));
+    if (cbHeaderAndSections.IsOverflow())
+        RETURN FALSE;
+
+    if (m_size < cbHeaderAndSections.Value())
+        RETURN FALSE;
+
+    // Synthesize IMAGE_SECTION_HEADERs from WebcilSectionHeaders so that
+    // RvaToSection()/RvaToOffset() work without WebCIL-specific code paths.
+    uint16_t nSections = VAL16(pWC->coff_sections);
+    if (nSections > WEBCIL_MAX_SECTIONS)
+        RETURN FALSE;
+
+    const WebcilSectionHeader* pWebcilSections = (const WebcilSectionHeader*)(m_base + sizeof(WebcilHeader));
+    PEDecoder* mutableThis = const_cast<PEDecoder *>(this);
+    mutableThis->m_webcilSectionCount = nSections;
+    for (uint16_t i = 0; i < nSections; i++)
+    {
+        memset(&mutableThis->m_webcilSectionHeaders[i], 0, sizeof(IMAGE_SECTION_HEADER));
+        mutableThis->m_webcilSectionHeaders[i].Misc.VirtualSize = pWebcilSections[i].virtual_size;
+        mutableThis->m_webcilSectionHeaders[i].VirtualAddress   = pWebcilSections[i].virtual_address;
+        mutableThis->m_webcilSectionHeaders[i].SizeOfRawData    = pWebcilSections[i].raw_data_size;
+        mutableThis->m_webcilSectionHeaders[i].PointerToRawData = pWebcilSections[i].raw_data_ptr;
+    }
+
+    mutableThis->m_flags |= FLAG_WEBCIL;
+
+    RETURN TRUE;
+}
+#endif // TARGET_BROWSER
 
 CHECK PEDecoder::CheckNTHeaders() const
 {
@@ -423,7 +511,7 @@ BOOL PEDecoder::HasWriteableSections() const
     PTR_IMAGE_SECTION_HEADER pSection = FindFirstSection();
     _ASSERTE(pSection != NULL);
 
-    PTR_IMAGE_SECTION_HEADER pSectionEnd = pSection + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
+    PTR_IMAGE_SECTION_HEADER pSectionEnd = pSection + GetNumberOfSections();
 
     while (pSection < pSectionEnd)
     {
@@ -461,7 +549,7 @@ CHECK PEDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, 
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         PRECONDITION(CheckPointer(pDir));
         NOTHROW;
         GC_NOTRIGGER;
@@ -492,20 +580,24 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
     }
     else
     {
-        IMAGE_SECTION_HEADER *section = RvaToSection(rva);
-
-        CHECK(section != NULL);
-
-        CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                          (UINT)VAL32(section->Misc.VirtualSize),
-                          rva, size));
-        if(!IsMapped())
         {
-            CHECK(CheckBounds(VAL32(section->VirtualAddress), VAL32(section->SizeOfRawData), rva, size));
-        }
+            IMAGE_SECTION_HEADER *section = RvaToSection(rva);
 
-        if (forbiddenFlags!=0)
-            CHECK((section->Characteristics & VAL32(forbiddenFlags))==0);
+            CHECK(section != NULL);
+
+            CHECK(CheckBounds(VAL32(section->VirtualAddress),
+                              (UINT)VAL32(section->Misc.VirtualSize),
+                              rva, size));
+            if(!IsMapped())
+            {
+                CHECK(CheckBounds(VAL32(section->VirtualAddress), VAL32(section->SizeOfRawData), rva, size));
+            }
+
+            // For WebCIL, synthesized Characteristics is 0, so this check
+            // passes naturally (no PE section flags to violate).
+            if (forbiddenFlags!=0)
+                CHECK((section->Characteristics & VAL32(forbiddenFlags))==0);
+        }
     }
 
     CHECK_OK;
@@ -525,7 +617,9 @@ CHECK PEDecoder::CheckRva(RVA rva, IsNullOK ok) const
     if (rva == 0)
         CHECK_MSG(ok == NULL_OK, "Zero RVA illegal");
     else
+    {
         CHECK(RvaToSection(rva) != NULL);
+    }
 
     CHECK_OK;
 }
@@ -770,8 +864,8 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
     }
     CONTRACT_END;
 
-    PTR_IMAGE_SECTION_HEADER section = dac_cast<PTR_IMAGE_SECTION_HEADER>(FindFirstSection(FindNTHeaders()));
-    PTR_IMAGE_SECTION_HEADER sectionEnd = section + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
+    PTR_IMAGE_SECTION_HEADER section = FindFirstSection();
+    PTR_IMAGE_SECTION_HEADER sectionEnd = section + GetNumberOfSections();
 
     while (section < sectionEnd)
     {
@@ -805,7 +899,7 @@ IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
     CONTRACT(IMAGE_SECTION_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
@@ -813,8 +907,8 @@ IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
     }
     CONTRACT_END;
 
-    PTR_IMAGE_SECTION_HEADER section = dac_cast<PTR_IMAGE_SECTION_HEADER>(FindFirstSection(FindNTHeaders()));
-    PTR_IMAGE_SECTION_HEADER sectionEnd = section + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
+    PTR_IMAGE_SECTION_HEADER section = FindFirstSection();
+    PTR_IMAGE_SECTION_HEADER sectionEnd = section + GetNumberOfSections();
 
     while (section < sectionEnd)
     {
@@ -837,7 +931,11 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
+#ifdef TARGET_BROWSER
+        PRECONDITION(HasHeaders());
+#else
         PRECONDITION(CheckNTHeaders());
+#endif
         PRECONDITION(CheckRva(rva, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -997,21 +1095,34 @@ CHECK PEDecoder::CheckCorHeader() const
     if (m_flags & FLAG_COR_CHECKED)
         CHECK_OK;
 
-    CHECK(CheckNTHeaders());
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        CHECK(HasCorHeader());
 
-    CHECK(HasCorHeader());
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        CHECK(VAL32(pWC->pe_cli_header_size) >= sizeof(IMAGE_COR20_HEADER));
+        CHECK(CheckRva(VAL32(pWC->pe_cli_header_rva), sizeof(IMAGE_COR20_HEADER)));
+    }
+    else
+#endif
+    {
+        CHECK(CheckNTHeaders());
 
-    IMAGE_DATA_DIRECTORY *pDir = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_COMHEADER);
+        CHECK(HasCorHeader());
 
-    CHECK(CheckDirectory(pDir, IMAGE_SCN_MEM_WRITE, NULL_NOT_OK));
+        IMAGE_DATA_DIRECTORY *pDir = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_COMHEADER);
 
-    CHECK(VAL32(pDir->Size) >= sizeof(IMAGE_COR20_HEADER));
+        CHECK(CheckDirectory(pDir, IMAGE_SCN_MEM_WRITE, NULL_NOT_OK));
 
-    IMAGE_SECTION_HEADER *section = RvaToSection(VAL32(pDir->VirtualAddress));
-    CHECK(section != NULL);
-    CHECK((section->Characteristics & VAL32(IMAGE_SCN_MEM_READ))!=0);
+        CHECK(VAL32(pDir->Size) >= sizeof(IMAGE_COR20_HEADER));
 
-    CHECK(CheckRva(VAL32(pDir->VirtualAddress), sizeof(IMAGE_COR20_HEADER)));
+        IMAGE_SECTION_HEADER *section = RvaToSection(VAL32(pDir->VirtualAddress));
+        CHECK(section != NULL);
+        CHECK((section->Characteristics & VAL32(IMAGE_SCN_MEM_READ))!=0);
+
+        CHECK(CheckRva(VAL32(pDir->VirtualAddress), sizeof(IMAGE_COR20_HEADER)));
+    }
 
     IMAGE_COR20_HEADER *pCor = GetCorHeader();
 
@@ -1348,6 +1459,15 @@ CHECK PEDecoder::CheckILOnly() const
         CHECK_OK;
 
     CHECK(CheckCorHeader());
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        // WebCIL images are always IL-only by definition.
+        const_cast<PEDecoder *>(this)->m_flags |= FLAG_IL_ONLY_CHECKED;
+        CHECK_OK;
+    }
+#endif
 
     if (HasReadyToRunHeader())
     {
@@ -2345,7 +2465,7 @@ PTR_IMAGE_DEBUG_DIRECTORY PEDecoder::GetDebugDirectoryEntry(UINT index) const
     CONTRACT(PTR_IMAGE_DEBUG_DIRECTORY)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;

@@ -14,14 +14,14 @@
 /* keep in sync with webcil-writer */
 enum {
 	MONO_WEBCIL_VERSION_MAJOR = 0,
-	MONO_WEBCIL_VERSION_MINOR = 0,
+	MONO_WEBCIL_VERSION_MINOR = 1,
 };
 
 typedef struct MonoWebCilHeader {
 	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
 	uint16_t version_major; // 0
-	uint16_t version_minor; // 0
+	uint16_t version_minor; // 1
 	// 8 bytes
 	uint16_t coff_sections;
 	uint16_t reserved0; // 0
@@ -84,7 +84,7 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
 
 	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' &&
-	      GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR && GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
+		GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR))
 		return -1;
 
 	memset (header, 0, sizeof(MonoDotNetHeader));

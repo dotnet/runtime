@@ -41,6 +41,13 @@ public class WebcilConverter
     private readonly string _inputPath;
     private readonly string _outputPath;
 
+    // Section data is aligned to this boundary so that RVA static fields maintain
+    // their natural alignment (required by CoreCLR's GetSpanDataFrom).  16 bytes
+    // covers Vector128<T>, Int128/UInt128, and all smaller primitive types.
+    private const int SectionAlignment = 16;
+
+    private static readonly byte[] s_paddingBytes = new byte[SectionAlignment - 1];
+
     private string InputPath => _inputPath;
 
     public bool WrapInWebAssembly { get; set; } = true;
@@ -87,6 +94,12 @@ public class WebcilConverter
     {
         WriteHeader(outputStream, wcInfo.Header);
         WriteSectionHeaders(outputStream, wcInfo.SectionHeaders);
+        // Pad to reach the aligned section start position
+        int headerPadding = (int)(wcInfo.SectionStart.Position - outputStream.Position);
+        if (headerPadding > 0)
+        {
+            outputStream.Write(s_paddingBytes, 0, headerPadding);
+        }
         CopySections(outputStream, inputStream, peInfo.SectionHeaders);
         if (wcInfo.Header.pe_debug_size != 0 && wcInfo.Header.pe_debug_rva != 0)
         {
@@ -132,7 +145,9 @@ public class WebcilConverter
         // position of the current section in the output file
         // initially it's after all the section headers
         FilePosition curSectionPos = pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections;
-        // The first WC section is immediately after the section directory
+        // Align section data so that RVA static fields maintain their natural alignment.
+        curSectionPos += (SectionAlignment - (curSectionPos.Position % SectionAlignment)) % SectionAlignment;
+        // The first WC section is immediately after the section directory (plus alignment padding)
         FilePosition firstWCSection = curSectionPos;
 
         FilePosition firstPESection = 0;
@@ -160,6 +175,8 @@ public class WebcilConverter
 
             pos += sizeof(WebcilSectionHeader);
             curSectionPos += sectionHeader.SizeOfRawData;
+            // Align next section so that RVA static fields maintain their natural alignment.
+            curSectionPos += (SectionAlignment - (curSectionPos.Position % SectionAlignment)) % SectionAlignment;
             headerBuilder.Add(newHeader);
         }
 
@@ -253,6 +270,12 @@ public class WebcilConverter
             inputStream.Seek(peHeader.PointerToRawData, SeekOrigin.Begin);
             ReadExactly(inputStream, buffer);
             outStream.Write(buffer, 0, buffer.Length);
+            // Align next section so that RVA static fields maintain their natural alignment.
+            int padding = (int)((SectionAlignment - (outStream.Position % SectionAlignment)) % SectionAlignment);
+            if (padding > 0)
+            {
+                outStream.Write(s_paddingBytes, 0, padding);
+            }
         }
     }
 
@@ -356,7 +379,13 @@ public class WebcilConverter
         {
             WriteDebugDirectoryEntry(writer, entry);
         }
-        // TODO check that we overwrite with the same size as the original
+        writer.Flush();
+        long bytesWritten = s.Position - debugDirectoryPos.Position;
+        if (bytesWritten != wcInfo.Header.pe_debug_size)
+        {
+            throw new InvalidOperationException(
+                $"Debug directory size mismatch: wrote {bytesWritten} bytes, expected {wcInfo.Header.pe_debug_size}");
+        }
 
         // restore the stream position
         writer.Seek(0, SeekOrigin.End);

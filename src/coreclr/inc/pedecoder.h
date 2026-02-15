@@ -46,6 +46,10 @@ typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 typedef DPTR(IMAGE_COR20_HEADER)    PTR_IMAGE_COR20_HEADER;
 
+#ifdef TARGET_BROWSER
+#include "webcil.h"
+#endif // TARGET_BROWSER
+
 // --------------------------------------------------------------------------------
 // Forward declared types
 // --------------------------------------------------------------------------------
@@ -166,6 +170,14 @@ class PEDecoder
 
     BOOL HasNTHeaders() const;
     CHECK CheckNTHeaders() const;
+
+#ifdef TARGET_BROWSER
+    BOOL HasWebcilHeaders() const;
+    inline BOOL HasHeaders() const { return HasWebcilHeaders() || HasNTHeaders(); }
+#else
+    inline BOOL HasWebcilHeaders() const { return FALSE; }
+    inline BOOL HasHeaders() const { return HasNTHeaders(); }
+#endif
 
     IMAGE_NT_HEADERS32 *GetNTHeaders32() const;
     IMAGE_NT_HEADERS64 *GetNTHeaders64() const;
@@ -399,6 +411,7 @@ class PEDecoder
         FLAG_NATIVE_CHECKED     = 0x80,
 
         FLAG_HAS_NO_READYTORUN_HEADER = 0x100,
+        FLAG_WEBCIL             = 0x200,
     };
 
     TADDR               m_base;
@@ -408,6 +421,14 @@ class PEDecoder
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
     PTR_IMAGE_COR20_HEADER m_pCorHeader;
     PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
+
+#ifdef TARGET_BROWSER
+    // Synthesized IMAGE_SECTION_HEADERs populated from WebcilSectionHeaders
+    // in HasWebcilHeaders(), so RvaToSection()/RvaToOffset() work uniformly.
+    static constexpr uint16_t WEBCIL_MAX_SECTIONS = 8;
+    uint16_t m_webcilSectionCount = 0;
+    IMAGE_SECTION_HEADER m_webcilSectionHeaders[WEBCIL_MAX_SECTIONS];
+#endif
 
     // to allow inherited classes to access, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;

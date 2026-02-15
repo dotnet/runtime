@@ -8,10 +8,6 @@ import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-let wasmMemory: WebAssembly.Memory = undefined as any;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-let wasmMainTable: WebAssembly.Table = undefined as any;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
@@ -29,11 +25,56 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
 
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
-        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
 
+        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
         _ems_.dotnetLogger.debug(`Registered assembly '${virtualPath}' (name: '${name}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
         loadedAssemblies.set(name, { ptr, length: bytes.length });
+    } finally {
+        _ems_.stackRestore(sp);
+    }
+}
+
+export async function instantiateWebCILModule(webCILPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string): Promise<void> {
+
+    const imports: WebAssembly.Imports = {
+        webcil: {
+            memory,
+        }
+    };
+
+    const { instance } = await instantiateWasm(webCILPromise, imports, false);
+    const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
+    if (webcilVersion !== 0) {
+        throw new Error(`Unsupported WebCIL version: ${webcilVersion}`);
+    }
+
+    const sp = _ems_.stackSave();
+    try {
+        const sizeOfPtr = 4;
+        const sizePtr = _ems_.stackAlloc(sizeOfPtr);
+        const getWebcilSize = instance.exports.getWebcilSize as (destPtr: number) => void;
+        getWebcilSize(sizePtr as any);
+        const payloadSize = _ems_.HEAPU32[sizePtr as any >>> 2];
+
+        if (payloadSize === 0) {
+            throw new Error("WebCIL payload size is 0");
+        }
+
+        const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
+        if (_ems_._posix_memalign(ptrPtr as any, 16, payloadSize)) {
+            throw new Error("posix_memalign failed for WebCIL payload");
+        }
+
+        const payloadPtr = _ems_.HEAPU32[ptrPtr as any >>> 2];
+
+        const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
+        getWebcilPayload(payloadPtr, payloadSize);
+
+        const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
+        _ems_.dotnetLogger.debug(`Registered WebCIL assembly '${virtualPath}' (name: '${name}') at ${payloadPtr.toString(16)} length ${payloadSize}`);
+        loadedAssemblies.set(virtualPath, { ptr: payloadPtr, length: payloadSize });
+        loadedAssemblies.set(name, { ptr: payloadPtr, length: payloadSize });
     } finally {
         _ems_.stackRestore(sp);
     }
@@ -100,11 +141,11 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
 }
 
-export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports, isStreaming: boolean, isMainModule: boolean): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
+export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports, isMainModule: boolean): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
     const res = await checkResponseOk(wasmPromise);
-    if (!hasInstantiateStreaming || !isStreaming || !res.isStreamingOk) {
+    if (!hasInstantiateStreaming || !res.isStreamingOk) {
         const data = await res.arrayBuffer();
         module = await WebAssembly.compile(data);
         instance = await WebAssembly.instantiate(module, imports);
@@ -112,10 +153,6 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
         const instantiated = await WebAssembly.instantiateStreaming(wasmPromise, imports);
         instance = instantiated.instance;
         module = instantiated.module;
-    }
-    if (isMainModule) {
-        wasmMemory = instance.exports.memory as WebAssembly.Memory;
-        wasmMainTable = instance.exports.__indirect_function_table as WebAssembly.Table;
     }
     return { instance, module };
 
