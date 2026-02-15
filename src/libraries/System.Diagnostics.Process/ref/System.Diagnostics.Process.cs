@@ -201,6 +201,13 @@ namespace System.Diagnostics
         public void CopyTo(System.Diagnostics.ProcessModule[] array, int index) { }
         public int IndexOf(System.Diagnostics.ProcessModule module) { throw null; }
     }
+    public sealed partial class ProcessExitStatus
+    {
+        public ProcessExitStatus(int exitCode, bool canceled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
+        public bool Canceled { get { throw null; } }
+        public int ExitCode { get { throw null; } }
+        public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+    }
     public enum ProcessPriorityClass
     {
         Normal = 32,

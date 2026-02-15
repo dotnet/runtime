@@ -1,10 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { dotnetAssert } from "./cross-module";
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
-export function initPolyfills(): void {
-    if (typeof globalThis.fetch !== "function") {
+let hasFetch = false;
+
+export async function initPolyfills(): Promise<void> {
+    if (ENVIRONMENT_IS_NODE) {
+        await nodeFs();
+        await nodeUrl();
+    }
+    hasFetch = typeof (globalThis.fetch) === "function";
+    if (!hasFetch) {
         globalThis.fetch = fetchLike as any;
     }
 }
@@ -71,10 +79,6 @@ export async function nodeUrl(): Promise<any> {
 
 export async function fetchLike(url: string, init?: RequestInit, expectedContentType?: string): Promise<Response> {
     try {
-        await nodeFs();
-        await nodeUrl();
-        // this need to be detected only after we import node modules in onConfigLoaded
-        const hasFetch = typeof (globalThis.fetch) === "function";
         if (ENVIRONMENT_IS_NODE) {
             const isFileUrl = url.startsWith("file://");
             if (!isFileUrl && hasFetch) {
@@ -96,12 +100,13 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            const arrayBuffer = read(url, "binary");
+            const isText = expectedContentType === "application/json" || expectedContentType === "text/plain";
+            const arrayBuffer = read(url, isText ? "utf8" : "binary");
             return responseLike(url, arrayBuffer, {
                 status: 200,
                 statusText: "OK",
                 headers: {
-                    "Content-Length": arrayBuffer.byteLength.toString(),
+                    "Content-Length": isText ? arrayBuffer.length : arrayBuffer.byteLength.toString(),
                     "Content-Type": expectedContentType || "application/octet-stream"
                 }
             });
@@ -116,7 +121,7 @@ export async function fetchLike(url: string, init?: RequestInit, expectedContent
     throw new Error("No fetch implementation available");
 }
 
-export function responseLike(url: string, body: ArrayBuffer | null, options: ResponseInit): Response {
+export function responseLike(url: string, body: ArrayBuffer | string | null, options: ResponseInit): Response {
     if (typeof globalThis.Response === "function") {
         const response = new Response(body, options);
 
@@ -139,12 +144,17 @@ export function responseLike(url: string, body: ArrayBuffer | null, options: Res
             get: (name: string) => (options.headers as any)[name] || null
         },
         url,
-        arrayBuffer: () => Promise.resolve(body),
+        arrayBuffer: () => {
+            dotnetAssert.check(body !== null && body instanceof ArrayBuffer, "Response body is not a ArrayBuffer.");
+            return Promise.resolve(body);
+        },
         json: () => {
-            throw new Error("NotImplementedException");
+            dotnetAssert.check(body !== null && typeof body === "string", "Response body is not a string.");
+            return Promise.resolve(JSON.parse(body));
         },
         text: () => {
-            throw new Error("NotImplementedException");
+            dotnetAssert.check(body !== null && typeof body === "string", "Response body is not a string.");
+            return Promise.resolve(body);
         }
     };
 }

@@ -1272,7 +1272,7 @@ namespace ILCompiler
 
                         uint count = reader.ReadILUInt32();
                         int nextInstruction = reader.Offset + (int)(4 * count);
-                        if (target > count)
+                        if (target >= count)
                         {
                             reader.Seek(nextInstruction);
                         }
