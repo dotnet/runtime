@@ -239,8 +239,7 @@ profiles:
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
-            "--build-timeout", "30",
-            "--no-cleanup"
+            "--build-timeout", "30"
         ],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
