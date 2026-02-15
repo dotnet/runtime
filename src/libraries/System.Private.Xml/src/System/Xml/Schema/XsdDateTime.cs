@@ -120,6 +120,9 @@ namespace System.Xml.Schema
         private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
+        // Maximum DateTime.Ticks value that can safely have one day added without overflow
+        private static readonly long s_maxDateTimeTicksForEndOfDay = DateTime.MaxValue.Ticks - TimeSpan.TicksPerDay;
+
         private const int CharStackBufferSize = 64;
 
         /// <summary>
@@ -160,7 +163,7 @@ namespace System.Xml.Schema
 
             if (isEndOfDay)
             {
-                if (_dt.Ticks > DateTime.MaxValue.Ticks - TimeSpan.TicksPerDay)
+                if (_dt.Ticks > s_maxDateTimeTicksForEndOfDay)
                 {
                     return false;
                 }
