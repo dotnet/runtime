@@ -21,8 +21,22 @@ namespace System.Diagnostics
         private IList<SafeHandle>? _inheritedHandles;
 
         /// <summary>
-        /// Gets the application to start.
+        /// Gets the absolute path of the application to start.
         /// </summary>
+        /// <value>
+        /// The absolute path to the executable file. This path is resolved from the <c>fileName</c> parameter
+        /// passed to the constructor by searching through various directories if needed.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The path is "resolved" meaning it has been converted to an absolute path and verified to exist.
+        /// If a relative path was provided to the constructor, it was located by searching in the executable's
+        /// directory, current directory, system directories (on Windows), and directories in the PATH environment variable.
+        /// </para>
+        /// <para>
+        /// See <see cref="ProcessStartOptions(string)"/> for complete details on the resolution process.
+        /// </para>
+        /// </remarks>
         public string FileName => _fileName;
 
         /// <summary>
@@ -129,10 +143,45 @@ namespace System.Diagnostics
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="fileName"/> is null.</exception>
         /// <exception cref="ArgumentException">Thrown when <paramref name="fileName"/> is empty.</exception>
         /// <exception cref="FileNotFoundException">Thrown when <paramref name="fileName"/> cannot be resolved to an existing file.</exception>
+        /// <remarks>
+        /// <para>
+        /// The <paramref name="fileName"/> is resolved to an absolute path before starting the process.
+        /// </para>
+        /// <para>
+        /// When the <paramref name="fileName"/> is a rooted path, it is used as-is without any resolution.
+        /// </para>
+        /// <para>
+        /// On Windows, when <paramref name="fileName"/> is not a rooted path, the system searches
+        /// for the executable in the following order (mimicking the behavior of the <c>CreateProcess</c> system call):
+        /// </para>
+        /// <list type="number">
+        /// <item><description>The directory of the executable that started the currently executing process.</description></item>
+        /// <item><description>The current directory.</description></item>
+        /// <item><description>The System directory.</description></item>
+        /// <item><description>The Windows directory.</description></item>
+        /// <item><description>The directories listed in the PATH environment variable.</description></item>
+        /// </list>
+        /// <para>
+        /// On Unix, when <paramref name="fileName"/> is not a rooted path, the system searches
+        /// for the executable in the following order (mimicking the Windows search order):
+        /// </para>
+        /// <list type="number">
+        /// <item><description>The directory of the executable that started the currently executing process.</description></item>
+        /// <item><description>The current directory.</description></item>
+        /// <item><description>The directories listed in the PATH environment variable.</description></item>
+        /// </list>
+        /// <para>
+        /// On Windows, if the <paramref name="fileName"/> does not have an extension, ".exe" is appended to it before searching.
+        /// </para>
+        /// </remarks>
         public ProcessStartOptions(string fileName)
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
+            // The file could be deleted or replaced after this check and before the process is started (TOCTOU).
+            // In such case, the process creation will fail.
+            // We resolve the path here to provide unified error handling and to avoid
+            // starting a process that will fail immediately after creation.
             string? resolved = ResolvePath(fileName);
             if (resolved == null || !File.Exists(resolved))
             {
@@ -141,14 +190,54 @@ namespace System.Diagnostics
             _fileName = resolved;
         }
 
+        // There are two ways to create a process on Windows using CreateProcess sys-call:
+        // 1. With NULL lpApplicationName and non-NULL lpCommandLine, where the first token of the
+        // command line is the executable name. In this case, the system will resolve the executable
+        // name to an actual file on disk using documented search order.
+        // 2. With non-NULL lpApplicationName, where the system will use the provided application
+        // name as-is without any resolution, and the command line is passed as-is to the process.
+        //
+        // The official documentation mentions:
+        // "(..) do not pass NULL for lpApplicationName. If you do pass NULL for lpApplicationName,
+        // use quotation marks around the executable path in lpCommandLine."
+        //
+        // We have asked the CreateProcess owners (Windows Team) for feedback. This is what they wrote:
+        // "Applications should not under any circumstances pass user-controlled input directly to CreateProcess;
+        // or, if they intend to do so (for passing user-originated parameters), they should be filling out the lpApplicationName parameter."
+        //
+        // We could either document that the FileName should never be user-controlled input or resolve it ourselves,
+        // pass it as lpApplicationName and arguments as lpCommandLine.
+        //
+        // On Unix, we were already resolving the executable path before starting the process.
+        // We were doing it for two reasons:
+        // 1. To mimic Windows resolution path order (consistency across platforms).
+        // 2. To avoid forking a process and then failing in exec because the file cannot be found.
+        // By resolving the path ourselves before forking we can avoid creating a child process that will fail immediately after creation.
+        //
+        // Changing the resolution logic could introduce breaking changes. For example:
+        // "If the executable module is a 16-bit application, lpApplicationName should be NULL, and the
+        // string pointed to by lpCommandLine should specify the executable module as well as its arguments."
+        //
+        // That is why we don't change the resolution logic for existing APIs, but since we are introducing a new API,
+        // we have the opportunity to do it in a more secure way by always resolving the executable name.
+        // Moreover, it gives the users the opportunity to:
+        // - check the resolved executable path before starting the process.
+        // - cache the resolved path and reuse it for subsequent process creations (perf).
+        //
+        // In upcoming .NET 11 previews, we may consider changing the order.
         internal static string? ResolvePath(string filename)
         {
             // If the filename is a complete path, use it, regardless of whether it exists.
+            if (Path.IsPathFullyQualified(filename))
+            {
+                return filename;
+            }
+
+            // Handle rooted but not fully qualified paths (e.g., C:foo.exe, \foo.exe on Windows)
+            // On Unix, this never executes since rooted paths are always fully qualified
             if (Path.IsPathRooted(filename))
             {
-                // In this case, it doesn't matter whether the file exists or not;
-                // it's what the caller asked for, so it's what they'll get
-                return filename;
+                return Path.GetFullPath(filename); // Resolve to absolute path
             }
 
 #if WINDOWS
@@ -192,7 +281,7 @@ namespace System.Diagnostics
             // Windows-specific search locations (from CreateProcessW documentation)
 
             // Check the system directory (e.g., System32)
-            path = s_cachedSystemDirectory ??= System.Environment.SystemDirectory;
+            path = System.Environment.SystemDirectory;
             if (path != null)
             {
                 path = Path.Combine(path, filename);
@@ -251,13 +340,7 @@ namespace System.Diagnostics
         }
 
 #if WINDOWS
-        private static string? s_cachedSystemDirectory;
         private static string? s_cachedWindowsDirectory;
-
-        private static string? GetSystemDirectory()
-        {
-            return s_cachedSystemDirectory ??= System.Environment.SystemDirectory;
-        }
 
         private static string? GetWindowsDirectory()
         {
