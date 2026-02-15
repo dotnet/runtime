@@ -289,10 +289,76 @@ bool initialize_tables(mdcxt_t* cxt)
 bool validate_tables(mdcxt_t* cxt)
 {
     assert(cxt != NULL);
-    (void)cxt;
+
     // [TODO] Reference ECMA-335 and encode table verification.
-    // [TODO] Validate that tables marked as sorted are actually sorted.
-    // [TODO] Do not allow the *Ptr tables to be present in a compressed table heap.
+
+    // Do not allow the *Ptr indirection tables
+    // to be present in a compressed table heap (#~).
+    if (!(cxt->context_flags & mdc_uncompressed_table_heap))
+    {
+        for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+        {
+            if (table_is_indirect_table((mdtable_id_t)i) && cxt->tables[i].row_count != 0)
+                return false;
+        }
+    }
+
+    // II.22 - Validate that tables marked as sorted are actually sorted.
+    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+    {
+        mdtable_t* table = &cxt->tables[i];
+        if (!table->is_sorted || table->row_count <= 1)
+            continue;
+
+        md_key_info_t const* keys;
+        uint8_t key_count = get_table_keys((mdtable_id_t)i, &keys);
+        if (key_count == 0)
+            continue;
+
+        for (uint32_t r = 1; r < table->row_count; ++r)
+        {
+            mdcursor_t row = create_cursor(table, r);
+            mdcursor_t next_row = create_cursor(table, r + 1);
+
+            for (uint8_t k = 0; k < key_count; ++k)
+            {
+                col_index_t key_col = index_to_col(keys[k].index, (mdtable_id_t)i);
+
+                access_cxt_t row_acxt;
+                if (!create_access_context(&row, key_col, false, &row_acxt))
+                    return false;
+
+                access_cxt_t next_acxt;
+                if (!create_access_context(&next_row, key_col, false, &next_acxt))
+                    return false;
+
+                uint32_t row_value;
+                if (!read_column_data(&row_acxt, &row_value))
+                    return false;
+
+                uint32_t next_value;
+                if (!read_column_data(&next_acxt, &next_value))
+                    return false;
+
+                // Compare by sort direction - ascending or descending.
+                if (keys[k].descending)
+                {
+                    if (row_value < next_value)
+                        return false;
+                    if (row_value > next_value)
+                        break;
+                }
+                else
+                {
+                    if (row_value > next_value)
+                        return false;
+                    if (row_value < next_value)
+                        break;
+                }
+            }
+        }
+    }
+
     return true;
 }
 

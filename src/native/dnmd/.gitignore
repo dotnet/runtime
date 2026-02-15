@@ -1,6 +1,8 @@
 artifacts/
+_codeql_build_dir/
 .vs/
 .idea/
 *~
 TestResults/
 .DS_Store
+_codeql_detected_source_root

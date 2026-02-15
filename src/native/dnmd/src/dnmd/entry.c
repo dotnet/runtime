@@ -225,6 +225,10 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
     if ((bool)(cxt.context_flags & mdc_minimal_delta) && !tables_heap_uncompressed)
         return false;
 
+    // Record whether the table heap is uncompressed (#-).
+    if (tables_heap_uncompressed)
+        cxt.context_flags |= mdc_uncompressed_table_heap;
+
     // Header initialization is complete.
     cxt.magic = MDLIB_MAGIC_NUMBER;
     cxt.raw_metadata.ptr = data;
@@ -968,13 +972,10 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
     if (cxt->user_string_heap.size != 0)
         stream_count++;
 
-    char const* tables_stream_name = "#~";
+    char const* tables_stream_name = (cxt->context_flags & mdc_uncompressed_table_heap) ? "#-" : "#~";
 
     if (cxt->context_flags & mdc_minimal_delta)
-    {
-        tables_stream_name = "#-";
         stream_count++;
-    }
 
     uint64_t valid_tables = 0;
     uint64_t sorted_tables = 0;
@@ -989,10 +990,6 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
             valid_tables |= (1ULL << i);
             if (cxt->tables[i].is_sorted)
                 sorted_tables |= (1ULL << i);
-
-            // Indirect tables only exist in images that use the uncompresed stream.
-            if (table_is_indirect_table((mdtable_id_t)i))
-                tables_stream_name = "#-";
         }
     }
 

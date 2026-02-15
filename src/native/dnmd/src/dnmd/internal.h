@@ -116,13 +116,14 @@ typedef enum
 // Flags and masks for context details
 typedef enum
 {
-    mdc_none              = 0x0000,
-    mdc_large_string_heap = 0x0001,
-    mdc_large_guid_heap   = 0x0002,
-    mdc_large_blob_heap   = 0x0004,
-    mdc_extra_data        = 0x0040,
-    mdc_image_flags       = 0xffff,
-    mdc_minimal_delta     = 0x00010000,
+    mdc_none                    = 0x0000,
+    mdc_large_string_heap       = 0x0001,
+    mdc_large_guid_heap         = 0x0002,
+    mdc_large_blob_heap         = 0x0004,
+    mdc_extra_data              = 0x0040,
+    mdc_image_flags             = 0xffff,
+    mdc_minimal_delta           = 0x00010000,
+    mdc_uncompressed_table_heap = 0x00020000,
 } mdcxt_flag_t;
 
 // Macros used to insert/extract the column offset.
