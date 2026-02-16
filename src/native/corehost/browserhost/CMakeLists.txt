@@ -55,7 +55,7 @@ set(SHARED_LIB_DESTINATION
 set(SHARED_CLR_DESTINATION
     ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_RUNTIME_CONFIGURATION}/sharedFramework)
 
-# these dependencies assume that you built `libs.native+clr.runtime` subsets first
+# CoreCLR runtime .a libraries
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
@@ -63,6 +63,10 @@ LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
     ${SHARED_CLR_DESTINATION}/libcoreclrpal.a
     ${SHARED_CLR_DESTINATION}/libminipal.a
+)
+
+# Shared platform .a libraries
+list(APPEND NATIVE_LIBS
     ${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.a
     ${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.a
@@ -135,6 +139,8 @@ install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
 install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION sharedFramework COMPONENT runtime)
 
 set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
     "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")
