@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*============================================================
-**
 ** File:    callhelpers.h
 ** Purpose: Provides helpers for making managed calls
-**
-
 ===========================================================*/
+
 #ifndef __CALLHELPERS_H__
 #define __CALLHELPERS_H__
 
 struct CallDescrData
 {
-    //
     // Input arguments
-    //
     LPVOID                      pSrc;
     UINT32                      numStackSlots;
 #ifdef CALLDESCR_ARGREGS
@@ -31,7 +28,9 @@ struct CallDescrData
 #ifdef TARGET_WASM
     // size of the arguments and the transition block are used to execute the method with the interpreter
     size_t                      nArgsSize;
-#endif
+    bool                        hasThis;
+    bool                        hasRetBuff;
+#endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG
     // Pointer to return buffer arg location
@@ -83,8 +82,6 @@ void* DispatchCallSimple(
 // 'dest' respecting the struct's layout described in 'info'.
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-
-bool IsCerRootMethod(MethodDesc *pMD);
 
 class MethodDescCallSite
 {
@@ -468,20 +465,6 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap);
 /* Macros used to indicate a call to managed code is starting/ending   */
 /***********************************************************************/
 
-#ifdef TARGET_UNIX
-// Install a native exception holder that doesn't catch any exceptions but its presence
-// in a stack range of native frames indicates that there was a call from native to
-// managed code. It is used by the DispatchManagedException to detect the case when
-// the INSTALL_MANAGED_EXCEPTION_DISPATCHER was not at the managed to native boundary.
-// For example in the PreStubWorker, which can be called from both native and managed
-// code.
-#define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER() \
-    NativeExceptionHolderNoCatch __exceptionHolder;    \
-    __exceptionHolder.Push();
-#else // TARGET_UNIX
-#define INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER()
-#endif // TARGET_UNIX
-
 enum EEToManagedCallFlags
 {
     EEToManagedDefault                  = 0x0000,
@@ -494,7 +477,6 @@ enum EEToManagedCallFlags
 #define BEGIN_CALL_TO_MANAGEDEX(flags)                                          \
 {                                                                               \
     MAKE_CURRENT_THREAD_AVAILABLE();                                            \
-    DECLARE_CPFH_EH_RECORD(CURRENT_THREAD);                                     \
     _ASSERTE(CURRENT_THREAD);                                                   \
     _ASSERTE((CURRENT_THREAD->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);     \
     /* This bit should never be set when we call into managed code.  The */     \
@@ -508,12 +490,9 @@ enum EEToManagedCallFlags
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
-    }                                                                           \
-    INSTALL_CALL_TO_MANAGED_EXCEPTION_HOLDER();                                 \
-    INSTALL_COMPLUS_EXCEPTION_HANDLER_NO_DECLARE();
+    }
 
 #define END_CALL_TO_MANAGED()                                                   \
-    UNINSTALL_COMPLUS_EXCEPTION_HANDLER();                                      \
 }
 
 /***********************************************************************/
@@ -680,6 +659,149 @@ enum DispatchCallSimpleFlags
 
 
 void CallDefaultConstructor(OBJECTREF ref);
+
+//
+// Helper types for calling managed methods marked with [UnmanagedCallersOnly]
+// from native code.
+//
+
+// Use CLR_BOOL_ARG to convert a BOOL value to a CLR_BOOL for passing to
+// UnmanagedCallersOnlyCaller::InvokeThrowing when the managed parameter is bool.
+#define CLR_BOOL_ARG(x) ((CLR_BOOL)(!!(x)))
+
+// Helper class for calling managed methods marked with [UnmanagedCallersOnly].
+// This provides a more efficient alternative to MethodDescCallSite for methods
+// using the reverse P/Invoke infrastructure.
+// This class assumes the target method signature has a trailing argument for
+// returning the exception (that is, Exception* in C#).
+//
+// Example usage:
+//   UnmanagedCallersOnlyCaller caller(BinderMethodID::MyMethod);
+//   ...
+//   caller.InvokeThrowing(arg1, arg2);
+//
+// The corresponding C# method would be declared as:
+//   [UnmanagedCallersOnly]
+//   public static void MyMethod(int arg1, object* arg2, Exception* pException);
+//
+class UnmanagedCallersOnlyCaller final
+{
+    MethodDesc* _pMD;
+public:
+    explicit UnmanagedCallersOnlyCaller(BinderMethodID id)
+        : _pMD{}
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        _pMD = CoreLibBinder::GetMethod(id);
+        _ASSERTE(_pMD != NULL);
+        _ASSERTE(_pMD->HasUnmanagedCallersOnlyAttribute());
+    }
+
+    template<typename... Args>
+    void InvokeThrowing(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<void(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+    }
+
+    template<typename Ret, typename... Args>
+    Ret InvokeThrowing_Ret(Args... args)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+        
+        // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
+        // See below load level override.
+        _ASSERTE(_pMD->GetModule()->IsSystem());
+
+        // We're invoking an CoreLib method, so lift the restriction on type load limits. These calls are
+        // limited to CoreLib and only into UnmanagedCallersOnly methods.
+        OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
+
+        Ret ret;
+
+        struct
+        {
+            OBJECTREF Exception;
+        } gc;
+        gc.Exception = NULL;
+        GCPROTECT_BEGIN(gc);
+
+        {
+            GCX_PREEMP();
+
+            PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+            _ASSERTE(methodEntry != (PCODE)NULL);
+
+            // Cast the function pointer to the appropriate type.
+            // Note that we append the exception handle argument.
+            auto fptr = reinterpret_cast<Ret(*)(Args..., OBJECTREF*)>(methodEntry);
+
+            // The last argument is the implied exception handle for any exceptions.
+            ret = fptr(args..., &gc.Exception);
+        }
+
+        // If an exception was thrown, propagate it
+        if (gc.Exception != NULL)
+            COMPlusThrow(gc.Exception);
+
+        GCPROTECT_END();
+
+        return ret;
+    }
+};
 
 #endif //!DACCESS_COMPILE
 

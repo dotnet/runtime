@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedJson, json);
 
             var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
-            JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
+            JsonTypeInfo<object> objectTypeInfo = options.GetTypeInfo<object>();
             json = await Serializer.SerializeWrapper(value, objectTypeInfo);
             Assert.Equal(expectedJson, json);
         }
@@ -358,6 +358,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(@"""IReadOnlyCollectionT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IReadOnlyListT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""ISetT"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""IReadOnlySetT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""StackT"":[""World"",""Hello""]", json);
                 Assert.Contains(@"""QueueT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""HashSetT"":[""Hello"",""World""]", json);

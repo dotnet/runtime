@@ -122,11 +122,14 @@ CorInfoIsAccessAllowedResult
 CorInfoMethodRuntimeFlags
 CorInfoTailCall
 CorInfoType
+CorInfoWasmType
+CorInfoWasmType*
 CorInfoHFAElemType
 CorInfoTypeWithMod
 CorInfoCallConvExtension
 InfoAccessType
 InfoAccessType*, ref InfoAccessType
+CorInfoReloc
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
 CORINFO_CALLINFO_FLAGS
@@ -153,6 +156,7 @@ CORINFO_CLASS_HANDLE*,CORINFO_CLASS_STRUCT_**
 CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
 CORINFO_VARARGS_HANDLE,IntPtr
 CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
+CORINFO_WASM_TYPE_SYMBOL_HANDLE,CORINFO_WASM_TYPE_SYMBOL_STRUCT_*
 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
 
 ICorDebugInfo::OffsetMapping*,OffsetMapping*
@@ -161,6 +165,9 @@ ICorDebugInfo::NativeVarInfo*,NativeVarInfo*
 ICorDebugInfo::BoundaryTypes*,BoundaryTypes*
 ICorDebugInfo::InlineTreeNode*,InlineTreeNode*
 ICorDebugInfo::RichOffsetMapping*,RichOffsetMapping*
+ICorDebugInfo::AsyncInfo*,AsyncInfo*
+ICorDebugInfo::AsyncSuspensionPoint*,AsyncSuspensionPoint*
+ICorDebugInfo::AsyncContinuationVarInfo*,AsyncContinuationVarInfo*
 
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*
 ICorJitInfo::errorTrapFunction,void*
@@ -274,6 +281,7 @@ FUNCTIONS
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)
     void setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars)
     void reportRichMappings(ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings)
+    void reportAsyncDebugInfo(ICorDebugInfo::AsyncInfo* asyncInfo, ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints, ICorDebugInfo::AsyncContinuationVarInfo* vars, uint32_t numVars)
     void reportMetadata(const char* key, const void* value, size_t length)
     void*allocateArray(size_t cBytes);
     void freeArray(void*array);
@@ -293,12 +301,12 @@ FUNCTIONS
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);
     void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, REF_CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, REF_CORINFO_CONST_LOOKUP pResult);
-    CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_MODULE_HANDLE embedModuleHandle(CORINFO_MODULE_HANDLE   handle, void                  **ppIndirection);
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
@@ -322,7 +330,7 @@ FUNCTIONS
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     CORINFO_CLASS_HANDLE getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize);
-    CORINFO_METHOD_HANDLE getAsyncResumptionStub();
+    CORINFO_METHOD_HANDLE getAsyncResumptionStub(void **entryPoint);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void updateEntryPointForTailCall(REF_CORINFO_CONST_LOOKUP entryPoint);
@@ -338,8 +346,9 @@ FUNCTIONS
     JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo)
     JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
-    void recordRelocation(void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta)
-    uint16_t getRelocTypeHint(void* target)
+    void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
+    CorInfoReloc getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

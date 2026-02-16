@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -179,10 +180,8 @@ public:
 
     PTR_MethodDesc      phdrMDesc;
 
-#ifdef FEATURE_EH_FUNCLETS
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
-#endif // FEATURE_EH_FUNCLETS
 };
 
 struct InterpreterRealCodeHeader
@@ -278,7 +277,6 @@ public:
         pRealCodeHeader = (PTR_RealCodeHeader)kind;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     UINT                    GetNumberOfUnwindInfos()
     {
         SUPPORTS_DAC;
@@ -301,7 +299,6 @@ public:
         return dac_cast<PTR_RUNTIME_FUNCTION>(
             PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos) + iUnwindInfo * sizeof(T_RUNTIME_FUNCTION));
     }
-#endif // FEATURE_EH_FUNCLETS
 
 
 #ifdef DACCESS_COMPILE
@@ -373,7 +370,6 @@ public:
         return FALSE;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool MayHaveFunclets()
     {
         LIMITED_METHOD_CONTRACT;
@@ -386,7 +382,6 @@ public:
         _ASSERTE(!"Unexpected call to GetUnwindInfoZero");
         return NULL;
     }
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
@@ -1716,6 +1711,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings) = 0;
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars) = 0;
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset) = 0;
 
     virtual BOOL JitCodeToMethodInfo(
@@ -1742,7 +1745,6 @@ public:
 
     TADDR JitTokenToModuleBase(const METHODTOKEN& MethodToken);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo) = 0;
 
     // GetFuncletStartAddress returns the starting address of the function or funclet indicated by the EECodeInfo address.
@@ -1752,7 +1754,6 @@ public:
 
     virtual BOOL LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind   GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC) = 0;
 
@@ -1762,10 +1763,8 @@ public:
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
-#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -1783,6 +1782,11 @@ public:
         return m_runtimeSupport;
     }
 
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
+
 protected:
     PTR_ICodeManager m_runtimeSupport;
 };
@@ -1799,16 +1803,33 @@ class CodeHeapIterator final
         size_t MaxCodeHeapSize;
     };
 
-    EECodeGenManager* m_manager;
+    class EECodeGenManagerReleaseIteratorHolder
+    {
+        EECodeGenManager* m_manager;
+    public:
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager);
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder&& other)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_manager = other.m_manager;
+            other.m_manager = NULL;
+        }
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder&& other);
+        ~EECodeGenManagerReleaseIteratorHolder();
+    };
+
+    EECodeGenManagerReleaseIteratorHolder m_manager;
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
     LoaderAllocator* m_pLoaderAllocatorFilter;
     MethodDesc* m_pCurrent;
+    DWORD m_codeType;
 
 public:
     CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter);
-    ~CodeHeapIterator();
 
     CodeHeapIterator(CodeHeapIterator const&) = delete;
     CodeHeapIterator& operator=(CodeHeapIterator const&) = delete;
@@ -1901,6 +1922,14 @@ protected:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    BOOL GetAsyncDebugInfoWorker(
+        PTR_BYTE pDebugInfo,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     template<typename TCodeHeader>
     BOOL JitCodeToMethodInfoWorker(
         RangeSection * pRangeSection,
@@ -1919,11 +1948,9 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
-#ifdef FEATURE_EH_FUNCLETS
                  , UINT nUnwindInfos
-#endif
                   );
 
     BYTE *AllocFromJitMetaHeap(MethodDesc *pMD, size_t blockSize);
@@ -2116,6 +2143,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
@@ -2148,16 +2183,13 @@ public:
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
     {
@@ -2167,7 +2199,6 @@ public:
         // unwind information at dump generation time (since it's dynamic, it will not be otherwise
         // available at debug time).
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #if !defined DACCESS_COMPILE
 protected:
@@ -2269,10 +2300,14 @@ public:
     };
 
     // Returns default scan flag for current thread
-    static ScanFlag GetScanFlags();
+    static ScanFlag GetScanFlags(Thread *pThread = NULL);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     static BOOL IsManagedCode(PCODE currentPC);
+
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
+    // Does not acquire the reader lock. Caller must ensure it is safe.
+    static BOOL IsManagedCodeNoLock(PCODE currentPC);
 
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
@@ -2388,14 +2423,14 @@ public:
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE jumpStub(MethodDesc* pMD,
                           PCODE target,
                           BYTE * loAddr,
                           BYTE * hiAddr,
                           LoaderAllocator *pLoaderAllocator = NULL,
                           bool throwOnOutOfMemoryWithinRange = true);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
@@ -2459,13 +2494,13 @@ private:
     }
 #endif // defined(_DEBUG)
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE getNextJumpStub(MethodDesc* pMD,
                                  PCODE target,
                                  BYTE * loAddr,  BYTE * hiAddr,
                                  LoaderAllocator *pLoaderAllocator,
                                  bool throwOnOutOfMemoryWithinRange);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     // ***************************************************************************
@@ -2668,6 +2703,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32*                           pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
                                      MethodDesc** ppMethodDesc,
@@ -2695,24 +2738,20 @@ public:
 
     virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
     virtual BOOL                    LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //FEATURE_EH_FUNCLETS
 #endif //DACCESS_COMPILE
 };
 
@@ -2795,12 +2834,19 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
 #ifndef DACCESS_COMPILE
     virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                         CrawlFrame *pCf);
 #endif // #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     {
         // Not used for the interpreter
@@ -2821,25 +2867,26 @@ protected:
 public:
 #endif // !DACCESS_COMPILE
 
-#endif // FEATURE_EH_FUNCLETS
-
     virtual StubCodeBlockKind GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif
+
 #if defined(DACCESS_COMPILE)
 
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
     {
         // Not used for the interpreter
         _ASSERTE(FALSE);
     }
 
-#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 private :
     Crst m_interpreterLoadLock;
@@ -2866,14 +2913,12 @@ class EECodeInfo
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum class IsFuncletCache : uint32_t
     {
         NotSet = 2,
         IsFunclet = 1,
         IsNotFunclet = 0
     };
-#endif // FEATURE_EH_FUNCLETS
 
 public:
     EECodeInfo();
@@ -2966,11 +3011,9 @@ public:
         return GetJitManager()->JitTokenToModuleBase(GetMethodToken());
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
     ULONG       GetFixedStackSize()
@@ -3013,10 +3056,8 @@ private:
     MethodDesc         *m_pMD;
     IJitManager        *m_pJM;
     DWORD               m_relOffset;
-#ifdef FEATURE_EH_FUNCLETS
     IsFuncletCache      m_isFuncletCache;
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_X86
     PTR_CBYTE           m_hdrInfoTable;

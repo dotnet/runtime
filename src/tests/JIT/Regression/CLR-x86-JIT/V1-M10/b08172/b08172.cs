@@ -3,12 +3,16 @@
 
 // Factorial
 
+
+namespace b08172;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 public class Test
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint() {
         Test app = new Test();

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // threadsuspend.CPP
 //
@@ -17,9 +18,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/time.h>
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
@@ -662,21 +661,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     EE_ILEXCEPTION_CLAUSE EHClause;
 
     StackWalkAction action = SWA_CONTINUE;
-#ifndef FEATURE_EH_FUNCLETS
-    // On X86, the EH encoding for catch clause is completely mess.
-    // If catch clause is in its own basic block, the end of catch includes everything in the basic block.
-    // For nested catch, the end of catch may include several jmp instructions after JIT_EndCatch call.
-    // To better decide if we are inside a nested catch, we check if offs-1 is in more than one catch clause.
-    DWORD countInCatch = 0;
-    BOOL fAtJitEndCatch = FALSE;
-    if (pData->pAbortee == GetThread() &&
-        pData->pAbortee->ThrewControlForThread() == Thread::InducedThreadRedirectAtEndOfCatch &&
-        GetControlPC(pCf->GetRegisterSet()) == (PCODE)GetIP(pData->pAbortee->GetAbortContext()))
-    {
-        fAtJitEndCatch = TRUE;
-        offs -= 1;
-    }
-#endif  // !FEATURE_EH_FUNCLETS
 
     for(ULONG i=0; i < EHCount; i++)
     {
@@ -697,20 +681,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         if (offs >= EHClause.HandlerStartPC &&
             offs < EHClause.HandlerEndPC)
         {
-#ifndef FEATURE_EH_FUNCLETS
-            if (fAtJitEndCatch)
-            {
-                // On X86, JIT's EH info may include the instruction after JIT_EndCatch inside the same catch
-                // clause if it is in the same basic block.
-                // So for this case, the offs is in at least one catch handler, but since we are at the end of
-                // catch, this one should not be counted.
-                countInCatch ++;
-                if (countInCatch == 1)
-                {
-                    continue;
-                }
-            }
-#endif // !FEATURE_EH_FUNCLETS
             pData->fWithinEHClause = true;
             // We're within an EH clause. If we're asking about CERs too then stop the stack walk if we've reached a conclusive
             // result or continue looking otherwise. Else we can stop the stackwalk now.
@@ -726,14 +696,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
     }
     }
 
-#ifndef FEATURE_EH_FUNCLETS
-#ifdef _DEBUG
-    if (fAtJitEndCatch)
-    {
-        _ASSERTE (countInCatch > 0);
-    }
-#endif   // _DEBUG
-#endif   // !FEATURE_EH_FUNCLETS
     return action;
 }
 
@@ -963,12 +925,10 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (IsAbortPrevented())
     {
         return FALSE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     REGDISPLAY rd;
 
@@ -1235,7 +1195,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        RaiseTheExceptionInternalOnly(exceptObj);
     }
 
     _ASSERTE(this != pCurThread);      // Aborting another thread.
@@ -1424,6 +1384,10 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         else
 #endif // FEATURE_THREAD_ACTIVATION
         {
+#ifdef TARGET_UNIX
+            _ASSERTE_MSG(false, "Thread::UserAbort: Activation injection is required on Unix platforms");
+            UNREACHABLE();
+#else // TARGET_UNIX
             BOOL fOutOfRuntime = FALSE;
             BOOL fNeedStackCrawl = FALSE;
 
@@ -1520,31 +1484,9 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
                                 | TS_Detached
                                 | TS_Unstarted)));
 
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-            // TODO WIN64: consider this if there is a way to detect of managed code on stack.
-            if ((m_pFrame == FRAME_TOP)
-                && (GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END)
-            )
-            {
-#ifndef DISABLE_THREADSUSPEND
-                ResumeThread();
-#endif
-#ifdef _DEBUG
-                m_dwAbortPoint = 8;
-#endif
-
-                return S_OK;
-            }
-#endif // TARGET_X86
-
-
             if (!m_fPreemptiveGCDisabled)
             {
-                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame()
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
-                    && ((size_t) GetFirstCOMPlusSEHRecord(this) > ((size_t) m_pFrame) - 20)
-#endif // TARGET_X86
-                    )
+                if ((m_pFrame != FRAME_TOP) && m_pFrame->IsTransitionToNativeFrame())
                 {
                     fOutOfRuntime = TRUE;
                 }
@@ -1622,6 +1564,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 LPrepareRetry:
 
             checkForAbort.Release();
+#endif // TARGET_UNIX
         }
 
         // Don't do a Sleep.  It's possible that the thread we are trying to abort is
@@ -1630,7 +1573,7 @@ LPrepareRetry:
         // will time out, but it will pump if we need it to.
         if (pCurThread)
         {
-            pCurThread->Join(ABORT_POLL_TIMEOUT, TRUE);
+            pCurThread->DoReentrantWaitWithRetry(pCurThread->GetThreadHandle(), ABORT_POLL_TIMEOUT, WaitMode_Alertable);
         }
         else
         {
@@ -1666,7 +1609,7 @@ LPrepareRetry:
 
             if (pCurThread)
             {
-                pCurThread->Join(100, TRUE);
+                pCurThread->DoReentrantWaitWithRetry(pCurThread->GetThreadHandle(), 100, WaitMode_Alertable);
             }
             else
             {
@@ -2195,6 +2138,10 @@ void Thread::RareDisablePreemptiveGC()
 
         if (ThreadStore::IsTrappingThreadsForSuspension())
         {
+            // Mark that this thread is trapped for suspension.
+            // Used by the sample profiler to determine this thread was in managed code.
+            SetThreadState(TS_SuspensionTrapped);
+
             EnablePreemptiveGC();
 
 #ifdef PROFILING_SUPPORTED
@@ -2233,6 +2180,9 @@ void Thread::RareDisablePreemptiveGC()
 
             // disable preemptive gc.
             m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+
+            // Clear the suspension trapped flag now that we're resuming.
+            ResetThreadState(TS_SuspensionTrapped);
 
             // check again if we have something to do
             continue;
@@ -2304,7 +2254,7 @@ void Thread::HandleThreadAbort ()
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE);
+        RaiseTheExceptionInternalOnly(exceptObj);
     }
 
     ::SetLastError(lastError);
@@ -3776,8 +3726,6 @@ ThrowControlForThread(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "ThrowControlForThread Aborting\n");
 
-#ifdef FEATURE_EH_FUNCLETS
-
     GCX_COOP();
 
     EXCEPTION_RECORD exceptionRecord = {0};
@@ -3788,12 +3736,6 @@ ThrowControlForThread(
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
-#else // FEATURE_EH_FUNCLETS
-    // Here we raise an exception.
-    INSTALL_MANAGED_EXCEPTION_DISPATCHER
-    RaiseComPlusException();
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#endif // FEATURE_EH_FUNCLETS
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4717,7 +4659,6 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
             // return address for hijacking.
             if (!pES->m_IsInterruptible)
             {
-#ifdef FEATURE_EH_FUNCLETS
                 PREGDISPLAY pRDT = pCF->GetRegisterSet();
                 _ASSERTE(pRDT != NULL);
 
@@ -4805,11 +4746,6 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_
                 }
-#else // FEATURE_EH_FUNCLETS
-                // peel off the next frame to expose the return address on the stack
-                pES->m_FirstPass = FALSE;
-                action = SWA_CONTINUE;
-#endif // !FEATURE_EH_FUNCLETS
             }
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
         }
@@ -5731,16 +5667,17 @@ retry_for_debugger:
 //          It is unsafe to use blocking APIs or allocate in this method.
 BOOL CheckActivationSafePoint(SIZE_T ip)
 {
-    Thread *pThread = GetThreadNULLOk();
+    Thread *pThread = GetThreadAsyncSafe();
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
     BOOL isActivationSafePoint = pThread != NULL &&
         (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
-        ExecutionManager::IsManagedCode(ip);
+        (ExecutionManager::GetScanFlags(pThread) != ExecutionManager::ScanReaderLock) &&
+        ExecutionManager::IsManagedCodeNoLock(ip);
 
-    if (!isActivationSafePoint)
+    if (!isActivationSafePoint && pThread != NULL)
     {
         pThread->m_hasPendingActivation = false;
     }
@@ -5943,8 +5880,11 @@ bool Thread::InjectActivation(ActivationReason reason)
             hThread,
             (ULONG_PTR)reason,
             SpecialUserModeApcWithContextFlags);
-    _ASSERTE(success);
-    return true;
+    if (!success)
+    {
+        m_hasPendingActivation = false;
+    }
+    return success;
 #elif defined(TARGET_UNIX)
     _ASSERTE((reason == ActivationReason::SuspendForGC) || (reason == ActivationReason::ThreadAbort) || (reason == ActivationReason::SuspendForDebugger));
 

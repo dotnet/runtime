@@ -2435,7 +2435,7 @@ namespace System.Tests
                 Assert.True(match.Success);
 
                 // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
-                if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
+                if (PlatformDetection.IsNotWindowsNanoServer)
                 {
                     string offset = (match.Groups["sign"].Value == "-" ? "-" : "") + match.Groups["amount"].Value;
                     TimeSpan ts = TimeSpan.Parse(offset);
@@ -2767,7 +2767,6 @@ namespace System.Tests
         }
 
         [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
@@ -2776,14 +2775,78 @@ namespace System.Tests
                 throw new SkipTestException("This test won't work on API level < 26");
             }
 
+            // Clear cached data to always ensure predictable results
+            TimeZoneInfo.ClearCachedData();
+            if (SupportLegacyTimeZoneNames)
+            {
+                // Get legacy time zone "UCT" and ensure is not included in list returned by TimeZoneInfo.GetSystemTimeZones
+                // to ensure no duplicates display names as we should have "UTC" in the list.
+                TimeZoneInfo uct = TimeZoneInfo.FindSystemTimeZoneById("UCT");
+            }
+
             ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
-            HashSet<String> tzDisplayNames = new HashSet<String>();
+            Dictionary<String, List<String>> displayNameToIds = new Dictionary<String, List<String>>();
 
             foreach (TimeZoneInfo timezone in tzCollection)
             {
-                tzDisplayNames.Add(timezone.DisplayName);
+                if (!displayNameToIds.ContainsKey(timezone.DisplayName))
+                {
+                    displayNameToIds[timezone.DisplayName] = new List<String>();
+                }
+                displayNameToIds[timezone.DisplayName].Add(timezone.Id);
             }
-            Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
+
+            var duplicates = displayNameToIds.Where(kvp => kvp.Value.Count > 1).ToList();
+            if (duplicates.Count > 0)
+            {
+                var duplicateInfo = string.Join(", ", duplicates.Select(kvp =>
+                    $"'{kvp.Key}' -> [{string.Join(", ", kvp.Value)}]"));
+                Assert.Fail($"Found {duplicates.Count} duplicate display name(s): {duplicateInfo}");
+            }
+
+            Assert.Equal(tzCollection.Count, displayNameToIds.Count);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90269", TestPlatforms.Android)]
+        public static void TestGetSystemTimeZones()
+        {
+            TimeZoneInfo.ClearCachedData(); // Start clean
+            ReadOnlyCollection<TimeZoneInfo> tzCollection1 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+            ReadOnlyCollection<TimeZoneInfo> tzCollection2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+            Assert.Equal(tzCollection1.Count, tzCollection2.Count);
+            foreach (TimeZoneInfo timezone in tzCollection1)
+            {
+                Assert.Contains(timezone, tzCollection2);
+            }
+
+            TimeZoneInfo.ClearCachedData(); // Start again as clean
+            tzCollection1 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+            tzCollection2 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+            Assert.Equal(tzCollection1.Count, tzCollection2.Count);
+            foreach (TimeZoneInfo timezone in tzCollection1)
+            {
+                Assert.Contains(timezone, tzCollection2);
+            }
+
+            TimeZoneInfo.ClearCachedData(); // Start clean
+            if (SupportLegacyTimeZoneNames)
+            {
+                // Get legacy time zone "UCT" and ensure is not included in list returned by TimeZoneInfo.GetSystemTimeZones
+                // to ensure no duplicates display names as we should have "UTC" in the list.
+                TimeZoneInfo uct = TimeZoneInfo.FindSystemTimeZoneById("UCT");
+            }
+
+            ReadOnlyCollection<TimeZoneInfo> tzCollection3 = TimeZoneInfo.GetSystemTimeZones(skipSorting: true);
+            ReadOnlyCollection<TimeZoneInfo> tzCollection4 = TimeZoneInfo.GetSystemTimeZones(skipSorting: false);
+            Assert.Equal(tzCollection3.Count, tzCollection4.Count);
+            Assert.Equal(tzCollection1.Count, tzCollection4.Count);
+            foreach (TimeZoneInfo timezone in tzCollection3)
+            {
+                Assert.Contains(timezone, tzCollection4);
+            }
+
+            Assert.DoesNotContain(tzCollection4, t => t.Id == "UCT");
         }
 
         [Fact]

@@ -864,7 +864,8 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void ConsumeFunctionPointerFields()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
+        public void ConsumeFunctionPointerMembers()
         {
             // public unsafe class Container
             // {
@@ -915,16 +916,29 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder mainMethod = programType.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
             mainMethod.SetReturnType(typeof(int));
             ILGenerator il = mainMethod.GetILGenerator();
-            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field1"));
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field1"));
             il.Emit(OpCodes.Pop);
-            // References to fields with unmanaged calling convention are broken
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/120909")]
-            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field2"));
-            // il.Emit(OpCodes.Pop);
-            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field3"));
-            // il.Emit(OpCodes.Pop);
-            // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field4"));
-            // il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field2"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field3"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field4"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field5"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method1"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method2"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method3"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method4"));
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method5"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(GenericClassWithFunctionPointerMembers<int>).GetField("Field"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(GenericClassWithFunctionPointerMembers<Guid>).GetMethod("Method").MakeGenericMethod(typeof(string)));
+            il.Emit(OpCodes.Pop);
             il.Emit(OpCodes.Call, assembly1FromDisk.GetType("Container").GetMethod("Init"));
             il.Emit(OpCodes.Ldc_I4_2);
             il.Emit(OpCodes.Ldc_I4_3);
@@ -989,11 +1003,24 @@ namespace System.Reflection.Emit.Tests
         public byte field2;
     }
 
-    public unsafe class ClassWithFunctionPointerFields
+    public unsafe class ClassWithFunctionPointerMembers
     {
-        public static delegate*<ClassWithFunctionPointerFields> field1;
+        public static delegate*<ClassWithFunctionPointerMembers> field1;
         public static delegate* unmanaged<int> field2;
         public static delegate* unmanaged[Cdecl]<Guid> field3;
         public static delegate* unmanaged[Cdecl, SuppressGCTransition]<Vector<int>, Vector<int>> field4;
+        public static List<delegate* unmanaged[Stdcall, MemberFunction, SuppressGCTransition]<long>*[]> field5;
+
+        public static delegate*<int> Method1() => null;
+        public static delegate* unmanaged<string> Method2() => null;
+        public static delegate* unmanaged[Fastcall]<double> Method3() => null;
+        public static delegate* unmanaged[Cdecl]<delegate* unmanaged<int>, Guid> Method4() => null;
+        public static delegate* unmanaged[Cdecl]<int> Method5(delegate* unmanaged[Cdecl]<delegate* unmanaged<int>, Guid> funcPtr) => null;
+    }
+
+    public unsafe class GenericClassWithFunctionPointerMembers<T>
+    {
+        public static delegate* unmanaged[Cdecl]<T> Field;
+        public static delegate* unmanaged[Fastcall, MemberFunction]<T, U> Method<U>() => null;
     }
 }

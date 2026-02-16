@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
             string projectFilePath = info.ProjectFilePath;
@@ -169,7 +169,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
             UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(forwardConsole: true);
 
             bool isPublish = false;
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
@@ -297,7 +297,7 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData(false)]
+        // [InlineData(false)] https://github.com/dotnet/runtime/issues/123477
         [InlineData(true)]
         public async Task LibraryModeBuild(bool useWasmSdk)
         {
@@ -316,6 +316,62 @@ namespace Wasm.Build.Tests
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
             }
             
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug, true)]
+        [InlineData(Configuration.Release, true)]
+        [InlineData(Configuration.Debug, false)]
+        [InlineData(Configuration.Release, false)]
+        public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config, bool emitTypeScriptDts)
+        {
+            string shouldEmit = emitTypeScriptDts ? "true" : "false";
+            string emitTypeScriptDtsProp = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
+
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
+
+            // Verify dotnet.d.ts is not in wwwroot after creation
+            Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
+
+            // Build to trigger the _EnsureDotnetTypeScriptDefinitions target during the build phase
+            BuildProject(info, config, new BuildOptions());
+
+            // Verify dotnet.d.ts presence in the project's wwwroot directory after build
+            bool fileExists = File.Exists(dotnetDtsWwwrootPath);
+            if (emitTypeScriptDts)
+            {
+                Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
+            else
+            {
+                Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
+        }
+
+        [Theory]
+        [InlineData("true", false)]
+        [InlineData("false", true)]
+        [InlineData("", false)] // Default case
+        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
+        {
+            Configuration config = Configuration.Debug;
+            string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "usemonoruntime", extraArgs: extraArgs);
+
+            string projectFile = File.ReadAllText(info.ProjectFilePath);
+
+            // Verify UseMonoRuntime presence in the project file
+            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>false</UseMonoRuntime>");
+            if (expectUseMonoRuntimeProperty)
+            {
+                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+            }
+            else
+            {
+                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+            }
         }
     }
 }

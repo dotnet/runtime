@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -861,6 +862,29 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public void InitOnlyPropertyWithReservedKeywordName_CompilesSuccessfully()
+        {
+            // Verbatim identifiers like @else should be correctly handled in property initializers.
+
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public class MyClass
+                {
+                    public string @else { get; init; }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
         public void RefStructPropertyWithJsonIgnore_CompilesSuccessfully()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/98590
@@ -965,5 +989,133 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.NotEmpty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP001"));
         }
 #endif
+
+        [Fact]
+        public void NegativeJsonPropertyOrderGeneratesValidCode()
+        {
+            // Test for https://github.com/dotnet/runtime/issues/121277
+            // Verify that negative JsonPropertyOrder values generate compilable code
+            // even on locales that use non-ASCII minus signs (e.g., fi_FI uses U+2212)
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace Test
+                {
+                    public class MyClass
+                    {
+                        [JsonPropertyOrder(-1)]
+                        public int FirstProperty { get; set; }
+
+                        [JsonPropertyOrder(0)]
+                        public int SecondProperty { get; set; }
+
+                        [JsonPropertyOrder(-100)]
+                        public int ThirdProperty { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            // Test with fi_FI culture which uses U+2212 minus sign for negative numbers
+            using (new ThreadCultureChange("fi-FI"))
+            {
+                Compilation compilation = CompilationHelper.CreateCompilation(source);
+                JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+                // The generated code should compile without errors
+                // If the bug exists, we'd see CS1525, CS1002, CS1056, or CS0201 errors
+                var errors = result.NewCompilation.GetDiagnostics()
+                    .Where(d => d.Severity == DiagnosticSeverity.Error)
+                    .ToList();
+
+                Assert.Empty(errors);
+            }
+        }
+
+        [Fact]
+        public void PartialContextClassWithAttributesOnMultipleDeclarations()
+        {
+            // Test for https://github.com/dotnet/runtime/issues/99669
+            // When a JsonSerializerContext is defined across multiple partial class declarations
+            // with [JsonSerializable] attributes on different declarations, the generator should
+            // successfully generate code without duplicate hintName errors.
+
+            string source1 = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    public class MyClass1
+                    {
+                        public int Value { get; set; }
+                    }
+
+                    public class MyClass2
+                    {
+                        public string Name { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass1))]
+                    internal partial class SerializerContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            string source2 = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass2))]
+                    internal partial class SerializerContext
+                    {
+                    }
+                }
+                """;
+
+            // Create a base compilation to get proper references (including netfx polyfill attributes).
+            // File paths are explicitly set to verify the canonical partial selection (first alphabetically).
+            // "File1.cs" comes before "File2.cs" alphabetically, so source1 declares the canonical partial.
+            Compilation baseCompilation = CompilationHelper.CreateCompilation("");
+
+            // Add our syntax trees with explicit file paths. Keep any existing polyfill trees from base compilation.
+            var polyfillTrees = baseCompilation.SyntaxTrees.Where(t => string.IsNullOrEmpty(t.FilePath) == false || !t.ToString().Contains("namespace HelloWorld"));
+            Compilation compilation = CSharpCompilation.Create(
+                "TestAssembly",
+                syntaxTrees: baseCompilation.SyntaxTrees.Concat(new[]
+                {
+                    CSharpSyntaxTree.ParseText(source1, CompilationHelper.CreateParseOptions()).WithFilePath("File1.cs"),
+                    CSharpSyntaxTree.ParseText(source2, CompilationHelper.CreateParseOptions()).WithFilePath("File2.cs")
+                }),
+                references: baseCompilation.References,
+                options: (CSharpCompilationOptions)baseCompilation.Options);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+            // Verify no errors from the source generator
+            var errors = result.Diagnostics
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .ToList();
+
+            Assert.Empty(errors);
+
+            // Verify a single combined context was generated containing both types
+            // (not two separate contexts, which would cause duplicate hintName errors)
+            Assert.Equal(1, result.ContextGenerationSpecs.Length);
+            result.AssertContainsType("global::HelloWorld.MyClass1");
+            result.AssertContainsType("global::HelloWorld.MyClass2");
+
+            // Verify the generated code compiles without errors
+            var compilationErrors = result.NewCompilation.GetDiagnostics()
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .ToList();
+
+            Assert.Empty(compilationErrors);
+        }
     }
 }

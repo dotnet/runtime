@@ -303,7 +303,7 @@ namespace System.Reflection
         {
             if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
             {
-                result = Array.Empty<byte>();
+                result = [];
                 return true;
             }
 

@@ -60,6 +60,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "LOONGARCH64"
 #elif defined(TARGET_RISCV64)
 #define TARGET_READABLE_NAME "RISCV64"
+#elif defined(TARGET_WASM32)
+#define TARGET_READABLE_NAME "WASM32"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -91,6 +93,10 @@ inline bool compUnixX86Abi()
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
+#elif defined(TARGET_WASM)
+#define REGMASK_BITS              32
+#define CSE_CONST_SHARED_LOW_BITS 12
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -106,10 +112,10 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 enum _regNumber_enum : unsigned
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
@@ -215,7 +221,11 @@ enum _regMask_enum : unsigned
 // be lost.
 
 typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
+#ifdef TARGET_WASM
+typedef unsigned regNumberSmall; // An 'unlimited' number of registers.
+#else
+typedef unsigned char regNumberSmall;
+#endif
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -331,7 +341,7 @@ public:
     }
 #endif
 
-#ifndef TARGET_X86
+#if REGMASK_BITS != 32
     explicit operator unsigned int() const
     {
         return (unsigned int)low;
@@ -413,7 +423,7 @@ public:
     }
 };
 
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
@@ -599,32 +609,32 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #include "targetloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "targetriscv64.h"
+#elif defined(TARGET_WASM)
+#include "targetwasm.h"
 #else
-  #error Unsupported or unset target architecture
+#error Unsupported or unset target architecture
 #endif
+
+#include "targetcommon.h"
 
 #ifdef TARGET_XARCH
 
-  #define JMP_DIST_SMALL_MAX_NEG  (-128)
-  #define JMP_DIST_SMALL_MAX_POS  (+127)
+#define JMP_DIST_SMALL_MAX_NEG  (-128)
+#define JMP_DIST_SMALL_MAX_POS  (+127)
 
-  #define JCC_DIST_SMALL_MAX_NEG  (-128)
-  #define JCC_DIST_SMALL_MAX_POS  (+127)
+#define JCC_DIST_SMALL_MAX_NEG  (-128)
+#define JCC_DIST_SMALL_MAX_POS  (+127)
 
-  #define JMP_SIZE_SMALL          (2)
-  #define JMP_SIZE_LARGE          (5)
+#define JMP_SIZE_SMALL          (2)
+#define JMP_SIZE_LARGE          (5)
 
-  #define JCC_SIZE_SMALL          (2)
-  #define JCC_SIZE_LARGE          (6)
+#define JCC_SIZE_SMALL          (2)
+#define JCC_SIZE_LARGE          (6)
 
-  #define PUSH_INST_SIZE          (5)
-  #define CALL_INST_SIZE          (5)
+#define PUSH_INST_SIZE          (5)
+#define CALL_INST_SIZE          (5)
 
 #endif // TARGET_XARCH
-
-static_assert(REG_FIRST == 0);
-static_assert(REG_INT_FIRST < REG_INT_LAST);
-static_assert(REG_FP_FIRST  < REG_FP_LAST);
 
 // Opportunistic tail call feature converts non-tail prefixed calls into
 // tail calls where possible. It requires fast tail calling mechanism for
@@ -639,12 +649,12 @@ static_assert((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #if CPU_HAS_BYTE_REGS
-  #define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
-  #define BYTE_REG_COUNT          4
-  #define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
+#define RBM_BYTE_REGS           (RBM_EAX|RBM_ECX|RBM_EDX|RBM_EBX)
+#define BYTE_REG_COUNT          4
+#define RBM_NON_BYTE_REGS       (RBM_ESI|RBM_EDI)
 #else
-  #define RBM_BYTE_REGS            RBM_ALLINT
-  #define RBM_NON_BYTE_REGS        RBM_NONE
+#define RBM_BYTE_REGS            RBM_ALLINT
+#define RBM_NON_BYTE_REGS        RBM_NONE
 #endif
 // clang-format on
 
@@ -674,6 +684,84 @@ const char* getRegName(regNumber reg);
 const char* getRegNameFloat(regNumber reg, var_types type);
 extern void dspRegMask(regMaskTP regMask, size_t minSiz = 0);
 #endif
+
+inline bool isFloatRegType(var_types type)
+{
+    // TODO-Cleanup: delete and use "varTypeUsesFloatReg" directly.
+    return varTypeUsesFloatReg(type);
+}
+
+//-------------------------------------------------------------------------------------------
+// hasFixedRetBuffReg:
+//     Returns true if our target architecture uses a fixed return buffer register
+//
+inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
+{
+#if defined(TARGET_ARM64)
+    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    return callConv == CorInfoCallConvExtension::Swift;
+#else
+    return false;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffReg:
+//     Returns the regNumber to use for the fixed return buffer
+//
+inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
+    return REG_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return REG_SWIFT_ARG_RET_BUFF;
+#else
+    return REG_NA;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffMask:
+//     Returns the regNumber to use for the fixed return buffer
+//
+inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
+    return RBM_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return RBM_SWIFT_ARG_RET_BUFF;
+#else
+    return 0;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffArgNum:
+//     Returns the argNum to use for the fixed return buffer
+//
+inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#ifdef TARGET_ARM64
+    return RET_BUFF_ARGNUM;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return SWIFT_RET_BUFF_ARGNUM;
+#else
+    return BAD_VAR_NUM;
+#endif
+}
+
+#if HAS_FIXED_REGISTER_SET
+static_assert(REG_FIRST == 0);
+static_assert(REG_INT_FIRST < REG_INT_LAST);
+static_assert(REG_FP_FIRST < REG_FP_LAST);
 
 #if CPU_HAS_BYTE_REGS
 inline bool isByteReg(regNumber reg)
@@ -750,73 +838,6 @@ inline bool genIsValidDoubleReg(regNumber reg)
 #endif // TARGET_ARM
 
 //-------------------------------------------------------------------------------------------
-// hasFixedRetBuffReg:
-//     Returns true if our target architecture uses a fixed return buffer register
-//
-inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
-{
-#if defined(TARGET_ARM64)
-    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    return callConv == CorInfoCallConvExtension::Swift;
-#else
-    return false;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffReg:
-//     Returns the regNumber to use for the fixed return buffer
-//
-inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#if defined(TARGET_ARM64)
-    return REG_ARG_RET_BUFF;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return REG_SWIFT_ARG_RET_BUFF;
-#else
-    return REG_NA;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffMask:
-//     Returns the regNumber to use for the fixed return buffer
-//
-inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#if defined(TARGET_ARM64)
-    return RBM_ARG_RET_BUFF;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return RBM_SWIFT_ARG_RET_BUFF;
-#else
-    return 0;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffArgNum:
-//     Returns the argNum to use for the fixed return buffer
-//
-inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
-    return RET_BUFF_ARGNUM;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return SWIFT_RET_BUFF_ARGNUM;
-#else
-    return BAD_VAR_NUM;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
 // fullIntArgRegMask:
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
@@ -854,13 +875,6 @@ inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
     return (genSingleTypeRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
-
-//-------------------------------------------------------------------------------------------
-// genRegArgNext:
-//     Given a register that is an integer or floating point argument register
-//     returns the next argument register
-//
-regNumber genRegArgNext(regNumber argReg);
 
 //-------------------------------------------------------------------------------------------
 // isValidFloatArgReg:
@@ -1119,16 +1133,6 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     return regReturn;
 }
 
-/*****************************************************************************
- *
- *  Type checks
- */
-
-inline bool isFloatRegType(var_types type)
-{
-    return varTypeUsesFloatReg(type);
-}
-
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.
 #if defined(WINDOWS_AMD64_ABI)
 #if !defined(TARGET_AMD64)
@@ -1158,6 +1162,7 @@ static_assert((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 static_assert((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef TARGET_64BIT
 typedef uint64_t target_size_t;
@@ -1181,6 +1186,11 @@ static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;
+#elif defined(TARGET_WASM)
+// WebAssembly has native support for 64-bit constants even in 32-bit mode, so we need the
+//  ability to store long constants regardless of pointer size on host or target.
+typedef int64_t  cnsval_ssize_t;
+typedef uint64_t cnsval_size_t;
 #else
 typedef target_ssize_t cnsval_ssize_t;
 typedef target_size_t  cnsval_size_t;

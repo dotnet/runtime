@@ -185,5 +185,66 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("http://www.w3.org/2000/09/xmldsig#rsa-sha1", si.SignatureLength);
             Assert.Equal("0", si.SignatureMethod);
         }
+
+        [Fact]
+        public void LoadXml_Null()
+        {
+            SignedInfo si = new SignedInfo();
+            Assert.Throws<ArgumentNullException>(() => si.LoadXml(null));
+        }
+
+        [Fact]
+        public void LoadXml_MissingCanonicalizationMethod()
+        {
+            string xml = @"<SignedInfo xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <SignatureMethod Algorithm=""http://www.w3.org/2000/09/xmldsig#rsa-sha1"" />
+            </SignedInfo>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            SignedInfo si = new SignedInfo();
+            Assert.Throws<CryptographicException>(() => si.LoadXml(doc.DocumentElement));
+        }
+
+        [Fact]
+        public void LoadXml_MissingSignatureMethod()
+        {
+            string xml = @"<SignedInfo xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" />
+            </SignedInfo>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            SignedInfo si = new SignedInfo();
+            Assert.Throws<CryptographicException>(() => si.LoadXml(doc.DocumentElement));
+        }
+
+        [Fact]
+        public void AddReference_Null()
+        {
+            SignedInfo si = new SignedInfo();
+            Assert.Throws<ArgumentNullException>(() => si.AddReference(null));
+        }
+
+        [Fact]
+        public void GetXml_NoSignatureMethod()
+        {
+            SignedInfo si = new SignedInfo();
+            si.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
+            Reference r = new Reference();
+            r.DigestMethod = SignedXml.XmlDsigSHA256Url;
+            r.DigestValue = new byte[32];
+            si.AddReference(r);
+            Assert.Throws<CryptographicException>(() => si.GetXml());
+        }
+
+        [Fact]
+        public void GetXml_NoReferences()
+        {
+            SignedInfo si = new SignedInfo();
+            si.CanonicalizationMethod = SignedXml.XmlDsigC14NTransformUrl;
+            si.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
+            Assert.Throws<CryptographicException>(() => si.GetXml());
+        }
     }
 }

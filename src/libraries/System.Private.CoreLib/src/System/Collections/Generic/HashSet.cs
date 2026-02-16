@@ -806,6 +806,14 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
 
+            // If this set is empty and other is a HashSet with the same effective comparer,
+            // we can copy the data directly instead of adding each element individually.
+            if (Count == 0 && other is HashSet<T> otherAsSet && EffectiveEqualityComparersAreEqual(this, otherAsSet))
+            {
+                ConstructFrom(otherAsSet);
+                return;
+            }
+
             foreach (T item in other)
             {
                 AddIfNotPresent(item, out _);

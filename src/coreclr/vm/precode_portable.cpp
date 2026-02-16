@@ -32,7 +32,7 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(portableEntryPoint->HasNativeCode());
+    _ASSERTE_ALL_BUILDS(portableEntryPoint->HasNativeCode());
     return portableEntryPoint->_pActualCode;
 }
 
@@ -41,7 +41,7 @@ void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(actualCode != (PCODE)NULL);
+    _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
 
     // This is a lock free write. It can either be NULL or was already set to the same value.
     _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode));
@@ -76,6 +76,14 @@ void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
     portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
 }
 
+#ifdef _DEBUG
+bool PortableEntryPoint::IsValid() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return _canary == CANARY_VALUE;
+}
+#endif // _DEBUG
+
 PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(PCODE addr)
 {
     LIMITED_METHOD_CONTRACT;
@@ -86,14 +94,6 @@ PortableEntryPoint* PortableEntryPoint::ToPortableEntryPoint(PCODE addr)
     return portableEntryPoint;
 }
 
-#ifdef _DEBUG
-bool PortableEntryPoint::IsValid() const
-{
-    LIMITED_METHOD_CONTRACT;
-    return _canary == CANARY_VALUE;
-}
-#endif // _DEBUG
-
 void PortableEntryPoint::Init(MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -101,6 +101,7 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pActualCode = NULL;
     _pMD = pMD;
     _pInterpreterData = NULL;
+    _flags = kNone;
     INDEBUG(_canary = CANARY_VALUE);
 }
 
@@ -111,7 +112,50 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     _pActualCode = nativeEntryPoint;
     _pMD = NULL;
     _pInterpreterData = NULL;
+    _flags = kNone;
     INDEBUG(_canary = CANARY_VALUE);
+}
+
+namespace
+{
+    bool HasFlags(Volatile<int32_t>& flags, int32_t flagMask)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (flags.Load() & flagMask) == flagMask;
+    }
+
+    void SetFlags(Volatile<int32_t>& flags, int32_t flagMask)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ::InterlockedOr(flags.GetPointer(), flagMask);
+    }
+}
+
+// Forward declaration
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
+
+bool PortableEntryPoint::EnsureCodeForUnmanagedCallersOnly()
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsValid());
+
+    if (HasFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has))
+        return true;
+
+    if (HasFlags(_flags, kUnmanagedCallersOnly_Checked))
+        return false;
+
+    // First time check, do the full check
+    if (_pMD == nullptr || !_pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        SetFlags(_flags, kUnmanagedCallersOnly_Checked);
+        return false;
+    }
+
+    _pActualCode = GetUnmanagedCallersOnlyThunk(_pMD);
+    SetFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has);
+
+    return true;
 }
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;

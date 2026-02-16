@@ -149,9 +149,20 @@ namespace System
                 return localTicks;
             }
 
+
+            // System time zones list. This could be a superset of the list we return from TimeZoneInfo.GetSystemTimeZones on Linux and macOS.
+            // This list can contain duplicate time zones with different legacy IDs.
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
+
+            // The sorted readonly collection created after populating _systemTimeZones.
+            // This collection returned to the callers of TimeZoneInfo.GetSystemTimeZones(skipSorting: false).
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
+
+            // The unsorted readonly collection created after populating _systemTimeZones.
+            // This collection returned to the callers of TimeZoneInfo.GetSystemTimeZones(skipSorting: true).
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlyUnsortedSystemTimeZones;
+
+            // Alternative IDs usually be IANA names when running on Windows and will be Windows TZ IDs on Linux/macOS.
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
             public volatile DateTimeNowCache? _dateTimeNowCache;
@@ -757,17 +768,14 @@ namespace System
             {
                 if ((skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones : cachedData._readOnlySystemTimeZones) is null)
                 {
-                    if (!cachedData._allSystemTimeZonesRead)
-                    {
-                        PopulateAllSystemTimeZones(cachedData);
-                        cachedData._allSystemTimeZonesRead = true;
-                    }
+                    Dictionary<string, TimeZoneInfo>? filteredTimeZones = PopulateAllSystemTimeZones(cachedData);
+                    cachedData._allSystemTimeZonesRead = true;
 
-                    if (cachedData._systemTimeZones != null)
+                    if (filteredTimeZones is not null)
                     {
-                        // return a collection of the cached system time zones
-                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
-                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+                        // return a collection of the filtered cached system time zones
+                        TimeZoneInfo[] array = new TimeZoneInfo[filteredTimeZones.Count];
+                        filteredTimeZones.Values.CopyTo(array, 0);
 
                         if (!skipSorting)
                         {
@@ -1205,18 +1213,15 @@ namespace System
             }
 
             // check the cache
-            if (cachedData._systemTimeZones != null)
+            if (cachedData._systemTimeZones?.TryGetValue(id, out value) is true)
             {
-                if (cachedData._systemTimeZones.TryGetValue(id, out value))
+                if (dstDisabled && value._supportsDaylightSavingTime)
                 {
-                    if (dstDisabled && value._supportsDaylightSavingTime)
-                    {
-                        // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
-                    }
-
-                    return result;
+                    // we found a cache hit but we want a time zone without DST and this one has DST data
+                    value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                 }
+
+                return result;
             }
 
             if (Invariant)

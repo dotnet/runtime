@@ -660,13 +660,8 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    SigParser sigParser(sig, sigLen);
-    ULONG offsetOfAsyncDetails;
-    bool isValueTask;
-    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
-    if (returnKind != MethodReturnKind::NormalMethod)
+    if (IsMiAsync(dwImplFlags))
     {
-        // TODO: (async) revisit and examine if this can be supported
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
     }
@@ -739,7 +734,7 @@ HRESULT EEClass::AddMethodDesc(
                                 pImport,
                                 NULL,
                                 Signature(),
-                                AsyncMethodKind::NotAsync
+                                AsyncMethodFlags::None
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
@@ -1371,6 +1366,12 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
             }
             MethodDesc* pMD = pMT->GetMethodDescForSlot(i);
+
+            // Skip validation for async variant methods, as they have different signatures by design
+            // to support the async calling convention
+            if (pMD->IsAsyncVariantMethod())
+                continue;
+
             MethodDesc* pParentMD = pParentMT->GetMethodDescForSlot(i);
 
             if (pMD == pParentMD)
@@ -2833,13 +2834,15 @@ void SparseVTableMap::AllocOrExpand()
 }
 
 //*******************************************************************************
-// While building mapping list, record a gap in VTable slot numbers.
+// While building mapping list, record a gap in VTable slot numbers or MT slots.
+// A positive number indicates a gap in the VTable slot numbers.
+// A negative number indicates a gap in the MT slots.
 void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE((StartMTSlot == 0) || (StartMTSlot > m_MTSlot));
-    _ASSERTE(NumSkipSlots > 0);
+    _ASSERTE(NumSkipSlots != 0);
 
     // We use the information about the current gap to complete a map entry for
     // the last non-gap. There is a special case where the vtable begins with a
@@ -2863,6 +2866,14 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
     m_MTSlot = StartMTSlot;
 
     m_MapEntries++;
+}
+
+//*******************************************************************************
+// While building mapping list, record an excluded MT slot.
+void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
+{
+    WRAPPER_NO_CONTRACT;
+    return RecordGap(MTSlot, -1);
 }
 
 //*******************************************************************************

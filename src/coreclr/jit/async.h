@@ -30,7 +30,7 @@ struct ContinuationLayout
     unsigned                             ReturnAlignment           = 0;
     unsigned                             ReturnSize                = 0;
     unsigned                             ReturnValOffset           = UINT_MAX;
-    unsigned                             ExecContextOffset         = UINT_MAX;
+    unsigned                             ExecutionContextOffset    = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
     CORINFO_CLASS_HANDLE                 ClassHnd = NO_CLASS_HANDLE;
 
@@ -49,7 +49,8 @@ struct CallDefinitionInfo
 {
     GenTreeLclVarCommon* DefinitionNode = nullptr;
 
-    // Where to insert new IR for suspension checks.
+    // Where to insert new IR after the call in the original block, for
+    // suspension checks and for the async suspension for diagnostics purposes.
     GenTree* InsertAfter = nullptr;
 };
 
@@ -57,12 +58,10 @@ class AsyncTransformation
 {
     friend class AsyncLiveness;
 
-    Compiler*                     m_comp;
+    Compiler*                     m_compiler;
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
-    CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
-    CORINFO_CONST_LOOKUP          m_resumeStubLookup;
     unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
@@ -72,6 +71,9 @@ class AsyncTransformation
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
     BasicBlock*                   m_lastResumptionBB        = nullptr;
     BasicBlock*                   m_sharedReturnBB          = nullptr;
+
+    void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
+    BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
     bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
@@ -86,6 +88,8 @@ class AsyncTransformation
                                     AsyncLiveness&                  life,
                                     jitstd::vector<LiveLocalInfo>&  liveLocals);
 
+    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
+
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
                       jitstd::vector<LiveLocalInfo>&  liveLocals);
@@ -97,9 +101,7 @@ class AsyncTransformation
                                           bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
-    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
-
-    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
+    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
@@ -107,10 +109,10 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
     void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
+    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
-                                                AsyncLiveness&            life,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
     BasicBlock*  CreateResumption(BasicBlock*               block,
@@ -137,17 +139,18 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    unsigned GetResultBaseVar();
-    unsigned GetExceptionVar();
-
-    GenTree* CreateResumptionStubAddrTree();
-    GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup);
+    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
+    unsigned    GetReturnedContinuationVar();
+    unsigned    GetNewContinuationVar();
+    unsigned    GetResultBaseVar();
+    unsigned    GetExceptionVar();
+    BasicBlock* GetSharedReturnBB();
 
     void CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
         , m_resumptionBBs(comp->getAllocator(CMK_Async))
     {

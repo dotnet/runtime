@@ -876,6 +876,16 @@ void interceptor_ICJI::reportRichMappings(
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    mcs->AddCall("reportAsyncDebugInfo");
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+}
+
 void interceptor_ICJI::reportMetadata(
           const char* key,
           const void* value,
@@ -1028,6 +1038,13 @@ void interceptor_ICJI::getFpStructLowering(
     original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType interceptor_ICJI::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    mcs->AddCall("getWasmLowering");
+    return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
@@ -1067,13 +1084,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
 {
     mcs->AddCall("getFunctionFixedEntryPoint");
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
-}
-
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    mcs->AddCall("getLazyStringLiteralHelper");
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
@@ -1275,10 +1285,11 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
     return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(
+          void** entryPoint)
 {
     mcs->AddCall("getAsyncResumptionStub");
-    return original_ICorJitInfo->getAsyncResumptionStub();
+    return original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(
@@ -1415,14 +1426,14 @@ void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     mcs->AddCall("recordRelocation");
     original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(
           void* target)
 {
     mcs->AddCall("getRelocTypeHint");
@@ -1441,6 +1452,14 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize)
+{
+    mcs->AddCall("getWasmTypeSymbol");
+    return original_ICorJitInfo->getWasmTypeSymbol(types, typesSize);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(

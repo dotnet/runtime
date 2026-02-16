@@ -147,15 +147,15 @@ namespace Internal.Runtime.TypeLoader
 
 
         #region Method Ldtoken Functions
-        public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, int handle, RuntimeTypeHandle[] genericMethodArgs)
-            => GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle.AsHandle().ToMethodHandle(null), genericMethodArgs);
+        public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, int handle, RuntimeTypeHandle[] genericMethodArgs, bool isAsyncVariant)
+            => GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle.AsHandle().ToMethodHandle(null), genericMethodArgs, isAsyncVariant);
 
         /// <summary>
         /// Create a runtime method handle from name, signature and generic arguments. If the methodSignature
         /// is constructed from a metadata token, the methodName should be IntPtr.Zero, as it already encodes the method
         /// name.
         /// </summary>
-        public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
+        public unsafe RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs, bool isAsyncVariant)
         {
             RuntimeMethodHandleKey key = new RuntimeMethodHandleKey(declaringTypeHandle, handle, genericMethodArgs);
 
@@ -172,6 +172,7 @@ namespace Internal.Runtime.TypeLoader
                     methodData->DeclaringType = declaringTypeHandle;
                     methodData->Handle = handle;
                     methodData->NumGenericArgs = numGenericMethodArgs;
+                    methodData->IsAsyncVariant = isAsyncVariant;
                     RuntimeTypeHandle* genericArgPtr = &methodData->FirstArgument;
                     for (int i = 0; i < numGenericMethodArgs; i++)
                     {
@@ -191,7 +192,7 @@ namespace Internal.Runtime.TypeLoader
         public MethodDesc GetMethodDescForRuntimeMethodHandle(TypeSystemContext context, RuntimeMethodHandle runtimeMethodHandle)
         {
             bool success = TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle,
-                out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs);
+                out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs, out bool isAsyncVariant);
             Debug.Assert(success);
 
             MetadataReader reader = ModuleList.Instance.GetMetadataReaderForModule(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle));
@@ -202,16 +203,17 @@ namespace Internal.Runtime.TypeLoader
             if (genericMethodArgs != null)
             {
                 Instantiation methodInst = context.ResolveRuntimeTypeHandles(genericMethodArgs);
-                return context.ResolveGenericMethodInstantiation(unboxingStub: false, type, nameAndSignature, methodInst);
+                return context.ResolveGenericMethodInstantiation(unboxingStub: false, isAsyncVariant, type, nameAndSignature, methodInst);
             }
 
-            return context.ResolveRuntimeMethod(unboxingStub: false, type, nameAndSignature);
+            return context.ResolveRuntimeMethod(unboxingStub: false, isAsyncVariant, type, nameAndSignature);
         }
 
         public unsafe bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition handle, out RuntimeTypeHandle[] genericMethodArgs)
         {
-            if (TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out MethodHandle methodHandle, out genericMethodArgs))
+            if (TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out MethodHandle methodHandle, out genericMethodArgs, out bool isAsyncVariant))
             {
+                Debug.Assert(!isAsyncVariant, "How did reflection get a RuntimeMethodHandle for an async variant?");
                 MetadataReader reader = ModuleList.Instance.GetMetadataReaderForModule(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle));
                 handle = new QMethodDefinition(reader, methodHandle);
                 return true;
@@ -220,12 +222,13 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public unsafe bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs)
+        public unsafe bool TryGetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodHandle handle, out RuntimeTypeHandle[] genericMethodArgs, out bool isAsyncVariant)
         {
             MethodHandleInfo* methodData = (MethodHandleInfo*)runtimeMethodHandle.Value;
 
             declaringTypeHandle = methodData->DeclaringType;
             handle = methodData->Handle;
+            isAsyncVariant = methodData->IsAsyncVariant;
 
             if (methodData->NumGenericArgs > 0)
             {

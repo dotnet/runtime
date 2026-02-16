@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*
  *    CallHelpers.CPP: helpers to call managed code
- *
-
  */
 
 #include "common.h"
@@ -29,15 +28,12 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 
 #endif
 
-// For X86, INSTALL_COMPLUS_EXCEPTION_HANDLER grants us sufficient protection to call into
-// managed code.
-//
-// But on 64-bit, the personality routine will not pop frames or trackers as exceptions unwind
+// The personality routine will not pop frames or trackers as exceptions unwind
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.
+// All callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// to get proper exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(
@@ -227,6 +223,7 @@ void* DispatchCallSimple(
 #ifdef TARGET_WASM
     static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
     callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    callDescrData.hasRetBuff = false;
     LPVOID pOrigSrc = callDescrData.pSrc;
     callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
     for (int i = 0; i < numStackSlotsToCopy; i++)
@@ -544,6 +541,8 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.pTarget = m_pCallTarget;
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasRetBuff = false;
+    _ASSERTE(!m_argIt.HasRetBuffArg());
 #endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);

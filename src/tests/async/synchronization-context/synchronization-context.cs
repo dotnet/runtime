@@ -241,4 +241,25 @@ public class Async2SynchronizationContext
         await Task.Delay(100).ConfigureAwait(false);
         Assert.Equal(0, syncCtx.NumPosts);
     }
+
+    [Fact]
+    public static void TestAsyncToSyncContextSwitch()
+    {
+        TestAsyncToSyncContextSwitchAsync().GetAwaiter().GetResult();
+    }
+
+    private static async Task TestAsyncToSyncContextSwitchAsync()
+    {
+        MySyncContext context1 = new MySyncContext();
+        MySyncContext context2 = new MySyncContext();
+        SynchronizationContext.SetSynchronizationContext(context1);
+        await SyncMethodThatSwitchesContext(context2);
+        Assert.Same(context2, SynchronizationContext.Current);
+    }
+
+    private static Task SyncMethodThatSwitchesContext(MySyncContext context)
+    {
+        SynchronizationContext.SetSynchronizationContext(context);
+        return Task.CompletedTask;
+    }
 }

@@ -29,6 +29,7 @@
 #endif // FEATURE_COMINTEROP
 
 #include "request_common.h"
+#include "conditionalweaktable.h"
 
 //-----------------------------------------------------------------------------
 // Have standard enter and leave macros at the DacDbi boundary to enforce
@@ -1136,7 +1137,7 @@ void DacDbiInterfaceImpl::GetMethodRegionInfo(MethodDesc *             pMethodDe
     CONTRACTL_END;
 
     IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
-    PCODE functionAddress = pMethodDesc->GetNativeCode();
+    PCODE functionAddress = pMethodDesc->GetCodeForInterpreterOrJitted();
 
     // get the start address of the hot region and initialize the jit manager
     pCodeInfo->m_rgCodeRegions[kHot].pAddress = CORDB_ADDRESS(PCODEToPINSTR(functionAddress));
@@ -1209,16 +1210,19 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
 //    - its method desc
 //    - whether it's an instantiated generic
 //    - its EnC version number
-//    - hot and cold region information.
-void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
-                                                   CORDB_ADDRESS            hotCodeStartAddr,
-                                                   NativeCodeFunctionData * pCodeInfo)
+//    - hot and cold region information
+//    - its module
+//    - its metadata token.
+void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(CORDB_ADDRESS            codeAddress,
+                                                   NativeCodeFunctionData * pCodeInfo,
+                                                   VMPTR_Module *           pVmModule,
+                                                   mdToken *                pFunctionToken)
 {
     DD_ENTER_MAY_THROW;
 
     _ASSERTE(pCodeInfo != NULL);
 
-    if (hotCodeStartAddr == (CORDB_ADDRESS)NULL)
+    if (codeAddress == (CORDB_ADDRESS)NULL)
     {
         // if the start address is NULL, the code isn't available yet, so just return
         _ASSERTE(!pCodeInfo->IsValid());
@@ -1226,7 +1230,13 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     }
 
     IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
-    TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(hotCodeStartAddr);
+    TADDR codeAddr = CORDB_ADDRESS_TO_TADDR(codeAddress);
+
+    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    {
+        codeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+    }
+    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
 
 #ifdef TARGET_ARM
     // TADDR should not have the thumb code bit set.
@@ -1236,6 +1246,8 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
 
     EECodeInfo codeInfo(codeAddr);
     _ASSERTE(codeInfo.IsValid());
+
+    TADDR codeStartAddr = codeInfo.GetStartAddress();
 
     // We may not have the memory for the cold code region in a minidump.
     // Do not fail stackwalking because of this.
@@ -1248,7 +1260,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     // Even if GetMethodRegionInfo() fails to retrieve the cold code region info,
     // we should still be able to get the hot code region info.  We are counting on this for
     // stackwalking to work in dump debugging scenarios.
-    _ASSERTE(methodRegionInfo.hotStartAddress == codeAddr);
+    _ASSERTE(methodRegionInfo.hotStartAddress == codeStartAddr);
 
     // now get the rest of the region information
     pCodeInfo->m_rgCodeRegions[kHot].Init(PCODEToPINSTR(methodRegionInfo.hotStartAddress),
@@ -1257,6 +1269,8 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
                                                (ULONG)methodRegionInfo.coldSize);
     _ASSERTE(pCodeInfo->IsValid());
 
+    VMPTR_MethodDesc vmMethodDesc;
+    vmMethodDesc.SetHostPtr(codeInfo.GetMethodDesc());
     MethodDesc* pMethodDesc = vmMethodDesc.GetDacPtr();
     pCodeInfo->isInstantiatedGeneric = pMethodDesc->HasClassOrMethodInstantiation();
     pCodeInfo->vmNativeCodeMethodDescToken = vmMethodDesc;
@@ -1267,10 +1281,19 @@ void DacDbiInterfaceImpl::GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMe
     LookupEnCVersions(pModule,
                       vmMethodDesc,
                       pMethodDesc->GetMemberDef(),
-                      codeAddr,
+                      codeStartAddr,
                       &unusedLatestEncVersion, //unused by caller
                       &(pCodeInfo->encVersion));
 
+    if (pVmModule != NULL)
+    {
+        pVmModule->SetDacTargetPtr(dac_cast<TADDR>(pModule));
+    }
+
+    if (pFunctionToken != NULL)
+    {
+        *pFunctionToken = pMethodDesc->GetMemberDef();
+    }
 } // GetNativeCodeInfo
 
 
@@ -2314,6 +2337,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
                                            DebuggerIPCE_ExpandedTypeData * pTypeInfo,
                                            AppDomain *                     pAppDomain)
 {
+    typeHandle = typeHandle.UpCastTypeIfNeeded();
     Module * pModule = typeHandle.GetModule();
 
     if (typeHandle.HasInstantiation()) // the type handle represents a generic instantiation
@@ -2401,9 +2425,10 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VALUETYPE:
         {
-            Module * pModule = typeHandle.GetModule();
+            typeHandle = typeHandle.UpCastTypeIfNeeded();
 
-            if (typeHandle.HasInstantiation())   // only set if instantiated
+            Module * pModule = typeHandle.GetModule();
+            if (typeHandle.HasInstantiation()) // only set if instantiated
             {
                 pTypeInfo->vmTypeHandle.SetDacTargetPtr(typeHandle.AsTAddr());
             }
@@ -5263,8 +5288,8 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
     ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
 }
 
-// Check if the given method is an IL stub or an LCD method.
-IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc)
+// Check if the given method is a DiagnosticHidden or an LCG method.
+IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5272,7 +5297,7 @@ IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsILStubOrLCGMethod(VMP
 
     if (pMD->IsDiagnosticsHidden())
     {
-        return kILStub;
+        return kDiagnosticHidden;
     }
     else if (pMD->IsLCGMethod())
     {
@@ -5967,62 +5992,6 @@ void DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS             objectAdd
     }
 } // DacDbiInterfaceImpl::GetBasicObjectInfo
 
-// This is the data passed to EnumerateBlockingObjectsCallback below
-struct BlockingObjectUserDataWrapper
-{
-    CALLBACK_DATA pUserData;
-    IDacDbiInterface::FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK fpCallback;
-};
-
-// The callback helper used by EnumerateBlockingObjects below, this
-// callback in turn invokes the user's callback with the right arguments
-void EnumerateBlockingObjectsCallback(PTR_DebugBlockingItem obj, VOID* pUserData)
-{
-    BlockingObjectUserDataWrapper* wrapper = (BlockingObjectUserDataWrapper*)pUserData;
-    DacBlockingObject dacObj;
-
-    // init to an arbitrary value to avoid mac compiler error about uninitialized use
-    // it will be correctly set in the switch and is never used with only this init here
-    dacObj.blockingReason = DacBlockReason_MonitorCriticalSection;
-
-    dacObj.vmBlockingObject.SetDacTargetPtr(dac_cast<TADDR>(OBJECTREFToObject(obj->pMonitor->GetOwningObject())));
-    dacObj.dwTimeout = obj->dwTimeout;
-    dacObj.vmAppDomain.SetDacTargetPtr(dac_cast<TADDR>(obj->pAppDomain));
-    switch(obj->type)
-    {
-        case DebugBlock_MonitorCriticalSection:
-            dacObj.blockingReason = DacBlockReason_MonitorCriticalSection;
-            break;
-        case DebugBlock_MonitorEvent:
-            dacObj.blockingReason = DacBlockReason_MonitorEvent;
-            break;
-        default:
-            _ASSERTE(!"obj->type has an invalid value");
-            return;
-    }
-
-    wrapper->fpCallback(dacObj, wrapper->pUserData);
-}
-
-// DAC/DBI API:
-// Enumerate all monitors blocking a thread
-void DacDbiInterfaceImpl::EnumerateBlockingObjects(VMPTR_Thread                           vmThread,
-                                                   FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK fpCallback,
-                                                   CALLBACK_DATA                          pUserData)
-{
-    DD_ENTER_MAY_THROW;
-
-    Thread * pThread = vmThread.GetDacPtr();
-    _ASSERTE(pThread != NULL);
-
-    BlockingObjectUserDataWrapper wrapper;
-    wrapper.fpCallback = fpCallback;
-    wrapper.pUserData = pUserData;
-
-    pThread->DebugBlockingInfo.VisitBlockingItems((DebugBlockingItemVisitor)EnumerateBlockingObjectsCallback,
-        (VOID*)&wrapper);
-}
-
 // DAC/DBI API:
 // Returns the thread which owns the monitor lock on an object and the acquisition count
 MonitorLockInfo DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_Object vmObject)
@@ -6033,10 +6002,14 @@ MonitorLockInfo DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_Object vmO
     info.acquisitionCount = 0;
 
     Object* pObj = vmObject.GetDacPtr();
-    DWORD threadId;
-    DWORD acquisitionCount;
-    if(!pObj->GetHeader()->GetThreadOwningMonitorLock(&threadId, &acquisitionCount))
+
+    DWORD threadId = 0;
+    DWORD recursionCount = 0;
+    BOOL isLockHeld = pObj->GetHeader()->PassiveGetSyncBlock()->TryGetLockInfo(&threadId, &recursionCount);
+
+    if (!isLockHeld)
     {
+        // The lock is not owned by any thread, so no thread owning the monitor lock
         return info;
     }
 
@@ -6046,30 +6019,13 @@ MonitorLockInfo DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_Object vmO
         if(pThread->GetThreadId() == threadId)
         {
             info.lockOwner.SetDacTargetPtr(PTR_HOST_TO_TADDR(pThread));
-            info.acquisitionCount = acquisitionCount;
+            info.acquisitionCount = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
             return info;
         }
         pThread = ThreadStore::GetThreadList(pThread);
     }
     _ASSERTE(!"A thread should have been found");
     return info;
-}
-
-// The data passed to EnumerateThreadsCallback below
-struct ThreadUserDataWrapper
-{
-    CALLBACK_DATA pUserData;
-    IDacDbiInterface::FP_THREAD_ENUMERATION_CALLBACK fpCallback;
-};
-
-// The callback helper used for EnumerateMonitorEventWaitList below. This callback
-// invokes the user's callback with the correct arguments.
-void EnumerateThreadsCallback(PTR_Thread pThread, VOID* pUserData)
-{
-    ThreadUserDataWrapper* wrapper = (ThreadUserDataWrapper*)pUserData;
-    VMPTR_Thread vmThread = VMPTR_Thread::NullPtr();
-    vmThread.SetDacTargetPtr(dac_cast<TADDR>(pThread));
-    wrapper->fpCallback(vmThread, wrapper->pUserData);
 }
 
 // DAC/DBI API:
@@ -6081,16 +6037,56 @@ void DacDbiInterfaceImpl::EnumerateMonitorEventWaitList(VMPTR_Object            
     DD_ENTER_MAY_THROW;
 
     Object* pObj = vmObject.GetDacPtr();
+
     SyncBlock* psb = pObj->PassiveGetSyncBlock();
 
     // no sync block means no wait list
     if(psb == NULL)
         return;
 
-    ThreadUserDataWrapper wrapper;
-    wrapper.fpCallback = fpCallback;
-    wrapper.pUserData = pUserData;
-    ThreadQueue::EnumerateThreads(psb, (FP_TQ_THREAD_ENUMERATION_CALLBACK)EnumerateThreadsCallback, (VOID*) &wrapper);
+    FieldDesc* pConditionTableField = (&g_CoreLib)->GetField(FIELD__MONITOR__CONDITION_TABLE);
+    CONDITIONAL_WEAK_TABLE_REF conditionTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pConditionTableField->GetStaticAddressHandle(pConditionTableField->GetBase()));
+
+
+    OBJECTREF condition = NULL;
+    if (!conditionTable->TryGetValue(OBJECTREF(pObj), &condition))
+    {
+        return;
+    }
+
+    MapSHash<TADDR, Thread*> waiterToThreadMap;
+    FieldDesc* pConditionWaiterField = (&g_CoreLib)->GetField(FIELD__CONDITION__WAITERS_HEAD);
+    FieldDesc* pWaiterNextField = (&g_CoreLib)->GetField(FIELD__WAITER__NEXT);
+    FieldDesc* pThisThreadWaiterField = (&g_CoreLib)->GetField(FIELD__CONDITION__CURRENT_THREAD_WAITER);
+
+    // Build a map of Waiter objects to their owning Threads.
+    for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread != NULL; pThread = ThreadStore::GetThreadList(pThread))
+    {
+        PTR_PTR_Object pThisThreadWaiterStorage = dac_cast<PTR_PTR_Object>(pThread->GetStaticFieldAddrNoCreate(pThisThreadWaiterField));
+        if (pThisThreadWaiterStorage == NULL || *pThisThreadWaiterStorage == NULL)
+        {
+            continue; // this thread is not waiting on the monitor for this object. It has never waited on any monitor.
+        }
+
+        OBJECTREF pThisThreadWaiter = *pThisThreadWaiterStorage;
+        waiterToThreadMap.Add(dac_cast<TADDR>(pThisThreadWaiter), pThread);
+    }
+
+    // Iterate through the waiters in the condition object and invoke the user's callback for each thread
+    for (OBJECTREF pWaiter = pConditionWaiterField->GetRefValue(condition); pWaiter != NULL; pWaiter = pWaiterNextField->GetRefValue(pWaiter))
+    {
+        Thread* pThread = NULL;
+        if (!waiterToThreadMap.Lookup(dac_cast<TADDR>(pWaiter), &pThread))
+        {
+            // This waiter is not in the map, so we can't find its thread.
+            LOG((LF_CORDB, LL_INFO10000, "D::EMEWL: Waiter not found in waiter->thread map.\n"));
+            continue;
+        }
+        VMPTR_Thread vmThread = VMPTR_Thread::NullPtr();
+        vmThread.SetDacTargetPtr(PTR_HOST_TO_TADDR(pThread));
+        // Invoke the user's callback with the thread and user data
+        fpCallback(vmThread, pUserData);
+    }
 }
 
 
@@ -6822,7 +6818,7 @@ bool DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS addr)
 
             if (mt == cls->GetMethodTable())
                 isValid = true;
-            else if (!mt->IsCanonicalMethodTable())
+            else if (!mt->IsCanonicalMethodTable() || mt->IsContinuation())
                 isValid = cls->GetMethodTable()->GetClass() == cls;
         }
         EX_CATCH
@@ -7265,7 +7261,7 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
     {
         return E_INVALIDARG;
     }
-#ifdef FEATURE_REJIT    
+#ifdef FEATURE_REJIT
     {
         CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
@@ -7348,6 +7344,164 @@ HRESULT DacDbiInterfaceImpl::GetDomainAssemblyFromModule(VMPTR_Module vmModule, 
 
     *pVmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
     pVmDomainAssembly->SetHostPtr(pModule->GetDomainAssembly());
+
+    return S_OK;
+}
+
+HRESULT DacDbiInterfaceImpl::ParseContinuation(
+    CORDB_ADDRESS continuationAddress,
+    OUT PCODE* pDiagnosticIP,
+    OUT CORDB_ADDRESS* pNextContinuation,
+    OUT UINT32* pState)
+{
+    DD_ENTER_MAY_THROW
+
+    PTR_Object continuationObjectPtr = PTR_Object(CORDB_ADDRESS_TO_TADDR(continuationAddress));
+    OBJECTREF continuation = ObjectToOBJECTREF(continuationObjectPtr);
+
+    PTR_MethodTable pDerivedMT = continuationObjectPtr->GetMethodTable();
+    PTR_MethodTable pContinuationMT = pDerivedMT->GetParentMethodTable();
+
+    struct ResumeInfo
+    {
+        PCODE pResume;
+        PCODE pDiagnosticIP;
+    };
+    typedef DPTR(ResumeInfo) PTR_ResumeInfo;
+
+
+    OBJECTREF pNext = nullptr;
+    PTR_ResumeInfo pResumeInfo = nullptr;
+    UINT32 state = 0;
+    int numFound = 0;
+
+    ApproxFieldDescIterator continuationFieldIter(pContinuationMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 3; continuationField = continuationFieldIter.Next())
+    {
+        LPCUTF8 fieldName = continuationField->GetName();
+        if (!strcmp(fieldName, "Next"))
+        {
+            pNext = (OBJECTREF)dac_cast<PTR_Object>((TADDR)continuation->GetPtrOffset(continuationField->GetOffset()));
+            numFound++;
+        }
+        else if (!strcmp(fieldName, "ResumeInfo"))
+        {
+            pResumeInfo = dac_cast<PTR_ResumeInfo>((TADDR)continuation->GetPtrOffset(continuationField->GetOffset()));
+            numFound++;
+        }
+        else if (!strcmp(fieldName, "State"))
+        {
+            state = continuation->GetOffset32(continuationField->GetOffset());
+            numFound++;
+        }
+    }
+
+    if (numFound < 3)
+    {
+        return E_FAIL;
+    }
+
+    *pDiagnosticIP = pResumeInfo->pDiagnosticIP;
+    *pNextContinuation = static_cast<CORDB_ADDRESS>(dac_cast<TADDR>(OBJECTREFToObject(pNext)));
+    *pState = state;
+
+    return S_OK;
+}
+
+// Allocator to pass to the debug-info-stores...
+static BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
+{
+    return new (nothrow) BYTE[cBytes];
+}
+
+void DacDbiInterfaceImpl::GetAsyncLocals(
+    VMPTR_MethodDesc vmMethod,
+    CORDB_ADDRESS codeAddr,
+    UINT32 state,
+    DacDbiArrayList<AsyncLocalData> * pAsyncLocals)
+{
+    DD_ENTER_MAY_THROW;
+
+    MethodDesc* pMethodDesc = vmMethod.GetDacPtr();
+    if (pMethodDesc->IsAsyncThunkMethod())
+    {
+        return;
+    }
+    TADDR nativeCodeStartAddr;
+    if (codeAddr != (TADDR)NULL)
+    {
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(static_cast<PCODE>(codeAddr));
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
+        {
+            return;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    }
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(pMethodDesc->GetNativeCode());
+    }
+
+    DebugInfoRequest request;
+    request.InitFromStartingAddr(pMethodDesc, nativeCodeStartAddr);
+
+    ICorDebugInfo::AsyncInfo asyncInfo = {};
+    NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
+    NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+    ULONG32 cAsyncVars = 0;
+
+    BOOL success = DebugInfoManager::GetAsyncDebugInfo(
+        request,
+        DebugInfoStoreNew,
+        nullptr,
+        &asyncInfo,
+        &asyncSuspensionPoints,
+        &asyncVars,
+        &cAsyncVars);
+
+    if (!success) return;
+    if (state >= asyncInfo.NumSuspensionPoints) return;
+
+    UINT32 varBeginIndex = 0;
+    for (UINT32 i = 0; i < state; i++)
+    {
+        varBeginIndex += asyncSuspensionPoints[i].NumContinuationVars;
+    }
+
+    UINT32 varCount = asyncSuspensionPoints[state].NumContinuationVars;
+    pAsyncLocals->Alloc(varCount);
+
+    _ASSERTE(varBeginIndex + varCount <= cAsyncVars);
+    for (UINT32 i = 0; i < varCount; i++)
+    {
+        (*pAsyncLocals)[i].offset = asyncVars[varBeginIndex + i].Offset;
+        (*pAsyncLocals)[i].ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+    }
+}
+
+HRESULT DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex)
+{
+    DD_ENTER_MAY_THROW;
+
+    if (vmMethod.IsNull() || pIndex == NULL)
+        return E_INVALIDARG;
+
+    PTR_MethodDesc pMethod = vmMethod.GetDacPtr();
+
+    if (!pMethod->IsSharedByGenericInstantiations())
+    {
+        // Not a shared generic method, so there is no generic token
+        return S_FALSE;
+    }
+
+    if (pMethod->AcquiresInstMethodTableFromThis())
+    {
+        *pIndex = 0;
+    }
+    else
+    {
+        *pIndex = ICorDebugInfo::TYPECTXT_ILNUM;
+    }
 
     return S_OK;
 }

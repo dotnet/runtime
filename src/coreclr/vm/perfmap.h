@@ -7,8 +7,8 @@
 #define PERFPID_H
 
 #include "sstring.h"
-#include "fstream.h"
 #include "volatile.h"
+#include <stdio.h>
 
 // Generates a perfmap file.
 
@@ -23,6 +23,9 @@ class PerfMap
 {
 private:
     static Volatile<bool> s_enabled;
+
+    // Set to true after all dependencies (AppDomain, ExecutionManager) are initialized.
+    static Volatile<bool> s_dependenciesReady;
 
     // The one and only PerfMap for the process.
     static PerfMap * s_Current;
@@ -40,7 +43,7 @@ private:
     static CrstStatic s_csPerfMap;
 
     // The file stream to write the map to.
-    CFileStream * m_FileStream;
+    FILE * m_fp;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
@@ -103,6 +106,9 @@ public:
 
     // Close the map and flush any remaining data.
     static void Disable();
+
+    // Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+    static void SignalDependenciesReady();
 
     static bool LowGranularityStubs() { return !s_IndividualAllocationStubReporting; }
 };
