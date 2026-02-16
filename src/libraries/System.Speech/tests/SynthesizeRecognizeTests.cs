@@ -56,9 +56,6 @@ namespace SampleSynthesisTests
 
         private void SpeechSynthesizerToSpeechRecognitionEngine_Core(string input, string output)
         {
-            if (PlatformDetection.IsWindows7 && PlatformDetection.IsX86Process)
-                return; // Flaky on this configuration
-
             RetryHelper.Execute(() => // Flaky in some cases
             {
                 if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
