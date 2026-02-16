@@ -197,7 +197,8 @@ REM Usage: set "__RunCmd=<command>" then call :RunWithTimeout <timeout_ms>
 REM Runs __RunCmd with a timeout, kills the process on timeout,
 REM and returns exit code 99 on timeout.
 REM Use PowerShell for reliable process management and timeout
-powershell -NoProfile -Command "& { $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c !__RunCmd!' -NoNewWindow -PassThru; if (-not $p.WaitForExit(%~1)) { try { $p.Kill() } catch {} ; try { taskkill /T /F /PID $p.Id 2>$null } catch {} ; exit 99 } else { exit $p.ExitCode } }"
+set __Timeout=%~1
+powershell -NoProfile -Command "& { $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c !__RunCmd!' -NoNewWindow -PassThru%3B if (-not $p.WaitForExit(!__Timeout!)) { try { $p.Kill() } catch {} %3B try { taskkill /T /F /PID $p.Id 2>$null } catch {} %3B exit 99 } else { exit $p.ExitCode } }"
 Exit /b !ERRORLEVEL!
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
@@ -274,7 +275,7 @@ IF NOT DEFINED RunWithNodeJS (
     REM workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
     set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
 
-    !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%CD% $(CLRTestMSBuildArgs)
+    !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%%CD%% $(CLRTestMSBuildArgs)
     IF NOT "!ERRORLEVEL!"=="0" (
         popd
         Exit /b !ERRORLEVEL!
@@ -323,12 +324,12 @@ IF NOT DEFINED RunWithNodeJS (
 
     ECHO Running with node
     ECHO CORE_ROOT: %CORE_ROOT%
-    ECHO ExePath: %CD%\%ExePath%
+    ECHO ExePath: %%CD%%\%ExePath%
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     REM Disable minidump generation for browser tests
     REM active issue https://github.com/dotnet/runtime/issues/124088
     ECHO Timeout in ms: !__TestTimeout!
-    set "__RunCmd=node "%CORE_ROOT%\corerun.js" -c "%CORE_ROOT%" "%CD%\%ExePath%" %CLRTestExecutionArguments%"
+    set "__RunCmd=node "%CORE_ROOT%\corerun.js" -c "%CORE_ROOT%" "%%CD%%\%ExePath%" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
     call :RunWithTimeout !__TestTimeout!
     set CLRTestExitCode=!ERRORLEVEL!
