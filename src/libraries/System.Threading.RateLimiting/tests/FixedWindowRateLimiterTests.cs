@@ -189,10 +189,12 @@ namespace System.Threading.RateLimiting.Test
             using var lease = limiter.AttemptAcquire(1);
             var wait = limiter.AcquireAsync(1);
 
+            SetElapsedTime(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(1);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var timeSpan));
-            Assert.Equal(TimeSpan.FromMilliseconds(2), timeSpan);
+            Assert.Equal(TimeSpan.FromMilliseconds(1), timeSpan);
         }
 
         [Fact]
@@ -724,6 +726,8 @@ namespace System.Threading.RateLimiting.Test
 
             using var lease = limiter.AttemptAcquire(2);
 
+            SetElapsedTime(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter.Name, out var metadata));
@@ -753,6 +757,8 @@ namespace System.Threading.RateLimiting.Test
             var wait = limiter.AcquireAsync(1);
             Assert.False(wait.IsCompleted);
 
+            SetElapsedTime(limiter, TimeSpan.FromSeconds(0));
+
             var failedLease = await limiter.AcquireAsync(2);
             Assert.False(failedLease.IsAcquired);
             Assert.True(failedLease.TryGetMetadata(MetadataName.RetryAfter, out var typedMetadata));
@@ -774,6 +780,8 @@ namespace System.Threading.RateLimiting.Test
             var limiter = new FixedWindowRateLimiter(options);
 
             using var lease = limiter.AttemptAcquire(2);
+
+            SetElapsedTime(limiter, TimeSpan.FromSeconds(0));
 
             var failedLease = await limiter.AcquireAsync(3);
             Assert.False(failedLease.IsAcquired);
@@ -1237,6 +1245,13 @@ namespace System.Threading.RateLimiting.Test
             var internalTick = typeof(FixedWindowRateLimiter).GetField("_lastReplenishmentTick", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
             var currentTick = (long)internalTick.GetValue(limiter);
             replenishInternalMethod.Invoke(limiter, new object[] { currentTick + addMilliseconds * (long)(TimeSpan.TicksPerMillisecond / TickFrequency) });
+        }
+
+        static internal void SetElapsedTime(FixedWindowRateLimiter limiter, TimeSpan desiredRemainingTime)
+        {
+            var overrideField = typeof(FixedWindowRateLimiter).GetField("getElapsedTime", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance)!;
+            Func<TimeSpan?> overrideFunc = () => desiredRemainingTime;
+            overrideField.SetValue(limiter, overrideFunc);
         }
     }
 }

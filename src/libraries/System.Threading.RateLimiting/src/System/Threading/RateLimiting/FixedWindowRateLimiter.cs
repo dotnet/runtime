@@ -22,6 +22,9 @@ namespace System.Threading.RateLimiting
         private long _failedLeasesCount;
         private long _successfulLeasesCount;
 
+        // In tests, this func can be overridden to control the time behavior
+        private Func<TimeSpan?> getElapsedTime;
+
         private readonly Timer? _renewTimer;
         private readonly FixedWindowRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -72,6 +75,8 @@ namespace System.Threading.RateLimiting
             _permitCount = options.PermitLimit;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
+
+            getElapsedTime = () => RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick);
 
             if (_options.AutoReplenishment)
             {
@@ -206,6 +211,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
+        /*
         private FixedWindowLease CreateFailedWindowLease(int permitCount)
         {
             int replenishAmount = permitCount - _permitCount + _queueCount;
@@ -213,6 +219,12 @@ namespace System.Threading.RateLimiting
             int replenishWindow = Math.Max(replenishAmount / _options.PermitLimit, 1);
 
             return new FixedWindowLease(false, TimeSpan.FromTicks(_options.Window.Ticks * replenishWindow));
+        }
+        */
+        private FixedWindowLease CreateFailedWindowLease(int _)
+        {
+            TimeSpan? remainingTime = _options.Window - getElapsedTime();
+            return new FixedWindowLease(false, remainingTime);
         }
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
