@@ -260,6 +260,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData(1)]
         [InlineData(2)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107339", TestPlatforms.Wasi)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task DnsGetHostEntry_LocalHost_ReturnsFqdnAndLoopbackIPs(int mode)
         {
             IPHostEntry entry = mode switch

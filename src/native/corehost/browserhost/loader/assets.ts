@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
 
 import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
-import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE } from "./per-module";
+import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
-import { fetchLike } from "./polyfills";
+import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
@@ -19,8 +19,8 @@ let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
 }
-
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
+export const mainModulePromiseController = createPromiseCompletionSource<WebAssembly.Instance>();
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
@@ -39,9 +39,9 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
         }
         assetInternal.behavior = "js-module-dotnet";
         if (typeof loadBootResourceCallback === "function") {
-            const type = runtimeToBlazorAssetTypeMap[assetInternal.behavior];
-            dotnetAssert.check(type, `Unsupported asset behavior: ${assetInternal.behavior}`);
-            const customLoadResult = loadBootResourceCallback(type, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
+            const blazorType = behaviorToBlazorAssetTypeMap[assetInternal.behavior];
+            dotnetAssert.check(blazorType, `Unsupported asset behavior: ${assetInternal.behavior}`);
+            const customLoadResult = loadBootResourceCallback(blazorType, assetInternal.name, asset.resolvedUrl!, assetInternal.integrity!, assetInternal.behavior);
             dotnetAssert.check(typeof customLoadResult === "string", "loadBootResourceCallback for JS modules must return string URL");
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         }
@@ -65,33 +65,11 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
     return wasmBinaryPromise;
 }
 
-export async function instantiateWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    if (wasmBinaryPromise instanceof globalThis.Response === false || !WebAssembly.instantiateStreaming) {
-        const res = await checkResponseOk();
-        const data = await res.arrayBuffer();
-        const module = await WebAssembly.compile(data);
-        const instance = await WebAssembly.instantiate(module, imports);
-        onDownloadedAsset();
-        successCallback(instance, module);
-    } else {
-        const instantiated = await WebAssembly.instantiateStreaming(wasmBinaryPromise, imports);
-        await checkResponseOk();
-        onDownloadedAsset();
-        successCallback(instantiated.instance, instantiated.module);
-    }
-
-    async function checkResponseOk(): Promise<Response> {
-        dotnetAssert.check(wasmBinaryPromise, "WASM binary promise was not initialized");
-        const res = await wasmBinaryPromise;
-        if (res.ok === false) {
-            throw new Error(`Failed to load WebAssembly module. HTTP status: ${res.status} ${res.statusText}`);
-        }
-        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-        if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
-            dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
-        }
-        return res;
-    }
+export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
+    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true, true);
+    onDownloadedAsset();
+    successCallback(instance, module);
+    mainModulePromiseController.resolve(instance);
 }
 
 export async function fetchIcu(asset: IcuAsset): Promise<void> {
@@ -112,33 +90,42 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
 export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
+    dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "assembly";
+    assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
+        ? assetInternal.virtualPath
+        : browserVirtualAppBase + assetInternal.virtualPath;
+
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerDllBytes(bytes, asset);
+        dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath);
     }
 }
 
 export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
+    dotnetAssert.check(assetInternal.virtualPath, "PDB asset must have virtualPath");
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "pdb";
     assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
+    assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
+        ? assetInternal.virtualPath
+        : browserVirtualAppBase + assetInternal.virtualPath;
     const bytes = await fetchBytes(assetInternal);
     await nativeModulePromiseController.promise;
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerPdbBytes(bytes, asset);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, asset.virtualPath);
     }
 }
 
@@ -215,18 +202,16 @@ async function loadResourceRetry(asset: AssetEntryInternal): Promise<Response> {
         try {
             response = await loadResourceThrottle(asset);
             if (!response) {
-                response = {
-                    ok: false,
-                    status: -1,
+                response = responseLike(asset.resolvedUrl!, null, {
+                    status: 404,
                     statusText: "No response",
-                } as any;
+                });
             }
         } catch (err: any) {
-            response = {
-                ok: false,
-                status: -1,
+            response = responseLike(asset.resolvedUrl!, null, {
+                status: 500,
                 statusText: err.message || "Exception during fetch",
-            } as any;
+            });
         }
         return response;
     }
@@ -261,30 +246,26 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
 }
 
 async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
+    const expectedContentType = behaviorToContentTypeMap[asset.behavior];
+    dotnetAssert.check(expectedContentType, `Unsupported asset behavior: ${asset.behavior}`);
     if (asset.buffer) {
-        return <Response><any>{
-            ok: true,
+        const arrayBuffer = await asset.buffer;
+        return responseLike(asset.resolvedUrl!, arrayBuffer, {
+            status: 200,
+            statusText: "OK",
             headers: {
-                length: 0,
-                get: () => null
-            },
-            url: asset.resolvedUrl,
-            arrayBuffer: () => Promise.resolve(asset.buffer!),
-            json: () => {
-                throw new Error("NotImplementedException");
-            },
-            text: () => {
-                throw new Error("NotImplementedException");
+                "Content-Length": arrayBuffer.byteLength.toString(),
+                "Content-Type": expectedContentType,
             }
-        };
+        });
     }
     if (asset.pendingDownload) {
         return asset.pendingDownload.response;
     }
     if (typeof loadBootResourceCallback === "function") {
-        const type = runtimeToBlazorAssetTypeMap[asset.behavior];
-        dotnetAssert.check(type, `Unsupported asset behavior: ${asset.behavior}`);
-        const customLoadResult = loadBootResourceCallback(type, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
+        const blazorType = behaviorToBlazorAssetTypeMap[asset.behavior];
+        dotnetAssert.check(blazorType, `Unsupported asset behavior: ${asset.behavior}`);
+        const customLoadResult = loadBootResourceCallback(blazorType, asset.name, asset.resolvedUrl!, asset.integrity!, asset.behavior);
         if (typeof customLoadResult === "string") {
             asset.resolvedUrl = makeURLAbsoluteWithApplicationBase(customLoadResult);
         } else if (typeof customLoadResult === "object") {
@@ -314,7 +295,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
         }
     }
 
-    return fetchLike(asset.resolvedUrl!, fetchOptions);
+    return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
 function onDownloadedAsset() {
@@ -328,7 +309,7 @@ export function verifyAllAssetsDownloaded(): void {
     dotnetAssert.check(downloadedAssetsCount === totalAssetsToDownload, `Not all assets were downloaded. Downloaded ${downloadedAssetsCount} out of ${totalAssetsToDownload}`);
 }
 
-const runtimeToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
+const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
     "resource": "assembly",
     "assembly": "assembly",
     "pdb": "pdb",
@@ -340,4 +321,14 @@ const runtimeToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType 
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
     "js-module-threads": "dotnetjs"
+};
+
+const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
+    "resource": "application/octet-stream",
+    "assembly": "application/octet-stream",
+    "pdb": "application/octet-stream",
+    "icu": "application/octet-stream",
+    "vfs": "application/octet-stream",
+    "manifest": "application/json",
+    "dotnetwasm": "application/wasm",
 };

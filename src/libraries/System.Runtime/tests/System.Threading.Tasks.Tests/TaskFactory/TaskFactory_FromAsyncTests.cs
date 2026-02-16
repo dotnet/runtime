@@ -299,31 +299,31 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
 
             // Test IAsyncResult overload that returns Task<string>
-            Task<string> asyncFuture = null;
-            asyncFuture = Task<string>.Factory.FromAsync(
+            Task<string> asyncTaskWithResult = null;
+            asyncTaskWithResult = Task<string>.Factory.FromAsync(
                 fac.StartRead(3, null, null),
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); });
 
             ae = Assert.Throws<AggregateException>(() =>
             {
-                asyncTask.Wait();
+                asyncTaskWithResult.Wait();
             });
             Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
-            Assert.Equal(TaskStatus.Canceled, asyncTask.Status);
+            Assert.Equal(TaskStatus.Canceled, asyncTaskWithResult.Status);
 
             // Test beginMethod overload that returns Task<string>
-            asyncFuture = null;
-            asyncFuture = Task<string>.Factory.FromAsync(
+            asyncTaskWithResult = null;
+            asyncTaskWithResult = Task<string>.Factory.FromAsync(
                 fac.StartRead,
                 delegate (IAsyncResult iar) { throw new OperationCanceledException("FromAsync"); },
                 3, null);
 
             ae = Assert.Throws<AggregateException>(() =>
             {
-                asyncFuture.Wait();
+                asyncTaskWithResult.Wait();
             });
             Assert.Equal(typeof(TaskCanceledException), ae.InnerException.GetType());
-            Assert.Equal(TaskStatus.Canceled, asyncFuture.Status);
+            Assert.Equal(TaskStatus.Canceled, asyncTaskWithResult.Status);
 
             //
             // Make sure that tasks aren't left hanging if StartXYZ() throws an exception

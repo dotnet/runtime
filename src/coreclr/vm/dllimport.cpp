@@ -489,7 +489,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#ifndef TARGET_X86
+#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
@@ -3476,6 +3476,7 @@ BOOL PInvoke::MarshalingRequired(
     if (!FitsInU2(dwStackSize))
         return TRUE;
 
+#ifdef TARGET_X86
     // do not set the stack size for varargs - the number is call site specific
     if (pMD != NULL && !pMD->IsVarArg())
     {
@@ -3491,6 +3492,7 @@ BOOL PInvoke::MarshalingRequired(
         }
 #endif // FEATURE_COMINTEROP
     }
+#endif // TARGET_X86
 
     return FALSE;
 }
@@ -3885,11 +3887,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+#endif
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -3983,11 +3987,13 @@ static void CreateStructStub(ILStubState* pss,
         pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
+#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
         pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
+#endif
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
@@ -5717,7 +5723,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
             // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
             // needed, like we do for the regular methods.
             InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
@@ -5725,7 +5731,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             {
                 CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
             }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && FEATURE_DYNAMIC_CODE_COMPILED
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
@@ -6162,7 +6168,7 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Pop(CURRENT_THREAD);
 }
 
-EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
 {
     CONTRACTL
     {
@@ -6179,7 +6185,24 @@ EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* 
     TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
     _ASSERTE(!type.IsTypeDesc());
 
-    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
+    // Iterate the type looking for a method with the given name that has the
+    // UnmanagedCallersOnly attribute.
+    MethodTable* pMT = type.GetMethodTable();
+    MethodTable::MethodIterator it(pMT);
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        if (strcmp(pMD->GetNameOnNonArrayClass(), methodName) == 0
+            && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            *ppMD = pMD;
+            return;
+        }
+    }
+
+    // Fallback if no UCO match found.
+    *ppMD = MemberLoader::FindMethodByName(pMT, methodName);
 }
 
 namespace

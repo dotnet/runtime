@@ -1126,19 +1126,24 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
 
     GCX_COOP();
 
-    MethodDescCallSite getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT, m_managedResolver);
-
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    _ASSERTE(resolver); // gc root must be up the stack
-
-    ARG_SLOT args[] =
+    struct
     {
-        ObjToArgSlot(resolver),
-        PtrToArgSlot(securityControlFlags),
-    };
+        OBJECTREF Resolver;
+        OBJECTREF ResultType;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.ResultType = NULL;
+    _ASSERTE(gc.Resolver); // gc root must be up the stack
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)getJitContext.Call_RetOBJECTREF(args);
+    GCPROTECT_BEGIN(gc);
+
+    UnmanagedCallersOnlyCaller getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT);
+    getJitContext.InvokeThrowing(&gc.Resolver, (int32_t*)securityControlFlags, &gc.ResultType);
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)gc.ResultType;
     *typeOwner = refType != NULL ? refType->GetType() : TypeHandle();
+
+    GCPROTECT_END();
 
 }
 
@@ -1170,21 +1175,24 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         GCX_COOP();
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting CodeInfo on resolver 0x%p...\n", this));
-        // get the code - Byte[] Resolver.GetCodeInfo(ref ushort stackSize, ref int EHCount)
-        MethodDescCallSite getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO, m_managedResolver);
 
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+        struct
+        {
+            OBJECTREF Resolver;
+            OBJECTREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+        VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
+
+        GCPROTECT_BEGIN(gc);
 
         int32_t stackSize = 0, initLocals = 0, EHSize = 0;
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(resolver),
-            PtrToArgSlot(&stackSize),
-            PtrToArgSlot(&initLocals),
-            PtrToArgSlot(&EHSize),
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getCodeInfo.Call_RetOBJECTREF(args);
+
+        UnmanagedCallersOnlyCaller getCodeInfo(METHOD__RESOLVER__GET_CODE_INFO);
+        getCodeInfo.InvokeThrowing(&gc.Resolver, &stackSize, &initLocals, &EHSize, &gc.DataArray);
+
+        U1ARRAYREF dataArray = (U1ARRAYREF)gc.DataArray;
         DWORD codeSize = dataArray->GetNumComponents();
         NewArrayHolder<BYTE> code(new BYTE[codeSize]);
         memcpy(code, dataArray->GetDataPtr(), codeSize);
@@ -1197,6 +1205,8 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         m_Code = (BYTE*)code;
         code.SuppressRelease();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: CodeInfo {0x%p} on resolver %p\n", m_Code, this));
+
+        GCPROTECT_END();
     }
 
     *pCodeSize = m_CodeSize;
@@ -1223,16 +1233,21 @@ LCGMethodResolver::GetLocalSig()
 
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: Getting LocalSig on resolver 0x%p...\n", this));
 
-        MethodDescCallSite getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE, m_managedResolver);
-
-        OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-        VALIDATEOBJECTREF(resolver); // gc root must be up the stack
-
-        ARG_SLOT args[] =
+        struct
         {
-            ObjToArgSlot(resolver)
-        };
-        U1ARRAYREF dataArray = (U1ARRAYREF) getLocalsSignature.Call_RetOBJECTREF(args);
+            OBJECTREF Resolver;
+            OBJECTREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+        VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
+
+        GCPROTECT_BEGIN(gc);
+
+        UnmanagedCallersOnlyCaller getLocalsSignature(METHOD__RESOLVER__GET_LOCALS_SIGNATURE);
+        getLocalsSignature.InvokeThrowing(&gc.Resolver, &gc.DataArray);
+
+        U1ARRAYREF dataArray = (U1ARRAYREF)gc.DataArray;
         DWORD localSigSize = dataArray->GetNumComponents();
         NewArrayHolder<COR_SIGNATURE> localSig(new COR_SIGNATURE[localSigSize]);
         memcpy((void *)localSig, dataArray->GetDataPtr(), localSigSize);
@@ -1240,6 +1255,8 @@ LCGMethodResolver::GetLocalSig()
         m_LocalSig = SigPointer((PCCOR_SIGNATURE)localSig, localSigSize);
         localSig.SuppressRelease();
         LOG((LF_BCL, LL_INFO100000, "Level5 - DM-JIT: LocalSig {0x%p} on resolver %p\n", m_LocalSig.GetPtr(), this));
+
+        GCPROTECT_END();
     }
 
     return m_LocalSig;
@@ -1296,16 +1313,23 @@ LCGMethodResolver::GetStringLiteral(
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    MethodDescCallSite getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL, m_managedResolver);
+    struct
+    {
+        OBJECTREF Resolver;
+        OBJECTREF Result;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.Result = NULL;
+    VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-    OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
-    VALIDATEOBJECTREF(resolver); // gc root must be up the stack
+    GCPROTECT_BEGIN(gc);
 
-    ARG_SLOT args[] = {
-        ObjToArgSlot(resolver),
-        metaTok,
-    };
-    return getStringLiteral.Call_RetSTRINGREF(args);
+    UnmanagedCallersOnlyCaller getStringLiteral(METHOD__RESOLVER__GET_STRING_LITERAL);
+    getStringLiteral.InvokeThrowing(&gc.Resolver, (int)metaTok, &gc.Result);
+
+    GCPROTECT_END();
+
+    return (STRINGREF)gc.Result;
 }
 
 // This method will get the interned string by calling GetInternedString on the
