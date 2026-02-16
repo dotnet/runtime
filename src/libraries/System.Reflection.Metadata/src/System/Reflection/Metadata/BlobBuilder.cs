@@ -707,6 +707,8 @@ namespace System.Reflection.Metadata
                 // If the first write into an empty buffer needs more space than the buffer provides, swap the buffers.
                 newChunk._buffer = _buffer;
                 _buffer = newBuffer;
+                // Free the new chunk that now contains the old buffer.
+                newChunk.ClearAndFreeChunk();
             }
             else
             {
