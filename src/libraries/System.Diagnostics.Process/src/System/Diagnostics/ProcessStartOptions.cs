@@ -152,17 +152,15 @@ namespace System.Diagnostics
         /// </para>
         /// <para>
         /// On Windows, when <paramref name="fileName"/> is not a rooted path, the system searches
-        /// for the executable in the following order (mimicking the behavior of the <c>CreateProcess</c> system call):
+        /// for the executable in the following order:
         /// </para>
         /// <list type="number">
-        /// <item><description>The current directory.</description></item>
         /// <item><description>The System directory.</description></item>
-        /// <item><description>The Windows directory.</description></item>
         /// <item><description>The directories listed in the PATH environment variable.</description></item>
         /// </list>
         /// <para>
         /// On Unix, when <paramref name="fileName"/> is not a rooted path, the system searches
-        /// for the executable in the current directory and then in the directories listed in the PATH environment variable.
+        /// for the executable in the directories listed in the PATH environment variable.
         /// </para>
         /// <para>
         /// On Windows, if the <paramref name="fileName"/> does not have an extension, ".exe" is appended to it before searching.
@@ -249,39 +247,11 @@ namespace System.Diagnostics
             }
 #endif
 
-            // Check the current directory
-            string path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-            if (File.Exists(path))
-            {
-                return path;
-            }
-
 #if WINDOWS
-            // Windows-specific search locations (from CreateProcessW documentation)
-
-            // Check the system directory (e.g., System32)
-            path = System.Environment.SystemDirectory;
+            // Windows-specific search location: the system directory (e.g., C:\Windows\System32)
+            string path = System.Environment.SystemDirectory;
             if (path != null)
             {
-                path = Path.Combine(path, filename);
-                if (File.Exists(path))
-                {
-                    return path;
-                }
-            }
-
-            // Check the Windows directory
-            path = GetWindowsDirectory();
-            if (path != null)
-            {
-                // Check the legacy System subdirectory of Windows directory (for compatibility)
-                string systemPath = Path.Combine(path, "System", filename);
-                if (File.Exists(systemPath))
-                {
-                    return systemPath;
-                }
-
-                // Check the Windows directory itself
                 path = Path.Combine(path, filename);
                 if (File.Exists(path))
                 {
@@ -317,23 +287,5 @@ namespace System.Diagnostics
 
             return null;
         }
-
-#if WINDOWS
-        private static string? s_cachedWindowsDirectory;
-
-        private static string? GetWindowsDirectory()
-        {
-            if (s_cachedWindowsDirectory == null)
-            {
-                Span<char> buffer = stackalloc char[260]; // MAX_PATH
-                uint length = Interop.Kernel32.GetWindowsDirectoryW(ref MemoryMarshal.GetReference(buffer), (uint)buffer.Length);
-                if (length > 0 && length < buffer.Length)
-                {
-                    s_cachedWindowsDirectory = new string(buffer.Slice(0, (int)length));
-                }
-            }
-            return s_cachedWindowsDirectory;
-        }
-#endif
     }
 }

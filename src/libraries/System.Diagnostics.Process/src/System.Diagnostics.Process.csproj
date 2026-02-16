@@ -140,8 +140,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcessPriorityBoost.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetProcessPriorityBoost.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetProcessPriorityBoost.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetWindowsDirectoryW.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetWindowsDirectoryW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenThread.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadPriority.cs"

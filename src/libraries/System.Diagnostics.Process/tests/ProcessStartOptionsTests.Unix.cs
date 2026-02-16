@@ -36,8 +36,10 @@ namespace System.Diagnostics.Tests
             Assert.False(options.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
         }
 
-        [Fact]
-        public void ResolvePath_UsesCurrentDirectory()
+        [Theory]
+        [InlineData("./testscript.sh", true)]
+        [InlineData("testscript.sh", false)]
+        public void ResolvePath_UsesCurrentDirectory(string fileNameFormat, bool shouldSucceed)
         {
             string tempDir = Path.GetTempPath();
             string fileName = "testscript.sh";
@@ -51,11 +53,19 @@ namespace System.Diagnostics.Tests
                 File.SetUnixFileMode(fullPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
                 
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new(fileName);
 
-                Assert.True(File.Exists(options.FileName));
-                // on macOS, we need to handle /tmp/testscript.sh -> /private/tmp/testscript.sh
-                Assert.EndsWith(fullPath, options.FileName);
+                if (shouldSucceed)
+                {
+                    ProcessStartOptions options = new(fileNameFormat);
+                    Assert.True(File.Exists(options.FileName));
+                    // on macOS, we need to handle /tmp/testscript.sh -> /private/tmp/testscript.sh
+                    Assert.EndsWith(fullPath, options.FileName);
+                }
+                else
+                {
+                    // Without ./ prefix, should not find file in CWD and should throw
+                    Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(fileNameFormat));
+                }
             }
             finally
             {

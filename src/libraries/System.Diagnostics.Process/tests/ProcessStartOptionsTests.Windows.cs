@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             {
                 File.WriteAllText(fullPath, "test");
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new(fileName);
+                ProcessStartOptions options = new($".\\{fileName}");
                 Assert.EndsWith(".com", options.FileName, StringComparison.OrdinalIgnoreCase);
             }
             finally
@@ -70,15 +70,10 @@ namespace System.Diagnostics.Tests
             Assert.StartsWith(systemDirectory, options.FileName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore))]
-        public void ResolvePath_FindsInWindowsDirectory()
-        {
-            ProcessStartOptions options = new("notepad");
-            Assert.True(File.Exists(options.FileName));
-        }
-
-        [Fact]
-        public void ResolvePath_UsesCurrentDirectory()
+        [Theory]
+        [InlineData(".\\testapp.exe", true)]
+        [InlineData("testapp.exe", false)]
+        public void ResolvePath_UsesCurrentDirectory(string fileNameFormat, bool shouldSucceed)
         {
             string tempDir = Path.GetTempPath();
             string fileName = "testapp.exe";
@@ -89,8 +84,17 @@ namespace System.Diagnostics.Tests
             {
                 File.WriteAllText(fullPath, "test");
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new(fileName);
-                Assert.Equal(fullPath, options.FileName);
+
+                if (shouldSucceed)
+                {
+                    ProcessStartOptions options = new(fileNameFormat);
+                    Assert.Equal(fullPath, options.FileName);
+                }
+                else
+                {
+                    // Without .\ prefix, should not find file in CWD and should throw
+                    Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(fileNameFormat));
+                }
             }
             finally
             {
@@ -145,6 +149,33 @@ namespace System.Diagnostics.Tests
                 tempFile = noExtFile;
 
                 ProcessStartOptions options = new(tempFile);
+                Assert.Equal(tempFile, options.FileName);
+            }
+            finally
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+        }
+
+        [Fact]
+        public void ResolvePath_RootedButNotFullyQualifiedPath()
+        {
+            // Test paths like "C:foo.exe" which are rooted but not fully qualified
+            // These should be resolved to full paths
+            string tempFile = Path.GetTempFileName();
+            try
+            {
+                // Get the drive letter and create a rooted but not fully qualified path
+                string drive = Path.GetPathRoot(tempFile);
+                string fileName = Path.GetFileName(tempFile);
+                string rootedPath = drive + fileName; // e.g., "C:tempfile.tmp"
+                
+                ProcessStartOptions options = new(rootedPath);
+                // Should resolve to fully qualified path
+                Assert.True(Path.IsPathFullyQualified(options.FileName));
                 Assert.Equal(tempFile, options.FileName);
             }
             finally
