@@ -144,9 +144,9 @@ namespace System.Buffers
 
             if (nonAsciiAffectedByCaseConversion)
             {
-                if (ContainsIncompleteSurrogatePairs(values))
+                if (ContainsInvalidValues(values))
                 {
-                    // Aho-Corasick can't deal with the matching semantics of standalone surrogate code units.
+                    // Aho-Corasick can't deal with the matching semantics of invalid values.
                     // We will use a slow but correct O(n * m) fallback implementation.
                     return new MultiStringIgnoreCaseSearchValuesFallback(uniqueValues);
                 }
@@ -503,7 +503,7 @@ namespace System.Buffers
             }
         }
 
-        private static bool ContainsIncompleteSurrogatePairs(ReadOnlySpan<string> values)
+        private static bool ContainsInvalidValues(ReadOnlySpan<string> values)
         {
             foreach (string value in values)
             {
