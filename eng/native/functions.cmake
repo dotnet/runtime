@@ -427,7 +427,7 @@ function(strip_symbols targetName outputFilename)
         VERBATIM
         COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
         COMMAND "${DSYMUTIL}" ${DSYMUTIL_OPTS} "${strip_source_file}"
-        COMMAND "${strip_command}"
+        COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
       # Win32 may be false when cross compiling
