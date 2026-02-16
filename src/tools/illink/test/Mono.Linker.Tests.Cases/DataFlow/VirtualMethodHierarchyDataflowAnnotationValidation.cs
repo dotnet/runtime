@@ -157,18 +157,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         class DerivedClass : BaseClass
         {
             // === Return values ===
-            // Return values are covariant: override can ADD annotations (strengthen postcondition)
-            // but cannot REMOVE annotations that the base declares.
             [LogDoesNotContain("DerivedClass.ReturnValueBaseWithoutDerivedWithout")]
             public override Type ReturnValueBaseWithoutDerivedWithout() => null;
 
-            // Adding DAMT to return value is now allowed (covariant - strengthening postcondition)
-            [LogDoesNotContain("DerivedClass.ReturnValueBaseWithoutDerivedWith")]
+            [ExpectedWarning("IL2093", "BaseClass.ReturnValueBaseWithoutDerivedWith", "DerivedClass.ReturnValueBaseWithoutDerivedWith")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public override Type ReturnValueBaseWithoutDerivedWith() => null;
 
-            // Removing DAMT from return value is NOT allowed (covariant - weakening postcondition)
-            [ExpectedWarning("IL2093", "DerivedClass.ReturnValueBaseWithDerivedWithout", "BaseClass.ReturnValueBaseWithDerivedWithout")]
+            [LogContains("DerivedClass.ReturnValueBaseWithDerivedWithout")]
             public override Type ReturnValueBaseWithDerivedWithout() => null;
 
             [LogDoesNotContain("DerivedClass.ReturnValueBaseWithDerivedWitht")]
@@ -177,11 +173,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === Method parameters ===
-            // Parameters are contravariant: override can REMOVE annotations (weaken precondition)
-            // but cannot ADD annotations that the base doesn't declare.
-
-            // Removing DAMT from parameter is now allowed (contravariant - weakening precondition)
-            [LogDoesNotContain("DerivedClass.SingleParameterBaseWithDerivedWithout")]
+            [ExpectedWarning("IL2092",
+                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithout(Type)",
+                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithout(Type)")]
             public override void SingleParameterBaseWithDerivedWithout(Type p) { }
 
             [LogDoesNotContain("DerivedClass.SingleParameterBaseWithDerivedWith_")]
@@ -190,10 +184,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 Type p)
             { }
 
-            // Adding DAMT to parameter is NOT allowed (contravariant - strengthening precondition)
-            [ExpectedWarning("IL2092",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithoutDerivedWith_(Type)",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithoutDerivedWith_(Type)")]
+            [LogContains(
+                "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithoutDerivedWith_(Type)' " +
+                "don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithoutDerivedWith_(Type)'. " +
+                "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override void SingleParameterBaseWithoutDerivedWith_(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
@@ -202,25 +196,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [LogDoesNotContain("DerivedClass.SingleParameterBaseWithoutDerivedWithout")]
             public override void SingleParameterBaseWithoutDerivedWithout(Type p) { }
 
-            // Changing DAMT on parameter where new value is not subset of base is NOT allowed
-            [ExpectedWarning("IL2092",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithDifferent(Type)",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithDifferent(Type)")]
+            [LogContains(
+                "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.SingleParameterBaseWithDerivedWithDifferent(Type)' " +
+                "don't match overridden parameter 'p' of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.SingleParameterBaseWithDerivedWithDifferent(Type)'. " +
+                "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override void SingleParameterBaseWithDerivedWithDifferent(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 Type p)
             { }
 
 
-            // Removing DAMT from parameters is now allowed (contravariant)
-            [LogDoesNotContain("DerivedClass.MultipleParametersBaseWithDerivedWithout")]
+            [LogContains(".*'p1BaseWithDerivedWithout'.*DerivedClass.*MultipleParametersBaseWithDerivedWithout.*", regexMatch: true)]
+            [LogDoesNotContain(".*'p2BaseWithoutDerivedWithout'.*DerivedClass.*MultipleParametersBaseWithDerivedWithout.*", regexMatch: true)]
+            [LogContains(".*'p3BaseWithDerivedWithout'.*DerivedClass.*MultipleParametersBaseWithDerivedWithout.*", regexMatch: true)]
             public override void MultipleParametersBaseWithDerivedWithout(
                 Type p1BaseWithDerivedWithout,
                 Type p2BaseWithoutDerivedWithout,
                 Type p3BaseWithDerivedWithout)
             { }
 
-            // Adding DAMT to parameters is NOT allowed (contravariant)
             [LogContains(".*'p1BaseWithoutDerivedWith'.*DerivedClass.*MultipleParametersBaseWithoutDerivedWith.*", regexMatch: true)]
             [LogDoesNotContain(".*'p2BaseWithoutDerivedWithout'.*DerivedClass.*MultipleParametersBaseWithoutDerivedWith.*", regexMatch: true)]
             [LogContains(".*'p3BaseWithoutDerivedWith'.*DerivedClass.*MultipleParametersBaseWithoutDerivedWith.*", regexMatch: true)]
@@ -241,10 +235,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 Type p3BaseWithDerivedWith)
             { }
 
-            // p1 changes from PublicMethods to PublicFields - not a subset, should warn
-            // p2 adds PublicFields where base has none - should warn
-            // p3 matches base - no warning
-            // p4 no annotations - no warning
             [LogContains(".*'p1BaseWithDerivedWithMismatch'.*DerivedClass.*MultipleParametersBaseWithDerivedWithMismatch.*", regexMatch: true)]
             [LogContains(".*'p2BaseWithoutDerivedWith'.*DerivedClass.*MultipleParametersBaseWithDerivedWithMismatch.*", regexMatch: true)]
             [LogDoesNotContain(".*'p3BaseWithDerivedWithMatch'.*DerivedClass.*MultipleParametersBaseWithDerivedWithMismatch.*", regexMatch: true)]
@@ -260,21 +250,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             { }
 
             // === Generic methods ===
-            // Generic parameters are contravariant: override can REMOVE annotations but cannot ADD
-
-            // === Generic methods ===
-            // Generic parameters are invariant in C# - they must match exactly
-
-            // Removing DAMT from generic parameter is NOT allowed (invariant)
             [ExpectedWarning("IL2095",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithDerivedWithout<T>()",
                 "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithDerivedWithout<T>()")]
             public override void GenericBaseWithDerivedWithout<T>() { }
 
-            // Adding DAMT to generic parameter is NOT allowed (invariant)
-            [ExpectedWarning("IL2095",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()")]
+            [LogContains(
+                "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()' " +
+                "don't match overridden generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()'. " +
+                "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override void GenericBaseWithoutDerivedWith<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>() { }
 
             [LogDoesNotContain("DerivedClass.GenericBaseWithDerivedWith_")]
@@ -285,12 +269,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === Properties ===
-            // Properties with DAMT on the type affect both getter (return) and setter (parameter)
-            // For getter (return value) - covariant rules apply
-            // Removing DAMT from property (affects return value) is NOT allowed
-            [ExpectedWarning("IL2093",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.PropertyBaseWithDerivedWithout.get",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.PropertyBaseWithDerivedWithout.get")]
+            // The warning is reported on the getter (or setter), which is not ideal, but it's probably good enough for now (we don't internally track annotations
+            // on properties themselves, only on methods).
+            [LogContains(
+                "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.PropertyBaseWithDerivedWithout.get' " +
+                "don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.PropertyBaseWithDerivedWithout.get'. " +
+                "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override Type PropertyBaseWithDerivedWithout { get; }
 
             [LogDoesNotContain("DerivedClass.PropertyBaseWithDerivedWith_.get")]
@@ -304,14 +288,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === RequiresUnreferencedCode ===
-            // Variance rules: Override can REMOVE Requires* attributes (weaker precondition is OK)
-            // but cannot ADD Requires* attributes that the base doesn't have
-
-            // Removing [RUC] is now allowed (variance - weakening precondition)
-            [LogDoesNotContain("DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout")]
+            [ExpectedWarning("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()",
+                "BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()",
+                "'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides")]
             public override void RequiresUnreferencedCodeBaseWithDerivedWithout() { }
-
-            // Adding [RUC] is NOT allowed (variance - strengthening precondition)
             [ExpectedWarning("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()",
                 "BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()",
                 "'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides")]
@@ -332,15 +312,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         class SuperDerivedClass : InBetweenDerived
         {
             // === Return values ===
-            // Removing DAMT from return value is NOT allowed (covariant - weakening postcondition)
-            [ExpectedWarning("IL2093",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.SuperDerivedClass.ReturnValueBaseWithSuperDerivedWithout()",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.ReturnValueBaseWithSuperDerivedWithout()")]
+            [LogContains(
+                "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.SuperDerivedClass.ReturnValueBaseWithSuperDerivedWithout()' " +
+                "don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.ReturnValueBaseWithSuperDerivedWithout()'. " +
+                "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
             public override Type ReturnValueBaseWithSuperDerivedWithout() => null;
 
             // === RequiresUnreferencedCode ===
-            // Adding [RUC] is NOT allowed (variance - strengthening precondition)
-            [ExpectedWarning("IL2046", "SuperDerivedClass.RequiresUnreferencedCodeBaseWithoutSuperDerivedWith_")]
+            [LogContains("SuperDerivedClass.RequiresUnreferencedCodeBaseWithoutSuperDerivedWith_")]
             [RequiresUnreferencedCode("")]
             public override void RequiresUnreferencedCodeBaseWithoutSuperDerivedWith_() { }
         }
@@ -374,8 +353,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         class DerivedOverNoAnnotations : BaseWithNoAnnotations
         {
             // === Return values ===
-            // Adding DAMT to return value is now allowed (covariant - strengthening postcondition)
-            [LogDoesNotContain("DerivedOverNoAnnotations.ReturnValueBaseWithoutDerivedWith")]
+            [LogContains("DerivedOverNoAnnotations.ReturnValueBaseWithoutDerivedWith")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public override Type ReturnValueBaseWithoutDerivedWith() => null;
 
@@ -383,10 +361,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public override Type ReturnValueBaseWithoutDerivedWithout() => null;
 
             // === Method parameters ===
-            // Adding DAMT to parameter is NOT allowed (contravariant - strengthening precondition)
-            [ExpectedWarning("IL2092",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedOverNoAnnotations.SingleParameterBaseWithoutDerivedWith_(Type)",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithNoAnnotations.SingleParameterBaseWithoutDerivedWith_(Type)")]
+            [LogContains("DerivedOverNoAnnotations.SingleParameterBaseWithoutDerivedWith_")]
             public override void SingleParameterBaseWithoutDerivedWith_(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
@@ -396,10 +371,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public override void SingleParameterBaseWithoutDerivedWithout(Type p) { }
 
             // === Generic methods ===
-            // Generic parameters are invariant in C# - they must match exactly
-            [ExpectedWarning("IL2095",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedOverNoAnnotations.GenericBaseWithoutDerivedWith_<T>()",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithNoAnnotations.GenericBaseWithoutDerivedWith_<T>()")]
+            [LogContains("DerivedOverNoAnnotations.GenericBaseWithoutDerivedWith_")]
             public override void GenericBaseWithoutDerivedWith_<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>() { }
 
             [LogDoesNotContain("DerivedOverNoAnnotations.GenericBaseWithoutDerivedWithout")]
@@ -407,8 +379,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === RequiresUnreferencedCode ===
-            // Adding [RUC] is NOT allowed (variance - strengthening precondition)
-            [ExpectedWarning("IL2046", "DerivedOverNoAnnotations.RequiresUnreferencedCodeBaseWithoutDerivedWith_")]
+            [LogContains("DerivedOverNoAnnotations.RequiresUnreferencedCodeBaseWithoutDerivedWith_")]
             [RequiresUnreferencedCode("")]
             public override void RequiresUnreferencedCodeBaseWithoutDerivedWith_() { }
             [LogDoesNotContain("DerivedOverNoAnnotations.RequiresUnreferencedCodeBaseWithoutDerivedWithout")]
@@ -454,18 +425,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // It's here to test that the optimization works (as most classes won't have any annotations, so we shortcut that path).
 
             // === Return values ===
-            // Removing DAMT from return value is NOT allowed (covariant - weakening postcondition)
-            [ExpectedWarning("IL2093",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedWithNoAnnotations.ReturnValueBaseWithDerivedWithout()",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithAnnotations.ReturnValueBaseWithDerivedWithout()")]
+            [LogContains("DerivedWithNoAnnotations.ReturnValueBaseWithDerivedWithout")]
             public override Type ReturnValueBaseWithDerivedWithout() => null;
 
             [LogDoesNotContain("DerivedWithNoAnnotations.ReturnValueBaseWithoutDerivedWithout")]
             public override Type ReturnValueBaseWithoutDerivedWithout() => null;
 
             // === Method parameters ===
-            // Removing DAMT from parameter is now allowed (contravariant - weakening precondition)
-            [LogDoesNotContain("DerivedWithNoAnnotations.SingleParameterBaseWithDerivedWithout")]
+            [LogContains("DerivedWithNoAnnotations.SingleParameterBaseWithDerivedWithout")]
             public override void SingleParameterBaseWithDerivedWithout(Type p) { }
 
             [LogDoesNotContain("DerivedWithNoAnnotations.SingleParameterBaseWithDerivedWith_")]
@@ -475,10 +442,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             { }
 
             // === Generic methods ===
-            // Generic parameters are invariant in C# - they must match exactly
-            [ExpectedWarning("IL2095",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedWithNoAnnotations.GenericBaseWithDerivedWithout<T>()",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseWithAnnotations.GenericBaseWithDerivedWithout<T>()")]
+            [LogContains("DerivedWithNoAnnotations.GenericBaseWithDerivedWithout")]
             public override void GenericBaseWithDerivedWithout<T>() { }
 
             [LogDoesNotContain("DerivedWithNoAnnotations.GenericBaseWithoutDerivedWithout")]
@@ -489,8 +453,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [LogDoesNotContain("DerivedWithNoAnnotations.RequiresUnreferencedCodeBaseWithDerivedWith_")]
             [RequiresUnreferencedCode("")]
             public override void RequiresUnreferencedCodeBaseWithDerivedWith_() { }
-            // Removing [RUC] is now allowed (variance - weakening precondition)
-            [LogDoesNotContain("DerivedWithNoAnnotations.RequiresUnreferencedCodeBaseWithDerivedWithout")]
+            [LogContains("DerivedWithNoAnnotations.RequiresUnreferencedCodeBaseWithDerivedWithout")]
             public override void RequiresUnreferencedCodeBaseWithDerivedWithout() { }
         }
 
@@ -549,14 +512,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         abstract class ImplementationClass : IDerived
         {
             // === Return values ===
-            // Removing DAMT from return value is NOT allowed (covariant - weakening postcondition)
-            [ExpectedWarning("IL2093",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.ReturnValueInterfaceBaseWithImplementationWithout()",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.ReturnValueInterfaceBaseWithImplementationWithout()")]
+            [LogContains("ImplementationClass.ReturnValueInterfaceBaseWithImplementationWithout")]
             public Type ReturnValueInterfaceBaseWithImplementationWithout() => null;
 
-            // Adding DAMT to return value is now allowed (covariant - strengthening postcondition)
-            [LogDoesNotContain("ImplementationClass.ReturnValueInterfaceBaseWithoutImplementationWith_")]
+            [LogContains("ImplementationClass.ReturnValueInterfaceBaseWithoutImplementationWith_")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public Type ReturnValueInterfaceBaseWithoutImplementationWith_() => null;
 
@@ -564,10 +523,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public Type ReturnValueInterfaceBaseWithImplementationWith_() => null;
 
-            // Removing DAMT from return value is NOT allowed
-            [ExpectedWarning("IL2093",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.ReturnTypeInterfaceDerivedWithImplementationWithout()",
-                "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IDerived.ReturnTypeInterfaceDerivedWithImplementationWithout()")]
+            [LogContains("ImplementationClass.ReturnTypeInterfaceDerivedWithImplementationWithout")]
             public Type ReturnTypeInterfaceDerivedWithImplementationWithout() => null;
 
 
@@ -578,14 +534,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 Type p)
             { }
 
-            // Removing DAMT from parameter is now allowed (contravariant - weakening precondition)
-            [LogDoesNotContain("ImplementationClass.SingleParameterBaseWithImplementationWithout")]
+            [LogContains("ImplementationClass.SingleParameterBaseWithImplementationWithout")]
             public void SingleParameterBaseWithImplementationWithout(Type p) { }
 
-            // Adding DAMT to parameter is NOT allowed (contravariant - strengthening precondition)
-            [ExpectedWarning("IL2092",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.SingleParameterBaseWithoutImplementationWith_(Type)",
-                "p", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.SingleParameterBaseWithoutImplementationWith_(Type)")]
+            [LogContains("ImplementationClass.SingleParameterBaseWithoutImplementationWith_")]
             public void SingleParameterBaseWithoutImplementationWith_(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 Type p)
@@ -596,24 +548,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
             // === Generic methods ===
-            // Generic parameters are invariant in C# - they must match exactly
-            [ExpectedWarning("IL2095",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.GenericInterfaceBaseWithoutImplementationWith_<T>()",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.GenericInterfaceBaseWithoutImplementationWith_<T>()")]
+            [LogContains("ImplementationClass.GenericInterfaceBaseWithoutImplementationWith_")]
             public void GenericInterfaceBaseWithoutImplementationWith_<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>() { }
 
-            // Removing DAMT from generic parameter is NOT allowed (invariant)
-            [ExpectedWarning("IL2095",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.GenericInterfaceBaseWithImplementationWithout<T>()",
-                "T", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.GenericInterfaceBaseWithImplementationWithout<T>()")]
+            [LogContains("ImplementationClass.GenericInterfaceBaseWithImplementationWithout")]
             public void GenericInterfaceBaseWithImplementationWithout<T>() { }
 
             // === Properties ===
-            // Property on return affects getter (covariant) and setter parameter (contravariant)
-            // Adding DAMT to property that has none: getter is OK (covariant), setter adds to param which is NOT OK (contravariant)
-            [ExpectedWarning("IL2092",
-                "value", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.ImplementationClass.PropertyInterfaceBaseWithoutImplementationWith.set",
-                "value", "Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBase.PropertyInterfaceBaseWithoutImplementationWith.set")]
+            [LogContains("ImplementationClass.PropertyInterfaceBaseWithoutImplementationWith.get")]
+            [LogContains("ImplementationClass.PropertyInterfaceBaseWithoutImplementationWith.set")]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             public Type PropertyInterfaceBaseWithoutImplementationWith { get; set; }
 
@@ -622,7 +565,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [LogDoesNotContain("ImplementationClass.RequiresUnreferencedCodeInterfaceBaseWithImplementationWith_")]
             [RequiresUnreferencedCode("")]
             public void RequiresUnreferencedCodeInterfaceBaseWithImplementationWith_() { }
-            // Adding [RUC] is NOT allowed (variance - strengthening precondition)
             [ExpectedWarning("IL2046", "ImplementationClass.RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_")]
             [RequiresUnreferencedCode("")]
             public void RequiresUnreferencedCodeInterfaceBaseWithoutImplementationWith_() { }
@@ -644,8 +586,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public virtual void RequiresUnreferencedCodeBaseWithoutInterfaceWith() { }
         }
 
-        // Interface has no DAMT on return, but class adds DAMT - now allowed (covariant)
-        // Interface has [RUC], but class removes it - now allowed (variance)
+        [ExpectedWarning("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
+        [LogContains(
+            "'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
+            "don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
+            "All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
         class DerivedWithInterfaceImplementedByBase : BaseImplementsInterfaceViaDerived, IBaseImplementedInterface
         {
         }
@@ -663,9 +608,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class ImplementationOfTwoInterfacesWithOneMethod : ITwoInterfacesImplementedByOneMethod_One, ITwoInterfacesImplementedByOneMethod_Two
         {
-            // Adding DAMT to return value is now allowed (covariant - strengthening postcondition)
-            [LogDoesNotContain("ITwoInterfacesImplementedByOneMethod_One.ReturnValueInterfaceWithoutImplementationWith")]
-            [LogDoesNotContain("ITwoInterfacesImplementedByOneMethod_Two.ReturnValueInterfaceWithoutImplementationWith")]
+            [LogContains("ITwoInterfacesImplementedByOneMethod_One.ReturnValueInterfaceWithoutImplementationWith")]
+            [LogContains("ITwoInterfacesImplementedByOneMethod_Two.ReturnValueInterfaceWithoutImplementationWith")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public virtual Type ReturnValueInterfaceWithoutImplementationWith() => null;
         }
@@ -695,12 +639,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
                 // So it doesn't matter that the annotations are not in-sync since the access will validate
                 // the annotations on the implementation method - it doesn't even see the base method in this case.
-                // With variance: removing from return is NOT allowed, removing from params IS allowed, but generic params are invariant
+                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 public static Type AbstractMethod<T>(Type type) => null;
 
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
+                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 public static Type VirtualMethod<T>(Type type) => null;
@@ -767,8 +712,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class ImplIDamOnNoneMismatch : IDamOnNone
             {
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                // With variance: adding to return is OK (covariant), adding to params/generics is NOT (contravariant)
                 [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type AbstractMethod
@@ -780,6 +725,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
                 // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
                 [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
                 [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type VirtualMethod

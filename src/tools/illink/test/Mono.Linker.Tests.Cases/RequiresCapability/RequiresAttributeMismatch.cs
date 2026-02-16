@@ -242,10 +242,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
-        // With variance: Removing Requires* attributes is now allowed (weakening precondition)
         class DerivedClassWithoutRequires : BaseClassWithRequires
         {
-            // Removing [RUC]/[RAF]/[RDC] is now allowed
+            [ExpectedWarning("IL2046", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
+            [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public override void VirtualMethod()
             {
             }
@@ -253,31 +254,36 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             private string name;
             public override string VirtualPropertyAnnotationInAccesor
             {
-                // Removing [RUC]/[RAF]/[RDC] is now allowed
+                [ExpectedWarning("IL2046", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+                [ExpectedWarning("IL3051", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
                 set { name = value; }
             }
 
             public override string VirtualPropertyAnnotationInProperty
             {
-                // Removing [RAF] is now allowed
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
 
             public override string VirtualPropertyAnnotationInPropertyAndAccessor
             {
-                // Removing [RUC]/[RAF] is now allowed
+                [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                // Removing [RAF] is now allowed
+                [ExpectedWarning("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 set;
             }
         }
 
-        // Mixed scenario - base has some Requires*, derived changes them
         class DerivedClassWithAllWarnings : BaseClassWithRequires
         {
-            // Base has [RUC]/[RAF]/[RDC], derived removes all - now allowed
+            [ExpectedWarning("IL2046", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()")]
+            [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualMethod()", "BaseClassWithRequires.VirtualMethod()", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
             public override void VirtualMethod()
             {
             }
@@ -287,9 +293,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [RequiresAssemblyFiles("Message")]
             public override string VirtualPropertyAnnotationInAccesor
             {
-                // Base getter has [RUC]/[RAF]/[RDC], derived removes [RUC]/[RDC] - now allowed
+                [ExpectedWarning("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
+                [ExpectedWarning("IL3051", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get { return name; }
-                // Base setter has nothing, derived adds [RUC]/[RAF] - NOT allowed
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInAccesor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.set")]
@@ -299,12 +305,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             public override string VirtualPropertyAnnotationInProperty
             {
-                // Base has [RAF] on property, derived getter adds [RUC] - NOT allowed
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInProperty.get", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.get")]
                 get;
-                // Base has [RAF] on property, derived setter adds [RUC] - NOT allowed
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInProperty.set", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty.set")]
@@ -313,9 +317,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
             public override string VirtualPropertyAnnotationInPropertyAndAccessor
             {
-                // Base getter has [RAF]/[RUC], derived removes them - now allowed
+                [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
+                [ExpectedWarning("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
                 get;
-                // Base setter has [RAF], derived adds [RUC] - NOT allowed
                 [RequiresAssemblyFiles("Message")]
                 [RequiresUnreferencedCode("Message")]
                 [ExpectedWarning("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.set", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.set")]

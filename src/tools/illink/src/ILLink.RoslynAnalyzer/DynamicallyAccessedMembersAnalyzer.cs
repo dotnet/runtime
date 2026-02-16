@@ -219,11 +219,7 @@ namespace ILLink.RoslynAnalyzer
         {
             var overrideMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(overrideMethod);
             var baseMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(baseMethod);
-
-            // Return values are covariant: override can add annotations (strengthen postcondition)
-            // but cannot remove annotations that the base declares.
-            // Valid if: (baseDAMT & overrideDAMT) == baseDAMT (override is superset of base)
-            if ((baseMethodReturnAnnotation & overrideMethodReturnAnnotation) != baseMethodReturnAnnotation)
+            if (overrideMethodReturnAnnotation != baseMethodReturnAnnotation)
             {
 
                 (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
@@ -243,15 +239,12 @@ namespace ILLink.RoslynAnalyzer
                     GetPrimaryLocation(returnOrigin.Locations), sourceLocation, DAMArgs?.ToImmutableDictionary(), overrideMethod.GetDisplayName(), baseMethod.GetDisplayName()));
             }
 
-            // Parameters are contravariant: override can remove annotations (weaken precondition)
-            // but cannot add annotations that the base doesn't declare.
-            // Valid if: (overrideDAMT & baseDAMT) == overrideDAMT (override is subset of base)
             foreach (var overrideParam in overrideMethod.GetMetadataParameters())
             {
                 var baseParam = baseMethod.GetParameter(overrideParam.Index);
                 var baseParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation(baseParam);
                 var overrideParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation(overrideParam);
-                if ((overrideParameterAnnotation & baseParameterAnnotation) != overrideParameterAnnotation)
+                if (overrideParameterAnnotation != baseParameterAnnotation)
                 {
                     (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
                         baseMethod, overrideParameterAnnotation, baseParameterAnnotation);
@@ -272,15 +265,14 @@ namespace ILLink.RoslynAnalyzer
                 }
             }
 
-            // Generic parameters are invariant in C# - they must match exactly
             for (int i = 0; i < overrideMethod.TypeParameters.Length; i++)
             {
-                var overrideTypeParameterAnnotation = overrideMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
-                var baseTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
-                if (overrideTypeParameterAnnotation != baseTypeParameterAnnotation)
+                var methodTypeParameterAnnotation = overrideMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
+                var overriddenMethodTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
+                if (methodTypeParameterAnnotation != overriddenMethodTypeParameterAnnotation)
                 {
 
-                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod, baseMethod, overrideTypeParameterAnnotation, baseTypeParameterAnnotation);
+                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
 
                     var attributableSymbol = attributableMethod.TypeParameters[i];
                     Location attributableSymbolLocation = GetPrimaryLocation(attributableSymbol.Locations);
@@ -300,13 +292,11 @@ namespace ILLink.RoslynAnalyzer
                 }
             }
 
-            // 'this' parameter is contravariant (like parameters): override can remove annotations
-            // but cannot add annotations that the base doesn't declare.
             if (!overrideMethod.IsStatic)
             {
                 var overrideMethodThisAnnotation = FlowAnnotations.GetMethodParameterAnnotation(new ParameterProxy(new(overrideMethod), (ParameterIndex)0));
                 var baseMethodThisAnnotation = FlowAnnotations.GetMethodParameterAnnotation(new ParameterProxy(new(baseMethod), (ParameterIndex)0));
-                if ((overrideMethodThisAnnotation & baseMethodThisAnnotation) != overrideMethodThisAnnotation)
+                if (overrideMethodThisAnnotation != baseMethodThisAnnotation)
                 {
                     var methodOrigin = origin ?? overrideMethod;
                     context.ReportDiagnostic(Diagnostic.Create(

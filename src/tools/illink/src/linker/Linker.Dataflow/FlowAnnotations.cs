@@ -575,28 +575,15 @@ namespace ILLink.Shared.TrimAnalysis
             GetAnnotations(method.DeclaringType).TryGetAnnotation(method, out var methodAnnotations);
             GetAnnotations(baseMethod.DeclaringType).TryGetAnnotation(baseMethod, out var baseMethodAnnotations);
 
-            // Return values are covariant: override can add annotations (strengthen postcondition)
-            // but cannot remove annotations that the base declares.
-            // Valid if: (baseDAMT & overrideDAMT) == baseDAMT (override is superset of base)
-            var baseReturnAnnotation = baseMethodAnnotations.ReturnParameterAnnotation;
-            var overrideReturnAnnotation = methodAnnotations.ReturnParameterAnnotation;
-            if ((baseReturnAnnotation & overrideReturnAnnotation) != baseReturnAnnotation)
+            if (methodAnnotations.ReturnParameterAnnotation != baseMethodAnnotations.ReturnParameterAnnotation)
                 LogValidationWarning(method.MethodReturnType, baseMethod.MethodReturnType, ov);
 
-            // Parameters are contravariant: override can remove annotations (weaken precondition)
-            // but cannot add annotations that the base doesn't declare.
-            // Valid if: (overrideDAMT & baseDAMT) == overrideDAMT (override is subset of base)
             if (methodAnnotations.ParameterAnnotations != null || baseMethodAnnotations.ParameterAnnotations != null)
             {
                 if (methodAnnotations.ParameterAnnotations == null)
-                {
-                    // Override has no annotations - this is always valid (removing annotations is allowed)
-                }
+                    ValidateMethodParametersHaveNoAnnotations(baseMethodAnnotations.ParameterAnnotations!, ov);
                 else if (baseMethodAnnotations.ParameterAnnotations == null)
-                {
-                    // Base has no annotations but override adds some - this is invalid
                     ValidateMethodParametersHaveNoAnnotations(methodAnnotations.ParameterAnnotations, ov);
-                }
                 else
                 {
                     if (methodAnnotations.ParameterAnnotations.Length != baseMethodAnnotations.ParameterAnnotations.Length)
@@ -604,10 +591,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                     for (int parameterIndex = 0; parameterIndex < methodAnnotations.ParameterAnnotations.Length; parameterIndex++)
                     {
-                        var baseAnnotation = baseMethodAnnotations.ParameterAnnotations[parameterIndex];
-                        var overrideAnnotation = methodAnnotations.ParameterAnnotations[parameterIndex];
-                        // Valid if override is a subset of base
-                        if ((overrideAnnotation & baseAnnotation) != overrideAnnotation)
+                        if (methodAnnotations.ParameterAnnotations[parameterIndex] != baseMethodAnnotations.ParameterAnnotations[parameterIndex])
                             LogValidationWarning(
                                 method.TryGetParameter((ParameterIndex)parameterIndex)?.GetCustomAttributeProvider()!,
                                 baseMethod.TryGetParameter((ParameterIndex)parameterIndex)?.GetCustomAttributeProvider()!,
@@ -616,7 +600,6 @@ namespace ILLink.Shared.TrimAnalysis
                 }
             }
 
-            // Generic parameters are invariant in C# - they must match exactly
             if (methodAnnotations.GenericParameterAnnotations != null || baseMethodAnnotations.GenericParameterAnnotations != null)
             {
                 if (methodAnnotations.GenericParameterAnnotations == null)
