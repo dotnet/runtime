@@ -283,7 +283,11 @@ namespace System
                 int fieldOffset = tuple.__GetFieldHelper(i, out MethodTable* fieldType);
                 object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, fieldOffset), fieldType);
 
-                if (i == numFields - 1 && fieldValue is IValueTupleInternal nested)
+                // The 8-tuple (ValueTuple<T1..T7, TRest>) stores nested tuples in its last field.
+                // When TRest is itself a ValueTuple, call ToStringEnd() to flatten the representation
+                // (e.g. (1, 2, 3, 4, 5, 6, 7, 8) instead of (1, 2, 3, 4, 5, 6, 7, (8))).
+                // Only the 8-tuple has exactly 8 fields, so this check is safe.
+                if (numFields == 8 && i == 7 && fieldValue is IValueTupleInternal nested)
                 {
                     sb.Append(nested.ToStringEnd());
                     return sb.ToString();
