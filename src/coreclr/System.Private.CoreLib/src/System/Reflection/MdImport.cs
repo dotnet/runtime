@@ -278,8 +278,9 @@ namespace System.Reflection
             }
             catch (TypeLoadException)
             {
-                // The user may have supplied a bad type name string causing this TypeLoadException
-                // Regardless, we return the bad type name
+                // The user may have supplied a bad type name string causing this TypeLoadException.
+                // Swallow the exception and leave SafeArrayUserDefinedSubType unset; the original
+                // type name remains in safeArrayUserDefinedTypeName for potential diagnostics.
                 Debug.Assert(safeArrayUserDefinedTypeName is not null);
             }
 

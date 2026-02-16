@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal((UnmanagedType)umanagedType, attribute.Value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SafeArrayParameter_ZeroLengthUserDefinedSubType_DoesNotThrow()
         {
             byte[] peBytes = BuildPEWithSafeArrayMarshalBlob();
@@ -42,15 +42,16 @@ namespace System.Runtime.InteropServices.Tests
             AssemblyLoadContext alc = new(nameof(SafeArrayParameter_ZeroLengthUserDefinedSubType_DoesNotThrow), isCollectible: true);
             try
             {
-                Assembly asm = alc.LoadFromStream(new MemoryStream(peBytes));
-                Type iface = asm.GetType("TestInterface");
-                MethodInfo method = iface.GetMethod("TestMethod");
+                using MemoryStream peStream = new(peBytes);
+                Assembly asm = alc.LoadFromStream(peStream);
+                Type iface = asm.GetType("TestInterface")!;
+                MethodInfo method = iface.GetMethod("TestMethod")!;
                 ParameterInfo param = method.GetParameters()[0];
 
                 // Must not throw TypeLoadException.
                 _ = param.GetCustomAttributes(false);
 
-                MarshalAsAttribute attr = (MarshalAsAttribute)Attribute.GetCustomAttribute(param, typeof(MarshalAsAttribute));
+                MarshalAsAttribute? attr = (MarshalAsAttribute?)Attribute.GetCustomAttribute(param, typeof(MarshalAsAttribute));
                 Assert.NotNull(attr);
                 Assert.Equal(UnmanagedType.SafeArray, attr.Value);
                 Assert.Null(attr.SafeArrayUserDefinedSubType);
@@ -88,6 +89,11 @@ namespace System.Runtime.InteropServices.Tests
 
             MetadataBuilder mdb = ab.GenerateMetadata(out BlobBuilder ilBlob, out _);
 
+            // This is the only parameter defined on the only method, so it
+            // occupies row 1 in the Param table. PersistedAssemblyBuilder
+            // emits parameters in definition order deterministically.
+            const int paramRowNumber = 1;
+
             // Blob bytes:
             //   0x1D  NATIVE_TYPE_SAFEARRAY
             //   0x09  VT_DISPATCH
@@ -101,7 +107,7 @@ namespace System.Runtime.InteropServices.Tests
             marshalBlob.WriteByte(0x58);
             marshalBlob.WriteByte(0x00);
             mdb.AddMarshallingDescriptor(
-                MetadataTokens.ParameterHandle(1),
+                MetadataTokens.ParameterHandle(paramRowNumber),
                 mdb.GetOrAddBlob(marshalBlob));
 
             ManagedPEBuilder pe = new(
