@@ -850,7 +850,10 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
 HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
 {
-    if (threadAddr == 0 || threadData == NULL)
+    if (threadData == NULL)
+        return E_POINTER;
+
+    if (threadAddr == 0)
         return E_INVALIDARG;
 
     SOSDacEnter();
