@@ -32,6 +32,8 @@ CHECK PEDecoder::CheckFormat() const
 #ifdef TARGET_BROWSER
     if (HasWebcilHeaders())
     {
+        CHECK(CheckWebcilHeaders());
+
         if (HasCorHeader())
         {
             CHECK(CheckCorHeader());
@@ -324,6 +326,26 @@ BOOL PEDecoder::HasWebcilHeaders() const
 
     RETURN TRUE;
 }
+
+CHECK PEDecoder::CheckWebcilHeaders() const
+{
+    CONTRACT_CHECK
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(HasContents());
+    }
+    CONTRACT_CHECK_END;
+
+    // HasWebcilHeaders() already performs full validation of the WebCIL
+    // header (magic, version, section count, section bounds, ordering,
+    // and non-overlap), so this CHECK method simply delegates to it.
+    CHECK(HasWebcilHeaders());
+
+    CHECK_OK;
+}
 #endif // TARGET_BROWSER
 
 CHECK PEDecoder::CheckNTHeaders() const
@@ -473,6 +495,31 @@ CHECK PEDecoder::CheckNTHeaders() const
     CHECK_OK;
 }
 
+CHECK PEDecoder::CheckHeaders() const
+{
+    CONTRACT_CHECK
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+        PRECONDITION(HasContents());
+    }
+    CONTRACT_CHECK_END;
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        CHECK(CheckWebcilHeaders());
+        CHECK_OK;
+    }
+#endif
+
+    CHECK(CheckNTHeaders());
+
+    CHECK_OK;
+}
+
 CHECK PEDecoder::CheckSection(COUNT_T previousAddressEnd, COUNT_T addressStart, COUNT_T addressSize,
                               COUNT_T previousOffsetEnd, COUNT_T offsetStart, COUNT_T offsetSize) const
 {
@@ -590,7 +637,7 @@ CHECK PEDecoder::CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags, 
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckPointer(pDir));
         NOTHROW;
         GC_NOTRIGGER;
@@ -621,24 +668,20 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
     }
     else
     {
+        IMAGE_SECTION_HEADER *section = RvaToSection(rva);
+
+        CHECK(section != NULL);
+
+        CHECK(CheckBounds(VAL32(section->VirtualAddress),
+                          (UINT)VAL32(section->Misc.VirtualSize),
+                          rva, size));
+        if(!IsMapped())
         {
-            IMAGE_SECTION_HEADER *section = RvaToSection(rva);
-
-            CHECK(section != NULL);
-
-            CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                              (UINT)VAL32(section->Misc.VirtualSize),
-                              rva, size));
-            if(!IsMapped())
-            {
-                CHECK(CheckBounds(VAL32(section->VirtualAddress), VAL32(section->SizeOfRawData), rva, size));
-            }
-
-            // For WebCIL, synthesized Characteristics is 0, so this check
-            // passes naturally (no PE section flags to violate).
-            if (forbiddenFlags!=0)
-                CHECK((section->Characteristics & VAL32(forbiddenFlags))==0);
+            CHECK(CheckBounds(VAL32(section->VirtualAddress), VAL32(section->SizeOfRawData), rva, size));
         }
+
+        if (forbiddenFlags!=0)
+            CHECK((section->Characteristics & VAL32(forbiddenFlags))==0);
     }
 
     CHECK_OK;
@@ -658,9 +701,7 @@ CHECK PEDecoder::CheckRva(RVA rva, IsNullOK ok) const
     if (rva == 0)
         CHECK_MSG(ok == NULL_OK, "Zero RVA illegal");
     else
-    {
         CHECK(RvaToSection(rva) != NULL);
-    }
 
     CHECK_OK;
 }
@@ -940,7 +981,7 @@ IMAGE_SECTION_HEADER *PEDecoder::OffsetToSection(COUNT_T fileOffset) const
     CONTRACT(IMAGE_SECTION_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
@@ -972,11 +1013,7 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-#ifdef TARGET_BROWSER
-        PRECONDITION(HasHeaders());
-#else
-        PRECONDITION(CheckNTHeaders());
-#endif
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckRva(rva, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -2506,7 +2543,7 @@ PTR_IMAGE_DEBUG_DIRECTORY PEDecoder::GetDebugDirectoryEntry(UINT index) const
     CONTRACT(PTR_IMAGE_DEBUG_DIRECTORY)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;

@@ -558,7 +558,7 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION((HasWebcilHeaders() || CheckDirectoryEntry(entry, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize, NULL_OK));
         NOTHROW;
@@ -646,7 +646,7 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         NOTHROW;
         GC_NOTRIGGER;
@@ -664,7 +664,7 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pS
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize));
         NOTHROW;
@@ -708,8 +708,6 @@ inline BOOL PEDecoder::HasCorHeader() const
     }
     CONTRACTL_END;
 
-    // HasDirectoryEntry already handles WebCIL via HasWebcilHeaders() check,
-    // so no separate WebCIL path is needed here.
     return HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_COMHEADER);
 }
 
@@ -734,11 +732,7 @@ inline COUNT_T PEDecoder::RvaToOffset(RVA rva) const
     CONTRACTL
     {
         INSTANCE_CHECK;
-#ifdef TARGET_BROWSER
-        PRECONDITION(HasHeaders());
-#else
-        PRECONDITION(CheckNTHeaders());
-#endif
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckRva(rva,NULL_OK));
         NOTHROW;
         CANNOT_TAKE_LOCK;
@@ -762,7 +756,7 @@ inline RVA PEDecoder::OffsetToRva(COUNT_T fileOffset) const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckOffset(fileOffset,NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -816,7 +810,7 @@ inline CHECK PEDecoder::CheckStrongNameSignature() const
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(HasCorHeader());
         PRECONDITION(HasStrongNameSignature());
         NOTHROW;
@@ -934,7 +928,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
     CONTRACT(IMAGE_COR20_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(HasCorHeader());
         NOTHROW;
         GC_NOTRIGGER;
@@ -1067,9 +1061,6 @@ inline IMAGE_COR20_HEADER *PEDecoder::FindCorHeader() const
     }
     CONTRACT_END;
 
-    // No WebCIL-specific path needed here: GetDirectoryEntryData already handles
-    // the WebCIL format via the HasWebcilHeaders() branch, routing through the
-    // WebcilHeader's pe_cli_header_rva/pe_cli_header_size fields.
     const IMAGE_COR20_HEADER * pCor=PTR_IMAGE_COR20_HEADER(GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_COMHEADER));
     RETURN ((IMAGE_COR20_HEADER*)pCor);
 }
