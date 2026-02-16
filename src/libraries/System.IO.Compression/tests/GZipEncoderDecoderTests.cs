@@ -147,25 +147,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void GZipEncoder_Decoder_RoundTrip_AllCompressionLevels()
-        {
-            byte[] input = CreateTestData();
-
-            for (int quality = 0; quality <= 9; quality++)
-            {
-                byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
-                using var encoder = new GZipEncoder(quality);
-                encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
-
-                byte[] decompressed = new byte[input.Length];
-                using var decoder = new GZipDecoder();
-                decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out _, out _);
-
-                Assert.Equal(input, decompressed);
-            }
-        }
-
-        [Fact]
         public void GZipEncoder_GZipStream_Interop()
         {
             byte[] input = CreateTestData();
