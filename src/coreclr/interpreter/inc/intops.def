@@ -7,6 +7,10 @@
 // we should add compact opcodes where all data is in uint16_t slots.
 
 OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_I1, "ret.i1", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_U1, "ret.u1", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_I2, "ret.i2", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_U2, "ret.u2", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
 
@@ -55,6 +59,8 @@ OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
 OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 5, 1, 2, InterpOpClassHandle)
 OPDEF(INTOP_LDELEMA_REF_GENERIC, "ldelema.ref.generic", 6, 1, 3, InterpOpGenericLookup)
+
+OPDEF(INTOP_CONV_NI, "conv.ni", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -131,8 +137,11 @@ OPDEF(INTOP_NOT_I8, "not.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CKFINITE_R4, "ckfinite.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CKFINITE_R8, "ckfinite.r8", 3, 1, 1, InterpOpNoArgs)
 
-OPDEF(INTOP_CONV_R_UN_I4, "conv.r.un.i4", 3, 1, 1, InterpOpNoArgs)
-OPDEF(INTOP_CONV_R_UN_I8, "conv.r.un.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_UN_I4, "conv.r4.un.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_UN_I8, "conv.r4.un.i8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_R8_UN_I4, "conv.r8.un.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R8_UN_I8, "conv.r8.un.i8", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_CONV_I1_I4, "conv.i1.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I1_I8, "conv.i1.i8", 3, 1, 1, InterpOpNoArgs)
@@ -157,6 +166,7 @@ OPDEF(INTOP_CONV_U2_R8, "conv.u2.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I4_R4, "conv.i4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I4_R8, "conv.i4.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_U4_U8_SAT, "conv.u4.u8.sat", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U4_R4, "conv.u4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U4_R8, "conv.u4.r8", 3, 1, 1, InterpOpNoArgs)
 
@@ -309,6 +319,8 @@ OPDEF(INTOP_SHL_I8, "shl.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SHR_I4, "shr.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SHR_I8, "shr.i8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_CZERO_I, "czero.i", 4, 1, 1, InterpOpNoArgs) // Set dvar to 1 if operand is non-zero otherwise 0 (produces a 32bit int)
+
 OPDEF(INTOP_CEQ_I4, "ceq.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CEQ_I8, "ceq.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CEQ_R4, "ceq.r4", 4, 1, 2, InterpOpNoArgs)
@@ -364,10 +376,10 @@ OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 // Calls
 OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_NULLCHECK, "call.nullcheck", 4, 1, 1, InterpOpMethodHandle)
-OPDEF(INTOP_CALLDELEGATE, "call.delegate", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLDELEGATE, "call.delegate", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLDELEGATE_TAIL, "call.delegate.tail", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI, "calli", 6, 1, 2, InterpOpLdPtr)
-OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLVIRT, "callvirt", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_PINVOKE, "call.pinvoke", 6, 1, 1, InterpOpMethodHandle) // inlined (no marshaling wrapper) pinvokes only
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_GENERIC, "newobj.generic", 6, 1, 2, InterpOpMethodHandle)
@@ -376,7 +388,7 @@ OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 // Tail calls
 OPDEF(INTOP_CALL_TAIL, "call.tail", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALLI_TAIL, "calli.tail", 6, 1, 2, InterpOpLdPtr)
-OPDEF(INTOP_CALLVIRT_TAIL, "callvirt.tail", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLVIRT_TAIL, "callvirt.tail", 5, 1, 1, InterpOpMethodHandle)
 
 // The following helper call instructions exist in 2 variants, one for normal methods, and one for cases where a shared generic lookup is needed.
 // In the case where a shared generic lookup is needed an extra argument is passed as an svar, which is a pointer to the generic context.
@@ -416,6 +428,7 @@ OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_HALT, "halt", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
 OPDEF(INTOP_RETHROW, "rethrow", 1, 0, 0, InterpOpInt)
@@ -426,6 +439,17 @@ OPDEF(INTOP_LOAD_EXCEPTION, "load.exception", 2, 1, 0, InterpOpNoArgs)
 OPDEF(INTOP_THROW_PNSE, "throw.pnse", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_SET_CONTINUATION_NULL, "set.continuation.null", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_SET_CONTINUATION, "set.continuation", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_GET_CONTINUATION, "get.continuation", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_HANDLE_CONTINUATION, "handle.continuation", 4, 1, 0, InterpOpHandleContinuation)
+OPDEF(INTOP_HANDLE_CONTINUATION_GENERIC, "handle.continuation.generic", 5, 1, 1, InterpOpHandleContinuation)
+OPDEF(INTOP_HANDLE_CONTINUATION_SUSPEND, "handle.continuation.suspend", 3, 0, 1, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_HANDLE_CONTINUATION_RESUME, "handle.continuation.resume", 2, 0, 0, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_CHECK_FOR_CONTINUATION, "check.for.continuation", 3, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_CAPTURE_CONTEXT_ON_SUSPEND, "capture.context.on.suspend", 4, 1, 1, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_RESTORE_CONTEXTS_ON_SUSPEND, "restore.contexts.on.suspend", 6, 1, 3, InterpOpHandleContinuationPt2)
 
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_U1, "compare.exchange.u1", 5, 1, 3, InterpOpNoArgs)

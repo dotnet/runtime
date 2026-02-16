@@ -858,6 +858,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
@@ -872,7 +873,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_MemCpy                    = 0x41,
 
     // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
+    READYTORUN_HELPER_GetString                 = 0x50, // Unused since READYTORUN_MAJOR_VERSION 17.0
 
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // Unused since READYTORUN_MAJOR_VERSION 10.0

@@ -135,8 +135,13 @@ class AsmOffsets
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
 #if FEATURE_INTERPRETER
+#if TARGET_UNIX
     public const int SIZEOF__StackFrameIterator = 0x168;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x160;
+#else // TARGET_UNIX
+    public const int SIZEOF__StackFrameIterator = 0x170;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#endif // TARGET_UNIX
 #else
     public const int SIZEOF__StackFrameIterator = 0x148;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x140;
@@ -204,9 +209,8 @@ class AsmOffsets
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x108;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xb8;
 #elif TARGET_WASM
-    // offset to dummy field
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x04;
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x04;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x10;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x0c;
 #endif
 
     // Offsets / sizes that are different in 64 / 32 bit mode
@@ -280,6 +284,9 @@ class AsmOffsets
 #elif TARGET_LOONGARCH64
     static_assert(offsetof(CONTEXT, Pc) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
     static_assert(offsetof(CONTEXT, Fp) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
+#elif TARGET_WASM
+    static_assert(offsetof(CONTEXT, InterpreterIP) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
+    static_assert(offsetof(CONTEXT, InterpreterFP) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
 #endif
     static_assert(sizeof(REGDISPLAY) == AsmOffsets::SIZEOF__REGDISPLAY);
     static_assert(offsetof(REGDISPLAY, SP) == AsmOffsets::OFFSETOF__REGDISPLAY__SP);

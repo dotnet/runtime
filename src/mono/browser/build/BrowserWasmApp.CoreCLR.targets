@@ -1,0 +1,9 @@
+<Project>
+  <!-- TODO-WASM: These targets are invoked by public WasmSDK -->
+  <Target Name="WasmBuildApp">
+    <Message Importance="high" Text="WasmBuildApp for CoreCLR not implemented" />
+  </Target>
+  <Target Name="WasmTriggerPublishApp">
+    <Message Importance="high" Text="WasmTriggerPublishApp for CoreCLR not implemented" />
+  </Target>
+</Project>

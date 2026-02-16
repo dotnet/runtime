@@ -148,7 +148,11 @@ namespace System.Linq
             {
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
                 {
-                    sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    if (sourceIndex < sourceSpan.Length)
+                    {
+                        sourceSpan.Slice(sourceIndex, destination.Length).CopyTo(destination);
+                    }
+
                     return;
                 }
 
@@ -441,8 +445,14 @@ namespace System.Linq
             {
                 if (_source is Iterator<TSource> iterator &&
                     iterator.GetCount(onlyIfCheap: true) is int count &&
-                    count > _minIndexInclusive)
+                    count >= 0)
                 {
+                    if (count <= _minIndexInclusive)
+                    {
+                        found = false;
+                        return default;
+                    }
+
                     // If there's no upper bound, or if there are fewer items in the list
                     // than the upper bound allows, just return the last element of the list.
                     // Otherwise, get the element at the upper bound.

@@ -129,13 +129,13 @@ static bool UpdateCacheEntryAtomically(InterfaceDispatchCacheEntry *pEntry,
 // supplied (in the case where another thread raced with us for the update and won). In any case, if the
 // returned pointer is non-NULL it represents a cache that should be scheduled for release.
 static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * pCell,
-                                                       void * pStub,
+                                                       PCODE pStub,
                                                        uintptr_t newCacheValue)
 {
     static_assert(offsetof(InterfaceDispatchCell, m_pStub) == 0);
     static_assert(offsetof(InterfaceDispatchCell, m_pCache) == sizeof(void*));
 
-    uintptr_t oldCacheValue = (uintptr_t)UpdatePointerPairAtomically(pCell, pStub, (void*)newCacheValue, false);
+    uintptr_t oldCacheValue = (uintptr_t)UpdatePointerPairAtomically(pCell, (void*)pStub, (void*)newCacheValue, false);
 
     if (InterfaceDispatchCell::IsCache(oldCacheValue))
     {
@@ -204,14 +204,14 @@ extern "C" void RhpVTableOffsetDispatch();
 
 typedef void (*InterfaceDispatchStub)();
 
-static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
-    (void *)&RhpInterfaceDispatch1,
-    (void *)&RhpInterfaceDispatch2,
-    (void *)&RhpInterfaceDispatch4,
-    (void *)&RhpInterfaceDispatch8,
-    (void *)&RhpInterfaceDispatch16,
-    (void *)&RhpInterfaceDispatch32,
-    (void *)&RhpInterfaceDispatch64,
+static const PCODE g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
+    (PCODE)&RhpInterfaceDispatch1,
+    (PCODE)&RhpInterfaceDispatch2,
+    (PCODE)&RhpInterfaceDispatch4,
+    (PCODE)&RhpInterfaceDispatch8,
+    (PCODE)&RhpInterfaceDispatch16,
+    (PCODE)&RhpInterfaceDispatch32,
+    (PCODE)&RhpInterfaceDispatch64,
 };
 
 // Map a cache size into a linear index.
@@ -241,12 +241,12 @@ static uint32_t CacheSizeToIndex(uint32_t cCacheEntries)
 // Allocates and initializes new cache of the given size. If given a previous version of the cache (guaranteed
 // to be smaller) it will also pre-populate the new cache with the contents of the old. Additionally the
 // address of the interface dispatch stub associated with this size of cache is returned.
-static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * pExistingCache, const DispatchCellInfo *pNewCellInfo, void ** ppStub)
+static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * pExistingCache, const DispatchCellInfo *pNewCellInfo, PCODE * ppStub)
 {
 #ifndef FEATURE_NATIVEAOT
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
-        *ppStub = (void *)&RhpVTableOffsetDispatch;
+        *ppStub = (PCODE)&RhpVTableOffsetDispatch;
         ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->GetVTableOffset()));
         return pNewCellInfo->GetVTableOffset();
     }
@@ -455,7 +455,7 @@ PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, P
     }
 
     uint32_t cNewCacheEntries = cOldCacheEntries ? cOldCacheEntries * 2 : 1;
-    void *pStub;
+    PCODE pStub;
     uintptr_t newCacheValue = AllocateCache(cNewCacheEntries, pCache, pNewCellInfo, &pStub);
     if (newCacheValue == 0)
     {

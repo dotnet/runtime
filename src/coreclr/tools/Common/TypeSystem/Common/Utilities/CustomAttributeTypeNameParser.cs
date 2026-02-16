@@ -179,7 +179,7 @@ namespace Internal.TypeSystem
                     TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
-                    return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
+                    return ((MetadataType)type).GetNestedType(System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)));
                 }
 
                 if (_canonGenericResolver != null)

@@ -155,7 +155,7 @@ namespace System.Runtime.CompilerServices
             [NotNull] ref Task<TResult>? taskField)
             where TStateMachine : IAsyncStateMachine
         {
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForSuspension(Thread.CurrentThread);
 
             IAsyncStateMachineBox result;
 
@@ -360,7 +360,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 ExecutionContext? context = Context;
-                if (context == null)
+                if (context == ExecutionContext.DefaultFlowSuppressed)
                 {
                     Debug.Assert(StateMachine != null);
                     StateMachine.MoveNext();

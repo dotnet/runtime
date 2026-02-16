@@ -277,16 +277,10 @@ namespace System.Diagnostics.Tracing
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
         [FeatureSwitchDefinition("System.Diagnostics.Tracing.EventSource.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
 
         [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsMeterSupported { get; } = InitializeIsMeterSupported();
-
-        private static bool InitializeIsMeterSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsMeterSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
 #if FEATURE_EVENTSOURCE_XPLAT
 #pragma warning disable CA1823 // field is used to keep listener alive
@@ -460,7 +454,7 @@ namespace System.Diagnostics.Tracing
         {
             if (!IsSupported)
             {
-                return Array.Empty<EventSource>();
+                return [];
             }
 
             var ret = new List<EventSource>();
@@ -1698,18 +1692,13 @@ namespace System.Diagnostics.Tracing
                     etwProvider = new OverrideEventProvider(eventSourceFactory, EventProviderType.ETW);
                     etwProvider.Register(eventSourceGuid, eventSourceName);
     #if TARGET_WINDOWS
-                    // API available on OS >= Win 8 and patched Win 7.
-                    // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                    if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
+                    var providerMetadata = ProviderMetadata;
+                    fixed (byte* pMetadata = providerMetadata)
                     {
-                        var providerMetadata = ProviderMetadata;
-                        fixed (byte* pMetadata = providerMetadata)
-                        {
-                            etwProvider.SetInformation(
-                                Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
-                                pMetadata,
-                                (uint)providerMetadata.Length);
-                        }
+                        etwProvider.SetInformation(
+                            Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
+                            pMetadata,
+                            (uint)providerMetadata.Length);
                     }
     #endif // TARGET_WINDOWS
                 }
@@ -3925,6 +3914,21 @@ namespace System.Diagnostics.Tracing
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        private static unsafe void InitializeDefaultEventSources(Exception* pException)
+        {
+            try
+            {
+                InitializeDefaultEventSources();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 #endregion
     }
 
@@ -5468,7 +5472,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return Array.Empty<ulong>();
+                return [];
             }
 
             // We create an array indexed by the channel id for fast look up.
@@ -5637,7 +5641,7 @@ namespace System.Diagnostics.Tracing
         public byte[] CreateManifest()
         {
             string str = CreateManifestString();
-            return (str != "") ? Encoding.UTF8.GetBytes(str) : Array.Empty<byte>();
+            return (str != "") ? Encoding.UTF8.GetBytes(str) : [];
         }
 
         public IList<string> Errors => errors;

@@ -333,6 +333,8 @@ public:
 
 class WasmClassifier
 {
+    unsigned m_localIndex = 0;
+
 public:
     WasmClassifier(const ClassifierInfo& info);
 
@@ -340,6 +342,8 @@ public:
     {
         return 0;
     }
+
+    static var_types ToJitType(CorInfoWasmType wasmType);
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,

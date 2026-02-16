@@ -1980,7 +1980,11 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
                 pMethod,
                 nativeCodeVersion.GetVersionId()));
 
-        #ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_INTERPRETER
+            // When we hit the Precode that should fixup any issues with an unset interpreter code pointer. This is notably most important in ReJIT scenarios
+            pMethod->ClearInterpreterCodePointer();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
             bool wasSet = CallCountingManager::SetCodeEntryPoint(nativeCodeVersion, pCode, false, nullptr);
             _ASSERTE(wasSet);
         #else

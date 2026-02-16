@@ -7,6 +7,14 @@
 #endif
 
 // clang-format off
+#ifdef TARGET_WASM32
+#define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
+#else
+#error NYI: WASM64
+#endif
+
+#define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet
+
 #define CPU_LOAD_STORE_ARCH      1
 #define CPU_HAS_FP_SUPPORT       1
 #define CPU_HAS_BYTE_REGS        0
@@ -40,7 +48,8 @@
 
 // TODO-WASM-CQ: measure if "CSE_CONSTS" is beneficial.
 #define CSE_CONSTS               1       // Enable if we want to CSE constants
-#define EMIT_TRACK_STACK_DEPTH   1       // TODO-WASM: set to 0.
+#define LOWER_DECOMPOSE_LONGS    0       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+#define EMIT_TRACK_STACK_DEPTH   0       // No need to track arg pushes/pops
 #define EMIT_GENERATE_GCINFO     0       // Codegen and emit not responsible for GC liveness tracking and GCInfo generation
 
 // Since we don't have a fixed register set on WASM, we set most of the following register defines to 'none'-like values.
@@ -82,18 +91,27 @@
 #define REG_VAR_ORDER
 #define REG_VAR_ORDER_FLT
 
-// The defines below affect CSE heuristics, so we need to give them some 'sensible' values.
-#define CNT_CALLEE_SAVED        (8)
-#define CNT_CALLEE_TRASH        (8)
-#define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED)
+// The defines below that affect CSE heuristics are given 'average native target' values.
+#define CNT_CALLEE_SAVED          (0)
+#define CNT_CALLEE_SAVED_FOR_CSE  (8)
+#define CNT_CALLEE_TRASH          (0)
+#define CNT_CALLEE_TRASH_FOR_CSE  (8)
+#define CNT_CALLEE_ENREG          (CNT_CALLEE_SAVED)
+#define CNT_CALLEE_ENREG_FOR_CSE  (CNT_CALLEE_SAVED_FOR_CSE)
 
-#define CNT_CALLEE_SAVED_FLOAT  (10)
-#define CNT_CALLEE_TRASH_FLOAT  (10)
-#define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+#define CNT_CALLEE_SAVED_FLOAT          (0)
+#define CNT_CALLEE_SAVED_FLOAT_FOR_CSE  (10)
+#define CNT_CALLEE_TRASH_FLOAT          (0)
+#define CNT_CALLEE_TRASH_FLOAT_FOR_CSE  (10)
+#define CNT_CALLEE_ENREG_FLOAT          (CNT_CALLEE_SAVED_FLOAT)
+#define CNT_CALLEE_ENREG_FLOAT_FOR_CSE  (CNT_CALLEE_SAVED_FLOAT_FOR_CSE)
 
-#define CNT_CALLEE_SAVED_MASK   (0)
-#define CNT_CALLEE_TRASH_MASK   (0)
-#define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
+#define CNT_CALLEE_SAVED_MASK          (0)
+#define CNT_CALLEE_SAVED_MASK_FOR_CSE  (0)
+#define CNT_CALLEE_TRASH_MASK          (0)
+#define CNT_CALLEE_TRASH_MASK_FOR_CSE  (0)
+#define CNT_CALLEE_ENREG_MASK          (CNT_CALLEE_SAVED_MASK)
+#define CNT_CALLEE_ENREG_MASK_FOR_CSE  (CNT_CALLEE_SAVED_MASK_FOR_CSE)
 
 #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
 #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -244,41 +262,4 @@
 
 // clang-format on
 
-// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
-// about the registers.
-
-inline bool genIsValidReg(regNumber reg)
-{
-    NYI_WASM("genIsValidReg");
-    return false;
-}
-
-inline bool genIsValidIntReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntReg");
-    return false;
-}
-
-inline bool genIsValidIntOrFakeReg(regNumber reg)
-{
-    NYI_WASM("genIsValidIntOrFakeReg");
-    return false;
-}
-
-inline bool genIsValidFloatReg(regNumber reg)
-{
-    NYI_WASM("genIsValidFloatReg");
-    return false;
-}
-
-inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-inline bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
-}
+#include "registeropswasm.h"

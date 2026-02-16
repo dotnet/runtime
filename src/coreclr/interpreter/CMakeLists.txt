@@ -20,6 +20,10 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
   )
+  list(APPEND INTERPRETER_SOURCES
+    Native.rc
+  )
+  add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
 endif()
 
 if(CLR_CMAKE_HOST_WIN32)

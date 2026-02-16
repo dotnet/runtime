@@ -13,6 +13,10 @@
 #include <pinvoke_override.hpp>
 #endif // TARGET_WASM
 
+#ifdef TARGET_BROWSER
+#include <emscripten/emscripten.h>
+#endif // TARGET_BROWSER
+
 #include <fstream>
 
 #if defined(TARGET_UNIX)
@@ -129,9 +133,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };
@@ -363,6 +365,9 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     return false;
 }
 
+extern "C" int corerun_shutdown(int exit_code);
+static pal::mod_t coreclr_mod;
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -460,7 +465,6 @@ static int run(const configuration& config)
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
-    pal::mod_t coreclr_mod;
     if (!pal::try_load_coreclr(core_root, coreclr_mod))
     {
         return -1;
@@ -603,9 +607,28 @@ static int run(const configuration& config)
         actions.after_execute_assembly();
     }
 
-#if !defined(TARGET_BROWSER)
+#ifdef TARGET_BROWSER
+    // in NodeJS/Browser this is not really end of the process, JS keeps running.
+    // We want to keep the CoreCLR runtime alive to be able to process async work
+    // The NodeJS process is kept alive by pending async work via safeSetTimeout() -> runtimeKeepalivePush()
+    // The actual exit code would be set by SystemJS_ResolveMainPromise if the managed Main() is async.
+    // Or in Module.onExit handler when  managed Main() is synchronous.
+    return 0;
+#else // TARGET_BROWSER
+    return corerun_shutdown(exit_code);
+#endif // TARGET_BROWSER
+}
+
+extern "C" int corerun_shutdown(int exit_code)
+{
+    coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
+    if (!try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
+    {
+        return -1;
+    }
+
     int latched_exit_code = 0;
-    result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
+    int result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
     if (FAILED(result))
     {
         pal::fprintf(stderr, W("coreclr_shutdown_2 failed - Error: 0x%08x\n"), result);
@@ -618,10 +641,6 @@ static int run(const configuration& config)
     ::free((void*)s_core_libs_path);
     ::free((void*)s_core_root_path);
     return exit_code;
-#else // TARGET_BROWSER
-    // In browser we don't shutdown the runtime here as we want to keep it alive
-    return 0;
-#endif // TARGET_BROWSER
 }
 
 // Display the command line options

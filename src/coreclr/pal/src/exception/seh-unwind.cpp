@@ -692,6 +692,17 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
         // happened in the first instruction of a function.
         CONTEXTSetPC(context, curPc + 1);
     }
+#ifndef UNW_VERSION // This is LLVM libunwind
+    else
+    {
+        // LLVM libunwind doesn't move the current PC back by one when unwinding from
+        // a non-hardware exception frame, unlike the HP libunwind implementation.
+        // So we compensate it here to have consistent behavior across all platforms.
+        // That allows proper unwinding in case a function ends with a call and the
+        // address after the call doesn't belong to the same function as the call.
+        CONTEXTSetPC(context, curPc - 1);
+    }
+#endif // !UNW_VERSION
 
 #if !UNWIND_CONTEXT_IS_UCONTEXT_T
 // The unw_getcontext is defined in the libunwind headers for ARM as inline assembly with
@@ -935,11 +946,14 @@ RaiseException(IN DWORD dwExceptionCode,
 
     // Capture the context of RaiseException.
     ZeroMemory(contextRecord, sizeof(CONTEXT));
+    // WASM-TODO: reconsider this
+#ifndef TARGET_WASM
     contextRecord->ContextFlags = CONTEXT_FULL;
     CONTEXT_CaptureContext(contextRecord);
 
     // We have to unwind one level to get the actual context user code could be resumed at.
     PAL_VirtualUnwind(contextRecord, NULL);
+#endif // !TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 

@@ -35,7 +35,9 @@ namespace System.Threading
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
-        internal static bool YieldFromDispatchLoop => true;
+#pragma warning disable IDE0060 // Remove unused parameter
+        internal static bool YieldFromDispatchLoop(int currentTickCount) => true;
+#pragma warning restore IDE0060
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -77,7 +79,8 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-        internal static unsafe void RequestWorkerThread()
+        [DynamicDependency("BackgroundJobHandler")] // https://github.com/dotnet/runtime/issues/101434
+        internal static unsafe void EnsureWorkerRequested()
         {
             if (_callbackQueued)
                 return;
@@ -99,10 +102,10 @@ namespace System.Threading
         {
         }
 
-        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode? GetOrCreateThreadLocalCompletionCountNode() => null;
 
 #pragma warning disable IDE0060
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode, int currentTimeMs)
         {
             return true;
         }

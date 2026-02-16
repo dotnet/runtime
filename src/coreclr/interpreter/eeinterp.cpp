@@ -85,8 +85,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#ifdef TARGET_WASM
-        // interpret everything on wasm
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
+        // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
         // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule
@@ -106,32 +106,52 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        InterpCompiler compiler(compHnd, methodInfo);
-        InterpMethod *pMethod = compiler.CompileMethod();
-        int32_t IRCodeSize = 0;
-        int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
+        InterpreterRetryData retryData;
 
-        uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
-        uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        while (true)
+        {
+            retryData.StartCompilationAttempt();
+            InterpCompiler compiler(compHnd, methodInfo, &retryData);
+            InterpMethod *pMethod = compiler.CompileMethod();
+            if (pMethod == NULL)
+            {
+                assert(retryData.NeedsRetry());
+                continue;
+            }
 
-        AllocMemArgs args {};
-        args.hotCodeSize = sizeOfCode;
-        args.coldCodeSize = 0;
-        args.roDataSize = 0;
-        args.xcptnsCount = 0;
-        args.flag = CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN;
-        compHnd->allocMem(&args);
+            // Once we reach here we will not attempt to retry again.
+            assert(!retryData.NeedsRetry());
 
-        // We store first the InterpMethod pointer as the code header, followed by the actual code
-        *(InterpMethod**)args.hotCodeBlockRW = pMethod;
-        memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+            int32_t IRCodeSize = 0;
+            int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
-        *entryAddress = (uint8_t*)args.hotCodeBlock;
-        *nativeSizeOfCode = sizeOfCode;
+            uint32_t sizeOfCode = sizeof(InterpMethod*) + IRCodeSize * sizeof(int32_t);
+            uint8_t unwindInfo[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-        // We can't do this until we've called allocMem
-        compiler.BuildGCInfo(pMethod);
-        compiler.BuildEHInfo();
+            AllocMemChunk codeChunk {};
+            codeChunk.alignment = 1;
+            codeChunk.size = sizeOfCode;
+            codeChunk.flags = CORJIT_ALLOCMEM_HOT_CODE;
+
+            AllocMemArgs args {};
+            args.chunks = &codeChunk;
+            args.chunksCount = 1;
+            args.xcptnsCount = 0;
+            compHnd->allocMem(&args);
+
+            // We store first the InterpMethod pointer as the code header, followed by the actual code
+            *(InterpMethod**)codeChunk.blockRW = pMethod;
+            memcpy ((uint8_t*)codeChunk.blockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
+
+            compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)codeChunk.block);
+            *entryAddress = (uint8_t*)codeChunk.block;
+            *nativeSizeOfCode = sizeOfCode;
+
+            // We can't do this until we've called allocMem
+            compiler.BuildGCInfo(pMethod);
+            compiler.BuildEHInfo();
+            break;
+        }
     }
     catch(const InterpException& e)
     {
@@ -168,6 +188,13 @@ INTERPRETER_NORETURN void BADCODE(const char* message)
     if (IsInterpDumpActive())
         printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_BADCODE);
+}
+
+INTERPRETER_NORETURN void SKIPCODE(const char* message)
+{
+    if (IsInterpDumpActive())
+        printf("Skip during interpreter method compilation: %s\n", message ? message : "unknown error");
+    throw InterpException(message, CORJIT_SKIPPED);
 }
 
 INTERPRETER_NORETURN void NOMEM()

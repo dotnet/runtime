@@ -186,6 +186,17 @@ struct VNFuncApp
     unsigned  m_arity;
     ValueNum* m_args;
 
+    bool FuncIs(VNFunc func) const
+    {
+        return m_func == func;
+    }
+
+    template <typename... T>
+    bool FuncIs(VNFunc func, T... rest) const
+    {
+        return FuncIs(func) || FuncIs(rest...);
+    }
+
     bool Equals(const VNFuncApp& funcApp)
     {
         if (m_func != funcApp.m_func)
@@ -274,7 +285,7 @@ public:
     };
 
 private:
-    Compiler* m_pComp;
+    Compiler* m_compiler;
 
     // For allocations.  (Other things?)
     CompAllocator m_alloc;
@@ -615,7 +626,7 @@ private:
         toVisit.Push(vn);
 
         SmallValueNumSet visited;
-        visited.Add(m_pComp, vn);
+        visited.Add(m_compiler, vn);
         while (toVisit.Height() > 0)
         {
             ValueNum vnToVisit = toVisit.Pop();
@@ -628,7 +639,7 @@ private:
                 for (unsigned ssaArgNum = 0; ssaArgNum < phiDef.NumArgs; ssaArgNum++)
                 {
                     ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
-                    if (visited.Add(m_pComp, childVN))
+                    if (visited.Add(m_compiler, childVN))
                     {
                         toVisit.Push(childVN);
                     }
@@ -701,7 +712,7 @@ public:
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
 
     // Returns if a value number represents NaN in all elements
     bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);
@@ -877,7 +888,7 @@ public:
 
     unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
 
-    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, unsigned* pSize);
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, ValueSize* pSize);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
@@ -980,28 +991,28 @@ public:
 
     ValueNum VNForLoad(ValueNumKind vnk,
                        ValueNum     locationValue,
-                       unsigned     locationSize,
+                       ValueSize    locationSize,
                        var_types    loadType,
                        ssize_t      offset,
-                       unsigned     loadSize);
+                       ValueSize    loadSize);
 
     ValueNumPair VNPairForLoad(
-        ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize);
+        ValueNumPair locationValue, ValueSize locationSize, var_types loadType, ssize_t offset, ValueSize loadSize);
 
     ValueNum VNForStore(
-        ValueNum locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNum value);
+        ValueNum locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNum value);
 
     ValueNumPair VNPairForStore(
-        ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
+        ValueNumPair locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNumPair value);
 
-    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
+    static bool LoadStoreIsEntire(ValueSize locationSize, ssize_t offset, ValueSize indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }
 
-    ValueNum VNForLoadStoreBitCast(ValueNum value, var_types indType, unsigned indSize);
+    ValueNum VNForLoadStoreBitCast(ValueNum value, var_types indType, ValueSize indSize);
 
-    ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize);
+    ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, ValueSize indSize);
 
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,
@@ -1017,13 +1028,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+    ValueNum EncodeBitCastType(var_types castToType, ValueSize size);
 
     var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, ValueSize size);
 
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, ValueSize size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
@@ -1088,70 +1099,6 @@ public:
         }
     };
 
-    struct CompareCheckedBoundArithInfo
-    {
-        // (vnBound - 1) > vnOp
-        // (vnBound arrOper arrOp) cmpOper cmpOp
-        ValueNum vnBound;
-        unsigned arrOper;
-        ValueNum arrOp;
-        bool     arrOpLHS; // arrOp is on the left side of cmpOp expression
-        unsigned cmpOper;
-        ValueNum cmpOp;
-        CompareCheckedBoundArithInfo()
-            : vnBound(NoVN)
-            , arrOper(GT_NONE)
-            , arrOp(NoVN)
-            , arrOpLHS(false)
-            , cmpOper(GT_NONE)
-            , cmpOp(NoVN)
-        {
-        }
-#ifdef DEBUG
-        void dump(ValueNumStore* vnStore)
-        {
-            vnStore->vnDump(vnStore->m_pComp, cmpOp);
-            printf(" ");
-            printf(vnStore->VNFuncName((VNFunc)cmpOper));
-            printf(" ");
-            vnStore->vnDump(vnStore->m_pComp, vnBound);
-            if (arrOper != GT_NONE)
-            {
-                printf(vnStore->VNFuncName((VNFunc)arrOper));
-                vnStore->vnDump(vnStore->m_pComp, arrOp);
-            }
-        }
-#endif
-    };
-
-    struct ConstantBoundInfo
-    {
-        // 100 > vnOp
-        int      constVal;
-        unsigned cmpOper;
-        ValueNum cmpOpVN;
-        bool     isUnsigned;
-
-        ConstantBoundInfo()
-            : constVal(0)
-            , cmpOper(GT_NONE)
-            , cmpOpVN(NoVN)
-            , isUnsigned(false)
-        {
-        }
-
-#ifdef DEBUG
-        void dump(ValueNumStore* vnStore)
-        {
-            vnStore->vnDump(vnStore->m_pComp, cmpOpVN);
-            printf(" ");
-            printf(vnStore->VNFuncName((VNFunc)cmpOper));
-            printf(" ");
-            printf("%d", constVal);
-        }
-#endif
-    };
-
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
@@ -1167,35 +1114,12 @@ public:
     // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
-    // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
-    bool IsVNConstantBound(ValueNum vn);
-
-    // If "vn" is of the form "(uint)var relop cns" for any relop except for == and !=
-    bool IsVNConstantBoundUnsigned(ValueNum vn);
-
-    // If "vn" is constant bound, then populate the "info" fields for constVal, cmpOp, cmpOper.
-    void GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info);
-
     // If "vn" is of the form "(uint)var < (uint)len" (or equivalent) return true.
     bool IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info);
 
-    // If "vn" is of the form "var < len" or "len <= var" return true.
-    bool IsVNCompareCheckedBound(ValueNum vn);
-
-    // If "vn" is checked bound, then populate the "info" fields for the boundVn, cmpOp, cmpOper.
-    void GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info);
-
-    // If "vn" is of the form "len +/- var" return true.
-    bool IsVNCheckedBoundArith(ValueNum vn);
-
-    // If "vn" is checked bound arith, then populate the "info" fields for arrOper, arrVn, arrOp.
-    void GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
-
-    // If "vn" is of the form "var < len +/- k" return true.
-    bool IsVNCompareCheckedBoundArith(ValueNum vn);
-
-    // If "vn" is checked bound arith, then populate the "info" fields for cmpOp, cmpOper.
-    void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
+    // If "vn" is of the form "len + cns" return true.
+    // NOTE: it accepts "cns + len" and "len - cns" as well ("len - cns" is treated as "len + (-cns)").
+    bool IsVNCheckedBoundAddConst(ValueNum vn, ValueNum* checkedBndVN, int* addCns);
 
     // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
     GenTreeFlags GetHandleFlags(ValueNum vn);
