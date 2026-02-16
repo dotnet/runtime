@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
+import { dotnetLogger, Module, dotnetBrowserUtilsExports, dotnetRuntimeExports, dotnetLoaderExports } from "./cross-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, globalThisAny } from "./per-module";
 
 export const runtimeState = {
+    creatingRuntime: false,
+    nativeReady: false,
+    dotnetReady: false,
     exitCode: undefined as number | undefined,
     exitReason: undefined as any,
-    runtimeReady: false,
     originalOnAbort: undefined as ((reason: any, extraJson?: string) => void) | undefined,
     originalOnExit: undefined as ((code: number) => void) | undefined,
     onExitListeners: [] as OnExitListener[],
@@ -19,7 +21,7 @@ export function isExited() {
 }
 
 export function isRuntimeRunning() {
-    return runtimeState.runtimeReady && !isExited();
+    return runtimeState.dotnetReady && !isExited();
 }
 
 export function addOnExitListener(cb: OnExitListener) {
@@ -102,28 +104,33 @@ export function exit(exitCode: number, reason: any): void {
     reason.silent = true;
     let shouldQuitNow = true;
 
-    if (!alreadyExisted) {
-        runtimeState.exitCode = exitCode;
-        if (!runtimeState.exitReason) {
-            runtimeState.exitReason = reason;
-        }
-        unregisterExit();
-        if (!alreadySilent) {
-            if (runtimeState.onExitListeners.length === 0 && !runtimeState.runtimeReady) {
-                dotnetLogger.error(`Exiting during runtime startup: ${message} ${stack}`);
+    if (!alreadyExisted && !runtimeState.exitReason) {
+        runtimeState.exitReason = reason;
+
+        try {
+            if (dotnetRuntimeExports && dotnetRuntimeExports.abortInteropTimers) {
+                dotnetRuntimeExports.abortInteropTimers();
             }
-            for (const listener of runtimeState.onExitListeners) {
-                try {
-                    if (!listener(exitCode, reason, alreadySilent)) {
-                        shouldQuitNow = false;
+            if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortBackgroundTimers) {
+                dotnetBrowserUtilsExports.abortBackgroundTimers();
+            }
+            unregisterExit();
+            if (!alreadySilent) {
+                if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
+                    dotnetLogger.error(`Exiting during runtime startup: ${message}`);
+                    dotnetLogger.debug(() => stack);
+                }
+                for (const listener of runtimeState.onExitListeners) {
+                    try {
+                        if (!listener(exitCode, reason, alreadySilent)) {
+                            shouldQuitNow = false;
+                        }
+                    } catch {
+                        // ignore errors from listeners
                     }
-                } catch {
-                    // ignore errors from listeners
                 }
             }
-        }
-        try {
-            if (!runtimeState.runtimeReady) {
+            if (!runtimeState.dotnetReady) {
                 dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }
@@ -131,6 +138,9 @@ export function exit(exitCode: number, reason: any): void {
             dotnetLogger.warn("dotnet.js exit() failed", err);
             // don't propagate any failures
         }
+
+        runtimeState.exitCode = exitCode; // this also marks the runtime as not running
+
         if (shouldQuitNow) {
             quitNow(exitCode, reason);
         }
@@ -141,16 +151,16 @@ export function exit(exitCode: number, reason: any): void {
 }
 
 export function quitNow(exitCode: number, reason?: any): void {
-    if (runtimeState.runtimeReady) {
+    if (runtimeState.dotnetReady) {
         Module.runtimeKeepalivePop();
-        if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortTimers) {
-            dotnetBrowserUtilsExports.abortTimers();
-        }
         if (dotnetBrowserUtilsExports && dotnetBrowserUtilsExports.abortPosix) {
-            dotnetBrowserUtilsExports.abortPosix(exitCode);
+            dotnetBrowserUtilsExports.abortPosix(exitCode, reason, runtimeState.dotnetReady);
         }
     }
     if (exitCode !== 0 || !ENVIRONMENT_IS_WEB) {
+        if (ENVIRONMENT_IS_SHELL && typeof globalThisAny.quit === "function") {
+            globalThisAny.quit(exitCode);
+        }
         if (ENVIRONMENT_IS_NODE && globalThis.process && typeof globalThis.process.exit === "function") {
             globalThis.process.exitCode = exitCode;
             globalThis.process.exit(exitCode);

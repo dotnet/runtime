@@ -1,3 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <EnableDiagnostics>false</EnableDiagnostics>
+    <MetricsSupport>false</MetricsSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+
+    <WasmTestSupport>true</WasmTestSupport>
+    <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
+    <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
+    <WasmTestLogExitCode>true</WasmTestLogExitCode>
+    <WasmTestAsyncFlushOnExit>true</WasmTestAsyncFlushOnExit>
+    <WasmTestForwardConsole>true</WasmTestForwardConsole>
+    
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
+  </PropertyGroup>
 </Project>

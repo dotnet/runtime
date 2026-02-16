@@ -5,19 +5,42 @@ import type { check, error, info, warn, debug, fastCheck } from "../../../../cor
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
 
-import type { installVfsFile, registerDllBytes, loadIcuData, initializeCoreCLR, registerPdbBytes } from "../../../../corehost/browserhost/host/host";
+import type { initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
+import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes } from "../../../../corehost/browserhost/host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
-import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
-import type { abortPosix, abortTimers, getExitStatus } from "../../../System.Native.Browser/utils/host";
+import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
+import type { abortPosix, abortBackgroundTimers, getExitStatus, runBackgroundTimers } from "../../../System.Native.Browser/utils/host";
+import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
+import type { forceDisposeProxies, releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
+import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
+import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
+import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
 import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { EmsAmbientSymbolsType } from "../types";
 
 export type RuntimeExports = {
+    bindJSImportST: typeof bindJSImportST,
+    invokeJSImportST: typeof invokeJSImportST,
+    releaseCSOwnedObject: typeof releaseCSOwnedObject,
+    resolveOrRejectPromise: typeof resolveOrRejectPromise,
+    cancelPromise: typeof cancelPromise,
+    invokeJSFunction: typeof invokeJSFunction,
+    forceDisposeProxies: typeof forceDisposeProxies,
+    abortInteropTimers: typeof abortInteropTimers,
 }
 
 export type RuntimeExportsTable = [
+    typeof bindJSImportST,
+    typeof invokeJSImportST,
+    typeof releaseCSOwnedObject,
+    typeof resolveOrRejectPromise,
+    typeof cancelPromise,
+    typeof invokeJSFunction,
+    typeof forceDisposeProxies,
+    typeof abortInteropTimers,
 ]
 
 export type LoggerType = {
@@ -72,6 +95,7 @@ export type BrowserHostExports = {
     loadIcuData: typeof loadIcuData
     initializeCoreCLR: typeof initializeCoreCLR
     registerPdbBytes: typeof registerPdbBytes
+    instantiateWasm: typeof instantiateWasm
 }
 
 export type BrowserHostExportsTable = [
@@ -80,12 +104,25 @@ export type BrowserHostExportsTable = [
     typeof loadIcuData,
     typeof initializeCoreCLR,
     typeof registerPdbBytes,
+    typeof instantiateWasm,
 ]
 
 export type InteropJavaScriptExports = {
+    SystemInteropJS_GetManagedStackTrace: EmsAmbientSymbolsType["_SystemInteropJS_GetManagedStackTrace"],
+    SystemInteropJS_CallDelegate: EmsAmbientSymbolsType["_SystemInteropJS_CallDelegate"],
+    SystemInteropJS_CompleteTask: EmsAmbientSymbolsType["_SystemInteropJS_CompleteTask"],
+    SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: EmsAmbientSymbolsType["_SystemInteropJS_ReleaseJSOwnedObjectByGCHandle"],
+    SystemInteropJS_BindAssemblyExports: EmsAmbientSymbolsType["_SystemInteropJS_BindAssemblyExports"],
+    SystemInteropJS_CallJSExport: EmsAmbientSymbolsType["_SystemInteropJS_CallJSExport"],
 }
 
 export type InteropJavaScriptExportsTable = [
+    EmsAmbientSymbolsType["_SystemInteropJS_GetManagedStackTrace"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CallDelegate"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CompleteTask"],
+    EmsAmbientSymbolsType["_SystemInteropJS_ReleaseJSOwnedObjectByGCHandle"],
+    EmsAmbientSymbolsType["_SystemInteropJS_BindAssemblyExports"],
+    EmsAmbientSymbolsType["_SystemInteropJS_CallJSExport"],
 ]
 
 export type NativeBrowserExports = {
@@ -99,11 +136,13 @@ export type BrowserUtilsExports = {
     stringToUTF16: typeof stringToUTF16,
     stringToUTF16Ptr: typeof stringToUTF16Ptr,
     stringToUTF8Ptr: typeof stringToUTF8Ptr,
+    stringToUTF8: typeof stringToUTF8,
     zeroRegion: typeof zeroRegion,
     isSharedArrayBuffer: typeof isSharedArrayBuffer
-    abortTimers: typeof abortTimers,
+    abortBackgroundTimers: typeof abortBackgroundTimers,
     abortPosix: typeof abortPosix,
     getExitStatus: typeof getExitStatus,
+    runBackgroundTimers: typeof runBackgroundTimers,
 }
 
 export type BrowserUtilsExportsTable = [
@@ -111,11 +150,13 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF16,
     typeof stringToUTF16Ptr,
     typeof stringToUTF8Ptr,
+    typeof stringToUTF8,
     typeof zeroRegion,
     typeof isSharedArrayBuffer,
-    typeof abortTimers,
+    typeof abortBackgroundTimers,
     typeof abortPosix,
     typeof getExitStatus,
+    typeof runBackgroundTimers,
 ]
 
 export type DiagnosticsExportsTable = [

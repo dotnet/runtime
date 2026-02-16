@@ -256,7 +256,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Context.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.Base64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CurrentSystemTimeZone.cs" />
@@ -285,6 +284,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\UnscopedRefAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresAssemblyFilesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresUnsafeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
@@ -1288,8 +1288,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\CachedCompletedInt32Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConfigureAwaitOptions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Future.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task_T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskFactory_T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\LoggingExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\IValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
@@ -1840,6 +1840,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
@@ -2397,8 +2400,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.FileSystemSupportsLocking.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
@@ -2471,6 +2474,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
@@ -2661,7 +2667,7 @@
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
-    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" Link="Common\Interop\SunOS\Interop.ProcFsStat.TryReadProcessStatusInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\SunOS\procfs\Interop.ProcFs.GetProcessInfoById.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" Link="Common\Interop\SunOS\Interop.ProcFs.GetProcessInfoById.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.FreeBSD.cs" Condition="'$(TargetsFreeBSD)' == 'true'" />
@@ -2826,8 +2832,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'"  />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true')" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'" />
@@ -2890,6 +2897,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParsable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\DivisionRounding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditionOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IAdditiveIdentity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IBinaryFloatingPointIeee754.cs" />

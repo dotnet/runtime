@@ -7,4 +7,7 @@
   <ItemGroup>
     <Compile Include="CollectibleTLSStaticCollection.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

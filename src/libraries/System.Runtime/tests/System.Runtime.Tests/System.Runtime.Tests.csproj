@@ -18,7 +18,6 @@
     <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
   </PropertyGroup>
@@ -185,9 +184,6 @@
     <Compile Include="System\UInt128Tests.cs" />
     <Compile Include="System\UIntPtrTests.cs" />
     <Compile Include="System\UnitySerializationHolderTests.cs" />
-    <Compile Include="System\Uri.CreateStringTests.cs" />
-    <Compile Include="System\Uri.CreateUriTests.cs" />
-    <Compile Include="System\Uri.MethodsTests.cs" />
     <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\ValueTypeTests.cs" />
     <Compile Include="System\VersionTests.cs" />
