@@ -434,6 +434,10 @@ public class ComputeWasmPublishAssets : Task
         // when the original assembly they depend on has been linked out.
         var assetsToUpdate = new Dictionary<string, ITaskItem>();
         var linkedAssets = new Dictionary<string, ITaskItem>();
+        // Secondary lookup by normalized filename for satellite matching.
+        // RelatedAsset may use a different base path (e.g., OutputPath/wwwroot)
+        // than the asset's build-time Identity (e.g., IntermediateOutputPath/webcil).
+        var assetsToUpdateByFileName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var kvp in assemblyAssets)
         {
@@ -447,6 +451,8 @@ public class ComputeWasmPublishAssets : Task
             {
                 // We found the assembly, so it'll have to be updated.
                 assetsToUpdate.Add(assetToUpdateItemSpec, asset);
+                if (!assetsToUpdateByFileName.ContainsKey(fileName))
+                    assetsToUpdateByFileName[fileName] = assetToUpdateItemSpec;
                 filesToRemove.Add(existing);
                 if (!string.Equals(asset.ItemSpec, existing.GetMetadata("FullPath"), StringComparison.Ordinal))
                 {
@@ -464,6 +470,14 @@ public class ComputeWasmPublishAssets : Task
         {
             var satelliteAssembly = kvp.Value;
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
+
+            // Try exact match first, then fall back to filename-based lookup.
+            var relatedAssetFileName = Path.GetFileName(relatedAsset);
+            if (!assetsToUpdate.ContainsKey(relatedAsset)
+                && assetsToUpdateByFileName.TryGetValue(relatedAssetFileName, out var matchedKey))
+            {
+                relatedAsset = matchedKey;
+            }
 
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
@@ -578,9 +592,24 @@ public class ComputeWasmPublishAssets : Task
 
     private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
     {
-        if (!updatedAssetsMap.TryGetValue(asset.GetMetadata("RelatedAsset"), out var updatedRelatedAsset))
+        var relatedAsset = asset.GetMetadata("RelatedAsset");
+        if (!updatedAssetsMap.TryGetValue(relatedAsset, out var updatedRelatedAsset))
         {
-            throw new InvalidOperationException("Related asset not found.");
+            // Fall back to filename matching when RelatedAsset uses a different base path
+            // than the asset's build-time Identity (e.g., OutputPath/wwwroot vs obj/webcil).
+            var relatedBaseName = Path.GetFileNameWithoutExtension(relatedAsset);
+            foreach (var kvp in updatedAssetsMap)
+            {
+                if (string.Equals(Path.GetFileNameWithoutExtension(kvp.Key), relatedBaseName, StringComparison.OrdinalIgnoreCase))
+                {
+                    updatedRelatedAsset = kvp.Value;
+                    break;
+                }
+            }
+            if (updatedRelatedAsset == null)
+            {
+                throw new InvalidOperationException("Related asset not found.");
+            }
         }
 
         newAsset.SetMetadata("RelatedAsset", updatedRelatedAsset.ItemSpec);
