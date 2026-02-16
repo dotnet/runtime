@@ -439,7 +439,7 @@ function(strip_symbols targetName outputFilename)
           COMMAND powershell -C "echo Stripping symbols from $(Split-Path -Path '${strip_source_file}' -Leaf) into $(Split-Path -Path '${strip_destination_file}' -Leaf)"
           COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
           COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
-          COMMAND "${CMAKE_OBJCOPY}" --add-gnu-debuglink=${strip_destination_file} "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       else()
         add_custom_command(
@@ -449,7 +449,7 @@ function(strip_symbols targetName outputFilename)
           COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
           COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
           COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
-          COMMAND "${CMAKE_OBJCOPY}" --add-gnu-debuglink=${strip_destination_file} "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       endif()
     endif (CLR_CMAKE_TARGET_APPLE)
