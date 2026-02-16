@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 if (s_unhandledExceptionPropagationHandler is null)
                     return null;
 
-                var runtimeHandle = RuntimeMethodHandle.FromIntPtr(methodDesc);
+                RuntimeMethodHandle runtimeHandle = RuntimeMethodHandle.FromIntPtr(methodDesc);
                 return s_unhandledExceptionPropagationHandler(*pExceptionArg, runtimeHandle, out *pContext);
             }
             catch (Exception ex)
