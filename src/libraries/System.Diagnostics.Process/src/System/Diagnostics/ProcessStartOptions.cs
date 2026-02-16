@@ -30,8 +30,6 @@ namespace System.Diagnostics
         /// <remarks>
         /// <para>
         /// The path is "resolved" meaning it has been converted to an absolute path and verified to exist.
-        /// If a relative path was provided to the constructor, it was located by searching in the executable's
-        /// directory, current directory, system directories (on Windows), and directories in the PATH environment variable.
         /// </para>
         /// <para>
         /// See <see cref="ProcessStartOptions(string)"/> for complete details on the resolution process.
@@ -185,7 +183,7 @@ namespace System.Diagnostics
         // There are two ways to create a process on Windows using CreateProcess sys-call:
         // 1. With NULL lpApplicationName and non-NULL lpCommandLine, where the first token of the
         // command line is the executable name. In this case, the system will resolve the executable
-        // name to an actual file on disk using documented search order.
+        // name to an actual file on disk using an algorithm that is not fully documented.
         // 2. With non-NULL lpApplicationName, where the system will use the provided application
         // name as-is without any resolution, and the command line is passed as-is to the process.
         //
@@ -200,23 +198,9 @@ namespace System.Diagnostics
         // We could either document that the FileName should never be user-controlled input or resolve it ourselves,
         // pass it as lpApplicationName and arguments as lpCommandLine.
         //
-        // On Unix, we were already resolving the executable path before starting the process.
-        // We were doing it for two reasons:
-        // 1. To mimic Windows resolution path order (consistency across platforms).
-        // 2. To avoid forking a process and then failing in exec because the file cannot be found.
-        // By resolving the path ourselves before forking we can avoid creating a child process that will fail immediately after creation.
-        //
-        // Changing the resolution logic could introduce breaking changes. For example:
-        // "If the executable module is a 16-bit application, lpApplicationName should be NULL, and the
-        // string pointed to by lpCommandLine should specify the executable module as well as its arguments."
-        //
-        // That is why we don't change the resolution logic for existing APIs, but since we are introducing a new API,
-        // we have the opportunity to do it in a more secure way by always resolving the executable name.
-        // Moreover, it gives the users the opportunity to:
-        // - check the resolved executable path before starting the process.
-        // - cache the resolved path and reuse it for subsequent process creations (perf).
-        //
-        // In upcoming .NET 11 previews, we may consider changing the order.
+        // Changing the resolution logic could introduce breaking changes, but since we are introducing a new API,
+        // we take it as an opportunity to clean up the legacy baggage to have simpler, easier to understand
+        // and more secure filename resolution algorithm that is consistent across OSes and aligned with other modern platforms.
         internal static string? ResolvePath(string filename)
         {
             // If the filename is a complete path, use it, regardless of whether it exists.
@@ -232,6 +216,14 @@ namespace System.Diagnostics
                 return Path.GetFullPath(filename); // Resolve to absolute path
             }
 
+            // Check if this is an explicit relative path (contains directory separators like .\file or ../file)
+            // If so, resolve it relative to the current directory
+            ReadOnlySpan<char> directoryName = Path.GetDirectoryName(filename);
+            if (!directoryName.IsEmpty)
+            {
+                return Path.GetFullPath(filename);
+            }
+
 #if WINDOWS
             // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
             // "If the file name does not contain an extension, .exe is appended.
@@ -240,14 +232,12 @@ namespace System.Diagnostics
 
             // HasExtension returns false for trailing dot, so we need to check that separately
             if (filename[filename.Length - 1] != '.'
-                && string.IsNullOrEmpty(Path.GetDirectoryName(filename))
+                && directoryName.IsEmpty
                 && !Path.HasExtension(filename))
             {
                 filename += ".exe";
             }
-#endif
 
-#if WINDOWS
             // Windows-specific search location: the system directory (e.g., C:\Windows\System32)
             string path = System.Environment.SystemDirectory;
             if (path != null)

@@ -163,26 +163,36 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void ResolvePath_RootedButNotFullyQualifiedPath()
         {
-            // Test paths like "C:foo.exe" which are rooted but not fully qualified
-            // These should be resolved to full paths
-            string tempFile = Path.GetTempFileName();
+            // Test paths like "C:foo.exe" (without backslash after colon) which are rooted but not fully qualified
+            // These resolve relative to the current directory on that drive
+            string tempDir = Path.GetTempPath();
+            string fileName = "test_rooted.tmp";
+            string fullPath = Path.Combine(tempDir, fileName);
+
+            string oldDir = Directory.GetCurrentDirectory();
             try
             {
-                // Get the drive letter and create a rooted but not fully qualified path
-                string drive = Path.GetPathRoot(tempFile);
-                string fileName = Path.GetFileName(tempFile);
-                string rootedPath = drive + fileName; // e.g., "C:tempfile.tmp"
-                
+                File.WriteAllText(fullPath, "test");
+                Directory.SetCurrentDirectory(tempDir);
+
+                // Create a rooted but not fully qualified path: "C:filename" (no backslash after drive)
+                string drive = Path.GetPathRoot(tempDir)!.TrimEnd('\\', '/'); // e.g., "C:"
+                string rootedPath = $"{drive}{fileName}"; // e.g., "C:test_rooted.tmp"
+
+                Assert.True(Path.IsPathRooted(rootedPath));
+                Assert.False(Path.IsPathFullyQualified(rootedPath));
+
                 ProcessStartOptions options = new(rootedPath);
-                // Should resolve to fully qualified path
+
                 Assert.True(Path.IsPathFullyQualified(options.FileName));
-                Assert.Equal(tempFile, options.FileName);
+                Assert.Equal(fullPath, options.FileName);
             }
             finally
             {
-                if (File.Exists(tempFile))
+                Directory.SetCurrentDirectory(oldDir);
+                if (File.Exists(fullPath))
                 {
-                    File.Delete(tempFile);
+                    File.Delete(fullPath);
                 }
             }
         }
