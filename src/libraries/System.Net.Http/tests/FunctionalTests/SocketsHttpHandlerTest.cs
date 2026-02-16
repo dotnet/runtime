@@ -932,7 +932,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/54156", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Trailer headers are not supported on Browser")]
     public sealed class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
