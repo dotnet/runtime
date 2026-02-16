@@ -6202,49 +6202,6 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-OBJECTREF Thread::GetCulture(BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // This is the case when we're building CoreLib and haven't yet created
-    // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL) {
-        return NULL;
-    }
-
-    OBJECTREF pCurrentCulture;
-    MethodDescCallSite propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE);
-    ARG_SLOT retVal = propGet.Call_RetArgSlot(NULL);
-    pCurrentCulture = ArgSlotToObj(retVal);
-    return pCurrentCulture;
-}
-
-void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE);
-
-    // Set up the Stack.
-    ARG_SLOT pNewArgs[] = {
-        ObjToArgSlot(*CultureObj)
-    };
-
-    // Make the actual call.
-    propSet.Call_RetArgSlot(pNewArgs);
-}
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
 {
@@ -6634,7 +6591,7 @@ void Thread::InitializeSpecialUserModeApc()
 
 #endif // FEATURE_SPECIAL_USER_MODE_APC
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
@@ -6647,8 +6604,6 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
         targetSSP = GetSSP(ContextRecord);
     }
     ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    ClrRestoreNonvolatileContextWorker(ContextRecord, 0);
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
     // need to pop the SEH records before write over the stack
     LPVOID oldSP = (LPVOID)GetSP(ContextRecord);

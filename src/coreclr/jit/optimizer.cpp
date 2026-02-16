@@ -18,7 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 DataFlow::DataFlow(Compiler* pCompiler)
-    : m_pCompiler(pCompiler)
+    : m_compiler(pCompiler)
 {
 }
 
@@ -1312,7 +1312,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     int        iterInc      = iterInfo.IterConst();
     genTreeOps iterOper     = iterInfo.IterOper();
     var_types  iterOperType = iterInfo.IterOperType();
-    bool       unsTest      = (iterInfo.TestTree->gtFlags & GTF_UNSIGNED) != 0;
+    bool       unsTest      = iterInfo.TestTree->IsUnsigned();
 
     assert(!lvaGetDesc(lvar)->IsAddressExposed());
     assert(!lvaGetDesc(lvar)->lvIsStructField);
@@ -5798,8 +5798,8 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 {
                     ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
                     oldStoreValue =
-                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), store->TypeGet(),
-                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetSize());
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclValueSize(lclNum), store->TypeGet(),
+                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetValueSize());
                 }
 
                 GenTree* data = store->AsLclVarCommon()->Data();

@@ -22,80 +22,80 @@ namespace System.Threading.Tasks.Tests
             int largeSize = 3;
             Task[] smallTaskArray = null;
             Task[] largeTaskArray = null;
-            Task<int>[] smallFutureArray = null;
-            Task<int>[] largeFutureArray = null;
+            Task<int>[] smallTaskWithResultArray = null;
+            Task<int>[] largeTaskWithResultArray = null;
             Task tSmall;
             Task tLarge;
             for (int i = 0; i < 2; i++)
             {
-                bool antecedentsAreFutures = (i == 0);
+                bool antecedentsHaveResult = (i == 0);
                 for (int j = 0; j < 2; j++)
                 {
-                    bool continuationsAreFutures = (j == 0);
+                    bool continuationsHaveResult = (j == 0);
 
                     for (int x = 0; x < 2; x++)
                     {
-                        bool useFutureFactory = (x == 0);
+                        bool useResultTaskFactory = (x == 0);
 
                         // This would be a nonsensical combination
-                        if (useFutureFactory && !continuationsAreFutures) continue;
+                        if (useResultTaskFactory && !continuationsHaveResult) continue;
 
                         Debug.WriteLine("    Testing {0} = {3}.Factory.CWAll({1}, {2})",
-                            continuationsAreFutures ? "Future" : "Task",
-                            antecedentsAreFutures ? "Future[]" : "Task[]",
-                            continuationsAreFutures ? "func" : "action",
-                            useFutureFactory ? "Task<int>" : "Task");
+                            continuationsHaveResult ? "Task<TResult>" : "Task",
+                            antecedentsHaveResult ? "Task<TResult>[]" : "Task[]",
+                            continuationsHaveResult ? "func" : "action",
+                            useResultTaskFactory ? "Task<int>" : "Task");
 
                         // Set up our antecedents
-                        if (antecedentsAreFutures)
+                        if (antecedentsHaveResult)
                         {
-                            makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
-                            if (continuationsAreFutures)
+                            makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
+                            if (continuationsHaveResult)
                             {
-                                if (useFutureFactory)
+                                if (useResultTaskFactory)
                                 {
-                                    // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = true
-                                    tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => 10);
-                                    tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => 20);
+                                    // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = true
+                                    tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10);
+                                    tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20);
                                 }
-                                else // useFutureFactory = false (use Task factory)
+                                else // useResultTaskFactory = false (use Task factory)
                                 {
-                                    // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = false
-                                    tSmall = Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Task<int>[] finishedArray) => 10);
-                                    tLarge = Task.Factory.ContinueWhenAll<int, int>(largeFutureArray, (Task<int>[] finishedArray) => 20);
+                                    // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = false
+                                    tSmall = Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10);
+                                    tLarge = Task.Factory.ContinueWhenAll<int, int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20);
                                 }
                             }
-                            else // continuationsAreFutures = false (continuations are Tasks)
+                            else // continuationsHaveResult = false (continuations are Tasks)
                             {
-                                // antecedentsAreFutures=true, continuationsAreFutures=false, useFutureFactory = false
-                                tSmall = Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => { });
-                                tLarge = Task.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => { });
+                                // antecedentsHaveResult=true, continuationsHaveResult=false, useResultTaskFactory = false
+                                tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => { });
+                                tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => { });
                             }
 
-                            // Kick off the smallFutureArray
-                            startTaskArray(smallFutureArray);
+                            // Kick off the smallTaskWithResultArray
+                            startTaskArray(smallTaskWithResultArray);
                         }
-                        else // antecedentsAreFutures = false (antecedents are Tasks)
+                        else // antecedentsHaveResult = false (antecedents are Tasks)
                         {
                             makeCWAllTaskArrays(smallSize, largeSize, out smallTaskArray, out largeTaskArray);
-                            if (continuationsAreFutures)
+                            if (continuationsHaveResult)
                             {
-                                if (useFutureFactory)
+                                if (useResultTaskFactory)
                                 {
-                                    // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = true
+                                    // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = true
                                     tSmall = Task<int>.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => 10);
                                     tLarge = Task<int>.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => 20);
                                 }
-                                else // useFutureFactory = false (use TaskFactory)
+                                else // useResultTaskFactory = false (use TaskFactory)
                                 {
-                                    // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = false
+                                    // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = false
                                     tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskArray, (Task[] finishedArray) => 10);
                                     tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskArray, (Task[] finishedArray) => 20);
                                 }
                             }
-                            else // continuationsAreFutures = false (continuations are Tasks)
+                            else // continuationsHaveResult = false (continuations are Tasks)
                             {
-                                // antecedentsAreFutures=false, continuationsAreFutures=false, useFutureFactory = false
+                                // antecedentsHaveResult=false, continuationsHaveResult=false, useResultTaskFactory = false
                                 tSmall = Task.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => { });
                                 tLarge = Task.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => { });
                             }
@@ -109,7 +109,7 @@ namespace System.Threading.Tasks.Tests
                         Exception ex = null;
                         try
                         {
-                            if (continuationsAreFutures) result = ((Task<int>)tSmall).Result;
+                            if (continuationsHaveResult) result = ((Task<int>)tSmall).Result;
                             else tSmall.Wait();
                         }
                         catch (Exception e)
@@ -118,19 +118,19 @@ namespace System.Threading.Tasks.Tests
                         }
 
                         Assert.Null(ex); // , "Did not expect exception from tSmall.Wait()")
-                        Assert.True((result == 10) || (!continuationsAreFutures), "Expected valid result from tSmall");
+                        Assert.True((result == 10) || (!continuationsHaveResult), "Expected valid result from tSmall");
                         Assert.False(tLarge.IsCompleted, "tLarge completed before its time");
 
                         //
                         // Now start the large array
                         //
-                        if (antecedentsAreFutures) startTaskArray(largeFutureArray);
+                        if (antecedentsHaveResult) startTaskArray(largeTaskWithResultArray);
                         else startTaskArray(largeTaskArray);
 
                         result = 0;
                         try
                         {
-                            if (continuationsAreFutures) result = ((Task<int>)tLarge).Result;
+                            if (continuationsHaveResult) result = ((Task<int>)tLarge).Result;
                             else tLarge.Wait();
                         }
                         catch (Exception e)
@@ -139,10 +139,10 @@ namespace System.Threading.Tasks.Tests
                         }
 
                         Assert.Null(ex); // , "Did not expect exception from tLarge.Wait()")
-                        Assert.True((result == 20) || (!continuationsAreFutures), "Expected valid result from tLarge");
-                    } // end x-loop (FutureFactory or TaskFactory)
-                } // end j-loop (continuations are futures or tasks)
-            }// end i-loop (antecedents are futures or tasks)
+                        Assert.True((result == 20) || (!continuationsHaveResult), "Expected valid result from tLarge");
+                    } // end x-loop (ResultTaskFactory or TaskFactory)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of ContinueWhenAll overloads w/ CancellationToken
@@ -153,16 +153,16 @@ namespace System.Threading.Tasks.Tests
             int largeSize = 3;
             Task[] smallTaskArray = null;
             Task[] largeTaskArray = null;
-            Task<int>[] smallFutureArray = null;
-            Task<int>[] largeFutureArray = null;
+            Task<int>[] smallTaskWithResultArray = null;
+            Task<int>[] largeTaskWithResultArray = null;
             Task tSmall;
             Task tLarge;
             for (int i = 0; i < 2; i++)
             {
-                bool antecedentsAreFutures = (i == 0);
+                bool antecedentsHaveResult = (i == 0);
                 for (int j = 0; j < 2; j++)
                 {
-                    bool continuationsAreFutures = (j == 0);
+                    bool continuationsHaveResult = (j == 0);
                     for (int k = 0; k < 2; k++)
                     {
                         bool preCanceledToken = (k == 0);
@@ -172,68 +172,68 @@ namespace System.Threading.Tasks.Tests
 
                         for (int x = 0; x < 2; x++)
                         {
-                            bool useFutureFactory = (x == 0);
+                            bool useResultTaskFactory = (x == 0);
 
                             // This would be a nonsensical combination
-                            if (useFutureFactory && !continuationsAreFutures) continue;
+                            if (useResultTaskFactory && !continuationsHaveResult) continue;
 
                             Debug.WriteLine("    Testing {0} = {4}.Factory.CWAll({1}, {3}, ct({2}))",
-                                continuationsAreFutures ? "Future" : "Task",
-                                antecedentsAreFutures ? "Future[]" : "Task[]",
+                                continuationsHaveResult ? "Task<TResult>" : "Task",
+                                antecedentsHaveResult ? "Task<TResult>[]" : "Task[]",
                                 preCanceledToken ? "signaled" : "unsignaled",
-                                continuationsAreFutures ? "func" : "action",
-                                useFutureFactory ? "Task<int>" : "Task");
+                                continuationsHaveResult ? "func" : "action",
+                                useResultTaskFactory ? "Task<int>" : "Task");
 
                             // Set up our antecedents
-                            if (antecedentsAreFutures)
+                            if (antecedentsHaveResult)
                             {
-                                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
-                                if (continuationsAreFutures)
+                                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = true
-                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => 10, ct);
-                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => 20, ct);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = true
+                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, ct);
+                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, ct);
                                     }
-                                    else // useFutureFactory = false (use Task factory)
+                                    else // useResultTaskFactory = false (use Task factory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = false
-                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Task<int>[] finishedArray) => 10, ct);
-                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeFutureArray, (Task<int>[] finishedArray) => 20, ct);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = false
+                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, ct);
+                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, ct);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=true, continuationsAreFutures=false, useFutureFactory = false
-                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => { }, ct);
-                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => { }, ct);
+                                    // antecedentsHaveResult=true, continuationsHaveResult=false, useResultTaskFactory = false
+                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => { }, ct);
+                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => { }, ct);
                                 }
 
-                                // Kick off the smallFutureArray
-                                startTaskArray(smallFutureArray);
+                                // Kick off the smallTaskWithResultArray
+                                startTaskArray(smallTaskWithResultArray);
                             }
-                            else // antecedentsAreFutures = false (antecedents are Tasks)
+                            else // antecedentsHaveResult = false (antecedents are Tasks)
                             {
                                 makeCWAllTaskArrays(smallSize, largeSize, out smallTaskArray, out largeTaskArray);
-                                if (continuationsAreFutures)
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = true
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = true
                                         tSmall = Task<int>.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => 10, ct);
                                         tLarge = Task<int>.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => 20, ct);
                                     }
-                                    else // useFutureFactory = false (use TaskFactory)
+                                    else // useResultTaskFactory = false (use TaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = false
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = false
                                         tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskArray, (Task[] finishedArray) => 10, ct);
                                         tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskArray, (Task[] finishedArray) => 20, ct);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=false, continuationsAreFutures=false, useFutureFactory = false
+                                    // antecedentsHaveResult=false, continuationsHaveResult=false, useResultTaskFactory = false
                                     tSmall = Task.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => { }, ct);
                                     tLarge = Task.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => { }, ct);
                                 }
@@ -247,7 +247,7 @@ namespace System.Threading.Tasks.Tests
                             Exception ex = null;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tSmall).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tSmall).Result;
                                 else tSmall.Wait();
                             }
                             catch (Exception e)
@@ -270,20 +270,20 @@ namespace System.Threading.Tasks.Tests
                             }
                             else // !preCanceledToken
                             {
-                                Assert.True((result == 10) || (!continuationsAreFutures), "Expected valid result from tSmall");
+                                Assert.True((result == 10) || (!continuationsHaveResult), "Expected valid result from tSmall");
                                 Assert.False(tLarge.IsCompleted, "tLarge completed before its time");
                             }
 
                             //
                             // Now start the large array
                             //
-                            if (antecedentsAreFutures) startTaskArray(largeFutureArray);
+                            if (antecedentsHaveResult) startTaskArray(largeTaskWithResultArray);
                             else startTaskArray(largeTaskArray);
 
                             result = 0;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tLarge).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tLarge).Result;
                                 else tLarge.Wait();
                             }
                             catch (Exception e)
@@ -306,12 +306,12 @@ namespace System.Threading.Tasks.Tests
                             }
                             else // !preCanceledToken
                             {
-                                Assert.True((result == 20) || (!continuationsAreFutures), "Expected valid result from tLarge");
+                                Assert.True((result == 20) || (!continuationsHaveResult), "Expected valid result from tLarge");
                             }
-                        } // end x-loop (FutureFactory or TaskFactory)
+                        } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (preCanceled or not)
-                } // end j-loop (continuations are futures or tasks)
-            }// end i-loop (antecedents are futures or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of ContinueWhenAll overloads w/ TaskContinuationOptions
@@ -322,16 +322,16 @@ namespace System.Threading.Tasks.Tests
             int largeSize = 3;
             Task[] smallTaskArray = null;
             Task[] largeTaskArray = null;
-            Task<int>[] smallFutureArray = null;
-            Task<int>[] largeFutureArray = null;
+            Task<int>[] smallTaskWithResultArray = null;
+            Task<int>[] largeTaskWithResultArray = null;
             Task tSmall;
             Task tLarge;
             for (int i = 0; i < 2; i++)
             {
-                bool antecedentsAreFutures = (i == 0);
+                bool antecedentsHaveResult = (i == 0);
                 for (int j = 0; j < 2; j++)
                 {
-                    bool continuationsAreFutures = (j == 0);
+                    bool continuationsHaveResult = (j == 0);
                     for (int k = 0; k < 2; k++)
                     {
                         bool longRunning = (k == 0);
@@ -339,68 +339,68 @@ namespace System.Threading.Tasks.Tests
 
                         for (int x = 0; x < 2; x++)
                         {
-                            bool useFutureFactory = (x == 0);
+                            bool useResultTaskFactory = (x == 0);
 
                             // This would be a nonsensical combination
-                            if (useFutureFactory && !continuationsAreFutures) continue;
+                            if (useResultTaskFactory && !continuationsHaveResult) continue;
 
                             Debug.WriteLine("    Testing {0} = {3}.Factory.CWAll({1}, {2}, {4})",
-                                continuationsAreFutures ? "Future" : "Task",
-                                antecedentsAreFutures ? "Future[]" : "Task[]",
-                                continuationsAreFutures ? "func" : "action",
-                                useFutureFactory ? "Task<int>" : "Task",
+                                continuationsHaveResult ? "Task<TResult>" : "Task",
+                                antecedentsHaveResult ? "Task<TResult>[]" : "Task[]",
+                                continuationsHaveResult ? "func" : "action",
+                                useResultTaskFactory ? "Task<int>" : "Task",
                                 tco);
 
                             // Set up our antecedents
-                            if (antecedentsAreFutures)
+                            if (antecedentsHaveResult)
                             {
-                                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
-                                if (continuationsAreFutures)
+                                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = true
-                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => 10, tco);
-                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => 20, tco);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = true
+                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, tco);
+                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, tco);
                                     }
-                                    else // useFutureFactory = false (use Task factory)
+                                    else // useResultTaskFactory = false (use Task factory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = false
-                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Task<int>[] finishedArray) => 10, tco);
-                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeFutureArray, (Task<int>[] finishedArray) => 20, tco);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = false
+                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, tco);
+                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, tco);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=true, continuationsAreFutures=false, useFutureFactory = false
-                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => { }, tco);
-                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => { }, tco);
+                                    // antecedentsHaveResult=true, continuationsHaveResult=false, useResultTaskFactory = false
+                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => { }, tco);
+                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => { }, tco);
                                 }
 
-                                // Kick off the smallFutureArray
-                                startTaskArray(smallFutureArray);
+                                // Kick off the smallTaskWithResultArray
+                                startTaskArray(smallTaskWithResultArray);
                             }
-                            else // antecedentsAreFutures = false (antecedents are Tasks)
+                            else // antecedentsHaveResult = false (antecedents are Tasks)
                             {
                                 makeCWAllTaskArrays(smallSize, largeSize, out smallTaskArray, out largeTaskArray);
-                                if (continuationsAreFutures)
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = true
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = true
                                         tSmall = Task<int>.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => 10, tco);
                                         tLarge = Task<int>.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => 20, tco);
                                     }
-                                    else // useFutureFactory = false (use TaskFactory)
+                                    else // useResultTaskFactory = false (use TaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = false
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = false
                                         tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskArray, (Task[] finishedArray) => 10, tco);
                                         tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskArray, (Task[] finishedArray) => 20, tco);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=false, continuationsAreFutures=false, useFutureFactory = false
+                                    // antecedentsHaveResult=false, continuationsHaveResult=false, useResultTaskFactory = false
                                     tSmall = Task.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => { }, tco);
                                     tLarge = Task.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => { }, tco);
                                 }
@@ -414,7 +414,7 @@ namespace System.Threading.Tasks.Tests
                             Exception ex = null;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tSmall).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tSmall).Result;
                                 else tSmall.Wait();
                             }
                             catch (Exception e)
@@ -423,7 +423,7 @@ namespace System.Threading.Tasks.Tests
                             }
 
                             Assert.Null(ex); // , "Did not expect exception from tSmall.Wait()")
-                            Assert.True((result == 10) || (!continuationsAreFutures), "Expected valid result from tSmall");
+                            Assert.True((result == 10) || (!continuationsHaveResult), "Expected valid result from tSmall");
                             Assert.False(tLarge.IsCompleted, "tLarge completed before its time");
                             Assert.Equal((tSmall.CreationOptions & TaskCreationOptions.LongRunning) != 0, longRunning);
                             Assert.True((tSmall.CreationOptions == TaskCreationOptions.None) || longRunning, "tSmall CreationOptions should be None unless longRunning is true");
@@ -431,13 +431,13 @@ namespace System.Threading.Tasks.Tests
                             //
                             // Now start the large array
                             //
-                            if (antecedentsAreFutures) startTaskArray(largeFutureArray);
+                            if (antecedentsHaveResult) startTaskArray(largeTaskWithResultArray);
                             else startTaskArray(largeTaskArray);
 
                             result = 0;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tLarge).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tLarge).Result;
                                 else tLarge.Wait();
                             }
                             catch (Exception e)
@@ -446,13 +446,13 @@ namespace System.Threading.Tasks.Tests
                             }
 
                             Assert.Null(ex); // , "Did not expect exception from tLarge.Wait()")
-                            Assert.True((result == 20) || (!continuationsAreFutures), "Expected valid result from tLarge");
+                            Assert.True((result == 20) || (!continuationsHaveResult), "Expected valid result from tLarge");
                             Assert.Equal((tLarge.CreationOptions & TaskCreationOptions.LongRunning) != 0, longRunning);
                             Assert.True((tLarge.CreationOptions == TaskCreationOptions.None) || longRunning, "tLarge CreationOptions should be None unless longRunning is true");
-                        } // end x-loop (FutureFactory or TaskFactory)
+                        } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (TaskContinuationOptions are LongRunning or None)
-                } // end j-loop (continuations are futures or tasks)
-            }// end i-loop (antecedents are futures or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         // Test functionality of "full up" ContinueWhenAll overloads
@@ -463,16 +463,16 @@ namespace System.Threading.Tasks.Tests
             int largeSize = 3;
             Task[] smallTaskArray = null;
             Task[] largeTaskArray = null;
-            Task<int>[] smallFutureArray = null;
-            Task<int>[] largeFutureArray = null;
+            Task<int>[] smallTaskWithResultArray = null;
+            Task<int>[] largeTaskWithResultArray = null;
             Task tSmall;
             Task tLarge;
             for (int i = 0; i < 2; i++)
             {
-                bool antecedentsAreFutures = (i == 0);
+                bool antecedentsHaveResult = (i == 0);
                 for (int j = 0; j < 2; j++)
                 {
-                    bool continuationsAreFutures = (j == 0);
+                    bool continuationsHaveResult = (j == 0);
                     for (int k = 0; k < 2; k++)
                     {
                         bool preCanceledToken = (k == 0);
@@ -482,71 +482,71 @@ namespace System.Threading.Tasks.Tests
 
                         for (int x = 0; x < 2; x++)
                         {
-                            bool useFutureFactory = (x == 0);
+                            bool useResultTaskFactory = (x == 0);
 
                             // This would be a nonsensical combination
-                            if (useFutureFactory && !continuationsAreFutures) continue;
+                            if (useResultTaskFactory && !continuationsHaveResult) continue;
 
                             TaskContinuationOptions tco = TaskContinuationOptions.None; // for now
                             TaskScheduler ts = TaskScheduler.Default;
 
                             Debug.WriteLine("    Testing {0} = {4}.Factory.CWAll({1}, {3}, ct({2}), tco.None, ts.Default)",
-                                continuationsAreFutures ? "Future" : "Task",
-                                antecedentsAreFutures ? "Future[]" : "Task[]",
+                                continuationsHaveResult ? "Task<TResult>" : "Task",
+                                antecedentsHaveResult ? "Task<TResult>[]" : "Task[]",
                                 preCanceledToken ? "signaled" : "unsignaled",
-                                continuationsAreFutures ? "func" : "action",
-                                useFutureFactory ? "Task<int>" : "Task");
+                                continuationsHaveResult ? "func" : "action",
+                                useResultTaskFactory ? "Task<int>" : "Task");
 
                             // Set up our antecedents
-                            if (antecedentsAreFutures)
+                            if (antecedentsHaveResult)
                             {
-                                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
-                                if (continuationsAreFutures)
+                                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = true
-                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => 10, ct, tco, ts);
-                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => 20, ct, tco, ts);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = true
+                                        tSmall = Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, ct, tco, ts);
+                                        tLarge = Task<int>.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, ct, tco, ts);
                                     }
-                                    else // useFutureFactory = false (use Task factory)
+                                    else // useResultTaskFactory = false (use Task factory)
                                     {
-                                        // antecedentsAreFutures=true, continuationsAreFutures=true, useFutureFactory = false
-                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Task<int>[] finishedArray) => 10, ct, tco, ts);
-                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeFutureArray, (Task<int>[] finishedArray) => 20, ct, tco, ts);
+                                        // antecedentsHaveResult=true, continuationsHaveResult=true, useResultTaskFactory = false
+                                        tSmall = Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => 10, ct, tco, ts);
+                                        tLarge = Task.Factory.ContinueWhenAll<int, int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => 20, ct, tco, ts);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=true, continuationsAreFutures=false, useFutureFactory = false
-                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Task<int>[] finishedArray) => { }, ct, tco, ts);
-                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeFutureArray, (Task<int>[] finishedArray) => { }, ct, tco, ts);
+                                    // antecedentsHaveResult=true, continuationsHaveResult=false, useResultTaskFactory = false
+                                    tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Task<int>[] finishedArray) => { }, ct, tco, ts);
+                                    tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskWithResultArray, (Task<int>[] finishedArray) => { }, ct, tco, ts);
                                 }
 
-                                // Kick off the smallFutureArray
-                                startTaskArray(smallFutureArray);
+                                // Kick off the smallTaskWithResultArray
+                                startTaskArray(smallTaskWithResultArray);
                             }
-                            else // antecedentsAreFutures = false (antecedents are Tasks)
+                            else // antecedentsHaveResult = false (antecedents are Tasks)
                             {
                                 makeCWAllTaskArrays(smallSize, largeSize, out smallTaskArray, out largeTaskArray);
-                                if (continuationsAreFutures)
+                                if (continuationsHaveResult)
                                 {
-                                    if (useFutureFactory)
+                                    if (useResultTaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = true
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = true
                                         tSmall = Task<int>.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => 10, ct, tco, ts);
                                         tLarge = Task<int>.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => 20, ct, tco, ts);
                                     }
-                                    else // useFutureFactory = false (use TaskFactory)
+                                    else // useResultTaskFactory = false (use TaskFactory)
                                     {
-                                        // antecedentsAreFutures=false, continuationsAreFutures=true, useFutureFactory = false
+                                        // antecedentsHaveResult=false, continuationsHaveResult=true, useResultTaskFactory = false
                                         tSmall = Task.Factory.ContinueWhenAll<int>(smallTaskArray, (Task[] finishedArray) => 10, ct, tco, ts);
                                         tLarge = Task.Factory.ContinueWhenAll<int>(largeTaskArray, (Task[] finishedArray) => 20, ct, tco, ts);
                                     }
                                 }
-                                else // continuationsAreFutures = false (continuations are Tasks)
+                                else // continuationsHaveResult = false (continuations are Tasks)
                                 {
-                                    // antecedentsAreFutures=false, continuationsAreFutures=false, useFutureFactory = false
+                                    // antecedentsHaveResult=false, continuationsHaveResult=false, useResultTaskFactory = false
                                     tSmall = Task.Factory.ContinueWhenAll(smallTaskArray, (Task[] finishedArray) => { }, ct, tco, ts);
                                     tLarge = Task.Factory.ContinueWhenAll(largeTaskArray, (Task[] finishedArray) => { }, ct, tco, ts);
                                 }
@@ -560,7 +560,7 @@ namespace System.Threading.Tasks.Tests
                             Exception ex = null;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tSmall).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tSmall).Result;
                                 else tSmall.Wait();
                             }
                             catch (Exception e)
@@ -583,20 +583,20 @@ namespace System.Threading.Tasks.Tests
                             }
                             else // !preCanceledToken
                             {
-                                Assert.True((result == 10) || (!continuationsAreFutures), "Expected valid result from tSmall");
+                                Assert.True((result == 10) || (!continuationsHaveResult), "Expected valid result from tSmall");
                                 Assert.False(tLarge.IsCompleted, "tLarge completed before its time");
                             }
 
                             //
                             // Now start the large array
                             //
-                            if (antecedentsAreFutures) startTaskArray(largeFutureArray);
+                            if (antecedentsHaveResult) startTaskArray(largeTaskWithResultArray);
                             else startTaskArray(largeTaskArray);
 
                             result = 0;
                             try
                             {
-                                if (continuationsAreFutures) result = ((Task<int>)tLarge).Result;
+                                if (continuationsHaveResult) result = ((Task<int>)tLarge).Result;
                                 else tLarge.Wait();
                             }
                             catch (Exception e)
@@ -619,12 +619,12 @@ namespace System.Threading.Tasks.Tests
                             }
                             else // !preCanceledToken
                             {
-                                Assert.True((result == 20) || (!continuationsAreFutures), "Expected valid result from tLarge");
+                                Assert.True((result == 20) || (!continuationsHaveResult), "Expected valid result from tLarge");
                             }
-                        } // end x-loop (FutureFactory or TaskFactory)
+                        } // end x-loop (ResultTaskFactory or TaskFactory)
                     } // end k-loop (preCanceled or not)
-                } // end j-loop (continuations are futures or tasks)
-            }// end i-loop (antecedents are futures or tasks)
+                } // end j-loop (continuations are Task<TResult> or Task)
+            }// end i-loop (antecedents are Task<TResult> or Task)
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -634,8 +634,8 @@ namespace System.Threading.Tasks.Tests
             int largeSize = 3;
             Task[] largeTaskArray = null;
             Task[] smallTaskArray;
-            Task<int>[] largeFutureArray = null;
-            Task<int>[] smallFutureArray;
+            Task<int>[] largeTaskWithResultArray = null;
+            Task<int>[] smallTaskWithResultArray;
 
             // The remainder of this method will verify exceptional conditions
 
@@ -715,7 +715,7 @@ namespace System.Threading.Tasks.Tests
 
 
             //
-            // Test exceptions from continuing from Task[] => Task<int> using FutureFactory
+            // Test exceptions from continuing from Task[] => Task<int> using ResultTaskFactory
             //
             {
                 makeCWAllTaskArrays(smallSize, largeSize, out smallTaskArray, out largeTaskArray);
@@ -751,32 +751,32 @@ namespace System.Threading.Tasks.Tests
             // Test exceptions from continuing from Task<int>[] => Task
             //
             {
-                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
+                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, finishedArray => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, finishedArray => { }, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
                 Assert.Throws<ArgumentOutOfRangeException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, finishedArray => { }, TaskContinuationOptions.NotOnFaulted); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, finishedArray => { }, TaskContinuationOptions.NotOnFaulted); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Action<Task<int>[]>)null); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Action<Task<int>[]>)null); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Action<Task<int>[]>)null, CancellationToken.None); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Action<Task<int>[]>)null, CancellationToken.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Action<Task<int>[]>)null, TaskContinuationOptions.None); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Action<Task<int>[]>)null, TaskContinuationOptions.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int>(smallFutureArray, (Action<Task<int>[]>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+                   () => { Task.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Action<Task<int>[]>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
 
                 Assert.Throws<ArgumentNullException>(
                    () => { Task.Factory.ContinueWhenAll<int>((Task<int>[])null, finishedArray => { }); });
 
-                smallFutureArray[0] = null;
+                smallTaskWithResultArray[0] = null;
 
-                AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(smallFutureArray, finishedArray => { }));
+                AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(smallTaskWithResultArray, finishedArray => { }));
                 AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(new Task<int>[0], finishedArray => { }));
             }
 
@@ -784,66 +784,66 @@ namespace System.Threading.Tasks.Tests
             // Test exceptions from continuing from Task<int>[] => Task<int> using TaskFactory
             //
             {
-                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
+                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, finishedArray => 10, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, finishedArray => 10, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
                 Assert.Throws<ArgumentOutOfRangeException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, finishedArray => 10, TaskContinuationOptions.NotOnFaulted); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, finishedArray => 10, TaskContinuationOptions.NotOnFaulted); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Func<Task[], int>)null); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Func<Task[], int>)null); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Func<Task[], int>)null, CancellationToken.None); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Func<Task[], int>)null, CancellationToken.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Func<Task[], int>)null, TaskContinuationOptions.None); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Func<Task[], int>)null, TaskContinuationOptions.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task.Factory.ContinueWhenAll<int, int>(smallFutureArray, (Func<Task[], int>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+                   () => { Task.Factory.ContinueWhenAll<int, int>(smallTaskWithResultArray, (Func<Task[], int>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
 
                 Assert.Throws<ArgumentNullException>(
                    () => { Task.Factory.ContinueWhenAll<int, int>((Task<int>[])null, finishedArray => 10); });
 
-                smallFutureArray[0] = null;
+                smallTaskWithResultArray[0] = null;
 
-                AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(smallFutureArray, finishedArray => 10));
+                AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(smallTaskWithResultArray, finishedArray => 10));
                 AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAll(new Task<int>[0], finishedArray => 10));
             }
 
             //
-            // Test exceptions from continuing from Task<int>[] => Task<int> using FutureFactory
+            // Test exceptions from continuing from Task<int>[] => Task<int> using ResultTaskFactory
             //
             {
-                makeCWAllFutureArrays(smallSize, largeSize, out smallFutureArray, out largeFutureArray);
+                makeCWAllTaskWithResultArrays(smallSize, largeSize, out smallTaskWithResultArray, out largeTaskWithResultArray);
 
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, finishedArray => 10, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, finishedArray => 10, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
 
                 Assert.Throws<ArgumentOutOfRangeException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, finishedArray => 10, TaskContinuationOptions.NotOnFaulted); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, finishedArray => 10, TaskContinuationOptions.NotOnFaulted); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Func<Task[], int>)null); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Func<Task[], int>)null); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Func<Task[], int>)null, CancellationToken.None); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Func<Task[], int>)null, CancellationToken.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Func<Task[], int>)null, TaskContinuationOptions.None); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Func<Task[], int>)null, TaskContinuationOptions.None); });
 
                 Assert.Throws<ArgumentNullException>(
-                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallFutureArray, (Func<Task[], int>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
+                   () => { Task<int>.Factory.ContinueWhenAll<int>(smallTaskWithResultArray, (Func<Task[], int>)null, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default); });
 
                 Assert.Throws<ArgumentNullException>(
                    () => { Task<int>.Factory.ContinueWhenAll<int>((Task<int>[])null, finishedArray => 10); });
 
-                smallFutureArray[0] = null;
+                smallTaskWithResultArray[0] = null;
 
-                AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAll(smallFutureArray, finishedArray => 10));
+                AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAll(smallTaskWithResultArray, finishedArray => 10));
                 AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAll(new Task<int>[0], finishedArray => 10));
             }
         }
@@ -857,7 +857,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 canceledTask.Wait();
-                Assert.Fail(string.Format("    > FAILED!  Pre-canceled result did not throw from Wait()"));
+                Assert.Fail("    > FAILED!  Pre-canceled result did not throw from Wait()");
             }
             catch (AggregateException ae)
             {
@@ -866,11 +866,11 @@ namespace System.Threading.Tasks.Tests
                     var tce = e as TaskCanceledException;
                     if (tce == null)
                     {
-                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw non-TCE from Wait()"));
+                        Assert.Fail("    > FAILED!  Pre-canceled result threw non-TCE from Wait()");
                     }
                     else if (tce.CancellationToken != correctToken)
                     {
-                        Assert.Fail(string.Format("    > FAILED!  Pre-canceled result threw TCE w/ wrong token"));
+                        Assert.Fail("    > FAILED!  Pre-canceled result threw TCE w/ wrong token");
                     }
 
                     return true;
@@ -878,7 +878,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        private static void makeCWAllFutureArrays(int smallSize, int largeSize, out Task<int>[] aSmall, out Task<int>[] aLarge)
+        private static void makeCWAllTaskWithResultArrays(int smallSize, int largeSize, out Task<int>[] aSmall, out Task<int>[] aLarge)
         {
             aLarge = new Task<int>[largeSize];
             aSmall = new Task<int>[smallSize];

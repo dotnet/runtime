@@ -5,10 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 using static DisabledRuntimeMarshallingNative;
+using TestLibrary;
 
 namespace DisabledRuntimeMarshalling;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/81676", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
 public unsafe class PInvokes_AutoLayout
 {
     [Fact]

@@ -220,7 +220,7 @@ namespace System.Buffers
 
                 int newSize = currentLength + growBy;
 
-                if ((uint)newSize > int.MaxValue)
+                if ((uint)newSize > ArrayMaxLength)
                 {
                     // Attempt to grow to ArrayMaxLength.
                     uint needed = (uint)(currentLength - FreeCapacity + sizeHint);

@@ -220,8 +220,8 @@ namespace Wasm.Build.Tests
                 options.InitProject?.Invoke();
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
+                File.Copy(Path.Combine(AppContext.BaseDirectory, "test-main.mjs"),
+                            Path.Combine(_projectDir, "test-main.mjs"));
             }
             else if (_projectDir is null)
             {
