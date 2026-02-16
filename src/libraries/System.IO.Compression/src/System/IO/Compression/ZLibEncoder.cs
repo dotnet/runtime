@@ -11,6 +11,7 @@ namespace System.IO.Compression
     public sealed class ZLibEncoder : IDisposable
     {
         private readonly DeflateEncoder _deflateEncoder;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZLibEncoder"/> class using the default quality.
@@ -58,7 +59,16 @@ namespace System.IO.Compression
         /// <summary>
         /// Frees and disposes unmanaged resources.
         /// </summary>
-        public void Dispose() => _deflateEncoder.Dispose();
+        public void Dispose()
+        {
+            _disposed = true;
+            _deflateEncoder.Dispose();
+        }
+
+        private void EnsureNotDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
 
         /// <summary>
         /// Gets the maximum expected compressed length for the provided input size.
@@ -78,7 +88,10 @@ namespace System.IO.Compression
         /// <param name="isFinalBlock"><see langword="true"/> to finalize the internal stream, which prevents adding more input data when this method returns; <see langword="false"/> to allow the encoder to postpone the production of output until it has processed enough input.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
         public OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
-            => _deflateEncoder.Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
+        {
+            EnsureNotDisposed();
+            return _deflateEncoder.Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
+        }
 
         /// <summary>
         /// Compresses an empty read-only span of bytes into its destination, ensuring that output is produced for all the processed input.
@@ -87,7 +100,10 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
         public OperationStatus Flush(Span<byte> destination, out int bytesWritten)
-            => _deflateEncoder.Flush(destination, out bytesWritten);
+        {
+            EnsureNotDisposed();
+            return _deflateEncoder.Flush(destination, out bytesWritten);
+        }
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the default quality.

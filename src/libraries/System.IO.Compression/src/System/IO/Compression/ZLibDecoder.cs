@@ -11,6 +11,7 @@ namespace System.IO.Compression
     public sealed class ZLibDecoder : IDisposable
     {
         private readonly DeflateDecoder _deflateDecoder;
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ZLibDecoder"/> class.
@@ -24,7 +25,16 @@ namespace System.IO.Compression
         /// <summary>
         /// Frees and disposes unmanaged resources.
         /// </summary>
-        public void Dispose() => _deflateDecoder.Dispose();
+        public void Dispose()
+        {
+            _disposed = true;
+            _deflateDecoder.Dispose();
+        }
+
+        private void EnsureNotDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
 
         /// <summary>
         /// Decompresses a read-only byte span into a destination span.
@@ -35,7 +45,10 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns>One of the enumeration values that describes the status with which the span-based operation finished.</returns>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
-            => _deflateDecoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
+        {
+            EnsureNotDisposed();
+            return _deflateDecoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
+        }
 
         /// <summary>
         /// Tries to decompress a source byte span into a destination span.
