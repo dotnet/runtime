@@ -35,7 +35,7 @@ internal partial class MockDescriptors
             Fields =
             [
                 new(nameof(Data.ProfControlBlock.GlobalEventMask), DataType.uint64),
-                new(nameof(Data.ProfControlBlock.RejitOnAttachEnabled), DataType.uint32),
+                new(nameof(Data.ProfControlBlock.RejitOnAttachEnabled), DataType.uint8),
             ]
         };
 
@@ -96,7 +96,7 @@ internal partial class MockDescriptors
             Builder.AddHeapFragment(fragment);
             Span<byte> pcb = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
             Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.GlobalEventMask)].Offset, sizeof(ulong)), 0ul);
-            Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.RejitOnAttachEnabled)].Offset, sizeof(uint)), rejitOnAttachEnabled ? 1u : 0u);
+            Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.RejitOnAttachEnabled)].Offset, sizeof(byte)), rejitOnAttachEnabled ? (byte)1 : (byte)0);
             return fragment.Address;
         }
     }
