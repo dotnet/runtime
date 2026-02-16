@@ -279,6 +279,8 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--profile", "Localhost",
         "--scenario", scenario_name,
         "--application.framework", framework,
+        "--application.channel", "edge",
+        "--application.sdkVersion", "latest",
         "--application.noGlobalJson", "false",
         "--load.options.reuseBuild", "true",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
