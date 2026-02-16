@@ -35,7 +35,7 @@ namespace System
         public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
-        public static bool IsNativeAot => IsNotMonoRuntime && typeof(object).Assembly.GetType("Internal.Runtime.CompilerHelpers.StartupCodeHelpers") is not null;
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
         public static bool IsCoreCLR => IsNotMonoRuntime && IsNotNativeAot;
         public static bool IsCoreClrInterpreter => GetIsRunningOnCoreClrInterpreter();
