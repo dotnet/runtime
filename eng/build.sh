@@ -47,6 +47,9 @@ usage()
   echo "                                  [Default: Builds the entire repo.]"
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  echo "  --dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
+  echo "                                  Also enables the interpreter when dynamic code compilation is disabled."
+  echo "                                  [Default: true for most platforms, false for ios/tvos/browser/wasi]"
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -161,6 +164,7 @@ crossBuild=0
 portableBuild=1
 bootstrap=0
 bootstrapConfig='Debug'
+dynamiccodecompiled=""
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
@@ -390,6 +394,20 @@ while [[ $# -gt 0 ]]; do
       shift 1
       ;;
 
+     -dynamiccodecompiled)
+      if [ -z ${2+x} ]; then
+        echo "No value for dynamiccodecompiled is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      dynamiccodecompiled="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      if [[ "$dynamiccodecompiled" != "true" && "$dynamiccodecompiled" != "false" ]]; then
+        echo "Unsupported value '$2' for dynamiccodecompiled."
+        echo "The allowed values are true and false."
+        exit 1
+      fi
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -571,6 +589,22 @@ fi
 if [[ "$os" == "wasi" ]]; then
     # override default arch for wasi, we only support wasm
     arch=wasm
+fi
+
+# Default dynamiccodecompiled based on target OS if not explicitly set
+if [[ -z "$dynamiccodecompiled" ]]; then
+    case "$os" in
+        maccatalyst|ios|iossimulator|tvos|tvossimulator|browser|wasi)
+            dynamiccodecompiled="false"
+            ;;
+        *)
+            dynamiccodecompiled="true"
+            ;;
+    esac
+fi
+arguments+=("/p:FeatureDynamicCodeCompiled=$dynamiccodecompiled")
+if [[ "$dynamiccodecompiled" == "false" ]]; then
+    arguments+=("/p:FeatureInterpreter=true")
 fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
