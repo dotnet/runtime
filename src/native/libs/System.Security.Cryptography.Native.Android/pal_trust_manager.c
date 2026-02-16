@@ -42,10 +42,11 @@ static jobject GetX509TrustManager(JNIEnv* env, jobject customTrustKeyStore)
         jobject tm = (*env)->GetObjectArrayElement(env, loc[trustManagers], i);
         if ((*env)->IsInstanceOf(env, tm, g_X509TrustManager))
         {
-            result = tm;
-            break;
+            result = (*env)->NewLocalRef(env, tm);
         }
         ReleaseLRef(env, tm);
+        if (result != NULL)
+            break;
     }
 
 cleanup:
