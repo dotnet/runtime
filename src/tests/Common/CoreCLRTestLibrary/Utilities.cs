@@ -96,7 +96,7 @@ namespace TestLibrary
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
-        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
+        public static bool IsNativeAot => IsNotMonoRuntime && typeof(object).Assembly.GetType("Internal.Runtime.CompilerHelpers.StartupCodeHelpers") is not null;
         public static bool IsNotNativeAot => !IsNativeAot;
 
         public static bool IsCoreClrInterpreter
