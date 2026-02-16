@@ -727,6 +727,7 @@ void SystemDomain::Attach()
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
     RangeSectionStubManager::Init();
     ILStubManager::Init();
+    PInvokeStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();

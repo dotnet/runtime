@@ -486,7 +486,7 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
-#ifdef TARGET_TVOS
+#if defined(TARGET_TVOS) || defined(TARGET_WASM)
     return ERROR_NOT_SUPPORTED;
 #else
     PAL_ERROR palError = NO_ERROR;
@@ -1025,7 +1025,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
-#endif // !TARGET_TVOS
+#endif // !TARGET_TVOS && !TARGET_WASM
 }
 
 
@@ -2396,7 +2396,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASM)
     return FALSE;
 #else
     _ASSERTE(argv[0] != nullptr);
@@ -2573,7 +2573,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS && !TARGET_TVOS
+#endif // !TARGET_IOS && !TARGET_TVOS && !TARGET_WASM
 }
 
 /*++
