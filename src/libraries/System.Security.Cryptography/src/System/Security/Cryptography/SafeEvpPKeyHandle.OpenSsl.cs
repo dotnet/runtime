@@ -67,6 +67,8 @@ namespace System.Security.Cryptography
             if (IsInvalid)
                 throw new InvalidOperationException(SR.Cryptography_OpenInvalidHandle);
 
+            // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
+            // that we don't lose a tracked reference in low-memory situations.
             SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
 
             // Keep the source handle alive so that a concurrent Dispose on another
@@ -77,27 +79,22 @@ namespace System.Security.Cryptography
             {
                 DangerousAddRef(ref addedRef);
 
-                IntPtr handleSnapshot = DangerousGetHandle();
-                IntPtr extraHandleSnapshot = ExtraHandle;
+                int success = Interop.Crypto.UpRefEvpPkey(this);
 
-                int uprefResult = Interop.Crypto.UpRefEvpPkey(this);
-
-                if (uprefResult != 1)
+                if (success != 1)
                 {
                     Debug.Fail("Called UpRefEvpPkey on a key which was already marked for destruction");
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                    safeHandle.Dispose();
+                    throw e;
                 }
 
-                // Use the captured snapshots so that a concurrent Dispose
-                // cannot cause us to copy a zeroed-out handle value.
-                safeHandle.SetHandle(handleSnapshot);
+                // Since we didn't actually create a new handle, copy the handle
+                // to the new SafeHandle. DangerousAddRef prevents ReleaseHandle
+                // from being called, so handle and ExtraHandle are stable here.
+                safeHandle.SetHandle(handle);
                 // ExtraHandle is upref'd by UpRefEvpPkey
-                safeHandle.ExtraHandle = extraHandleSnapshot;
-            }
-            catch
-            {
-                safeHandle.Dispose();
-                throw;
+                safeHandle.ExtraHandle = ExtraHandle;
             }
             finally
             {
