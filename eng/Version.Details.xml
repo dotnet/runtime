@@ -327,10 +327,6 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>2497df9ce6db7a2b4082cb45b203983f977c6d5b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="5.4.0-2.26069.103">
-      <Uri>https://github.com/dotnet/dotnet</Uri>
-      <Sha>adf42f5dcec99a409a6f63355f5b52147bfaf043</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis" Version="5.4.0-2.26069.103">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>adf42f5dcec99a409a6f63355f5b52147bfaf043</Sha>
