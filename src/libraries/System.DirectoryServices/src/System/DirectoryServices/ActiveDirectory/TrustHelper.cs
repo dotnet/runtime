@@ -1010,7 +1010,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     policyHandle?.Dispose();
-                        
                     if (impersonated)
                         Utils.Revert();
                 }
