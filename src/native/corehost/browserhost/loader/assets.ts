@@ -184,7 +184,7 @@ async function fetchText(asset: AssetEntryInternal): Promise<string | null> {
 }
 
 function loadResource(asset: AssetEntryInternal): Promise<Response> {
-    if (noThrotttleNoRetry[asset.behavior]) {
+    if (noThrottleNoRetry[asset.behavior]) {
         // `response.arrayBuffer()` can't be called twice.
         return loadResourceFetch(asset);
     }
@@ -359,7 +359,7 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "dotnetwasm": "application/wasm",
 };
 
-const noThrotttleNoRetry: { [key: string]: number | undefined } = {
+const noThrottleNoRetry: { [key: string]: number | undefined } = {
     "dotnetwasm": 1,
     "symbols": 1,
 };
