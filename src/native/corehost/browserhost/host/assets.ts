@@ -4,7 +4,7 @@
 import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 
-import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
+import { browserVirtualAppBase, ENVIRONMENT_IS_WEB, sizeOfPtr } from "./per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -17,7 +17,6 @@ export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
 export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
     const sp = _ems_.stackSave();
     try {
-        const sizeOfPtr = 4;
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
         if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed");
@@ -51,7 +50,6 @@ export async function instantiateWebCILModule(webCILPromise: Promise<Response>, 
 
     const sp = _ems_.stackSave();
     try {
-        const sizeOfPtr = 4;
         const sizePtr = _ems_.stackAlloc(sizeOfPtr);
         const getWebcilSize = instance.exports.getWebcilSize as (destPtr: number) => void;
         getWebcilSize(sizePtr as any);
@@ -100,7 +98,6 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
 export function loadIcuData(bytes: Uint8Array) {
     const sp = _ems_.stackSave();
     try {
-        const sizeOfPtr = 4;
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
         if (_ems_._posix_memalign(ptrPtr as any, 16, bytes.length)) {
             throw new Error("posix_memalign failed for ICU data");

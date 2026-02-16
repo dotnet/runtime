@@ -99,7 +99,7 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         ? assetInternal.virtualPath
         : browserVirtualAppBase + assetInternal.virtualPath;
     if (assetInternal.virtualPath.endsWith(".wasm")) {
-        assetInternal.behavior = "webcil1";
+        assetInternal.behavior = "webcil01";
         const webCILPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
@@ -169,7 +169,7 @@ async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null>
 }
 
 function loadResource(asset: AssetEntryInternal): Promise<Response> {
-    if ("dotnetwasm" === asset.behavior || "webcil1" === asset.behavior) {
+    if ("dotnetwasm" === asset.behavior || "webcil01" === asset.behavior) {
         // `response.arrayBuffer()` can't be called twice.
         return loadResourceFetch(asset);
     }
@@ -327,7 +327,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "vfs": "configuration",
     "manifest": "manifest",
     "dotnetwasm": "dotnetwasm",
-    "webcil1": "dotnetwasm",
+    "webcil01": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
@@ -342,5 +342,5 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "vfs": "application/octet-stream",
     "manifest": "application/json",
     "dotnetwasm": "application/wasm",
-    "webcil1": "application/wasm",
+    "webcil01": "application/wasm",
 };

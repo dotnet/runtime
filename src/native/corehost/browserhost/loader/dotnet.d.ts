@@ -445,7 +445,7 @@ type AssetBehaviors = SingleAssetBehaviors |
 /**
  * Managed assembly packaged as WebCIL v 1.0
  */
- | "webcil1";
+ | "webcil01";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.

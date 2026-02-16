@@ -16,9 +16,9 @@
 #pragma pack(push, 1)
 
 struct WebcilHeader {
-    uint8_t  id[4];              // 'W','b','I','L'
-    uint16_t version_major;      // 0
-    uint16_t version_minor;      // 1
+    uint8_t  id[4];
+    uint16_t version_major;
+    uint16_t version_minor;
     uint16_t coff_sections;
     uint16_t reserved0;
     uint32_t pe_cli_header_rva;
