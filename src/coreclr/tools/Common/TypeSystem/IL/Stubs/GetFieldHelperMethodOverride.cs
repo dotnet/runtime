@@ -87,10 +87,14 @@ namespace Internal.IL.Stubs
 
             if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null), out int lastFieldEndOffset))
             {
-                var stream = emitter.NewCodeStream();
-                stream.EmitLdc(-lastFieldEndOffset);
-                stream.Emit(ILOpcode.ret);
-                return emitter.Link(this);
+                // ValueTuple types need per-field enumeration for ToString, even if they can be memcompared.
+                if (!(_owningType.Module == Context.SystemModule && _owningType.Name.StartsWith("ValueTuple`"u8) && _owningType.Namespace.SequenceEqual("System"u8)))
+                {
+                    var stream = emitter.NewCodeStream();
+                    stream.EmitLdc(-lastFieldEndOffset);
+                    stream.Emit(ILOpcode.ret);
+                    return emitter.Link(this);
+                }
             }
 
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime"u8, "MethodTable"u8);

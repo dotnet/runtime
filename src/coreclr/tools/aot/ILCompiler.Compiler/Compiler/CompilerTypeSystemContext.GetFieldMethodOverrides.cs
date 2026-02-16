@@ -102,9 +102,10 @@ namespace ILCompiler
             if (IsAsyncStateMachineType(valueType))
                 return false;
 
-            // ValueTuples override Equals/GetHashCode and don't have a `base.GetHashCode` call. So avoid the infrastructure.
+            // ValueTuples override Equals/GetHashCode and don't have a `base.GetHashCode` call. So they don't
+            // need the infrastructure for those purposes, but they do need it for ValueTuple.ToString.
             if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`"u8) && valueType.Namespace.SequenceEqual("System"u8))
-                return false;
+                return true;
 
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
         }
