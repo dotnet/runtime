@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -48,7 +47,7 @@ namespace System.Diagnostics.Tests
                 File.WriteAllText(fullPath, "test");
                 Directory.SetCurrentDirectory(tempDir);
                 ProcessStartOptions options = new($".\\{fileName}");
-                Assert.EndsWith(".com", options.FileName, StringComparison.OrdinalIgnoreCase);
+                Assert.EndsWith(".com", options.FileName, StringComparison.Ordinal);
             }
             finally
             {
@@ -66,8 +65,8 @@ namespace System.Diagnostics.Tests
             // cmd.exe should be found in system directory
             ProcessStartOptions options = new("cmd");
             Assert.True(File.Exists(options.FileName));
-            string systemDirectory = Environment.SystemDirectory;
-            Assert.StartsWith(systemDirectory, options.FileName, StringComparison.OrdinalIgnoreCase);
+            string expectedPath = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            Assert.Equal(expectedPath, options.FileName);
         }
 
         [Theory]

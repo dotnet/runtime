@@ -138,30 +138,42 @@ namespace System.Diagnostics
         /// Initializes a new instance of the <see cref="ProcessStartOptions"/> class.
         /// </summary>
         /// <param name="fileName">The application to start.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="fileName"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="fileName"/> is empty.</exception>
-        /// <exception cref="FileNotFoundException">Thrown when <paramref name="fileName"/> cannot be resolved to an existing file.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="fileName"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="fileName"/> is empty.</exception>
+        /// <exception cref="FileNotFoundException"><paramref name="fileName"/> cannot be resolved to an existing file.</exception>
         /// <remarks>
         /// <para>
         /// The <paramref name="fileName"/> is resolved to an absolute path before starting the process.
         /// </para>
         /// <para>
-        /// When the <paramref name="fileName"/> is a rooted path, it is used as-is without any resolution.
+        /// When the <paramref name="fileName"/> is a fully qualified path, it is used as-is without any resolution.
         /// </para>
         /// <para>
-        /// On Windows, when <paramref name="fileName"/> is not a rooted path, the system searches
-        /// for the executable in the following order:
+        /// When the <paramref name="fileName"/> is a rooted but not fully qualified path (for example, <c>C:foo.exe</c> or <c>\foo\bar.exe</c> on Windows),
+        /// it is resolved to an absolute path using the current directory context.
+        /// </para>
+        /// <para>
+        /// When the <paramref name="fileName"/> is an explicit relative path containing directory separators (for example, <c>.\foo.exe</c> or <c>../bar</c>),
+        /// it is resolved relative to the current directory.
+        /// </para>
+        /// <para>
+        /// When the <paramref name="fileName"/> is a bare filename without directory separators, the system searches for the executable in the following locations:
+        /// </para>
+        /// <para>
+        /// On Windows:
         /// </para>
         /// <list type="number">
-        /// <item><description>The System directory.</description></item>
+        /// <item><description>The System directory (for example, <c>C:\Windows\System32</c>).</description></item>
         /// <item><description>The directories listed in the PATH environment variable.</description></item>
         /// </list>
         /// <para>
-        /// On Unix, when <paramref name="fileName"/> is not a rooted path, the system searches
-        /// for the executable in the directories listed in the PATH environment variable.
+        /// On Unix:
         /// </para>
+        /// <list type="number">
+        /// <item><description>The directories listed in the PATH environment variable.</description></item>
+        /// </list>
         /// <para>
-        /// On Windows, if the <paramref name="fileName"/> does not have an extension, ".exe" is appended to it before searching.
+        /// On Windows, if the <paramref name="fileName"/> does not have an extension and does not contain directory separators, <c>.exe</c> is appended before searching.
         /// </para>
         /// </remarks>
         public ProcessStartOptions(string fileName)
@@ -187,20 +199,12 @@ namespace System.Diagnostics
         // 2. With non-NULL lpApplicationName, where the system will use the provided application
         // name as-is without any resolution, and the command line is passed as-is to the process.
         //
-        // The official documentation mentions:
-        // "(..) do not pass NULL for lpApplicationName. If you do pass NULL for lpApplicationName,
-        // use quotation marks around the executable path in lpCommandLine."
+        // The recommended way is to use the second approach and provide the resolved executable path.
         //
-        // We have asked the CreateProcess owners (Windows Team) for feedback. This is what they wrote:
-        // "Applications should not under any circumstances pass user-controlled input directly to CreateProcess;
-        // or, if they intend to do so (for passing user-originated parameters), they should be filling out the lpApplicationName parameter."
-        //
-        // We could either document that the FileName should never be user-controlled input or resolve it ourselves,
-        // pass it as lpApplicationName and arguments as lpCommandLine.
-        //
-        // Changing the resolution logic could introduce breaking changes, but since we are introducing a new API,
-        // we take it as an opportunity to clean up the legacy baggage to have simpler, easier to understand
-        // and more secure filename resolution algorithm that is consistent across OSes and aligned with other modern platforms.
+        // Changing the resolution logic for existing Process APIs would introduce breaking changes.
+        // Since we are introducing a new API, we take it as an opportunity to clean up the legacy baggage
+        // to have simpler, easier to understand and more secure filename resolution algorithm
+        // that is more consistent across OSes and aligned with other modern platforms.
         internal static string? ResolvePath(string filename)
         {
             // If the filename is a complete path, use it, regardless of whether it exists.
@@ -224,6 +228,8 @@ namespace System.Diagnostics
                 return Path.GetFullPath(filename);
             }
 
+            // We want to keep the resolution logic in one place for better maintainability and consistency.
+            // That is why we don't provide platform-specific implementations files and use #if directives here.
 #if WINDOWS
             // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
             // "If the file name does not contain an extension, .exe is appended.
@@ -231,9 +237,7 @@ namespace System.Diagnostics
             // If the file name ends in a period (.) with no extension, or if the file name contains a path, .exe is not appended."
 
             // HasExtension returns false for trailing dot, so we need to check that separately
-            if (filename[filename.Length - 1] != '.'
-                && directoryName.IsEmpty
-                && !Path.HasExtension(filename))
+            if (filename[filename.Length - 1] != '.' && !Path.HasExtension(filename))
             {
                 filename += ".exe";
             }
@@ -259,7 +263,7 @@ namespace System.Diagnostics
             if (pathEnvVar != null)
             {
                 char pathSeparator = OperatingSystem.IsWindows() ? ';' : ':';
-                var pathParser = new StringParser(pathEnvVar, pathSeparator, skipEmpty: true);
+                StringParser pathParser = new(pathEnvVar, pathSeparator, skipEmpty: true);
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
