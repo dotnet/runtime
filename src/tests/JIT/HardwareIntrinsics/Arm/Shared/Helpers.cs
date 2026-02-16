@@ -171,12 +171,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return U.CreateChecked(result);
         }
 
-        public static byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
+        public static unsafe byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
             where T : unmanaged, INumber<T>
         {
             int result = 0;
+            int elementSize = sizeof(T);
+            int segmentStartByte = ((i * elementSize) / 16) * 16;
+            int segmentEndByte = segmentStartByte + 16;
+            int rightLengthBytes = right.Length * elementSize;
 
-            for (int j = 0; j < right.Length; j++)
+            if (segmentEndByte > rightLengthBytes)
+            {
+                segmentEndByte = rightLengthBytes;
+            }
+
+            int segmentStart = segmentStartByte / elementSize;
+            int segmentEnd = segmentEndByte / elementSize;
+
+            for (int j = segmentStart; j < segmentEnd; j++)
             {
                 if (left[i] == right[j])
                 {
