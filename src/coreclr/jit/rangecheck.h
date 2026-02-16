@@ -655,24 +655,6 @@ struct RangeOps
         return result;
     }
 
-    static Range Not(const Range& range)
-    {
-        int constVal;
-        if (range.IsSingleValueConstant(&constVal) && ((constVal == 0) || (constVal == 1)))
-        {
-            // ![0..0] = [1..1]
-            // ![1..1] = [0..0]
-            return Range(Limit(Limit::keConstant, constVal == 0 ? 1 : 0));
-        }
-        if (range.LowerLimit().IsConstant() && (range.LowerLimit().GetConstant() == 0) &&
-            range.UpperLimit().IsConstant() && (range.UpperLimit().GetConstant() == 1))
-        {
-            // ![0..1] = [0..1]
-            return range;
-        }
-        return Limit(Limit::keUnknown);
-    }
-
     //------------------------------------------------------------------------
     // EvalRelop: Evaluate the relation between two ranges for the given relop
     //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
