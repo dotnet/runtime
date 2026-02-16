@@ -419,9 +419,14 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="ArgumentNullException">The password provided is null.</exception>
         public Stream Open(string password)
         {
             ThrowIfInvalidArchive();
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+            }
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
@@ -453,6 +458,10 @@ namespace System.IO.Compression
         public Stream Open(string password, EncryptionMethod encryptionMethod)
         {
             ThrowIfInvalidArchive();
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+            }
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
@@ -522,7 +531,10 @@ namespace System.IO.Compression
         public Stream Open(FileAccess access, string password)
         {
             ThrowIfInvalidArchive();
-
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+            }
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
 
@@ -1151,11 +1163,14 @@ namespace System.IO.Compression
 
             // Build the stream stack with encryption if needed
             Stream targetStream = _archive.ArchiveStream;
+            Stream? encryptionStream = null;
 
             if (encryptionMethod == EncryptionMethod.ZipCrypto)
             {
                 if (string.IsNullOrEmpty(password))
-                    throw new InvalidOperationException(SR.NoPasswordProvided);
+                {
+                    throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+                }
 
                 Encryption = encryptionMethod;
 
@@ -1169,6 +1184,7 @@ namespace System.IO.Compression
                     encrypting: true,
                     crc32: null,
                     leaveOpen: true);
+                encryptionStream = targetStream;
             }
             else if (encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128)
             {
@@ -1178,7 +1194,7 @@ namespace System.IO.Compression
                 }
 
                 if (string.IsNullOrEmpty(password))
-                    throw new InvalidOperationException(SR.NoPasswordProvided);
+                    throw new InvalidOperationException(SR.EmptyPassword);
 
                 Encryption = encryptionMethod;
 
@@ -1194,6 +1210,7 @@ namespace System.IO.Compression
                     totalStreamSize: -1,
                     encrypting: true,
                     leaveOpen: true);
+                encryptionStream = targetStream;
             }
 
             bool isAesEncryption = encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128;
@@ -1210,7 +1227,7 @@ namespace System.IO.Compression
                 },
                 streamForPosition: encryptionMethod != EncryptionMethod.None ? _archive.ArchiveStream : null);
 
-            _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this, encryptionMethod);
+            _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this, encryptionMethod, encryptionStream);
 
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
@@ -2096,10 +2113,11 @@ namespace System.IO.Compression
             private bool _usedZip64inLH;
             private bool _canWrite;
             private readonly EncryptionMethod _encryption;
+            private readonly Stream? _encryptionStream;
 
             // makes the assumption that somewhere down the line, crcSizeStream is eventually writing directly to the archive
             // this class calls other functions on ZipArchiveEntry that write directly to the archive
-            public DirectToArchiveWriterStream(CheckSumAndSizeWriteStream crcSizeStream, ZipArchiveEntry entry, EncryptionMethod encryptionMethod = EncryptionMethod.None)
+            public DirectToArchiveWriterStream(CheckSumAndSizeWriteStream crcSizeStream, ZipArchiveEntry entry, EncryptionMethod encryptionMethod = EncryptionMethod.None, Stream? encryptionStream = null)
             {
                 _position = 0;
                 _crcSizeStream = crcSizeStream;
@@ -2109,6 +2127,7 @@ namespace System.IO.Compression
                 _usedZip64inLH = false;
                 _canWrite = true;
                 _encryption = encryptionMethod;
+                _encryptionStream = encryptionStream;
             }
 
             public override long Length
@@ -2271,8 +2290,14 @@ namespace System.IO.Compression
                 {
                     _crcSizeStream.Dispose(); // now we have size/crc info
 
+                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
+                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
+                    // stream would be orphaned. Dispose it explicitly to finalize encryption
+                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
                     if (!_everWritten)
                     {
+                        _encryptionStream?.Dispose();
+
                         // write local header, no data, so we use stored
                         _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
                     }
@@ -2299,8 +2324,17 @@ namespace System.IO.Compression
                 {
                     await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
 
+                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
+                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
+                    // stream would be orphaned. Dispose it explicitly to finalize encryption
+                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
                     if (!_everWritten)
                     {
+                        if (_encryptionStream is not null)
+                        {
+                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
+                        }
+
                         // write local header, no data, so we use stored
                         await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, cancellationToken: default).ConfigureAwait(false);
                     }
@@ -2321,7 +2355,6 @@ namespace System.IO.Compression
                 await base.DisposeAsync().ConfigureAwait(false);
             }
         }
-
         [Flags]
         internal enum BitFlagValues : ushort
         {

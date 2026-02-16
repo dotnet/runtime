@@ -1388,8 +1388,8 @@ namespace System.IO.Compression.Tests
                     // Read access in create mode throws
                     await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Read, "password"));
                     // Encryption without password throws
-                    await Assert.ThrowsAsync<InvalidOperationException>(() => entry.OpenAsync(FileAccess.Write, null!, EncryptionMethod.Aes256));
-                    await Assert.ThrowsAsync<IOException>(() => entry.OpenAsync(FileAccess.Write, "", EncryptionMethod.Aes256));
+                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, null!, EncryptionMethod.Aes256));
+                    await Assert.ThrowsAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Write, "", EncryptionMethod.Aes256));
                 }
                 else
                 {
@@ -1418,15 +1418,15 @@ namespace System.IO.Compression.Tests
 
                 if (async)
                 {
-                    await Assert.ThrowsAnyAsync<InvalidDataException>(() => entry.OpenAsync(FileAccess.Read, null!));
-                    await Assert.ThrowsAnyAsync<InvalidDataException>(() => entry.OpenAsync(FileAccess.Read, ""));
+                    await Assert.ThrowsAnyAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Read, null!));
+                    await Assert.ThrowsAnyAsync<ArgumentNullException>(() => entry.OpenAsync(FileAccess.Read, ""));
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, null!));
                     await Assert.ThrowsAnyAsync<ArgumentException>(() => entry.OpenAsync(FileAccess.ReadWrite, ""));
                 }
                 else
                 {
-                    Assert.ThrowsAny<InvalidDataException>(() => entry.Open(FileAccess.Read, null!));
-                    Assert.ThrowsAny<InvalidDataException>(() => entry.Open(FileAccess.Read, ""));
+                    Assert.ThrowsAny<ArgumentNullException>(() => entry.Open(FileAccess.Read, null!));
+                    Assert.ThrowsAny<ArgumentNullException>(() => entry.Open(FileAccess.Read, ""));
                     Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.ReadWrite, null!));
                     Assert.ThrowsAny<ArgumentException>(() => entry.Open(FileAccess.ReadWrite, ""));
                 }

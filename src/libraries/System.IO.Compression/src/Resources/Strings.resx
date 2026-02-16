@@ -324,8 +324,8 @@
   <data name="PasswordRequired" xml:space="preserve">
     <value>A password is required for encrypted entries.</value>
   </data>
-  <data name="NoPasswordProvided" xml:space="preserve">
-    <value>No password was provided for encrypting this entry</value>
+  <data name="EmptyPassword" xml:space="preserve">
+    <value>Empty password was provided for encrypting this entry</value>
   </data>
   <data name="InvalidAesStrength" xml:space="preserve">
     <value>Invalid AES strength value.</value>

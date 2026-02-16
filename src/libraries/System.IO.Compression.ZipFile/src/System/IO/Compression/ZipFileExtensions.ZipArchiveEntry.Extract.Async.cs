@@ -71,7 +71,7 @@ public static partial class ZipFileExtensions
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
 
         // When overwriting, extract to a temporary file first to avoid corrupting the destination file
         // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
@@ -125,7 +125,7 @@ public static partial class ZipFileExtensions
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+        ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: true, out FileStreamOptions fileStreamOptions);
 
         FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
         await using (fs)

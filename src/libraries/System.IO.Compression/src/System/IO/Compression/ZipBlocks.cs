@@ -679,6 +679,11 @@ namespace System.IO.Compression
             ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes[relativeFilenameLengthLocation..]);
             ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes[relativeExtraFieldLengthLocation..]);
 
+            if (stream.Length < stream.Position + filenameLength + extraFieldLength)
+            {
+                return false;
+            }
+
             // Calculate absolute position of compressed data and seek there
             // Using SeekOrigin.Begin ensures we end up at the correct position
             // regardless of any edge cases during header parsing

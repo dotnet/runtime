@@ -62,7 +62,7 @@ namespace System.IO.Compression
         /// <param name="overwrite">True to indicate overwrite.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
-            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
             // When overwriting, extract to a temporary file first to avoid corrupting the destination file
             // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
@@ -127,7 +127,7 @@ namespace System.IO.Compression
         /// <param name="password">The password used to decrypt the encrypted entry.</param>
         public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
         {
-            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
 
             // When overwriting, extract to a temporary file first to avoid corrupting the destination file
             // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
@@ -167,7 +167,7 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
+        private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, bool useAsync, out FileStreamOptions fileStreamOptions)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
@@ -177,7 +177,8 @@ namespace System.IO.Compression
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
-                BufferSize = ZipFile.FileStreamBufferSize
+                BufferSize = ZipFile.FileStreamBufferSize,
+                Options = useAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
             const UnixFileMode OwnershipPermissions =

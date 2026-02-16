@@ -59,7 +59,7 @@ namespace System.IO.Compression
         public static System.IO.Compression.ZipArchive OpenRead(string archiveFileName) { throw null; }
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> OpenReadAsync(string archiveFileName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(1)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class ZipFileExtensions
     {
         public static System.IO.Compression.ZipArchiveEntry CreateEntryFromFile(this System.IO.Compression.ZipArchive destination, string sourceFileName, string entryName) { throw null; }
@@ -73,6 +73,7 @@ namespace System.IO.Compression
         public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName) { }
         public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles) { }
         public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles, string password) { }
+        public static void ExtractToDirectory(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, string password) { }
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles, string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(this System.IO.Compression.ZipArchive source, string destinationDirectoryName, string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

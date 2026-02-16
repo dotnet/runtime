@@ -93,9 +93,6 @@ namespace System.IO.Compression.Tests
             await encryptStream.WriteAsync(new byte[] { 0 }, 0, 1).ConfigureAwait(false); // Trigger header write
             await encryptStream.FlushAsync().ConfigureAwait(false);
 
-            // Wait briefly for data to flow through connected streams
-            await Task.Delay(10).ConfigureAwait(false);
-
             // Now create the decryption stream (read-only) - wraps stream2
             // This will read and validate the 12-byte header
             // Use async factory method to support AsyncOnlyStream wrappers

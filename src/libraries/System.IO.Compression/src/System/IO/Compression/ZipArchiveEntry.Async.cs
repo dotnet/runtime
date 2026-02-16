@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.IO.Compression.ZipLocalFileHeader;
 
 namespace System.IO.Compression;
 
@@ -118,6 +116,10 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
+        if (string.IsNullOrEmpty(password))
+        {
+            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+        }
 
         if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
@@ -179,7 +181,14 @@ public partial class ZipArchiveEntry
         ThrowIfInvalidArchive();
 
         if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+        {
             throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+        }
+
+        if (string.IsNullOrEmpty(password))
+        {
+            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+        }
 
         switch (_archive.Mode)
         {
@@ -205,6 +214,10 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
+        if (string.IsNullOrEmpty(password))
+        {
+            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+        }
 
         switch (_archive.Mode)
         {
@@ -231,6 +244,10 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
+        if (string.IsNullOrEmpty(password))
+        {
+            throw new ArgumentNullException(nameof(password), SR.EmptyPassword);
+        }
 
         switch (_archive.Mode)
         {
