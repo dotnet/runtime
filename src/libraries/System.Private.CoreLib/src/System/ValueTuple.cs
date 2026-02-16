@@ -9,6 +9,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NATIVEAOT
+using System.Runtime;
+using System.Text;
+using Internal.Runtime;
+#endif
 
 namespace System
 {
@@ -254,6 +259,43 @@ namespace System
         /// <returns>An 8-tuple (octuple) whose value is (item1, item2, item3, item4, item5, item6, item7, item8).</returns>
         public static ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>> Create<T1, T2, T3, T4, T5, T6, T7, T8>(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, T8 item8) =>
             new ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>>(item1, item2, item3, item4, item5, item6, item7, Create(item8));
+
+#if NATIVEAOT
+        // Shared helper for NativeAOT that uses __GetFieldHelper to enumerate fields.
+        // This produces a single shared implementation for all ValueTuple arities,
+        // leading to smaller code size in NativeAOT.
+        internal static unsafe string ToStringShared(ValueType tuple, bool includeOpenParen)
+        {
+            int numFields = tuple.__GetFieldHelper(-1, out _);
+            Debug.Assert(numFields > 0);
+
+            ref byte data = ref tuple.GetRawData();
+
+            var sb = new StringBuilder();
+            if (includeOpenParen)
+                sb.Append('(');
+
+            for (int i = 0; i < numFields; i++)
+            {
+                if (i > 0)
+                    sb.Append(", ");
+
+                int fieldOffset = tuple.__GetFieldHelper(i, out MethodTable* fieldType);
+                object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, fieldOffset), fieldType);
+
+                if (i == numFields - 1 && fieldValue is IValueTupleInternal nested)
+                {
+                    sb.Append(nested.ToStringEnd());
+                    return sb.ToString();
+                }
+
+                sb.Append(fieldValue?.ToString());
+            }
+
+            sb.Append(')');
+            return sb.ToString();
+        }
+#endif
     }
 
     /// <summary>Represents a 1-tuple, or singleton, as a value type.</summary>
@@ -387,12 +429,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -592,12 +642,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -789,12 +847,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -1004,12 +1070,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -1237,12 +1311,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -1488,12 +1570,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -1757,12 +1847,20 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ")";
+#endif
         }
 
         /// <summary>
@@ -2170,22 +2268,30 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: true);
+#else
             if (Rest is IValueTupleInternal)
             {
                 return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
             }
 
             return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
+#endif
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
+#if NATIVEAOT
+            return ValueTuple.ToStringShared((ValueType)(object)this, includeOpenParen: false);
+#else
             if (Rest is IValueTupleInternal)
             {
                 return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
             }
 
             return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
+#endif
         }
 
         /// <summary>
