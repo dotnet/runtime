@@ -1352,7 +1352,7 @@ namespace System.Runtime.Serialization
         private static void CheckIfElementUsesUnsupportedConstructs(XmlQualifiedName typeName, XmlSchemaElement element)
         {
             if (element.IsAbstract)
-                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.AbstractElementNotSupported, element.Name));
+                ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.AbstractElementNotSupported);
             if (element.DefaultValue != null)
                 ThrowTypeCannotBeImportedException(typeName.Name, typeName.Namespace, SR.Format(SR.DefaultOnElementNotSupported, element.Name));
             if (element.FixedValue != null)

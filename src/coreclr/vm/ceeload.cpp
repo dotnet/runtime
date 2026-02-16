@@ -523,7 +523,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
         if (setEnC)
         {
             EnableEditAndContinue();
