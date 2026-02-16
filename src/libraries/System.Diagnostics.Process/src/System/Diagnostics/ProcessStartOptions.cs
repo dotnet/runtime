@@ -243,14 +243,10 @@ namespace System.Diagnostics
             }
 
             // Windows-specific search location: the system directory (e.g., C:\Windows\System32)
-            string path = System.Environment.SystemDirectory;
-            if (path != null)
+            string path = Path.Combine(System.Environment.SystemDirectory, filename);
+            if (File.Exists(path))
             {
-                path = Path.Combine(path, filename);
-                if (File.Exists(path))
-                {
-                    return path;
-                }
+                return path;
             }
 #endif
 
