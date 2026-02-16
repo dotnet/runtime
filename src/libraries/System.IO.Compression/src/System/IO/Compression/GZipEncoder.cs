@@ -115,9 +115,7 @@ namespace System.IO.Compression
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
-        {
-            return TryCompress(source, destination, out bytesWritten, quality, DeflateEncoder.DefaultWindowLog);
-        }
+            => TryCompress(source, destination, out bytesWritten, quality, DeflateEncoder.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality and window size.
