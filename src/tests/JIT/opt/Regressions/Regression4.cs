@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -11,6 +12,7 @@ public class Program
     public static int s_58;
     public static uint s_66;
     public static byte[] s_126 = new byte[] { 0 };
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

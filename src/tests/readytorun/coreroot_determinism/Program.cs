@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -104,6 +105,7 @@ public class Program
         return 0 == process.ExitCode;
     }
 
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

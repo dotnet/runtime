@@ -253,6 +253,12 @@ PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
 PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
+PALIMPORT
 BOOL
 PALAPI
 PAL_GenerateCoreDump(
