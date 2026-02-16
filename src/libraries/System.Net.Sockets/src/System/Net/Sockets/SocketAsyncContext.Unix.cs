@@ -678,6 +678,8 @@ namespace System.Net.Sockets
 
                 if (buffer.Length == 0)
                 {
+                    AssociatedContext._socket.RestoreBlocking();
+
                     // Invoke callback only when we are completely done.
                     // In case data were provided for Connect we may or may not send them all.
                     // If we did not we will need follow-up with Send operation
@@ -1350,8 +1352,9 @@ namespace System.Net.Sockets
             //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
-            // operations.  We never transition back to blocking mode, to avoid problems synchronizing that
-            // transition with the async infrastructure.
+            // operations. After a successful ConnectAsync, we may transition back to blocking mode to optimize
+            // subsequent synchronous operations (see SetHandleBlocking). The socket will be set back to
+            // non-blocking when another async operation is performed.
             //
             // Note that there's no synchronization here, so we may set the non-blocking option multiple times
             // in a race.  This should be fine.
@@ -1368,6 +1371,23 @@ namespace System.Net.Sockets
         }
 
         public bool IsHandleNonBlocking => _isHandleNonBlocking;
+
+        public void SetHandleBlocking()
+        {
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI sockets are always non-blocking
+                return;
+            }
+
+            if (_isHandleNonBlocking)
+            {
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                {
+                    _isHandleNonBlocking = false;
+                }
+            }
+        }
 
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
             where TOperation : AsyncOperation
@@ -1563,6 +1583,12 @@ namespace System.Net.Sockets
                 {
                     errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
                 }
+
+                // Only restore blocking when there's no follow-up async send.
+                if (buffer.Length == 0)
+                {
+                    _socket.RestoreBlocking();
+                }
                 return errorCode;
             }
 
@@ -1579,6 +1605,11 @@ namespace System.Net.Sockets
                 if (operation.ErrorCode == SocketError.Success)
                 {
                     sentBytes += operation.BytesTransferred;
+                }
+
+                if (buffer.Length == 0)
+                {
+                    _socket.RestoreBlocking();
                 }
                 return operation.ErrorCode;
             }
