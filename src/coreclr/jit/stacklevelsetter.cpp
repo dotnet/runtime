@@ -240,8 +240,10 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
         case GT_INDEX_ADDR:
-        case GT_ARR_ELEM:
-            SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);
+            if (node->AsIndexAddr()->IsBoundsChecked())
+            {
+                SetThrowHelperBlock(SCK_RNGCHK_FAIL, block);
+            }
             break;
 
         case GT_CKFINITE:
