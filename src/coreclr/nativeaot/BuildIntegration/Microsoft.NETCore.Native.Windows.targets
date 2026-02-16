@@ -82,6 +82,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <SdkNativeLibrary Include="user32.lib" />
       <SdkNativeLibrary Include="version.lib" />
       <SdkNativeLibrary Include="ws2_32.lib" />
+      <SdkNativeLibrary Include="Synchronization.lib" />
     </ItemGroup>
 
     <ItemGroup>

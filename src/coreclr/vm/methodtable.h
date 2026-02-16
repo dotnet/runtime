@@ -325,6 +325,7 @@ struct MethodTableAuxiliaryData
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_Initialized, enum_flag_IsInitError, and enum_flag_IsNotFullyLoaded.
 
         enum_flag_Initialized               = 0x0001,
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode  = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
@@ -2465,8 +2466,8 @@ public:
     static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
 
 #ifdef FEATURE_COMINTEROP
-    // get the method desc given the interface method desc on a COM implemented server (if fNullOk is set then NULL is an allowable return value)
-    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
+    // get the method desc given the interface method desc on a COM implemented server
+    MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD);
 #endif // FEATURE_COMINTEROP
 
     // Resolve virtual static interface method pInterfaceMD on this type.
@@ -3713,7 +3714,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        //
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state
@@ -3787,40 +3788,41 @@ private:
 
         // The following bits describe mutually exclusive locations of the type
         // in the type hierarchy.
-        enum_flag_Category_Mask             = 0x000F0000,
+
+        enum_flag_Category_Mask             = 0x000F0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_Category_Class            = 0x00000000,
         enum_flag_Category_Unused_1         = 0x00010000,
         enum_flag_Category_Unused_2         = 0x00020000,
         enum_flag_Category_Unused_3         = 0x00030000,
 
-        enum_flag_Category_ValueType        = 0x00040000,
+        enum_flag_Category_ValueType        = 0x00040000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
-        enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType
-        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type
-        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
-        enum_flag_Category_Array            = 0x00080000,
-        enum_flag_Category_Array_Mask       = 0x000C0000,
+        enum_flag_Category_Array            = 0x00080000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_Array_Mask       = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // enum_flag_Category_IfArrayThenUnused                 = 0x00010000, // sub-category of Array
-        enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array
+        enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
-        enum_flag_Category_Interface        = 0x000C0000,
+        enum_flag_Category_Interface        = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_Unused_4         = 0x000D0000,
         enum_flag_Category_Unused_5         = 0x000E0000,
         enum_flag_Category_Unused_6         = 0x000F0000,
 
-        enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
+        enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
-        enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
+        enum_flag_Collectible                 = 0x00200000, // GC depends on this bit. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // enum_flag_unused                   = 0x00400000,
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references
+        enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
         enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
         // unused                             = 0x08000000,
@@ -3829,7 +3831,7 @@ private:
         enum_flag_ContainsGenericVariables    = 0x20000000, // we cache this flag to help detect these efficiently and
                                                             // to detect this condition when restoring
         enum_flag_ComObject                   = 0x40000000, // class is a com object
-        enum_flag_HasComponentSize            = 0x80000000, // This is set if component size is used for flags.
+        enum_flag_HasComponentSize            = 0x80000000, // This is set if component size is used for flags. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
@@ -3851,6 +3853,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the value of enum_flag_DynamicStatics.
 
         enum_flag_HasPerInstInfo            = 0x0001,
         enum_flag_DynamicStatics            = 0x0002,
@@ -3977,6 +3980,7 @@ private:
     PTR_MethodTableAuxiliaryData m_pAuxiliaryData;
 
     // The value of lowest two bits describe what the union contains
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of UNION_EECLASS and UNION_METHODTABLE.
     enum LowBits {
         UNION_EECLASS      = 0,    //  0 - pointer to EEClass. This MethodTable is the canonical method table.
         UNION_METHODTABLE  = 1,    //  1 - pointer to canonical MethodTable.

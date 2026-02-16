@@ -5810,7 +5810,7 @@ ClrDataAccess::RawGetMethodName(
                 EX_END_CATCH
             }
         }
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
@@ -5832,7 +5832,7 @@ ClrDataAccess::RawGetMethodName(
                 return hr;
             }
         }
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
