@@ -434,6 +434,10 @@ CorUnix::InternalCreateThread(
     HANDLE *phThread
     )
 {
+#ifdef FEATURE_SINGLE_THREADED
+    ERROR("Threads are not supported in single-threaded mode.\n");
+    return ERROR_NOT_SUPPORTED;
+#else // FEATURE_SINGLE_THREADED
     PAL_ERROR palError;
     CPalThread *pNewThread = NULL;
     CObjectAttributes oa;
@@ -629,6 +633,7 @@ EXIT:
     }
 
     return palError;
+#endif // FEATURE_SINGLE_THREADED
 }
 
 
@@ -1352,6 +1357,7 @@ SetThreadDescription(
     return HRESULT_FROM_WIN32(palError);
 }
 
+#ifndef FEATURE_SINGLE_THREADED
 void *
 CPalThread::ThreadEntry(
     void *pvParam
@@ -1497,6 +1503,7 @@ fail:
        above should release all resources */
     return NULL;
 }
+#endif // !FEATURE_SINGLE_THREADED
 
 /*++
 Function:

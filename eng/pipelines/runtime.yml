@@ -646,7 +646,7 @@ extends:
           platforms:
           - linux_x64
           - windows_x64
-          - osx_x64
+          - osx_arm64
           - linux_arm64
           - windows_arm64
           variables:
@@ -1620,29 +1620,10 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
+          - osx_x64
           - linux_x64
           - linux_arm64
           - windows_x64
-          helixQueueGroup: pr
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testGroup: innerloop
-            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
-            unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
-            unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          buildConfig: checked
-          platforms:
-          - osx_x64
           helixQueueGroup: pr
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:

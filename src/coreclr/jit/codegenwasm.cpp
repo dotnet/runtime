@@ -13,6 +13,7 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
 static const instruction INS_I_le_u  = INS_i64_le_u;
 static const instruction INS_I_ge_u  = INS_i64_ge_u;
@@ -20,6 +21,7 @@ static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
 static const instruction INS_I_le_u  = INS_i32_le_u;
 static const instruction INS_I_ge_u  = INS_i32_ge_u;
@@ -394,6 +396,34 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// MakeOperandMultiUse: Prepare an operand for multiple usages.
+//
+// Extracts an internal register from 'node' if 'operand' is not already
+// in a register, and initializes the extracted register via "local.tee".
+//
+// Arguments:
+//    node    - The parent node of 'operand', holder of the internal registers
+//    operand - The operand, must be on top of the value stack
+//
+// Return Value:
+//    The register to use for 'operand'.
+//
+regNumber CodeGen::MakeOperandMultiUse(GenTree* node, GenTree* operand)
+{
+    if (genIsRegCandidateLocal(operand))
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(operand->AsLclVar());
+        assert(varDsc->lvIsInReg());
+        return varDsc->GetRegNum();
+    }
+
+    InternalRegs* regs = internalRegisters.GetAll(node);
+    regNumber     reg  = regs->Extract();
+    GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(operand), WasmRegToIndex(reg));
+    return reg;
+}
+
+//------------------------------------------------------------------------
 // genCodeForTreeNode: codegen for a particular tree node
 //
 // Arguments:
@@ -477,6 +507,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_RETURN:
+        case GT_RETFILT:
             genReturn(treeNode);
             break;
 
@@ -534,6 +565,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // TODO-WASM-RA: remove KEEPALIVE after we've produced the GC info.
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             GetEmitter()->emitIns(INS_drop);
+            break;
+
+        case GT_INDEX_ADDR:
+            genCodeForIndexAddr(treeNode->AsIndexAddr());
+            break;
+
+        case GT_LEA:
+            genLeaInstruction(treeNode->AsAddrMode());
+            break;
+
+        case GT_MEMORYBARRIER:
+            // No-op for single-threaded wasm.
+            assert(!WASM_THREAD_SUPPORT);
+            JITDUMP("Ignoring GT_MEMORYBARRIER; single-threaded codegen\n");
             break;
 
         default:
@@ -955,34 +1000,31 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
-    // wasm stack is
-    // divisor (top)
-    // dividend (next)
-    // ...
-    // TODO-WASM: To check for exception, we will have to spill these to
-    // internal registers along the way, like so:
-    //
-    // ... push dividend
-    // tee.local $temp1
-    // ... push divisor
-    // tee.local $temp2
-    // ... exception checks (using $temp1 and $temp2; will introduce flow)
-    // div/mod op
-
     if (!varTypeIsFloating(treeNode->TypeGet()))
     {
         ExceptionSetFlags exSetFlags = treeNode->OperExceptions(m_compiler);
+        bool              is64BitOp  = treeNode->TypeIs(TYP_LONG);
+        emitAttr          size       = is64BitOp ? EA_8BYTE : EA_4BYTE;
 
-        // TODO-WASM:(AnyVal / 0) => DivideByZeroException
-        //
+        // (AnyVal / 0) => DivideByZeroException.
+        GenTree*  divisor    = treeNode->gtGetOp2();
+        regNumber divisorReg = REG_NA;
         if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
+            divisorReg = MakeOperandMultiUse(treeNode, divisor);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_eqz : INS_i32_eqz);
+            genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO);
         }
 
-        // TODO-WASM: (MinInt / -1) => ArithmeticException
-        //
+        // (MinInt / -1) => ArithmeticException.
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
+            // TODO-WASM: implement overflow checking.
+        }
+
+        if (divisorReg != REG_NA)
+        {
+            GetEmitter()->emitIns_I(INS_local_get, size, WasmRegToIndex(divisorReg));
         }
     }
 
@@ -1024,9 +1066,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForDivMod");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -1314,6 +1354,87 @@ void CodeGen::genRangeCheck(GenTree* tree)
     genConsumeOperands(tree->AsOp());
     GetEmitter()->emitIns(INS_I_ge_u);
     genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.
+//
+// Arguments:
+//    tree - the GT_INDEX_ADDR node
+//
+void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
+{
+    genConsumeOperands(node);
+
+    GenTree* const base  = node->Arr();
+    GenTree* const index = node->Index();
+
+    assert(varTypeIsIntegral(index->TypeGet()));
+
+    // Generate the bounds check if necessary.
+    if (node->IsBoundsChecked())
+    {
+        // We need internal registers for this case.
+        NYI_WASM("GT_INDEX_ADDR with bounds check");
+    }
+
+    // Zero extend index if necessary.
+    if (genTypeSize(index->TypeGet()) < TARGET_POINTER_SIZE)
+    {
+        assert(TARGET_POINTER_SIZE == 8);
+        GetEmitter()->emitIns(INS_i64_extend_u_i32);
+    }
+
+    // Result is the address of the array element.
+    unsigned const scale = node->gtElemSize;
+
+    if (scale > 1)
+    {
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, scale);
+        GetEmitter()->emitIns(INS_I_mul);
+    }
+    GetEmitter()->emitIns(INS_I_add);
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, node->gtElemOffset);
+    GetEmitter()->emitIns(INS_I_add);
+    genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genLeaInstruction: Produce code for a GT_LEA node.
+//
+// Arguments:
+//    lea - the node
+//
+void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
+{
+    genConsumeOperands(lea);
+    assert(lea->HasIndex() || lea->HasBase());
+
+    if (lea->HasIndex())
+    {
+        unsigned const scale = lea->gtScale;
+
+        if (scale > 1)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, scale);
+            GetEmitter()->emitIns(INS_I_mul);
+        }
+
+        if (lea->HasBase())
+        {
+            GetEmitter()->emitIns(INS_I_add);
+        }
+    }
+
+    const int offset = lea->Offset();
+
+    if (offset != 0)
+    {
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, offset);
+        GetEmitter()->emitIns(INS_I_add);
+    }
+
+    genProduceReg(lea);
 }
 
 //------------------------------------------------------------------------

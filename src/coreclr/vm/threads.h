@@ -502,7 +502,7 @@ public:
     //
     enum ThreadState
     {
-        TS_Unknown                = 0x00000000,    // threads are initialized this way
+        TS_Unknown                = 0x00000000,    // threads are initialized this way. [cDAC] [Thread]: Contract depends on this value.
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
@@ -517,13 +517,13 @@ public:
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
 #ifdef FEATURE_HIJACK
-        TS_Hijacked               = 0x00000080,    // Return address has been hijacked
+        TS_Hijacked               = 0x00000080,    // Return address has been hijacked. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_HIJACK
 
         // unused                 = 0x00000100,
-        TS_Background             = 0x00000200,    // Thread is a background thread
-        TS_Unstarted              = 0x00000400,    // Thread has never been started
-        TS_Dead                   = 0x00000800,    // Thread is dead
+        TS_Background             = 0x00000200,    // Thread is a background thread. [cDAC] [Thread]: Contract depends on this value.
+        TS_Unstarted              = 0x00000400,    // Thread has never been started. [cDAC] [Thread]: Contract depends on this value.
+        TS_Dead                   = 0x00000800,    // Thread is dead. [cDAC] [Thread]: Contract depends on this value.
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -548,7 +548,7 @@ public:
         // unused                 = 0x00400000,
 
         // unused                 = 0x00800000,
-        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread?
+        TS_TPWorkerThread         = 0x01000000,    // is this a threadpool worker thread? [cDAC] [Thread]: Contract depends on this value.
 
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
@@ -2244,10 +2244,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_TraceCallCount;
     }
-
-    // Functions to get/set culture information for current thread.
-    static OBJECTREF GetCulture(BOOL bUICulture);
-    static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
