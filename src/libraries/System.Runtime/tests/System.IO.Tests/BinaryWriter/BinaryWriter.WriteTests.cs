@@ -434,8 +434,9 @@ namespace System.IO.Tests
 
             public override byte[] ReadBytes(int count)
             {
-                Advance(count);
-                return base.ReadBytes(count);
+                var result = base.ReadBytes(count);
+                Advance(result.Length);
+                return result;
             }
 
             public override char ReadChar()
