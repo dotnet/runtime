@@ -238,7 +238,7 @@ namespace System.PrivateUri.Tests
             EscapeUnescapeTestUnicodePlane(0x20000, 0x2FFFF);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public void Iri_UnicodePlane3_13()
         {
             EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF);
