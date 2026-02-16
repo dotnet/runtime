@@ -13,6 +13,7 @@ For the existing Mono-based WebAssembly documentation, see [Mono WASM features](
 - [Hosting the application](#hosting-the-application)
 - [Resources consumed on the target device](#resources-consumed-on-the-target-device)
 - [Key differences from Mono WASM](#key-differences-from-mono-wasm)
+- [JavaScript host API](#javascript-host-api)
 - [Developer tools](#developer-tools)
 
 ## Configuring browser features
@@ -131,7 +132,7 @@ The following shows the structure for a Debug build:
 
 ### `corehost` folder structure
 
-- `dotnet.js` — the main entrypoint with the [JavaScript API](#JavaScript-host-API). It will load the rest of the runtime.
+- `dotnet.js` — the main entrypoint with the [JavaScript API](#javascript-host-api). It will load the rest of the runtime.
 - `dotnet.native.js` — POSIX emulation layer provided by [Emscripten](https://github.com/emscripten-core/emscripten).
 - `dotnet.runtime.js` — integration of dotnet with the browser.
 - `dotnet.boot.js` — asset manifest with integrity hashes and configuration flags.
@@ -183,7 +184,7 @@ Running a .NET application in the browser may require more memory and CPU resour
 | **GC** | CoreCLR workstation GC | Mono SGen GC |
 | **Type system** | CoreCLR type system | Mono type system |
 | **Assembly loading** | `AssemblyLoadContext` | Mono native loader |
-| **JS interop** | `[LibraryImport]` P/Invoke + source generators | Direct Mono C interop |
+| **JS interop** | `[JSImport]` / `[JSExport]` (CoreCLR WASM implementation) | `[JSImport]` / `[JSExport]` (shared system with CoreCLR WASM) |
 | **Export binding** | Reflection-based (`__GeneratedInitializer`) | Direct C interop |
 | **Threading** | Not yet supported | Experimental (`WasmEnableThreads`) |
 | **WebCIL** | In progress ([#120248](https://github.com/dotnet/runtime/issues/120248)) | Supported |
