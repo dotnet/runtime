@@ -480,7 +480,7 @@ namespace System.Speech.Internal.Synthesis
             // Update the next phoneme id
             // Retain any other information based on the first TTS phoneme event.
             //
-            TTSEvent ttsEvent, targetEvent, basePhonemeEvent = null;
+            TTSEvent ttsEvent, targetEvent, basePhonemeEvent;
             long totalDurationTicks = 0;
             basePhonemeEvent = (TTSEvent)_phonemeQueue.Peek()!;
             for (int i = 0; i < _lastComplete;)
