@@ -8815,12 +8815,19 @@ void Interpreter::InitBlk()
     if (sizeCIT != CORINFO_TYPE_INT && !isLong)
         VerificationError("Size of InitBlk must be int");
 #endif // _DEBUG
+    size_t size = (size_t) ((isLong) ? OpStackGet<UINT64>(sizeInd) : OpStackGet<UINT32>(sizeInd));
+    if (size==0)
+    {
+        m_curStackHt = addrInd;
+        m_ILCodePtr += 2;
+        BarrierIfVolatile();
+        return;
+    }
 
     void* addr = OpStackGet<void*>(addrInd);
     ThrowOnInvalidPointer(addr);
     GCX_FORBID(); // addr is a potentially vulnerable byref.
     INT8 val = OpStackGet<INT8>(valInd);
-    size_t size = (size_t) ((isLong) ? OpStackGet<UINT64>(sizeInd) : OpStackGet<UINT32>(sizeInd));
     memset(addr, val, size);
 
     m_curStackHt = addrInd;
@@ -8871,13 +8878,19 @@ void Interpreter::CpBlk()
         VerificationError("Size of CpBlk must be int");
 #endif // _DEBUG
 
+    size_t size = (size_t)((isLong) ? OpStackGet<UINT64>(sizeInd) : OpStackGet<UINT32>(sizeInd));
+    if (size==0){
+            m_curStackHt = destInd;
+            m_ILCodePtr += 2;
+            BarrierIfVolatile();
+            return;
+    }
 
     void* destAddr = OpStackGet<void*>(destInd);
     void* srcAddr = OpStackGet<void*>(srcInd);
     ThrowOnInvalidPointer(destAddr);
     ThrowOnInvalidPointer(srcAddr);
     GCX_FORBID(); // destAddr & srcAddr are potentially vulnerable byrefs.
-    size_t size = (size_t)((isLong) ? OpStackGet<UINT64>(sizeInd) : OpStackGet<UINT32>(sizeInd));
     memcpyNoGCRefs(destAddr, srcAddr, size);
 
     m_curStackHt = destInd;
