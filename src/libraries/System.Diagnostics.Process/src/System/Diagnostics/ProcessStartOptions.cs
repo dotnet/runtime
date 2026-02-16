@@ -155,7 +155,6 @@ namespace System.Diagnostics
         /// for the executable in the following order (mimicking the behavior of the <c>CreateProcess</c> system call):
         /// </para>
         /// <list type="number">
-        /// <item><description>The directory of the executable that started the currently executing process.</description></item>
         /// <item><description>The current directory.</description></item>
         /// <item><description>The System directory.</description></item>
         /// <item><description>The Windows directory.</description></item>
@@ -163,13 +162,8 @@ namespace System.Diagnostics
         /// </list>
         /// <para>
         /// On Unix, when <paramref name="fileName"/> is not a rooted path, the system searches
-        /// for the executable in the following order (mimicking the Windows search order):
+        /// for the executable in the current directory and then in the directories listed in the PATH environment variable.
         /// </para>
-        /// <list type="number">
-        /// <item><description>The directory of the executable that started the currently executing process.</description></item>
-        /// <item><description>The current directory.</description></item>
-        /// <item><description>The directories listed in the PATH environment variable.</description></item>
-        /// </list>
         /// <para>
         /// On Windows, if the <paramref name="fileName"/> does not have an extension, ".exe" is appended to it before searching.
         /// </para>
@@ -255,23 +249,8 @@ namespace System.Diagnostics
             }
 #endif
 
-            // Then check the executable's directory
-            string? path = System.Environment.ProcessPath;
-            if (path != null)
-            {
-                try
-                {
-                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-                    if (File.Exists(path))
-                    {
-                        return path;
-                    }
-                }
-                catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
-            }
-
-            // Then check the current directory
-            path = Path.Combine(Directory.GetCurrentDirectory(), filename);
+            // Check the current directory
+            string path = Path.Combine(Directory.GetCurrentDirectory(), filename);
             if (File.Exists(path))
             {
                 return path;
