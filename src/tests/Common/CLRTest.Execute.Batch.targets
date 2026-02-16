@@ -198,7 +198,7 @@ REM Runs __RunCmd with a timeout, kills the process on timeout,
 REM and returns exit code 99 on timeout.
 REM Use PowerShell for reliable process management and timeout
 set __Timeout=%~1
-powershell -NoProfile -Command "& { $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c !__RunCmd!' -NoNewWindow -PassThru%3B if (-not $p.WaitForExit(!__Timeout!)) { try { $p.Kill() } catch {} %3B try { taskkill /T /F /PID $p.Id 2>$null } catch {} %3B exit 99 } else { exit $p.ExitCode } }"
+powershell -NoProfile -Command "& { $psi = New-Object System.Diagnostics.ProcessStartInfo 'cmd.exe','/c !__RunCmd!'%3B $psi.UseShellExecute = $false%3B $p = [System.Diagnostics.Process]::Start($psi)%3B if (-not $p.WaitForExit(!__Timeout!)) { try { $p.Kill() } catch {} %3B try { taskkill /T /F /PID $p.Id 2>$null } catch {} %3B exit 99 } else { exit $p.ExitCode } }"
 Exit /b !ERRORLEVEL!
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
@@ -322,14 +322,28 @@ IF NOT DEFINED RunWithNodeJS (
       set __TestTimeout=300000
     )
 
+    REM Convert Windows paths to Unix-style paths for Node.js
+    set "__CoreRootWin=%CORE_ROOT%"
+    set "__CoreRootUnix=%CORE_ROOT%"
+    set "__CoreRootUnix=!__CoreRootUnix:\=/!"
+    if "!__CoreRootUnix:~1,1!"==":" set "__CoreRootUnix=/!__CoreRootUnix:~3!"
+    
+    set "__ExePathUnix=!CD!\%ExePath%"
+    set "__ExePathUnix=!__ExePathUnix:\=/!"
+    if "!__ExePathUnix:~1,1!"==":" set "__ExePathUnix=/!__ExePathUnix:~3!"
+    
+    set "CORE_ROOT=!__CoreRootUnix!"
+    set "TestExclusionListPath=!__CoreRootUnix!/TestExclusionList.txt"
+    
     ECHO Running with node
-    ECHO CORE_ROOT: %CORE_ROOT%
-    ECHO ExePath: %%CD%%\%ExePath%
+    ECHO CORE_ROOT: !CORE_ROOT!
+    ECHO ExePath: !__ExePathUnix!
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     REM Disable minidump generation for browser tests
     REM active issue https://github.com/dotnet/runtime/issues/124088
     ECHO Timeout in ms: !__TestTimeout!
-    set "__RunCmd=node "%CORE_ROOT%\corerun.js" -c "%CORE_ROOT%" "%%CD%%\%ExePath%" %CLRTestExecutionArguments%"
+    
+    set "__RunCmd=node "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
     call :RunWithTimeout !__TestTimeout!
     set CLRTestExitCode=!ERRORLEVEL!
