@@ -32,7 +32,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <!-- API level specified here MUST be the same as the one used by .NET for Android. .NET for Android targets will
            take care to always set this property. -->
-      <CrossCompileAndroidApiLevel Condition="'$(CrossCompileAndroidApiLevel)' == ''">24</CrossCompileAndroidApiLevel>
+      <CrossCompileAndroidApiLevel Condition="'$(CrossCompileAndroidApiLevel)' == ''">21</CrossCompileAndroidApiLevel>
 
       <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
       <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
