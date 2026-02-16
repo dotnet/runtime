@@ -472,7 +472,11 @@ public class ComputeWasmPublishAssets : Task
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
 
             // Try exact match first, then fall back to filename-based lookup.
+            // Normalize to .dll when webcil is enabled since assetsToUpdateByFileName
+            // keys are normalized to .dll (line 448) but RelatedAsset paths use .wasm.
             var relatedAssetFileName = Path.GetFileName(relatedAsset);
+            if (IsWebCilEnabled)
+                relatedAssetFileName = Path.ChangeExtension(relatedAssetFileName, ".dll");
             if (!assetsToUpdate.ContainsKey(relatedAsset)
                 && assetsToUpdateByFileName.TryGetValue(relatedAssetFileName, out var matchedKey))
             {
