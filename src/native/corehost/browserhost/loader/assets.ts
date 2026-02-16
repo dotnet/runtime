@@ -152,6 +152,7 @@ export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
     }
     assetInternal.behavior = "symbols";
     const table = await fetchText(assetInternal);
+    onDownloadedAsset();
     dotnetDiagnosticsExports.installNativeSymbols(table || "");
 }
 

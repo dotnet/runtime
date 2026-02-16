@@ -75,7 +75,7 @@ function initSymbolMap() {
             if (parts.length < 2)
                 return;
 
-            parts[1] = parts.splice(1).join(":");
+            parts[1] = parts.splice(1).join(":").replace(/\\([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
             symbol_map.set(Number(parts[0]), parts[1]);
         });
     } catch (exc) {
