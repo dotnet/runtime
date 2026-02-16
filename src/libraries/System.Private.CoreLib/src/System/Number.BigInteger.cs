@@ -1356,12 +1356,12 @@ namespace System
             {
                 if (_length > 3)
                 {
-                    return new UInt128(((ulong)(_blocks[3]) << 96) + ((ulong)_blocks[2] << 64), ((ulong)(_blocks[1]) << 32) + _blocks[0]);
+                    return new UInt128(((ulong)_blocks[3] << 32) + _blocks[2], ((ulong)(_blocks[1]) << 32) + _blocks[0]);
                 }
 
                 if (_length > 2)
                 {
-                    return new UInt128(((ulong)_blocks[2] << 64), ((ulong)(_blocks[1]) << 32) + _blocks[0]);
+                    return new UInt128((ulong)_blocks[2], ((ulong)_blocks[1] << 32) + _blocks[0]);
                 }
 
                 if (_length > 1)

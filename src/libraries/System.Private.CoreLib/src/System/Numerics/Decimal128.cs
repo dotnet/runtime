@@ -1,12 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers.Text;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Text;
 
 namespace System.Numerics
 {
@@ -37,7 +34,7 @@ namespace System.Numerics
         private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
         private static UInt128 QuietNaNValue => new UInt128(0x7C00_0000_0000_0000, 0);
         private static UInt128 MaxInternalValue = new UInt128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
-        private static UInt128 MinInternalValue = new UInt128(upper: 0xDFFF_ED09B_EAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+        private static UInt128 MinInternalValue = new UInt128(upper: 0xDFFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
 
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
 

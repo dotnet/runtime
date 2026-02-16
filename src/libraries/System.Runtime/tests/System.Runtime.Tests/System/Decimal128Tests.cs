@@ -1,13 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -27,12 +23,6 @@ namespace System.Tests
 
             var customFormat2 = new NumberFormatInfo();
             customFormat2.NumberDecimalSeparator = ".";
-
-            var customFormat3 = new NumberFormatInfo();
-            customFormat3.NumberGroupSeparator = ",";
-
-            var customFormat4 = new NumberFormatInfo();
-            customFormat4.NumberDecimalSeparator = ".";
 
             yield return new object[] { "-123", defaultStyle, null, new Decimal128(-123, 0) };
             yield return new object[] { "0", defaultStyle, null, new Decimal128(0, 0) };
@@ -281,6 +271,8 @@ namespace System.Tests
             yield return new object[] { new Decimal128(-1, 1), new Decimal128(-10, 0), 0 };
             yield return new object[] { new Decimal128(1, 6144), new Decimal128(10, 6143), 0 };
             yield return new object[] { new Decimal128(Int128.Parse(new string('9', 33)), 6111), new Decimal128(Int128.Parse(new string('9', 33) + "0"), 6110), 0 };
+            yield return new object[] { Decimal128.Parse(new string('9', 33) + new string('0', 6111)), new Decimal128(Int128.Parse(new string('9', 32) + "8"), 6110), 1 };
+            yield return new object[] { Decimal128.Parse(new string('9', 25) + new string('0', 6111)), new Decimal128(Int128.Parse(new string('9', 24) + "8"), 6110), 1 };
             yield return new object[] { new Decimal128(1, 1), new Decimal128(-1, 0), 1 };
             yield return new object[] { new Decimal128(10, 0), new Decimal128(-1, 1), 1 };
             yield return new object[] { new Decimal128(10, 0), Decimal128.NaN, 1 };

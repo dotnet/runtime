@@ -1,13 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -27,12 +23,6 @@ namespace System.Tests
 
             var customFormat2 = new NumberFormatInfo();
             customFormat2.NumberDecimalSeparator = ".";
-
-            var customFormat3 = new NumberFormatInfo();
-            customFormat3.NumberGroupSeparator = ",";
-
-            var customFormat4 = new NumberFormatInfo();
-            customFormat4.NumberDecimalSeparator = ".";
 
             yield return new object[] { "-123", defaultStyle, null, new Decimal64(-123, 0) };
             yield return new object[] { "0", defaultStyle, null, new Decimal64(0, 0) };
