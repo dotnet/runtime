@@ -2085,10 +2085,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;
 
-            case NI_Sve_CreateWhileLessThanMask8Bit:
-            case NI_Sve_CreateWhileLessThanMask16Bit:
-            case NI_Sve_CreateWhileLessThanMask32Bit:
-            case NI_Sve_CreateWhileLessThanMask64Bit:
+            case NI_Sve_CreateWhileLessThanMaskByte:
+            case NI_Sve_CreateWhileLessThanMaskDouble:
+            case NI_Sve_CreateWhileLessThanMaskInt16:
+            case NI_Sve_CreateWhileLessThanMaskInt32:
+            case NI_Sve_CreateWhileLessThanMaskInt64:
+            case NI_Sve_CreateWhileLessThanMaskSByte:
+            case NI_Sve_CreateWhileLessThanMaskSingle:
+            case NI_Sve_CreateWhileLessThanMaskUInt16:
+            case NI_Sve_CreateWhileLessThanMaskUInt32:
+            case NI_Sve_CreateWhileLessThanMaskUInt64:
             {
                 // Emit size and instruction is based on the scalar operands.
                 var_types auxType = node->GetAuxiliaryType();
@@ -2102,10 +2108,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_CreateWhileLessThanOrEqualMask8Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask16Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask32Bit:
-            case NI_Sve_CreateWhileLessThanOrEqualMask64Bit:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
             {
                 // Emit size and instruction is based on the scalar operands.
                 var_types auxType = node->GetAuxiliaryType();
