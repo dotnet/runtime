@@ -162,8 +162,6 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool _isBroadcastSetByUser;
-
         public bool EnableBroadcast
         {
             get
@@ -250,6 +248,7 @@ namespace System.Net.Sockets
         }
 
         private bool _isBroadcast;
+        private bool _isBroadcastSetByUser;
         private void CheckForBroadcast(IPAddress ipAddress)
         {
             // Here we check to see if the user is trying to use a Broadcast IP address
