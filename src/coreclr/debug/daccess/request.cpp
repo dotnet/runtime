@@ -2705,6 +2705,11 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly,
         return E_INVALIDARG;
     }
 
+    if (assemblyData == NULL)
+    {
+        return E_POINTER;
+    }
+
     SOSDacEnter();
 
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
