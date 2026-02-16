@@ -705,11 +705,10 @@ Range RangeCheck::GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VA
             }
             break;
 
-            case VNF_NOT:
             case VNF_NEG:
             {
                 Range r1            = GetRangeFromAssertions(comp, funcApp.m_args[0], assertions, --budget);
-                Range unaryOpResult = funcApp.FuncIs(VNF_NEG) ? RangeOps::Negate(r1) : RangeOps::Not(r1);
+                Range unaryOpResult = RangeOps::Negate(r1);
 
                 // We can use the result only if it never overflows.
                 result = unaryOpResult.IsConstantRange() ? unaryOpResult : result;
