@@ -454,7 +454,7 @@ namespace System.Diagnostics.Tracing
         {
             if (!IsSupported)
             {
-                return Array.Empty<EventSource>();
+                return [];
             }
 
             var ret = new List<EventSource>();
@@ -3914,6 +3914,21 @@ namespace System.Diagnostics.Tracing
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        private static unsafe void InitializeDefaultEventSources(Exception* pException)
+        {
+            try
+            {
+                InitializeDefaultEventSources();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 #endregion
     }
 
@@ -5457,7 +5472,7 @@ namespace System.Diagnostics.Tracing
         {
             if (this.channelTab == null)
             {
-                return Array.Empty<ulong>();
+                return [];
             }
 
             // We create an array indexed by the channel id for fast look up.
@@ -5626,7 +5641,7 @@ namespace System.Diagnostics.Tracing
         public byte[] CreateManifest()
         {
             string str = CreateManifestString();
-            return (str != "") ? Encoding.UTF8.GetBytes(str) : Array.Empty<byte>();
+            return (str != "") ? Encoding.UTF8.GetBytes(str) : [];
         }
 
         public IList<string> Errors => errors;

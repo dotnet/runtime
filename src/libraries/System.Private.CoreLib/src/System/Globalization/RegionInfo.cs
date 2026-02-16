@@ -63,7 +63,7 @@ namespace System.Globalization
             if (culture == CultureInfo.LOCALE_CUSTOM_DEFAULT || culture == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED)
             {
                 // Not supposed to be neutral
-                throw new ArgumentException(SR.Format(SR.Argument_CustomCultureCannotBePassedByNumber, culture), nameof(culture));
+                throw new ArgumentException(SR.Argument_CustomCultureCannotBePassedByNumber, nameof(culture));
             }
 
             _cultureData = CultureData.GetCultureData(culture, true);

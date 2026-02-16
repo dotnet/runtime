@@ -1120,6 +1120,19 @@ void Compiler::eeDispLineInfos()
 }
 #endif // DEBUG
 
+bool Compiler::eeDataWithCodePointersNeedsRelocs()
+{
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // On these platforms, for ELF/MachO, we allocate this data in read-write
+    // data and need to report relocations to the EE. Otherwise we allocate
+    // next to the code chunk and hence do not need to report any relocs.
+    return opts.compReloc && !TargetOS::IsWindows;
+#else
+    // Other targets allocate code and data separately and always needs relocs.
+    return opts.compReloc;
+#endif
+}
+
 /*****************************************************************************
  *
  *                      ICorJitInfo wrapper functions
@@ -1173,15 +1186,23 @@ void Compiler::eeAllocMem(AllocMemChunk& codeChunk,
 
     for (unsigned i = 0; i < numDataChunks; i++)
     {
-        // Increase size of the hot code chunk and store offset in data chunk
-        AllocMemChunk& codeChunk = chunks.BottomRef(0);
+        if (((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0) && eeDataWithCodePointersNeedsRelocs())
+        {
+            // These are always passed to the EE as separate chunks since their relocations need special treatment
+            chunks.Push(dataChunks[i]);
+        }
+        else
+        {
+            // Increase size of the hot code chunk and store offset in data chunk
+            AllocMemChunk& codeChunk = chunks.BottomRef(0);
 
-        codeChunk.size        = AlignUp(codeChunk.size, dataChunks[i].alignment);
-        dataChunks[i].block   = (uint8_t*)(uintptr_t)codeChunk.size;
-        dataChunks[i].blockRW = (uint8_t*)(uintptr_t)codeChunk.size;
-        codeChunk.size += dataChunks[i].size;
+            codeChunk.size        = AlignUp(codeChunk.size, dataChunks[i].alignment);
+            dataChunks[i].block   = (uint8_t*)(uintptr_t)codeChunk.size;
+            dataChunks[i].blockRW = (uint8_t*)(uintptr_t)codeChunk.size;
+            codeChunk.size += dataChunks[i].size;
 
-        codeChunk.alignment = max(codeChunk.alignment, dataChunks[i].alignment);
+            codeChunk.alignment = max(codeChunk.alignment, dataChunks[i].alignment);
+        }
     }
 
 #else
@@ -1228,8 +1249,18 @@ void Compiler::eeAllocMem(AllocMemChunk& codeChunk,
     // Fix up data section pointers.
     for (unsigned i = 0; i < numDataChunks; i++)
     {
-        dataChunks[i].block   = codeChunk.block + (size_t)dataChunks[i].block;
-        dataChunks[i].blockRW = codeChunk.blockRW + (size_t)dataChunks[i].blockRW;
+        if (((dataChunks[i].flags & CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0) && eeDataWithCodePointersNeedsRelocs())
+        {
+            // These are always passed to the EE as separate chunks since their relocations need special treatment
+            dataChunks[i].block   = chunks.BottomRef(curDataChunk).block;
+            dataChunks[i].blockRW = chunks.BottomRef(curDataChunk).blockRW;
+            curDataChunk++;
+        }
+        else
+        {
+            dataChunks[i].block   = codeChunk.block + (size_t)dataChunks[i].block;
+            dataChunks[i].blockRW = codeChunk.blockRW + (size_t)dataChunks[i].blockRW;
+        }
     }
 
 #else
