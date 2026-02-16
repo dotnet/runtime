@@ -39,41 +39,6 @@ CRANK_PORT = 5010
 _crank_agent_process = None
 
 
-# kill processes by port number
-def kill_port(port):
-    system_name = platform.system()
-    try:
-        if system_name == "Windows":
-            # Windows: Find PID via netstat, then force kill
-            out = subprocess.check_output(f'netstat -ano | findstr :{port}', shell=True).decode()
-            pids = {line.split()[-1] for line in out.strip().split('\n') if line.strip()}
-            for pid in pids:
-                os.system(f"taskkill /F /PID {pid}")
-        elif system_name == "Darwin": # macOS
-            # macOS: Get PID using lsof -t (terse mode)
-            pid = subprocess.check_output(["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]).decode().strip()
-            if pid:
-                subprocess.run(["kill", "-9", pid], check=False)
-        else: # Linux
-            # Linux: Prefer fuser if available; fall back to lsof
-            if shutil.which("fuser") is not None:
-                subprocess.run(["fuser", "-k", f"{port}/tcp"], check=True)
-            elif shutil.which("lsof") is not None:
-                pids_output = subprocess.check_output(
-                    ["lsof", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"]
-                ).decode().strip()
-                if pids_output:
-                    for pid in pids_output.splitlines():
-                        os.system(f"kill -9 {pid}")
-            else:
-                raise FileNotFoundError(
-                    "Neither 'fuser' nor 'lsof' is available to kill processes by port."
-                )
-        print(f"Port {port} cleared.")
-    except Exception:
-        print(f"Port {port} is already free or permission denied.")
-
-
 # Convert a filename to the appropriate native DLL name, e.g. "clrjit" -> "libclrjit.so" (on Linux)
 def native_dll(name: str) -> str:
     ext = ".dll" if sys.platform.startswith("win") else (".dylib" if sys.platform == "darwin" else ".so")
@@ -267,6 +232,7 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
+    systemNative = native_dll("System.Native")
     spcorelib = "System.Private.CoreLib.dll"
     cmd = [
         str(crank_app),
@@ -298,6 +264,7 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
             "--application.options.outputFiles", str(core_root_path / clrjit),
             "--application.options.outputFiles", str(core_root_path / coreclr),
             "--application.options.outputFiles", str(core_root_path / spcorelib),
+            "--application.options.outputFiles", str(core_root_path / systemNative),
         ])
     
     # Add custom environment variables for this run
@@ -314,7 +281,6 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
 
 # Main entry point
 def main():
-    kill_port(CRANK_PORT)
     parser = argparse.ArgumentParser(description="Cross-platform crank runner.")
     parser.add_argument("--core_root", help="Path to built runtime bits (CORE_ROOT).")
     parser.add_argument("--tfm", default="net11.0", help="Target Framework Moniker (e.g., net11.0).")
