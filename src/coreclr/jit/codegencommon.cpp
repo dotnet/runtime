@@ -591,7 +591,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
 {
-    treeLifeUpdater->UpdateLife(tree);
+    treeLifeUpdater->UpdateLife<false>(tree);
 }
 
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
