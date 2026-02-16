@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
             ProcessId = processId;
         }
 
-        private static IntPtr CreateKillOnParentExitJob()
+        private static unsafe IntPtr CreateKillOnParentExitJob()
         {
             IntPtr jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
             if (jobHandle == IntPtr.Zero)
@@ -59,7 +59,7 @@ namespace Microsoft.Win32.SafeHandles
                 jobHandle,
                 Interop.Kernel32.JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation,
                 ref limitInfo,
-                (uint)Marshal.SizeOf<Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
+                (uint)sizeof(Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION)))
             {
                 Interop.Kernel32.CloseHandle(jobHandle);
                 throw new Win32Exception();
@@ -95,14 +95,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return exitCode;
-        }
-
-        private bool TryGetExitCodeCore(out int exitCode, out PosixSignal? signal)
-        {
-            signal = default;
-
-            return Interop.Kernel32.GetExitCodeProcess(this, out exitCode)
-                && exitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE;
         }
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
@@ -297,7 +289,6 @@ namespace Microsoft.Win32.SafeHandles
                     Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
                     Marshal.FreeHGlobal(attributeListBuffer);
                 }
-                Interop.Kernel32.CloseHandle(currentProcHandle);
             }
 
             return procSH;
@@ -396,6 +387,7 @@ namespace Microsoft.Win32.SafeHandles
             if (!processWaitHandle.WaitOne(milliseconds))
             {
                 wasKilledOnTimeout = KillCore(throwOnError: false);
+                processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
             return new(GetExitCode(), wasKilledOnTimeout);

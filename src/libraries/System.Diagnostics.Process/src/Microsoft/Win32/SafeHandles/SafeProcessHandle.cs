@@ -302,7 +302,14 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        internal static int GetTimeoutInMilliseconds(TimeSpan timeout) =>
-            timeout == Timeout.InfiniteTimeSpan ? Timeout.Infinite : (int)timeout.TotalMilliseconds;
+        internal static int GetTimeoutInMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
+            return (int)totalMilliseconds;
+        }
     }
 }
