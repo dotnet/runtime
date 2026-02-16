@@ -3914,6 +3914,21 @@ namespace System.Diagnostics.Tracing
                 EventSourceInitHelper.PreregisterEventProviders(id, name, EventSourceInitHelper.GetMetricsEventSource);
             }
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        private static unsafe void InitializeDefaultEventSources(Exception* pException)
+        {
+            try
+            {
+                InitializeDefaultEventSources();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 #endregion
     }
 

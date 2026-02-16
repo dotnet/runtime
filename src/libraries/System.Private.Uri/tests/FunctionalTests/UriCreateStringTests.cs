@@ -345,6 +345,9 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "unknown://h.-/", "unknown", "", "h.-", UriHostNameType.Basic, -1, true, false };
             yield return new object[] { "unknown://h._", "unknown", "", "h._", UriHostNameType.Basic, -1, true, false };
             yield return new object[] { "unknown://", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
+            yield return new object[] { "unknown:///path", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
+            yield return new object[] { "unknown://?query", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
+            yield return new object[] { "unknown://#fragment", "unknown", "", "", UriHostNameType.Basic, -1, true, true };
 
             // Mailto
             yield return new object[] { "mailto:", "mailto", "", "", UriHostNameType.Basic, 25, true, true };
@@ -372,6 +375,9 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "unknown:", "unknown", "", "", UriHostNameType.Unknown, -1, true, false };
             yield return new object[] { "unknown:path", "unknown", "", "", UriHostNameType.Unknown, -1, true, false };
             yield return new object[] { "unknown://host", "unknown", "", "host", UriHostNameType.Dns, -1, true, false };
+            yield return new object[] { "unknown://a:80", "unknown", "", "a", UriHostNameType.Dns, 80, false, false };
+            yield return new object[] { "unknown://ab:80", "unknown", "", "ab", UriHostNameType.Dns, 80, false, false };
+            yield return new object[] { "unknown://host:80", "unknown", "", "host", UriHostNameType.Dns, 80, false, false };
             yield return new object[] { "unknown://userinfo@host", "unknown", "userinfo", "host", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { "unknown://userinfo@host:80", "unknown", "userinfo", "host", UriHostNameType.Dns, 80, false, false };
             yield return new object[] { "unknown://./", "unknown", "", ".", UriHostNameType.Basic, -1, true, false };
@@ -1273,6 +1279,17 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "uri://a:65536", UriKind.Absolute };
             yield return new object[] { "uri://a:2147483648", UriKind.Absolute };
             yield return new object[] { "uri://a:80:80", UriKind.Absolute };
+
+            // Unknown scheme with no host and a port
+            yield return new object[] { "tcp://:11111", UriKind.Absolute };
+            yield return new object[] { "udp://:11111", UriKind.Absolute };
+            yield return new object[] { "unix://:11111", UriKind.Absolute };
+            yield return new object[] { "unknown://:80", UriKind.Absolute };
+            yield return new object[] { "unknown://:80/path", UriKind.Absolute };
+            yield return new object[] { "unknown://:80?query", UriKind.Absolute };
+            yield return new object[] { "unknown://:80#fragment", UriKind.Absolute };
+            yield return new object[] { "unknown://userinfo@:80", UriKind.Absolute };
+            yield return new object[] { "unknown://userinfo@", UriKind.Absolute };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {

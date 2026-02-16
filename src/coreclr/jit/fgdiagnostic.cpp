@@ -2859,6 +2859,15 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         JITDUMP(FMT_BB " is successor of finallyret " FMT_BB " but prev block is not a callfinally to " FMT_BB
                        " (search range was [" FMT_BB "..." FMT_BB "]\n",
                 block->bbNum, blockPred->bbNum, finBeg->bbNum, firstBlock->bbNum, lastBlock->bbNum);
+
+        // If try regions are no longer contiguous we lose this invariant.
+
+        if (m_compiler->fgTrysNotContiguous())
+        {
+            JITDUMP("Tolerating, since try regions are not contiguous\n");
+            return true;
+        }
+
         assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
     }
 
