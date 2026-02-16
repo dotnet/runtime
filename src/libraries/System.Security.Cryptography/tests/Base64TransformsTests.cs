@@ -463,7 +463,7 @@ namespace System.Security.Cryptography.Tests
 
             // Now try to reuse the transform with a complete block
             // This should succeed without observing leftover data from before
-            byte[] complete = Text.Encoding.UTF8.GetBytes(Convert.ToBase64String("Hello World"u8));
+            byte[] complete = Text.Encoding.UTF8.GetBytes(Convert.ToBase64String("Hello World"u8.ToArray()));
             transformed = transform.TransformFinalBlock(complete, 0, complete.Length);
 
             // Verify we get the expected output
