@@ -261,6 +261,72 @@ namespace System
             new ValueTuple<T1, T2, T3, T4, T5, T6, T7, ValueTuple<T8>>(item1, item2, item3, item4, item5, item6, item7, Create(item8));
 
 #if NATIVEAOT
+        // Shared GetHashCode helper for NativeAOT that uses __GetFieldHelper to enumerate fields.
+        // This produces a single shared implementation for all ValueTuple arities,
+        // leading to smaller code size in NativeAOT.
+        internal static unsafe int GetHashCodeShared(ValueType tuple)
+        {
+            int numFields = tuple.__GetFieldHelper(-1, out _);
+            Debug.Assert(numFields > 0);
+
+            ref byte data = ref tuple.GetRawData();
+
+            // For the 8-tuple (ValueTuple<T1..T7, TRest>), when the last field (TRest)
+            // implements IValueTupleInternal, we need special handling to match the
+            // existing behavior that flattens nested tuple hash codes.
+            if (numFields == 8)
+            {
+                int lastFieldOffset = tuple.__GetFieldHelper(7, out MethodTable* lastFieldType);
+                object? lastFieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, lastFieldOffset), lastFieldType);
+
+                if (lastFieldValue is IValueTupleInternal rest)
+                {
+                    int size = rest.Length;
+                    int restHashCode = rest.GetHashCode();
+                    if (size >= 8)
+                    {
+                        return restHashCode;
+                    }
+
+                    // Combine hash codes of the last (8 - size) items from Item1..Item7 with restHashCode.
+                    int k = 8 - size;
+                    HashCode hc = default;
+                    for (int i = 7 - k; i < 7; i++)
+                    {
+                        int fieldOffset = tuple.__GetFieldHelper(i, out MethodTable* fieldType);
+                        object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, fieldOffset), fieldType);
+                        hc.Add(fieldValue?.GetHashCode() ?? 0);
+                    }
+                    hc.Add(restHashCode);
+                    return hc.ToHashCode();
+                }
+
+                // Rest is not IValueTupleInternal - hash only the first 7 fields
+                {
+                    HashCode hc = default;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        int fieldOffset = tuple.__GetFieldHelper(i, out MethodTable* fieldType);
+                        object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, fieldOffset), fieldType);
+                        hc.Add(fieldValue?.GetHashCode() ?? 0);
+                    }
+                    return hc.ToHashCode();
+                }
+            }
+
+            // For arities 1-7, combine all field hash codes.
+            {
+                HashCode hc = default;
+                for (int i = 0; i < numFields; i++)
+                {
+                    int fieldOffset = tuple.__GetFieldHelper(i, out MethodTable* fieldType);
+                    object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref data, fieldOffset), fieldType);
+                    hc.Add(fieldValue?.GetHashCode() ?? 0);
+                }
+                return hc.ToHashCode();
+            }
+        }
+
         // Shared helper for NativeAOT that uses __GetFieldHelper to enumerate fields.
         // This produces a single shared implementation for all ValueTuple arities,
         // leading to smaller code size in NativeAOT.
@@ -409,7 +475,11 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return Item1?.GetHashCode() ?? 0;
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -614,8 +684,12 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -819,9 +893,13 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0,
                                     Item3?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1040,10 +1118,14 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0,
                                     Item3?.GetHashCode() ?? 0,
                                     Item4?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1279,11 +1361,15 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0,
                                     Item3?.GetHashCode() ?? 0,
                                     Item4?.GetHashCode() ?? 0,
                                     Item5?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1536,12 +1622,16 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0,
                                     Item3?.GetHashCode() ?? 0,
                                     Item4?.GetHashCode() ?? 0,
                                     Item5?.GetHashCode() ?? 0,
                                     Item6?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -1811,6 +1901,9 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             return HashCode.Combine(Item1?.GetHashCode() ?? 0,
                                     Item2?.GetHashCode() ?? 0,
                                     Item3?.GetHashCode() ?? 0,
@@ -1818,6 +1911,7 @@ namespace System
                                     Item5?.GetHashCode() ?? 0,
                                     Item6?.GetHashCode() ?? 0,
                                     Item7?.GetHashCode() ?? 0);
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
@@ -2110,6 +2204,9 @@ namespace System
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
+#if NATIVEAOT
+            return ValueTuple.GetHashCodeShared((ValueType)(object)this);
+#else
             // We want to have a limited hash in this case. We'll use the first 7 elements of the tuple
             if (Rest is not IValueTupleInternal)
             {
@@ -2180,6 +2277,7 @@ namespace System
 
             Debug.Fail("Missed all cases for computing ValueTuple hash code");
             return -1;
+#endif
         }
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
