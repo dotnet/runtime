@@ -51,7 +51,7 @@ Passing Int64 and UInt64 values between JavaScript and C# requires support for t
 
 Multi-threading is **not yet supported** for CoreCLR on WASM. The runtime operates in single-threaded mode:
 
-- No pthread linking (pthreads would require Node.js workers, which are not suitable for browsers).
+- No pthread linking (browser pthreads via Emscripten would require Web Workers, SharedArrayBuffer, and cross-origin isolation headers, which are not currently enabled).
 - No background GC or finalizer thread — all GC work runs on the main thread via the browser event loop.
 - `Task.Wait` and other blocking operations on the main thread are dangerous and should be avoided.
 
