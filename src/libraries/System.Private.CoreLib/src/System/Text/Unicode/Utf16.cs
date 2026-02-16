@@ -13,15 +13,15 @@ namespace System.Text.Unicode
         /// <summary>
         /// Validates that the value is well-formed UTF-16.
         /// </summary>
-        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
-        /// <returns><c>true</c> if value is well-formed UTF-16, <c>false</c> otherwise.</returns>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-16 input text to validate.</param>
+        /// <returns><c>true</c> if <paramref name="value"/> is well-formed UTF-16, <c>false</c> otherwise.</returns>
         public static bool IsValid(ReadOnlySpan<char> value) =>
             IndexOfInvalidSubsequence(value) < 0;
 
         /// <summary>
-        /// Find the index of the first invalid UTF-16 subsequence.
+        /// Finds the index of the first invalid UTF-16 subsequence.
         /// </summary>
-        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-16 input text to examine.</param>
         /// <returns>The index of the first invalid UTF-16 subsequence, or <c>-1</c> if the entire input is valid.</returns>
         public static unsafe int IndexOfInvalidSubsequence(ReadOnlySpan<char> value)
         {
