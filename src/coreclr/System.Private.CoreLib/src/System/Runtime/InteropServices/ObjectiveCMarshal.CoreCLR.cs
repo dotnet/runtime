@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.ObjectiveC
@@ -38,6 +39,16 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ObjectHandleOnStack obj,
             out int memInSizeT,
             out IntPtr mem);
+
+        [StackTraceHidden]
+        internal static void ThrowPendingExceptionObject()
+        {
+            Exception? ex = System.StubHelpers.StubHelpers.GetPendingExceptionObject();
+            if (ex is not null)
+            {
+                ExceptionDispatchInfo.Throw(ex);
+            }
+        }
 
         [UnmanagedCallersOnly]
         internal static unsafe void* InvokeUnhandledExceptionPropagation(Exception* pExceptionArg, IntPtr methodDesc, IntPtr* pContext, Exception* pException)

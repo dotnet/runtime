@@ -221,7 +221,13 @@ namespace ILCompiler
                     && key.IsPInvoke
                     && _compilationModuleGroup.GeneratesPInvoke(key))
                 {
-                    methodIL = PInvokeILEmitter.EmitIL(key);
+                    try
+                    {
+                        methodIL = PInvokeILEmitter.EmitIL(key);
+                    }
+                    catch (RequiresRuntimeJitException)
+                    {
+                    }
                 }
 
                 return new MethodILData() { Method = key, MethodIL = methodIL };

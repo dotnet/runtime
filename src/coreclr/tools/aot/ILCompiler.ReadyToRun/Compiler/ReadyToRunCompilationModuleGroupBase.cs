@@ -716,7 +716,17 @@ namespace ILCompiler
             if (!VersionsWithMethodBody(method))
                 return false;
 
-            return !Marshaller.IsMarshallingRequired(method);
+            if (!Marshaller.IsMarshallingRequired(method))
+                return true;
+
+            // Even when marshalling is required, we can still generate stubs for ObjC
+            // objc_msgSend P/Invokes that only need a pending exception check — the R2R
+            // PInvokeILEmitter handles this by emitting a call to
+            // ObjectiveCMarshal.ThrowPendingExceptionObject() after the native call.
+            if (Marshaller.IsObjCMessageSendPInvoke(method))
+                return true;
+
+            return false;
         }
 
         public sealed override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)

@@ -153,5 +153,12 @@ namespace Internal.TypeSystem.Interop
 
             return false;
         }
+
+        public static bool IsObjCMessageSendPInvoke(MethodDesc targetMethod)
+        {
+            Debug.Assert(targetMethod.IsPInvoke);
+            PInvokeMetadata metadata = targetMethod.GetPInvokeMethodMetadata();
+            return MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata);
+        }
     }
 }

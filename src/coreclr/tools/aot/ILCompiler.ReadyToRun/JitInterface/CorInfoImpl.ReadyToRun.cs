@@ -3131,8 +3131,8 @@ namespace Internal.JitInterface
                     stubIL = _compilation.GetMethodIL(method);
                     if (stubIL == null)
                     {
-                        // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
-                        Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                        // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation.
+                        // GeneratesPInvoke may still return true for ObjC P/Invokes that couldn't be emitted at compile time.
                         return true;
                     }
                 }
