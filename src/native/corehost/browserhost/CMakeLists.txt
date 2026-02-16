@@ -99,18 +99,13 @@ set_target_properties(browserhost PROPERTIES
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     target_link_options(browserhost PRIVATE
-#        -sVERBOSE
-#        -sASSERTIONS=1
-        --emit-symbol-map
+# add -sVERBOSE=1 to debug linking issues
+        -sASSERTIONS=1
         -sLLD_REPORT_UNDEFINED
         -sERROR_ON_UNDEFINED_SYMBOLS=1
     )
 endif ()
 
-# add -sVERBOSE=1 to debug linking issues
-# WASM-TODO    -emit-llvm
-# WASM-TODO    --source-map-base http://microsoft.com
-# WASM-TODO    -sSEPARATE_DWARF=1, -gseparate-dwarf
 target_link_options(browserhost PRIVATE
     -sINITIAL_MEMORY=134217728
     -sMAXIMUM_MEMORY=2147483648
@@ -125,6 +120,7 @@ target_link_options(browserhost PRIVATE
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
+    --emit-symbol-map
     -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PRIVATE

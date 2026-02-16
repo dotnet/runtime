@@ -53,24 +53,15 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     return true;
 }
 
-function logExitReason(exit_code: number, reason: any) {
-    if (exit_code !== 0 && reason) {
+function logExitReason(exitCode: number, reason: any) {
+    if (exitCode !== 0 && reason) {
         const exitStatus = isExitStatus(reason);
-        if (typeof reason === "string") {
-            dotnetLogger.error(reason);
+        reason = dotnetLoaderExports.normalizeException(reason);
+        const msg = "dotnet exited with " + exitCode;
+        if (exitStatus) {
+            dotnetLogger.debug(msg, reason);
         } else {
-            if (reason.stack === undefined && !exitStatus) {
-                reason.stack = new Error().stack + "";
-            }
-            const message = reason.message
-                ? symbolicateStackTrace(reason.message + "\n" + reason.stack)
-                : reason.toString();
-
-            if (exitStatus) {
-                dotnetLogger.debug(message);
-            } else {
-                dotnetLogger.error(message);
-            }
+            dotnetLogger.error(msg, reason);
         }
     }
 }
@@ -164,6 +155,6 @@ async function flushNodeStreams() {
         await Promise.race([Promise.all([stdoutFlushed, stderrFlushed]), timeout]);
         clearTimeout(timeoutId);
     } catch (err) {
-        dotnetLogger.error(`flushing std* streams failed: ${err}`);
+        dotnetLogger.error(`flushing std* streams failed`, err);
     }
 }
