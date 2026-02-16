@@ -99,6 +99,19 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
         {
+            Process.s_processStartLock.EnterReadLock();
+            try
+            {
+                return StartCoreSerialized(options, inputHandle, outputHandle, errorHandle, createSuspended);
+            }
+            finally
+            {
+                Process.s_processStartLock.ExitReadLock();
+            }
+        }
+
+        private static unsafe SafeProcessHandle StartCoreSerialized(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
+        {
             Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
             Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;

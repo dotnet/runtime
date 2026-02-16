@@ -18,7 +18,6 @@ namespace System.Diagnostics
     {
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
-        private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a

@@ -16,8 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly object s_createProcessLock = new object();
-
         private string? _processName;
 
         /// <summary>
@@ -453,7 +451,8 @@ namespace System.Diagnostics
             // calls. We do not want one process to inherit the handles created concurrently for another
             // process, as that will impact the ownership and lifetimes of those handles now inherited
             // into multiple child processes.
-            lock (s_createProcessLock)
+            s_processStartLock.EnterWriteLock();
+            try
             {
                 try
                 {
@@ -629,6 +628,10 @@ namespace System.Diagnostics
                     childOutputPipeHandle?.Dispose();
                     childErrorPipeHandle?.Dispose();
                 }
+            }
+            finally
+            {
+                s_processStartLock.ExitWriteLock();
             }
 
             if (startInfo.RedirectStandardInput)
