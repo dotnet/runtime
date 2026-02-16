@@ -16,10 +16,6 @@ namespace System.IO.Compression
         private bool _disposed;
         private bool _finished;
 
-        // Store construction parameters for encoder initialization
-        private readonly ZLibNative.CompressionLevel _zlibCompressionLevel;
-        private readonly ZLibCompressionStrategy _strategy;
-
         /// <summary>
         /// The default quality value (optimal compression).
         /// </summary>
@@ -92,8 +88,6 @@ namespace System.IO.Compression
 
             _disposed = false;
             _finished = false;
-            _zlibCompressionLevel = (ZLibNative.CompressionLevel)quality;
-            _strategy = ZLibCompressionStrategy.Default;
 
             // Compute windowBits based on the compression format:
             // - Deflate: negative windowLog produces raw deflate (no header/trailer)
@@ -108,10 +102,10 @@ namespace System.IO.Compression
             };
 
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
-                _zlibCompressionLevel,
+                (ZLibNative.CompressionLevel)quality,
                 windowBits,
                 ZLibNative.Deflate_DefaultMemLevel,
-                (ZLibNative.CompressionStrategy)_strategy);
+                ZLibNative.CompressionStrategy.DefaultStrategy);
         }
 
         /// <summary>
@@ -123,8 +117,6 @@ namespace System.IO.Compression
 
             _disposed = false;
             _finished = false;
-            _zlibCompressionLevel = (ZLibNative.CompressionLevel)options.CompressionLevel;
-            _strategy = options.CompressionStrategy;
 
             // -1 means use the default window log
             int windowLog = options.WindowLog == -1 ? DefaultWindowLog : options.WindowLog;
@@ -139,10 +131,10 @@ namespace System.IO.Compression
             };
 
             _state = ZLibNative.ZLibStreamHandle.CreateForDeflate(
-                _zlibCompressionLevel,
+                (ZLibNative.CompressionLevel)options.CompressionLevel,
                 windowBits,
                 ZLibNative.Deflate_DefaultMemLevel,
-                (ZLibNative.CompressionStrategy)_strategy);
+                (ZLibNative.CompressionStrategy)options.CompressionStrategy);
         }
 
 
