@@ -132,6 +132,7 @@
       <_ApplePropertyNames Include="UseConsoleUITemplate" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
+      <_ApplePropertyNames Include="DynamicCodeSupport" />
 
       <!-- Globalization properties -->
       <_ApplePropertyNames Include="HybridGlobalization" />
