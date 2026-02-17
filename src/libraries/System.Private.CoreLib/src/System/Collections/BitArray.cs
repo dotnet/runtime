@@ -543,24 +543,26 @@ namespace System.Collections
                     }
                     fromIndex += toIndex;
 
-                    int carryCount = BitsPerByte - shiftCount;
+                    // 32 bits
+                    ReadOnlySpan<int> intSpanFrom = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(fromIndex));
+                    Span<int> intSpanTo = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(toIndex));
 
-                    ref byte p = ref MemoryMarshal.GetReference(thisSpan);
+                    Debug.Assert(intSpanFrom.Length <= intSpanTo.Length);
 
-                    const uint shiftUnit = 0x01010101u;
-                    uint shiftMask = (shiftUnit << carryCount) - shiftUnit;
-                    uint carryMask = ~shiftMask;
-
-                    while (fromIndex < thisSpan.Length - 4)
+                    int index32;
+                    for (index32 = 0; index32 + 1 < intSpanFrom.Length; index32++)
                     {
-                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)fromIndex)) >>> shiftCount) & shiftMask;
-                        uint hi = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex + 1))) << carryCount) & carryMask;
-                        uint result = hi | lo;
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref p, toIndex), result);
-
-                        fromIndex += 4;
-                        toIndex += 4;
+                        int lo = ReverseIfBE(intSpanFrom[index32]) >>> shiftCount;
+                        int hi = ReverseIfBE(intSpanFrom[index32 + 1]) << (BitsPerInt32 - shiftCount);
+                        intSpanTo[index32] = ReverseIfBE(hi | lo);
                     }
+
+                    int size32 = index32 * sizeof(int);
+                    fromIndex += size32;
+                    toIndex += size32;
+
+                    // remaining bytes
+                    int carryCount = BitsPerByte - shiftCount;
 
                     while (fromIndex < thisSpan.Length)
                     {
@@ -652,23 +654,39 @@ namespace System.Collections
                     }
                     fromIndex = toIndex - lengthToClear;
 
-                    int carryCount = BitsPerByte - shiftCount;
+                    // 32 bits
+                    const int indexMask = sizeof(int) - 1;
+                    ReadOnlySpan<int> intSpanFrom = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(fromIndex & indexMask, fromIndex & ~indexMask));
+                    Span<int> intSpanTo = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(toIndex & indexMask, toIndex & ~indexMask));
 
-                    ref byte p = ref MemoryMarshal.GetReference(thisSpan);
-
-                    const uint shiftUnit = 0x01010101u;
-                    uint carryMask = (shiftUnit << shiftCount) - shiftUnit;
-                    uint shiftMask = ~carryMask;
-
-                    while (fromIndex >= 5)
+                    if (intSpanFrom.Length == 0 || intSpanTo.Length == 0)
                     {
-                        fromIndex -= 4;
-                        uint lo = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)fromIndex)) << shiftCount) & shiftMask;
-                        uint hi = (Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref p, (uint)(fromIndex - 1))) >>> carryCount) & carryMask;
-                        uint result = hi | lo;
-                        toIndex -= 4;
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref p, toIndex), result);
+                        intSpanFrom = default;
+                        intSpanTo = default;
                     }
+                    else if (intSpanFrom.Length > intSpanTo.Length)
+                    {
+                        intSpanFrom = intSpanFrom.Slice(intSpanFrom.Length - (intSpanTo.Length + 1), intSpanTo.Length + 1);
+                    }
+                    else
+                    {
+                        intSpanTo = intSpanTo.Slice(intSpanTo.Length - (intSpanFrom.Length - 1), intSpanFrom.Length - 1);
+                    }
+                    Debug.Assert(intSpanFrom.Length == intSpanTo.Length + 1 || intSpanTo.Length == 0);
+
+                    for (int i = intSpanTo.Length - 1; i >= 0; i--)
+                    {
+                        int hi = ReverseIfBE(intSpanFrom[i + 1]) << shiftCount;
+                        int lo = ReverseIfBE(intSpanFrom[i]) >>> (BitsPerInt32 - shiftCount);
+                        intSpanTo[i] = ReverseIfBE(hi | lo);
+                    }
+
+                    int size32 = intSpanTo.Length * sizeof(int);
+                    fromIndex -= size32;
+                    toIndex -= size32;
+
+                    // remaining bytes
+                    int carryCount = BitsPerByte - shiftCount;
 
                     while (--fromIndex >= 0)
                     {
