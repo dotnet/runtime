@@ -12,7 +12,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsiOSLike Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsiOSLike>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">

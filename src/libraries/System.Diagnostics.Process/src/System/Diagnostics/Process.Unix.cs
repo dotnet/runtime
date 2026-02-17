@@ -663,7 +663,7 @@ namespace System.Diagnostics
                 // find filename on PATH
                 else
                 {
-                    resolvedFilename = ProcessStartOptions.FindProgramInPath(filename);
+                    resolvedFilename = FindProgramInPath(filename);
                 }
             }
 
@@ -726,10 +726,35 @@ namespace System.Diagnostics
             }
 
             // Then check each directory listed in the PATH environment variables
-            return ProcessStartOptions.FindProgramInPath(filename);
+            return FindProgramInPath(filename);
         }
 
-        internal static bool IsExecutable(string fullPath)
+        /// <summary>
+        /// Gets the path to the program
+        /// </summary>
+        /// <param name="program"></param>
+        /// <returns></returns>
+        private static string? FindProgramInPath(string program)
+        {
+            string path;
+            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar != null)
+            {
+                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
+                while (pathParser.MoveNext())
+                {
+                    string subPath = pathParser.ExtractCurrent();
+                    path = Path.Combine(subPath, program);
+                    if (IsExecutable(path))
+                    {
+                        return path;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static bool IsExecutable(string fullPath)
         {
             Interop.Sys.FileStatus fileinfo;
 

@@ -143,7 +143,7 @@ namespace System.Diagnostics
         /// <exception cref="FileNotFoundException"><paramref name="fileName"/> cannot be resolved to an existing file.</exception>
         /// <remarks>
         /// <para>
-        /// The <paramref name="fileName"/> is resolved to an absolute path before starting the process.
+        /// The <paramref name="fileName"/> is resolved to an absolute path.
         /// </para>
         /// <para>
         /// When the <paramref name="fileName"/> is a fully qualified path, it is used as-is without any resolution.
@@ -184,8 +184,8 @@ namespace System.Diagnostics
             // In such case, the process creation will fail.
             // We resolve the path here to provide unified error handling and to avoid
             // starting a process that will fail immediately after creation.
-            string? resolved = ResolvePath(fileName);
-            if (resolved == null || !File.Exists(resolved))
+            string? resolved = ResolvePath(fileName, out bool requiresExistenceCheck);
+            if (resolved is null || (requiresExistenceCheck && !File.Exists(resolved)))
             {
                 throw new FileNotFoundException(SR.FileNotFoundResolvePath, fileName);
             }
@@ -205,70 +205,64 @@ namespace System.Diagnostics
         // Since we are introducing a new API, we take it as an opportunity to clean up the legacy baggage
         // to have simpler, easier to understand and more secure filename resolution algorithm
         // that is more consistent across OSes and aligned with other modern platforms.
-        internal static string? ResolvePath(string filename)
+        private static string? ResolvePath(string filename, out bool requiresExistenceCheck)
         {
-            // If the filename is a complete path, use it, regardless of whether it exists.
+            Debug.Assert(!string.IsNullOrEmpty(filename), "Caller should have validated the filename.");
+            requiresExistenceCheck = true;
+
             if (Path.IsPathFullyQualified(filename))
             {
                 return filename;
             }
 
-            // Handle rooted but not fully qualified paths (e.g., C:foo.exe, \foo.exe on Windows)
-            // On Unix, this never executes since rooted paths are always fully qualified
-            if (Path.IsPathRooted(filename))
+            // Check for filenames that are not bare filenames. It includes:
+            // - Relative paths with directory separators (e.g., .\foo.exe, ..\foo.exe, subdir\foo.exe)
+            // - Rooted but not fully qualified paths (e.g., C:foo.exe, \foo.exe on Windows)
+            if (Path.GetFileName(filename.AsSpan()).Length != filename.Length)
             {
                 return Path.GetFullPath(filename); // Resolve to absolute path
             }
 
-            // Check if this is an explicit relative path (contains directory separators like .\file or ../file)
-            // If so, resolve it relative to the current directory
-            ReadOnlySpan<char> directoryName = Path.GetDirectoryName(filename);
-            if (!directoryName.IsEmpty)
-            {
-                return Path.GetFullPath(filename);
-            }
-
             // We want to keep the resolution logic in one place for better maintainability and consistency.
             // That is why we don't provide platform-specific implementations files and use #if directives here.
-#if WINDOWS
-            // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
-            // "If the file name does not contain an extension, .exe is appended.
-            // Therefore, if the file name extension is .com, this parameter must include the .com extension.
-            // If the file name ends in a period (.) with no extension, or if the file name contains a path, .exe is not appended."
-
-            // HasExtension returns false for trailing dot, so we need to check that separately
-            if (filename[filename.Length - 1] != '.' && !Path.HasExtension(filename))
+            if (OperatingSystem.IsWindows())
             {
-                filename += ".exe";
+                // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
+                // "If the file name does not contain an extension, .exe is appended.
+                // Therefore, if the file name extension is .com, this parameter must include the .com extension.
+                // If the file name ends in a period (.) with no extension, or if the file name contains a path, .exe is not appended."
+
+                // HasExtension returns false for trailing dot, so we need to check that separately
+                if (filename[filename.Length - 1] != '.' && !Path.HasExtension(filename))
+                {
+                    filename += ".exe";
+                }
+
+                // Windows-specific search location: the system directory (e.g., C:\Windows\System32)
+                string path = Path.Combine(System.Environment.SystemDirectory, filename);
+                if (File.Exists(path))
+                {
+                    requiresExistenceCheck = false;
+                    return path;
+                }
             }
 
-            // Windows-specific search location: the system directory (e.g., C:\Windows\System32)
-            string path = Path.Combine(System.Environment.SystemDirectory, filename);
-            if (File.Exists(path))
-            {
-                return path;
-            }
-#endif
-
-            return FindProgramInPath(filename);
+            string? fromPath = FindProgramInPath(filename);
+            requiresExistenceCheck = fromPath is null;
+            return fromPath;
         }
 
-        internal static string? FindProgramInPath(string program)
+        private static string? FindProgramInPath(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar != null)
+            if (pathEnvVar is not null)
             {
-                char pathSeparator = OperatingSystem.IsWindows() ? ';' : ':';
-                StringParser pathParser = new(pathEnvVar, pathSeparator, skipEmpty: true);
+                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
                 while (pathParser.MoveNext())
                 {
                     string subPath = pathParser.ExtractCurrent();
                     string path = Path.Combine(subPath, program);
-#if WINDOWS
                     if (File.Exists(path))
-#else
-                    if (Process.IsExecutable(path))
-#endif
                     {
                         return path;
                     }
