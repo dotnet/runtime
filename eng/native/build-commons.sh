@@ -91,11 +91,12 @@ build_native()
     if [[ "$targetOS" == maccatalyst ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
-        # CMAKE_OSX_DEPLOYMENT_TARGET is set to the macOS equivalent (14.0) of the
-        # Catalyst min version (17.0) so CMake's compiler test emits a valid
-        # -mmacosx-version-min flag. The effective Catalyst min version is enforced
-        # via the -target triple in eng/native/configurecompiler.cmake, not this value.
-        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 $cmakeArgs"
+        # Intentionally do not set CMAKE_OSX_DEPLOYMENT_TARGET for maccatalyst here:
+        # - CMake interprets CMAKE_OSX_DEPLOYMENT_TARGET as a macOS minimum version
+        #   instead of MacCatalyst, causing newer clang to reject it as invalid.
+        # - The effective Catalyst minimum version is enforced via the
+        #   -target *-apple-ios<version>-macabi flag in eng/native/configurecompiler.cmake
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
