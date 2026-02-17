@@ -353,8 +353,10 @@ run_with_timeout() {
   wait "$pid"
   local exit_code=$?
 
-  # Kill watchdog if still running
+  # Kill watchdog and its children (sleep process) if still running
+  pkill -P "$watchdog" 2>/dev/null
   kill "$watchdog" 2>/dev/null
+  wait "$watchdog" 2>/dev/null
 
   # If the process was killed by SIGKILL (128+9 = 137), map to 99
   if [ $exit_code -eq 137 ]; then
