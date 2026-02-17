@@ -1131,6 +1131,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    assert(TypeGet(value) != TYP_SIMD);
+    assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
@@ -3363,6 +3368,12 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
+#ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    {
+        return false;
+    }
+#endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
@@ -3788,21 +3799,19 @@ inline void Compiler::optAssertionReset()
         AssertionIndex      index        = optAssertionCount;
         const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion.op1.lclNum;
+        unsigned lclNum = curAssertion.GetOp1().GetLclNum();
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion.assertionKind == OAK_EQUAL) && (curAssertion.op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion.IsCopyAssertion())
         {
-            assert(curAssertion.op1.kind == O1K_LCLVAR);
-
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion.op2.lclNum;
+            lclNum = curAssertion.GetOp2().GetLclNum();
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
     }
@@ -4549,13 +4558,13 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        unsigned size = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
         return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetValueSize()));
     }
     if (OperIs(GT_CALL))
     {
@@ -4567,7 +4576,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 
             bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 

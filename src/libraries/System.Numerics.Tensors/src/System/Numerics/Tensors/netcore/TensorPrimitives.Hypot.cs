@@ -18,7 +18,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = T.Hypot(<paramref name="x" />[i], <paramref name="x" />[i])</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.Hypot(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void Hypot<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
