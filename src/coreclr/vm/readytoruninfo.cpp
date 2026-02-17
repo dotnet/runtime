@@ -935,19 +935,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
         if (pExternalTypeMapsDir != NULL)
         {
-            m_externalTypeMaps = NativeHashtable(NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress));
+            NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
+            m_externalTypeMaps = NativeHashtable(parser);
         }
 
         IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
         if (pProxyTypeMapsDir != NULL)
         {
-            m_proxyTypeMaps = NativeHashtable(NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress));
+            NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
+            m_proxyTypeMaps = NativeHashtable(parser);
         }
 
         IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
         if (pTypeMapAssemblyTargetsDir != NULL)
         {
-            m_typeMapAssemblyTargets = NativeHashtable(NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress));
+            NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
+            m_typeMapAssemblyTargets = NativeHashtable(parser);
         }
     }
 
