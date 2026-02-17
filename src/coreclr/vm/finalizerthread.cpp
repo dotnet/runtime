@@ -206,6 +206,7 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
 
     if (g_HashMapEbr.CleanupRequested())
     {
+        GCX_PREEMP();
         g_HashMapEbr.TryReclaim();
     }
 }

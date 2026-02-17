@@ -1386,7 +1386,6 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
-
                 GCHeapUtilities::GetGCHeap()->Shutdown();
             }
         }

@@ -1073,6 +1073,8 @@ void ThreadDetaching()
     // 2. When a fiber is destroyed, or OS calls FlsCallback after DLL_THREAD_DETACH process.
     // We will null the FLS and TLS entry if it matches the deleted one.
 
+    g_HashMapEbr.ThreadDetach();
+
     if (StressLog::t_pCurrentThreadLog != NULL)
     {
 #ifdef STRESS_LOG
@@ -1081,8 +1083,6 @@ void ThreadDetaching()
         _ASSERTE (!"should not have StressLog");
 #endif
     }
-
-    g_HashMapEbr.ThreadDetach();
 
 #ifdef ENABLE_CONTRACTS_IMPL
     if (t_pClrDebugState != NULL)
