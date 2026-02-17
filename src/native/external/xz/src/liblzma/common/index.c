@@ -883,7 +883,7 @@ static index_stream *
 index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
 {
 	// Catch a somewhat theoretical integer overflow.
-	if (src->record_count > PREALLOC_MAX)
+	if (src->record_count > (lzma_vli)PREALLOC_MAX)
 		return NULL;
 
 	// Allocate and initialize a new Stream.
@@ -907,7 +907,7 @@ index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
 	// a single group. It's simplest and also tends to make
 	// lzma_index_locate() a little bit faster with very big Indexes.
 	index_group *destg = lzma_alloc(sizeof(index_group)
-			+ src->record_count * sizeof(index_record),
+			+ (size_t)src->record_count * sizeof(index_record),
 			allocator);
 	if (destg == NULL) {
 		index_stream_end(dest, allocator);
@@ -918,8 +918,8 @@ index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
 	destg->node.uncompressed_base = 0;
 	destg->node.compressed_base = 0;
 	destg->number_base = 1;
-	destg->allocated = src->record_count;
-	destg->last = src->record_count - 1;
+	destg->allocated = (size_t)src->record_count;
+	destg->last = (size_t)src->record_count - 1;
 
 	// Go through all the groups in src and copy the Records into destg.
 	const index_group *srcg = (const index_group *)(src->groups.leftmost);

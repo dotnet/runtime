@@ -80,7 +80,7 @@ lzma_block_buffer_bound(size_t uncompressed_size)
 		return 0;
 #endif
 
-	return ret;
+	return (size_t)ret;
 }
 
 
@@ -180,7 +180,7 @@ block_encode_normal(lzma_block *block, const lzma_allocator *allocator,
 	// Limit out_size so that we stop encoding if the output would grow
 	// bigger than what uncompressed Block would be.
 	if (out_size - *out_pos > block->compressed_size)
-		out_size = *out_pos + block->compressed_size;
+		out_size = *out_pos + (size_t)block->compressed_size;
 
 	// TODO: In many common cases this could be optimized to use
 	// significantly less memory.

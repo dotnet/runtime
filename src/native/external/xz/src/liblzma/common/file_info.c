@@ -399,7 +399,7 @@ file_info_decode(void *coder_ptr, const lzma_allocator *allocator,
 			// Set coder->temp_pos to point to the beginning
 			// of the Index.
 			coder->temp_pos = coder->temp_size
-					- coder->footer_flags.backward_size;
+					- (size_t)coder->footer_flags.backward_size;
 		} else {
 			// These are set to zero to indicate that there's no
 			// useful data (Index or anything else) in coder->temp.
@@ -551,15 +551,15 @@ file_info_decode(void *coder_ptr, const lzma_allocator *allocator,
 		// Stream are cached and already handled a few lines above.
 		// So this isn't as useful as the other seek-avoidance cases.
 		if (coder->temp_size != 0 && coder->temp_size
-				- coder->footer_flags.backward_size
-				>= seek_amount) {
+						- (size_t)coder->footer_flags.backward_size
+						>= (size_t)seek_amount) {
 			// Make temp_pos and temp_size point to the *end* of
 			// Stream Header so that SEQ_HEADER_DECODE will find
 			// the start of Stream Header from coder->temp[
 			// coder->temp_size - LZMA_STREAM_HEADER_SIZE].
 			coder->temp_pos = coder->temp_size
-					- coder->footer_flags.backward_size
-					- seek_amount
+					- (size_t)coder->footer_flags.backward_size
+					- (size_t)seek_amount
 					+ LZMA_STREAM_HEADER_SIZE;
 			coder->temp_size = coder->temp_pos;
 		} else {
