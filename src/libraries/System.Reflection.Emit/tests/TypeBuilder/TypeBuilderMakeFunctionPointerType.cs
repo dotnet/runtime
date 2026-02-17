@@ -8,7 +8,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderMakeFunctionPointerType
     {
         [Fact]
-        public void MakePointerType()
+        public void MakeFunctionPointerType()
         {
             TypeBuilder retType = Helpers.DynamicType(TypeAttributes.Public);
             Type[] paramTypes = [typeof(int), typeof(bool)];
