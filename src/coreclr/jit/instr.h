@@ -78,6 +78,7 @@ enum instruction : uint32_t
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #elif defined(TARGET_POWERPC64) //TODO POWERPC64 -> Vikas 
 
+    #define INST(id, nm, ldst, e1) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals

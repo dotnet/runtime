@@ -262,8 +262,8 @@ set( JIT_S390X_SOURCES
 )
 
 set( JIT_POWERPC64_SOURCES
-  #emitppc64le.cpp
-  #targetppc64le.cpp
+  emitppc64le.cpp
+  targetppc64le.cpp
   # Not supported as JIT target
 )
 
@@ -482,6 +482,8 @@ convert_to_absolute_path(JIT_LOONGARCH64_SOURCES ${JIT_LOONGARCH64_SOURCES})
 convert_to_absolute_path(JIT_LOONGARCH64_HEADERS ${JIT_LOONGARCH64_HEADERS})
 convert_to_absolute_path(JIT_RISCV64_SOURCES ${JIT_RISCV64_SOURCES})
 convert_to_absolute_path(JIT_RISCV64_HEADERS ${JIT_RISCV64_HEADERS})
+convert_to_absolute_path(JIT_POWERPC64_SOURCES ${JIT_POWERPC64_SOURCES})
+convert_to_absolute_path(JIT_POWERPC64_HEADERS ${JIT_POWERPC64_HEADERS})
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
