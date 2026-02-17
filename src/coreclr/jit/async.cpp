@@ -508,8 +508,7 @@ class DefaultValueAnalysis
             // anywhere within the try region.
             VARSET_TP tryDefault(VarSetOps::MakeCopy(m_compiler, m_analysis.m_defaultVarsIn[firstTryBlock->bbNum]));
 
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next();
-                 tryBlock             = tryBlock->Next())
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
                 VarSetOps::DiffD(m_compiler, tryDefault, m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
@@ -527,8 +526,7 @@ class DefaultValueAnalysis
                 // OSR locals whose initial values are not default.
                 VarSetOps::AssignNoCopy(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
                                         VarSetOps::MakeFull(m_compiler));
-                VarSetOps::DiffD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
-                                 m_analysis.m_nonDefaultAtEntry);
+                VarSetOps::DiffD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum], m_analysis.m_nonDefaultAtEntry);
             }
 
             return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_defaultVarsIn[block->bbNum]);
@@ -544,7 +542,7 @@ public:
     {
     }
 
-    void Run();
+    void       Run();
     VARSET_TP* GetDefaultVarsIn(BasicBlock* block) const;
 
 private:
@@ -594,7 +592,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
     const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
     for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
-        BasicBlock* block = dfsTree->GetPostOrder(i);
+        BasicBlock* block   = dfsTree->GetPostOrder(i);
         VARSET_TP&  mutated = m_mutatedVars[block->bbNum];
 
         for (GenTree* node : LIR::AsRange(block))
@@ -690,8 +688,8 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
     // Parameters and OSR locals do not have default values at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
-        unsigned    lclNum = m_compiler->lvaTrackedToVarNum[i];
-        LclVarDsc*  varDsc = m_compiler->lvaGetDesc(lclNum);
+        unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
         {
@@ -929,12 +927,13 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         //
         // A dependently promoted struct is live if any of its fields are live.
 
-        bool anyLive = false;
+        bool anyLive    = false;
         bool allDefault = true;
         for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            anyLive |= !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
+            anyLive |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
             allDefault &= fieldDsc->lvTracked && VarSetOps::IsMember(m_compiler, m_defaultValues, fieldDsc->lvVarIndex);
         }
 
