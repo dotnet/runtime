@@ -212,10 +212,6 @@ namespace ILCompiler
             {
                 return GetAllMethodsForDelegate(type, virtualOnly);
             }
-            else if (type.IsEnum)
-            {
-                return GetAllMethodsForEnum(type, virtualOnly);
-            }
             else if (type.IsValueType)
             {
                 return GetAllMethodsForValueType(type, virtualOnly);

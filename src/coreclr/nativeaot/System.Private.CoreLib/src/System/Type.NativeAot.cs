@@ -22,6 +22,10 @@ namespace System
         [Intrinsic]
         public static unsafe Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromMethodTable(handle.ToMethodTable());
 
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
+        internal static unsafe RuntimeType? GetTypeFromMethodTableMaybeNull(MethodTable* pMT) => (pMT == null) ? null : GetTypeFromMethodTable(pMT);
+
+        // Implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, CORINFO_HELP_GETSYNCFROMCLASSHANDLE
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {

@@ -239,7 +239,7 @@ namespace ILCompiler
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
-            public override bool IsExtendedLayout => true;
+            public override bool IsExtendedLayout => false;
             public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
@@ -273,7 +273,7 @@ namespace ILCompiler
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
-            public override MetadataType GetNestedType(string name) => null;
+            public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
             public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 
@@ -396,16 +396,6 @@ namespace ILCompiler
                         Array.Empty<object>());
                 }
 
-                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
-                if (_targetMethod.IsAsyncCall())
-                {
-                    ILEmitter e = new ILEmitter();
-                    ILCodeStream c = e.NewCodeStream();
-
-                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
-                    return e.Link(this);
-                }
-
                 // Generate the unboxing stub. This loosely corresponds to following C#:
                 // return BoxedValue.InstanceMethod(this.m_pEEType, [rest of parameters])
 
@@ -429,6 +419,11 @@ namespace ILCompiler
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
+                }
+
+                if (_targetMethod.IsAsyncCall())
+                {
+                    codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 }
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
@@ -490,7 +485,8 @@ namespace ILCompiler
                         Array.Empty<object>());
                 }
 
-                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                // TODO: mirror what was done in the commit that introduced this comment. Not doing it in that
+                // commit since this can't be tested in dotnet/runtime repo main right now.
                 if (_targetMethod.IsAsyncCall())
                 {
                     ILEmitter e = new ILEmitter();

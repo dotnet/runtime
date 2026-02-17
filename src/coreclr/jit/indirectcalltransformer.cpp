@@ -210,6 +210,7 @@ private:
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
             remainderBlock->SetFlags(BBF_INTERNAL);
+            remainderBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // We will be adding more blocks after currBlock, so remove edge to remainderBlock.
             //
@@ -237,6 +238,7 @@ private:
             {
                 block->CopyFlags(flagsSource, BBF_SPLIT_GAINED);
             }
+            block->RemoveFlags(BBF_DONT_REMOVE);
             return block;
         }
 
@@ -970,10 +972,9 @@ private:
             CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
             if (clsHnd != NO_CLASS_HANDLE)
             {
-                // If we devirtualized an array interface call,
-                // pass the original method handle and original context handle to the devirtualizer.
+                // Pass the original method handle and original context handle to the devirtualizer if needed.
                 //
-                if (inlineInfo->arrayInterface)
+                if (inlineInfo->needsMethodContext)
                 {
                     methodHnd = inlineInfo->originalMethodHandle;
                     context   = inlineInfo->originalContextHandle;

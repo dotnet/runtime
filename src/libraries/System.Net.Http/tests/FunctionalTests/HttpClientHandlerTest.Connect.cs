@@ -14,8 +14,12 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
 
-        [Fact]
-        public async Task ConnectMethod_Success()
+        [Theory]
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NoContent)]
+        public async Task ConnectMethod_Success(HttpStatusCode statusCode)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -41,7 +45,7 @@ namespace System.Net.Http.Functional.Tests
                             }
                         }
 
-                        Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
+                        Task serverTask = connection.SendResponseAsync(statusCode);
                         await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);
 
                         using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync(TestAsync))

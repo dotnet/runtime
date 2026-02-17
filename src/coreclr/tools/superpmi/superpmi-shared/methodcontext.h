@@ -282,10 +282,6 @@ public:
     void dmpGetFieldOffset(DWORDLONG key, DWORD value);
     unsigned repGetFieldOffset(CORINFO_FIELD_HANDLE field);
 
-    void recGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle, CorInfoHelpFunc result);
-    void dmpGetLazyStringLiteralHelper(DWORDLONG key, DWORD value);
-    CorInfoHelpFunc repGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle);
-
     void recGetUnBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetUnBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -790,6 +786,10 @@ public:
     void dmpGetFpStructLowering(DWORDLONG key, const Agnostic_GetFpStructLowering& value);
     void repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
 
+    void recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType wasmType);
+    void dmpGetWasmLowering(DWORDLONG key, DWORD value);
+    CorInfoWasmType repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, CorInfoReloc result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     CorInfoReloc repGetRelocTypeHint(void* target);
@@ -910,6 +910,10 @@ public:
     void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
     void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
     CORINFO_METHOD_HANDLE repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type);
+
+    void recGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize, CORINFO_WASM_TYPE_SYMBOL_HANDLE result);
+    void dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, DWORDLONG value);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize);
 
     void dmpSigInstHandleMap(DWORD key, DWORDLONG value);
 
@@ -1125,7 +1129,7 @@ enum mcPackets
     //Packet_IsValidToken = 144,
     //Packet_FindNameOfToken = 145,
     //PacketCR_RecordCallSite = 146,
-    Packet_GetLazyStringLiteralHelper = 147,
+    //Packet_GetLazyStringLiteralHelper = 147,
     Packet_IsIntrinsicType = 148,
     Packet_PrintClassName = 149,
     Packet_GetReadyToRunHelper = 150,
@@ -1213,6 +1217,8 @@ enum mcPackets
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
     Packet_GetContinuationType = 234,
+    Packet_GetWasmTypeSymbol = 235,
+    Packet_GetWasmLowering = 236,
 };
 
 void SetDebugDumpVariables();

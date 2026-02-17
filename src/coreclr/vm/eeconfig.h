@@ -269,9 +269,7 @@ public:
 
     bool IsJitVerificationDisabled(void)    const {LIMITED_METHOD_CONTRACT;  return fJitVerificationDisable; }
 
-#ifdef FEATURE_EH_FUNCLETS
     bool SuppressLockViolationsOnReentryFromOS() const {LIMITED_METHOD_CONTRACT;  return fSuppressLockViolationsOnReentryFromOS; }
-#endif
 
 #endif // _DEBUG
 
@@ -407,7 +405,6 @@ public:
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
     bool    DebugAssembliesModifiable()     const { LIMITED_METHOD_CONTRACT; return fDebugAssembliesModifiable; }
 
     // Optimizations to improve working set
@@ -520,9 +517,7 @@ private: //----------------------------------------------------------------
                                         // at load time.
     bool fJitVerificationDisable;       // Turn off jit verification (for testing purposes only)
 
-#ifdef FEATURE_EH_FUNCLETS
     bool fSuppressLockViolationsOnReentryFromOS;
-#endif
 
 #endif // _DEBUG
 #ifdef ENABLE_STARTUP_DELAY
@@ -572,7 +567,6 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
     bool fDebugAssembliesModifiable;
 
 #ifdef _DEBUG

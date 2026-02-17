@@ -68,5 +68,45 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("", name.Value);
             Assert.Equal("<KeyName xmlns=\"http://www.w3.org/2000/09/xmldsig#\"></KeyName>", (name.GetXml().OuterXml));
         }
+
+        [Fact]
+        public void Constructor()
+        {
+            KeyInfoName name = new KeyInfoName();
+            Assert.Null(name.Value);
+        }
+
+        [Fact]
+        public void Constructor_WithValue()
+        {
+            KeyInfoName name = new KeyInfoName("TestKeyName");
+            Assert.Equal("TestKeyName", name.Value);
+        }
+
+        [Fact]
+        public void Value_SetNull()
+        {
+            KeyInfoName name = new KeyInfoName("test");
+            name.Value = null;
+            Assert.Null(name.Value);
+        }
+
+        [Fact]
+        public void GetXml_NullValue()
+        {
+            KeyInfoName name = new KeyInfoName();
+            XmlElement xml = name.GetXml();
+            Assert.Equal("KeyName", xml.LocalName);
+            Assert.Equal(string.Empty, xml.InnerText);
+        }
+
+        [Fact]
+        public void GetXml_EmptyValue()
+        {
+            KeyInfoName name = new KeyInfoName("");
+            XmlElement xml = name.GetXml();
+            Assert.Equal("KeyName", xml.LocalName);
+            Assert.Equal(string.Empty, xml.InnerText);
+        }
     }
 }

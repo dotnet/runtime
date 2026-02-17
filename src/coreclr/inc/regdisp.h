@@ -20,7 +20,6 @@ struct REGDISPLAY_BASE {
                             // do NOT trash it! But DO update any static
                             // registers here.
 
-#ifdef FEATURE_EH_FUNCLETS
     PT_CONTEXT pCurrentContext;   // [trashed] points to current Context of stackwalk
     PT_CONTEXT pCallerContext;    // [trashed] points to the Context of the caller during stackwalk -- used for GC crawls
 
@@ -37,7 +36,6 @@ struct REGDISPLAY_BASE {
 
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsOne;  // used by stackwalk
     T_KNONVOLATILE_CONTEXT_POINTERS ctxPtrsTwo;  // used by stackwalk
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef DEBUG_REGDISPLAY
     Thread *_pThread;
@@ -72,30 +70,6 @@ inline void SetRegdisplaySP(REGDISPLAY_BASE *pRD, LPVOID sp) {
 
 struct REGDISPLAY : public REGDISPLAY_BASE {
 
-#ifndef FEATURE_EH_FUNCLETS
-    // TODO: Unify with pCurrentContext / pCallerContext used on 64-bit
-    PCONTEXT pContextForUnwind; // scratch context for unwinding
-                                // used to preserve context saved in the frame that
-                                // could be otherwise wiped by the unwinding
-
-    DWORD * pEdi;
-    DWORD * pEsi;
-    DWORD * pEbx;
-    DWORD * pEdx;
-    DWORD * pEcx;
-    DWORD * pEax;
-
-    DWORD * pEbp;
-#endif // !FEATURE_EH_FUNCLETS
-
-#ifndef FEATURE_EH_FUNCLETS
-
-#define REG_METHODS(reg) \
-    inline PDWORD Get##reg##Location(void) { return p##reg;  } \
-    inline void   Set##reg##Location(PDWORD p##reg) { this->p##reg = p##reg; }
-
-#else // !FEATURE_EH_FUNCLETS
-
 #define REG_METHODS(reg) \
     inline PDWORD Get##reg##Location(void) { return pCurrentContextPointers->reg; } \
     inline void   Set##reg##Location(PDWORD p##reg) \
@@ -103,8 +77,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
         pCurrentContextPointers->reg = p##reg; \
         pCurrentContext->reg = *p##reg; \
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     REG_METHODS(Eax)
     REG_METHODS(Ecx)
@@ -122,21 +94,13 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 inline TADDR GetRegdisplayFP(REGDISPLAY *display) {
     LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_EH_FUNCLETS
     return (TADDR)display->pCurrentContext->Ebp;
-#else
-    return (TADDR)*display->GetEbpLocation();
-#endif
 }
 
 inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display) {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef FEATURE_EH_FUNCLETS
     return &display->pCurrentContext->Ebp;
-#else
-    return (LPVOID)display->GetEbpLocation();
-#endif
 }
 
 inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
@@ -147,9 +111,7 @@ inline TADDR GetRegdisplayPCTAddr(REGDISPLAY *display)
 inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
 {
     display->PCTAddr = addr;
-#ifdef FEATURE_EH_FUNCLETS
     display->pCurrentContext->Eip = *PTR_PCODE(addr);
-#endif
     display->ControlPC = *PTR_PCODE(addr);
 }
 
@@ -366,8 +328,6 @@ inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
-// This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
     LIMITED_METHOD_CONTRACT;
@@ -401,11 +361,9 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
     CheckRegDisplaySP(pRD);
 #endif // DEBUG_REGDISPLAY
 }
-#endif // FEATURE_EH_FUNCLETS
 
 typedef REGDISPLAY *PREGDISPLAY;
 
-#ifdef FEATURE_EH_FUNCLETS
 inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CONTEXT pCtx)
 {
 #ifdef TARGET_AMD64
@@ -463,7 +421,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }
-#endif // FEATURE_EH_FUNCLETS
 
 inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pCallerCtx = NULL, bool fLightUnwind = false)
 {
@@ -471,25 +428,6 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
 
     SUPPORTS_DAC;
 
-#ifndef FEATURE_EH_FUNCLETS
-#ifdef TARGET_X86
-    pRD->pContext = pctx;
-    pRD->pContextForUnwind = NULL;
-    pRD->pEdi = &(pctx->Edi);
-    pRD->pEsi = &(pctx->Esi);
-    pRD->pEbx = &(pctx->Ebx);
-    pRD->pEbp = &(pctx->Ebp);
-    pRD->pEax = &(pctx->Eax);
-    pRD->pEcx = &(pctx->Ecx);
-    pRD->pEdx = &(pctx->Edx);
-    pRD->SP   = pctx->Esp;
-    pRD->ControlPC = (PCODE)(pctx->Eip);
-    pRD->PCTAddr = (UINT_PTR)&(pctx->Eip);
-#else // TARGET_X86
-    PORTABILITY_ASSERT("FillRegDisplay");
-#endif // _TARGET_???_ (ELSE)
-
-#else // !FEATURE_EH_FUNCLETS
     pRD->pContext   = pctx;
 
     // Setup the references
@@ -587,8 +525,6 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
     pRD->volatileCurrContextPointers.T5 = &pctx->T5;
     pRD->volatileCurrContextPointers.T6 = &pctx->T6;
 #endif // TARGET_RISCV64
-
-#endif // !FEATURE_EH_FUNCLETS
 }
 
 // Initialize a new REGDISPLAY/CONTEXT pair from an existing valid REGDISPLAY.
@@ -601,31 +537,11 @@ inline void CopyRegDisplay(const PREGDISPLAY pInRD, PREGDISPLAY pOutRD, T_CONTEX
 
     T_CONTEXT* pOutCallerCtx = NULL;
 
-#ifndef FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_X86)
-    if (pInRD->pEdi != NULL) {pOutCtx->Edi = *pInRD->pEdi;} else {pInRD->pEdi = NULL;}
-    if (pInRD->pEsi != NULL) {pOutCtx->Esi = *pInRD->pEsi;} else {pInRD->pEsi = NULL;}
-    if (pInRD->pEbx != NULL) {pOutCtx->Ebx = *pInRD->pEbx;} else {pInRD->pEbx = NULL;}
-    if (pInRD->pEbp != NULL) {pOutCtx->Ebp = *pInRD->pEbp;} else {pInRD->pEbp = NULL;}
-    if (pInRD->pEax != NULL) {pOutCtx->Eax = *pInRD->pEax;} else {pInRD->pEax = NULL;}
-    if (pInRD->pEcx != NULL) {pOutCtx->Ecx = *pInRD->pEcx;} else {pInRD->pEcx = NULL;}
-    if (pInRD->pEdx != NULL) {pOutCtx->Edx = *pInRD->pEdx;} else {pInRD->pEdx = NULL;}
-    pOutCtx->Esp = pInRD->SP;
-    pOutCtx->Eip = pInRD->ControlPC;
-#else // TARGET_X86
-    PORTABILITY_ASSERT("CopyRegDisplay");
-#endif // _TARGET_???_
-
-#else // FEATURE_EH_FUNCLETS
-
     *pOutCtx = *(pInRD->pCurrentContext);
     if (pInRD->IsCallerContextValid)
     {
         pOutCallerCtx = pInRD->pCallerContext;
     }
-
-#endif // FEATURE_EH_FUNCLETS
 
     if (pOutRD)
         FillRegDisplay(pOutRD, pOutCtx, pOutCallerCtx);
@@ -684,28 +600,7 @@ inline void UpdateContextFromRegDisp(PREGDISPLAY pRegDisp, PT_CONTEXT pContext)
 {
     _ASSERTE((pRegDisp != NULL) && (pContext != NULL));
 
-#ifndef FEATURE_EH_FUNCLETS
-
-#if defined(TARGET_X86)
-    pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
-    pContext->Edi = *pRegDisp->pEdi;
-    pContext->Esi = *pRegDisp->pEsi;
-    pContext->Ebx = *pRegDisp->pEbx;
-    pContext->Ebp = *pRegDisp->pEbp;
-    pContext->Eax = *pRegDisp->pEax;
-    pContext->Ecx = *pRegDisp->pEcx;
-    pContext->Edx = *pRegDisp->pEdx;
-    pContext->Esp = pRegDisp->SP;
-    pContext->Eip = pRegDisp->ControlPC;
-#else // TARGET_X86
-    PORTABILITY_ASSERT("UpdateContextFromRegDisp");
-#endif // _TARGET_???_
-
-#else // FEATURE_EH_FUNCLETS
-
     *pContext = *pRegDisp->pCurrentContext;
-
-#endif // FEATURE_EH_FUNCLETS
 }
 
 
