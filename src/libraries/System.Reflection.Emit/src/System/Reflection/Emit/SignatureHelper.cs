@@ -134,7 +134,6 @@ namespace System.Reflection.Emit
                     ParameterTypeEncoder encoder = parameterEncoder.AddParameter();
 
                     Type[]? modreqs = (requiredModifiers != null && requiredModifiers.Length > i) ? requiredModifiers[i] : null;
-
                     Type[]? modopts = (optionalModifiers != null && optionalModifiers.Length > i) ? optionalModifiers[i] : null;
 
                     WriteSignatureForType(encoder.Type(), parameters[i], module, modreqs, modopts);
