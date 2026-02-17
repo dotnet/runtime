@@ -297,8 +297,6 @@ namespace System.IO.Tests
             // exercising a very deep directory tree. See https://github.com/dotnet/runtime/issues/84344.
             // The original scenario and this test are limited to Windows; on Unix-like systems the much shorter maximum path length
             // (for example, 4096 characters) would cause failures due to path length limits rather than testing Directory.Delete recursion.
-
-            // Create a specific subdir only for this test.
             DirectoryInfo subDir = testDir.CreateSubdirectory("test_issue84344");
             for (int i = 0; i < depth; i++)
             {
