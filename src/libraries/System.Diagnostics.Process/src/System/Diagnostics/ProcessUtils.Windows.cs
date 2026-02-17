@@ -7,7 +7,7 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessUtils
     {
-        internal static bool IsExecutable(string fullPath)
+        private static bool IsExecutable(string fullPath)
         {
             return File.Exists(fullPath);
         }
