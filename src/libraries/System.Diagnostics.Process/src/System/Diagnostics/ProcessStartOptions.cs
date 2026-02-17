@@ -247,35 +247,9 @@ namespace System.Diagnostics
                 }
             }
 
-            string? fromPath = FindProgramInPath(filename);
+            string? fromPath = ProcessUtils.FindProgramInPath(filename);
             requiresExistenceCheck = fromPath is null;
             return fromPath;
-        }
-
-        internal static string? FindProgramInPath(string program)
-        {
-            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar is not null)
-            {
-                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    string path = Path.Combine(subPath, program);
-#if WINDOWS
-                    if (File.Exists(path))
-#else
-                    // On Unix, all shells ignore broken links and non-executable files
-                    // when searching for programs in PATH, so do we.
-                    if (ProcessUtils.IsExecutable(path))
-#endif
-                    {
-                        return path;
-                    }
-                }
-            }
-
-            return null;
         }
     }
 }

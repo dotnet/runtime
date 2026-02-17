@@ -5,9 +5,9 @@ using System.IO;
 
 namespace System.Diagnostics
 {
-    internal static class ProcessUtils
+    internal static partial class ProcessUtils
     {
-        internal static bool IsExecutable(string fullPath)
+        private static bool IsExecutable(string fullPath)
         {
             Interop.Sys.FileStatus fileinfo;
 
@@ -66,6 +66,26 @@ namespace System.Diagnostics
             {
                 return otherCanExecute;
             }
+        }
+
+        internal static string? FindProgramInPath(string program)
+        {
+            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar is not null)
+            {
+                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
+                while (pathParser.MoveNext())
+                {
+                    string subPath = pathParser.ExtractCurrent();
+                    string path = Path.Combine(subPath, program);
+                    if (IsExecutable(path))
+                    {
+                        return path;
+                    }
+                }
+            }
+
+            return null;
         }
     }
 }

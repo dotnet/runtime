@@ -663,7 +663,7 @@ namespace System.Diagnostics
                 // find filename on PATH
                 else
                 {
-                    resolvedFilename = ProcessStartOptions.FindProgramInPath(filename);
+                    resolvedFilename = ProcessUtils.FindProgramInPath(filename);
                 }
             }
 
@@ -726,7 +726,7 @@ namespace System.Diagnostics
             }
 
             // Then check each directory listed in the PATH environment variables
-            return ProcessStartOptions.FindProgramInPath(filename);
+            return ProcessUtils.FindProgramInPath(filename);
         }
 
         private static long s_ticksPerSecond;
