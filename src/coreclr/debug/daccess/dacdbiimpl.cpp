@@ -1189,18 +1189,7 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
     MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
     if (pMethodDesc->IsAsyncThunkMethod())
     {
-        MethodTable * pMT = pMethodDesc->GetMethodTable();
-        MethodTable::IntroducedMethodIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc * pMD = it.GetMethodDesc();
-            CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
-            if (!pMD->IsDiagnosticsHidden())
-            {
-                pMethodDesc = pMD;
-                break;
-            }
-        }
+        pMethodDesc = pMethodDesc->GetAsyncOtherVariantNoCreate();
     }
     pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
 
