@@ -216,16 +216,16 @@ namespace System.Runtime.CompilerServices
             return awaiter.GetResult();
         }
 #else
-        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new NotImplementedException(); }
-        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new NotImplementedException(); }
-        public static void Await(System.Threading.Tasks.Task task) { throw new NotImplementedException(); }
-        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new NotImplementedException(); }
-        public static void Await(System.Threading.Tasks.ValueTask task) { throw new NotImplementedException(); }
-        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw new NotImplementedException(); }
-        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw new NotImplementedException(); }
-        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw new NotImplementedException(); }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw new NotImplementedException(); }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw new NotImplementedException(); }
+        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Threading.Tasks.Task task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Threading.Tasks.ValueTask task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
 #endif
     }
 }
