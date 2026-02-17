@@ -450,7 +450,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
         return false;
     }
 
-    if (pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
+    if (!pPEAssembly->GetPEImage()->IsInBundle() && pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
     }
