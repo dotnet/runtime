@@ -52,6 +52,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(TransitivePolymorphicClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
@@ -156,6 +157,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(TransitivePolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
