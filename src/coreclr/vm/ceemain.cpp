@@ -1386,8 +1386,6 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
-                // Shutdown EBR before GC heap to ensure all deferred deletions are drained.
-                g_HashMapEbr.Shutdown();
 
                 GCHeapUtilities::GetGCHeap()->Shutdown();
             }

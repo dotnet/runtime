@@ -55,9 +55,6 @@ static thread_local EbrThreadData t_pThreadData = {};
 // a single shared global collector.
 EbrCollector g_HashMapEbr;
 
-// Count of objects leaked due to OOM when queuing for deferred deletion.
-static LONG s_ebrLeakedDeletionCount = 0;
-
 // ============================================
 // EbrCollector implementation
 // ============================================
@@ -102,48 +99,6 @@ static size_t DeletePendingEntries(EbrPendingEntry* pEntry)
         pEntry = pNext;
     }
     return freedSize;
-}
-
-void
-EbrCollector::Shutdown()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (!m_initialized)
-        return;
-
-    // Drain all pending queues unconditionally.
-    EbrPendingEntry* pDetached[EBR_EPOCHS];
-    {
-        CrstHolder lock(&m_pendingLock);
-        for (uint32_t i = 0; i < EBR_EPOCHS; i++)
-            pDetached[i] = DetachQueue(i);
-    }
-    for (uint32_t i = 0; i < EBR_EPOCHS; i++)
-        DeletePendingEntries(pDetached[i]);
-
-    // Threads should have exited their critical regions by now. We walk the list and clear them.
-    {
-        CrstHolder lock(&m_threadListLock);
-        EbrThreadData* pCur = m_pThreadListHead;
-        while (pCur != nullptr)
-        {
-            EbrThreadData* pNext = pCur->m_pNext;
-            *pCur = {}; // Clear the data to prevent reuse after shutdown.
-            pCur = pNext;
-        }
-        m_pThreadListHead = nullptr;
-    }
-
-    m_threadListLock.Destroy();
-    m_pendingLock.Destroy();
-
-    m_initialized = false;
 }
 
 // ============================================
@@ -411,7 +366,7 @@ EbrCollector::CleanupRequested()
     return m_initialized && (size_t)m_pendingSizeInBytes > 0;
 }
 
-void
+bool
 EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize)
 {
     CONTRACTL
@@ -436,10 +391,8 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     {
         // If we can't allocate, we must not delete pObject immediately, because
         // EBR readers in async mode may still be traversing data structures that
-        // reference it. As a degraded fallback, intentionally leak pObject rather
-        // than risk a use-after-free. This path should be extremely rare.
-        InterlockedIncrement(&s_ebrLeakedDeletionCount);
-        return;
+        // reference it.
+        return false;
     }
 
     // Insert into the current epoch's pending list.
@@ -451,4 +404,5 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
         m_pPendingHeads[slot] = pEntry;
         m_pendingSizeInBytes = (size_t)m_pendingSizeInBytes + estimatedSize;
     }
+    return true;
 }

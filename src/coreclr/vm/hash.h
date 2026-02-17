@@ -347,7 +347,7 @@ private:
 
     // compute the new size, based on the number of free slots
     // available, compact or expand
-    UPTR            NewSize();
+    UPTR            NewSize() const;
     // create a new bucket array and rehash the non-deleted entries
     void            Rehash();
     PTR_Bucket      Buckets();

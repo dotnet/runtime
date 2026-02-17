@@ -24,7 +24,8 @@
 //   g_HashMapEbr.QueueForDeletion(pOldData, deleteFn, sizeEstimate);
 //
 //   // Shutdown:
-//   g_HashMapEbr.Shutdown();
+//   The EBR collector doesn't support a shutdown feature. CoreCLR doesn't support
+//   clean shutdown.
 
 #ifndef __EBR_H__
 #define __EBR_H__
@@ -59,10 +60,6 @@ public:
     //   crstPending:    Crst type for the pending deletion queue lock
     void Init(CrstType crstThreadList, CrstType crstPending);
 
-    // Shutdown the collector, draining all pending deletions.
-    // All threads should have exited their critical regions before calling.
-    void Shutdown();
-
     // Enter a critical region. While in a critical region, objects queued for
     // deletion will not be freed. Re-entrant: nested calls are counted.
     void EnterCriticalRegion();
@@ -76,7 +73,11 @@ public:
     //   pObject:       the object to retire (must not be nullptr)
     //   pfnDelete:     function to call to delete the object
     //   estimatedSize: approximate size in bytes (for tracking)
-    void QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize);
+    // Returns true if the object was successfully queued for deletion, false if
+    // the queue allocation failed (in which case the object was not queued and will not be deleted).
+    // Note: if queuing fails, the caller is responsible for ensuring the object is eventually deleted,
+    // either by retrying the queue or by deleting it directly if safe to do so.
+    bool QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t estimatedSize);
 
     // Returns true if the calling thread is currently in a critical region.
     bool InCriticalRegion();
