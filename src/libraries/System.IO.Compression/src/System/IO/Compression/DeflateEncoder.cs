@@ -246,19 +246,15 @@ namespace System.IO.Compression
 
                     OperationStatus status = errorCode switch
                     {
+                        ZLibNative.ErrorCode.Ok when isFinalBlock => OperationStatus.DestinationTooSmall,
                         ZLibNative.ErrorCode.Ok => _state.AvailIn == 0
                             ? OperationStatus.Done
-                            : _state.AvailOut == 0
-                                ? OperationStatus.DestinationTooSmall
-                                : OperationStatus.Done,
+                            : OperationStatus.DestinationTooSmall,
                         ZLibNative.ErrorCode.StreamEnd => OperationStatus.Done,
                         ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
                             ? OperationStatus.DestinationTooSmall
-                            : _state.AvailIn == 0
-                                ? OperationStatus.Done
-                                : OperationStatus.NeedMoreData,
-                        ZLibNative.ErrorCode.DataError => OperationStatus.InvalidData,
-                        _ => OperationStatus.InvalidData
+                            : OperationStatus.Done,
+                        _ => throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errorCode, _state.GetErrorMessage())
                     };
 
                     // Track if compression is finished
@@ -310,7 +306,7 @@ namespace System.IO.Compression
                         ZLibNative.ErrorCode.BufError => _state.AvailOut == 0
                             ? OperationStatus.DestinationTooSmall
                             : OperationStatus.Done,
-                        _ => OperationStatus.InvalidData
+                        _ => throw new ZLibException(SR.ZLibErrorUnexpected, "deflate", (int)errorCode, _state.GetErrorMessage())
                     };
                 }
             }
