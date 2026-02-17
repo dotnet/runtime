@@ -454,8 +454,9 @@ static bool IsDefaultValue(GenTree* node)
 class DefaultValueAnalysis
 {
     Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_defaultVarsIn; // Per-block set of locals with default value on entry.
+    VARSET_TP* m_mutatedVars;       // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_defaultVarsIn;     // Per-block set of locals with default value on entry.
+    VARSET_TP  m_nonDefaultAtEntry; // Locals that do not have default value at method entry.
 
     // DataFlow::ForwardAnalysis callback used in Phase 2.
     class DataFlowCallback
@@ -521,10 +522,13 @@ class DefaultValueAnalysis
         {
             if (m_isFirstPred)
             {
-                // No predecessors (entry block or unreachable). All locals
-                // start with default value.
+                // No predecessors (entry block or unreachable). Start with
+                // all locals having default value, then remove parameters and
+                // OSR locals whose initial values are not default.
                 VarSetOps::AssignNoCopy(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
                                         VarSetOps::MakeFull(m_compiler));
+                VarSetOps::DiffD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
+                                 m_analysis.m_nonDefaultAtEntry);
             }
 
             return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_defaultVarsIn[block->bbNum]);
@@ -536,6 +540,7 @@ public:
         : m_compiler(compiler)
         , m_mutatedVars(nullptr)
         , m_defaultVarsIn(nullptr)
+        , m_nonDefaultAtEntry(VarSetOps::MakeEmpty(compiler))
     {
     }
 
@@ -680,6 +685,18 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
     for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
     {
         VarSetOps::AssignNoCopy(m_compiler, m_defaultVarsIn[i], VarSetOps::MakeFull(m_compiler));
+    }
+
+    // Parameters and OSR locals do not have default values at method entry.
+    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+    {
+        unsigned    lclNum = m_compiler->lvaTrackedToVarNum[i];
+        LclVarDsc*  varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        {
+            VarSetOps::AddElemD(m_compiler, m_nonDefaultAtEntry, varDsc->lvVarIndex);
+        }
     }
 
     DataFlowCallback callback(*this, m_compiler);
