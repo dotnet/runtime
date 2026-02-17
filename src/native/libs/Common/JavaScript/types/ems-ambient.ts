@@ -38,11 +38,14 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_BindAssemblyExports: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
+    _corerun_shutdown: (code: number) => void;
 
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
         createDataFile: (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean) => string;
+        chdir: (path: string) => void;
     }
+    ENV: any;
 
     DOTNET: any;
     DOTNET_INTEROP: any;
@@ -68,8 +71,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     HEAPF64: Float64Array;
 
     ExitStatus: (exitCode: number) => number;
-    _emscripten_force_exit: (exitCode: number) => void;
     _exit: (exitCode: number, implicit?: boolean) => void;
+    abort: (reason: any) => void;
+    ___trap: () => void;
     safeSetTimeout: (func: Function, timeout: number) => number;
     exitJS: (status: number, implicit?: boolean | number) => void;
     runtimeKeepalivePop: () => void;

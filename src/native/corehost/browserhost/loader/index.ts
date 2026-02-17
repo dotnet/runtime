@@ -21,7 +21,7 @@ import { check, error, info, warn, debug, fastCheck } from "./logging";
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
-import { instantiateWasm } from "./assets";
+import { instantiateMainWasm } from "./assets";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
@@ -83,7 +83,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
 
     // emscripten extension point
     const localModule: Partial<EmscriptenModuleInternal> = {
-        instantiateWasm,
+        instantiateWasm: instantiateMainWasm,
     };
     Object.assign(dotnetApi.Module!, localModule);
 

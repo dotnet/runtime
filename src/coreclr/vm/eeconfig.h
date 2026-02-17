@@ -414,7 +414,6 @@ public:
     bool    ExcludeReadyToRun(LPCUTF8 assemblyName) const;
 
     bool    StressLog()                            const { LIMITED_METHOD_CONTRACT; return fStressLog; }
-    bool    ForceEnc()                             const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
     ClrModifiableAssemblies ModifiableAssemblies() const { LIMITED_METHOD_CONTRACT; return modifiableAssemblies; }
 
     // Optimizations to improve working set
@@ -577,7 +576,6 @@ private: //----------------------------------------------------------------
     AssemblyNamesList * pReadyToRunExcludeList;
 
     bool fStressLog;
-    bool fForceEnc;
     ClrModifiableAssemblies modifiableAssemblies;
 
 #ifdef _DEBUG

@@ -524,7 +524,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     if (IsEditAndContinueCapable())
     {
         BOOL setEnC = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&
-                      ((newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() ||
+                      ((newBits & DACF_ENC_ENABLED) != 0 ||
                        (g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG && AreJITOptimizationsDisabled()));
         if (setEnC)
         {
