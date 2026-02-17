@@ -285,7 +285,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 //    tree - the tree which effect on liveness is processed.
 //
 template <bool ForCodeGen>
-template <bool ProcessLclAddrs>
+template <bool GeneralLclAddrHandling>
 void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
 {
     assert(m_compiler->GetCurLVEpoch() == epoch);
@@ -300,7 +300,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     {
         UpdateLifeVar(tree, tree->AsLclVarCommon());
     }
-    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
+    else if (!GeneralLclAddrHandling && tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
     {
         UpdateLifeVar(tree, tree->AsIndir()->Addr()->AsLclVarCommon());
     }
@@ -312,7 +312,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
         };
         tree->VisitLocalDefNodes(m_compiler, visitDef);
     }
-    else if (ProcessLclAddrs && tree->OperIs(GT_LCL_ADDR))
+    else if (GeneralLclAddrHandling && tree->OperIs(GT_LCL_ADDR))
     {
         UpdateLifeVar(tree, tree->AsLclVarCommon());
     }
