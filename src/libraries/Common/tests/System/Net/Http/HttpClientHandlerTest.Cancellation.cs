@@ -520,7 +520,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if !NETFRAMEWORK
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41531")]
         [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
