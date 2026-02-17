@@ -31040,6 +31040,10 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_WASM)
+
+            // Nothing to do here.
+
 #else //  TARGET_XXX
 
             // This target needs support here!
