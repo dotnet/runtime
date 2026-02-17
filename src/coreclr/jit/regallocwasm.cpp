@@ -440,7 +440,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //
 void WasmRegAlloc::ResolveReferences()
 {
-    // Finish the allocation by allocating temprary registers to virtual registers.
+    // Finish the allocation by allocating temporary registers to virtual registers.
     struct TemporaryRegBank
     {
         regNumber* Regs;
