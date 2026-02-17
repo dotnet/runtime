@@ -68,24 +68,5 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string? FindProgramInPath(string program)
-        {
-            string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar is not null)
-            {
-                StringParser pathParser = new(pathEnvVar, Path.PathSeparator, skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    string path = Path.Combine(subPath, program);
-                    if (IsExecutable(path))
-                    {
-                        return path;
-                    }
-                }
-            }
-
-            return null;
-        }
     }
 }
