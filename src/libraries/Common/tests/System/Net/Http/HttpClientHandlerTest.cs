@@ -1528,9 +1528,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
         {
+            // The site doesn't support HTTP/3.
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 // international version of the Starbucks website
