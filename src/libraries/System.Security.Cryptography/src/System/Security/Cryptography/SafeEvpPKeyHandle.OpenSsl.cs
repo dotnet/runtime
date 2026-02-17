@@ -96,6 +96,11 @@ namespace System.Security.Cryptography
                 // ExtraHandle is upref'd by UpRefEvpPkey
                 safeHandle.ExtraHandle = ExtraHandle;
             }
+            catch
+            {
+                safeHandle.Dispose();
+                throw;
+            }
             finally
             {
                 if (addedRef)
