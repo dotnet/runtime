@@ -27,13 +27,22 @@ namespace System.Security.Cryptography.OpenSsl.Tests
                 Thread duplicateThread = new Thread(() =>
                 {
                     Thread.Sleep(Random.Shared.Next(0, 3));
-                    try { duplicated = keyHandle.DuplicateHandle(); } catch { }
+                    try
+                    {
+                        duplicated = keyHandle.DuplicateHandle();
+                    }
+                    catch
+                    {
+                        // We are only interested in crashes, not managed exceptions.
+                    }
                 });
 
                 disposeThread.Start();
                 duplicateThread.Start();
                 disposeThread.Join();
                 duplicateThread.Join();
+
+                keyHandle.Dispose();
 
                 if (duplicated is not null)
                 {
