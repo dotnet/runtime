@@ -343,9 +343,11 @@ run_with_timeout() {
   # Start a watchdog that will kill the process if it exceeds timeout
   (
     sleep "$timeout_sec"
-    echo "Process $pid exceeded timeout of $timeout_sec seconds. Killing..."
-    if kill -0 "$pid" 2>/dev/null; then
-      kill -9 "$pid" 2>/dev/null
+    if [ $? -eq 0 ]; then
+      echo "Process $pid exceeded timeout of $timeout_sec seconds. Killing..."
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -9 "$pid" 2>/dev/null
+      fi
     fi
   ) &
   local watchdog=$!
@@ -355,6 +357,7 @@ run_with_timeout() {
   local exit_code=$?
 
   # Kill watchdog and its children (sleep process) if still running
+  echo Kill watchdog with PID $watchdog
   pkill -P "$watchdog" 2>/dev/null
   kill "$watchdog" 2>/dev/null
   wait "$watchdog" 2>/dev/null
