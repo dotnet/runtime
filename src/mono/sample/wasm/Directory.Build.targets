@@ -54,12 +54,6 @@
     <NestedBuildProperty Include="WasmTestForwardConsole" />
   </ItemGroup>
 
-  <Target Name="CleanSampleBinObj" BeforeTargets="BuildSampleInTree">
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/bin" Condition="Exists('$(MSBuildProjectDirectory)/bin')" />
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/obj" Condition="Exists('$(MSBuildProjectDirectory)/obj')" />
-    <RemoveDir Directories="$(BaseIntermediateOutputPath)" Condition="Exists('$(BaseIntermediateOutputPath)')" />
-  </Target>
-
   <Target Name="BuildSampleInTree"
       Inputs="
       Program.cs;

@@ -43,7 +43,7 @@ export function warn(msg: string, ...data: any) {
 }
 
 export function error(msg: string, reason: any) {
-    console.error(prefix + msg, reason);
+    console.error(prefix + msg, normalizeException(reason));
 }
 
 export function normalizeException(reason: any) {

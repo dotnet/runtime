@@ -5,7 +5,6 @@ import type { LoaderConfigInternal } from "./types";
 import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports, dotnetRuntimeExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
-import { symbolicateStackTrace } from "./symbolicate";
 
 let loaderConfig: LoaderConfigInternal = null as any;
 export function registerExit() {

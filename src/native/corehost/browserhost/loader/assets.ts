@@ -151,6 +151,7 @@ export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.behavior = "symbols";
+    assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
     const table = await fetchText(assetInternal);
     onDownloadedAsset();
     dotnetDiagnosticsExports.installNativeSymbols(table || "");
@@ -341,6 +342,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "icu": "globalization",
     "vfs": "configuration",
     "manifest": "manifest",
+    "symbols": "pdb",
     "dotnetwasm": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
@@ -355,7 +357,7 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "icu": "application/octet-stream",
     "vfs": "application/octet-stream",
     "manifest": "application/json",
-    "symbols": "text/plain",
+    "symbols": "text/plain; charset=utf-8",
     "dotnetwasm": "application/wasm",
 };
 
