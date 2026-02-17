@@ -201,6 +201,9 @@ namespace System
         internal const string NamedPipeClientStreamIsConnectedMessage = "This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead.";
         internal const string NamedPipeClientStreamIsConnectedDiagId = "SYSLIB0063";
 
+        internal const string RSACspEncryptDecryptMessage = "RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead.";
+        internal const string RSACspEncryptDecryptDiagId = "SYSLIB0064";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

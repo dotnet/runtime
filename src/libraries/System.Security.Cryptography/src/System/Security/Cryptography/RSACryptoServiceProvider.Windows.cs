@@ -259,6 +259,7 @@ namespace System.Security.Cryptography
         /// <param name="rgb">encrypted data</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>decrypted data</returns>
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
@@ -316,6 +317,7 @@ namespace System.Security.Cryptography
         /// <param name="rgb">raw data to encrypt</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>Encrypted key</returns>
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
@@ -593,11 +595,15 @@ namespace System.Security.Cryptography
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
+#pragma warning disable SYSLIB0064 // Encrypt with fOAEP bool is obsolete
                 return Encrypt(data, fOAEP: false);
+#pragma warning restore SYSLIB0064
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
+#pragma warning disable SYSLIB0064 // Encrypt with fOAEP bool is obsolete
                 return Encrypt(data, fOAEP: true);
+#pragma warning restore SYSLIB0064
             }
             else
             {
@@ -612,11 +618,15 @@ namespace System.Security.Cryptography
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
+#pragma warning disable SYSLIB0064 // Decrypt with fOAEP bool is obsolete
                 return Decrypt(data, fOAEP: false);
+#pragma warning restore SYSLIB0064
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
+#pragma warning disable SYSLIB0064 // Decrypt with fOAEP bool is obsolete
                 return Decrypt(data, fOAEP: true);
+#pragma warning restore SYSLIB0064
             }
             else
             {

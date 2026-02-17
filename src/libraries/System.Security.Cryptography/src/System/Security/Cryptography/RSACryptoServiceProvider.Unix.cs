@@ -39,6 +39,7 @@ namespace System.Security.Cryptography
         public CspKeyContainerInfo CspKeyContainerInfo =>
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CAPI_Required, nameof(CspKeyContainerInfo)));
 
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
@@ -56,8 +57,10 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(padding);
 
             return
+#pragma warning disable SYSLIB0064 // Decrypt with fOAEP bool is obsolete
                 padding == RSAEncryptionPadding.Pkcs1 ? Decrypt(data, fOAEP: false) :
                 padding == RSAEncryptionPadding.OaepSHA1 ? Decrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
+#pragma warning restore SYSLIB0064
                 throw PaddingModeNotSupported();
         }
 
@@ -82,6 +85,7 @@ namespace System.Security.Cryptography
             }
         }
 
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
@@ -95,8 +99,10 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(padding);
 
             return
+#pragma warning disable SYSLIB0064 // Encrypt with fOAEP bool is obsolete
                 padding == RSAEncryptionPadding.Pkcs1 ? Encrypt(data, fOAEP: false) :
                 padding == RSAEncryptionPadding.OaepSHA1 ? Encrypt(data, fOAEP: true) : // For compat, this prevents OaepSHA2 options as fOAEP==true will cause Decrypt to use OaepSHA1
+#pragma warning restore SYSLIB0064
                 throw PaddingModeNotSupported();
         }
 
