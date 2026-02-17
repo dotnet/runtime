@@ -67,9 +67,10 @@ public class Color
             Console.ResetColor();
             Console.Write('4');
 
+            Console.Out.Flush();
             string outputText = Encoding.UTF8.GetString(data.ToArray());
             Assert.Equal(0, outputText.Count(c => c == Esc));
-            Assert.StartsWith("1234", outputText);
+            Assert.Equal("1234", outputText);
         });
     }
 
