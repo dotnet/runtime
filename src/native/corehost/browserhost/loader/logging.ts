@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { loaderConfig } from "./config";
-import { dotnetBrowserUtilsExports, dotnetDiagnosticsExports } from "./cross-module";
+import { dotnetDiagnosticsExports } from "./cross-module";
 
 export function check(condition: unknown, message: string): asserts condition {
     if (!condition) {
