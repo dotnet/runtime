@@ -48,7 +48,7 @@ class DynamicResolver
 {
 public:
     // Keep in sync with dynamicIlGenerator.cs
-    enum SecurityControlFlags : int32_t
+    enum SecurityControlFlags
     {
         Default = 0,
         SkipVisibilityChecks = 0x1,

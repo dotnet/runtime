@@ -1052,8 +1052,17 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    UnmanagedCallersOnlyCaller initLoaderAllocator(METHOD__LOADERALLOCATOR__CREATE);
-    initLoaderAllocator.InvokeThrowing(pKeepLoaderAllocatorAlive);
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
+
+    *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
+
+    MethodDescCallSite initLoaderAllocator(METHOD__LOADERALLOCATOR__CTOR, (OBJECTREF *)pKeepLoaderAllocatorAlive);
+
+    ARG_SLOT args[] = {
+        ObjToArgSlot(*pKeepLoaderAllocatorAlive)
+    };
+
+    initLoaderAllocator.Call(args);
 
     m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 

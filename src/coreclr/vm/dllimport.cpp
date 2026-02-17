@@ -6168,7 +6168,7 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Pop(CURRENT_THREAD);
 }
 
-EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
 {
     CONTRACTL
     {
@@ -6185,26 +6185,7 @@ EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTy
     TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
     _ASSERTE(!type.IsTypeDesc());
 
-    // Iterate the type looking for a method with the given name that has the
-    // UnmanagedCallersOnly attribute.
-    MethodTable* pMT = type.GetMethodTable();
-    MethodTable::MethodIterator it(pMT);
-    it.MoveToEnd();
-    for (; it.IsValid(); it.Prev())
-    {
-        MethodDesc* pMD = it.GetMethodDesc();
-        if (strcmp(pMD->GetNameOnNonArrayClass(), methodName) == 0
-            && pMD->HasUnmanagedCallersOnlyAttribute())
-        {
-            *ppMD = pMD;
-            printf("Found UCO method %s on type %s\n", methodName, fullQualifiedTypeName);
-            return;
-        }
-    }
-
-    printf("Did not find UCO method %s on type %s, looking for a method with the given name\n", methodName, fullQualifiedTypeName);
-    // Fallback if no UCO match found.
-    *ppMD = MemberLoader::FindMethodByName(pMT, methodName);
+    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
 }
 
 namespace

@@ -659,8 +659,8 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     // Initialize default event sources
     {
         GCX_COOP();
-        UnmanagedCallersOnlyCaller initEventSources(METHOD__EVENT_SOURCE__INITIALIZE_DEFAULT_EVENT_SOURCES);
-        initEventSources.InvokeThrowing();
+        MethodDescCallSite initEventSources(METHOD__EVENT_SOURCE__INITIALIZE_DEFAULT_EVENT_SOURCES);
+        initEventSources.Call(NULL);
     }
 #endif // FEATURE_PERFTRACING
 
