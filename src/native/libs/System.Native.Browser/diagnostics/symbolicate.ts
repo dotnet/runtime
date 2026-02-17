@@ -13,7 +13,7 @@ export function symbolicateStackTrace(message: string): string {
     const origMessage = message;
     initSymbolMap();
 
-    if (symbol_map.size == 0)
+    if (symbol_map.size === 0)
         return message;
 
     try {
