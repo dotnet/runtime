@@ -117,7 +117,7 @@ export function exit(exitCode: number, reason: any): void {
             unregisterExit();
             if (!alreadySilent) {
                 if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
-                    dotnetLogger.error(`Exiting during runtime startup: ${message}`);
+                    dotnetLogger.error(`Exiting during runtime startup`, message);
                     dotnetLogger.debug(() => stack);
                 }
                 for (const listener of runtimeState.onExitListeners) {
