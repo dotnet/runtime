@@ -355,7 +355,7 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "icu": "application/octet-stream",
     "vfs": "application/octet-stream",
     "manifest": "application/json",
-    "symbols": "application/text",
+    "symbols": "text/plain",
     "dotnetwasm": "application/wasm",
 };
 
