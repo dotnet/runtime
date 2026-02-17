@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.DotEnv.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.FileExtensions\src\Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="$(MicrosoftNETTestSdkVersion)" />
+    <PackageReference Include="xunit" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" />
+  </ItemGroup>
+
+</Project>
