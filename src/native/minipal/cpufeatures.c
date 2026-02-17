@@ -48,8 +48,24 @@
 #ifndef HWCAP_SVE
 #define HWCAP_SVE   (1 << 22)
 #endif
+#ifndef HWCAP_SHA3
+#define HWCAP_SHA3   (1 << 17)
+#endif
+#ifndef HWCAP_SM4
+#define HWCAP_SM4   (1 << 19)
+#endif
+
 #ifndef HWCAP2_SVE2
 #define HWCAP2_SVE2   (1 << 1)
+#endif
+#ifndef HWCAP2_SVEAES
+#define HWCAP2_SVEAES   (1 << 2)
+#endif
+#ifndef HWCAP2_SVESHA3
+#define HWCAP2_SVESHA3   (1 << 5)
+#endif
+#ifndef HWCAP2_SVESM4
+#define HWCAP2_SVESM4   (1 << 6)
 #endif
 
 #endif
@@ -485,6 +501,12 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_SHA2)
         result |= ARM64IntrinsicConstants_Sha256;
 
+    if (hwCap & HWCAP_SHA3)
+        result |= ARM64IntrinsicConstants_Sha3;
+
+    if (hwCap & HWCAP_SM4)
+        result |= ARM64IntrinsicConstants_Sm4;
+
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
 
@@ -495,6 +517,15 @@ int minipal_getcpufeatures(void)
 
     if (hwCap2 & HWCAP2_SVE2)
         result |= ARM64IntrinsicConstants_Sve2;
+
+    if (hwCap2 & HWCAP2_SVEAES)
+        result |= ARM64IntrinsicConstants_SveAes;
+
+    if (hwCap2 & HWCAP2_SVESHA3)
+        result |= ARM64IntrinsicConstants_SveSha3;
+
+    if (hwCap2 & HWCAP2_SVESM4)
+        result |= ARM64IntrinsicConstants_SveSm4;
 
 #else // !HAVE_AUXV_HWCAP_H
 
@@ -545,6 +576,27 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc2;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Sve;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Sve2;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA3", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Sha3;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SM4", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Sm4;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE_AES", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_SveAes;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE_SHA3", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_SveSha3;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SVE_SM4", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_SveSm4;
 #endif // HAVE_SYSCTLBYNAME
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
@@ -604,6 +656,31 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Sve2;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sha3;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SM4_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sm4;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_SveAes;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_SveSha3;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_SM4_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_SveSm4;
     }
 #endif // HOST_WINDOWS
 

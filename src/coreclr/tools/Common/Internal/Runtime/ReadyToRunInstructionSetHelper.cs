@@ -50,6 +50,16 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Sve_Arm64: return ReadyToRunInstructionSet.Sve;
                             case InstructionSet.ARM64_Sve2: return ReadyToRunInstructionSet.Sve2;
                             case InstructionSet.ARM64_Sve2_Arm64: return ReadyToRunInstructionSet.Sve2;
+                            case InstructionSet.ARM64_Sha3: return ReadyToRunInstructionSet.Sha3;
+                            case InstructionSet.ARM64_Sha3_Arm64: return ReadyToRunInstructionSet.Sha3;
+                            case InstructionSet.ARM64_Sm4: return ReadyToRunInstructionSet.Sm4;
+                            case InstructionSet.ARM64_Sm4_Arm64: return ReadyToRunInstructionSet.Sm4;
+                            case InstructionSet.ARM64_SveAes: return ReadyToRunInstructionSet.SveAes;
+                            case InstructionSet.ARM64_SveAes_Arm64: return ReadyToRunInstructionSet.SveAes;
+                            case InstructionSet.ARM64_SveSha3: return ReadyToRunInstructionSet.SveSha3;
+                            case InstructionSet.ARM64_SveSha3_Arm64: return ReadyToRunInstructionSet.SveSha3;
+                            case InstructionSet.ARM64_SveSm4: return ReadyToRunInstructionSet.SveSm4;
+                            case InstructionSet.ARM64_SveSm4_Arm64: return ReadyToRunInstructionSet.SveSm4;
 
                             default: throw new Exception("Unknown instruction set");
                         }

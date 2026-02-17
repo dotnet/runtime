@@ -44,6 +44,11 @@
 #define ARM64IntrinsicConstants_Rcpc2 (1 << 8)
 #define ARM64IntrinsicConstants_Sve (1 << 9)
 #define ARM64IntrinsicConstants_Sve2 (1 << 10)
+#define ARM64IntrinsicConstants_Sha3 (1 << 11)
+#define ARM64IntrinsicConstants_Sm4 (1 << 12)
+#define ARM64IntrinsicConstants_SveAes (1 << 13)
+#define ARM64IntrinsicConstants_SveSha3 (1 << 14)
+#define ARM64IntrinsicConstants_SveSm4 (1 << 15)
 
 #include <assert.h>
 
