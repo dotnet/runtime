@@ -262,6 +262,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
+            ArgumentNullException.ThrowIfNull(rgb);
             return Decrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
         }
 
@@ -307,6 +308,7 @@ namespace System.Security.Cryptography
         [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
+            ArgumentNullException.ThrowIfNull(rgb);
             return Encrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
         }
 
