@@ -49,11 +49,8 @@ export function error(msg: string, reason: any) {
 export function normalizeException(reason: any) {
     let res = "unknown exception";
     if (reason) {
-        const exitStatus = isExitStatus(reason);
-        if (typeof reason === "object") {
-            if (reason.stack === undefined && !exitStatus) {
-                reason.stack = new Error().stack + "";
-            }
+        if (typeof reason === "object" && reason.status === undefined && reason.stack === undefined) {
+            reason.stack = new Error().stack + "";
         }
         if (reason.message) {
             res = reason.message;
@@ -83,12 +80,3 @@ function symbolicateStackTrace(message: string): string {
     }
     return message;
 }
-
-function isExitStatus(reason: any): boolean {
-    if (!dotnetBrowserUtilsExports.getExitStatus) {
-        return false;
-    }
-    const ExitStatus = dotnetBrowserUtilsExports.getExitStatus();
-    return ExitStatus && reason instanceof ExitStatus;
-}
-

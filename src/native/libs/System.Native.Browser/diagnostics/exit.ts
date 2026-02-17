@@ -55,20 +55,19 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
 
 function logExitReason(exitCode: number, reason: any) {
     if (exitCode !== 0 && reason) {
-        const exitStatus = isExitStatus(reason);
-        reason = dotnetLoaderExports.normalizeException(reason);
+        const hasExitStatus = typeof reason === "object" && reason.status !== undefined;
+        if (dotnetLoaderExports.normalizeException) {
+            reason = dotnetLoaderExports.normalizeException(reason);
+        } else {
+            reason = reason + "";
+        }
         const msg = "dotnet exited with " + exitCode;
-        if (exitStatus) {
+        if (hasExitStatus) {
             dotnetLogger.debug(msg, reason);
         } else {
             dotnetLogger.error(msg, reason);
         }
     }
-}
-
-function isExitStatus(reason: any): boolean {
-    const ExitStatus = dotnetBrowserUtilsExports.getExitStatus();
-    return ExitStatus && reason instanceof ExitStatus;
 }
 
 function logExitCode(exitCode: number): void {
