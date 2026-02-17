@@ -199,205 +199,20 @@ public ref struct ByRefLikeType<T>
 {
 }
 
-public interface SimpleInterface
-{
-    int Method();
-}
-
-public ref struct ByRefLikeTypeWithInterface : SimpleInterface
+public ref struct ByRefLikeTypeWithInterface : InvalidCSharp.SimpleInterface
 {
     public int Method() => 1;
 }
 
-public interface DefaultInterface
-{
-    int Method() => 0;
-}
-
-public ref struct RS_DI1 : DefaultInterface
+public ref struct RS_DI1 : InvalidCSharp.DefaultInterface
 {
 }
 
-public ref struct RS_DI2 : DefaultInterface
+public ref struct RS_DI2 : InvalidCSharp.DefaultInterface
 {
     public int Method() => 1;
 }
 
 public struct RegularValueType
 {
-}
-
-// Generic value type with allows ref struct constraint
-public struct GenericValueType_Over<T> where T : allows ref struct
-{
-}
-
-// Generic ref struct with allows ref struct constraint
-public ref struct GenericByRefLike_Over<T> where T : allows ref struct
-{
-    public T Field;
-
-    public T CreateDefaultInstance()
-    {
-        return default(T);
-    }
-
-    public Type GetGenericType()
-    {
-        return typeof(T);
-    }
-
-    public bool BoxUnboxAny(T value)
-    {
-        object? boxed = value;
-        T unboxed = (T)boxed!;
-        return true;
-    }
-
-    public bool BoxBranch(T value)
-    {
-        object? boxed1 = value;
-        if (boxed1 == null) { }
-        
-        object? boxed2 = value;
-        if (boxed2 == null) { }
-        
-        object? boxed3 = value;
-        if (boxed3 != null) { }
-        
-        object? boxed4 = value;
-        if (boxed4 != null) { }
-        
-        return true;
-    }
-
-    public bool BoxBranchToOther<U>(T value) where U : allows ref struct
-    {
-        // This method boxes U, not T - it's testing generic method constraints
-        U defaultU = default(U);
-        object? boxed1 = defaultU;
-        if (boxed1 == null) { }
-        
-        object? boxed2 = defaultU;
-        if (boxed2 == null) { }
-        
-        object? boxed3 = defaultU;
-        if (boxed3 != null) { }
-        
-        object? boxed4 = defaultU;
-        if (boxed4 != null) { }
-        
-        return true;
-    }
-
-    public bool BoxBranch_WithSideEffects(ref T value)
-    {
-        T copy1 = value;
-        object? boxed1 = copy1;
-        if (boxed1 == null) { }
-        
-        T copy2 = value;
-        object? boxed2 = copy2;
-        if (boxed2 == null) { }
-        
-        T copy3 = value;
-        object? boxed3 = copy3;
-        if (boxed3 != null) { }
-        
-        T copy4 = value;
-        object? boxed4 = copy4;
-        if (boxed4 != null) { }
-        
-        return true;
-    }
-
-    public bool BoxIsinstUnboxAny(T value)
-    {
-        object? boxed = value;
-        if (boxed is ByRefLikeType)
-        {
-            ByRefLikeType unboxed = (ByRefLikeType)boxed;
-        }
-        return true;
-    }
-
-    public bool BoxIsinstUnboxAny_Mismatch(T value)
-    {
-        object? boxed = value;
-        if (boxed is ByRefLikeType2)
-        {
-            ByRefLikeType2 unboxed = (ByRefLikeType2)boxed;
-        }
-        return false;
-    }
-
-    public bool BoxIsinstBranch(T value)
-    {
-        object? boxed1 = value;
-        if (boxed1 is not ByRefLikeType) { }
-        
-        object? boxed2 = value;
-        if (boxed2 is not ByRefLikeType) { }
-        
-        object? boxed3 = value;
-        if (boxed3 is ByRefLikeType) { }
-        
-        object? boxed4 = value;
-        if (boxed4 is ByRefLikeType) { }
-        
-        return true;
-    }
-
-    public bool BoxIsinstBranch_WithSideEffects(ref T value)
-    {
-        T copy1 = value;
-        object? boxed1 = copy1;
-        if (boxed1 is not ByRefLikeType) { }
-        
-        T copy2 = value;
-        object? boxed2 = copy2;
-        if (boxed2 is not ByRefLikeType) { }
-        
-        T copy3 = value;
-        object? boxed3 = copy3;
-        if (boxed3 is ByRefLikeType) { }
-        
-        T copy4 = value;
-        object? boxed4 = copy4;
-        if (boxed4 is ByRefLikeType) { }
-        
-        return true;
-    }
-
-    public bool BoxIsinstBranch_CheckForSimpleInterface<U>(U value) where U : allows ref struct
-    {
-        if (value is not SimpleInterface)
-        {
-            throw new Exception("All types should implement SimpleInterface");
-        }
-        
-        SimpleInterface iface = (SimpleInterface)(object)value!;
-        return iface.Method() != 0;
-    }
-
-    public bool AllocArrayOfT()
-    {
-        T[] array = new T[1];
-        return array != null;
-    }
-
-    public bool InstanceOfT(object o)
-    {
-        return o is T;
-    }
-
-    public void CastToT(object o)
-    {
-        T value = (T)o;
-    }
-
-    public void UnboxToT(object o)
-    {
-        T value = (T)o;
-    }
 }

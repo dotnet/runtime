@@ -59,6 +59,360 @@
 {
 }
 
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericValueType_Over`1<byreflike T>
+    extends [System.Runtime]System.ValueType
+{
+}
+
+.class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericByRefLike_Over`1<byreflike T>
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .field public !T Field
+
+    .method public hidebysig
+        instance !T CreateDefaultInstance() cil managed
+    {
+        .locals init (
+            [0] !T
+        )
+        ldloca.s 0
+        initobj !T
+        ldloc.0
+        ret
+    }
+
+    .method public hidebysig
+        instance class [System.Runtime]System.Type GetGenericType() cil managed
+    {
+        ldtoken !T
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxUnboxAny(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            unbox.any !T
+        // End sequence
+        pop
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxBranch(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxBranchToOther<byreflike U>(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            box !!U
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxBranch_WithSideEffects(!T&) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstUnboxAny(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            unbox.any ByRefLikeType
+        // End sequence
+        pop
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstUnboxAny_Mismatch(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType2
+            unbox.any ByRefLikeType2
+        // End sequence
+        pop
+        ldc.i4.0
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstBranch(!T) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            box !T
+            isinst ByRefLikeType
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstBranch_WithSideEffects(!T&) cil managed
+    {
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brfalse.s NEXT_1
+        // End sequence
+        NEXT_1:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brfalse NEXT_2
+        // End sequence
+        NEXT_2:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brtrue.s NEXT_3
+        // End sequence
+        NEXT_3:
+
+        ldarg.1
+        // Begin sequence
+            ldobj !T // Side-effect
+            box !T
+            isinst ByRefLikeType
+            brtrue NEXT_4
+        // End sequence
+        NEXT_4:
+
+        ldc.i4.1
+        ret
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstBranch_CheckForSimpleInterface<byreflike U>(!!U) cil managed
+    {
+        .locals init (
+            [0] !!U
+        )
+
+        ldarg.1
+        box !!U
+        isinst InvalidCSharp.SimpleInterface
+        brtrue.s IS_SIMPLEINTERFACE
+
+        ldstr "All types should implement SimpleInterface"
+        newobj instance void [System.Runtime]System.Exception::.ctor(string)
+        throw
+
+    IS_SIMPLEINTERFACE:
+        ldarg.1
+        stloc.0
+        ldloca.s 0
+        constrained. !!U
+        callvirt instance int32 InvalidCSharp.SimpleInterface::Method()
+        ret
+    }
+
+    .method public hidebysig
+        instance bool AllocArrayOfT() cil managed aggressiveinlining
+    {
+        ldc.i4.1
+        newarr !T
+        ldnull
+        cgt.un
+        ret
+    }
+
+    .method public hidebysig
+        instance bool InstanceOfT(
+            object o
+        ) cil managed
+    {
+        ldarg.1
+        isinst !T
+        ldnull
+        cgt.un
+        ret
+    }
+
+    .method public hidebysig
+        instance void CastToT(
+            object o
+        ) cil managed
+    {
+        ldarg.1
+        castclass !T
+        pop
+        ret
+    }
+
+    .method public hidebysig
+        instance void UnboxToT(
+            object o
+        ) cil managed
+    {
+        ldarg.1
+        unbox.any !T
+        pop
+        ret
+    }
+}
+
+.class interface public auto ansi abstract InvalidCSharp.SimpleInterface
+{
+    .method public hidebysig newslot abstract virtual
+        instance int32 Method() cil managed
+    {
+    }
+}
+
+.class interface public auto ansi abstract InvalidCSharp.DefaultInterface
+{
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+}
+
 .class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClass_WithStaticField`1<byreflike T>
     extends [System.Runtime]System.Object
 {
