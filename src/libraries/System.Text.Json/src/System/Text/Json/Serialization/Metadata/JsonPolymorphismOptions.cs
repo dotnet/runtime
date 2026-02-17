@@ -139,15 +139,27 @@ namespace System.Text.Json.Serialization.Metadata
             for (int i = 0; i < opts.DerivedTypes.Count; i++)
             {
                 Type child = opts.DerivedTypes[i].DerivedType;
+
+                // Do not walk through types that declare their own [JsonPolymorphic] configuration;
+                // those define an independent polymorphic scheme and their [JsonDerivedType] entries
+                // belong to that scheme, not to the root type's.
+                if (child.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false) is not null)
+                {
+                    continue;
+                }
+
                 foreach (JsonDerivedTypeAttribute a in child.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
                 {
                     if (seen is null)
                     {
-                        seen = new HashSet<Type>();
-                        seen.Add(root);
+                        // Seed with the root type and all types already declared directly
+                        // so that we never re-add a type the author already listed.
+                        seen = new HashSet<Type> { root };
+                        foreach (JsonDerivedType dt in opts.DerivedTypes)
+                        {
+                            seen.Add(dt.DerivedType);
+                        }
                     }
-
-                    seen.Add(child);
 
                     if (seen.Add(a.DerivedType))
                     {
