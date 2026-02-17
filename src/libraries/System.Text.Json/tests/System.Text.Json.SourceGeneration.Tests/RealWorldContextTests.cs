@@ -1101,6 +1101,41 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public void TransitivePolymorphicClass_Serialization()
+        {
+            TransitivePolymorphicClass value = new TransitivePolymorphicClass.Leaf { Value = 1, Tag = "t", Flag = true };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, DefaultContext.TransitivePolymorphicClass));
+            }
+            else
+            {
+                string actualJson = JsonSerializer.Serialize(value, DefaultContext.TransitivePolymorphicClass);
+                JsonTestHelper.AssertJsonEqual(@"{""$type"":""leaf"",""Value"":1,""Tag"":""t"",""Flag"":true}", actualJson);
+            }
+        }
+
+        [Fact]
+        public void TransitivePolymorphicClass_Deserialization()
+        {
+            string json = @"{""$type"":""leaf"",""Value"":1,""Tag"":""t"",""Flag"":true}";
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TransitivePolymorphicClass>(json, DefaultContext.TransitivePolymorphicClass));
+            }
+            else
+            {
+                TransitivePolymorphicClass result = JsonSerializer.Deserialize<TransitivePolymorphicClass>(json, DefaultContext.TransitivePolymorphicClass);
+                TransitivePolymorphicClass.Leaf leafResult = Assert.IsType<TransitivePolymorphicClass.Leaf>(result);
+                Assert.Equal(1, leafResult.Value);
+                Assert.Equal("t", leafResult.Tag);
+                Assert.True(leafResult.Flag);
+            }
+        }
+
+        [Fact]
         public void NumberHandlingHonoredOnPoco()
         {
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)

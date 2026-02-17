@@ -208,6 +208,23 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
     }
 
+    [JsonDerivedType(typeof(TransitivePolymorphicClass.Middle), "middle")]
+    public class TransitivePolymorphicClass
+    {
+        public int Value { get; set; }
+
+        [JsonDerivedType(typeof(Leaf), "leaf")]
+        public class Middle : TransitivePolymorphicClass
+        {
+            public string Tag { get; set; }
+        }
+
+        public class Leaf : Middle
+        {
+            public bool Flag { get; set; }
+        }
+    }
+
     public class MyContainingClass
     {
         public class MyNestedClass
