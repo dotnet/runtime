@@ -42,8 +42,6 @@ namespace System.Security.Cryptography.OpenSsl.Tests
                 disposeThread.Join();
                 duplicateThread.Join();
 
-                keyHandle.Dispose();
-
                 if (duplicated is not null)
                 {
                     bool refAdded = false;
