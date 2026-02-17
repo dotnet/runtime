@@ -8891,7 +8891,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         bool bbIsReturn = block->KindIs(BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->KindIs(BBJ_RETURN)));
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
-                        if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+                        if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn) || compIsAsync())
                         {
                             // Append a tree to zero-out the temp
                             GenTree* newObjInit =
