@@ -13529,7 +13529,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 Compiler::MorphUnreachableInfo::MorphUnreachableInfo(Compiler* comp)
     : m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
-    , m_vec(BitVecOps::MakeEmpty(&m_traits)) {};
+    , m_vec(BitVecOps::MakeEmpty(&m_traits)){};
 
 //------------------------------------------------------------------------
 // SetUnreachable: during morph, mark a block as unreachable
