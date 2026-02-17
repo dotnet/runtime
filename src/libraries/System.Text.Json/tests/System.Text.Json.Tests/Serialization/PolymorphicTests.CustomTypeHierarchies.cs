@@ -2846,6 +2846,80 @@ namespace System.Text.Json.Serialization.Tests
         }
         #endregion
 
+        #region Transitive Derived Type Resolution
+
+        [Theory]
+        [InlineData(typeof(TransitiveHierarchy_Grandchild), """{"$type":"grandchild","Extra":"e","Value":"v"}""")]
+        [InlineData(typeof(TransitiveHierarchy_Child), """{"$type":"child","Value":"v"}""")]
+        public async Task TransitiveDerivedType_Serialization_IncludesDiscriminator(Type runtimeType, string expectedJson)
+        {
+            TransitiveHierarchy_Root value = runtimeType == typeof(TransitiveHierarchy_Child)
+                ? new TransitiveHierarchy_Child { Value = "v" }
+                : new TransitiveHierarchy_Grandchild { Value = "v", Extra = "e" };
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, json);
+        }
+
+        [Theory]
+        [InlineData("""{"$type":"grandchild","Extra":"e","Value":"v"}""", typeof(TransitiveHierarchy_Grandchild))]
+        [InlineData("""{"$type":"child","Value":"v"}""", typeof(TransitiveHierarchy_Child))]
+        public async Task TransitiveDerivedType_Deserialization_ResolvesCorrectType(string json, Type expectedType)
+        {
+            TransitiveHierarchy_Root result = await Serializer.DeserializeWrapper<TransitiveHierarchy_Root>(json);
+            Assert.IsType(expectedType, result);
+        }
+
+        [Fact]
+        public async Task TransitiveDerivedType_DeepChain_SerializesCorrectly()
+        {
+            TransitiveDeepChain_Root value = new TransitiveDeepChain_Level3 { A = 1, B = 2, C = 3 };
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"$type":"l3","C":3,"B":2,"A":1}""", json);
+
+            TransitiveDeepChain_Root result = await Serializer.DeserializeWrapper<TransitiveDeepChain_Root>(json);
+            TransitiveDeepChain_Level3 typed = Assert.IsType<TransitiveDeepChain_Level3>(result);
+            Assert.Equal(1, typed.A);
+            Assert.Equal(2, typed.B);
+            Assert.Equal(3, typed.C);
+        }
+
+        [JsonDerivedType(typeof(TransitiveHierarchy_Child), "child")]
+        public class TransitiveHierarchy_Root { }
+
+        [JsonDerivedType(typeof(TransitiveHierarchy_Grandchild), "grandchild")]
+        public class TransitiveHierarchy_Child : TransitiveHierarchy_Root
+        {
+            public string Value { get; set; }
+        }
+
+        public class TransitiveHierarchy_Grandchild : TransitiveHierarchy_Child
+        {
+            public string Extra { get; set; }
+        }
+
+        [JsonDerivedType(typeof(TransitiveDeepChain_Level1), "l1")]
+        public class TransitiveDeepChain_Root
+        {
+            public int A { get; set; }
+        }
+
+        [JsonDerivedType(typeof(TransitiveDeepChain_Level2), "l2")]
+        public class TransitiveDeepChain_Level1 : TransitiveDeepChain_Root
+        {
+            public int B { get; set; }
+        }
+
+        [JsonDerivedType(typeof(TransitiveDeepChain_Level3), "l3")]
+        public class TransitiveDeepChain_Level2 : TransitiveDeepChain_Level1
+        {
+            public int C { get; set; }
+        }
+
+        public class TransitiveDeepChain_Level3 : TransitiveDeepChain_Level2 { }
+
+        #endregion
+
         #region Test Helpers
         public class PolymorphicEqualityComparer<TBaseType> : IEqualityComparer<TBaseType>
             where TBaseType : class
