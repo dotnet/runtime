@@ -449,8 +449,7 @@ DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
-DEFINE_METHOD(OBJCMARSHAL,   AVAILABLEUNHANDLEDEXCEPTIONPROPAGATION, AvailableUnhandledExceptionPropagation, SM_RetBool)
-DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_Exception_Obj_RefIntPtr_RetVoidPtr)
+DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)

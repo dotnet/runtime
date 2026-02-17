@@ -1092,14 +1092,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             int cnstLimit = (int)curAssertion.GetOp2().GetIntConstant();
             assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.GetOp2().GetVN()));
 
-            if ((cnstLimit == 0) && curAssertion.KindIs(Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
-                comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
-            {
-                // we have arr.Len != 0, so the length must be atleast one
-                limit   = Limit(Limit::keConstant, 1);
-                cmpOper = GT_GE;
-            }
-            else if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+            if (curAssertion.KindIs(Compiler::OAK_EQUAL))
             {
                 limit   = Limit(Limit::keConstant, cnstLimit);
                 cmpOper = GT_EQ;

@@ -187,7 +187,7 @@ DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
 DEFINE_METASIG_T(SM(ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt, C(MANAGED_OBJECT_WRAPPER_HOLDER) r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
-DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v)))
+DEFINE_METASIG_T(SM(PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr, P(C(EXCEPTION)) I P(I) P(C(EXCEPTION)), P(v)))
 #endif // FEATURE_OBJCMARSHAL
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_RetObj, i, j))
@@ -200,7 +200,6 @@ DEFINE_METASIG_T(SM(Obj_Array_RetVoid, j C(ARRAY), v))
 DEFINE_METASIG(SM(Obj_IntPtr_Obj_RetVoid, j I j, v))
 DEFINE_METASIG(SM(RetIntPtr, _, I))
 DEFINE_METASIG(SM(RetUInt, _, K))
-DEFINE_METASIG(SM(RetBool, _, F))
 DEFINE_METASIG(SM(IntPtr_RetStr, I, s))
 DEFINE_METASIG(SM(Char_Bool_Bool_RetByte, u F F, b))
 DEFINE_METASIG(SM(Byte_RetChar, b, u))
