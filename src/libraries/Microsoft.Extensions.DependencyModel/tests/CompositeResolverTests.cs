@@ -16,6 +16,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     {
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void ReturnsFirstSuccessfulResolve()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
@@ -47,6 +48,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void PassesLibraryToAllResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
@@ -68,6 +70,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public void PopulatedAssemblies()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
