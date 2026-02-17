@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests;
@@ -549,6 +551,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Null(serviceDescriptor.ImplementationInstance);
             Assert.Null(serviceDescriptor.ImplementationType);
             Assert.Null(serviceDescriptor.ImplementationFactory);
+        }
+
+        [Fact]
+        public void IsKeyedService_TrueValueEnsuresServiceKeyNotNullForAnalysis()
+        {
+            PropertyInfo isKeyedServiceProperty = typeof(ServiceDescriptor).GetProperty(nameof(ServiceDescriptor.IsKeyedService))!;
+            MemberNotNullWhenAttribute? attribute = isKeyedServiceProperty.GetMethod!.GetCustomAttribute<MemberNotNullWhenAttribute>();
+
+            Assert.NotNull(attribute);
+            Assert.True(attribute.ReturnValue);
+            Assert.Equal(nameof(ServiceDescriptor.ServiceKey), Assert.Single(attribute.Members));
         }
     }
 }
