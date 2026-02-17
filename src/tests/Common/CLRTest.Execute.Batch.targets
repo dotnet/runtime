@@ -339,8 +339,6 @@ IF NOT DEFINED RunWithNodeJS (
     ECHO CORE_ROOT: !CORE_ROOT!
     ECHO ExePath: !__ExePathUnix!
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
-    REM Disable minidump generation for browser tests
-    REM active issue https://github.com/dotnet/runtime/issues/124088
     ECHO Timeout in ms: !__TestTimeout!
     
     set "__RunCmd=node "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
