@@ -3,7 +3,7 @@
 
 const symbol_map = new Map<number, string>();
 let symbolTable: string | undefined;
-const regexes: any[] = [];
+const regexes: RegExp[] = [];
 
 export function installNativeSymbols(table: string) {
     symbolTable = table;
