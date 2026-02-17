@@ -155,7 +155,7 @@ export function responseLike(url: string, body: ArrayBuffer | string | null, opt
         text: () => {
             if (typeof body !== "string" && typeof globalThis.TextDecoder !== "undefined") {
                 const decoder = new globalThis.TextDecoder("utf-8");
-                return decoder.decode(body || new Uint8Array());
+                return Promise.resolve(decoder.decode(body || new Uint8Array()));
             }
             dotnetAssert.check(body !== null && typeof body === "string", "Response body is not a string.");
             return Promise.resolve(body);
