@@ -486,7 +486,7 @@ static void InterpHalt()
 }
 #endif // DEBUG
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+#ifdef DEBUGGING_SUPPORTED
 static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
     Thread *pThread = GetThread();
@@ -521,7 +521,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             pThread);
     }
 }
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+#endif // DEBUGGING_SUPPORTED
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -1009,9 +1009,9 @@ MAIN_LOOP:
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
             opcode = ip[0];
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+#ifdef DEBUGGING_SUPPORTED
 SWITCH_OPCODE:
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+#endif // DEBUGGING_SUPPORTED
             switch (opcode)
             {
 #ifdef DEBUG
@@ -1020,7 +1020,7 @@ SWITCH_OPCODE:
                     ip++;
                     break;
 #endif // DEBUG
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+#ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
@@ -1041,7 +1041,7 @@ SWITCH_OPCODE:
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
                     break;
                 }
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_NOP:
                     ip++;
                     break;
@@ -3048,13 +3048,13 @@ CALL_INTERP_METHOD:
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
+#ifdef DEBUGGING_SUPPORTED
                     // Notify debugger of method entry for step-in support for indirect calls.
                     if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
                     {
                         g_pDebugInterface->OnMethodEnter((void*)ip);
                     }
-#endif // DEBUGGING_SUPPORTED && !TARGET_BROWSER
+#endif // DEBUGGING_SUPPORTED
 
                     if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
                     {

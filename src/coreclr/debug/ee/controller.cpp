@@ -2124,10 +2124,9 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
         if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
         {
-            if (dji->GetSequenceMapCount() > 0)
-            {
-                nativeOffset = dji->GetSequenceMap()[0].nativeStartOffset;
-            }
+            // Every interpreted method must have at least one sequence point mapping.
+            _ASSERTE(dji->GetSequenceMapCount() > 0);
+            nativeOffset = dji->GetSequenceMap()[0].nativeStartOffset;
         }
 #endif // FEATURE_INTERPRETER
 

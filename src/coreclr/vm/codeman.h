@@ -2872,7 +2872,7 @@ public:
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE)
     // Return execution control for interpreter bytecode breakpoints
     virtual IExecutionControl* GetExecutionControl();
 #endif
