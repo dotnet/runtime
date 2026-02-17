@@ -256,73 +256,14 @@ BOOL PEDecoder::HasWebcilHeaders() const
         RETURN FALSE;
 
     S_SIZE_T cbHeaderAndSections(S_SIZE_T(sizeof(WebcilHeader)) +
-                                 S_SIZE_T(static_cast<SIZE_T>(VAL16(pWC->coff_sections))) * S_SIZE_T(sizeof(WebcilSectionHeader)));
+                                 S_SIZE_T(static_cast<SIZE_T>(VAL16(pWC->coff_sections))) * S_SIZE_T(sizeof(IMAGE_SECTION_HEADER)));
     if (cbHeaderAndSections.IsOverflow())
         RETURN FALSE;
 
     if (m_size < cbHeaderAndSections.Value())
         RETURN FALSE;
 
-    // Synthesize IMAGE_SECTION_HEADERs from WebcilSectionHeaders so that
-    // RvaToSection()/RvaToOffset() work without WebCIL-specific code paths.
-    uint16_t nSections = VAL16(pWC->coff_sections);
-    if (nSections > WEBCIL_MAX_SECTIONS)
-        RETURN FALSE;
-
-    const WebcilSectionHeader* pWebcilSections = (const WebcilSectionHeader*)(m_base + sizeof(WebcilHeader));
-
-    // Validate every section header before caching anything.
-    // This mirrors the spirit of CheckSection() / CheckNTHeaders() for PE files:
-    //   - raw data must lie within the file
-    //   - no arithmetic overflow on ptr + size
-    //   - sections must be ordered by VirtualAddress and must not overlap
-    UINT32 previousVAEnd = 0;
-    UINT32 previousOffsetEnd = 0;
-    for (uint16_t i = 0; i < nSections; i++)
-    {
-        UINT32 vaStart   = VAL32(pWebcilSections[i].virtual_address);
-        UINT32 vaSize    = VAL32(pWebcilSections[i].virtual_size);
-        UINT32 rawOffset = VAL32(pWebcilSections[i].raw_data_ptr);
-        UINT32 rawSize   = VAL32(pWebcilSections[i].raw_data_size);
-
-        // Overflow checks
-        S_SIZE_T endInFile(S_SIZE_T(rawOffset) + S_SIZE_T(rawSize));
-        if (endInFile.IsOverflow())
-            RETURN FALSE;
-
-        // Raw data must fit within the file
-        if (endInFile.Value() > m_size)
-            RETURN FALSE;
-
-        // VA overflow check
-        S_SIZE_T vaEnd(S_SIZE_T(vaStart) + S_SIZE_T(vaSize));
-        if (vaEnd.IsOverflow())
-            RETURN FALSE;
-
-        // Sections must be ordered by VA and must not overlap
-        if (vaStart < previousVAEnd)
-            RETURN FALSE;
-
-        // Raw data regions must not overlap (allow rawSize == 0 gaps)
-        if (rawSize != 0 && rawOffset < previousOffsetEnd)
-            RETURN FALSE;
-
-        previousVAEnd = (UINT32)vaEnd.Value();
-        previousOffsetEnd = (UINT32)endInFile.Value();
-    }
-
-    PEDecoder* mutableThis = const_cast<PEDecoder *>(this);
-    mutableThis->m_webcilSectionCount = nSections;
-    for (uint16_t i = 0; i < nSections; i++)
-    {
-        memset(&mutableThis->m_webcilSectionHeaders[i], 0, sizeof(IMAGE_SECTION_HEADER));
-        mutableThis->m_webcilSectionHeaders[i].Misc.VirtualSize = pWebcilSections[i].virtual_size;
-        mutableThis->m_webcilSectionHeaders[i].VirtualAddress   = pWebcilSections[i].virtual_address;
-        mutableThis->m_webcilSectionHeaders[i].SizeOfRawData    = pWebcilSections[i].raw_data_size;
-        mutableThis->m_webcilSectionHeaders[i].PointerToRawData = pWebcilSections[i].raw_data_ptr;
-    }
-
-    mutableThis->m_flags |= FLAG_WEBCIL;
+    const_cast<PEDecoder *>(this)->m_flags |= FLAG_WEBCIL;
 
     RETURN TRUE;
 }
@@ -339,10 +280,52 @@ CHECK PEDecoder::CheckWebcilHeaders() const
     }
     CONTRACT_CHECK_END;
 
-    // HasWebcilHeaders() already performs full validation of the WebCIL
-    // header (magic, version, section count, section bounds, ordering,
-    // and non-overlap), so this CHECK method simply delegates to it.
+    if (m_flags & FLAG_WEBCIL_CHECKED)
+        CHECK_OK;
+
     CHECK(HasWebcilHeaders());
+
+    const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+    uint16_t nSections = VAL16(pWC->coff_sections);
+    const IMAGE_SECTION_HEADER* pSections = (const IMAGE_SECTION_HEADER*)(m_base + sizeof(WebcilHeader));
+
+    // Validate every section header.
+    // This mirrors the spirit of CheckNTHeaders() for PE files:
+    //   - raw data must lie within the file
+    //   - no arithmetic overflow on ptr + size
+    //   - sections must be ordered by VirtualAddress and must not overlap
+    UINT32 previousVAEnd = 0;
+    UINT32 previousOffsetEnd = 0;
+    for (uint16_t i = 0; i < nSections; i++)
+    {
+        UINT32 vaStart   = VAL32(pSections[i].VirtualAddress);
+        UINT32 vaSize    = VAL32(pSections[i].Misc.VirtualSize);
+        UINT32 rawOffset = VAL32(pSections[i].PointerToRawData);
+        UINT32 rawSize   = VAL32(pSections[i].SizeOfRawData);
+
+        // Overflow checks
+        S_SIZE_T endInFile(S_SIZE_T(rawOffset) + S_SIZE_T(rawSize));
+        CHECK(!endInFile.IsOverflow());
+
+        // Raw data must fit within the file
+        CHECK(endInFile.Value() <= m_size);
+
+        // VA overflow check
+        S_SIZE_T vaEnd(S_SIZE_T(vaStart) + S_SIZE_T(vaSize));
+        CHECK(!vaEnd.IsOverflow());
+
+        // Sections must be ordered by VA and must not overlap
+        CHECK(vaStart >= previousVAEnd);
+
+        // Raw data regions must not overlap (allow rawSize == 0 gaps)
+        if (rawSize != 0)
+            CHECK(rawOffset >= previousOffsetEnd);
+
+        previousVAEnd = (UINT32)vaEnd.Value();
+        previousOffsetEnd = (UINT32)endInFile.Value();
+    }
+
+    const_cast<PEDecoder *>(this)->m_flags |= FLAG_WEBCIL_CHECKED;
 
     CHECK_OK;
 }

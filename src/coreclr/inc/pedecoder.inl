@@ -616,6 +616,7 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
         // is safe.  Verify the full [rva, rva+size) range fits within the
         // section's raw data (for flat/unmapped images) or virtual extent.
         RVA sectionBase = VAL32(section->VirtualAddress);
+        _ASSERTE(rva >= sectionBase);
         COUNT_T sectionLimit = IsMapped()
             ? VAL32(section->Misc.VirtualSize)
             : VAL32(section->SizeOfRawData);
@@ -996,7 +997,10 @@ inline COUNT_T PEDecoder::GetNumberOfSections() const
 
 #ifdef TARGET_BROWSER
     if (HasWebcilHeaders())
-        return m_webcilSectionCount;
+    {
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        return VAL16(pWC->coff_sections);
+    }
 #endif
 
     return VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
@@ -1025,7 +1029,7 @@ inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection() const
 
 #ifdef TARGET_BROWSER
     if (HasWebcilHeaders())
-        RETURN dac_cast<PTR_IMAGE_SECTION_HEADER>((TADDR)const_cast<PEDecoder*>(this)->m_webcilSectionHeaders);
+        RETURN dac_cast<PTR_IMAGE_SECTION_HEADER>(m_base + sizeof(WebcilHeader));
 #endif
 
     RETURN FindFirstSection(FindNTHeaders());

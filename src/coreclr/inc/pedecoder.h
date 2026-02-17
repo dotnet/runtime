@@ -416,6 +416,7 @@ class PEDecoder
 
         FLAG_HAS_NO_READYTORUN_HEADER = 0x100,
         FLAG_WEBCIL             = 0x200,
+        FLAG_WEBCIL_CHECKED     = 0x400,
     };
 
     TADDR               m_base;
@@ -425,14 +426,6 @@ class PEDecoder
     PTR_IMAGE_NT_HEADERS   m_pNTHeaders;
     PTR_IMAGE_COR20_HEADER m_pCorHeader;
     PTR_READYTORUN_HEADER  m_pReadyToRunHeader;
-
-#ifdef TARGET_BROWSER
-    // Synthesized IMAGE_SECTION_HEADERs populated from WebcilSectionHeaders
-    // in HasWebcilHeaders(), so RvaToSection()/RvaToOffset() work uniformly.
-    static constexpr uint16_t WEBCIL_MAX_SECTIONS = 8;
-    uint16_t m_webcilSectionCount = 0;
-    IMAGE_SECTION_HEADER m_webcilSectionHeaders[WEBCIL_MAX_SECTIONS];
-#endif
 
     // to allow inherited classes to access, friend to all specializations of cdac_data
     template<typename U> friend struct ::cdac_data;

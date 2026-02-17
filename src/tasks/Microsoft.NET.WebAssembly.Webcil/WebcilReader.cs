@@ -354,7 +354,7 @@ public sealed partial class WebcilReader : IDisposable
     {
         WebcilSectionHeader secheader;
         var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
-        var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
+        var buffer = new byte[sizeof(WebcilSectionHeader)];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
         for (int i = 0; i < _header.coff_sections; i++)
         {
@@ -368,21 +368,13 @@ public sealed partial class WebcilReader : IDisposable
             }
             if (!BitConverter.IsLittleEndian)
             {
-                sections.Add
-                (
-                    new WebcilSectionHeader
-                    (
-                        virtualSize: BinaryPrimitives.ReverseEndianness(secheader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData)
-                    )
-                );
+                // Name is a byte array, no endian swap needed
+                secheader.VirtualSize = BinaryPrimitives.ReverseEndianness(secheader.VirtualSize);
+                secheader.VirtualAddress = BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress);
+                secheader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData);
+                secheader.PointerToRawData = BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData);
             }
-            else
-            {
-                sections.Add(secheader);
-            }
+            sections.Add(secheader);
         }
         return sections.MoveToImmutable();
     }

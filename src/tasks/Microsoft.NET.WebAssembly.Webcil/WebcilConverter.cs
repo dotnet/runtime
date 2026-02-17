@@ -153,6 +153,7 @@ public class WebcilConverter
         {
             var newHeader = new WebcilSectionHeader
             (
+                name: sectionHeader.Name,
                 virtualSize: sectionHeader.VirtualSize,
                 virtualAddress: sectionHeader.VirtualAddress,
                 sizeOfRawData: sectionHeader.SizeOfRawData,
@@ -204,13 +205,15 @@ public class WebcilConverter
     {
         if (!BitConverter.IsLittleEndian)
         {
-            sectionHeader = new WebcilSectionHeader
-            (
-                virtualSize: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize),
-                virtualAddress: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress),
-                sizeOfRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData),
-                pointerToRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData)
-            );
+            unsafe
+            {
+                // Name is a byte array, no endian swap needed
+                sectionHeader.VirtualSize = BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize);
+                sectionHeader.VirtualAddress = BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress);
+                sectionHeader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData);
+                sectionHeader.PointerToRawData = BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData);
+                // Remaining fields are zero, no swap needed
+            }
         }
         WriteStructure(s, sectionHeader);
     }

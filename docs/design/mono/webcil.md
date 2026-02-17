@@ -2,7 +2,7 @@
 
 ## Version
 
-This is version 0.1 of the Webcil payload format.
+This is version 1.0 of the Webcil payload format.
 This is version 0 of the WebAssembly module Webcil wrapper.
 
 ## Motivation
@@ -111,27 +111,27 @@ The Webcil headers consist of a Webcil header followed by a sequence of section 
 
 ``` c
 struct WebcilHeader {
-	uint8_t id[4]; // 'W' 'b' 'I' 'L'
-	// 4 bytes
-	uint16_t version_major; // 0
-	uint16_t version_minor; // 1
-	// 8 bytes
-	uint16_t coff_sections;
-	uint16_t reserved0; // 0
-	// 12 bytes
+  uint8_t id[4]; // 'W' 'b' 'I' 'L'
+  // 4 bytes
+  uint16_t version_major; // 1
+  uint16_t version_minor; // 0
+  // 8 bytes
+  uint16_t coff_sections;
+  uint16_t reserved0; // 0
+  // 12 bytes
 
-	uint32_t pe_cli_header_rva;
-	uint32_t pe_cli_header_size;
-	// 20 bytes
+  uint32_t pe_cli_header_rva;
+  uint32_t pe_cli_header_size;
+  // 20 bytes
 
-    uint32_t pe_debug_rva;
-    uint32_t pe_debug_size;
-    // 28 bytes
+  uint32_t pe_debug_rva;
+  uint32_t pe_debug_size;
+  // 28 bytes
 };
 ```
 
 The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
-minor format (must be 0 and 1).  Then a count of the section headers and two reserved bytes.
+minor format (must be 1 and 0).  Then a count of the section headers and two reserved bytes.
 
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
 of the CLI header, as well as the directory entry for the PE debug directory.
@@ -140,21 +140,32 @@ of the CLI header, as well as the directory entry for the PE debug directory.
 #### Section header table
 
 Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
-above) of section headers giving their virtual address and virtual size, as well as the offset in
-the Webcil payload and the size in the file.  This is a subset of the PE section header that includes
-enough information to correctly interpret the RVAs from the webcil header and from the .NET
-metadata. Other information (such as the section names) are not included.
+above) of PE/COFF `IMAGE_SECTION_HEADER` structures (40 bytes each).  Each header contains the
+section name, virtual address and size, file offset and size, and other PE section attributes.
+Unused fields (such as `PointerToRelocations`, `NumberOfRelocations`, `PointerToLinenumbers`,
+`NumberOfLinenumbers`, and `Characteristics`) are set to zero.  The `Name` field is copied from
+the original PE section header.
+
+Using the standard `IMAGE_SECTION_HEADER` layout allows runtimes to reference the section headers
+directly from the loaded file image without converting from a compact representation at load time.
 
 ``` c
+// IMAGE_SECTION_HEADER — 40 bytes, same layout as PE/COFF
 struct SectionHeader {
-    uint32_t st_virtual_size;
-    uint32_t st_virtual_address;
-    uint32_t st_raw_data_size;
-    uint32_t st_raw_data_ptr;
+    char     Name[8];
+    uint32_t VirtualSize;
+    uint32_t VirtualAddress;
+    uint32_t SizeOfRawData;
+    uint32_t PointerToRawData;
+    uint32_t PointerToRelocations; // 0
+    uint32_t PointerToLinenumbers; // 0
+    uint16_t NumberOfRelocations;  // 0
+    uint16_t NumberOfLinenumbers;  // 0
+    uint32_t Characteristics;      // 0
 };
 ```
 
-(**Note**: the `st_raw_data_ptr` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
+(**Note**: the `PointerToRawData` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
 
 #### Sections
 

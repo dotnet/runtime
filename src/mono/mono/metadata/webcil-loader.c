@@ -13,15 +13,15 @@
 
 /* keep in sync with webcil-writer */
 enum {
-	MONO_WEBCIL_VERSION_MAJOR = 0,
-	MONO_WEBCIL_VERSION_MINOR = 1,
+	MONO_WEBCIL_VERSION_MAJOR = 1,
+	MONO_WEBCIL_VERSION_MINOR = 0,
 };
 
 typedef struct MonoWebCILHeader {
 	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
-	uint16_t version_major; // 0
-	uint16_t version_minor; // 1
+	uint16_t version_major; // 1
+	uint16_t version_minor; // 0
 	// 8 bytes
 	uint16_t coff_sections;
 	uint16_t reserved0; // 0
@@ -102,21 +102,29 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 int32_t
 mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, int32_t webcil_section_adjustment, MonoSectionTable *t)
 {
-	/* WebCIL section table entries are a subset of a PE section
-	 * header. Initialize just the parts we have.
+	/* WebCIL v1.0 section headers are standard IMAGE_SECTION_HEADER (40 bytes).
+	 * Layout: Name[8], VirtualSize, VirtualAddress, SizeOfRawData,
+	 * PointerToRawData, plus unused trailing fields.
 	 */
-	uint32_t st [4];
+	#define IMAGE_SECTION_HEADER_SIZE 40
 
 	if (G_UNLIKELY (offset < 0))
 		return offset;
-	if ((uint32_t)offset > raw_data_len)
+	if ((uint32_t)(offset + IMAGE_SECTION_HEADER_SIZE) > raw_data_len)
 		return -1;
-	memcpy (st, raw_data + offset, sizeof (st));
-	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
-	t->st_virtual_address = GUINT32_FROM_LE (st [1]);
-	t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
-	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]) + (uint32_t)webcil_section_adjustment;
-	offset += sizeof(st);
+
+	const uint8_t *p = (const uint8_t *)(raw_data + offset);
+	uint32_t virtual_size, virtual_address, raw_data_size, raw_data_ptr;
+	memcpy (&virtual_size, p + 8, sizeof (uint32_t));
+	memcpy (&virtual_address, p + 12, sizeof (uint32_t));
+	memcpy (&raw_data_size, p + 16, sizeof (uint32_t));
+	memcpy (&raw_data_ptr, p + 20, sizeof (uint32_t));
+
+	t->st_virtual_size = GUINT32_FROM_LE (virtual_size);
+	t->st_virtual_address = GUINT32_FROM_LE (virtual_address);
+	t->st_raw_data_size = GUINT32_FROM_LE (raw_data_size);
+	t->st_raw_data_ptr = GUINT32_FROM_LE (raw_data_ptr) + (uint32_t)webcil_section_adjustment;
+	offset += IMAGE_SECTION_HEADER_SIZE;
 	return offset;
 }
 

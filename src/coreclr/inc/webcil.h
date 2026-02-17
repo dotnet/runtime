@@ -10,8 +10,8 @@
 #define WEBCIL_MAGIC_B 'b'
 #define WEBCIL_MAGIC_I 'I'
 #define WEBCIL_MAGIC_L 'L'
-#define WEBCIL_VERSION_MAJOR 0
-#define WEBCIL_VERSION_MINOR 1
+#define WEBCIL_VERSION_MAJOR 1
+#define WEBCIL_VERSION_MINOR 0
 
 #pragma pack(push, 1)
 
@@ -27,16 +27,9 @@ struct WebcilHeader {
     uint32_t pe_debug_size;
 };  // 28 bytes
 
-struct WebcilSectionHeader {
-    uint32_t virtual_size;
-    uint32_t virtual_address;
-    uint32_t raw_data_size;
-    uint32_t raw_data_ptr;
-};  // 16 bytes
-
 #pragma pack(pop)
 
 static_assert(sizeof(WebcilHeader) == 28, "WebcilHeader must be 28 bytes");
-static_assert(sizeof(WebcilSectionHeader) == 16, "WebcilSectionHeader must be 16 bytes");
+// Section headers following WebcilHeader are standard IMAGE_SECTION_HEADER (40 bytes each).
 
 #endif // WEBCIL_H_
