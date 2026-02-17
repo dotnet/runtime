@@ -224,7 +224,7 @@ namespace System.Diagnostics
             }
 
             // We want to keep the resolution logic in one place for better maintainability and consistency.
-            // That is why we don't provide platform-specific implementations files and use #if directives here.
+            // That is why we don't provide platform-specific implementations files.
             if (OperatingSystem.IsWindows())
             {
                 // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
