@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);WINDOWS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
@@ -238,6 +239,7 @@
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"

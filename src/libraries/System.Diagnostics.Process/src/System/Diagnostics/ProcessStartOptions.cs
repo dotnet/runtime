@@ -252,7 +252,7 @@ namespace System.Diagnostics
             return fromPath;
         }
 
-        private static string? FindProgramInPath(string program)
+        internal static string? FindProgramInPath(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");
             if (pathEnvVar is not null)
@@ -262,7 +262,13 @@ namespace System.Diagnostics
                 {
                     string subPath = pathParser.ExtractCurrent();
                     string path = Path.Combine(subPath, program);
+#if WINDOWS
                     if (File.Exists(path))
+#else
+                    // On Unix, all shells ignore broken links and non-executable files
+                    // when searching for programs in PATH, so do we.
+                    if (ProcessUtils.IsExecutable(path))
+#endif
                     {
                         return path;
                     }

@@ -38,7 +38,7 @@ namespace System.Diagnostics
         /// <summary>Gets execution path</summary>
         private static string? GetPathToOpenFile()
         {
-            return FindProgramInPath("xdg-open");
+            return ProcessStartOptions.FindProgramInPath("xdg-open");
         }
 
         /// <summary>
