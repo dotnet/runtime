@@ -64,21 +64,21 @@ namespace Microsoft.Interop.Analyzers
                 LibraryImportGeneratorOptions options = new(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions);
 
                 // Track if we found any LibraryImport methods to report RequiresAllowUnsafeBlocks once
-                bool foundLibraryImportMethod = false;
+                int foundLibraryImportMethod = 0;
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
 
                 context.RegisterSymbolAction(symbolContext =>
                 {
                     if (AnalyzeMethod(symbolContext, env, libraryImportAttrType, options))
                     {
-                        foundLibraryImportMethod = true;
+                        Interlocked.Exchange(ref foundLibraryImportMethod, 1);
                     }
                 }, SymbolKind.Method);
 
                 // Report RequiresAllowUnsafeBlocks once per compilation if there are LibraryImport methods and unsafe is not enabled
                 context.RegisterCompilationEndAction(endContext =>
                 {
-                    if (foundLibraryImportMethod && !unsafeEnabled)
+                    if (Volatile.Read(ref foundLibraryImportMethod) != 0 && !unsafeEnabled)
                     {
                         endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null).ToDiagnostic());
                     }
