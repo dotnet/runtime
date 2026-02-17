@@ -846,6 +846,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
+	// ppc64le: 	56 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -861,7 +862,7 @@ protected:
 #elif defined(TARGET_XARCH)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_POWERPC64)
-#define ID_EXTRA_BITFIELD_BITS (16)
+#define ID_EXTRA_BITFIELD_BITS (24) //TODO POWERPC64 vikas check correct value.
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -901,7 +902,7 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
-	// ppc64le: 	62/57 bits	//TODO POWERPC64 Vikas
+	// ppc64le: 	63/58 bits	//TODO POWERPC64 Vikas
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
