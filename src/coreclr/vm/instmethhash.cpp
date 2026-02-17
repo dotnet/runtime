@@ -86,6 +86,7 @@ PTR_LoaderAllocator InstMethodHashTable::GetLoaderAllocator()
     }
 }
 
+#endif // #ifndef DACCESS_COMPILE
 
 // Calculate a hash value for a method-desc key
 static DWORD Hash(TypeHandle declaringType, mdMethodDef token, Instantiation inst)
@@ -97,9 +98,9 @@ static DWORD Hash(TypeHandle declaringType, mdMethodDef token, Instantiation ins
     DWORD dwHash = 0x87654321;
 #define INST_HASH_ADD(_value) dwHash = ((dwHash << 5) + dwHash) ^ (_value)
 #ifdef TARGET_64BIT
-#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value); INST_HASH_ADD((uint32_t)(((uintptr_t)_value) >> 32))
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)dac_cast<TADDR>(_value)); INST_HASH_ADD((uint32_t)((dac_cast<TADDR>(_value)) >> 32))
 #else
-#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value);
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)dac_cast<TADDR>(_value));
 #endif
 
     INST_HASH_ADDPOINTER(declaringType.AsPtr());
@@ -195,6 +196,8 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
 
     return pMDResult;
 }
+
+#ifndef DACCESS_COMPILE
 
 BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 {
