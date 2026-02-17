@@ -6197,7 +6197,7 @@ EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTy
             && pMD->HasUnmanagedCallersOnlyAttribute())
         {
             *ppMD = pMD;
-            printf("Found UCO method %s on type %s MD %s::%s\n", methodName, fullQualifiedTypeName, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName);
+            printf("Found UCO method %s on type %s\n", methodName, fullQualifiedTypeName);
             return;
         }
     }
