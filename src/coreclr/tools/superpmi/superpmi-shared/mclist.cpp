@@ -39,13 +39,7 @@ bool MCList::processArgAsMCL(char* input, int* count, int** list)
             foundDigit = false;
             while ((head <= tail) && (isdigit((unsigned char)*head)))
             {
-                unsigned digit = (*head) - '0';
-                if (scratch > (UINT_MAX - digit) / 10)
-                {
-                    LogError("Invalid int value in '%s'", input);
-                    return false;
-                }
-                scratch    = (scratch * 10) + digit;
+                scratch    = (scratch * 10) + ((*head) - '0');
                 foundDigit = true;
                 head++;
             }
