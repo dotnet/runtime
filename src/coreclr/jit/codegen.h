@@ -214,6 +214,7 @@ protected:
     ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
     unsigned                   wasmCursor           = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
+    regNumber                  MakeOperandMultiUse(GenTree* node, GenTree* operand);
 #endif
 
     void        genEmitStartBlock(BasicBlock* block);
