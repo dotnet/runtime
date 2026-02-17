@@ -363,7 +363,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="Pdb" Pattern="*.pdb" Expression="#[.{fingerprint}]!" />
-      <_WasmFingerprintPatterns Include="Symbols" Pattern="*.symbols" Expression="#[.{fingerprint}]!" />
+      <_WasmFingerprintPatterns Include="Symbols" Pattern="*.js.symbols" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
     <DefineStaticWebAssets
