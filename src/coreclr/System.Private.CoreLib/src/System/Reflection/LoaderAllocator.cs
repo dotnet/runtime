@@ -54,6 +54,19 @@ namespace System.Reflection
             m_scout = new LoaderAllocatorScout();
         }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void Create(object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new LoaderAllocator();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
 #pragma warning disable CA1823, 414, 169
         private LoaderAllocatorScout m_scout;
         private object[] m_slots;
