@@ -101,6 +101,7 @@
 
   <PropertyGroup>
     <Features Condition="'$(RuntimeFlavor)' != 'mono' and '$(TestBuildMode)' != 'nativeaot' and '$(TargetArchitecture)' != 'wasm'">$(Features);runtime-async=on</Features>
+    <NoWarn>$(NoWarn);SYSLIB5007</NoWarn>
   </PropertyGroup>
   
 </Project>
