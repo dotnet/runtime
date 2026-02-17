@@ -5,6 +5,7 @@
 //COMMAND LINE: csc /nologo /optimize- /debug- /w:0 bug.cs
 using System;
 using Xunit;
+using TestLibrary;
 public struct AA
 {
     static void Test(int param, __arglist)

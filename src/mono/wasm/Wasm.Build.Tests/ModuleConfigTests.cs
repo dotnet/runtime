@@ -105,4 +105,46 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             m => Assert.Equal("Managed code has run", m)
         );
     }
+
+    [Fact, TestCategory("bundler-friendly")]
+    public async Task AssetIntegrity()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"AssetIntegrity");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "AssetIntegrity"
+        ));
+        Assert.False(
+            result.TestOutput.Any(m => !m.Contains(".js") && !m.Contains(".json") && m.Contains("has integrity ''")),
+            "There are assets without integrity hash"
+        );
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    public void SymbolMapFileEmitted(bool emitSymbolMap, bool isPublish)
+    {
+        Configuration config = Configuration.Release;
+        string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp,
+            $"SymbolMapFile_{emitSymbolMap}_{isPublish}", extraProperties: extraProperties);
+
+        if (isPublish)
+            PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
+        else
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+
+        string frameworkDir = GetBinFrameworkDir(config, forPublish: isPublish);
+
+        // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols),
+        // so use a glob pattern to find it.
+        bool symbolsFileExists = Directory.EnumerateFiles(frameworkDir, "dotnet.native*.js.symbols").Any();
+        Assert.Equal(emitSymbolMap, symbolsFileExists);
+    }
 }

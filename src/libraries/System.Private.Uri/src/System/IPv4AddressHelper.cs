@@ -13,7 +13,7 @@ namespace System.Net
         // Parse and canonicalize
         internal static string ParseCanonicalName(string str, int start, int end, ref bool isLoopback)
         {
-            long result = ParseNonCanonical(str.AsSpan(start), out _, true);
+            long result = ParseNonCanonical(str.AsSpan(start, end - start), out _, true);
 
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {str}");
 

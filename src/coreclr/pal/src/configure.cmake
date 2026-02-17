@@ -141,7 +141,6 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
-check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -367,21 +366,7 @@ int main()
 }" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
@@ -497,52 +482,6 @@ int main(void)
   exit(ret != 1);
 }" ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS)
 
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <pthread.h>
-#include <stdlib.h>
-
-void *start_routine(void *param) { return NULL; }
-
-int main() {
-  int result;
-  pthread_t tid;
-
-  errno = 0;
-  result = pthread_create(&tid, NULL, start_routine, NULL);
-  if (result != 0) {
-    exit(1);
-  }
-  if (errno != 0) {
-    exit(0);
-  }
-  exit(1);
-}" PTHREAD_CREATE_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_runs("
-#include <errno.h>
-#include <semaphore.h>
-#include <stdlib.h>
-
-int main() {
-  int result;
-  sem_t sema;
-
-  errno = 50;
-  result = sem_init(&sema, 0, 0);
-  if (result != 0)
-  {
-    exit(1);
-  }
-  if (errno != 50)
-  {
-    exit(0);
-  }
-  exit(1);
-}" SEM_INIT_MODIFIES_ERRNO)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>
@@ -566,7 +505,7 @@ int main(void) {
   }
   exit(0);
 }" HAVE_PROCFS_CTL)
-set(CMAKE_REQUIRED_LIBRARIES)
+
 check_cxx_source_runs("
 #include <fcntl.h>
 #include <stdlib.h>
@@ -590,21 +529,6 @@ int main(void) {
   }
   exit(0);
 }" HAVE_PROCFS_STAT)
-set(CMAKE_REQUIRED_LIBRARIES)
-
-set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <errno.h>
-#include <semaphore.h>
-
-int main() {
-  sem_t sema;
-  if (sem_init(&sema, 0, 0) == -1){
-    exit(1);
-  }
-  exit(0);
-}" HAS_POSIX_SEMAPHORES)
 set(CMAKE_REQUIRED_LIBRARIES)
 
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
@@ -665,238 +589,12 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE_PR_SET_PTRACER)
 
-set(CMAKE_REQUIRED_LIBRARIES pthread)
-check_cxx_source_compiles("
-#include <errno.h>
-#include <pthread.h>
-#include <time.h>
-
-int main()
-{
-    pthread_mutexattr_t mutexAttributes;
-    pthread_mutexattr_init(&mutexAttributes);
-    pthread_mutexattr_setpshared(&mutexAttributes, PTHREAD_PROCESS_SHARED);
-    pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutexattr_setrobust(&mutexAttributes, PTHREAD_MUTEX_ROBUST);
-
-    pthread_mutex_t mutex;
-    pthread_mutex_init(&mutex, &mutexAttributes);
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    struct timespec timeoutTime;
-    timeoutTime.tv_sec = 1; // not the right way to specify absolute time, but just checking availability of timed lock
-    timeoutTime.tv_nsec = 0;
-    pthread_mutex_timedlock(&mutex, &timeoutTime);
-    pthread_mutex_consistent(&mutex);
-
-    pthread_mutex_destroy(&mutex);
-
-    int error = EOWNERDEAD;
-    error = ENOTRECOVERABLE;
-    error = ETIMEDOUT;
-    error = 0;
-    return error;
-}" HAVE_FULLY_FEATURED_PTHREAD_MUTEXES)
-set(CMAKE_REQUIRED_LIBRARIES)
-
-if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
-  set(CMAKE_REQUIRED_LIBRARIES pthread)
-  check_cxx_source_runs("
-  // This test case verifies the pthread process-shared robust mutex's cross-process abandon detection. The parent process starts
-  // a child process that locks the mutex, the process process then waits to acquire the lock, and the child process abandons the
-  // mutex by exiting the process while holding the lock. The parent process should then be released from its wait, be assigned
-  // ownership of the lock, and be notified that the mutex was abandoned.
-
-  #include <sys/mman.h>
-  #include <sys/time.h>
-
-  #include <errno.h>
-  #include <pthread.h>
-  #include <stdio.h>
-  #include <unistd.h>
-
-  #include <new>
-  using namespace std;
-
-  struct Shm
-  {
-      pthread_mutex_t syncMutex;
-      pthread_cond_t syncCondition;
-      pthread_mutex_t robustMutex;
-      int conditionValue;
-
-      Shm() : conditionValue(0)
-      {
-      }
-  } *shm;
-
-  int GetFailTimeoutTime(struct timespec *timeoutTimeRef)
-  {
-      int getTimeResult = clock_gettime(CLOCK_REALTIME, timeoutTimeRef);
-      if (getTimeResult != 0)
-      {
-          struct timeval tv;
-          getTimeResult = gettimeofday(&tv, NULL);
-          if (getTimeResult != 0)
-              return 1;
-          timeoutTimeRef->tv_sec = tv.tv_sec;
-          timeoutTimeRef->tv_nsec = tv.tv_usec * 1000;
-      }
-      timeoutTimeRef->tv_sec += 30;
-      return 0;
-  }
-
-  int WaitForConditionValue(int desiredConditionValue)
-  {
-      struct timespec timeoutTime;
-      if (GetFailTimeoutTime(&timeoutTime) != 0)
-          return 1;
-      if (pthread_mutex_timedlock(&shm->syncMutex, &timeoutTime) != 0)
-          return 1;
-
-      if (shm->conditionValue != desiredConditionValue)
-      {
-          if (GetFailTimeoutTime(&timeoutTime) != 0)
-              return 1;
-          if (pthread_cond_timedwait(&shm->syncCondition, &shm->syncMutex, &timeoutTime) != 0)
-              return 1;
-          if (shm->conditionValue != desiredConditionValue)
-              return 1;
-      }
-
-      if (pthread_mutex_unlock(&shm->syncMutex) != 0)
-          return 1;
-      return 0;
-  }
-
-  int SetConditionValue(int newConditionValue)
-  {
-      struct timespec timeoutTime;
-      if (GetFailTimeoutTime(&timeoutTime) != 0)
-          return 1;
-      if (pthread_mutex_timedlock(&shm->syncMutex, &timeoutTime) != 0)
-          return 1;
-
-      shm->conditionValue = newConditionValue;
-      if (pthread_cond_signal(&shm->syncCondition) != 0)
-          return 1;
-
-      if (pthread_mutex_unlock(&shm->syncMutex) != 0)
-          return 1;
-      return 0;
-  }
-
-  void DoTest_Child();
-
-  int DoTest()
-  {
-      // Map some shared memory
-      void *shmBuffer = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-      if (shmBuffer == MAP_FAILED)
-          return 1;
-      shm = new(shmBuffer) Shm;
-
-      // Create sync mutex
-      pthread_mutexattr_t syncMutexAttributes;
-      if (pthread_mutexattr_init(&syncMutexAttributes) != 0)
-          return 1;
-      if (pthread_mutexattr_setpshared(&syncMutexAttributes, PTHREAD_PROCESS_SHARED) != 0)
-          return 1;
-      if (pthread_mutex_init(&shm->syncMutex, &syncMutexAttributes) != 0)
-          return 1;
-      if (pthread_mutexattr_destroy(&syncMutexAttributes) != 0)
-          return 1;
-
-      // Create sync condition
-      pthread_condattr_t syncConditionAttributes;
-      if (pthread_condattr_init(&syncConditionAttributes) != 0)
-          return 1;
-      if (pthread_condattr_setpshared(&syncConditionAttributes, PTHREAD_PROCESS_SHARED) != 0)
-          return 1;
-      if (pthread_cond_init(&shm->syncCondition, &syncConditionAttributes) != 0)
-          return 1;
-      if (pthread_condattr_destroy(&syncConditionAttributes) != 0)
-          return 1;
-
-      // Create the robust mutex that will be tested
-      pthread_mutexattr_t robustMutexAttributes;
-      if (pthread_mutexattr_init(&robustMutexAttributes) != 0)
-          return 1;
-      if (pthread_mutexattr_setpshared(&robustMutexAttributes, PTHREAD_PROCESS_SHARED) != 0)
-          return 1;
-      if (pthread_mutexattr_setrobust(&robustMutexAttributes, PTHREAD_MUTEX_ROBUST) != 0)
-          return 1;
-      if (pthread_mutex_init(&shm->robustMutex, &robustMutexAttributes) != 0)
-          return 1;
-      if (pthread_mutexattr_destroy(&robustMutexAttributes) != 0)
-          return 1;
-
-      // Start child test process
-      int error = fork();
-      if (error == -1)
-          return 1;
-      if (error == 0)
-      {
-          DoTest_Child();
-          return -1;
-      }
-
-      // Wait for child to take a lock
-      WaitForConditionValue(1);
-
-      // Wait to try to take a lock. Meanwhile, child abandons the robust mutex.
-      struct timespec timeoutTime;
-      if (GetFailTimeoutTime(&timeoutTime) != 0)
-          return 1;
-      error = pthread_mutex_timedlock(&shm->robustMutex, &timeoutTime);
-      if (error != EOWNERDEAD) // expect to be notified that the robust mutex was abandoned
-          return 1;
-      if (pthread_mutex_consistent(&shm->robustMutex) != 0)
-          return 1;
-
-      if (pthread_mutex_unlock(&shm->robustMutex) != 0)
-          return 1;
-      if (pthread_mutex_destroy(&shm->robustMutex) != 0)
-          return 1;
-      return 0;
-  }
-
-  void DoTest_Child()
-  {
-      // Lock the robust mutex
-      struct timespec timeoutTime;
-      if (GetFailTimeoutTime(&timeoutTime) != 0)
-          return;
-      if (pthread_mutex_timedlock(&shm->robustMutex, &timeoutTime) != 0)
-          return;
-
-      // Notify parent that robust mutex is locked
-      if (SetConditionValue(1) != 0)
-          return;
-
-      // Wait a short period to let the parent block on waiting for a lock
-      sleep(1);
-
-      // Abandon the mutex by exiting the process while holding the lock. Parent's wait should be released by EOWNERDEAD.
-  }
-
-  int main()
-  {
-      int result = DoTest();
-      return result >= 0 ? result : 0;
-  }" HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES)
-  set(CMAKE_REQUIRED_LIBRARIES)
-endif()
-
 if(CLR_CMAKE_TARGET_APPLE)
   set(HAVE__NSGETENVIRON 1)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
 elseif(CLR_CMAKE_TARGET_FREEBSD)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
@@ -907,21 +605,17 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
   endif()
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_NETBSD)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(BSD_REGS_STYLE "((reg).regs[_REG_##RR])")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
 elseif(CLR_CMAKE_TARGET_SUNOS)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(SET_SCHEDPARAM_NEEDS_PRIVS 1)
 elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CLR_CMAKE_TARGET_BROWSER)
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 else() # Anything else is Linux
   # LTTNG is not available on Android, so don't error out
@@ -929,7 +623,6 @@ else() # Anything else is Linux
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()
-  set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 endif(CLR_CMAKE_TARGET_APPLE)

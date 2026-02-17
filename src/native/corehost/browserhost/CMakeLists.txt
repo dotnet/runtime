@@ -40,6 +40,7 @@ set(HEADERS
 )
 
 add_compile_definitions(FEATURE_APPHOST)
+add_definitions(-DGEN_PINVOKE=1)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
@@ -57,7 +58,6 @@ set(SHARED_CLR_DESTINATION
 # these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
-    ${SHARED_CLR_DESTINATION}/libclrinterpreter.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -80,7 +80,7 @@ LIST(APPEND NATIVE_LIBS
 set(JS_SYSTEM_NATIVE_BROWSER
     "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
     "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
@@ -103,8 +103,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
+# add -sVERBOSE=1 to debug linking issues
 # WASM-TODO    -emit-llvm
 # WASM-TODO    --source-map-base http://microsoft.com
+# WASM-TODO    -sSEPARATE_DWARF=1, -gseparate-dwarf
 target_link_options(browserhost PRIVATE
     -sINITIAL_MEMORY=134217728
     -sMAXIMUM_MEMORY=2147483648
@@ -113,16 +115,16 @@ target_link_options(browserhost PRIVATE
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-    -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_malloc,_free,stackAlloc,stackRestore,stackSave,___cpp_exception,_GetDotNetRuntimeContractDescriptor,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly
+    -sEXIT_RUNTIME=1
+    -sALLOW_TABLE_GROWTH=1
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -lnodefs.js)
+    -sENVIRONMENT=web,webview,worker,node,shell
+    -Wl,-error-limit=0)
 
-target_link_libraries(browserhost PUBLIC
-    BrowserHost-Static
-)
 target_link_libraries(browserhost PRIVATE
+    BrowserHost-Static
     ${NATIVE_LIBS}
 	${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
@@ -134,4 +136,5 @@ install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 
-add_subdirectory(sample)
+set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
+    "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")

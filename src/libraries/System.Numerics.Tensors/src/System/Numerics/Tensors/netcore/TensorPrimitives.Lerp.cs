@@ -102,7 +102,6 @@ namespace System.Numerics.Tensors
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> amount)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector128.Lerp(x.AsDouble(), y.AsDouble(), amount.AsDouble()).As<double, T>();
@@ -112,14 +111,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector128.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
-#else
-                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector128<T>.One - amount, y * amount);
-#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> amount)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector256.Lerp(x.AsDouble(), y.AsDouble(), amount.AsDouble()).As<double, T>();
@@ -129,14 +124,10 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector256.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
-#else
-                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector256<T>.One - amount, y * amount);
-#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> amount)
             {
-#if NET9_0_OR_GREATER
                 if (typeof(T) == typeof(double))
                 {
                     return Vector512.Lerp(x.AsDouble(), y.AsDouble(), amount.AsDouble()).As<double, T>();
@@ -146,9 +137,6 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(float));
                     return Vector512.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
-#else
-                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector512<T>.One - amount, y * amount);
-#endif
             }
         }
     }

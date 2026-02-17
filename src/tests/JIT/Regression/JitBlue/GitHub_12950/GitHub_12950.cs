@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_12950;
+
 using System;
 using System.Numerics;
 using Xunit;
@@ -25,6 +28,7 @@ public class Program
         var hmm = box.GetHashCode();
     }
     
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

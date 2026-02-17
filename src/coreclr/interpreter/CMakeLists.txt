@@ -20,6 +20,10 @@ if(CLR_CMAKE_HOST_WIN32)
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
   )
+  list(APPEND INTERPRETER_SOURCES
+    Native.rc
+  )
+  add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
 endif()
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -67,7 +71,7 @@ target_link_libraries(clrinterpreter
         ${INTERPRETER_LINK_LIBRARIES}
     )
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_MACCATALYST)
+if (FEATURE_STATICALLY_LINKED)
     install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime OPTIONAL)
 else()
     install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)

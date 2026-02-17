@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace DevDiv2_8863;
+
 using System;
 using Xunit;
 
@@ -66,6 +69,7 @@ public class Program
         d.j = 0x77777777;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

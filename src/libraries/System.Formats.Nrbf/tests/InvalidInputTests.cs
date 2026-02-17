@@ -632,4 +632,84 @@ public class InvalidInputTests : ReadTests
 
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
+
+    [Fact]
+    public void DoesNotThrowInvalidCastExceptionForSystemClassInsteadOfPrimitive_DateTime()
+    {
+        // This test reproduces the InvalidCastException found by the fuzzer
+        // where the second member (dateData) has BinaryType.SystemClass instead of BinaryType.Primitive
+        // The fix ensures we don't crash with InvalidCastException, though other exceptions may be thrown
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // class Id
+        writer.Write("System.DateTime");
+        writer.Write(2); // member count
+        writer.Write("ticks");
+        writer.Write("dateData");
+
+        // BinaryType for each member
+        writer.Write((byte)BinaryType.Primitive); // ticks
+        writer.Write((byte)BinaryType.SystemClass); // dateData - WRONG! Should be Primitive
+
+        // AdditionalInfo for each BinaryType
+        writer.Write((byte)PrimitiveType.Int64); // for ticks
+        writer.Write("jagged"); // for SystemClass (this would be a type name)
+
+        // Member values would go here, but they should never be read because the type info is invalid
+
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+        
+        // The decoder should not throw InvalidCastException (the bug we're fixing)
+        // It may throw other exceptions like EndOfStreamException or SerializationException
+        Exception? exception = Record.Exception(() => NrbfDecoder.Decode(stream));
+        Assert.NotNull(exception);
+        Assert.IsNotType<InvalidCastException>(exception);
+        Assert.IsNotType<NullReferenceException>(exception);
+    }
+
+    [Fact]
+    public void DoesNotThrowNullReferenceExceptionForMissingAdditionalInfo_DateTime()
+    {
+        // This test reproduces the NullReferenceException found by the fuzzer
+        // where the second member (dateData) has BinaryType.String instead of BinaryType.Primitive
+        // The fix ensures we don't crash with NullReferenceException, though other exceptions may be thrown
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)SerializationRecordType.SystemClassWithMembersAndTypes);
+        writer.Write(1); // class Id
+        writer.Write("System.DateTime");
+        writer.Write(2); // member count
+        writer.Write("ticks");
+        writer.Write("dateData");
+
+        // BinaryType for each member
+        writer.Write((byte)BinaryType.Primitive); // ticks
+        writer.Write((byte)BinaryType.String); // dateData - WRONG! Should be Primitive
+
+        // AdditionalInfo for each BinaryType
+        writer.Write((byte)PrimitiveType.Int64); // for ticks
+        // BinaryType.String has no additional info
+
+        // Member values would go here, but they should never be read because the type info is invalid
+
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+        
+        // The decoder should not throw NullReferenceException (the bug we're fixing)
+        // It may throw other exceptions like EndOfStreamException or SerializationException
+        Exception? exception = Record.Exception(() => NrbfDecoder.Decode(stream));
+        Assert.NotNull(exception);
+        Assert.IsNotType<InvalidCastException>(exception);
+        Assert.IsNotType<NullReferenceException>(exception);
+    }
 }

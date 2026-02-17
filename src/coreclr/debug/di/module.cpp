@@ -15,7 +15,7 @@
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
@@ -117,8 +117,8 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-        m_pAssembly->GetDomainAssemblyPtr(),
+    GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+        m_pAppDomain->GetADToken(),
         DbgAssertModuleDeletedCallback,
         this);
 }
@@ -5103,7 +5103,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(methodDesc, startAddress, &codeInfo);
+        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL);
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,

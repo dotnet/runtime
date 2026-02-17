@@ -5,6 +5,7 @@ parameters:
   runtimeFlavor: ''
   runtimeVariant: ''
   liveLibrariesBuildConfig: ''
+  useNativeAOTRuntime: false
 
 variables:
 
@@ -85,7 +86,7 @@ variables:
     - name: runtimeFlavorArgs
       value: '-mono'
 
-  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.useNativeAOTRuntime, true), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
     - name: runtimeFlavorArgs
       value: '-nativeaot'
 

@@ -819,7 +819,6 @@ namespace System.Runtime.InteropServices
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.ObsoleteAttribute("CurrencyWrapper and support for marshalling to the VARIANT type may be unavailable in future releases.")]
     public sealed partial class CurrencyWrapper
     {
         public CurrencyWrapper(decimal obj) { }
@@ -1582,6 +1581,8 @@ namespace System.Runtime.InteropServices
     }
     public enum PosixSignal
     {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]

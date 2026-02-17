@@ -37,6 +37,7 @@ public:
     // a sequence point will also be a stack_empty point, and/or a call site.
     // The debugger will check to see if a boundary offset's source field &
     // SEQUENCE_POINT is true to determine if the boundary is a sequence point.
+    // [cDAC] [DebugInfo]: Contract depends on the values of SOURCE_TYPE_INVALID, STACK_EMPTY, CALL_INSTRUCTION, and ASYNC.
 
     enum SourceTypes
     {
@@ -214,7 +215,7 @@ public:
         REGNUM_T5,
         REGNUM_T6,
         REGNUM_PC,
-#elif TARGET_WASM
+#elif defined(TARGET_WASM)
         REGNUM_PC, // wasm doesn't have registers
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")

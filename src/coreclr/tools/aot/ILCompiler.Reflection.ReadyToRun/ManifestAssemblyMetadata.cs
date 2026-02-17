@@ -25,10 +25,15 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         private readonly MetadataReader _metadataReader;
 
+        public ManifestAssemblyMetadata(MetadataReader metadataReader)
+        {
+            _metadataReader = metadataReader;
+        }
+
         public ManifestAssemblyMetadata(PEReader peReader, MetadataReader metadataReader)
+            : this(metadataReader)
         {
             _peReader = peReader;
-            _metadataReader = metadataReader;
         }
 
         public PEReader ImageReader => _peReader;

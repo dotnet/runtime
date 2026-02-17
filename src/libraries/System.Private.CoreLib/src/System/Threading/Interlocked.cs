@@ -865,5 +865,15 @@ namespace System.Threading
         [Intrinsic]
         public static void MemoryBarrier() => MemoryBarrier();
         #endregion
+
+#if !MONO
+        #region MemoryBarrierProcessWide
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
+        private static partial void _MemoryBarrierProcessWide();
+
+        /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
+        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
+        #endregion
+#endif
     }
 }

@@ -7,7 +7,7 @@ Servicing branches represent shipped versions of .NET. The branch naming convent
 - **For .NET 8 and .NET 9**: Branch names use the format `release/X.0-staging`. Examples:
   - `release/9.0-staging`
   - `release/8.0-staging`
-  
+
 - **For .NET 10+**: Branch names use the format `release/X.0` (no `-staging` suffix). Examples:
   - `release/10.0`
   - `release/11.0`
@@ -36,7 +36,7 @@ All the servicing change must go through an approval process. You have two ways 
   For .NET 8 and .NET 9 (use `-staging` suffix):
   - `/backport to release/9.0-staging`
   - `/backport to release/8.0-staging`
-  
+
   For .NET 10+ (no `-staging` suffix):
   - `/backport to release/10.0`
   - `/backport to release/11.0`

@@ -39,6 +39,8 @@ namespace ILCompiler
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
         private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
+        private readonly AsyncAwareVirtualMethodResolutionAlgorithm _virtualMethodAlgorithm;
+
         private TypeDesc[] _arrayOfTInterfaces;
         private TypeDesc[] _arrayEnumeratorOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -53,12 +55,15 @@ namespace ILCompiler
         {
             _genericsMode = genericsMode;
 
+            _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
+
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
+            _continuationTypeHashtable = new ContinuationTypeHashtable(this);
 
             _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
 
@@ -206,10 +211,6 @@ namespace ILCompiler
             if (type.IsDelegate)
             {
                 return GetAllMethodsForDelegate(type, virtualOnly);
-            }
-            else if (type.IsEnum)
-            {
-                return GetAllMethodsForEnum(type, virtualOnly);
             }
             else if (type.IsValueType)
             {

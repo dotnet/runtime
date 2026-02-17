@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using System.Threading;
 
@@ -679,25 +680,21 @@ namespace System.Runtime.Loader
             return (assembly != null) ? ValidateAssemblyNameWithSimpleName(assembly, simpleName) : null;
         }
 
-        // This method is called by the VM.
         private static void OnAssemblyLoad(RuntimeAssembly assembly)
         {
             AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
-        // This method is called by the VM.
-        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly assembly, string resourceName)
+        internal static RuntimeAssembly? OnResourceResolve(RuntimeAssembly? assembly, string resourceName)
         {
             return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
         }
 
-        // This method is called by the VM
         internal static RuntimeAssembly? OnTypeResolve(RuntimeAssembly? assembly, string typeName)
         {
             return InvokeResolveEvent(TypeResolve, assembly, typeName);
         }
 
-        // This method is called by the VM.
         private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
@@ -737,6 +734,107 @@ namespace System.Runtime.Loader
 
             return null;
         }
+
+#if CORECLR
+        // UnmanagedCallersOnly wrappers for VM callbacks
+        // These methods provide efficient reverse P/Invoke entry points for the VM.
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyLoad(RuntimeAssembly* pAssembly, Exception* pException)
+        {
+            try
+            {
+                OnAssemblyLoad(*pAssembly);
+            }
+            catch (Exception)
+            {
+                // The VM does not expect exceptions to propagate out of this callback
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnTypeResolve(RuntimeAssembly* pAssembly, byte* typeName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                string name = Utf8StringMarshaller.ConvertToManaged(typeName)!;
+                *ppResult = OnTypeResolve(*pAssembly, name);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnResourceResolve(RuntimeAssembly* pAssembly, byte* resourceName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                string name = Utf8StringMarshaller.ConvertToManaged(resourceName)!;
+                *ppResult = OnResourceResolve(*pAssembly, name);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnAssemblyResolve(RuntimeAssembly* pAssembly, char* assemblyFullName, RuntimeAssembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = OnAssemblyResolve(*pAssembly, new string(assemblyFullName));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void Resolve(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveUsingLoad(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveSatelliteAssembly(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveSatelliteAssembly(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ResolveUsingEvent(IntPtr gchAssemblyLoadContext, AssemblyName* pAssemblyName, Assembly* ppResult, Exception* pException)
+        {
+            try
+            {
+                AssemblyLoadContext context = GCHandle<AssemblyLoadContext>.FromIntPtr(gchAssemblyLoadContext).Target;
+                *ppResult = context.ResolveUsingEvent(*pAssemblyName);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif // CORECLR
 #endif // !NATIVEAOT
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
