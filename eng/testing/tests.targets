@@ -7,6 +7,7 @@
     and '$(TargetOS)' != 'browser'
     and '$(TargetOS)' != 'wasi'
     and '$(RuntimeFlavor)' != 'Mono'
+    and '$(TargetsAppleMobile)' != 'true'
     and '$(UseRuntimeAsync)' != 'false'">
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>

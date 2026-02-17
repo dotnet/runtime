@@ -1,6 +1,6 @@
-# Experimental support of CoreCLR on iOS/tvOS
+# CoreCLR on iOS/tvOS
 
-This is the internal documentation which outlines experimental support of CoreCLR on iOS/tvOS platforms.
+This documentation outlines developer workflows for CoreCLR on iOS/tvOS platforms.
 
 ## Table of Contents
 
@@ -10,8 +10,8 @@ This is the internal documentation which outlines experimental support of CoreCL
     - [Building the runtime, libraries and tools](#building-the-runtime-libraries-and-tools)
 - [Building and running a sample app](#building-and-running-a-sample-app)
   - [Building HelloiOS sample](#building-helloios-sample)
-  - [Running HelloiOS sample on a simulator](#running-helloios-sample-on-a-simulator)
-- [Building and running tests on a simulator](#building-and-running-tests-on-a-simulator)
+  - [Running HelloiOS sample](#running-helloios-sample)
+- [Building and running tests](#building-and-running-tests)
 - [Debugging the runtime and the sample app](#debugging-the-runtime-and-the-sample-app)
   - [Steps](#steps)
 - [See also](#see-also)
@@ -24,14 +24,18 @@ Supported host systems for building CoreCLR for iOS/tvOS:
 
 Supported target platforms:
 - iOS Simulator ✔
-- tvOS Simulator ❌ (not yet supported)
+- tvOS Simulator ✔
 - Mac Catalyst ✔
 - iOS Device ✔
-- tvOS Device ❌ (not yet supported)
+- tvOS Device ✔
 
 Supported target architectures:
 - x64 ✔
 - arm64 ✔
+
+Supported execution modes:
+- Interpreter ✔
+- ReadyToRun (R2R) ✔
 
 ### macOS
 
@@ -56,7 +60,7 @@ Supported target architectures:
 To build CoreCLR runtime, libraries and tools, run the following command from `<repo-root>`:
 
 ```bash
-./build.sh clr+clr.runtime+libs+packs -os <ios|iossimulator|maccatalyst> -arch arm64 -cross -c <Debug|Checked>
+./build.sh clr+clr.runtime+libs+packs -os <ios|iossimulator|tvos|tvossimulator|maccatalyst> -arch arm64 -cross -c <Release|Debug>
 ```
 
 > [!NOTE]
@@ -73,23 +77,23 @@ A prerequisite for building and running samples locally is to have CoreCLR succe
 To build `HelloiOS`, run the following command from `<repo-root>`:
 
 ```bash
-./dotnet.sh build src/mono/sample/iOS/Program.csproj -c <Debug|Checked> /p:TargetOS=<ios|iossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:UseMonoRuntime=false /p:RunAOTCompilation=false /p:MonoForceInterpreter=false
+./dotnet.sh build src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:UseMonoRuntime=false
 ```
 
 On successful execution, the command will output the iOS app bundle.
 
-### Running HelloiOS sample on a simulator
+### Running HelloiOS sample
 
-To run the sample on a simulator, run the following command from `<repo-root>`:
+To run the sample, run the following command from `<repo-root>`:
 
 ```bash
-./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c <Debug|Checked> /p:TargetOS=<ios|iossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:DeployAndRun=true /p:UseMonoRuntime=false /p:RunAOTCompilation=false /p:MonoForceInterpreter=false
+./dotnet.sh publish src/mono/sample/iOS/Program.csproj -c <Release|Debug> /p:TargetOS=<ios|iossimulator|tvossimulator|maccatalyst> /p:TargetArchitecture=arm64 /p:DeployAndRun=true /p:UseMonoRuntime=false
 ```
 
 The command also produces an Xcode project that can be opened for debugging:
 
 ```bash
-open ./src/mono/sample/iOS/bin/<ios|iossimulator|maccatalyst>-arm64/Bundle/HelloiOS/HelloiOS.xcodeproj
+open ./src/mono/sample/iOS/bin/<ios|iossimulator|tvossimulator|maccatalyst>-arm64/Bundle/HelloiOS/HelloiOS.xcodeproj
 ```
 
 > [!NOTE]
@@ -98,16 +102,13 @@ open ./src/mono/sample/iOS/bin/<ios|iossimulator|maccatalyst>-arm64/Bundle/Hello
 > xcrun simctl list devices
 > ```
 
-## Building and running tests on a simulator
+## Building and running tests
 
 To build the runtime tests for iOS with CoreCLR, run the following command from `<repo-root>`:
 
 ```bash
-./src/tests/build.sh -os <iossimulator|tvossimulator> <x64|arm64> <Debug|Release> -p:UseMonoRuntime=false
+./src/tests/build.sh -os <ios|iossimulator|tvossimulator|maccatalyst> arm64 <Release|Debug> -p:UseMonoRuntime=false
 ```
-
-> [!NOTE]
-> Running the tests is not fully implemented yet. It will likely need similar app bundle infrastructure as NativeAOT/iOS uses.
 
 ## Debugging the runtime and the sample app
 
@@ -115,7 +116,7 @@ Native debugging is supported through Xcode. You can debug both the managed port
 
 ### Steps
 
-1. Build the runtime and `HelloiOS` sample app in `Debug` configuration.
+1. Build the runtime and `HelloiOS` sample app.
 2. Open the generated Xcode project:
    ```bash
    open ./src/mono/sample/iOS/bin/<target>/Bundle/HelloiOS/HelloiOS.xcodeproj

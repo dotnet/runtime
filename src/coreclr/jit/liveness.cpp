@@ -51,10 +51,12 @@ protected:
         //
         // * Outside SSA: Partial defs are _not_ full defs and are also not
         // considered uses. They do not get included in bbVarUse/bbVarDef.
-        SsaLiveness           = false,
-        ComputeMemoryLiveness = false,
-        IsLIR                 = false,
-        IsEarly               = false,
+        SsaLiveness               = false,
+        ComputeMemoryLiveness     = false,
+        IsLIR                     = false,
+        IsEarly                   = false,
+        EliminateDeadCode         = false,
+        TrackAddressExposedLocals = false,
     };
 
     Liveness(Compiler* compiler)
@@ -445,7 +447,7 @@ void Liveness<TLiveness>::SelectTrackedLocals()
         // Pinned variables may not be tracked (a condition of the GCInfo representation)
         // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
         // references when using the general GC encoding.
-        if (varDsc->IsAddressExposed())
+        if (!TLiveness::TrackAddressExposedLocals && varDsc->IsAddressExposed())
         {
             varDsc->lvTracked = 0;
             assert(varDsc->lvType != TYP_STRUCT || varDsc->lvDoNotEnregister); // For structs, should have set this when
@@ -1043,7 +1045,8 @@ void Liveness<TLiveness>::MarkUseDef(GenTreeLclVarCommon* tree)
         // We don't treat stores to tracked locals as modifications of ByrefExposed memory;
         // Make sure no tracked local is addr-exposed, to make sure we don't incorrectly CSE byref
         // loads aliasing it across a store to it.
-        assert(!varDsc->IsAddressExposed());
+        assert(!varDsc->IsAddressExposed() ||
+               (TLiveness::TrackAddressExposedLocals && !TLiveness::ComputeMemoryLiveness));
 
         if (TLiveness::IsLIR && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
         {
@@ -1454,12 +1457,13 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // If we had unremovable blocks that are not in the DFS tree then make
-    // the 'keepAlive' set live in them. This would normally not be
-    // necessary assuming those blocks are actually unreachable; however,
-    // throw helpers fall into this category because we do not model them
-    // correctly, and those will actually end up reachable. Fix that up
-    // here.
+    // Now that we create throw helper blocks after lower,
+    // we don't need to search for them and set up liveness
+    // during lower.
+    assert(!m_compiler->fgRngChkThrowAdded);
+
+#ifdef DEBUG
+    // Double-check that no unreachable throw helper blocks exist.
     if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
     {
         for (BasicBlock* block : m_compiler->Blocks())
@@ -1469,26 +1473,10 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            VarSetOps::ClearD(m_compiler, block->bbLiveOut);
-            if (keepAliveThis)
-            {
-                unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
-                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
-            }
-
-            if (block->HasPotentialEHSuccs(m_compiler))
-            {
-                block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
-                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
-                    return BasicBlockVisit::Continue;
-                });
-            }
-
-            VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
+            assert(!block->HasFlag(BBF_THROW_HELPER));
         }
     }
 
-#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
@@ -1610,6 +1598,34 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
         memoryLiveness |= succ->bbMemoryLiveIn;
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// fgSetThrowHelpBlockLiveness: set liveness for throw helper block
+//
+// Arguments:
+//  block -- potential throw helper block
+//
+void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
+{
+    VarSetOps::ClearD(this, block->bbLiveOut);
+
+    const bool keepAliveThis = lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked;
+    if (keepAliveThis)
+    {
+        unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
+        VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
+    }
+
+    if (block->HasPotentialEHSuccs(this))
+    {
+        block->VisitEHSuccs(this, [=](BasicBlock* succ) {
+            VarSetOps::UnionD(this, block->bbLiveOut, succ->bbLiveIn);
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    VarSetOps::Assign(this, block->bbLiveIn, block->bbLiveOut);
 }
 
 #ifdef DEBUG
@@ -1965,16 +1981,19 @@ bool Liveness<TLiveness>::ComputeLifeTrackedLocalDef(VARSET_TP&           life,
         // Dead store
         node->gtFlags |= GTF_VAR_DEATH;
 
-        // keepAliveVars always stay alive
-        noway_assert(!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex));
+        if (TLiveness::EliminateDeadCode)
+        {
+            // keepAliveVars always stay alive
+            noway_assert(!VarSetOps::IsMember(m_compiler, keepAliveVars, varIndex));
 
-        // Do not consider this store dead if the target local variable represents
-        // a promoted struct field of an address exposed local or if the address
-        // of the variable has been exposed. Improved alias analysis could allow
-        // stores to these sorts of variables to be removed at the cost of compile
-        // time.
-        return !varDsc.IsAddressExposed() &&
-               !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
+            // Do not consider this store dead if the target local variable represents
+            // a promoted struct field of an address exposed local or if the address
+            // of the variable has been exposed. Improved alias analysis could allow
+            // stores to these sorts of variables to be removed at the cost of compile
+            // time.
+            return !varDsc.IsAddressExposed() &&
+                   !(varDsc.lvIsStructField && m_compiler->lvaTable[varDsc.lvParentLcl].IsAddressExposed());
+        }
     }
 
     return false;
@@ -2011,7 +2030,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     // We have accurate ref counts when running late liveness so we can eliminate
     // some stores if the lhs local has a ref count of 1.
-    if (isDef && TLiveness::IsLIR && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
+    if (TLiveness::EliminateDeadCode && TLiveness::IsLIR && isDef && (varDsc.lvRefCnt() == 1) && !varDsc.lvPinned)
     {
         if (varDsc.lvIsStructField)
         {
@@ -2083,7 +2102,7 @@ bool Liveness<TLiveness>::ComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (isDef && !anyFieldLive)
+    if (TLiveness::EliminateDeadCode && isDef && !anyFieldLive)
     {
         // Do not consider this store dead if the parent local variable is an address exposed local or
         // if the struct has any significant padding we must retain the value of.
@@ -2328,7 +2347,8 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();
-                if ((call->TypeIs(TYP_VOID) || call->IsUnusedValue()) && !call->HasSideEffects(m_compiler))
+                if (TLiveness::EliminateDeadCode && (call->TypeIs(TYP_VOID) || call->IsUnusedValue()) &&
+                    !call->HasSideEffects(m_compiler))
                 {
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
@@ -2375,13 +2395,13 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 GenTreeLclVarCommon* const lclVarNode = node->AsLclVarCommon();
                 LclVarDsc&                 varDsc     = m_compiler->lvaTable[lclVarNode->GetLclNum()];
 
-                if (node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar use:\n");
                     DISPNODE(lclVarNode);
 
                     blockRange.Delete(m_compiler, block, node);
-                    if (varDsc.lvTracked && !m_compiler->opts.MinOpts())
+                    if (varDsc.lvTracked)
                     {
                         m_compiler->fgStmtRemoved = true;
                     }
@@ -2398,14 +2418,14 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             }
 
             case GT_LCL_ADDR:
-                if (node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar address:\n");
                     DISPNODE(node);
 
                     const bool isTracked = m_compiler->lvaTable[node->AsLclVarCommon()->GetLclNum()].lvTracked;
                     blockRange.Delete(m_compiler, block, node);
-                    if (isTracked && !m_compiler->opts.MinOpts())
+                    if (isTracked)
                     {
                         m_compiler->fgStmtRemoved = true;
                     }
@@ -2423,7 +2443,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     }
 
                     isDeadStore = ComputeLifeLocal(life, keepAliveVars, node);
-                    if (isDeadStore)
+                    if (TLiveness::EliminateDeadCode && isDeadStore)
                     {
                         LIR::Use addrUse;
                         if (blockRange.TryGetUse(node, &addrUse) && addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK))
@@ -2464,7 +2484,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     isDeadStore = ComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
 
-                if (isDeadStore && TryRemoveDeadStoreLIR(node, lclVarNode, block))
+                if (TLiveness::EliminateDeadCode && isDeadStore && TryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
                     GenTree* value = lclVarNode->Data();
                     value->SetUnusedValue();
@@ -2491,7 +2511,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
 #endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
-                if (node->IsUnusedValue())
+                if (TLiveness::EliminateDeadCode && node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead node:\n");
                     DISPNODE(node);
@@ -2693,6 +2713,11 @@ bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCom
 template <typename TLiveness>
 bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange)
 {
+    if (!TLiveness::EliminateDeadCode)
+    {
+        return false;
+    }
+
     assert(!node->OperIsLocal());
     if (!node->IsValue() || node->IsUnusedValue())
     {
@@ -2812,10 +2837,12 @@ void Compiler::fgSsaLiveness()
     {
         enum
         {
-            SsaLiveness           = true,
-            ComputeMemoryLiveness = true,
-            IsLIR                 = false,
-            IsEarly               = false,
+            SsaLiveness               = true,
+            ComputeMemoryLiveness     = true,
+            IsLIR                     = false,
+            IsEarly                   = false,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         SsaLivenessClass(Compiler* comp)
@@ -2837,10 +2864,12 @@ void Compiler::fgAsyncLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = true,
-            IsEarly               = false,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = true,
+            IsEarly                   = false,
+            EliminateDeadCode         = false,
+            TrackAddressExposedLocals = true,
         };
 
         AsyncLiveness(Compiler* comp)
@@ -2862,10 +2891,12 @@ void Compiler::fgPostLowerLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = true,
-            IsEarly               = false,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = true,
+            IsEarly                   = false,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         PostLowerLiveness(Compiler* comp)
@@ -2905,10 +2936,12 @@ PhaseStatus Compiler::fgEarlyLiveness()
     {
         enum
         {
-            SsaLiveness           = false,
-            ComputeMemoryLiveness = false,
-            IsLIR                 = false,
-            IsEarly               = true,
+            SsaLiveness               = false,
+            ComputeMemoryLiveness     = false,
+            IsLIR                     = false,
+            IsEarly                   = true,
+            EliminateDeadCode         = true,
+            TrackAddressExposedLocals = false,
         };
 
         EarlyLiveness(Compiler* comp)

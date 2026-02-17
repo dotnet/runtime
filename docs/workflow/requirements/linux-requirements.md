@@ -47,7 +47,7 @@ The packages you need to install are shown in the following list:
 - `lld`
 - `lldb`
 - `llvm`
-- `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `ninja-build`
 - `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
 - `python-is-python3`
 
@@ -116,7 +116,7 @@ Install the following packages for the toolchain:
 - `lldb`
 - `llvm`
 - `lttng-ust-devel`
-- `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `ninja-build`
 - `openssl-devel`
 - `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
 - `python`
