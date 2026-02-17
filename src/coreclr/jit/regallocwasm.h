@@ -48,6 +48,25 @@ public:
     }
 };
 
+struct InternalRegStack
+{
+    unsigned Count    = 0;
+    unsigned MaxCount = 0;
+
+    unsigned Push()
+    {
+        unsigned index = Count++;
+        assert(Count <= InternalRegs::MAX_REG_COUNT);
+        return index;
+    }
+
+    void PopAll()
+    {
+        MaxCount = max(MaxCount, Count);
+        Count    = 0;
+    }
+};
+
 struct VirtualRegReferences
 {
     GenTreeLclVarCommon*  Nodes[16];
@@ -57,10 +76,12 @@ struct VirtualRegReferences
 class WasmRegAlloc : public RegAllocInterface
 {
     Compiler*             m_compiler;
+    CodeGenInterface*     m_codeGen;
     BasicBlock*           m_currentBlock;
     VirtualRegStack       m_virtualRegs[static_cast<int>(WasmValueType::Count)];
     unsigned              m_lastVirtualRegRefsCount = 0;
     VirtualRegReferences* m_virtualRegRefs          = nullptr;
+    InternalRegStack      m_internalRegs[static_cast<int>(WasmValueType::Count)];
 
     // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
     // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
@@ -90,12 +111,17 @@ private:
     regNumber AllocateStackPointer();
     void      AllocateFramePointer();
     regNumber AllocateVirtualRegister(var_types type);
+    regNumber AllocateVirtualRegister(WasmValueType type);
+    regNumber AllocateInternalRegister(var_types type);
+    void      FreeInternalRegisters();
 
     void CollectReferences();
     void CollectReferencesForBlock(BasicBlock* block);
     void CollectReferencesForNode(GenTree* node);
+    void CollectReferencesForDivMod(GenTreeOp* divModNode);
     void RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void CollectReference(GenTreeLclVarCommon* node);
+    void RequestInternalRegForOperand(GenTree* node, GenTree* operand DEBUGARG(const char* reason));
 
     void ResolveReferences();
 
