@@ -809,6 +809,15 @@ namespace System.Reflection.Emit
                     if (t is not RuntimeType rtType)
                         throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(optionalCustomModifiers));
 
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.IsFunctionPointer)
+                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(optionalCustomModifiers));
+
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
                     int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
@@ -825,6 +834,15 @@ namespace System.Reflection.Emit
 
                     if (t is not RuntimeType rtType)
                         throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(requiredCustomModifiers));
+
+                    if (t.HasElementType)
+                        throw new ArgumentException(SR.Argument_ArraysInvalid, nameof(requiredCustomModifiers));
+
+                    if (t.ContainsGenericParameters)
+                        throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
+
+                    if (t.IsFunctionPointer)
+                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(requiredCustomModifiers));
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 

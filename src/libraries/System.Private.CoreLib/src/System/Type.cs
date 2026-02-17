@@ -699,9 +699,9 @@ namespace System
             {
                 // Newer or multiple calling conventions specified -> encoded as modopts
                 returnType = MakeModifiedSignatureType(
-                    returnType.UnderlyingSystemType,
-                    returnType.GetRequiredCustomModifiers(),
-                    optionalCustomModifiers: [.. callingConventions, .. returnType.GetOptionalCustomModifiers()]);
+                    returnType,
+                    requiredCustomModifiers: [],
+                    optionalCustomModifiers: callingConventions);
             }
 
             return new SignatureFunctionPointerType(

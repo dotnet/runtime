@@ -460,6 +460,54 @@ namespace System.Reflection.Tests
             Assert.Equal(typeof(IsVolatile).ToString(), t.GetOptionalCustomModifiers()[0].ToString());
         }
 
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested1()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    typeof(int),
+                    [typeof(IsVolatile)], []),
+                [typeof(IsConst)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(int));
+            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], type.GetRequiredCustomModifiers());
+            Assert.Equal([], type.GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested2()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    typeof(bool),
+                    [],
+                    [typeof(CallConvSuppressGCTransition), typeof(CallConvCdecl)]),
+            [typeof(IsConst)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(bool));
+            Assert.Equal([typeof(IsConst)], type.GetRequiredCustomModifiers());
+            Assert.Equal([typeof(CallConvSuppressGCTransition), typeof(CallConvCdecl)], type.GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested3()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    Type.MakeModifiedSignatureType(
+                        typeof(long),
+                        [typeof(IsLong)], []),
+                    [typeof(IsConst)], []),
+                [typeof(IsVolatile)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(long));
+            Assert.Equal([typeof(IsLong), typeof(IsConst), typeof(IsVolatile)], type.GetRequiredCustomModifiers());
+            Assert.Equal([], type.GetOptionalCustomModifiers());
+        }
+
         [Theory]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(Span<>))]

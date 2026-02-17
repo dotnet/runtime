@@ -5,9 +5,16 @@ namespace System.Reflection
 {
     internal sealed class SignatureModifiedType : SignatureType
     {
-        internal SignatureModifiedType(Type unmodifiedType, Type[] requiredCustomModifiers, Type[] optionalCustomModifiers)
+        internal SignatureModifiedType(Type baseType, Type[] requiredCustomModifiers, Type[] optionalCustomModifiers)
         {
-            _unmodifiedType = unmodifiedType;
+            if (baseType is SignatureModifiedType modifiedType)
+            {
+                baseType = modifiedType.UnderlyingSystemType;
+                requiredCustomModifiers = [.. modifiedType.GetRequiredCustomModifiers(), .. requiredCustomModifiers];
+                optionalCustomModifiers = [.. modifiedType.GetOptionalCustomModifiers(), .. optionalCustomModifiers];
+            }
+
+            _unmodifiedType = baseType;
             _requiredCustomModifiers = requiredCustomModifiers;
             _optionalCustomModifiers = optionalCustomModifiers;
         }

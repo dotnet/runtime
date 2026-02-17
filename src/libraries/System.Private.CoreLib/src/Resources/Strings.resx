@@ -4453,4 +4453,7 @@
   <data name="NotSupported_FunctionPointerSignature">
     <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
   </data>
+  <data name="Argument_FunctionPointersInvalid">
+    <value>Function pointer types are not valid.</value>
+  </data>
 </root>
