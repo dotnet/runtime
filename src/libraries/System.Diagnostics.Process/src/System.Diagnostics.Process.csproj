@@ -233,8 +233,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.ProcThreadAttributeList.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ResumeThread_IntPtr.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.ResumeThread_IntPtr.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />

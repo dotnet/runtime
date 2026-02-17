@@ -259,39 +259,21 @@ namespace Microsoft.Win32.SafeHandles
                     commandLine.Dispose();
                 }
 
-                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != new IntPtr(-1))
-                {
-                    if (createSuspended && processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
-                    {
-                        procSH = new(processInfo.hProcess, processInfo.hThread, processGroupJobHandle, processInfo.dwProcessId);
-                    }
-                    else
-                    {
-                        procSH = new(processInfo.hProcess, IntPtr.Zero, processGroupJobHandle, processInfo.dwProcessId);
-                        if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
-                            Interop.Kernel32.CloseHandle(processInfo.hThread);
-                    }
-                }
-                else if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != new IntPtr(-1))
-                {
-                    Interop.Kernel32.CloseHandle(processInfo.hThread);
-                }
-
-                if (procSH is null)
+                if (errorCode != 0)
                 {
                     throw new Win32Exception(errorCode);
                 }
-            }
-            catch
-            {
-                procSH?.Dispose();
 
-                if (processGroupJobHandle != IntPtr.Zero)
+                procSH = new SafeProcessHandle(
+                    processInfo.hProcess,
+                    createSuspended ? processInfo.hThread : IntPtr.Zero,
+                    processGroupJobHandle,
+                    processInfo.dwProcessId);
+
+                if (!createSuspended)
                 {
-                    Interop.Kernel32.CloseHandle(processGroupJobHandle);
+                    Interop.Kernel32.CloseHandle(processInfo.hThread);
                 }
-
-                throw;
             }
             finally
             {
@@ -301,6 +283,24 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
                     Marshal.FreeHGlobal(attributeListBuffer);
+                }
+
+                if (procSH is null)
+                {
+                    if (processInfo.hProcess != IntPtr.Zero)
+                    {
+                        Interop.Kernel32.CloseHandle(processInfo.hProcess);
+                    }
+
+                    if (processInfo.hThread != IntPtr.Zero)
+                    {
+                        Interop.Kernel32.CloseHandle(processInfo.hThread);
+                    }
+
+                    if (processGroupJobHandle != IntPtr.Zero)
+                    {
+                        Interop.Kernel32.CloseHandle(processGroupJobHandle);
+                    }
                 }
             }
 
@@ -377,7 +377,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             processWaitHandle.WaitOne(Timeout.Infinite);
 
-            return new(GetExitCode(), false);
+            return new ProcessExitStatus(GetExitCode(), false);
         }
 
         private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
@@ -389,7 +389,7 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            exitStatus = new(GetExitCode(), false);
+            exitStatus = new ProcessExitStatus(GetExitCode(), false);
             return true;
         }
 
@@ -403,7 +403,7 @@ namespace Microsoft.Win32.SafeHandles
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
-            return new(GetExitCode(), wasKilledOnTimeout);
+            return new ProcessExitStatus(GetExitCode(), wasKilledOnTimeout);
         }
 
         private async Task<ProcessExitStatus> WaitForExitAsyncCore(CancellationToken cancellationToken)
@@ -442,7 +442,7 @@ namespace Microsoft.Win32.SafeHandles
                 registeredWaitHandle?.Unregister(null);
             }
 
-            return new(GetExitCode(), false);
+            return new ProcessExitStatus(GetExitCode(), false);
         }
 
         private async Task<ProcessExitStatus> WaitForExitOrKillOnCancellationAsyncCore(CancellationToken cancellationToken)
@@ -483,7 +483,7 @@ namespace Microsoft.Win32.SafeHandles
                 registeredWaitHandle?.Unregister(null);
             }
 
-            return new(GetExitCode(), wasKilledBox.Value);
+            return new ProcessExitStatus(GetExitCode(), wasKilledBox.Value);
         }
 
         internal bool KillCore(bool throwOnError, bool entireProcessGroup = false)
