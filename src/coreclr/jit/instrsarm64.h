@@ -1528,7 +1528,7 @@ INST1(sha1su0,     "sha1su0",      0,      IF_DV_3F,  0x5E003000)
                                    //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S  (vector)
 
 INST1(sha1su1,     "sha1su1",      0,      IF_DV_2U,  0x5E281800)
-                                   //  sha1su1 Vd.4S, Vn.4S         DV_2P  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
+                                   //  sha1su1 Vd.4S, Vn.4S         DV_2U  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256h,     "sha256h",      0,      IF_DV_3F,  0x5E004000)
                                    //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010000nnnnnddddd   5E00 4000   Qd Qn Vm.4S   (vector)
@@ -1537,7 +1537,7 @@ INST1(sha256h2,    "sha256h2",     0,      IF_DV_3F,  0x5E005000)
                                    //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010100nnnnnddddd   5E00 5000   Qd Qn Vm.4S   (vector)
 
 INST1(sha256su0,   "sha256su0",    0,      IF_DV_2U,  0x5E282800)
-                                   // sha256su0  Vd.4S,Vn.4S        DV_2P  0101111000101000 001010nnnnnddddd   5E28 2800   Vd.4S Vn.4S   (vector)
+                                   // sha256su0  Vd.4S,Vn.4S        DV_2U  0101111000101000 001010nnnnnddddd   5E28 2800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256su1,   "sha256su1",    0,      IF_DV_3F,  0x5E006000)
                                    // sha256su1  Vd.4S,Vn.4S,Vm.4S  DV_3F  01011110000mmmmm 011000nnnnnddddd   5E00 6000   Vd.4S Vn.4S Vm.4S  (vector)
@@ -2078,12 +2078,11 @@ INST1(sm4ekey,   "sm4ekey",        0,      IF_DV_3H,  0xCE60C800)
 INST1(xar,       "xar",            0,      IF_DV_3I,  0xCE800000)
                                    //  xar Vd.2D,Vn.2D,Vm.2D,#imm6          DV_3I  11001110100mmmmm iiiiiinnnnnddddd      Vd Vn Vm imm (vector)
 
-INST1(sha512su0,"sha512su0",     0,      IF_DV_2V,  0xCEC08000)
-                                   //  sha512su0 Vd.2D,Vn.2D               DV_2V  1100111011000000 100000nnnnnddddd      Vd Vn       (vector)
-
+INST1(sha512su0,"sha512su0",       0,      IF_DV_2V,  0xCEC08000)
+                                   //  sha512su0 Vd.2D,Vn.2D                DV_2V  1100111011000000 100000nnnnnddddd      Vd Vn       (vector)
 
 INST1(sm4e,      "sm4e",           0,      IF_DV_2V,  0xCEC08400)
-                                   //  sm4e Vd.4S,Vn.4S                     DV_2V  1100111011000000 100000nnnnnddddd      Vd Vn       (vector)
+                                   //  sm4e Vd.4S,Vn.4S                     DV_2V  1100111011000000 100001nnnnnddddd      Vd Vn       (vector)
 
 // clang-format on
 

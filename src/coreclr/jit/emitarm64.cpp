@@ -6747,9 +6747,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_rax1:
             assert(size == EA_16BYTE);
             assert(opt == INS_OPTS_2D);
-            assert(reg1);
-            assert(reg2);
-            assert(reg3);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
             fmt = IF_DV_3H;
             break;
 
@@ -6758,9 +6758,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sm4ekey:
             assert(size == EA_16BYTE);
             assert(opt == INS_OPTS_4S);
-            assert(reg1);
-            assert(reg2);
-            assert(reg3);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
             fmt = IF_DV_3H;
             break;
 
