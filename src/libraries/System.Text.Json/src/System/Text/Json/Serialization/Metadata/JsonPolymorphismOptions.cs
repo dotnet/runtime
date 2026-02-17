@@ -131,14 +131,15 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Walks the DerivedTypes list (which may grow during iteration) and appends
         /// any additional derived types found via transitive [JsonDerivedType] declarations
-        /// on already-known derived types. Uses a set to prevent duplicates and cycles.
+        /// on already-known derived types. Types with [JsonPolymorphic] are treated as
+        /// boundary nodes and are not traversed. Uses a set to prevent duplicates and cycles.
         /// </summary>
-        private static void CollectTransitiveDerivedTypes(JsonPolymorphismOptions opts, Type root)
+        private static void CollectTransitiveDerivedTypes(JsonPolymorphismOptions options, Type root)
         {
             HashSet<Type>? seen = null;
-            for (int i = 0; i < opts.DerivedTypes.Count; i++)
+            for (int i = 0; i < options.DerivedTypes.Count; i++)
             {
-                Type child = opts.DerivedTypes[i].DerivedType;
+                Type child = options.DerivedTypes[i].DerivedType;
 
                 // Do not walk through types that declare their own [JsonPolymorphic] configuration;
                 // those define an independent polymorphic scheme and their [JsonDerivedType] entries
@@ -155,7 +156,7 @@ namespace System.Text.Json.Serialization.Metadata
                         // Seed with the root type and all types already declared directly
                         // so that we never re-add a type the author already listed.
                         seen = new HashSet<Type> { root };
-                        foreach (JsonDerivedType dt in opts.DerivedTypes)
+                        foreach (JsonDerivedType dt in options.DerivedTypes)
                         {
                             seen.Add(dt.DerivedType);
                         }
@@ -163,7 +164,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                     if (seen.Add(a.DerivedType))
                     {
-                        opts.DerivedTypes.Add(new JsonDerivedType(a.DerivedType, a.TypeDiscriminator));
+                        options.DerivedTypes.Add(new JsonDerivedType(a.DerivedType, a.TypeDiscriminator));
                     }
                 }
             }
