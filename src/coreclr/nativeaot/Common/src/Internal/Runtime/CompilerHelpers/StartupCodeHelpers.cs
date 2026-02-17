@@ -96,10 +96,10 @@ namespace Internal.Runtime.CompilerHelpers
 
                     // Rehydrate any dehydrated data structures
                     IntPtr dehydratedDataSection = RuntimeImports.RhGetModuleSection(
-                        handle, ReadyToRunSectionType.DehydratedData, out int dehydratedDataLength);
+                        handle, ReadyToRunSectionType.DehydratedData, out _);
                     if (dehydratedDataSection != IntPtr.Zero)
                     {
-                        RehydrateData(dehydratedDataSection, dehydratedDataLength);
+                        RehydrateData(dehydratedDataSection);
                     }
 
                     pHandles[moduleIndex++] = handle;
@@ -244,17 +244,17 @@ namespace Internal.Runtime.CompilerHelpers
                 => (byte*)address + *(int*)address;
         }
 
-        private static unsafe void RehydrateData(IntPtr dehydratedData, int length)
+        private static unsafe void RehydrateData(IntPtr dehydratedData)
         {
             // Destination for the hydrated data is in the first 32-bit relative pointer
             byte* pDest = (byte*)ReadRelPtr32((void*)dehydratedData);
 
-            // Next is the number of fixups at the end of the stream
-            int numFixups = *(int*)(dehydratedData + sizeof(int));
+            // Next is length of the dehydrated data
+            int length = *(int*)(dehydratedData + sizeof(int));
 
             // The dehydrated data follows
             byte* pCurrent = (byte*)dehydratedData + sizeof(int) * 2;
-            byte* pEnd = (byte*)dehydratedData + length - (sizeof(int) * numFixups);
+            byte* pEnd = (byte*)dehydratedData + length;
 
             // Fixup table immediately follows the command stream
             int* pFixups = (int*)pEnd;
