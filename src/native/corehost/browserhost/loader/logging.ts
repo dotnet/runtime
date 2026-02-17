@@ -50,7 +50,11 @@ export function normalizeException(reason: any) {
     let res = "unknown exception";
     if (reason) {
         if (typeof reason === "object" && reason.status === undefined && reason.stack === undefined) {
-            reason.stack = new Error().stack + "";
+            try {
+                reason.stack = new Error().stack + "";
+            } catch {
+                // Ignore failure to assign stack; continue logging with what we have.
+            }
         }
         if (reason.message) {
             res = reason.message;
