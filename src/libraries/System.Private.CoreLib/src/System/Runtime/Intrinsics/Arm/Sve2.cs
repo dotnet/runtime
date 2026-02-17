@@ -380,14 +380,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svaddp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svaddp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<byte> AddPairwise(Vector<byte> left, Vector<byte> right) => AddPairwise(left, right);
 
         /// <summary>
         /// svfloat64_t svaddp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// svfloat64_t svaddp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
-        ///   FADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   FADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<double> AddPairwise(Vector<double> left, Vector<double> right) => AddPairwise(left, right);
@@ -396,14 +394,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svaddp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svaddp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<short> AddPairwise(Vector<short> left, Vector<short> right) => AddPairwise(left, right);
 
         /// <summary>
         /// svint32_t svaddp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svaddp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<int> AddPairwise(Vector<int> left, Vector<int> right) => AddPairwise(left, right);
@@ -412,14 +408,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svaddp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svaddp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<long> AddPairwise(Vector<long> left, Vector<long> right) => AddPairwise(left, right);
 
         /// <summary>
         /// svint8_t svaddp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svaddp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   ADDP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<sbyte> AddPairwise(Vector<sbyte> left, Vector<sbyte> right) => AddPairwise(left, right);
@@ -428,14 +422,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svaddp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         /// svfloat32_t svaddp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         ///   FADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   FADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<float> AddPairwise(Vector<float> left, Vector<float> right) => AddPairwise(left, right);
 
         /// <summary>
         /// svuint16_t svaddp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svaddp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   ADDP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<ushort> AddPairwise(Vector<ushort> left, Vector<ushort> right) => AddPairwise(left, right);
@@ -444,14 +436,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svaddp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svaddp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   ADDP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<uint> AddPairwise(Vector<uint> left, Vector<uint> right) => AddPairwise(left, right);
 
         /// <summary>
         /// svuint64_t svaddp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svaddp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   ADDP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<ulong> AddPairwise(Vector<ulong> left, Vector<ulong> right) => AddPairwise(left, right);
@@ -463,7 +453,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svadalp[_s16]_x(svbool_t pg, svint16_t op1, svint8_t op2)
         /// svint16_t svadalp[_s16]_z(svbool_t pg, svint16_t op1, svint8_t op2)
         ///   SADALP Ztied1.H, Pg/M, Zop2.B
-        ///   SADALP Ztied1.H, Pg/M, Zop2.B
         /// </summary>
         public static Vector<short> AddPairwiseWideningAndAdd(Vector<short> left, Vector<sbyte> right) => AddPairwiseWideningAndAdd(left, right);
 
@@ -471,7 +460,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svadalp[_s32]_m(svbool_t pg, svint32_t op1, svint16_t op2)
         /// svint32_t svadalp[_s32]_x(svbool_t pg, svint32_t op1, svint16_t op2)
         /// svint32_t svadalp[_s32]_z(svbool_t pg, svint32_t op1, svint16_t op2)
-        ///   SADALP Ztied1.S, Pg/M, Zop2.H
         ///   SADALP Ztied1.S, Pg/M, Zop2.H
         /// </summary>
         public static Vector<int> AddPairwiseWideningAndAdd(Vector<int> left, Vector<short> right) => AddPairwiseWideningAndAdd(left, right);
@@ -481,7 +469,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svadalp[_s64]_x(svbool_t pg, svint64_t op1, svint32_t op2)
         /// svint64_t svadalp[_s64]_z(svbool_t pg, svint64_t op1, svint32_t op2)
         ///   SADALP Ztied1.D, Pg/M, Zop2.S
-        ///   SADALP Ztied1.D, Pg/M, Zop2.S
         /// </summary>
         public static Vector<long> AddPairwiseWideningAndAdd(Vector<long> left, Vector<int> right) => AddPairwiseWideningAndAdd(left, right);
 
@@ -489,7 +476,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svadalp[_u16]_m(svbool_t pg, svuint16_t op1, svuint8_t op2)
         /// svuint16_t svadalp[_u16]_x(svbool_t pg, svuint16_t op1, svuint8_t op2)
         /// svuint16_t svadalp[_u16]_z(svbool_t pg, svuint16_t op1, svuint8_t op2)
-        ///   UADALP Ztied1.H, Pg/M, Zop2.B
         ///   UADALP Ztied1.H, Pg/M, Zop2.B
         /// </summary>
         public static Vector<ushort> AddPairwiseWideningAndAdd(Vector<ushort> left, Vector<byte> right) => AddPairwiseWideningAndAdd(left, right);
@@ -499,7 +485,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadalp[_u32]_x(svbool_t pg, svuint32_t op1, svuint16_t op2)
         /// svuint32_t svadalp[_u32]_z(svbool_t pg, svuint32_t op1, svuint16_t op2)
         ///   UADALP Ztied1.S, Pg/M, Zop2.H
-        ///   UADALP Ztied1.S, Pg/M, Zop2.H
         /// </summary>
         public static Vector<uint> AddPairwiseWideningAndAdd(Vector<uint> left, Vector<ushort> right) => AddPairwiseWideningAndAdd(left, right);
 
@@ -507,7 +492,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svadalp[_u64]_m(svbool_t pg, svuint64_t op1, svuint32_t op2)
         /// svuint64_t svadalp[_u64]_x(svbool_t pg, svuint64_t op1, svuint32_t op2)
         /// svuint64_t svadalp[_u64]_z(svbool_t pg, svuint64_t op1, svuint32_t op2)
-        ///   UADALP Ztied1.D, Pg/M, Zop2.S
         ///   UADALP Ztied1.D, Pg/M, Zop2.S
         /// </summary>
         public static Vector<ulong> AddPairwiseWideningAndAdd(Vector<ulong> left, Vector<uint> right) => AddPairwiseWideningAndAdd(left, right);
@@ -722,6 +706,74 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static new Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
 
+        // Saturating add with signed addend
+
+        /// <summary>
+        /// svuint8_t svsqadd[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
+        /// svuint8_t svsqadd[_u8]_x(svbool_t pg, svuint8_t op1, svint8_t op2)
+        /// svuint8_t svsqadd[_u8]_z(svbool_t pg, svuint8_t op1, svint8_t op2)
+        ///   USQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static Vector<byte> AddSaturate(Vector<byte> left, Vector<sbyte> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint16_t svsqadd[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
+        /// svuint16_t svsqadd[_u16]_x(svbool_t pg, svuint16_t op1, svint16_t op2)
+        /// svuint16_t svsqadd[_u16]_z(svbool_t pg, svuint16_t op1, svint16_t op2)
+        ///   USQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static Vector<ushort> AddSaturate(Vector<ushort> left, Vector<short> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint32_t svsqadd[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
+        /// svuint32_t svsqadd[_u32]_x(svbool_t pg, svuint32_t op1, svint32_t op2)
+        /// svuint32_t svsqadd[_u32]_z(svbool_t pg, svuint32_t op1, svint32_t op2)
+        ///   USQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static Vector<uint> AddSaturate(Vector<uint> left, Vector<int> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svuint64_t svsqadd[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
+        /// svuint64_t svsqadd[_u64]_x(svbool_t pg, svuint64_t op1, svint64_t op2)
+        /// svuint64_t svsqadd[_u64]_z(svbool_t pg, svuint64_t op1, svint64_t op2)
+        ///   USQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static Vector<ulong> AddSaturate(Vector<ulong> left, Vector<long> right) => AddSaturate(left, right);
+
+        // Saturating add with unsigned addend
+
+        /// <summary>
+        /// svint16_t svuqadd[_s16]_m(svbool_t pg, svint16_t op1, svuint16_t op2)
+        /// svint16_t svuqadd[_s16]_x(svbool_t pg, svint16_t op1, svuint16_t op2)
+        /// svint16_t svuqadd[_s16]_z(svbool_t pg, svint16_t op1, svuint16_t op2)
+        ///   SUQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> AddSaturate(Vector<short> left, Vector<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint32_t svuqadd[_s32]_m(svbool_t pg, svint32_t op1, svuint32_t op2)
+        /// svint32_t svuqadd[_s32]_x(svbool_t pg, svint32_t op1, svuint32_t op2)
+        /// svint32_t svuqadd[_s32]_z(svbool_t pg, svint32_t op1, svuint32_t op2)
+        ///   SUQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> AddSaturate(Vector<int> left, Vector<uint> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint64_t svuqadd[_s64]_m(svbool_t pg, svint64_t op1, svuint64_t op2)
+        /// svint64_t svuqadd[_s64]_x(svbool_t pg, svint64_t op1, svuint64_t op2)
+        /// svint64_t svuqadd[_s64]_z(svbool_t pg, svint64_t op1, svuint64_t op2)
+        ///   SUQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> AddSaturate(Vector<long> left, Vector<ulong> right) => AddSaturate(left, right);
+
+        /// <summary>
+        /// svint8_t svuqadd[_s8]_m(svbool_t pg, svint8_t op1, svuint8_t op2)
+        /// svint8_t svuqadd[_s8]_x(svbool_t pg, svint8_t op1, svuint8_t op2)
+        /// svint8_t svuqadd[_s8]_z(svbool_t pg, svint8_t op1, svuint8_t op2)
+        ///   SUQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> AddSaturate(Vector<sbyte> left, Vector<byte> right) => AddSaturate(left, right);
+
         // Saturating complex add with rotate
 
         /// <summary>
@@ -748,82 +800,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<sbyte> AddSaturateRotateComplex(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(left, right, rotation);
 
-
-        // Saturating add with signed addend
-
-        /// <summary>
-        /// svuint8_t svsqadd[_u8]_m(svbool_t pg, svuint8_t op1, svint8_t op2)
-        /// svuint8_t svsqadd[_u8]_x(svbool_t pg, svuint8_t op1, svint8_t op2)
-        /// svuint8_t svsqadd[_u8]_z(svbool_t pg, svuint8_t op1, svint8_t op2)
-        ///   USQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   USQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        /// </summary>
-        public static Vector<byte> AddSaturateWithSignedAddend(Vector<byte> left, Vector<sbyte> right) => AddSaturateWithSignedAddend(left, right);
-
-        /// <summary>
-        /// svuint16_t svsqadd[_u16]_m(svbool_t pg, svuint16_t op1, svint16_t op2)
-        /// svuint16_t svsqadd[_u16]_x(svbool_t pg, svuint16_t op1, svint16_t op2)
-        /// svuint16_t svsqadd[_u16]_z(svbool_t pg, svuint16_t op1, svint16_t op2)
-        ///   USQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   USQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        /// </summary>
-        public static Vector<ushort> AddSaturateWithSignedAddend(Vector<ushort> left, Vector<short> right) => AddSaturateWithSignedAddend(left, right);
-
-        /// <summary>
-        /// svuint32_t svsqadd[_u32]_m(svbool_t pg, svuint32_t op1, svint32_t op2)
-        /// svuint32_t svsqadd[_u32]_x(svbool_t pg, svuint32_t op1, svint32_t op2)
-        /// svuint32_t svsqadd[_u32]_z(svbool_t pg, svuint32_t op1, svint32_t op2)
-        ///   USQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   USQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        /// </summary>
-        public static Vector<uint> AddSaturateWithSignedAddend(Vector<uint> left, Vector<int> right) => AddSaturateWithSignedAddend(left, right);
-
-        /// <summary>
-        /// svuint64_t svsqadd[_u64]_m(svbool_t pg, svuint64_t op1, svint64_t op2)
-        /// svuint64_t svsqadd[_u64]_x(svbool_t pg, svuint64_t op1, svint64_t op2)
-        /// svuint64_t svsqadd[_u64]_z(svbool_t pg, svuint64_t op1, svint64_t op2)
-        ///   USQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   USQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        /// </summary>
-        public static Vector<ulong> AddSaturateWithSignedAddend(Vector<ulong> left, Vector<long> right) => AddSaturateWithSignedAddend(left, right);
-
-        // Saturating add with unsigned addend
-
-        /// <summary>
-        /// svint16_t svuqadd[_s16]_m(svbool_t pg, svint16_t op1, svuint16_t op2)
-        /// svint16_t svuqadd[_s16]_x(svbool_t pg, svint16_t op1, svuint16_t op2)
-        /// svint16_t svuqadd[_s16]_z(svbool_t pg, svint16_t op1, svuint16_t op2)
-        ///   SUQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   SUQADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        /// </summary>
-        public static unsafe Vector<short> AddSaturateWithUnsignedAddend(Vector<short> left, Vector<ushort> right) => AddSaturateWithUnsignedAddend(left, right);
-
-        /// <summary>
-        /// svint32_t svuqadd[_s32]_m(svbool_t pg, svint32_t op1, svuint32_t op2)
-        /// svint32_t svuqadd[_s32]_x(svbool_t pg, svint32_t op1, svuint32_t op2)
-        /// svint32_t svuqadd[_s32]_z(svbool_t pg, svint32_t op1, svuint32_t op2)
-        ///   SUQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SUQADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        /// </summary>
-        public static unsafe Vector<int> AddSaturateWithUnsignedAddend(Vector<int> left, Vector<uint> right) => AddSaturateWithUnsignedAddend(left, right);
-
-        /// <summary>
-        /// svint64_t svuqadd[_s64]_m(svbool_t pg, svint64_t op1, svuint64_t op2)
-        /// svint64_t svuqadd[_s64]_x(svbool_t pg, svint64_t op1, svuint64_t op2)
-        /// svint64_t svuqadd[_s64]_z(svbool_t pg, svint64_t op1, svuint64_t op2)
-        ///   SUQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   SUQADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        /// </summary>
-        public static unsafe Vector<long> AddSaturateWithUnsignedAddend(Vector<long> left, Vector<ulong> right) => AddSaturateWithUnsignedAddend(left, right);
-
-        /// <summary>
-        /// svint8_t svuqadd[_s8]_m(svbool_t pg, svint8_t op1, svuint8_t op2)
-        /// svint8_t svuqadd[_s8]_x(svbool_t pg, svint8_t op1, svuint8_t op2)
-        /// svint8_t svuqadd[_s8]_z(svbool_t pg, svint8_t op1, svuint8_t op2)
-        ///   SUQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SUQADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        /// </summary>
-        public static unsafe Vector<sbyte> AddSaturateWithUnsignedAddend(Vector<sbyte> left, Vector<byte> right) => AddSaturateWithUnsignedAddend(left, right);
 
         // Add wide (bottom)
 
@@ -1202,7 +1178,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svcvtnt_f32[_f64]_m(svfloat32_t even, svbool_t pg, svfloat64_t op)
         /// svfloat32_t svcvtnt_f32[_f64]_x(svfloat32_t even, svbool_t pg, svfloat64_t op)
         ///   FCVTNT Ztied.S, Pg/M, Zop.D
-        ///   FCVTNT Ztied.S, Pg/M, Zop.D
         /// </summary>
         public static Vector<float> ConvertToSingleOdd(Vector<float> even, Vector<double> value) => ConvertToSingleOdd(even, value);
 
@@ -1211,7 +1186,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// svfloat32_t svcvtxnt_f32[_f64]_m(svfloat32_t even, svbool_t pg, svfloat64_t op)
         /// svfloat32_t svcvtxnt_f32[_f64]_x(svfloat32_t even, svbool_t pg, svfloat64_t op)
-        ///   FCVTXNT Ztied.S, Pg/M, Zop.D
         ///   FCVTXNT Ztied.S, Pg/M, Zop.D
         /// </summary>
         public static Vector<float> ConvertToSingleOddRoundToOdd(Vector<float> even, Vector<double> value) => ConvertToSingleOddRoundToOdd(even, value);
@@ -1270,7 +1244,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svhadd[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svhadd[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   UHADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// </summary>
         public static Vector<byte> FusedAddHalving(Vector<byte> left, Vector<byte> right) => FusedAddHalving(left, right);
@@ -1279,7 +1252,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svhadd[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svhadd[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svhadd[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   SHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SHADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// </summary>
@@ -1290,7 +1262,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svhadd[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svhadd[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   SHADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// </summary>
         public static Vector<int> FusedAddHalving(Vector<int> left, Vector<int> right) => FusedAddHalving(left, right);
@@ -1299,7 +1270,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svhadd[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svhadd[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svhadd[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   SHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SHADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// </summary>
@@ -1310,7 +1280,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t svhadd[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svhadd[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SHADD Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   SHADD Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// </summary>
         public static Vector<sbyte> FusedAddHalving(Vector<sbyte> left, Vector<sbyte> right) => FusedAddHalving(left, right);
@@ -1319,7 +1288,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svhadd[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svhadd[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svhadd[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UHADD Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UHADD Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// </summary>
@@ -1330,7 +1298,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svhadd[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svhadd[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   UHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UHADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   UHADD Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// </summary>
         public static Vector<uint> FusedAddHalving(Vector<uint> left, Vector<uint> right) => FusedAddHalving(left, right);
@@ -1339,7 +1306,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svhadd[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svhadd[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svhadd[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UHADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UHADD Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// </summary>
@@ -1352,7 +1318,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svhsub[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svhsub[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   UHSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// </summary>
         public static Vector<byte> FusedSubtractHalving(Vector<byte> left, Vector<byte> right) => FusedSubtractHalving(left, right);
@@ -1361,7 +1326,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svhsub[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svhsub[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svhsub[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   SHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SHSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// </summary>
@@ -1372,7 +1336,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svhsub[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svhsub[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   SHSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// </summary>
         public static Vector<int> FusedSubtractHalving(Vector<int> left, Vector<int> right) => FusedSubtractHalving(left, right);
@@ -1381,7 +1344,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svhsub[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svhsub[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svhsub[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   SHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SHSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// </summary>
@@ -1392,7 +1354,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t svhsub[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svhsub[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SHSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   SHSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         /// </summary>
         public static Vector<sbyte> FusedSubtractHalving(Vector<sbyte> left, Vector<sbyte> right) => FusedSubtractHalving(left, right);
@@ -1401,7 +1362,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svhsub[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svhsub[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svhsub[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UHSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UHSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         /// </summary>
@@ -1412,7 +1372,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svhsub[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svhsub[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   UHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UHSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   UHSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         /// </summary>
         public static Vector<uint> FusedSubtractHalving(Vector<uint> left, Vector<uint> right) => FusedSubtractHalving(left, right);
@@ -1421,7 +1380,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svhsub[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svhsub[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svhsub[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UHSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UHSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         /// </summary>
@@ -1603,14 +1561,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat64_t svmaxnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// svfloat64_t svmaxnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         ///   FMAXNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   FMAXNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<double> MaxNumberPairwise(Vector<double> left, Vector<double> right) => MaxNumberPairwise(left, right);
 
         /// <summary>
         /// svfloat32_t svmaxnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         /// svfloat32_t svmaxnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
-        ///   FMAXNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   FMAXNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<float> MaxNumberPairwise(Vector<float> left, Vector<float> right) => MaxNumberPairwise(left, right);
@@ -1621,14 +1577,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svmaxp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svmaxp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<byte> MaxPairwise(Vector<byte> left, Vector<byte> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// svfloat64_t svmaxp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// svfloat64_t svmaxp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
-        ///   FMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   FMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<double> MaxPairwise(Vector<double> left, Vector<double> right) => MaxPairwise(left, right);
@@ -1637,14 +1591,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svmaxp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svmaxp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   SMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<short> MaxPairwise(Vector<short> left, Vector<short> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// svint32_t svmaxp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svmaxp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   SMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   SMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<int> MaxPairwise(Vector<int> left, Vector<int> right) => MaxPairwise(left, right);
@@ -1653,14 +1605,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svmaxp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svmaxp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   SMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<long> MaxPairwise(Vector<long> left, Vector<long> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// svint8_t svmaxp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svmaxp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   SMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   SMAXP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<sbyte> MaxPairwise(Vector<sbyte> left, Vector<sbyte> right) => MaxPairwise(left, right);
@@ -1669,14 +1619,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svmaxp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         /// svfloat32_t svmaxp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         ///   FMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   FMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<float> MaxPairwise(Vector<float> left, Vector<float> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// svuint16_t svmaxp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svmaxp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UMAXP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<ushort> MaxPairwise(Vector<ushort> left, Vector<ushort> right) => MaxPairwise(left, right);
@@ -1685,14 +1633,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svmaxp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svmaxp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   UMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UMAXP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<uint> MaxPairwise(Vector<uint> left, Vector<uint> right) => MaxPairwise(left, right);
 
         /// <summary>
         /// svuint64_t svmaxp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svmaxp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UMAXP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<ulong> MaxPairwise(Vector<ulong> left, Vector<ulong> right) => MaxPairwise(left, right);
@@ -1703,14 +1649,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat64_t svminnmp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// svfloat64_t svminnmp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         ///   FMINNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   FMINNMP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<double> MinNumberPairwise(Vector<double> left, Vector<double> right) => MinNumberPairwise(left, right);
 
         /// <summary>
         /// svfloat32_t svminnmp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         /// svfloat32_t svminnmp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
-        ///   FMINNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   FMINNMP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<float> MinNumberPairwise(Vector<float> left, Vector<float> right) => MinNumberPairwise(left, right);
@@ -1721,14 +1665,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svminp[_u8]_m(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svminp[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<byte> MinPairwise(Vector<byte> left, Vector<byte> right) => MinPairwise(left, right);
 
         /// <summary>
         /// svfloat64_t svminp[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
         /// svfloat64_t svminp[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2)
-        ///   FMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   FMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<double> MinPairwise(Vector<double> left, Vector<double> right) => MinPairwise(left, right);
@@ -1737,14 +1679,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svminp[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svminp[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         ///   SMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
-        ///   SMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<short> MinPairwise(Vector<short> left, Vector<short> right) => MinPairwise(left, right);
 
         /// <summary>
         /// svint32_t svminp[_s32]_m(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svminp[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
-        ///   SMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   SMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<int> MinPairwise(Vector<int> left, Vector<int> right) => MinPairwise(left, right);
@@ -1753,14 +1693,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svminp[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svminp[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         ///   SMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
-        ///   SMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<long> MinPairwise(Vector<long> left, Vector<long> right) => MinPairwise(left, right);
 
         /// <summary>
         /// svint8_t svminp[_s8]_m(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svminp[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
-        ///   SMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   SMINP Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         /// </summary>
         public static Vector<sbyte> MinPairwise(Vector<sbyte> left, Vector<sbyte> right) => MinPairwise(left, right);
@@ -1769,14 +1707,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svminp[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         /// svfloat32_t svminp[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2)
         ///   FMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   FMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<float> MinPairwise(Vector<float> left, Vector<float> right) => MinPairwise(left, right);
 
         /// <summary>
         /// svuint16_t svminp[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svminp[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UMINP Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         /// </summary>
         public static Vector<ushort> MinPairwise(Vector<ushort> left, Vector<ushort> right) => MinPairwise(left, right);
@@ -1785,14 +1721,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svminp[_u32]_m(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svminp[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   UMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UMINP Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         /// </summary>
         public static Vector<uint> MinPairwise(Vector<uint> left, Vector<uint> right) => MinPairwise(left, right);
 
         /// <summary>
         /// svuint64_t svminp[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svminp[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UMINP Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         /// </summary>
         public static Vector<ulong> MinPairwise(Vector<ulong> left, Vector<ulong> right) => MinPairwise(left, right);
@@ -4093,7 +4027,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint8_t svqsub[_u8]_x(svbool_t pg, svuint8_t op1, svuint8_t op2)
         /// svuint8_t svqsub[_u8]_z(svbool_t pg, svuint8_t op1, svuint8_t op2)
         ///   UQSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   UQSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   UQSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         ///   UQSUB Zresult.B, Zop1.B, Zop2.B
         /// </summary>
@@ -4103,7 +4036,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqsub[_s16]_m(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svqsub[_s16]_x(svbool_t pg, svint16_t op1, svint16_t op2)
         /// svint16_t svqsub[_s16]_z(svbool_t pg, svint16_t op1, svint16_t op2)
-        ///   SQSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SQSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   SQSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         ///   SQSUB Zresult.H, Zop1.H, Zop2.H
@@ -4115,7 +4047,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svqsub[_s32]_x(svbool_t pg, svint32_t op1, svint32_t op2)
         /// svint32_t svqsub[_s32]_z(svbool_t pg, svint32_t op1, svint32_t op2)
         ///   SQSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   SQSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   SQSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         ///   SQSUB Zresult.S, Zop1.S, Zop2.S
         /// </summary>
@@ -4125,7 +4056,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svqsub[_s64]_m(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svqsub[_s64]_x(svbool_t pg, svint64_t op1, svint64_t op2)
         /// svint64_t svqsub[_s64]_z(svbool_t pg, svint64_t op1, svint64_t op2)
-        ///   SQSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SQSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   SQSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         ///   SQSUB Zresult.D, Zop1.D, Zop2.D
@@ -4137,7 +4067,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t svqsub[_s8]_x(svbool_t pg, svint8_t op1, svint8_t op2)
         /// svint8_t svqsub[_s8]_z(svbool_t pg, svint8_t op1, svint8_t op2)
         ///   SQSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
-        ///   SQSUB Ztied1.B, Pg/M, Ztied1.B, Zop2.B
         ///   SQSUBR Ztied2.B, Pg/M, Ztied2.B, Zop1.B
         ///   SQSUB Zresult.B, Zop1.B, Zop2.B
         /// </summary>
@@ -4147,7 +4076,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svqsub[_u16]_m(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svqsub[_u16]_x(svbool_t pg, svuint16_t op1, svuint16_t op2)
         /// svuint16_t svqsub[_u16]_z(svbool_t pg, svuint16_t op1, svuint16_t op2)
-        ///   UQSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UQSUB Ztied1.H, Pg/M, Ztied1.H, Zop2.H
         ///   UQSUBR Ztied2.H, Pg/M, Ztied2.H, Zop1.H
         ///   UQSUB Zresult.H, Zop1.H, Zop2.H
@@ -4159,7 +4087,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svqsub[_u32]_x(svbool_t pg, svuint32_t op1, svuint32_t op2)
         /// svuint32_t svqsub[_u32]_z(svbool_t pg, svuint32_t op1, svuint32_t op2)
         ///   UQSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
-        ///   UQSUB Ztied1.S, Pg/M, Ztied1.S, Zop2.S
         ///   UQSUBR Ztied2.S, Pg/M, Ztied2.S, Zop1.S
         ///   UQSUB Zresult.S, Zop1.S, Zop2.S
         /// </summary>
@@ -4169,7 +4096,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svqsub[_u64]_m(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svqsub[_u64]_x(svbool_t pg, svuint64_t op1, svuint64_t op2)
         /// svuint64_t svqsub[_u64]_z(svbool_t pg, svuint64_t op1, svuint64_t op2)
-        ///   UQSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UQSUB Ztied1.D, Pg/M, Ztied1.D, Zop2.D
         ///   UQSUBR Ztied2.D, Pg/M, Ztied2.D, Zop1.D
         ///   UQSUB Zresult.D, Zop1.D, Zop2.D
