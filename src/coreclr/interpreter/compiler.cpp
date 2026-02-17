@@ -1146,7 +1146,6 @@ void InterpCompiler::EmitCode()
     // The goal is to move all clauses to the end of the method code recursively so that
     // no handler is inside of a try block.
     int32_t *ip = m_pMethodCode;
-
     bool emittedBlock;
     int clauseDepth = 0;
     do

@@ -24,19 +24,6 @@ static const uint8_t s_interpOpLenWalker[] = {
 #undef OPDEF
 };
 
-// Generate local copy of interpreter opcode name table for debugging.
-static const char* const s_interpOpNameWalker[] = {
-#define OPDEF(a,b,c,d,e,f) b,
-#include "../../interpreter/inc/intops.def"
-#undef OPDEF
-};
-
-static const char* InterpOpNameLocal(int opcode)
-{
-    _ASSERTE(opcode >= 0 && opcode < (int)(sizeof(s_interpOpNameWalker)/sizeof(s_interpOpNameWalker[0])));
-    return s_interpOpNameWalker[opcode];
-}
-
 void InterpreterWalker::Init(const int32_t* ip, InterpMethod* pInterpMethod)
 {
     _ASSERTE(ip != NULL);
@@ -111,7 +98,7 @@ void InterpreterWalker::Decode()
     // Resolve the opcode (handles breakpoint patches)
     m_opcode = ResolveOpcode(m_ip);
 
-    LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::Decode: opcode=0x%x (%s)\n", m_opcode, InterpOpNameLocal(m_opcode)));
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::Decode: opcode=0x%x\n", m_opcode));
 
     // Calculate skip IP (instruction after current one)
     int instrLen = GetOpcodeLength(m_opcode);
@@ -191,8 +178,8 @@ void InterpreterWalker::Decode()
 
 MethodDesc* InterpreterWalker::GetCallTarget() const
 {
-    LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::GetCallTarget: ip=%p, opcode=0x%x, opname=%s\n",
-        m_ip, m_opcode, InterpOpNameLocal(m_opcode)));
+    LOG((LF_CORDB, LL_INFO10000, "InterpreterWalker::GetCallTarget: ip=%p, opcode=0x%x\n",
+        m_ip, m_opcode));
 
     // Only valid for call instructions
     if (m_type != WALK_CALL)

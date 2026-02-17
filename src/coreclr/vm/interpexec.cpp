@@ -3049,8 +3049,8 @@ CALL_INTERP_METHOD:
                     ip = pFrame->startIp->GetByteCodes();
 
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_BROWSER)
-                    // Notify debugger of method entry for step-in support
-                    if (g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
+                    // Notify debugger of method entry for step-in support for indirect calls.
+                    if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
                     {
                         g_pDebugInterface->OnMethodEnter((void*)ip);
                     }

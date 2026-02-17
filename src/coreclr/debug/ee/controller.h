@@ -18,7 +18,9 @@
 
 #include "frameinfo.h"
 #include "executioncontrol.h"
+#ifdef FEATURE_INTERPRETER
 #include "interpreterwalker.h"
+#endif // FEATURE_INTERPRETER
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
@@ -444,6 +446,7 @@ struct DebuggerControllerPatch
     // Interpreter opcodes can have value 0 (e.g., INTOP_RET), so we need a separate flag
     // to track activation state since PRDIsEmpty() returns true for opcode 0.
     // TODO: We should consider using the activated flag for all patches and stop using opcode == 0 as a special case for "not active".
+    // https://github.com/dotnet/runtime/issues/124499
     bool                    m_interpActivated;
 #endif // FEATURE_INTERPRETER
 private:
