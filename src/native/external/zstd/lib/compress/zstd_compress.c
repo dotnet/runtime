@@ -7404,7 +7404,7 @@ BlockSummary ZSTD_get1BlockSummary(const ZSTD_Sequence* seqs, size_t nbSeqs)
 
     /* Process 2 structs (32 bytes) at a time */
     for (i = 0; i + 2 <= nbSeqs; i += 2) {
-        /* Load two consecutive ZSTD_Sequence (8×4 = 32 bytes) */
+        /* Load two consecutive ZSTD_Sequence (8x4 = 32 bytes) */
         __m256i data     = _mm256_loadu_si256((const __m256i*)(const void*)&seqs[i]);
         /* check end of block signal */
         __m256i cmp      = _mm256_cmpeq_epi32(data, zeroVec);
