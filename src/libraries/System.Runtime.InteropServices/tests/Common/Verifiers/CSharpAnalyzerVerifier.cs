@@ -44,12 +44,19 @@ namespace Microsoft.Interop.UnitTests.Verifiers
         {
             public Test() : base()
             {
-                // Ignore compiler diagnostics since we're only testing the analyzer.
-                // Without the generator, partial methods won't have implementations which causes CS8795.
-                CompilerDiagnostics = CompilerDiagnostics.None;
                 // Disable SYSLIB1092 recommendation diagnostic by default (same as source generator tests)
                 DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             }
+
+            // Exclude CS8795 (Partial method must have an implementation) since without the generator,
+            // partial methods won't have implementations.
+            // Exclude CS0751 (A partial member must be declared within a partial type) since tests
+            // intentionally test non-partial types containing LibraryImport methods.
+            // Other compiler diagnostics are still checked.
+            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics)
+                => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics)
+                    && diagnostic.Id != "CS8795"
+                    && diagnostic.Id != "CS0751";
         }
     }
 }
