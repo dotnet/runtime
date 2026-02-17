@@ -53,6 +53,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(TransitivePolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext

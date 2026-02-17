@@ -117,7 +117,56 @@ namespace System.Text.Json.Serialization.Metadata
                 (options ??= new()).DerivedTypes.Add(new JsonDerivedType(attr.DerivedType, attr.TypeDiscriminator));
             }
 
+            // Transitively collect derived types declared on types in an unbroken
+            // chain of [JsonDerivedType] annotations. E.g. if A declares B and B
+            // declares C, C is also included as a derived type of A.
+            if (options is { DerivedTypes.Count: > 0 })
+            {
+                CollectTransitiveDerivedTypes(options, baseType);
+            }
+
             return options;
+        }
+
+        /// <summary>
+        /// Walks the DerivedTypes list (which may grow during iteration) and appends
+        /// any additional derived types found via transitive [JsonDerivedType] declarations
+        /// on already-known derived types. Uses a set to prevent duplicates and cycles.
+        /// </summary>
+        private static void CollectTransitiveDerivedTypes(JsonPolymorphismOptions opts, Type root)
+        {
+            HashSet<Type>? seen = null;
+            for (int i = 0; i < opts.DerivedTypes.Count; i++)
+            {
+                Type child = opts.DerivedTypes[i].DerivedType;
+
+                // Do not walk through types that declare their own [JsonPolymorphic] configuration;
+                // those define an independent polymorphic scheme and their [JsonDerivedType] entries
+                // belong to that scheme, not to the root type's.
+                if (child.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false) is not null)
+                {
+                    continue;
+                }
+
+                foreach (JsonDerivedTypeAttribute a in child.GetCustomAttributes<JsonDerivedTypeAttribute>(inherit: false))
+                {
+                    if (seen is null)
+                    {
+                        // Seed with the root type and all types already declared directly
+                        // so that we never re-add a type the author already listed.
+                        seen = new HashSet<Type> { root };
+                        foreach (JsonDerivedType dt in opts.DerivedTypes)
+                        {
+                            seen.Add(dt.DerivedType);
+                        }
+                    }
+
+                    if (seen.Add(a.DerivedType))
+                    {
+                        opts.DerivedTypes.Add(new JsonDerivedType(a.DerivedType, a.TypeDiscriminator));
+                    }
+                }
+            }
         }
     }
 }
