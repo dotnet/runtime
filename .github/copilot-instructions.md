@@ -26,6 +26,7 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Use `ObjectDisposedException.ThrowIf` where applicable.
 - When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
 - When adding new unit tests, avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
+- When writing tests, prefer using `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods. Fewer test methods that validate more inputs are better than many similar test methods.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
