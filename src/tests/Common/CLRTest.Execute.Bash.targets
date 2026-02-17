@@ -343,6 +343,7 @@ run_with_timeout() {
   # Start a watchdog that will kill the process if it exceeds timeout
   (
     sleep "$timeout_sec"
+    echo "Process $pid exceeded timeout of $timeout_sec seconds. Killing..."
     if kill -0 "$pid" 2>/dev/null; then
       kill -9 "$pid" 2>/dev/null
     fi
