@@ -42,10 +42,9 @@ CHECK PEDecoder::CheckFormat() const
                 CHECK(CheckILOnly());
         }
     }
-    else if (HasNTHeaders())
-#else // TARGET_BROWSER
-    if (HasNTHeaders())
+    else
 #endif // TARGET_BROWSER
+    if (HasNTHeaders())
     {
         CHECK(CheckNTHeaders());
 
