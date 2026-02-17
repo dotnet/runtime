@@ -2428,6 +2428,49 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve2_Scatter16BitNarrowingNonTemporal:
+            case NI_Sve2_Scatter16BitWithByteOffsetsNarrowingNonTemporal:
+            case NI_Sve2_Scatter32BitNarrowingNonTemporal:
+            case NI_Sve2_Scatter32BitWithByteOffsetsNarrowingNonTemporal:
+            case NI_Sve2_Scatter8BitNarrowingNonTemporal:
+            case NI_Sve2_Scatter8BitWithByteOffsetsNarrowingNonTemporal:
+            case NI_Sve2_ScatterNonTemporal:
+            case NI_Sve2_ScatterWithByteOffsetsNonTemporal:
+            {
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    // Scatter...(Vector<T> mask, T* address, Vector<T2> offsets, Vector<T> data)
+
+                    assert(intrin.numOperands == 4);
+
+                    // Calculate the byte offsets if using indices.
+                    if (intrin.id == NI_Sve2_Scatter16BitNarrowingNonTemporal)
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 1, opt);
+                    }
+                    else if (intrin.id == NI_Sve2_Scatter32BitNarrowingNonTemporal)
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 2, opt);
+                    }
+                    else if (intrin.id == NI_Sve2_ScatterNonTemporal)
+                    {
+                        assert(emitActualTypeSize(intrin.baseType) == 8);
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 3, opt);
+                    }
+
+                    // op2Reg and op3Reg are swapped
+                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op3Reg, op2Reg, opt);
+                }
+                else
+                {
+                    // Scatter...(Vector<T> mask, Vector<T> addresses, Vector<T> data)
+
+                    assert(intrin.numOperands == 3);
+                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op3Reg, op1Reg, op2Reg, REG_ZR, opt);
+                }
+                break;
+            }
+
             case NI_Sve_StoreNarrowing:
                 opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
