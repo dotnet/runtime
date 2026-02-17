@@ -175,7 +175,7 @@ namespace System.Reflection.Emit
                 else
                 {
                     signature.Array(out SignatureTypeEncoder elTypeSignature, out ArrayShapeEncoder arrayEncoder);
-                    WriteSimpleSignature(elTypeSignature, elementType, module);
+                    WriteSignatureForType(elTypeSignature, elementType, module);
                     arrayEncoder.Shape(type.GetArrayRank(), [], default);
                 }
             }
