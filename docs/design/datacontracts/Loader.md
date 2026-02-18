@@ -118,7 +118,7 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
-| `Assembly` | `Level` | File load level of the assembly |
+| `Assembly` | `IsLoaded` | Whether assembly has been loaded |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
@@ -170,7 +170,6 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
 
 Contracts used:
@@ -248,7 +247,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             // IncludeAvailableToProfilers contains some loaded AND loading
             // assemblies.
         }
-        else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED)
+        else if (assembly.IsLoaded)
         {
             if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
             {
@@ -611,8 +610,8 @@ bool IsDynamic(ModuleHandle handle)
 bool IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
-    return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
+    bool isLoaded = target.Read<byte>(assembly + /* Assembly::IsLoaded*/) != 0;
+    return isLoaded;
 }
 
 TargetPointer GetGlobalLoaderAllocator()

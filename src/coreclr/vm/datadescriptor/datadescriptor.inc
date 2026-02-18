@@ -205,7 +205,7 @@ CDAC_TYPE_FIELD(Assembly, /*bool*/, IsDynamic, cdac_data<Assembly>::IsDynamic)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
 CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
-CDAC_TYPE_FIELD(Assembly, /*uint32*/, Level, cdac_data<Assembly>::Level)
+CDAC_TYPE_FIELD(Assembly, /*bool*/, IsLoaded, cdac_data<Assembly>::IsLoaded)
 CDAC_TYPE_END(Assembly)
 
 CDAC_TYPE_BEGIN(LoaderAllocator)

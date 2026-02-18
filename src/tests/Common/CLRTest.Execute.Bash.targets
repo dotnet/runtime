@@ -552,7 +552,6 @@ $(IlasmRoundTripBashScript)
 $(SuperPMICollectionBashScript)
 # Allow test environment variables or precommands to override the ExePath
 ExePath=$(InputAssemblyName)
-export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
 $(BashEnvironmentVariables)
 # PreCommands
 $(CLRTestBashPreCommands)

@@ -1038,6 +1038,13 @@ void interceptor_ICJI::getFpStructLowering(
     original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType interceptor_ICJI::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    mcs->AddCall("getWasmLowering");
+    return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {

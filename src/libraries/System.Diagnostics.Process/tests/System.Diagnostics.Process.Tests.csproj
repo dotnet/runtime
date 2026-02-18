@@ -25,6 +25,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="ProcessCollectionTests.cs" />
+    <Compile Include="ProcessExitStatusTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />

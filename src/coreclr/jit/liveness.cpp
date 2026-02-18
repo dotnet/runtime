@@ -1457,12 +1457,13 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // If we had unremovable blocks that are not in the DFS tree then make
-    // the 'keepAlive' set live in them. This would normally not be
-    // necessary assuming those blocks are actually unreachable; however,
-    // throw helpers fall into this category because we do not model them
-    // correctly, and those will actually end up reachable. Fix that up
-    // here.
+    // Now that we create throw helper blocks after lower,
+    // we don't need to search for them and set up liveness
+    // during lower.
+    assert(!m_compiler->fgRngChkThrowAdded);
+
+#ifdef DEBUG
+    // Double-check that no unreachable throw helper blocks exist.
     if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
     {
         for (BasicBlock* block : m_compiler->Blocks())
@@ -1472,11 +1473,10 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            m_compiler->fgSetThrowHelpBlockLiveness(block);
+            assert(!block->HasFlag(BBF_THROW_HELPER));
         }
     }
 
-#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");

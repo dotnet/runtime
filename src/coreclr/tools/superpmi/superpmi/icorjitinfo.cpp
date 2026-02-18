@@ -1268,6 +1268,12 @@ void MyICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUC
     jitInstance->mc->repGetFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType MyICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getWasmLowering");
+    return jitInstance->mc->repGetWasmLowering(structHnd);
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {

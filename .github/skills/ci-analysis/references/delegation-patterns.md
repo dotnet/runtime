@@ -13,7 +13,7 @@ Extract all unique test failures from these Helix work items:
 Job: {JOB_ID_1}, Work items: {ITEM_1}, {ITEM_2}
 Job: {JOB_ID_2}, Work items: {ITEM_3}
 
-For each, use hlx_logs with jobId and workItem to get console output.
+For each, search console logs for lines ending with [FAIL] (xUnit format).
 If hlx MCP is not available, fall back to:
   ./scripts/Get-CIStatus.ps1 -HelixJob "{JOB}" -WorkItem "{ITEM}"
 
@@ -34,7 +34,7 @@ Failing build: {BUILD_ID}, job: {JOB_NAME}, work item: {WORK_ITEM}
 
 Steps:
 1. Search for recently merged PRs:
-   github-mcp-server-search_pull_requests query:"is:merged base:{TARGET_BRANCH}" owner:dotnet repo:{REPO}
+   Search for recently merged PRs on {TARGET_BRANCH}
 2. Run: ./scripts/Get-CIStatus.ps1 -PRNumber {MERGED_PR} -Repository "dotnet/{REPO}"
 3. Find the build with same job name that passed
 4. Locate the Helix job ID (may need artifact download — see [azure-cli.md](azure-cli.md))
@@ -53,7 +53,7 @@ If authentication fails or API returns errors, STOP and return the error — don
 ```
 List all changed files on merge PR #{PR_NUMBER} in dotnet/{REPO}.
 
-Use: github-mcp-server-pull_request_read method:get_files owner:dotnet repo:{REPO} pullNumber:{PR_NUMBER}
+Get the list of changed files for PR #{PR_NUMBER} in dotnet/{REPO}
 
 For each file, note: path, change type (added/modified/deleted), lines changed.
 
@@ -74,9 +74,7 @@ Download and analyze binlog from AzDO build {BUILD_ID}, artifact {ARTIFACT_NAME}
 
 Steps:
 1. Download the artifact (see [azure-cli.md](azure-cli.md))
-2. Load: mcp-binlog-tool-load_binlog path:"{BINLOG_PATH}"
-3. Find tasks: mcp-binlog-tool-search_tasks_by_name taskName:"Csc"
-4. Get task parameters: mcp-binlog-tool-get_task_info
+2. Load the binlog, find the {TASK_NAME} task invocations, get full task details including CommandLineArguments.
 
 Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 ```
@@ -86,8 +84,8 @@ Return JSON: { "buildId": N, "project": "...", "args": ["..."] }
 Check if canceled job "{JOB_NAME}" from build {BUILD_ID} has recoverable Helix results.
 
 Steps:
-1. Use hlx_files with jobId:"{HELIX_JOB_ID}" workItem:"{WORK_ITEM}" to find testResults.xml
-2. Download with hlx_download_url using the testResults.xml URI
+1. Check if TRX test results are available for the work item. Parse them for pass/fail counts.
+2. If no structured results, check for testResults.xml
 3. Parse the XML for pass/fail counts on the <assembly> element
 
 Return JSON: { "jobName": "...", "hasResults": true, "passed": N, "failed": N }
@@ -104,8 +102,7 @@ This pattern scales to any number of builds — launch N subagents for N builds,
 ```
 Extract the target branch HEAD from AzDO build {BUILD_ID}.
 
-Use azure-devops-pipelines_get_build_log_by_id with:
-  project: "public", buildId: {BUILD_ID}, logId: 5, startLine: 500
+Fetch the checkout task log (typically LOG ID 5, starting around LINE 500+ to skip git-fetch output)
 
 Search for: "HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}"
 
@@ -113,11 +110,11 @@ Return JSON: { "buildId": N, "targetHead": "abc1234", "mergeCommit": "def5678" }
 Or: { "buildId": N, "targetHead": null, "error": "merge line not found in log 5" }
 ```
 
-Launch one per build in parallel. The main agent combines with `azure-devops-pipelines_get_builds` results to build the full progression table.
+Launch one per build in parallel. The main agent combines with the build list to build the full progression table.
 
 ## General Guidelines
 
-- **Use `general-purpose` agent type** — it has shell + MCP access (`hlx_status`, `azure-devops-pipelines_get_builds`, `mcp-binlog-tool-load_binlog`, etc.)
+- **Use `general-purpose` agent type** — it has shell + MCP access for Helix, AzDO, binlog, and GitHub queries
 - **Run independent tasks in parallel** — the whole point of delegation
 - **Include script paths** — subagents don't inherit skill context
 - **Require structured JSON output** — enables comparison across subagents

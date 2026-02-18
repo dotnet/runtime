@@ -42,25 +42,25 @@ void SystemNative_SetKeypadXmit(intptr_t fd, const char* terminfoString)
 {
     (void)fd;
     assert(terminfoString != NULL);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_UninitializeConsoleAfterRead(void)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
@@ -73,22 +73,28 @@ void SystemNative_GetControlCharacters(
     assert(controlCharacterLength >= 0);
     assert(posixDisableValue != NULL);
 
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 int32_t SystemNative_StdinReady(void)
 {
+#if defined(TARGET_WASI)
     struct pollfd fd = { .fd = STDIN_FILENO, .events = POLLIN };
     int rv = poll(&fd, 1, 0) > 0 ? 1 : 0;
     return rv;
+#else // !TARGET_WASI
+    errno = ENOTSUP;
+    return -1;
+#endif // !TARGET_WASI
 }
 
 int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
 {
+#if defined(TARGET_WASI)
     assert(buffer != NULL || bufferSize == 0);
     assert(bufferSize >= 0);
 
-     if (bufferSize < 0)
+    if (bufferSize < 0)
     {
         errno = EINVAL;
         return -1;
@@ -97,26 +103,29 @@ int32_t SystemNative_ReadStdin(void* buffer, int32_t bufferSize)
     ssize_t count;
     while (CheckInterrupted(count = read(STDIN_FILENO, buffer, Int32ToSizeT(bufferSize))));
     return (int32_t)count;
+#else // !TARGET_WASI
+    errno = ENOTSUP;
+    return -1;
+#endif // !TARGET_WASI
 }
 
 int32_t SystemNative_GetSignalForBreak(void)
 {
-    return false;
+    return 0;
 }
 
 int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
     return -1;
 }
 
-
-
 int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
-    return true;
+    return 1;
 }
 
 void SystemNative_UninitializeTerminal(void)
-{ }
+{
+}

@@ -24,13 +24,13 @@ DEBUGNOTRETURN
 void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
 {
     assert(signalHandler);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 
@@ -38,21 +38,21 @@ DEBUGNOTRETURN
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
 {
     assert(callback != NULL);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 DEBUGNOTRETURN
 void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
 {
     assert(callback == NULL);
-    assert_msg(false, "Not supported on WASI", 0);
+    assert_msg(false, "Not supported on Wasm", 0);
 }
 
 int32_t SystemNative_EnablePosixSignalHandling(int signalCode)

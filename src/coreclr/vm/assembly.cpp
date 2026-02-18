@@ -129,6 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}
@@ -515,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
         pAssem->ClearLoading();
-        pAssem->m_level = FILE_ACTIVE;
+        pAssem->SetLoadLevel(FILE_ACTIVE);
     }
 
     {
@@ -2302,7 +2303,7 @@ void Assembly::FinishLoad()
     CONTRACTL_END;
 
     // Must set this a bit prematurely for the DAC stuff to work
-    m_level = FILE_LOADED;
+    SetLoadLevel(FILE_LOADED);
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
