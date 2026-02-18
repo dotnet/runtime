@@ -523,7 +523,8 @@ namespace Internal.JitInterface
 
         public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
         {
-            if (methodNeedingCode.IsAggressiveOptimization)
+            bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration;
+            if (methodNeedingCode.IsAggressiveOptimization && targetAllowsRuntimeCodeGeneration)
             {
                 return true;
             }
@@ -532,8 +533,7 @@ namespace Internal.JitInterface
             // On platforms where we cannot JIT, we need to ensure that we have a fallback implementation pre-compiled
             // so any code that uses hardware intrinsics and is interpreted has an implementation to use.
             // This allows us to avoid the high cost of manually implementing intrinsics in the interpreter.
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode)
-                && ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration)
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode) && targetAllowsRuntimeCodeGeneration)
             {
                 return true;
             }
