@@ -190,11 +190,6 @@ void* DispatchCallSimple(
     }
     CONTRACTL_END;
 
-#ifdef PORTABLE_ENTRYPOINTS
-    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(pTargetAddress);
-    (void)pMethod->GetInterpreterCodeWithPrestub();
-#endif // PORTABLE_ENTRYPOINTS
-
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
         g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
@@ -304,11 +299,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
     }
     CONTRACTL_END;
-
-#ifdef PORTABLE_ENTRYPOINTS
-    MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(m_pCallTarget);
-    (void)pMethod->GetInterpreterCodeWithPrestub();
-#endif // PORTABLE_ENTRYPOINTS
 
     // If we're invoking an CoreLib method, lift the restriction on type load limits. Calls into CoreLib are
     // typically calls into specific and controlled helper methods for security checks and other linktime tasks.
