@@ -539,7 +539,6 @@ public:
     }
 
     void Run();
-    bool HasDefaultValue(BasicBlock* block, unsigned varIndex) const;
     const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
 
 private:
@@ -576,24 +575,6 @@ void DefaultValueAnalysis::Run()
 #endif
     ComputePerBlockMutatedVars();
     ComputeInterBlockDefaultValues();
-}
-
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::HasDefaultValue:
-//   Check if a tracked local has its default value at the entry of the
-//   specified block.
-//
-// Parameters:
-//   block    - The basic block.
-//   varIndex - The tracking index of the local variable.
-//
-// Returns:
-//   True if the local is guaranteed to have its default value at block entry.
-//
-bool DefaultValueAnalysis::HasDefaultValue(BasicBlock* block, unsigned varIndex) const
-{
-    assert(m_mutatedVarsIn != nullptr);
-    return !VarSetOps::IsMember(m_compiler, m_mutatedVarsIn[block->bbNum], varIndex);
 }
 
 //------------------------------------------------------------------------
@@ -964,16 +945,16 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         // A dependently promoted struct is live if any of its fields are live.
 
         bool anyLive    = false;
-        bool allDefault = true;
+        bool anyMutated = false;
         for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
             anyLive |=
                 !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
-            allDefault &= fieldDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
+            anyMutated |= !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
         }
 
-        return anyLive && !allDefault;
+        return anyLive && anyMutated;
     }
 
     if (dsc->lvIsStructField && (m_compiler->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
