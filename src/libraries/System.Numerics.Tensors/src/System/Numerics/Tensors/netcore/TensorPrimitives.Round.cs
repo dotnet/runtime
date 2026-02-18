@@ -110,6 +110,7 @@ namespace System.Numerics.Tensors
             if (digits == 0)
             {
                 Round(x, mode, destination);
+                return;
             }
 
             ReadOnlySpan<T> roundPower10;
@@ -149,7 +150,7 @@ namespace System.Numerics.Tensors
 
                 case MidpointRounding.AwayFromZero:
                     InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundAwayFromZeroOperator<T>>(power10), destination);
-                    break;
+                    return;
 
                 case MidpointRounding.ToZero:
                     InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, TruncateOperator<T>>(power10), destination);

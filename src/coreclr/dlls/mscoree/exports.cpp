@@ -297,6 +297,13 @@ int coreclr_initialize(
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
 
+#ifdef TARGET_UNIX
+    if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
+    {
+        PAL_EnableCrashReportBeforeSignalChaining();
+    }
+#endif
+
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);
 

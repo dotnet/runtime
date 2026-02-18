@@ -5583,8 +5583,18 @@ bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
         return false;
     }
 
-    auto isAsyncCall = [](GenTree* tree) {
-        return tree->IsCall() && tree->AsCall()->IsAsync();
+    auto isAsyncCall = [=](GenTree* tree) {
+        if (tree->IsCall() && tree->AsCall()->IsAsync())
+        {
+            return true;
+        }
+
+        if (tree->OperIs(GT_RET_EXPR) && gtTreeContainsAsyncCall(tree->AsRetExpr()->gtInlineCandidate))
+        {
+            return true;
+        }
+
+        return false;
     };
 
     return gtFindNodeInTree<GTF_CALL>(tree, isAsyncCall) != nullptr;

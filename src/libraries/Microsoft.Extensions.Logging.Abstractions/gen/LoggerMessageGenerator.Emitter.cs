@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal sealed class Emitter(Compilation compilation)
+        internal sealed class Emitter
         {
             // The maximum arity of LoggerMessage.Define.
             private const int MaxLoggerMessageDefineArguments = 6;
@@ -32,15 +32,14 @@ namespace Microsoft.Extensions.Logging.Generators
                 "global::System.ComponentModel.EditorBrowsableAttribute(" +
                 "global::System.ComponentModel.EditorBrowsableState.Never)";
 
-            private readonly bool _hasStringCreate =
-                compilation.GetSpecialType(SpecialType.System_String).GetMembers("Create").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic &&
-                              m.Parameters.Length == 2 &&
-                              m.Parameters[0].Type.Name == "IFormatProvider" &&
-                              m.Parameters[1].RefKind == RefKind.Ref);
-
+            private readonly bool _hasStringCreate;
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
             private bool _needEnumerationHelper;
+
+            public Emitter(bool hasStringCreate)
+            {
+                _hasStringCreate = hasStringCreate;
+            }
 
             public string Emit(IReadOnlyList<LoggerClass> logClasses, CancellationToken cancellationToken)
             {
@@ -411,6 +410,8 @@ namespace {lc.Namespace}
 ");
                 }
 
+                GenMethodDocumentation(lm, nestedIndentation);
+
                 _builder.Append($@"
         {nestedIndentation}[{s_generatedCodeAttribute}]
         {nestedIndentation}{lm.Modifiers} void {lm.Name}({extension}");
@@ -504,21 +505,111 @@ namespace {lc.Namespace}
                     }
                     else
                     {
-                        level = lm.Level switch
-                        {
-                            0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
-                            1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
-                            2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
-                            3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
-                            4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
-                            5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
-                            6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
-                            _ => $"(global::Microsoft.Extensions.Logging.LogLevel){lm.Level}",
-                        };
+                        level = GetLogLevelFullName(lm.Level.Value);
                     }
 
                     return level;
                 }
+            }
+
+            private void GenMethodDocumentation(LoggerMethod lm, string nestedIndentation)
+            {
+                _builder.Append($@"
+        {nestedIndentation}/// <summary>
+        {nestedIndentation}/// <para><b>Message:</b> {EscapeForXmlDoc(lm.Message)}</para>");
+
+                if (lm.Level != null)
+                {
+                    _builder.Append($@"
+        {nestedIndentation}/// <para><b>Level:</b> {GetLogLevelName(lm.Level.Value)}</para>");
+                }
+
+                _builder.Append($@"
+        {nestedIndentation}/// </summary>");
+            }
+
+            private static string EscapeForXmlDoc(string text)
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    return text;
+                }
+
+                foreach (char c in text)
+                {
+                    if (c is '<' or '>' or '&' or '"' or '\'' or '\n' or '\r')
+                    {
+                        return PerformEscaping(text);
+                    }
+                }
+
+                return text;
+
+                static string PerformEscaping(string text)
+                {
+                    var sb = new StringBuilder(text.Length + 20);
+                    foreach (char c in text)
+                    {
+                        switch (c)
+                        {
+                            case '<':
+                                sb.Append("&lt;");
+                                break;
+                            case '>':
+                                sb.Append("&gt;");
+                                break;
+                            case '&':
+                                sb.Append("&amp;");
+                                break;
+                            case '"':
+                                sb.Append("&quot;");
+                                break;
+                            case '\'':
+                                sb.Append("&apos;");
+                                break;
+                            case '\n':
+                                sb.Append("&#10;");
+                                break;
+                            case '\r':
+                                sb.Append("&#13;");
+                                break;
+                            default:
+                                sb.Append(c);
+                                break;
+                        }
+                    }
+                    return sb.ToString();
+                }
+            }
+
+            private static string GetLogLevelName(int level)
+            {
+                return level switch
+                {
+                    0 => "Trace",
+                    1 => "Debug",
+                    2 => "Information",
+                    3 => "Warning",
+                    4 => "Error",
+                    5 => "Critical",
+                    6 => "None",
+                    _ => level.ToString(),
+                };
+            }
+
+            private static string GetLogLevelFullName(int level)
+            {
+                return level switch
+                {
+                    0 => "global::Microsoft.Extensions.Logging.LogLevel.Trace",
+                    1 => "global::Microsoft.Extensions.Logging.LogLevel.Debug",
+                    2 => "global::Microsoft.Extensions.Logging.LogLevel.Information",
+                    3 => "global::Microsoft.Extensions.Logging.LogLevel.Warning",
+                    4 => "global::Microsoft.Extensions.Logging.LogLevel.Error",
+                    5 => "global::Microsoft.Extensions.Logging.LogLevel.Critical",
+                    6 => "global::Microsoft.Extensions.Logging.LogLevel.None",
+                    _ => $"(global::Microsoft.Extensions.Logging.LogLevel){level}",
+                };
             }
 
             private void GenEnumerationHelper()
