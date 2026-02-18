@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Text;
 
 namespace System.Diagnostics
 {
-    internal static class ProcessUtils
+    internal static partial class ProcessUtils
     {
         internal static void BuildArgs(ProcessStartOptions options, ref ValueStringBuilder applicationName, ref ValueStringBuilder commandLine)
         {
@@ -24,6 +25,11 @@ namespace System.Diagnostics
                 PasteArguments.AppendArgument(ref commandLine, argument);
             }
             commandLine.NullTerminate();
+        }
+
+        private static bool IsExecutable(string fullPath)
+        {
+            return File.Exists(fullPath);
         }
     }
 }

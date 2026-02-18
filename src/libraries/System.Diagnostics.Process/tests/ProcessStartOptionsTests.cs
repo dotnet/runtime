@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -93,9 +91,9 @@ namespace System.Diagnostics.Tests
         {
             ProcessStartOptions options = new(GetCurrentProcessName());
             IDictionary<string, string?> env = options.Environment;
-            
+
             env["TestKey"] = "TestValue";
-            
+
             if (OperatingSystem.IsWindows())
             {
                 Assert.True(env.ContainsKey("testkey"));
@@ -120,7 +118,7 @@ namespace System.Diagnostics.Tests
         public void InheritedHandles_CanSet()
         {
             ProcessStartOptions options = new(GetCurrentProcessName());
-            List<SafeHandle> newHandles = new List<SafeHandle>();
+            List<SafeHandle> newHandles = [];
             options.InheritedHandles = newHandles;
             Assert.Same(newHandles, options.InheritedHandles);
         }

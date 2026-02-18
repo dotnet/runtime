@@ -445,7 +445,7 @@ namespace System.Diagnostics
             }
             else
             {
-                filename = ProcessStartOptions.ResolvePath(startInfo.FileName);
+                filename = ResolvePath(startInfo.FileName);
                 argv = ParseArgv(startInfo);
                 if (Directory.Exists(filename))
                 {
@@ -662,7 +662,7 @@ namespace System.Diagnostics
                 // find filename on PATH
                 else
                 {
-                    resolvedFilename = ProcessStartOptions.FindProgramInPath(filename);
+                    resolvedFilename = ProcessUtils.FindProgramInPath(filename);
                 }
             }
 
@@ -681,65 +681,51 @@ namespace System.Diagnostics
             }
         }
 
-        internal static bool IsExecutable(string fullPath)
+        /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
+        /// <param name="filename">The filename.</param>
+        /// <returns>The resolved path. It can return null in case of URLs.</returns>
+        private static string? ResolvePath(string filename)
         {
-            Interop.Sys.FileStatus fileinfo;
+            // Follow the same resolution that Windows uses with CreateProcess:
+            // 1. First try the exact path provided
+            // 2. Then try the file relative to the executable directory
+            // 3. Then try the file relative to the current directory
+            // 4. then try the file in each of the directories specified in PATH
+            // Windows does additional Windows-specific steps between 3 and 4,
+            // and we ignore those here.
 
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+            // If the filename is a complete path, use it, regardless of whether it exists.
+            if (Path.IsPathRooted(filename))
             {
-                return false;
+                // In this case, it doesn't matter whether the file exists or not;
+                // it's what the caller asked for, so it's what they'll get
+                return filename;
             }
 
-            // Check if the path is a directory.
-            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            // Then check the executable's directory
+            string? path = Environment.ProcessPath;
+            if (path != null)
             {
-                return false;
+                try
+                {
+                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
+                    if (File.Exists(path))
+                    {
+                        return path;
+                    }
+                }
+                catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
             }
 
-            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
-
-            // Avoid checking user/group when permission.
-            if (permissions == AllExecute)
+            // Then check the current directory
+            path = Path.Combine(Directory.GetCurrentDirectory(), filename);
+            if (File.Exists(path))
             {
-                return true;
-            }
-            else if (permissions == 0)
-            {
-                return false;
+                return path;
             }
 
-            uint euid = Interop.Sys.GetEUid();
-
-            if (euid == 0)
-            {
-                return true; // We're root.
-            }
-
-            if (euid == fileinfo.Uid)
-            {
-                // We own the file.
-                return (permissions & UnixFileMode.UserExecute) != 0;
-            }
-
-            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
-            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
-
-            // Avoid group check when group and other have same permissions.
-            if (groupCanExecute == otherCanExecute)
-            {
-                return groupCanExecute;
-            }
-
-            if (Interop.Sys.IsMemberOfGroup(fileinfo.Gid))
-            {
-                return groupCanExecute;
-            }
-            else
-            {
-                return otherCanExecute;
-            }
+            // Then check each directory listed in the PATH environment variables
+            return ProcessUtils.FindProgramInPath(filename);
         }
 
         private static long s_ticksPerSecond;

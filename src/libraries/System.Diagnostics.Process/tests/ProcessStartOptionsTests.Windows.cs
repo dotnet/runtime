@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -47,8 +46,8 @@ namespace System.Diagnostics.Tests
             {
                 File.WriteAllText(fullPath, "test");
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new(fileName);
-                Assert.EndsWith(".com", options.FileName, StringComparison.OrdinalIgnoreCase);
+                ProcessStartOptions options = new($".\\{fileName}");
+                Assert.EndsWith(".com", options.FileName, StringComparison.Ordinal);
             }
             finally
             {
@@ -66,19 +65,14 @@ namespace System.Diagnostics.Tests
             // cmd.exe should be found in system directory
             ProcessStartOptions options = new("cmd");
             Assert.True(File.Exists(options.FileName));
-            string systemDirectory = Environment.SystemDirectory;
-            Assert.StartsWith(systemDirectory, options.FileName, StringComparison.OrdinalIgnoreCase);
+            string expectedPath = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            Assert.Equal(expectedPath, options.FileName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore))]
-        public void ResolvePath_FindsInWindowsDirectory()
-        {
-            ProcessStartOptions options = new("notepad");
-            Assert.True(File.Exists(options.FileName));
-        }
-
-        [Fact]
-        public void ResolvePath_UsesCurrentDirectory()
+        [Theory]
+        [InlineData(".\\testapp.exe", true)]
+        [InlineData("testapp.exe", false)]
+        public void ResolvePath_UsesCurrentDirectory(string fileNameFormat, bool shouldSucceed)
         {
             string tempDir = Path.GetTempPath();
             string fileName = "testapp.exe";
@@ -89,8 +83,17 @@ namespace System.Diagnostics.Tests
             {
                 File.WriteAllText(fullPath, "test");
                 Directory.SetCurrentDirectory(tempDir);
-                ProcessStartOptions options = new(fileName);
-                Assert.Equal(fullPath, options.FileName);
+
+                if (shouldSucceed)
+                {
+                    ProcessStartOptions options = new(fileNameFormat);
+                    Assert.Equal(fullPath, options.FileName);
+                }
+                else
+                {
+                    // Without .\ prefix, should not find file in CWD and should throw
+                    Assert.Throws<FileNotFoundException>(() => new ProcessStartOptions(fileNameFormat));
+                }
             }
             finally
             {
@@ -152,6 +155,43 @@ namespace System.Diagnostics.Tests
                 if (File.Exists(tempFile))
                 {
                     File.Delete(tempFile);
+                }
+            }
+        }
+
+        [Fact]
+        public void ResolvePath_RootedButNotFullyQualifiedPath()
+        {
+            // Test paths like "C:foo.exe" (without backslash after colon) which are rooted but not fully qualified
+            // These resolve relative to the current directory on that drive
+            string tempDir = Path.GetTempPath();
+            string fileName = "test_rooted.tmp";
+            string fullPath = Path.Combine(tempDir, fileName);
+
+            string oldDir = Directory.GetCurrentDirectory();
+            try
+            {
+                File.WriteAllText(fullPath, "test");
+                Directory.SetCurrentDirectory(tempDir);
+
+                // Create a rooted but not fully qualified path: "C:filename" (no backslash after drive)
+                string drive = Path.GetPathRoot(tempDir)!.TrimEnd('\\', '/'); // e.g., "C:"
+                string rootedPath = $"{drive}{fileName}"; // e.g., "C:test_rooted.tmp"
+
+                Assert.True(Path.IsPathRooted(rootedPath));
+                Assert.False(Path.IsPathFullyQualified(rootedPath));
+
+                ProcessStartOptions options = new(rootedPath);
+
+                Assert.True(Path.IsPathFullyQualified(options.FileName));
+                Assert.Equal(fullPath, options.FileName);
+            }
+            finally
+            {
+                Directory.SetCurrentDirectory(oldDir);
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
                 }
             }
         }
