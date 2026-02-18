@@ -806,17 +806,17 @@ namespace System.Net
                     if (index < authorizationHeader.Length)
                     {
                         if ((authenticationScheme & AuthenticationSchemes.Negotiate) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Negotiate, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.Negotiate, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Negotiate;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Ntlm) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.NTLM, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.NTLM, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Ntlm;
                         }
                         else if ((authenticationScheme & AuthenticationSchemes.Basic) != AuthenticationSchemes.None &&
-                            string.Compare(authorizationHeader, 0, AuthenticationTypes.Basic, 0, index, StringComparison.OrdinalIgnoreCase) == 0)
+                            authorizationHeader.AsSpan(0, index).Equals(AuthenticationTypes.Basic, StringComparison.OrdinalIgnoreCase))
                         {
                             headerScheme = AuthenticationSchemes.Basic;
                         }
