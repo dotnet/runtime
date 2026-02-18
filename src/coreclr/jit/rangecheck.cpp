@@ -1180,12 +1180,12 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                         continue;
                     }
                 }
-                // arr[arr.Length - CNS] means arr.Length > CNS, so we can deduce "normalLclVN > CNS"
+                // arr[arr.Length - CNS] means arr.Length >= CNS, so we can deduce "normalLclVN >= CNS"
                 // On the VN level it's VNF_ADD(normalLclVN, -CNS).
                 else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
                          (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
                 {
-                    cmpOper = GT_GT;
+                    cmpOper = GT_GE;
                     limit   = Limit(Limit::keConstant, -indexOp2Cns);
                 }
                 else
