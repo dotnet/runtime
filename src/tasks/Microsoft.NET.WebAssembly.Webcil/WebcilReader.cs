@@ -342,7 +342,12 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                return section.PointerToRawData + (rva - section.VirtualAddress) + _webcilInWasmOffset;
+                uint offset = rva - section.VirtualAddress;
+                if (offset >= section.SizeOfRawData)
+                {
+                    throw new BadImageFormatException("RVA maps to an offset beyond the section's raw data", nameof(_stream));
+                }
+                return section.PointerToRawData + offset + _webcilInWasmOffset;
             }
         }
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
