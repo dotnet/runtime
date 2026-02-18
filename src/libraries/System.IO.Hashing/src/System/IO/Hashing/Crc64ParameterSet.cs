@@ -111,5 +111,39 @@ namespace System.IO.Hashing
 
             return BinaryPrimitives.ReverseEndianness(value);
         }
+
+        private abstract partial class ForwardCrc64 : Crc64ParameterSet
+        {
+            private readonly bool _canVectorize;
+
+            partial void InitializeVectorized(ref bool canVectorize);
+            partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
+            protected ForwardCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
+            {
+                InitializeVectorized(ref _canVectorize);
+            }
+
+            protected abstract ulong UpdateScalar(ulong value, ReadOnlySpan<byte> source);
+
+            internal sealed override ulong Update(ulong value, ReadOnlySpan<byte> source)
+            {
+                if (_canVectorize)
+                {
+                    int consumed = 0;
+                    UpdateVectorized(ref value, source, ref consumed);
+
+                    if (consumed == source.Length)
+                    {
+                        return value;
+                    }
+
+                    source = source.Slice(consumed);
+                }
+
+                return UpdateScalar(value, source);
+            }
+        }
     }
 }

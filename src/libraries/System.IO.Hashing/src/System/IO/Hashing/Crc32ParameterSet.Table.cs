@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+#if NET
+using System.Runtime.Intrinsics;
+#endif
 
 namespace System.IO.Hashing
 {
@@ -59,17 +62,25 @@ namespace System.IO.Hashing
             return table;
         }
 
-        private sealed class ReflectedTableBasedCrc32 : Crc32ParameterSet
+        private sealed partial class ReflectedTableBasedCrc32 : Crc32ParameterSet
         {
             private readonly uint[] _lookupTable;
+
+            partial void InitializeVectorized();
 
             internal ReflectedTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue)
                 : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
+                InitializeVectorized();
             }
 
             internal override uint Update(uint value, ReadOnlySpan<byte> source)
+            {
+                return UpdateScalar(value, source);
+            }
+
+            private uint UpdateScalar(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;
@@ -86,17 +97,17 @@ namespace System.IO.Hashing
             }
         }
 
-        private sealed class ForwardTableBasedCrc32 : Crc32ParameterSet
+        private sealed class ForwardTableBasedCrc32 : ForwardCrc32
         {
             private readonly uint[] _lookupTable;
 
             internal ForwardTableBasedCrc32(uint polynomial, uint initialValue, uint finalXorValue)
-                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
+                : base(polynomial, initialValue, finalXorValue)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
             }
 
-            internal override uint Update(uint value, ReadOnlySpan<byte> source)
+            protected override uint UpdateScalar(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;
