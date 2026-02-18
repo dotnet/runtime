@@ -1363,7 +1363,7 @@ namespace Internal.JitInterface
             else
             {
                 // We can devirtualize the callvirt if the method is not virtual to begin with
-                bool canDevirt = IsCallEffectivelyDirect(targetMethod);
+                bool canDevirt = targetMethod.IsCallEffectivelyDirect();
 
                 // We might be able to devirt based on whole program view
                 if (!canDevirt
