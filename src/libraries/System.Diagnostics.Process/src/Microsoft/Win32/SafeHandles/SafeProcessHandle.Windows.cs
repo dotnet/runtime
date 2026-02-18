@@ -112,7 +112,7 @@ namespace Microsoft.Win32.SafeHandles
             Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
             SafeProcessHandle? procSH = null;
             IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-            IntPtr attributeListBuffer = IntPtr.Zero;
+            void* attributeListBuffer = null;
             Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
 
             // In certain scenarios, the same handle may be passed for multiple stdio streams:
@@ -132,8 +132,7 @@ namespace Microsoft.Win32.SafeHandles
 
             int maxHandleCount = 3 + (options.HasInheritedHandlesBeenAccessed ? options.InheritedHandles.Count : 0);
 
-            IntPtr heapHandlesPtr = (IntPtr)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
-            IntPtr* handlesToInherit = (IntPtr*)heapHandlesPtr;
+            IntPtr* handlesToInherit = (IntPtr*)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
             IntPtr processGroupJobHandle = IntPtr.Zero;
 
             try
@@ -164,8 +163,8 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
                 Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, attributeCount, 0, ref size);
 
-                attributeListBuffer = (IntPtr)NativeMemory.Alloc((nuint)size);
-                attributeList.AttributeList = attributeListBuffer;
+                attributeListBuffer = NativeMemory.Alloc((nuint)size);
+                attributeList.AttributeList = (IntPtr)attributeListBuffer;
 
                 if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, attributeCount, 0, ref size))
                 {
@@ -278,12 +277,12 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
-                NativeMemory.Free((void*)heapHandlesPtr);
+                NativeMemory.Free(handlesToInherit);
 
-                if (attributeListBuffer != IntPtr.Zero)
+                if (attributeListBuffer != null)
                 {
                     Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
-                    NativeMemory.Free((void*)attributeListBuffer);
+                    NativeMemory.Free(attributeListBuffer);
                 }
 
                 if (procSH is null)
