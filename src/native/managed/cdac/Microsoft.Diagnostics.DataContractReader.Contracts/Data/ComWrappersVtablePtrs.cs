@@ -14,9 +14,9 @@ internal sealed class ComWrappersVtablePtrs : IData<ComWrappersVtablePtrs>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComWrappersVtablePtrs);
         for (int i = 0; i < type.Size; i++)
         {
-            ComWrappersInterfacePointers.Add(target.ReadPointer(address + (ulong)(i * target.PointerSize)));
+            ComWrappersInterfacePointers.Add(target.ReadCodePointer(address + (ulong)(i * target.PointerSize)));
         }
     }
 
-    public List<TargetPointer> ComWrappersInterfacePointers { get; init; } = new List<TargetPointer>();
+    public List<TargetCodePointer> ComWrappersInterfacePointers { get; init; } = new List<TargetCodePointer>();
 }
