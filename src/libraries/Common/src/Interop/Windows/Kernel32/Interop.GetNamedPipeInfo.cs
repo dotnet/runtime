@@ -17,5 +17,15 @@ internal static partial class Interop
             uint* lpInBufferSize,
             uint* lpMaxInstances
         );
+
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool GetNamedPipeInfo(
+            SafeFileHandle hNamedPipe,
+            uint* lpFlags,
+            uint* lpOutBufferSize,
+            uint* lpInBufferSize,
+            uint* lpMaxInstances
+        );
     }
 }

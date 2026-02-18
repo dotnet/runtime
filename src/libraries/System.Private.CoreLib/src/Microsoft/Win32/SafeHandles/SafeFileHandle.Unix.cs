@@ -339,6 +339,9 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
+                // Cache the file type from the status
+                _cachedFileType = (int)MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
+
                 fileLength = status.Size;
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
@@ -492,6 +495,48 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return canSeek == NullableBool.True;
+        }
+
+        /// <summary>
+        /// Gets the type of the file that this handle represents.
+        /// </summary>
+        /// <returns>The type of the file.</returns>
+        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
+        public new System.IO.FileType GetFileType()
+        {
+            ObjectDisposedException.ThrowIf(IsClosed, this);
+
+            int cachedType = _cachedFileType;
+            if (cachedType != -1)
+            {
+                return (System.IO.FileType)cachedType;
+            }
+
+            // If we don't have a cached value, call FStat to get it
+            if (Interop.Sys.FStat(this, out Interop.Sys.FileStatus status) == 0)
+            {
+                System.IO.FileType fileType = MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
+                _cachedFileType = (int)fileType;
+                return fileType;
+            }
+
+            // If FStat fails, return Unknown
+            return System.IO.FileType.Unknown;
+        }
+
+        private static System.IO.FileType MapUnixFileTypeToFileType(int unixFileType)
+        {
+            return unixFileType switch
+            {
+                Interop.Sys.FileTypes.S_IFREG => System.IO.FileType.RegularFile,
+                Interop.Sys.FileTypes.S_IFDIR => System.IO.FileType.Directory,
+                Interop.Sys.FileTypes.S_IFLNK => System.IO.FileType.SymbolicLink,
+                Interop.Sys.FileTypes.S_IFIFO => System.IO.FileType.Pipe,
+                Interop.Sys.FileTypes.S_IFSOCK => System.IO.FileType.Socket,
+                Interop.Sys.FileTypes.S_IFCHR => System.IO.FileType.CharacterDevice,
+                Interop.Sys.FileTypes.S_IFBLK => System.IO.FileType.BlockDevice,
+                _ => System.IO.FileType.Unknown
+            };
         }
 
         internal long GetFileLength()

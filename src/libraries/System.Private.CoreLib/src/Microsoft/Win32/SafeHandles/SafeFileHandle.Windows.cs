@@ -270,6 +270,72 @@ namespace Microsoft.Win32.SafeHandles
             return fileType;
         }
 
+        /// <summary>
+        /// Gets the type of the file that this handle represents.
+        /// </summary>
+        /// <returns>The type of the file.</returns>
+        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
+        public new unsafe System.IO.FileType GetFileType()
+        {
+            ObjectDisposedException.ThrowIf(IsClosed, this);
+
+            int cachedType = _cachedFileType;
+            if (cachedType != -1)
+            {
+                return (System.IO.FileType)cachedType;
+            }
+
+            int kernelFileType = GetFileType();
+
+            System.IO.FileType result = kernelFileType switch
+            {
+                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => System.IO.FileType.CharacterDevice,
+                Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
+                Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
+                _ => System.IO.FileType.Unknown
+            };
+
+            _cachedFileType = (int)result;
+            return result;
+        }
+
+        private unsafe System.IO.FileType GetPipeOrSocketType()
+        {
+            // Try to call GetNamedPipeInfo to determine if it's a pipe or socket
+            uint flags;
+            if (Interop.Kernel32.GetNamedPipeInfo(this, &flags, null, null, null))
+            {
+                return System.IO.FileType.Pipe;
+            }
+
+            // If GetNamedPipeInfo fails, it's likely a socket
+            return System.IO.FileType.Socket;
+        }
+
+        private unsafe System.IO.FileType GetDiskBasedType()
+        {
+            // First check if it's a directory using GetFileInformationByHandle
+            if (Interop.Kernel32.GetFileInformationByHandle(this, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
+            {
+                if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0)
+                {
+                    return System.IO.FileType.Directory;
+                }
+            }
+
+            // Check if it's a reparse point (symbolic link) using GetFileInformationByHandleEx
+            Interop.Kernel32.FILE_BASIC_INFO basicInfo;
+            if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
+            {
+                if ((basicInfo.FileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    return System.IO.FileType.SymbolicLink;
+                }
+            }
+
+            return System.IO.FileType.RegularFile;
+        }
+
         internal long GetFileLength()
         {
             if (!_lengthCanBeCached)
