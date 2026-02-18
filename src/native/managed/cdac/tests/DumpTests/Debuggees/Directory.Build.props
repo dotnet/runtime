@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <!-- Debuggees intentionally use unsealed types for type hierarchy testing -->
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
+  </PropertyGroup>
+</Project>
