@@ -10,7 +10,7 @@
 //
 // Usage:
 //   // Startup:
-//   g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending, budgetBytes);
+//   g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending);
 //
 //   // Reader/Writer thread:
 //   {
@@ -82,15 +82,15 @@ public:
     // Returns true if the calling thread is currently in a critical region.
     bool InCriticalRegion();
 
-    // Detach the calling thread from this collector. Unlinks and frees per-thread
-    // EBR state. Should be called during thread shutdown.
+    // Detach the calling thread from this collector. Marks per-thread EBR state
+    // for deferred cleanup. Should be called during thread shutdown.
     void ThreadDetach();
 
     // Returns true if there are pending deletions that may be reclaimable.
-    bool CleanupRequested();
+    bool CleanUpRequested();
 
     // Attempt to advance the epoch and reclaim safe pending deletions.
-    void TryReclaim();
+    void CleanUpPending();
 
 private:
     // Thread list management
@@ -110,7 +110,7 @@ private:
     // Global epoch counter [0, EBR_EPOCHS-1]
     Volatile<uint32_t> m_globalEpoch;
 
-    // Registered thread list (protected by m_threadListLock)
+    // Registered thread list (lock-free CAS insert; m_threadListLock used only for pruning)
     CrstStatic       m_threadListLock;
     EbrThreadData*   m_pThreadListHead = nullptr;
 

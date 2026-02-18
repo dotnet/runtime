@@ -153,7 +153,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
         || YieldProcessorNormalization::IsMeasurementScheduled()
         || HasDelayedDynamicMethod()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads()
-        || g_HashMapEbr.CleanupRequested();
+        || g_HashMapEbr.CleanUpRequested();
 
 #endif // TARGET_WASM
 }
@@ -204,10 +204,10 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         CleanupDelayedDynamicMethods();
     }
 
-    if (g_HashMapEbr.CleanupRequested())
+    if (g_HashMapEbr.CleanUpRequested())
     {
         GCX_PREEMP();
-        g_HashMapEbr.TryReclaim();
+        g_HashMapEbr.CleanUpPending();
     }
 }
 

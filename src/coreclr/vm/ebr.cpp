@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "ebr.h"
+#include "finalizerthread.h"
 
 // ============================================
 // Per-thread EBR state
@@ -22,6 +23,9 @@ struct EbrThreadData
 
     // Nesting depth for re-entrant critical regions.
     uint32_t           m_criticalDepth;
+
+    // Logically deleted from the thread list.
+    Volatile<BOOL>     m_detached;
 
     // Intrusive linked list through the collector's thread list.
     EbrThreadData*     m_pNext;
@@ -122,14 +126,17 @@ EbrCollector::GetOrCreateThreadData()
     pData->m_pCollector = this;
     pData->m_localEpoch = 0;
     pData->m_criticalDepth = 0;
+    pData->m_detached = FALSE;
     pData->m_pNext = nullptr;
 
     // Link into the collector's thread list.
+    // See TryAdvanceEpoch for the removal semantics of detached nodes.
+    EbrThreadData* pHead;
+    do
     {
-        CrstHolder lock(&m_threadListLock);
-        pData->m_pNext = m_pThreadListHead;
-        m_pThreadListHead = pData;
-    }
+        pHead = VolatileLoad(&m_pThreadListHead);
+        pData->m_pNext = pHead;
+    } while (InterlockedCompareExchangeT(&m_pThreadListHead, pData, pHead) != pHead);
 
     return pData;
 }
@@ -137,27 +144,13 @@ EbrCollector::GetOrCreateThreadData()
 void
 EbrCollector::UnlinkThreadData(EbrThreadData* pData)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
     if (pData == nullptr)
         return;
 
-    CrstHolder lock(&m_threadListLock);
-    EbrThreadData** pp = &m_pThreadListHead;
-    while (*pp != nullptr)
-    {
-        if (*pp == pData)
-        {
-            *pp = pData->m_pNext;
-            break;
-        }
-        pp = &(*pp)->m_pNext;
-    }
+    // Logically detach: the epoch scanner skips detached nodes.
+    pData->m_detached = TRUE;
 }
 
 // ============================================
@@ -263,21 +256,22 @@ EbrCollector::CanAdvanceEpoch()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Caller must hold m_threadListLock.
     uint32_t currentEpoch = m_globalEpoch;
 
-    EbrThreadData* pData = m_pThreadListHead;
+    EbrThreadData* pData = VolatileLoad(&m_pThreadListHead);
     while (pData != nullptr)
     {
-        uint32_t localEpoch = pData->m_localEpoch;
-        bool active = (localEpoch & ACTIVE_FLAG) != 0;
-
-        if (active)
+        if (!pData->m_detached)
         {
-            // If an active thread has not yet observed the current epoch,
-            // we cannot advance.
-            if (localEpoch != (currentEpoch | ACTIVE_FLAG))
-                return false;
+            uint32_t localEpoch = pData->m_localEpoch;
+            bool active = (localEpoch & ACTIVE_FLAG) != 0;
+            if (active)
+            {
+                // If an active thread has not yet observed the current epoch,
+                // we cannot advance.
+                if (localEpoch != (currentEpoch | ACTIVE_FLAG))
+                    return false;
+            }
         }
 
         pData = pData->m_pNext;
@@ -295,7 +289,11 @@ EbrCollector::TryAdvanceEpoch()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
+    // Serialize scan, epoch advance, and pruning under the lock. This prevents
+    // two concurrent callers from double-advancing the epoch and ensures the
+    // CanAdvanceEpoch result is still valid when we act on it.
     CrstHolder lock(&m_threadListLock);
 
     // Acquire fence to synchronize with the MemoryBarrier() calls in
@@ -307,6 +305,19 @@ EbrCollector::TryAdvanceEpoch()
 
     uint32_t newEpoch = ((uint32_t)m_globalEpoch + 1) % EBR_EPOCHS;
     m_globalEpoch = newEpoch;
+
+    // Physically prune detached nodes. New nodes are only ever CAS-pushed at
+    // the head, so unlinking interior nodes here is safe without interfering
+    // with concurrent inserts.
+    EbrThreadData** pp = &m_pThreadListHead;
+    while (*pp != nullptr)
+    {
+        if ((*pp)->m_detached)
+            *pp = (*pp)->m_pNext;
+        else
+            pp = &(*pp)->m_pNext;
+    }
+
     return true;
 }
 
@@ -314,12 +325,13 @@ EbrCollector::TryAdvanceEpoch()
 // Deferred deletion
 // ============================================
 
-// Detach the pending list for a given slot. Must be called under m_pendingLock.
+// Detach the pending list for a given slot.
 // Returns the head of the detached list.
 EbrPendingEntry*
 EbrCollector::DetachQueue(uint32_t slot)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(m_pendingLock.OwnedByCurrentThread());
 
     EbrPendingEntry* pHead = m_pPendingHeads[slot];
     m_pPendingHeads[slot] = nullptr;
@@ -327,7 +339,7 @@ EbrCollector::DetachQueue(uint32_t slot)
 }
 
 void
-EbrCollector::TryReclaim()
+EbrCollector::CleanUpPending()
 {
     CONTRACTL
     {
@@ -335,6 +347,7 @@ EbrCollector::TryReclaim()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     if (TryAdvanceEpoch())
     {
@@ -360,7 +373,7 @@ EbrCollector::TryReclaim()
 }
 
 bool
-EbrCollector::CleanupRequested()
+EbrCollector::CleanUpRequested()
 {
     LIMITED_METHOD_CONTRACT;
     return m_initialized && (size_t)m_pendingSizeInBytes > 0;
