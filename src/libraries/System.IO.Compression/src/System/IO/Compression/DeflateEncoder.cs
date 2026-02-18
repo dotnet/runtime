@@ -227,6 +227,11 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
             }
 
+            if (source.IsEmpty && !isFinalBlock)
+            {
+                return OperationStatus.Done;
+            }
+
             ZLibNative.FlushCode flushCode = isFinalBlock ? ZLibNative.FlushCode.Finish : ZLibNative.FlushCode.NoFlush;
 
             unsafe
