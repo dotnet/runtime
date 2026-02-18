@@ -12454,6 +12454,15 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 const instruction INS_BREAKPOINT = INS_ebreak;
 #endif // TARGET_RISCV64
 
+//#ifdef TARGET_POWERPC64
+//inline const instruction INS_BREAKPOINT_osHelper()
+//{
+//    // GDB needs the encoding of brk #0
+//    // Windbg needs the encoding of brk #F000
+//    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
+//}
+#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
+#endif // TARGET_POWERPC64
 /*****************************************************************************/
 
 extern const BYTE genTypeSizes[];
