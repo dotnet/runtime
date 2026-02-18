@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { dotnetLogger } from "./cross-module";
+
 const symbol_map = new Map<number, string>();
 let symbolTable: string | undefined;
 const regexes: RegExp[] = [];
@@ -43,7 +45,7 @@ export function symbolicateStackTrace(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`failed to symbolicate: ${error}`);
+        dotnetLogger.debug(`failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -79,5 +81,6 @@ function initSymbolMap() {
             symbol_map.set(Number(parts[0]), parts[1]);
         });
     } catch (exc) {
+        dotnetLogger.debug(`failed to parse symbol table: ${exc}`);
     }
 }

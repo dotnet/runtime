@@ -3,7 +3,7 @@
 
 import type { TimeStamp } from "./types";
 
-import { dotnetAssert, dotnetDiagnosticsExports, dotnetLoaderExports, Module } from "./cross-module";
+import { dotnetAssert, dotnetLoaderExports, Module } from "./cross-module";
 import { jsInteropState } from "./marshal";
 import { ENVIRONMENT_IS_WEB } from "./per-module";
 
