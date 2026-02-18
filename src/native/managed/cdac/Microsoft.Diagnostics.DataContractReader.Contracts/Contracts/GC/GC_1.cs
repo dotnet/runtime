@@ -19,11 +19,29 @@ internal readonly struct GC_1 : IGC
         Server,
     }
 
-    private readonly Target _target;
+    private enum HandleType_1
+    {
+        HNDTYPE_WEAK_SHORT = 0,
+        HNDTYPE_WEAK_LONG = 1,
+        HNDTYPE_STRONG = 2,
+        HNDTYPE_PINNED = 3,
+        HNDTYPE_REFCOUNTED = 5,
+        HNDTYPE_DEPENDENT = 6,
+        HNDTYPE_WEAK_INTERIOR_POINTER = 10,
+        HNDTYPE_CROSSREFERENCE = 11
+    }
 
-    internal GC_1(Target target)
+    private readonly Target _target;
+    private readonly uint _handlesPerBlock;
+    private readonly byte _blockInvalid;
+    private readonly TargetPointer _debugDestroyedHandleValue;
+
+    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue)
     {
         _target = target;
+        _handlesPerBlock = handlesPerBlock;
+        _blockInvalid = blockInvalid;
+        _debugDestroyedHandleValue = debugDestroyedHandleValue;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -276,5 +294,147 @@ internal readonly struct GC_1 : IGC
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();
         return identifiers.Contains(GCIdentifiers.DynamicHeapCount);
+    }
+
+    List<HandleData> IGC.GetHandles(uint[] types)
+    {
+        List<uint> typesList = types.ToList();
+        typesList.Sort();
+        List<HandleData> handles = new();
+        TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
+        while (handleTableMap != TargetPointer.Null)
+        {
+            Data.HandleTableMap handleTableData = _target.ProcessedData.GetOrAdd<Data.HandleTableMap>(handleTableMap);
+            foreach (TargetPointer bucketPtr in handleTableData.BucketsPtr)
+            {
+                if (bucketPtr == TargetPointer.Null)
+                    continue;
+
+                Data.HandleTableBucket bucket = _target.ProcessedData.GetOrAdd<Data.HandleTableBucket>(bucketPtr);
+                int heapCount = (int)((IGC)this).GetGCHeapCount();
+                for (int j = 0; j < heapCount; j++)
+                {
+                    TargetPointer handleTablePtr = _target.ReadPointer(bucket.Table + (ulong)(j * _target.PointerSize));
+                    if (handleTablePtr == TargetPointer.Null)
+                        continue;
+
+                    Data.HandleTable handleTable = _target.ProcessedData.GetOrAdd<Data.HandleTable>(handleTablePtr);
+                    foreach (uint type in typesList)
+                    {
+                        if (handleTable.SegmentList == TargetPointer.Null)
+                            continue;
+                        TargetPointer segmentPtr = handleTable.SegmentList;
+                        do
+                        {
+                            Data.TableSegment tableSegment = _target.ProcessedData.GetOrAdd<Data.TableSegment>(segmentPtr);
+                            segmentPtr = tableSegment.NextSegment;
+                            GetHandlesForSegment(tableSegment, type, handles);
+                        } while (segmentPtr != TargetPointer.Null);
+                    }
+                }
+            }
+            handleTableMap = handleTableData.Next;
+        }
+        return handles;
+    }
+
+    uint[] IGC.GetSupportedHandleTypes()
+    {
+        List<uint> supportedTypes =
+        [
+            .. new uint[]
+            {
+                (uint)HandleType_1.HNDTYPE_WEAK_SHORT,
+                (uint)HandleType_1.HNDTYPE_WEAK_LONG,
+                (uint)HandleType_1.HNDTYPE_STRONG,
+                (uint)HandleType_1.HNDTYPE_PINNED,
+                (uint)HandleType_1.HNDTYPE_DEPENDENT,
+                (uint)HandleType_1.HNDTYPE_WEAK_INTERIOR_POINTER
+            },
+        ];
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureComWrappers) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureObjCMarshal) != 0)
+        {
+            supportedTypes.Add((uint)HandleType_1.HNDTYPE_REFCOUNTED);
+        }
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureJavaMarshal) != 0)
+        {
+            supportedTypes.Add((uint)HandleType_1.HNDTYPE_CROSSREFERENCE);
+        }
+        return supportedTypes.ToArray();
+    }
+
+    private void GetHandlesForSegment(Data.TableSegment tableSegment, uint type, List<HandleData> handles)
+    {
+        byte uBlock = tableSegment.RgTail[type];
+        if (uBlock == _blockInvalid)
+            return;
+        uBlock = tableSegment.RgAllocation[uBlock];
+        byte uHead = uBlock;
+        byte uBlockOld;
+        // for each block in the segment for the given handle type
+        do
+        {
+            uBlockOld = uBlock;
+            uBlock = tableSegment.RgAllocation[uBlock];
+            if (HasSecondary(type))
+            {
+                byte blockIndex = tableSegment.RgUserData[uBlockOld];
+                if (blockIndex == _blockInvalid)
+                    continue;
+            }
+            GetHandlesForBlock(tableSegment, uBlockOld, type, handles);
+        } while (uBlock != uHead);
+    }
+
+    private void GetHandlesForBlock(Data.TableSegment tableSegment, byte uBlock, uint type, List<HandleData> handles)
+    {
+        for (uint k = 0; k < _handlesPerBlock; k++)
+        {
+            uint offset = uBlock * _handlesPerBlock + k;
+            TargetPointer handleAddress = tableSegment.RgValue + offset * (uint)_target.PointerSize;
+            TargetPointer handle = _target.ReadPointer(handleAddress);
+            if (handle == TargetPointer.Null || handle == _debugDestroyedHandleValue)
+                continue;
+            handles.Add(CreateHandleData(handleAddress, uBlock, k, tableSegment, type));
+        }
+    }
+
+    private static bool IsStrongReference(uint type) => type == (uint)HandleType_1.HNDTYPE_STRONG || type == (uint)HandleType_1.HNDTYPE_PINNED;
+    private static bool HasSecondary(uint type) => type == (uint)HandleType_1.HNDTYPE_DEPENDENT || type == (uint)HandleType_1.HNDTYPE_WEAK_INTERIOR_POINTER || type == (uint)HandleType_1.HNDTYPE_CROSSREFERENCE;
+    private static bool IsRefCounted(uint type) => type == (uint)HandleType_1.HNDTYPE_REFCOUNTED;
+
+    private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, uint intraBlockIndex, Data.TableSegment tableSegment, uint type)
+    {
+        HandleData handleData = default;
+        handleData.Handle = handleAddress;
+        handleData.Type = type;
+        handleData.JupiterRefCount = 0;
+        handleData.IsPegged = false;
+        handleData.StrongReference = IsStrongReference(type);
+        if (HasSecondary(type))
+        {
+            byte blockIndex = tableSegment.RgUserData[uBlock];
+            uint offset = blockIndex * _handlesPerBlock + intraBlockIndex;
+            handleData.Secondary = _target.ReadPointer(tableSegment.RgValue + offset * (uint)_target.PointerSize);
+        }
+        else
+        {
+            handleData.Secondary = 0;
+        }
+
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 && IsRefCounted(type))
+        {
+            IObject obj = _target.Contracts.Object;
+            TargetPointer handle = _target.ReadPointer(handleAddress);
+            obj.GetBuiltInComData(handle, out _, out TargetPointer ccw);
+            if (ccw != TargetPointer.Null)
+            {
+                IComWrappers comWrappers = _target.Contracts.ComWrappers;
+                handleData.RefCount = (uint)comWrappers.GetRefCount(ccw);
+                handleData.StrongReference = handleData.StrongReference || handleData.RefCount > 0 && !comWrappers.IsHandleWeak(ccw);
+            }
+        }
+
+        return handleData;
     }
 }

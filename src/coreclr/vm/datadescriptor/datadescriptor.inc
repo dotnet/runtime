@@ -1006,6 +1006,17 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
+CDAC_TYPE_BEGIN(ComCallWrapper)
+CDAC_TYPE_INDETERMINATE(ComCallWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_END(ComCallWrapper)
+
+CDAC_TYPE_BEGIN(SimpleComCallWrapper)
+CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_END(SimpleComCallWrapper)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1069,6 +1080,21 @@ CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
+#if FEATURE_COMWRAPPERS
+CDAC_GLOBAL(FeatureComWrappers, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureComWrappers, uint8, 0)
+#endif
+#if FEATURE_OBJCMARSHAL
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 0)
+#endif
+#if FEATURE_JAVAMARSHAL
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 0)
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
@@ -1134,7 +1160,7 @@ CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
-
+CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
 // EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes

@@ -157,6 +157,15 @@ Data descriptors used:
 | `OomHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
+| `HandleTableMap` | BucketsPtr | GC | Pointer to the bucket pointer array |
+| `HandleTableMap` | Next | GC | Pointer to the next handle table map in the linked list |
+| `HandleTableBucket` | Table | GC | Pointer to per-heap `HandleTable*` array |
+| `HandleTable` | SegmentList | GC | Head of linked list of handle table segments |
+| `TableSegment` | NextSegment | GC | Pointer to the next segment |
+| `TableSegment` | RgTail | GC | Tail block index per handle type |
+| `TableSegment` | RgAllocation | GC | Circular block-list links per block |
+| `TableSegment` | RgValue | GC | Start of handle value storage |
+| `TableSegment` | RgUserData | GC | Auxiliary per-block metadata (e.g. secondary handle blocks) |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
@@ -192,15 +201,26 @@ Global variables used:
 | `GCHeapExpandMechanisms` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `GCHeapInterestingMechanismBits` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `CurrentGCState` | uint | GC | `c_gc_state` enum value. Only available when `GCIdentifiers` contains `background`. |
-| `DynamicAdaptationMode | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
+| `DynamicAdaptationMode` | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
+| `HandleTableMap` | TargetPointer | GC | Pointer to the head of the handle table map linked list |
+| `InitialHandleTableArraySize` | uint | GC | Number of bucket entries in each `HandleTableMap` |
+| `HandleBlocksPerSegment` | uint | GC | Number of blocks in each `TableSegment` |
+| `HandleMaxInternalTypes` | uint | GC | Number of handle types (length of `TableSegment.RgTail`) |
+| `HandlesPerBlock` | uint | GC | Number of handles in each handle block |
+| `BlockInvalid` | byte | GC | Sentinel value indicating an invalid handle block index |
+| `DebugDestroyedHandleValue` | TargetPointer | GC | Sentinel handle value used for destroyed handles |
+| `FeatureCOMInterop` | byte | VM | Non-zero when COM interop support is enabled |
+| `FeatureComWrappers` | byte | VM | Non-zero when `ComWrappers` support is enabled |
+| `FeatureObjCMarshal` | byte | VM | Non-zero when Objective-C marshal support is enabled |
+| `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
 
 Contracts used:
 | Contract Name |
 | --- |
-| _(none)_ |
-
+| ComWrappers |
+| Object |
 
 Constants used:
 | Name | Type | Purpose | Value |
@@ -547,4 +567,134 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
         arr.Add(target.ReadNUInt(arrayStart + (i * target.PointerSize)));
     return arr;
 }
+```
+
+GetHandles
+```csharp
+List<HandleData> IGC.GetHandles(uint[] types)
+{
+    List<HandleData> handles = new();
+    TargetPointer handleTableMap = _target.ReadGlobalPointer("HandleTableMap");
+    // for each handleTableMap in the linked list
+    while (handleTableMap != TargetPointer.Null)
+    {
+        TargetPointer bucketsPtr = target.ReadPointer(handleTableMap + /* HandleTableMap::BucketsPtr offset */);
+        foreach (/* read global variable "InitialHandleTableArraySize" bucketPtrs starting at bucketsPtr */)
+        {
+            if (bucketPtr == TargetPointer.Null)
+                continue;
+
+            int heapCount = (int)((IGC)this).GetGCHeapCount();
+            for (int j = 0; j < heapCount; j++)
+            {
+                // double dereference to iterate handle tables per array element per GC heap - native equivalent = map->pBuckets[i]->pTable[j] 
+                TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);
+                TargetPointer handleTablePtr = _target.ReadPointer(table + (ulong)(j * _target.PointerSize));
+                if (handleTablePtr == TargetPointer.Null)
+                    continue;
+
+                foreach (uint type in types)
+                {
+                    // initialize segmentPtr and iterate through the linked list of segments.
+                    TargetPointer segmentPtr = target.ReadPointer(handleTablePtr + /* HandleTable::SegmentList offset */);
+                    if (segmentPtr == TargetPointer.Null)
+                        continue;
+                    do
+                    {
+                        GetHandlesForSegment(segmentPtr, type, handles);
+                        segmentPtr = target.ReadPointer(segmentPtr + /* TableSegment::NextSegment offset */);
+                    } while (segmentPtr != TargetPointer.Null);
+                }
+            }
+        }
+        handleTableMap = target.ReadPointer(handleTableMap + /* HandleTableMap::Next offset */);
+    }
+    return handles;
+}
+
+uint[] IGC.GetSupportedHandleTypes()
+{
+    // currently supported types: HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT, HNDTYPE_WEAK_INTERIOR_POINTER, HNDTYPE_REFCOUNTED (conditional on at least one of global variables "FeatureCOMInterop", "FeatureComWrappers", and "FeatureObjCMarshal"), and HNDTYPE_CROSSREFERENCE (conditional on global variable "FeatureJavaMarshal")
+}
+
+private void GetHandlesForSegment(TargetPointer segmentPtr, uint type, List<HandleData> handles)
+{
+    // GC handles are stored in circular linked lists per segment and handle type. 
+    // RgTail = array of bytes that is global variable "HandleMaxInternalTypes" long.
+    // Contains tail block indices for each GC handle type.
+    // RgAllocation = byte array of block indices that are linked together to find all blocks for a given type. It is global variable "HandleBlocksPerSegment" long
+    // RgUser = byte array of block indices for extra handle info such as dependent handles. It is also "HandleBlocksPerSegment" long.
+    // For example, target.Read<byte>(segmentPtr + TableSegment::RgTail offset + x); => RgTail[x];
+    byte uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgTail offset */ + type);
+    if (uBlock == target.ReadGlobal<byte>("BlockInvalid"))
+        return;
+    uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgAllocation offset */ + uBlock);
+    byte uHead = uBlock;
+    do
+    {
+        if (HasSecondary(type))
+        {
+            byte blockIndex = target.Read<byte>(segmentPtr + /* TableSegment::RgUserData offset */ + uBlock);
+            if (blockIndex == target.ReadGlobal<byte>("BlockInvalid"))
+                continue;
+        }
+        GetHandlesForBlock(segmentPtr, uBlock, type, handles);
+        // update uBlock
+        uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgAllocation offset */ + uBlock);
+    } while (uBlock != uHead);
+}
+
+private void GetHandlesForBlock(TargetPointer segmentPtr, byte uBlock, uint type, List<HandleData> handles)
+{
+    for (uint k = 0; k < target.ReadGlobal<byte>("HandlesPerBlock"); k++)
+    {
+        uint offset = uBlock * target.ReadGlobal<byte>("HandlesPerBlock") + k;
+        TargetPointer handleAddress = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * (uint)_target.PointerSize);
+        TargetPointer handle = _target.ReadPointer(handleAddress);
+        if (handle == TargetPointer.Null || handle == target.ReadGlobalPointer("DebugDestroyedHandleValue"))
+            continue;
+        handles.Add(CreateHandleData(handleAddress, uBlock, k, segmentPtr, type));
+    }
+}
+
+private static bool IsStrongReference(uint type) => // HNDTYPE_STRONG || HNDTYPE_PINNED;
+private static bool HasSecondary(uint type) => // HNDTYPE_DEPENDENT || HNDTYPE_WEAK_INTERIOR_POINTER || HNDTYPE_CROSSREFERENCE;
+private static bool IsRefCounted(uint type) => // HNDTYPE_REFCOUNTED;
+
+private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, uint intraBlockIndex, TargetPointer segmentPtr, uint type)
+{
+    HandleData handleData = default;
+    handleData.Handle = handleAddress;
+    handleData.Type = type;
+    handleData.JupiterRefCount = 0;
+    handleData.IsPegged = false;
+    handleData.StrongReference = IsStrongReference(type);
+    if (HasSecondary(type))
+    {
+        byte blockIndex = target.Read<byte>(segmentPtr + /* TableSegment::RgUserData offset */ + uBlock);
+        uint offset = blockIndex * target.ReadGlobal<byte>("HandlesPerBlock") + intraBlockIndex;
+        TargetPointer secondaryPtr = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * _target.PointerSize);
+        handleData.Secondary = _target.ReadPointer(secondaryPtr);
+    }
+    else
+    {
+        handleData.Secondary = 0;
+    }
+
+    if (_target.ReadGlobal<byte>("FeatureCOMInterop") != 0 && IsRefCounted(type))
+    {
+        IObject obj = _target.Contracts.Object;
+        TargetPointer handle = _target.ReadPointer(handleAddress);
+        obj.GetBuiltInComData(handle, out _, out TargetPointer ccw);
+        if (ccw != TargetPointer.Null)
+        {
+            IComWrappers comWrappers = _target.Contracts.ComWrappers;
+            handleData.RefCount = (uint)comWrappers.GetRefCount(ccw);
+            handleData.StrongReference = handleData.StrongReference || handleData.RefCount > 0 && !comWrappers.IsHandleWeak(ccw);
+        }
+    }
+
+    return handleData;
+}
+
 ```

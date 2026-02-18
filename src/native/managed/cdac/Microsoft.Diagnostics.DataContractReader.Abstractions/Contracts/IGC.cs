@@ -19,6 +19,15 @@ public static class GCIdentifiers
     public const string DynamicHeapCount = "dynamic_heap";
 }
 
+public record struct HandleData(
+    TargetPointer Handle,
+    TargetPointer Secondary,
+    uint Type,
+    bool StrongReference,
+    uint RefCount,
+    uint JupiterRefCount,
+    bool IsPegged);
+
 public readonly struct GCHeapData
 {
     public TargetPointer MarkArray { get; init; }
@@ -102,6 +111,8 @@ public interface IGC : IContract
     GCOomData GetOomData() => throw new NotImplementedException();
     // server variant
     GCOomData GetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
+    List<HandleData> GetHandles(uint[] types) => throw new NotImplementedException();
+    uint[] GetSupportedHandleTypes() => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC
