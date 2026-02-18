@@ -58,6 +58,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public void GetMethodSigHelper_FunctionPointerParameter_ThrowsNotSupportedException()
         {
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(CallingConventions.Standard, typeof(void));
