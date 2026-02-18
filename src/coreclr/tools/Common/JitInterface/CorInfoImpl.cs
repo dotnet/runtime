@@ -1763,6 +1763,19 @@ namespace Internal.JitInterface
             return result;
         }
 
+        private MethodDesc GetRuntimeDeterminedMethodForTokenWithTemplate(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc templateMethod)
+        {
+            object result = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            Debug.Assert(result is MethodDesc);
+
+            if (templateMethod.IsAsyncVariant() && !((MethodDesc)result).IsAsyncVariant())
+            {
+                result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
+            }
+
+            return (MethodDesc)result;
+        }
+
         private object GetRuntimeDeterminedObjectForToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             // Since RyuJIT operates on canonical types (as opposed to runtime determined ones), but the
@@ -1779,17 +1792,6 @@ namespace Internal.JitInterface
                 result = ((TypeDesc)result).MakeArrayType();
 
             return result;
-        }
-
-        private MethodDesc GetRuntimeDeterminedMethodForTokenWithTemplate(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc templateMethod)
-        {
-            object result = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            Debug.Assert(result is MethodDesc);
-
-            if (templateMethod.IsAsyncVariant())
-                result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
-
-            return (MethodDesc)result;
         }
 
         private static object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
