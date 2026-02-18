@@ -46,7 +46,7 @@ namespace System.IO
         /// <summary>
         /// The file is a block device.
         /// </summary>
-        [UnsupportedOSPlatform("windows")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
         BlockDevice
     }
 }

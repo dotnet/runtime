@@ -21,12 +21,5 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal string? Path => _path;
-
-        /// <summary>
-        /// Gets the type of the file that this handle represents.
-        /// </summary>
-        /// <returns>The type of the file.</returns>
-        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        public System.IO.FileType GetFileType() => throw new PlatformNotSupportedException();
     }
 }

@@ -275,7 +275,7 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <returns>The type of the file.</returns>
         /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        public new unsafe System.IO.FileType GetFileType()
+        public unsafe System.IO.FileType GetFileType()
         {
             ObjectDisposedException.ThrowIf(IsClosed, this);
 
