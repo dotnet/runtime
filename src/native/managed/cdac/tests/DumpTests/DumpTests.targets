@@ -12,6 +12,7 @@
       TestHostDir            — Path to the local-build testhost runtime (auto-detected)
       DebuggeeConfiguration  — Build configuration for debuggees (default: Release)
       CIDumpVersionsOnly     — When 'true', only generate dumps for "local" version (CI mode)
+      SkipDumpGeneration     — When 'true', skip dump generation entirely (CI test-only phase)
 
     RuntimeVersion values:
       "local"  — framework-dependent build, run with the repo's testhost
@@ -42,6 +43,7 @@
     <Debuggee Include="ExceptionState" />
     <Debuggee Include="MultiModule" />
     <Debuggee Include="GCRoots" />
+    <Debuggee Include="StackWalk" />
   </ItemGroup>
 
   <!-- Runtime versions to create dumps for.
@@ -52,7 +54,7 @@
     <DumpRuntimeVersion Include="net10.0" Condition="'$(CIDumpVersionsOnly)' != 'true'" />
   </ItemGroup>
 
-  <Target Name="GenerateAllDumps" BeforeTargets="Build">
+  <Target Name="GenerateAllDumps" BeforeTargets="Build" Condition="'$(SkipDumpGeneration)' != 'true'">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
              Properties="DebuggeeName=%(Debuggee.Identity)" />

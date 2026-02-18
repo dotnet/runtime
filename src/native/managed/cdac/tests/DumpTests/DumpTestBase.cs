@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
@@ -12,23 +13,36 @@ using Xunit.Sdk;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Automatically checks <see cref="SkipOnRuntimeVersionAttribute"/> on test methods
-/// before they execute. Applied at the class level on <see cref="DumpTestBase"/>,
-/// so all derived test classes get automatic version-aware skipping.
+/// Automatically checks <see cref="SkipOnRuntimeVersionAttribute"/> and
+/// <see cref="SkipOnTargetOSAttribute"/> on test methods before they execute.
+/// Applied at the class level on <see cref="DumpTestBase"/>, so all derived
+/// test classes get automatic version-aware and OS-aware skipping.
 /// </summary>
 public sealed class CheckSkipOnRuntimeVersionAttribute : BeforeAfterTestAttribute
 {
     public override void Before(MethodInfo methodUnderTest)
     {
         string? version = DumpTestBase.CurrentRuntimeVersion.Value;
-        if (version is null)
-            return;
-
-        foreach (SkipOnRuntimeVersionAttribute attr in methodUnderTest.GetCustomAttributes<SkipOnRuntimeVersionAttribute>())
+        if (version is not null)
         {
-            if (string.Equals(attr.Version, version, StringComparison.OrdinalIgnoreCase))
+            foreach (SkipOnRuntimeVersionAttribute attr in methodUnderTest.GetCustomAttributes<SkipOnRuntimeVersionAttribute>())
             {
-                throw new SkipTestException($"[{version}] {attr.Reason}");
+                if (string.Equals(attr.Version, version, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new SkipTestException($"[{version}] {attr.Reason}");
+                }
+            }
+        }
+
+        string? targetOS = DumpTestBase.CurrentTargetOS.Value;
+        if (targetOS is not null)
+        {
+            foreach (SkipOnTargetOSAttribute attr in methodUnderTest.GetCustomAttributes<SkipOnTargetOSAttribute>())
+            {
+                if (string.Equals(attr.OperatingSystem, targetOS, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new SkipTestException($"[TargetOS={targetOS}] {attr.Reason}");
+                }
             }
         }
     }
@@ -40,18 +54,20 @@ public sealed class CheckSkipOnRuntimeVersionAttribute : BeforeAfterTestAttribut
 /// shared helpers for assertions.
 /// </summary>
 /// <remarks>
-/// Tests that need version-aware skipping should:
+/// Tests that need version-aware or OS-aware skipping should:
 /// <list type="number">
 ///   <item>Use <c>[ConditionalFact]</c> instead of <c>[Fact]</c></item>
-///   <item>Apply <c>[SkipOnRuntimeVersion("version", "reason")]</c> to the method</item>
+///   <item>Apply <c>[SkipOnRuntimeVersion("version", "reason")]</c> or
+///         <c>[SkipOnTargetOS("Windows", "reason")]</c> to the method</item>
 /// </list>
 /// The <see cref="CheckSkipOnRuntimeVersionAttribute"/> on this class automatically
-/// evaluates skip conditions — no manual <c>SkipIfVersionExcluded()</c> call required.
+/// evaluates skip conditions — no manual skip call required.
 /// </remarks>
 [CheckSkipOnRuntimeVersion]
 public abstract class DumpTestBase : IDisposable
 {
     internal static readonly AsyncLocal<string?> CurrentRuntimeVersion = new();
+    internal static readonly AsyncLocal<string?> CurrentTargetOS = new();
 
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
@@ -73,15 +89,23 @@ public abstract class DumpTestBase : IDisposable
 
     /// <summary>
     /// Resolves the dump file path for the current debuggee and runtime version.
-    /// Convention: {RepoRoot}/artifacts/dumps/cdac/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
+    /// If the <c>CDAC_DUMP_ROOT</c> environment variable is set, uses that as the base directory.
+    /// Otherwise falls back to <c>{RepoRoot}/artifacts/dumps/cdac/</c>.
+    /// Convention: {root}/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
     /// </summary>
     protected string GetDumpPath()
     {
-        string? repoRoot = FindRepoRoot();
-        if (repoRoot is null)
-            throw new InvalidOperationException("Could not locate the repository root.");
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
+        {
+            string? repoRoot = FindRepoRoot();
+            if (repoRoot is null)
+                throw new InvalidOperationException("Could not locate the repository root.");
 
-        return Path.Combine(repoRoot, "artifacts", "dumps", "cdac", RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
+            dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
+        }
+
+        return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
     }
 
     /// <summary>
@@ -103,11 +127,22 @@ public abstract class DumpTestBase : IDisposable
             contractDescriptor,
             _host.ReadFromTarget,
             writeToTarget: null!,
-            getThreadContext: null!,
+            _host.GetThreadContext,
             additionalFactories: [],
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+
+        // Set the target OS for SkipOnTargetOS attribute evaluation
+        try
+        {
+            RuntimeInfoOperatingSystem os = _target!.Contracts.RuntimeInfo.GetTargetOperatingSystem();
+            CurrentTargetOS.Value = os.ToString();
+        }
+        catch
+        {
+            // RuntimeInfo contract may not be available; leave CurrentTargetOS null
+        }
     }
 
     private static string? FindRepoRoot()
@@ -126,6 +161,6 @@ public abstract class DumpTestBase : IDisposable
     public void Dispose()
     {
         _host?.Dispose();
-        GC.SuppressFinalize(this);
+        System.GC.SuppressFinalize(this);
     }
 }
