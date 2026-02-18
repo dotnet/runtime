@@ -1129,8 +1129,6 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
             ValueNum lenVN   = curAssertion.GetOp2().GetCheckedBound();
-            ValueNum indexOp1VN;
-            int      indexOp2Cns;
 
             assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
             assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
@@ -1163,16 +1161,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     }
                 }
             }
-            // Example: we have IsBoundsCheckNoThrow assertion for arr[i - 2] with i == normalLclVN
-            // This means i >= 2. NOTE: "i - 2" is VNF_ADD(i, -2).
-            else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
-                     (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
-            {
-                cmpOper = GT_GE;
-                limit   = Limit(Limit::keConstant, -indexOp2Cns);
-            }
             else if (normalLclVN == lenVN)
             {
+                ValueNum indexOp1VN;
+                int      indexOp2Cns;
+
                 if (comp->vnStore->IsVNInt32Constant(indexVN))
                 {
                     // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
@@ -1186,6 +1179,13 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     {
                         continue;
                     }
+                }
+                // arr[arr.Length - 2] means arr.Length > 2, so we can deduce "normalLclVN > CNS"
+                else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
+                         (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
+                {
+                    cmpOper = GT_GT;
+                    limit   = Limit(Limit::keConstant, -indexOp2Cns);
                 }
                 else
                 {
