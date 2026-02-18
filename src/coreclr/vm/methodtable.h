@@ -2063,6 +2063,12 @@ public:
     bool IsNativeHFA();
     CorInfoHFAElemType GetNativeHFAType();
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+    // Returns true if this is the System.Half type, which is passed and returned
+    // in floating point registers on xarch platforms.
+    bool IsNativeHalfType();
+#endif // TARGET_XARCH
+
 #ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()
     {
