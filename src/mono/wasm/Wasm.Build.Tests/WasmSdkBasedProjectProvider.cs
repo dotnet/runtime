@@ -32,7 +32,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.js", true },
             { "dotnet.js.map", false },
             { "dotnet.native.js", true },
-            { "dotnet.native.js.symbols", false },
+            { "dotnet.native.js.symbols", true },
             { "dotnet.native.wasm", true },
             { "dotnet.native.worker.mjs", true },
             { "dotnet.runtime.js", true },

@@ -107,10 +107,4 @@ namespace Internal.Runtime
         ReadonlyBlobRegionStart = 300,
         ReadonlyBlobRegionEnd = 399,
     }
-
-    [Flags]
-    internal enum ModuleInfoFlags : int
-    {
-        HasEndPointer = 0x1,
-    }
 }
