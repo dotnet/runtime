@@ -454,9 +454,9 @@ static bool IsDefaultValue(GenTree* node)
 class DefaultValueAnalysis
 {
     Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;     // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_mutatedVarsIn;   // Per-block set of locals mutated to non-default on entry.
-    VARSET_TP  m_mutatedAtEntry;  // Locals that are mutated at method entry (params, OSR locals).
+    VARSET_TP* m_mutatedVars;    // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn;  // Per-block set of locals mutated to non-default on entry.
+    VARSET_TP  m_mutatedAtEntry; // Locals that are mutated at method entry (params, OSR locals).
 
     // DataFlow::ForwardAnalysis callback used in Phase 2.
     class DataFlowCallback
@@ -505,8 +505,7 @@ class DefaultValueAnalysis
             // entry or mutated anywhere within the try region.
             VARSET_TP tryMutated(VarSetOps::MakeCopy(m_compiler, m_analysis.m_mutatedVarsIn[firstTryBlock->bbNum]));
 
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next();
-                 tryBlock             = tryBlock->Next())
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
                 VarSetOps::UnionD(m_compiler, tryMutated, m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
@@ -521,8 +520,7 @@ class DefaultValueAnalysis
             {
                 // No predecessors (entry block or unreachable). Parameters
                 // and OSR locals are considered mutated at method entry.
-                VarSetOps::Assign(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
-                                  m_analysis.m_mutatedAtEntry);
+                VarSetOps::Assign(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedAtEntry);
             }
 
             return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
@@ -538,7 +536,7 @@ public:
     {
     }
 
-    void Run();
+    void             Run();
     const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
 
 private:
@@ -951,7 +949,8 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
             anyLive |=
                 !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
-            anyMutated |= !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
+            anyMutated |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
         }
 
         return anyLive && anyMutated;
