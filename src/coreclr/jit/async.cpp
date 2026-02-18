@@ -615,6 +615,45 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 }
 
 //------------------------------------------------------------------------
+//------------------------------------------------------------------------
+// UpdateMutatedLocal:
+//   If the given node is a local store or LCL_ADDR, and the local is tracked,
+//   mark it as mutated in the provided set. Stores of a default (zero) value
+//   are not considered mutations.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   node     - The IR node to check.
+//   mutated  - [in/out] The set to update.
+//
+static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+{
+    if (!node->OperIsLocalStore() && !node->OperIs(GT_LCL_ADDR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
+    if (!varDsc->lvTracked)
+    {
+        return;
+    }
+
+    if (node->OperIs(GT_LCL_ADDR))
+    {
+        // Address taken — we cannot know how the address will be used
+        // so conservatively treat this as a non-default mutation.
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+        return;
+    }
+
+    if (!IsDefaultValue(node->AsLclVarCommon()->Data()))
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+    }
+}
+
+//------------------------------------------------------------------------
 // DefaultValueAnalysis::ComputePerBlockMutatedVars:
 //   Phase 1: For each reachable basic block compute the set of tracked locals
 //   that are mutated to a non-default value.
@@ -641,38 +680,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 
         for (GenTree* node : LIR::AsRange(block))
         {
-            if (!node->OperIsLocalStore() && !node->OperIs(GT_LCL_ADDR))
-            {
-                continue;
-            }
-
-            GenTreeLclVarCommon* lclNode = node->AsLclVarCommon();
-            unsigned             lclNum  = lclNode->GetLclNum();
-            LclVarDsc*           varDsc  = m_compiler->lvaGetDesc(lclNum);
-
-            if (!varDsc->lvTracked)
-            {
-                continue;
-            }
-
-            unsigned varIndex = varDsc->lvVarIndex;
-
-            if (node->OperIs(GT_LCL_ADDR))
-            {
-                // Address taken — we cannot know how the address will be used
-                // so conservatively treat this as a non-default mutation.
-                VarSetOps::AddElemD(m_compiler, mutated, varIndex);
-                continue;
-            }
-
-            if (node->OperIsLocalStore())
-            {
-                GenTree* data = lclNode->Data();
-                if (!IsDefaultValue(data))
-                {
-                    VarSetOps::AddElemD(m_compiler, mutated, varIndex);
-                }
-            }
+            UpdateMutatedLocal(m_compiler, node, mutated);
         }
     }
 
@@ -835,26 +843,7 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 void AsyncLiveness::Update(GenTree* node)
 {
     m_updater.UpdateLife(node);
-
-    if (node->OperIs(GT_LCL_ADDR))
-    {
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-        if (dsc->lvTracked)
-        {
-            VarSetOps::AddElemD(m_compiler, m_mutatedValues, dsc->lvVarIndex);
-        }
-
-        return;
-    }
-
-    if (node->OperIsLocalStore())
-    {
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-        if (dsc->lvTracked && !IsDefaultValue(node->AsLclVarCommon()->Data()))
-        {
-            VarSetOps::AddElemD(m_compiler, m_mutatedValues, dsc->lvVarIndex);
-        }
-    }
+    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
 }
 
 //------------------------------------------------------------------------
