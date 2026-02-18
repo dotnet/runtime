@@ -49,6 +49,15 @@ internal sealed class ClrMdDumpHost : IDisposable
     }
 
     /// <summary>
+    /// Get a thread's register context from the dump.
+    /// Returns 0 on success, non-zero on failure.
+    /// </summary>
+    public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
+    {
+        return _dataTarget.DataReader.GetThreadContext(threadId, contextFlags, buffer) ? 0 : -1;
+    }
+
+    /// <summary>
     /// Locate the DotNetRuntimeContractDescriptor symbol address in the dump.
     /// Uses ClrMD's built-in export resolution which handles PE, ELF, and Mach-O formats.
     /// </summary>

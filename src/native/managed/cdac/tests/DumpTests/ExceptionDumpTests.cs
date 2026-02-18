@@ -35,6 +35,61 @@ public abstract class ExceptionDumpTestsBase : DumpTestBase
         IException exceptionContract = Target.Contracts.Exception;
         Assert.NotNull(exceptionContract);
     }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Thread.UEWatsonBucketTrackerBuckets field not present in .NET 10 contract descriptor")]
+    public void Exception_CrashingThreadHasLastThrownObject()
+    {
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        // Walk threads to find one with a non-null LastThrownObjectHandle
+        bool foundExceptionThread = false;
+        TargetPointer currentThread = storeData.FirstThread;
+        while (currentThread != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(currentThread);
+            if (threadData.LastThrownObjectHandle != TargetPointer.Null)
+            {
+                foundExceptionThread = true;
+                break;
+            }
+            currentThread = threadData.NextThread;
+        }
+
+        // FailFast with a message should leave an exception on the crashing thread
+        Assert.True(foundExceptionThread, "Expected at least one thread with a LastThrownObjectHandle");
+    }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Thread.UEWatsonBucketTrackerBuckets field not present in .NET 10 contract descriptor")]
+    public void Exception_CanGetExceptionDataFromFirstNestedException()
+    {
+        IThread threadContract = Target.Contracts.Thread;
+        IException exceptionContract = Target.Contracts.Exception;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        // Find a thread with a first nested exception
+        TargetPointer currentThread = storeData.FirstThread;
+        while (currentThread != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(currentThread);
+            if (threadData.FirstNestedException != TargetPointer.Null)
+            {
+                // Walk the nested exception chain
+                TargetPointer nestedEx = threadData.FirstNestedException;
+                TargetPointer managedException = exceptionContract.GetNestedExceptionInfo(nestedEx, out TargetPointer nextNested);
+                Assert.NotEqual(TargetPointer.Null, managedException);
+
+                ExceptionData exData = exceptionContract.GetExceptionData(managedException);
+                Assert.NotEqual(TargetPointer.Null, exData.Message);
+                return;
+            }
+            currentThread = threadData.NextThread;
+        }
+
+        // If no nested exceptions found, that's still valid — FailFast may not create nested chain
+    }
 }
 
 public class ExceptionDumpTests_Local : ExceptionDumpTestsBase

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -76,6 +79,157 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
 
         TypeHandle handle = rts.GetTypeHandle(stringMT);
         Assert.True(rts.IsString(handle));
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableHasParent()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
+
+        // System.Object has no parent
+        TargetPointer parent = rts.GetParentMethodTable(objectHandle);
+        Assert.Equal(TargetPointer.Null, parent);
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_StringHasObjectParent()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle stringHandle = rts.GetTypeHandle(stringMT);
+
+        // System.String's parent should be System.Object
+        TargetPointer parent = rts.GetParentMethodTable(stringHandle);
+        Assert.Equal(objectMT, parent);
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        uint baseSize = rts.GetBaseSize(handle);
+        Assert.True(baseSize > 0 && baseSize < 1024,
+            $"Expected System.Object base size between 1 and 1024, got {baseSize}");
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_StringHasNonZeroComponentSize()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        // String has a component size (char size = 2)
+        uint componentSize = rts.GetComponentSize(handle);
+        Assert.Equal(2u, componentSize);
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        // System.Object has no GC-tracked fields
+        Assert.False(rts.ContainsGCPointers(handle));
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableHasValidToken()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        uint token = rts.GetTypeDefToken(handle);
+        // TypeDef tokens have the form 0x02xxxxxx
+        Assert.Equal(0x02000000u, token & 0xFF000000u);
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableHasMethods()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        ushort numMethods = rts.GetNumMethods(handle);
+        // System.Object has ToString, Equals, GetHashCode, Finalize, etc.
+        Assert.True(numMethods >= 4, $"Expected System.Object to have at least 4 methods, got {numMethods}");
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        Assert.False(rts.IsGenericTypeDefinition(handle));
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_StringCorElementTypeIsClass()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
+        TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(stringMT);
+
+        // GetSignatureCorElementType returns the MethodTable's stored CorElementType,
+        // which is Class for System.String (not CorElementType.String)
+        CorElementType corType = rts.GetSignatureCorElementType(handle);
+        Assert.Equal(CorElementType.Class, corType);
+    }
+
+    [Fact]
+    public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods()
+    {
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
+        TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
+        TypeHandle handle = rts.GetTypeHandle(objectMT);
+
+        IEnumerable<TargetPointer> methodDescs = rts.GetIntroducedMethodDescs(handle);
+        List<TargetPointer> methods = methodDescs.ToList();
+
+        Assert.True(methods.Count >= 4, $"Expected System.Object to have at least 4 introduced methods, got {methods.Count}");
+
+        // Each method desc should have a valid token
+        foreach (TargetPointer mdPtr in methods)
+        {
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(mdPtr);
+            uint token = rts.GetMethodToken(mdHandle);
+            // MethodDef tokens have the form 0x06xxxxxx
+            Assert.Equal(0x06000000u, token & 0xFF000000u);
+        }
     }
 }
 

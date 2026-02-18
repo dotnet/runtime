@@ -95,6 +95,19 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
             currentThread = threadData.NextThread;
         }
     }
+
+    [Fact]
+    public void ThreadCounts_AreNonNegative()
+    {
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreCounts counts = threadContract.GetThreadCounts();
+
+        Assert.True(counts.UnstartedThreadCount >= 0, $"UnstartedThreadCount should be non-negative, got {counts.UnstartedThreadCount}");
+        Assert.True(counts.BackgroundThreadCount >= 0, $"BackgroundThreadCount should be non-negative, got {counts.BackgroundThreadCount}");
+        Assert.True(counts.PendingThreadCount >= 0, $"PendingThreadCount should be non-negative, got {counts.PendingThreadCount}");
+        Assert.True(counts.DeadThreadCount >= 0, $"DeadThreadCount should be non-negative, got {counts.DeadThreadCount}");
+    }
+
 }
 
 /// <summary>

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -54,6 +56,76 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         string path = loader.GetPath(moduleHandle);
         Assert.NotNull(path);
         Assert.NotEmpty(path);
+    }
+
+    [Fact]
+    public void Loader_AppDomainHasFriendlyName()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        string name = loader.GetAppDomainFriendlyName();
+        Assert.NotNull(name);
+        Assert.NotEmpty(name);
+    }
+
+    [Fact]
+    public void Loader_GlobalLoaderAllocatorIsValid()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer globalLA = loader.GetGlobalLoaderAllocator();
+        Assert.NotEqual(TargetPointer.Null, globalLA);
+    }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
+    public void Loader_RootModuleHasFileName()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer rootAssembly = loader.GetRootAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
+
+        string fileName = loader.GetFileName(moduleHandle);
+        Assert.NotNull(fileName);
+        Assert.NotEmpty(fileName);
+        Assert.Contains("MultiModule", fileName);
+    }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
+    public void Loader_RootModuleIsNotDynamic()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer rootAssembly = loader.GetRootAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
+
+        Assert.False(loader.IsDynamic(moduleHandle));
+    }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
+    public void Loader_RootModuleHasLoaderAllocator()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer rootAssembly = loader.GetRootAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
+
+        TargetPointer la = loader.GetLoaderAllocator(moduleHandle);
+        Assert.NotEqual(TargetPointer.Null, la);
+    }
+
+    [ConditionalFact]
+    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
+    public void Loader_RootModuleHasILBase()
+    {
+        ILoader loader = Target.Contracts.Loader;
+        TargetPointer rootAssembly = loader.GetRootAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
+
+        TargetPointer ilBase = loader.GetILBase(moduleHandle);
+        Assert.NotEqual(TargetPointer.Null, ilBase);
     }
 }
 
