@@ -808,7 +808,7 @@ namespace System.Collections.Immutable
 
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Argument(index - count + 1 >= 0);
+                Requires.Range(index - count + 1 >= 0, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
                 using (var enumerator = new Enumerator(this, startIndex: index, count: count, reversed: true))
