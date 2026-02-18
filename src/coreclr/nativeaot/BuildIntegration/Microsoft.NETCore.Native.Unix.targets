@@ -190,7 +190,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <!-- xz must be added after System.IO.Compression.Native due to dependency. -->
+      <!-- lzma must be added after System.IO.Compression.Native due to dependency. -->
       <NativeLibrary Condition="'$(UseSystemLzma)' != 'true'" Include="$(IlcFrameworkNativePath)liblzma.a" />
     </ItemGroup>
 
