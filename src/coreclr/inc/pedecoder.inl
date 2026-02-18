@@ -621,7 +621,7 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
             ? VAL32(section->Misc.VirtualSize)
             : VAL32(section->SizeOfRawData);
         COUNT_T offsetInSection = rva - sectionBase;
-        if (size > sectionLimit - offsetInSection)
+        if (offsetInSection > sectionLimit || size > sectionLimit - offsetInSection)
         {
             if (pSize != NULL)
                 *pSize = 0;
