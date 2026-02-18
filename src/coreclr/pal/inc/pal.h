@@ -253,15 +253,16 @@ PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
 /// <summary>
-/// Callback invoked when a fatal error occurs. The callback should log the callstack for the fatal error.
+/// Callback invoked when a signal is received that will terminate the process.
+/// The callback should log the managed callstack for the signal.
 /// </summary>
-typedef VOID (*PLOGCALLSTACKFORFATALERROR_CALLBACK)(LPCWSTR errorMessage);
+typedef VOID (*PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK)(LPCWSTR signalName);
 
 PALIMPORT
 VOID
 PALAPI
-PAL_SetLogCallstackForFatalErrorCallback(
-    IN PLOGCALLSTACKFORFATALERROR_CALLBACK callback);
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
 
 PALIMPORT
 VOID

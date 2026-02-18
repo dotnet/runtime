@@ -183,8 +183,8 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
-// Function to call to log the callstack for a fatal error. Used by Android since CoreCLR doesn't support CreateDump on Android.
-Volatile<PLOGCALLSTACKFORFATALERROR_CALLBACK> g_logCallstackForFatalErrorCallback = nullptr;
+// Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
+Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
@@ -1351,10 +1351,10 @@ PAL_SetCreateDumpCallback(
 
 /*++
 Function:
-  PAL_SetLogCallstackForFatalErrorCallback
+  PAL_SetLogManagedCallstackForSignalCallback
 
 Abstract:
-  Sets a callback that is executed when a fatal error (crash) occurs to log the callstack.
+  Sets a callback that is executed when a signal is received to log the managed callstack.
   Used by Android CoreCLR since CreateDump is not supported on Android.
 
   NOTE: Currently only one callback can be set at a time.
@@ -1362,11 +1362,11 @@ Abstract:
 PALIMPORT
 VOID
 PALAPI
-PAL_SetLogCallstackForFatalErrorCallback(
-    IN PLOGCALLSTACKFORFATALERROR_CALLBACK callback)
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback)
 {
-    _ASSERTE(g_logCallstackForFatalErrorCallback == nullptr);
-    g_logCallstackForFatalErrorCallback = callback;
+    _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
+    g_logManagedCallstackForSignalCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2751,9 +2751,9 @@ static LPCWSTR GetSignalName(int signal)
 
 /*++
 Function:
-  PROCLogCallstackForFatalError
+  PROCLogManagedCallstackForSignal
 
-  Invokes the registered callback to log the callstack for a fatal error.
+  Invokes the registered callback to log the managed callstack for a signal.
   Used by Android since CreateDump is not supported there.
 
 Parameters:
@@ -2762,12 +2762,12 @@ Parameters:
 (no return value)
 --*/
 VOID
-PROCLogCallstackForFatalError(int signal)
+PROCLogManagedCallstackForSignal(int signal)
 {
-    if (g_logCallstackForFatalErrorCallback != nullptr)
+    if (g_logManagedCallstackForSignalCallback != nullptr)
     {
         LPCWSTR signalName = GetSignalName(signal);
-        g_logCallstackForFatalErrorCallback(signalName);
+        g_logManagedCallstackForSignalCallback(signalName);
     }
 }
 

@@ -472,7 +472,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-        PROCLogCallstackForFatalError(code);
+        PROCLogManagedCallstackForSignal(code);
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
 
@@ -493,7 +493,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     {
         PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-        PROCLogCallstackForFatalError(code);
+        PROCLogManagedCallstackForSignal(code);
         PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
     }
 }
@@ -884,7 +884,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCLogCallstackForFatalError(code);
+            PROCLogManagedCallstackForSignal(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, false);
         }
     }
@@ -1031,7 +1031,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.
-        PROCLogCallstackForFatalError(SIGABRT);
+        PROCLogManagedCallstackForSignal(SIGABRT);
         PROCAbort();
     }
 

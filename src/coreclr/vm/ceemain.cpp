@@ -695,7 +695,7 @@ void EEStartupHelper()
 #endif // TARGET_UNIX
 
 #ifdef HOST_ANDROID
-        PAL_SetLogCallstackForFatalErrorCallback(EEPolicy::LogCallstackForFatalErrorOnce);
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
 #endif // HOST_ANDROID
 
 #ifdef STRESS_LOG

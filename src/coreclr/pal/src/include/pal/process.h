@@ -160,9 +160,9 @@ VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context,
 
 /*++
 Function:
-  PROCLogCallstackForFatalError
+  PROCLogManagedCallstackForSignal
 
-  Invokes the registered callback to log the callstack for a fatal error.
+  Invokes the registered callback to log the managed callstack for a signal.
   Used by Android since CreateDump is not supported there.
 
 Parameters:
@@ -170,7 +170,7 @@ Parameters:
 
 (no return value)
 --*/
-VOID PROCLogCallstackForFatalError(int signal);
+VOID PROCLogManagedCallstackForSignal(int signal);
 
 #ifdef __cplusplus
 }
