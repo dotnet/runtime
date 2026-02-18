@@ -518,7 +518,7 @@ void ControllerStackInfo::GetStackInfo(
     {
         PCODE ip = GetIP(pContext);
         EECodeInfo codeInfo(ip);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             TADDR interpreterFrameAddr = GetFirstArgReg(pContext);
             if (interpreterFrameAddr != 0)
@@ -1593,7 +1593,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
             _ASSERTE(pExecControl != NULL);
@@ -1716,7 +1716,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
             _ASSERTE(pExecControl != NULL);
@@ -2122,7 +2122,7 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         // have a breakpoint. Use the first sequence map entry's native offset instead.
         // FIXME: https://github.com/dotnet/runtime/issues/123998
         EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             // Every interpreted method must have at least one sequence point mapping.
             _ASSERTE(dji->GetSequenceMapCount() > 0);
@@ -2837,7 +2837,7 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
         // INTOP_BREAKPOINT, it checks these fields and executes the
         // original opcode instead of notifying the debugger again.
         EECodeInfo codeInfo((PCODE)PC);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
             _ASSERTE(pExecControl != NULL);
@@ -3097,23 +3097,38 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
             p = pNext;
         }
 
-        UnapplyTraceFlag(thread);
-
-        //
-        // See if we have any steppers still active for this thread, if so
-        // re-apply the trace flag.
-        //
-
-        p = g_controllers;
-        while (p != NULL)
+#ifdef FEATURE_INTERPRETER
+        // Interpreter stepping uses breakpoints and does not support
+        // single stepping so we should not apply the trace flag.
+        bool fIsInterpretedCode = false;
         {
-            if (p->m_thread == thread && p->m_singleStep)
+            CONTEXT *ctx = GetManagedStoppedCtx(thread);
+            if (ctx != NULL)
             {
-                ApplyTraceFlag(thread);
-                break;
+                EECodeInfo codeInfo(GetIP(ctx));
+                fIsInterpretedCode = codeInfo.IsInterpretedCode();
             }
+        }
+        if (!fIsInterpretedCode)
+#endif // FEATURE_INTERPRETER
+        {
+            UnapplyTraceFlag(thread);
 
-            p = p->m_next;
+            //
+            // See if we have any steppers still active for this thread, if so
+            // re-apply the trace flag.
+            //
+            p = g_controllers;
+            while (p != NULL)
+            {
+                if (p->m_thread == thread && p->m_singleStep)
+                {
+                    ApplyTraceFlag(thread);
+                    break;
+                }
+
+                p = p->m_next;
+            }
         }
     }
 
@@ -3558,17 +3573,13 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     _ASSERTE(context != NULL);
 
 #ifdef FEATURE_INTERPRETER
-    // Check if the current IP is in interpreter code.
-    // For interpreter, single-stepping is emulated using breakpoints - 
-    // the stepper places breakpoints at predicted next instructions.
-    // We don't need any special flag here since ApplyTraceFlag is called
-    // as part of enabling stepping, and the stepper will set up breakpoints.
+    // Interpreter does not support single stepping, so we should never be
+    // trying to apply the trace flag for interpreter code.
     PCODE ip = GetIP(context);
     EECodeInfo codeInfo(ip);
-    if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+    if (codeInfo.IsInterpretedCode())
     {
-        LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag: interpreter code at IP %p - using breakpoint emulation\n", ip));
-        return;
+        _ASSERTE(!"Interpreter doesn't support single stepping");
     }
 #endif // FEATURE_INTERPRETER
 
@@ -3597,16 +3608,15 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     CONTEXT *context = GetManagedStoppedCtx(thread);
 
 #ifdef FEATURE_INTERPRETER
-    // For interpreter code, single-stepping is emulated using breakpoints
-    // which are managed by the stepper, so no cleanup needed here.
+    // Interpreter does not support single stepping, so we should never be
+    // trying to unapply the trace flag for interpreter code.
     if (context != NULL)
     {
         PCODE ip = GetIP(context);
         EECodeInfo codeInfo(ip);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
-            LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag: interpreter code at IP %p - no hardware flag to clear\n", ip));
-            return;
+            _ASSERTE(!"Interpreter doesn't support single stepping");
         }
     }
 #endif // FEATURE_INTERPRETER
@@ -6478,7 +6488,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
     {
         PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
         EECodeInfo codeInfo(currentPC);
-        if (codeInfo.IsValid() && codeInfo.IsInterpretedCode())
+        if (codeInfo.IsInterpretedCode())
         {
             return TrapInterpreterCodeStep(info, in, ji);
         }
