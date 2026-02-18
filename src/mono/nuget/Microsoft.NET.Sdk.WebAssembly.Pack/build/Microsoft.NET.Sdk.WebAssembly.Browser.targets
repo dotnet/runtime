@@ -407,6 +407,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="$(AddWasmStaticWebAssetsDependsOn)">
     <ItemGroup>
+      <!-- Remove SDK-defined assets that we're redefining as WasmStaticWebAsset to avoid
+           duplicate Identity collisions and duplicate endpoint entries. This follows the
+           same pattern used above for _WasmJsConfigStaticWebAsset. -->
+      <StaticWebAsset Remove="@(WasmStaticWebAsset)" />
       <StaticWebAsset Include="@(WasmStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmBuildBootConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
@@ -441,16 +445,34 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmJsModuleCandidatesForBuildEndpoint" />
     </FilterStaticWebAssetEndpoints>
 
+    <!-- Filter out SDK endpoints for assets we're redefining as WasmStaticWebAsset.
+         Per-item ContentRoot can make WasmStaticWebAsset Identity equal the original
+         DLL path, which the SDK already has endpoints for. We must remove these before
+         DefineStaticWebAssetEndpoints so it creates fresh _framework/ prefixed endpoints,
+         and before the resolver so it doesn't produce duplicate AssetFile keys. -->
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(WasmStaticWebAsset)"
+      Filters=""
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmOverlappingSdkEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+
+    <ItemGroup>
+      <_WasmNonOverlappingSdkEndpoint Include="@(StaticWebAssetEndpoint)" />
+      <_WasmNonOverlappingSdkEndpoint Remove="@(_WasmOverlappingSdkEndpoint)" />
+    </ItemGroup>
+
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(WasmStaticWebAsset)"
-      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ExistingEndpoints="@(_WasmNonOverlappingSdkEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
       <Output TaskParameter="Endpoints" ItemName="WasmStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(StaticWebAssetEndpoint)"
+      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(_WasmNonOverlappingSdkEndpoint)"
       CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
