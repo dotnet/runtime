@@ -1506,15 +1506,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int --> float/double conversions are always non-overflow ones
     assert(treeNode->OperIs(GT_CAST));
-
-    GenIntCastDesc desc(treeNode);
-
-    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
-    {
-
-        assert(genIsValidIntReg(srcReg));
-        genIntCastOverflowCheck(treeNode, desc, srcReg);
-    }
+    assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
     assert(genIsValidFloatReg(targetReg));
