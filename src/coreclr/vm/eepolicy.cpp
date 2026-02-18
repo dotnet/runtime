@@ -192,9 +192,9 @@ class CallStackLogger
     {
         WRAPPER_NO_CONTRACT;
 
-        MethodDesc* pMD = m_frames[index];
-
         SString str(pWordAt);
+
+        MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
         str.Append(W("\n"));
 
