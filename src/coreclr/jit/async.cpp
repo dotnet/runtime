@@ -825,7 +825,7 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    m_updater.UpdateLife(node);
+    m_updater.UpdateLife<true>(node);
     UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
 }
 
