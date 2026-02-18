@@ -2860,6 +2860,15 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+#if defined(TARGET_WASM)
+    if (call->NeedsNullCheck())
+    {
+        // Prepare for explicit null check
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+#endif
+
     LowerArgsForCall(call);
 
     // note that everything generated from this point might run AFTER the outgoing args are placed
