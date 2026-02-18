@@ -560,6 +560,23 @@ private:
 //
 void DefaultValueAnalysis::Run()
 {
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        JITDUMP("Default value analysis disabled because of method range\n");
+        m_defaultVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            VarSetOps::AssignNoCopy(m_compiler, m_defaultVarsIn[block->bbNum], VarSetOps::MakeEmpty(m_compiler));
+        }
+
+        return;
+    }
+
+#endif
     ComputePerBlockMutatedVars();
     ComputeInterBlockDefaultValues();
 }
