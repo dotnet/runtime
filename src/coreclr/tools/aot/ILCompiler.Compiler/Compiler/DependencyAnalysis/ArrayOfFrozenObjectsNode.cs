@@ -10,10 +10,8 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public class ArrayOfFrozenObjectsNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart"u8);
@@ -56,8 +54,6 @@ namespace ILCompiler.DependencyAnalysis
             // Terminate with a null pointer as expected by the GC
             AlignNextObject(ref builder, factory);
             builder.EmitZeroPointer();
-
-            _size = builder.CountBytes;
 
             return builder.ToObjectData();
         }
