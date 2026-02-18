@@ -352,7 +352,7 @@ namespace System.Security
 
                 int length = strEscValue.Length;
 
-                if (length <= maxCompareLength && string.Compare(strEscValue, 0, str, index, length, StringComparison.Ordinal) == 0)
+                if (length <= maxCompareLength && str.AsSpan(index).StartsWith(strEscValue, StringComparison.Ordinal))
                 {
                     newIndex = index + strEscValue.Length;
                     return strEscSeq;

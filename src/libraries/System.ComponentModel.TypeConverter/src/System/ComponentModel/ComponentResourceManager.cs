@@ -143,14 +143,14 @@ namespace System.ComponentModel
 
                 if (IgnoreCase)
                 {
-                    if (string.Compare(key, 0, objectName, 0, objectName.Length, StringComparison.OrdinalIgnoreCase) != 0)
+                    if (!key.AsSpan().StartsWith(objectName, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
                 }
                 else
                 {
-                    if (string.CompareOrdinal(key, 0, objectName, 0, objectName.Length) != 0)
+                    if (!key.AsSpan().StartsWith(objectName, StringComparison.Ordinal))
                     {
                         continue;
                     }

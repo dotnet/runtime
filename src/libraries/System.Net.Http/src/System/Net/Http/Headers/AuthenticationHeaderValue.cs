@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                 case 9: targetScheme = "Negotiate"; break;
             }
 
-            string scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
+            string scheme = targetScheme != null && input.AsSpan(startIndex, schemeLength).Equals(targetScheme, StringComparison.Ordinal) ?
                 targetScheme :
                 input.Substring(startIndex, schemeLength);
 
