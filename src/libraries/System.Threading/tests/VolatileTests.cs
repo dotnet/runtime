@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -101,6 +103,44 @@ namespace System.Threading.Tests
             int sum = x + y;
 
             Assert.Equal(3, sum);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Action ReadBarrierDelegate() => Volatile.ReadBarrier;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Action WriteBarrierDelegate() => Volatile.WriteBarrier;
+
+        [Fact]
+        public void ReadBarrier_CanBeCalledViaDelegate()
+        {
+            // Verify ReadBarrier can be called through a delegate
+            ReadBarrierDelegate()();
+        }
+
+        [Fact]
+        public void WriteBarrier_CanBeCalledViaDelegate()
+        {
+            // Verify WriteBarrier can be called through a delegate
+            WriteBarrierDelegate()();
+        }
+
+        [Fact]
+        public void ReadBarrier_CanBeCalledViaReflection()
+        {
+            // Verify ReadBarrier can be called via reflection
+            MethodInfo method = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(method);
+            method.Invoke(null, null);
+        }
+
+        [Fact]
+        public void WriteBarrier_CanBeCalledViaReflection()
+        {
+            // Verify WriteBarrier can be called via reflection
+            MethodInfo method = typeof(Volatile).GetMethod(nameof(Volatile.WriteBarrier), BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(method);
+            method.Invoke(null, null);
         }
     }
 }
