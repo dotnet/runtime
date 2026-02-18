@@ -454,9 +454,9 @@ static bool IsDefaultValue(GenTree* node)
 class DefaultValueAnalysis
 {
     Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;       // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_defaultVarsIn;     // Per-block set of locals with default value on entry.
-    VARSET_TP  m_nonDefaultAtEntry; // Locals that do not have default value at method entry.
+    VARSET_TP* m_mutatedVars;     // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn;   // Per-block set of locals mutated to non-default on entry.
+    VARSET_TP  m_mutatedAtEntry;  // Locals that are mutated at method entry (params, OSR locals).
 
     // DataFlow::ForwardAnalysis callback used in Phase 2.
     class DataFlowCallback
@@ -478,42 +478,40 @@ class DefaultValueAnalysis
         void StartMerge(BasicBlock* block)
         {
             // Save the current in set for change detection later.
-            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_defaultVarsIn[block->bbNum]);
+            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
 
-            // Optimistically assume all locals have default value; Merge will
-            // narrow via intersection.
-            VarSetOps::AssignNoCopy(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
-                                    VarSetOps::MakeFull(m_compiler));
+            // Optimistically assume no locals have been mutated; Merge will
+            // grow via union.
+            VarSetOps::ClearD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum]);
             m_isFirstPred = true;
         }
 
         void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
         {
-            // The out set of a predecessor is its in set minus the locals
-            // mutated in that block: defaultOut = defaultIn - mutated.
-            VARSET_TP predOut(VarSetOps::MakeCopy(m_compiler, m_analysis.m_defaultVarsIn[predBlock->bbNum]));
-            VarSetOps::DiffD(m_compiler, predOut, m_analysis.m_mutatedVars[predBlock->bbNum]);
+            // The out set of a predecessor is its in set plus the locals
+            // mutated in that block: mutatedOut = mutatedIn | mutated.
+            VARSET_TP predOut(VarSetOps::MakeCopy(m_compiler, m_analysis.m_mutatedVarsIn[predBlock->bbNum]));
+            VarSetOps::UnionD(m_compiler, predOut, m_analysis.m_mutatedVars[predBlock->bbNum]);
 
-            // Intersect: a local has default value only if all predecessors
-            // agree.
-            VarSetOps::IntersectionD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum], predOut);
+            // Union: a local is mutated if it is mutated on any incoming path.
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], predOut);
             m_isFirstPred = false;
         }
 
         void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
         {
             // A handler can be reached from any point in the try region.
-            // A local has its default value at handler entry only if it has
-            // its default value at the try region entry AND is not mutated
-            // anywhere within the try region.
-            VARSET_TP tryDefault(VarSetOps::MakeCopy(m_compiler, m_analysis.m_defaultVarsIn[firstTryBlock->bbNum]));
+            // A local is mutated at handler entry if it was mutated at try
+            // entry or mutated anywhere within the try region.
+            VARSET_TP tryMutated(VarSetOps::MakeCopy(m_compiler, m_analysis.m_mutatedVarsIn[firstTryBlock->bbNum]));
 
-            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next();
+                 tryBlock             = tryBlock->Next())
             {
-                VarSetOps::DiffD(m_compiler, tryDefault, m_analysis.m_mutatedVars[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, tryMutated, m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
 
-            VarSetOps::IntersectionD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum], tryDefault);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], tryMutated);
             m_isFirstPred = false;
         }
 
@@ -521,15 +519,13 @@ class DefaultValueAnalysis
         {
             if (m_isFirstPred)
             {
-                // No predecessors (entry block or unreachable). Start with
-                // all locals having default value, then remove parameters and
-                // OSR locals whose initial values are not default.
-                VarSetOps::AssignNoCopy(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum],
-                                        VarSetOps::MakeFull(m_compiler));
-                VarSetOps::DiffD(m_compiler, m_analysis.m_defaultVarsIn[block->bbNum], m_analysis.m_nonDefaultAtEntry);
+                // No predecessors (entry block or unreachable). Parameters
+                // and OSR locals are considered mutated at method entry.
+                VarSetOps::Assign(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedAtEntry);
             }
 
-            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_defaultVarsIn[block->bbNum]);
+            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
         }
     };
 
@@ -537,20 +533,21 @@ public:
     DefaultValueAnalysis(Compiler* compiler)
         : m_compiler(compiler)
         , m_mutatedVars(nullptr)
-        , m_defaultVarsIn(nullptr)
-        , m_nonDefaultAtEntry(VarSetOps::MakeEmpty(compiler))
+        , m_mutatedVarsIn(nullptr)
+        , m_mutatedAtEntry(VarSetOps::MakeEmpty(compiler))
     {
     }
 
-    void       Run();
-    VARSET_TP* GetDefaultVarsIn(BasicBlock* block) const;
+    void Run();
+    bool HasDefaultValue(BasicBlock* block, unsigned varIndex) const;
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
 
 private:
     void ComputePerBlockMutatedVars();
     void ComputeInterBlockDefaultValues();
 
     INDEBUG(void DumpMutatedVars());
-    INDEBUG(void DumpDefaultVarsIn());
+    INDEBUG(void DumpMutatedVarsIn());
 };
 
 //------------------------------------------------------------------------
@@ -567,10 +564,10 @@ void DefaultValueAnalysis::Run()
     if (!s_range.Contains(m_compiler->info.compMethodHash()))
     {
         JITDUMP("Default value analysis disabled because of method range\n");
-        m_defaultVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
         for (BasicBlock* block : m_compiler->Blocks())
         {
-            VarSetOps::AssignNoCopy(m_compiler, m_defaultVarsIn[block->bbNum], VarSetOps::MakeEmpty(m_compiler));
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
         }
 
         return;
@@ -581,9 +578,40 @@ void DefaultValueAnalysis::Run()
     ComputeInterBlockDefaultValues();
 }
 
-VARSET_TP* DefaultValueAnalysis::GetDefaultVarsIn(BasicBlock* block) const
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::HasDefaultValue:
+//   Check if a tracked local has its default value at the entry of the
+//   specified block.
+//
+// Parameters:
+//   block    - The basic block.
+//   varIndex - The tracking index of the local variable.
+//
+// Returns:
+//   True if the local is guaranteed to have its default value at block entry.
+//
+bool DefaultValueAnalysis::HasDefaultValue(BasicBlock* block, unsigned varIndex) const
 {
-    return &m_defaultVarsIn[block->bbNum];
+    assert(m_mutatedVarsIn != nullptr);
+    return !VarSetOps::IsMember(m_compiler, m_mutatedVarsIn[block->bbNum], varIndex);
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::GetMutatedVarsIn:
+//   Get the set of tracked locals that have been mutated to a non-default
+//   value on entry to the specified block.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   The VARSET_TP of tracked locals mutated on entry. A local NOT in this
+//   set is guaranteed to have its default value.
+//
+const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
+{
+    assert(m_mutatedVarsIn != nullptr);
+    return m_mutatedVarsIn[block->bbNum];
 }
 
 //------------------------------------------------------------------------
@@ -684,21 +712,20 @@ void DefaultValueAnalysis::DumpMutatedVars()
 //------------------------------------------------------------------------
 // DefaultValueAnalysis::ComputeInterBlockDefaultValues:
 //   Phase 2: Forward dataflow to compute for each block the set of tracked
-//   locals that have their default (zero) value on entry.
+//   locals that have been mutated to a non-default value on entry.
 //
-//   Transfer function: defaultOut[B] = defaultIn[B] - mutated[B]
-//   Merge: defaultIn[B] = intersection of defaultOut[pred] for all preds
+//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
+//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At entry, all tracked locals have their default value (all bits set in the
-//   VARSET_TP).
+//   At entry, only parameters and OSR locals are considered mutated.
 //
 void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 {
-    m_defaultVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
 
     for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
     {
-        VarSetOps::AssignNoCopy(m_compiler, m_defaultVarsIn[i], VarSetOps::MakeFull(m_compiler));
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
     // Parameters and OSR locals do not have default values at method entry.
@@ -709,7 +736,7 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 
         if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
         {
-            VarSetOps::AddElemD(m_compiler, m_nonDefaultAtEntry, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_mutatedAtEntry, varDsc->lvVarIndex);
         }
     }
 
@@ -717,30 +744,30 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
     DataFlow         flow(m_compiler);
     flow.ForwardAnalysis(callback);
 
-    JITDUMP("Default value analysis: per-block default vars on entry\n");
-    DBEXEC(m_compiler->verbose, DumpDefaultVarsIn());
+    JITDUMP("Default value analysis: per-block mutated vars on entry\n");
+    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
 }
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpDefaultVarsIn:
-//   Debug helper to print the per-block default value sets.
+// DefaultValueAnalysis::DumpMutatedVarsIn:
+//   Debug helper to print the per-block mutated-on-entry variable sets.
 //
-void DefaultValueAnalysis::DumpDefaultVarsIn()
+void DefaultValueAnalysis::DumpMutatedVarsIn()
 {
     const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
     for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
     {
         BasicBlock* block = dfsTree->GetPostOrder(i - 1);
-        printf("  " FMT_BB " default: ", block->bbNum);
+        printf("  " FMT_BB " mutated on entry: ", block->bbNum);
 
-        if (VarSetOps::IsEmpty(m_compiler, m_defaultVarsIn[block->bbNum]))
+        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
         {
             printf("<none>");
         }
         else
         {
-            VarSetOps::Iter iter(m_compiler, m_defaultVarsIn[block->bbNum]);
+            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
             unsigned        varIndex = 0;
             const char*     sep      = "";
             while (iter.NextElem(&varIndex))
@@ -794,7 +821,8 @@ private:
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
-    VarSetOps::Assign(m_compiler, m_defaultValues, *m_defaultValueAnalysis.GetDefaultVarsIn(block));
+    VarSetOps::AssignNoCopy(m_compiler, m_defaultValues, VarSetOps::MakeFull(m_compiler));
+    VarSetOps::DiffD(m_compiler, m_defaultValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
 }
 
 //------------------------------------------------------------------------
