@@ -406,12 +406,22 @@ int minipal_getcpufeatures(void)
 
             if (IsApxEnabled() && apxStateSupport())
             {
-                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                    // Apx
+                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                    // Apx_F
                 {
-                    result |= XArchIntrinsicConstants_Apx;
+                    __cpuidex(cpuidInfo, 0x00000029, 0x00000000);
+                    if ((cpuidInfo[CPUID_EBX] & (1 << 0)) != 0)                                                 // Apx_NCI_NDD_NF
+                    {
+                        // As documented in the "Intel® Advanced Performance Extensions (Intel® APX) Software Developer’s Manual" revision 7.0
+                        // APX_F (CPUID.(EAX=07H,ECX=1H):EDX[bit 21]) indicates the basic support for APX, and 
+                        // APX_NCI_NDD_NF (CPUID.(EAX=29H,ECX=0H):EBX[bit 0]) indicates support for the NCI/NDD/NF features.
+                        // As of now, both bits are required to turn on APX in JIT.
+                        result |= XArchIntrinsicConstants_Apx;
+                    }
                 }
             }
         }
+
+        __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
 
         if (maxCpuId >= 0x24)
         {
