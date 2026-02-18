@@ -43,7 +43,7 @@ export function warn(msg: string, ...data: any) {
 }
 
 export function error(msg: string, reason: any) {
-    if (reason.silent) {
+    if (reason && typeof reason === "object" && reason.silent) {
         return;
     }
     console.error(prefix + msg, normalizeException(reason));
