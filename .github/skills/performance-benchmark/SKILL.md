@@ -130,7 +130,7 @@ Post a comment on the PR to trigger EgorBot with your benchmark. The general for
 ```cs
 // Your benchmark code here
 ```
-NOTE: The @EgorBot command must not be inside the code block. Only the benchmark code should be inside the code block.
+> **Note:** The @EgorBot command must not be inside the code block. Only the benchmark code should be inside the code block.
 
 ### Target Flags
 
