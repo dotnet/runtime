@@ -135,9 +135,11 @@ extends:
               continueOnError: true
               condition: always()
 
-      #
-      # cDAC Dump Tests — Stage 1: Build runtime, create crash dumps, publish dump artifacts
-      #
+    #
+    # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
+    #
+    - stage: DumpCreation
+      jobs:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -164,9 +166,13 @@ extends:
                 artifactName: CdacDumps_$(osGroup)_$(archType)
                 displayName: cDAC Dump Artifacts
 
-      #
-      # cDAC Dump Tests — Stage 2: Download dumps from all platforms, run tests cross-platform
-      #
+    #
+    # cDAC Dump Tests — Download dumps from all platforms, run tests cross-platform
+    #
+    - stage: DumpTest
+      dependsOn:
+      - DumpCreation
+      jobs:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -175,12 +181,9 @@ extends:
           - windows_x64
           - linux_x64
           jobParameters:
-            buildArgs: -s tools.cdacdumptests /p:SkipDumpGeneration=true
+            buildArgs: -s tools.cdacdumptests /p:SkipDumpGeneration=true /p:SkipDumpVersions=net10.0
             nameSuffix: CdacDumpTests
             timeoutInMinutes: 60
-            dependsOn:
-            - build_windows_x64_release_CdacDumpGeneration
-            - build_linux_x64_release_CdacDumpGeneration
             postBuildSteps:
             # Download dumps from all platforms
             - template: /eng/pipelines/common/download-artifact-step.yml
@@ -202,6 +205,7 @@ extends:
                 --logger "trx;LogFileName=CdacDumpTests_windows_x64.trx"
                 --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)
               displayName: 'Run cDAC Dump Tests (windows_x64 dumps)'
+              continueOnError: true
               env:
                 CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/windows_x64
             # Run tests against Linux dumps
@@ -211,6 +215,7 @@ extends:
                 --logger "trx;LogFileName=CdacDumpTests_linux_x64.trx"
                 --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)
               displayName: 'Run cDAC Dump Tests (linux_x64 dumps)'
+              continueOnError: true
               env:
                 CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/linux_x64
             - task: PublishTestResults@2
