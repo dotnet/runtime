@@ -577,8 +577,7 @@ VARSET_TP* DefaultValueAnalysis::GetDefaultVarsIn(BasicBlock* block) const
 //   A tracked local is considered mutated if:
 //     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
 //       not a zero constant.
-//     - It has a LCL_ADDR use with GTF_VAR_DEF (address taken for a
-//       definition whose result we cannot reason about).
+//     - It has a LCL_ADDR use (address taken that we cannot reason about).
 //
 void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 {
