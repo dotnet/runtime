@@ -25,8 +25,7 @@ Data descriptors used:
 | `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
 | `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
 | `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
-| `ComWrappersVtablePtrs` | `MowQueryInterface` | Function pointer of ManagedObjectWrapper_QueryInterface |
-| `ComWrappersVtablePtrs` | `TtQueryInterface` | Function pointer of TrackerTarget_QueryInterface |
+| `ComWrappersVtablePtrs` | `Size` | Number of entries in vtable pointers array |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -73,7 +72,7 @@ private bool IsComWrappersCCW(TargetPointer ccw)
 
     TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer("ComWrappersVtablePtrs");
 
-    return /* qiAddress matches either entry in ComWrappersVtablePtrs */ ;
+    return /* qiAddress matches any entry in ComWrappersVtablePtrs */ ;
 }
 
 public TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw)

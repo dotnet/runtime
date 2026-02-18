@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -11,11 +12,11 @@ internal sealed class ComWrappersVtablePtrs : IData<ComWrappersVtablePtrs>
     public ComWrappersVtablePtrs(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.ComWrappersVtablePtrs);
-
-        MowQueryInterface = target.ReadPointer(address + (ulong)type.Fields[nameof(MowQueryInterface)].Offset);
-        TtQueryInterface = target.ReadPointer(address + (ulong)type.Fields[nameof(TtQueryInterface)].Offset);
+        for (int i = 0; i < type.Size; i++)
+        {
+            ComWrappersInterfacePointers.Add(target.ReadPointer(address + (ulong)(i * target.PointerSize)));
+        }
     }
 
-    public TargetPointer MowQueryInterface { get; init; }
-    public TargetPointer TtQueryInterface { get; init; }
+    public List<TargetPointer> ComWrappersInterfacePointers { get; init; } = new List<TargetPointer>();
 }

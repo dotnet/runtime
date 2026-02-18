@@ -43,8 +43,7 @@ internal readonly struct ComWrappers_1 : IComWrappers
 
         TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs);
         Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs);
-        return CodePointerUtils.CodePointerFromAddress(qiAddress, _target) == comWrappersVtableStruct.MowQueryInterface ||
-               CodePointerUtils.CodePointerFromAddress(qiAddress, _target) == comWrappersVtableStruct.TtQueryInterface;
+        return comWrappersVtableStruct.ComWrappersInterfacePointers.Contains(new TargetPointer(CodePointerUtils.CodePointerFromAddress(qiAddress, _target)));
     }
 
     public TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw)
