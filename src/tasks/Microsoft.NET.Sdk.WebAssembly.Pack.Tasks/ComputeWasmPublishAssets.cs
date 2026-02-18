@@ -60,7 +60,7 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EmitSymbolMap { get; set; }
 
-    public bool IsWebCilEnabled { get; set; }
+    public bool IsWebCILEnabled { get; set; }
 
     public bool FingerprintAssets { get; set; }
 

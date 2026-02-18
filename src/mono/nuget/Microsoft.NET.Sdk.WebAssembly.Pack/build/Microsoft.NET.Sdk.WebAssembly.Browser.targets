@@ -703,7 +703,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       EmitSymbolMap="$(WasmEmitSymbolMap)"
-      IsWebCilEnabled="$(_WasmEnableWebcil)"
+      IsWebCILEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
