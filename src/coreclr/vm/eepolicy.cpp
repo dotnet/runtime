@@ -445,14 +445,6 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         {
             LogCallstackForLogWorker(pThread, pExceptionInfo);
 
-#ifdef HOST_ANDROID
-            // Mark that a callstack has been logged so the signal handler
-            // (LogCallstackForFatalErrorOnce) does not log a duplicate.
-            // This handles the FailFast path: HandleFatalError -> LogInfoForFatalError
-            // -> CrashDumpAndTerminateProcess -> PROCAbort -> SIGABRT -> signal handler.
-            EEPolicy::CallstackForFatalErrorLogged();
-#endif
-
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
             }
@@ -912,23 +904,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 }
 
 #ifdef HOST_ANDROID
-// Guards against duplicate callstack logging across different crash paths.
-// The unhandled managed exception path (DefaultCatchHandlerExceptionMessageWorker)
-// logs its own stack trace and sets this flag, but never enters LogInfoForFatalError
-// so s_pCrashingThreadID is never set. Without this flag, the subsequent SIGABRT
-// signal handler would produce a duplicate stack trace.
-// The FailFast path sets this flag after LogInfoForFatalError logs the callstack.
-static Volatile<LONG> s_callstackForFatalErrorLogged = FALSE;
-
 // Logs the callstack for a fatal error.
 void EEPolicy::LogCallstackForFatalErrorOnce(LPCWSTR errorMessage)
 {
     WRAPPER_NO_CONTRACT;
-
-    if (InterlockedCompareExchange(&s_callstackForFatalErrorLogged, TRUE, FALSE) != FALSE)
-    {
-        return;
-    }
 
     InlineSString<256> nativeCrashMessage;
     nativeCrashMessage.Append(W("Got a "));
@@ -938,10 +917,5 @@ void EEPolicy::LogCallstackForFatalErrorOnce(LPCWSTR errorMessage)
                               W("used by your application."));
 
     LogInfoForFatalError(0, nativeCrashMessage.GetUnicode(), nullptr, nullptr, nullptr);
-}
-
-void EEPolicy::CallstackForFatalErrorLogged()
-{
-    s_callstackForFatalErrorLogged = TRUE;
 }
 #endif // HOST_ANDROID

@@ -451,7 +451,6 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             // Shutdown and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-            PROCLogCallstackForFatalError(code);
             PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
@@ -1032,6 +1031,7 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
         // if the thread doesn't exist anymore.
+        PROCLogCallstackForFatalError(SIGABRT);
         PROCAbort();
     }
 

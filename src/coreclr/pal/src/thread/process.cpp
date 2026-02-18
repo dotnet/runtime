@@ -2898,7 +2898,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCLogCallstackForFatalError(signal);
     PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and

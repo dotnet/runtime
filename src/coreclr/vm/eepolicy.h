@@ -40,8 +40,6 @@ public:
 
 #ifdef HOST_ANDROID
     static void LogCallstackForFatalErrorOnce(LPCWSTR errorMessage);
-
-    static void CallstackForFatalErrorLogged();
 #endif
 
 private:
