@@ -788,7 +788,7 @@ class AsyncLiveness
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
     DefaultValueAnalysis&  m_defaultValueAnalysis;
-    VARSET_TP              m_defaultValues;
+    VARSET_TP              m_mutatedValues;
 
 public:
     AsyncLiveness(Compiler* comp, DefaultValueAnalysis& defaultValueAnalysis)
@@ -796,7 +796,7 @@ public:
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
         , m_defaultValueAnalysis(defaultValueAnalysis)
-        , m_defaultValues(VarSetOps::MakeEmpty(comp))
+        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
     {
     }
 
@@ -821,8 +821,7 @@ private:
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
-    VarSetOps::AssignNoCopy(m_compiler, m_defaultValues, VarSetOps::MakeFull(m_compiler));
-    VarSetOps::DiffD(m_compiler, m_defaultValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
+    VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
 }
 
 //------------------------------------------------------------------------
@@ -842,7 +841,7 @@ void AsyncLiveness::Update(GenTree* node)
         LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
         if (dsc->lvTracked)
         {
-            VarSetOps::RemoveElemD(m_compiler, m_defaultValues, dsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_mutatedValues, dsc->lvVarIndex);
         }
 
         return;
@@ -853,7 +852,7 @@ void AsyncLiveness::Update(GenTree* node)
         LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
         if (dsc->lvTracked && !IsDefaultValue(node->AsLclVarCommon()->Data()))
         {
-            VarSetOps::RemoveElemD(m_compiler, m_defaultValues, dsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_mutatedValues, dsc->lvVarIndex);
         }
     }
 }
@@ -978,7 +977,7 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
             anyLive |=
                 !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
-            allDefault &= fieldDsc->lvTracked && VarSetOps::IsMember(m_compiler, m_defaultValues, fieldDsc->lvVarIndex);
+            allDefault &= fieldDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
         }
 
         return anyLive && !allDefault;
@@ -999,7 +998,7 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    if (VarSetOps::IsMember(m_compiler, m_defaultValues, dsc->lvVarIndex))
+    if (!VarSetOps::IsMember(m_compiler, m_mutatedValues, dsc->lvVarIndex))
     {
         return false;
     }
