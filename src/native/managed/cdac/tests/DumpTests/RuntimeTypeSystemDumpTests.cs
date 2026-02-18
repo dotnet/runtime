@@ -34,7 +34,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, modulePtr);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableIsValid()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -48,7 +48,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_FreeObjectMethodTableIsValid()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -62,7 +62,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_StringMethodTableIsString()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -76,7 +76,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(rts.IsString(handle));
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableHasParent()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -90,7 +90,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(TargetPointer.Null, parent);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_StringHasObjectParent()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -107,7 +107,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(objectMT, parent);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -121,7 +121,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
             $"Expected System.Object base size between 1 and 1024, got {baseSize}");
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_StringHasNonZeroComponentSize()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -135,7 +135,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(2u, componentSize);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -148,7 +148,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.ContainsGCPointers(handle));
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableHasValidToken()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -162,7 +162,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(0x02000000u, token & 0xFF000000u);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableHasMethods()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -176,7 +176,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(numMethods >= 4, $"Expected System.Object to have at least 4 methods, got {numMethods}");
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -188,7 +188,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.IsGenericTypeDefinition(handle));
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_StringCorElementTypeIsClass()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -203,7 +203,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(CorElementType.Class, corType);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;

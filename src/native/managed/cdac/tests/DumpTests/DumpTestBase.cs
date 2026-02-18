@@ -57,10 +57,10 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
     /// </summary>
     public Task InitializeAsync()
     {
-        string dumpPath = GetDumpPath();
-        if (!File.Exists(dumpPath))
-            throw new FileNotFoundException($"Dump file not found: {dumpPath}. Run dump generation first.");
+        if (IsVersionSkipped(RuntimeVersion))
+            throw new SkipTestException($"RuntimeVersion '{RuntimeVersion}' is in SkipDumpVersions list.");
 
+        string dumpPath = GetDumpPath();
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
@@ -121,6 +121,24 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
         }
 
         return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
+    }
+
+    /// <summary>
+    /// Checks if the given version is in the <c>SkipDumpVersions</c> MSBuild property
+    /// (baked into runtimeconfig.json as <c>CDAC_SKIP_VERSIONS</c>).
+    /// </summary>
+    private static bool IsVersionSkipped(string version)
+    {
+        if (AppContext.GetData("CDAC_SKIP_VERSIONS") is not string skipVersions)
+            return false;
+
+        foreach (string entry in skipVersions.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (string.Equals(entry, version, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private static string? FindRepoRoot()

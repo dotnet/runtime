@@ -16,7 +16,7 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-    [Fact]
+    [ConditionalFact]
     public void Loader_CanGetRootAssembly()
     {
         ILoader loader = Target.Contracts.Loader;
@@ -53,7 +53,7 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEmpty(path);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void Loader_AppDomainHasFriendlyName()
     {
         ILoader loader = Target.Contracts.Loader;
@@ -62,7 +62,7 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEmpty(name);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void Loader_GlobalLoaderAllocatorIsValid()
     {
         ILoader loader = Target.Contracts.Loader;

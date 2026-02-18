@@ -15,7 +15,7 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
-    [Fact]
+    [ConditionalFact]
     public void Object_ContractIsAvailable()
     {
         IObject objectContract = Target.Contracts.Object;
@@ -101,7 +101,7 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
             $"Expected GC min address (0x{minAddr:X}) < max address (0x{maxAddr:X})");
     }
 
-    [Fact]
+    [ConditionalFact]
     public void Object_StringMethodTableHasCorrectComponentSize()
     {
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;

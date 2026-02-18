@@ -18,7 +18,7 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
 
     protected override string DebuggeeName => "BasicThreads";
 
-    [Fact]
+    [ConditionalFact]
     public void ThreadStoreData_HasExpectedThreadCount()
     {
         IThread threadContract = Target.Contracts.Thread;
@@ -54,7 +54,7 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         Assert.Equal(storeData.ThreadCount, count);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void ThreadStoreData_HasFinalizerThread()
     {
         IThread threadContract = Target.Contracts.Thread;
@@ -63,7 +63,7 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, storeData.FinalizerThread);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void ThreadStoreData_HasGCThread()
     {
         IThread threadContract = Target.Contracts.Thread;
@@ -93,7 +93,7 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         }
     }
 
-    [Fact]
+    [ConditionalFact]
     public void ThreadCounts_AreNonNegative()
     {
         IThread threadContract = Target.Contracts.Thread;

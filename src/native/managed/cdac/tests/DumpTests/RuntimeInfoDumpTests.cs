@@ -15,14 +15,14 @@ public abstract class RuntimeInfoDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeInfo_ContractIsAvailable()
     {
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         Assert.NotNull(runtimeInfo);
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeInfo_ArchitectureIsValid()
     {
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
@@ -32,7 +32,7 @@ public abstract class RuntimeInfoDumpTestsBase : DumpTestBase
             $"Expected a valid RuntimeInfoArchitecture enum value, got {arch}");
     }
 
-    [Fact]
+    [ConditionalFact]
     public void RuntimeInfo_OperatingSystemIsValid()
     {
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;

@@ -15,7 +15,7 @@ public abstract class EcmaMetadataDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
 
-    [Fact]
+    [ConditionalFact]
     public void EcmaMetadata_ContractIsAvailable()
     {
         IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
@@ -26,7 +26,6 @@ public abstract class EcmaMetadataDumpTestsBase : DumpTestBase
     public void EcmaMetadata_RootModuleHasMetadataAddress()
     {
         SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
-        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
 
@@ -42,7 +41,6 @@ public abstract class EcmaMetadataDumpTestsBase : DumpTestBase
     public void EcmaMetadata_CanGetMetadataReader()
     {
         SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
-        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
 
@@ -57,7 +55,6 @@ public abstract class EcmaMetadataDumpTestsBase : DumpTestBase
     public void EcmaMetadata_MetadataReaderHasTypeDefs()
     {
         SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
-        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
 

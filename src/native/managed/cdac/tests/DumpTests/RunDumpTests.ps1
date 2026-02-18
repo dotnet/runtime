@@ -31,6 +31,11 @@
     Configuration of the testhost used for the "local" runtime version.
     Default: "Release"
 
+.PARAMETER Filter
+    Glob-style filter for test names. Uses substring matching.
+    Examples: "*StackWalk*", "*Thread*", "*GC_Heap*"
+    Default: "" (run all tests)
+
 .EXAMPLE
     .\RunDumpTests.ps1
 
@@ -42,6 +47,9 @@
 
 .EXAMPLE
     .\RunDumpTests.ps1 -Action test -Versions local
+
+.EXAMPLE
+    .\RunDumpTests.ps1 -Filter "*StackWalk*"
 #>
 
 [CmdletBinding()]
@@ -53,7 +61,9 @@ param(
 
     [switch]$Force,
 
-    [string]$TestHostConfiguration = "Release"
+    [string]$TestHostConfiguration = "Release",
+
+    [string]$Filter = ""
 )
 
 Set-StrictMode -Version Latest
@@ -94,6 +104,7 @@ Write-Host "  Action:    $Action"
 Write-Host "  Versions:  $($selectedVersions -join ', ')"
 Write-Host "  Debuggees: $($allDebugees -join ', ')"
 Write-Host "  Force:     $Force"
+if ($Filter) { Write-Host "  Filter:    $Filter" }
 Write-Host ""
 
 # --- Force: delete existing dumps ---
@@ -218,6 +229,13 @@ if ($Action -in @("test", "all")) {
         $filters += "FullyQualifiedName~$suffix"
     }
     $filterExpr = $filters -join " | "
+
+    # Apply user-supplied name filter (glob-style: * maps to dotnet test's ~ operator)
+    if ($Filter) {
+        # Convert glob wildcards to dotnet test FullyQualifiedName contains filter
+        $namePattern = $Filter.Replace("*", "")
+        $filterExpr = "($filterExpr) & FullyQualifiedName~$namePattern"
+    }
 
     # dotnet test writes failure details to stderr; suppress termination so we see full results.
     $saved = $ErrorActionPreference
