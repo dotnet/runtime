@@ -1,27 +1,117 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithSignedAddend(System.Numerics.Vector{System.Byte},System.Numerics.Vector{System.SByte})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithSignedAddend(System.Numerics.Vector{System.UInt16},System.Numerics.Vector{System.Int16})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithSignedAddend(System.Numerics.Vector{System.UInt32},System.Numerics.Vector{System.Int32})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithSignedAddend(System.Numerics.Vector{System.UInt64},System.Numerics.Vector{System.Int64})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithUnsignedAddend(System.Numerics.Vector{System.Int16},System.Numerics.Vector{System.UInt16})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithUnsignedAddend(System.Numerics.Vector{System.Int32},System.Numerics.Vector{System.UInt32})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithUnsignedAddend(System.Numerics.Vector{System.Int64},System.Numerics.Vector{System.UInt64})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.AddSaturateWithUnsignedAddend(System.Numerics.Vector{System.SByte},System.Numerics.Vector{System.Byte})</Target>
+    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await(System.Threading.Tasks.Task):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await(System.Threading.Tasks.ValueTask):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await``1(System.Runtime.CompilerServices.ConfiguredTaskAwaitable{``0}):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await``1(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable{``0}):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await``1(System.Threading.Tasks.Task{``0}):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.Await``1(System.Threading.Tasks.ValueTask{``0}):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.AwaitAwaiter``1(``0):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.Runtime.CompilerServices.AsyncHelpers.UnsafeAwaitAwaiter``1(``0):[T:System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.AsyncHelpers:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
-    <Left>net10.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
-    <Left>net10.0/System.Diagnostics.Tools.dll</Left>
-    <Right>net11.0/System.Diagnostics.Tools.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
-    <Left>net10.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.Diagnostics.StackTraceHiddenAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>net10.0/System.Runtime.dll</Left>
     <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
@@ -34,7 +124,25 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net10.0/System.Diagnostics.Tools.dll</Left>
+    <Right>net11.0/System.Diagnostics.Tools.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
     <Left>net10.0/System.dll</Left>
     <Right>net11.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Diagnostics.StackTraceHiddenAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
 </Suppressions>

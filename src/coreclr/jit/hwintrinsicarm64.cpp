@@ -3471,6 +3471,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve2_AddSaturate:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType != TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            var_types   argType1       = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            var_types   argType2       = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+            assert(JitType2PreciseVarType(op1BaseJitType) == simdBaseType);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+            retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
+            break;
+        }
+
         default:
         {
             return nullptr;

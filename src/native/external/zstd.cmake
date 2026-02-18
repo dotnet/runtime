@@ -53,3 +53,6 @@ endif()
 
 # disable warnings that occur in the zstd library
 target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-Wno-implicit-fallthrough>)
+
+# Avoid errors caused by non-ASCII characters
+target_compile_options(libzstd_static PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/source-charset:utf-8>)
