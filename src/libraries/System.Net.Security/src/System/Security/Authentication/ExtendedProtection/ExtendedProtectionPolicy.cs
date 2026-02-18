@@ -148,7 +148,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             get
             {
-                // .NET Core is supported only on Win7+ where ExtendedProtection is supported.
+                // .NET is supported only on Windows where ExtendedProtection is supported.
                 return OperatingSystem.IsWindows();
             }
         }
