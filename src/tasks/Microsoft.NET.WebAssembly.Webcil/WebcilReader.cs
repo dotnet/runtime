@@ -10,26 +10,26 @@ using System.Buffers.Binary;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace Microsoft.NET.WebAssembly.Webcil;
+namespace Microsoft.NET.WebAssembly.WebCIL;
 
 
-public sealed partial class WebcilReader : IDisposable
+public sealed partial class WebCILReader : IDisposable
 {
     // WISH:
     // This should be implemented in terms of System.Reflection.Internal.MemoryBlockProvider like the PEReader,
     // but the memory block classes are internal to S.R.M.
 
     private readonly Stream _stream;
-    private WebcilHeader _header;
+    private WebCILHeader _header;
     private DirectoryEntry _corHeaderMetadataDirectory;
     private MetadataReaderProvider? _metadataReaderProvider;
-    private ImmutableArray<WebcilSectionHeader>? _sections;
+    private ImmutableArray<WebCILSectionHeader>? _sections;
 
     private string? InputPath { get; }
 
     private readonly long _webcilInWasmOffset;
 
-    public WebcilReader(Stream stream)
+    public WebCILReader(Stream stream)
     {
         this._stream = stream;
         if (!stream.CanRead || !stream.CanSeek)
@@ -42,30 +42,30 @@ public sealed partial class WebcilReader : IDisposable
         }
         if (!ReadHeader())
         {
-            throw new BadImageFormatException("Stream does not contain a valid Webcil file", nameof(stream));
+            throw new BadImageFormatException("Stream does not contain a valid WebCIL file", nameof(stream));
         }
         if (!ReadCorHeader())
         {
-            throw new BadImageFormatException("Stream does not contain a valid COR header in the Webcil file", nameof(stream));
+            throw new BadImageFormatException("Stream does not contain a valid COR header in the WebCIL file", nameof(stream));
         }
     }
 
-    public WebcilReader (Stream stream, string inputPath) : this(stream)
+    public WebCILReader (Stream stream, string inputPath) : this(stream)
     {
         InputPath = inputPath;
     }
 
     private unsafe bool ReadHeader()
     {
-        WebcilHeader header;
-        var buffer = new byte[Marshal.SizeOf<WebcilHeader>()];
+        WebCILHeader header;
+        var buffer = new byte[Marshal.SizeOf<WebCILHeader>()];
         if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
         {
             return false;
         }
         fixed (byte* p = buffer)
         {
-            header = *(WebcilHeader*)p;
+            header = *(WebCILHeader*)p;
         }
         if (!BitConverter.IsLittleEndian)
         {
@@ -348,23 +348,23 @@ public sealed partial class WebcilReader : IDisposable
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
     }
 
-    private static long SectionDirectoryOffset => Marshal.SizeOf<WebcilHeader>();
+    private static long SectionDirectoryOffset => Marshal.SizeOf<WebCILHeader>();
 
-    private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
+    private unsafe ImmutableArray<WebCILSectionHeader> ReadSections()
     {
-        WebcilSectionHeader secheader;
-        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
-        var buffer = new byte[sizeof(WebcilSectionHeader)];
+        WebCILSectionHeader secheader;
+        var sections = ImmutableArray.CreateBuilder<WebCILSectionHeader>(_header.coff_sections);
+        var buffer = new byte[sizeof(WebCILSectionHeader)];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
         for (int i = 0; i < _header.coff_sections; i++)
         {
             if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
             {
-                throw new BadImageFormatException("Stream does not contain a valid Webcil file", nameof(_stream));
+                throw new BadImageFormatException("Stream does not contain a valid WebCIL file", nameof(_stream));
             }
             fixed (byte* p = buffer)
             {
-                secheader = (*(WebcilSectionHeader*)p);
+                secheader = (*(WebCILSectionHeader*)p);
             }
             if (!BitConverter.IsLittleEndian)
             {
@@ -399,16 +399,16 @@ public sealed partial class WebcilReader : IDisposable
             return false;
         if (!reader.Visit())
             return false;
-        if (!reader.HasWebcil)
+        if (!reader.HasWebCIL)
             return false;
-        webcilInWasmOffset = reader.WebcilPayloadOffset;
+        webcilInWasmOffset = reader.WebCILPayloadOffset;
         return true;
     }
 
     private sealed class WasmWrapperModuleReader : WasmModuleReader
     {
-        internal bool HasWebcil {get; private set;}
-        internal long WebcilPayloadOffset {get; private set; }
+        internal bool HasWebCIL {get; private set;}
+        internal long WebCILPayloadOffset {get; private set; }
         public WasmWrapperModuleReader(Stream stream) : base (stream)
         {
         }
@@ -431,8 +431,8 @@ public sealed partial class WebcilReader : IDisposable
             if (!TryReadPassiveDataSegment (out long _, out long segmentStart))
                 return false;
 
-            HasWebcil = true;
-            WebcilPayloadOffset = segmentStart;
+            HasWebCIL = true;
+            WebCILPayloadOffset = segmentStart;
             return true;
         }
     }

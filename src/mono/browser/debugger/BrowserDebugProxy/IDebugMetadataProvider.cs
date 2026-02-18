@@ -11,7 +11,7 @@ using System.Reflection.PortableExecutable;
 namespace Microsoft.WebAssembly.Diagnostics;
 
 /// <summary>
-///   An adapter on top of MetadataReader and WebcilReader for DebugStore compensating
+///   An adapter on top of MetadataReader and WebCILReader for DebugStore compensating
 ///   for the lack of a common base class on those two types.
 /// </summary>
 public interface IDebugMetadataProvider

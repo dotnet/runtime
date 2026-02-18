@@ -63,7 +63,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
-        public static bool UseWebcil => s_buildEnv.UseWebcil;
+        public static bool UseWebCIL => s_buildEnv.UseWebCIL;
         public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
@@ -92,10 +92,10 @@ namespace Wasm.Build.Tests
                 Console.WriteLine("");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
-                if (UseWebcil)
+                if (UseWebCIL)
                     Console.WriteLine($"=============== Using webcil-in-wasm ===============");
                 else
-                    Console.WriteLine($"=============== Webcil disabled ===============");
+                    Console.WriteLine($"=============== WebCIL disabled ===============");
                 Console.WriteLine ($"============== Multi-threading runtime pack for {DefaultTargetFramework} is {(IsWorkloadWithMultiThreadingForDefaultFramework ? "available" : "not available")} ==============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");

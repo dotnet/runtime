@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Microsoft.NET.WebAssembly.Webcil;
+namespace Microsoft.NET.WebAssembly.WebCIL;
 
 /// <summary>
 /// The header of a WebCIL file.
@@ -13,7 +13,7 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 /// The header is a subset of the PE, COFF and CLI headers that are needed by the mono runtime to load managed assemblies.
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct WebcilHeader
+public unsafe struct WebCILHeader
 {
     public fixed byte id[4];
     // 4 bytes

@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Microsoft.NET.WebAssembly.Webcil;
+namespace Microsoft.NET.WebAssembly.WebCIL;
 
 internal class WasmModuleReader : IDisposable
 {

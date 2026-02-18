@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? V8PathForTests            = Environment.GetEnvironmentVariable("V8_PATH_FOR_TESTS");
         internal static readonly bool    IsRunningOnCI             = Environment.GetEnvironmentVariable("IS_RUNNING_ON_CI") is "true";
         internal static readonly bool    ShowBuildOutput           = IsRunningOnCI || Environment.GetEnvironmentVariable("SHOW_BUILD_OUTPUT") is not null;
-        internal static readonly bool UseWebcil                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
+        internal static readonly bool UseWebCIL                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
         internal static readonly bool UseFingerprinting            = Environment.GetEnvironmentVariable("USE_FINGERPRINTING_FOR_TESTS") is "true";
         internal static readonly bool UseJavascriptBundler         = Environment.GetEnvironmentVariable("USE_JAVASCRIPT_BUNDLER_FOR_TESTS") is "true";
         internal static readonly string? SdkDirName                = Environment.GetEnvironmentVariable("SDK_DIR_NAME");

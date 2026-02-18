@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests;
 // ToDo: REMOVE, use WasmSdkBasedProjectProvider only
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
-    public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
+    public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebCIL ? ".wasm" : ".dll";
     protected const string s_dotnetVersionHashRegex = @"\.(?<hash>[a-zA-Z0-9]+)\.";
 
     private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
@@ -50,10 +50,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
-                                   expectToExist: IsFingerprintingEnabled ? false : !BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : !BuildTestBase.UseWebCIL);
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
-                                   expectToExist: IsFingerprintingEnabled ? false : BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : BuildTestBase.UseWebCIL);
 
         var bootJson = AssertBootJson(assertOptions);
 

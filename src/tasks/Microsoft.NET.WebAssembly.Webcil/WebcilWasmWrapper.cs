@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.NET.WebAssembly.Webcil;
+namespace Microsoft.NET.WebAssembly.WebCIL;
 
 //
 // Emits a simple WebAssembly wrapper module around a given webcil payload.
@@ -24,22 +24,22 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 //  (data "webcil Payload\cc")  ;; data segment 1: webcil payload
 //  (memory (import "webcil" "memory") 1)
 //  (global (export "webcilVersion") i32 (i32.const 0))
-//  (func (export "getWebcilSize") (param $destPtr i32) (result)
+//  (func (export "getWebCILSize") (param $destPtr i32) (result)
 //    local.get $destPtr
 //    i32.const 0
 //    i32.const 4
 //    memory.init 0)
-//  (func (export "getWebcilPayload") (param $d i32) (param $n i32) (result)
+//  (func (export "getWebCILPayload") (param $d i32) (param $n i32) (result)
 //    local.get $d
 //    i32.const 0
 //    local.get $n
 //    memory.init 1))
-public class WebcilWasmWrapper
+public class WebCILWasmWrapper
 {
     private readonly Stream _webcilPayloadStream;
     private readonly uint _webcilPayloadSize;
 
-    public WebcilWasmWrapper(Stream webcilPayloadStream)
+    public WebCILWasmWrapper(Stream webcilPayloadStream)
     {
         _webcilPayloadStream = webcilPayloadStream;
         long len = webcilPayloadStream.Length;
@@ -48,7 +48,7 @@ public class WebcilWasmWrapper
         _webcilPayloadSize = (uint)len;
     }
 
-    public void WriteWasmWrappedWebcil(Stream outputStream)
+    public void WriteWasmWrappedWebCIL(Stream outputStream)
     {
         WriteWasmHeader(outputStream);
         using (var writer = new BinaryWriter(outputStream, System.Text.Encoding.UTF8, leaveOpen: true))
@@ -117,7 +117,7 @@ public class WebcilWasmWrapper
     //
     // There are requirements in ECMA-335 (Section II.25.4) that fat method headers and method data
     // sections be 4-byte aligned.
-    private const uint WebcilPayloadInternalAlignment = 4;
+    private const uint WebCILPayloadInternalAlignment = 4;
 
     private void WriteDataSection(BinaryWriter writer)
     {
@@ -131,14 +131,14 @@ public class WebcilWasmWrapper
         dataSectionSize += segment0MinimumSize;
 
         // encode webcil size as a uleb128
-        byte[] ulebWebcilPayloadSize = ULEB128Encode(_webcilPayloadSize);
+        byte[] ulebWebCILPayloadSize = ULEB128Encode(_webcilPayloadSize);
 
         // compute the segment 1 size:
         //   segment 1 has 1 byte segment code, a uleb128 encoding of the webcilPayloadSize, and the payload
         // don't count the size of the payload yet
         checked
         {
-            dataSectionSize += SegmentCodeSize + (uint)ulebWebcilPayloadSize.Length;
+            dataSectionSize += SegmentCodeSize + (uint)ulebWebCILPayloadSize.Length;
         }
 
         // at this point the data section size includes everything except the data section code, the data section size and the webcil payload itself
@@ -147,7 +147,7 @@ public class WebcilWasmWrapper
         byte[] putativeULEBDataSectionSize = ULEB128Encode(dataSectionSize + _webcilPayloadSize);
         uint payloadOffset = (uint)s_wasmWrapperPrefix.Length + 1 + (uint)putativeULEBDataSectionSize.Length + dataSectionSize ;
 
-        uint paddingSize = PadTo(payloadOffset, WebcilPayloadInternalAlignment);
+        uint paddingSize = PadTo(payloadOffset, WebCILPayloadInternalAlignment);
 
         if (paddingSize > 0)
         {
@@ -183,8 +183,8 @@ public class WebcilWasmWrapper
 
         // write segment 1
         writer.Write((byte)1); // passive segment
-        writer.Write(ulebWebcilPayloadSize, 0, ulebWebcilPayloadSize.Length); // segment size:  _webcilPayloadSize
-        if (writer.BaseStream.Position % WebcilPayloadInternalAlignment != 0) {
+        writer.Write(ulebWebCILPayloadSize, 0, ulebWebCILPayloadSize.Length); // segment size:  _webcilPayloadSize
+        if (writer.BaseStream.Position % WebCILPayloadInternalAlignment != 0) {
             throw new Exception ($"predited offset {payloadOffset}, actual position {writer.BaseStream.Position}");
         }
         _webcilPayloadStream.CopyTo(writer.BaseStream); // payload is the entire webcil content

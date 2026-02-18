@@ -30,9 +30,9 @@ CHECK PEDecoder::CheckFormat() const
     CHECK(HasContents());
 
 #ifdef TARGET_BROWSER
-    if (HasWebcilHeaders())
+    if (HasWebCILHeaders())
     {
-        CHECK(CheckWebcilHeaders());
+        CHECK(CheckWebCILHeaders());
 
         if (HasCorHeader())
         {
@@ -217,7 +217,7 @@ BOOL PEDecoder::HasNTHeaders() const
 }
 
 #ifdef TARGET_BROWSER
-BOOL PEDecoder::HasWebcilHeaders() const
+BOOL PEDecoder::HasWebCILHeaders() const
 {
     CONTRACT(BOOL)
     {
@@ -232,10 +232,10 @@ BOOL PEDecoder::HasWebcilHeaders() const
     if (m_flags & FLAG_WEBCIL)
         RETURN TRUE;
 
-    if (m_size < sizeof(WebcilHeader))
+    if (m_size < sizeof(WebCILHeader))
         RETURN FALSE;
 
-    const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+    const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
 
     if (pWC->id[0] != WEBCIL_MAGIC_W
         || pWC->id[1] != WEBCIL_MAGIC_B
@@ -254,7 +254,7 @@ BOOL PEDecoder::HasWebcilHeaders() const
     if (VAL16(pWC->coff_sections) == 0)
         RETURN FALSE;
 
-    S_SIZE_T cbHeaderAndSections(S_SIZE_T(sizeof(WebcilHeader)) +
+    S_SIZE_T cbHeaderAndSections(S_SIZE_T(sizeof(WebCILHeader)) +
                                  S_SIZE_T(static_cast<SIZE_T>(VAL16(pWC->coff_sections))) * S_SIZE_T(sizeof(IMAGE_SECTION_HEADER)));
     if (cbHeaderAndSections.IsOverflow())
         RETURN FALSE;
@@ -267,7 +267,7 @@ BOOL PEDecoder::HasWebcilHeaders() const
     RETURN TRUE;
 }
 
-CHECK PEDecoder::CheckWebcilHeaders() const
+CHECK PEDecoder::CheckWebCILHeaders() const
 {
     CONTRACT_CHECK
     {
@@ -282,11 +282,11 @@ CHECK PEDecoder::CheckWebcilHeaders() const
     if (m_flags & FLAG_WEBCIL_CHECKED)
         CHECK_OK;
 
-    CHECK(HasWebcilHeaders());
+    CHECK(HasWebCILHeaders());
 
-    const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+    const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
     uint16_t nSections = VAL16(pWC->coff_sections);
-    const IMAGE_SECTION_HEADER* pSections = (const IMAGE_SECTION_HEADER*)(m_base + sizeof(WebcilHeader));
+    const IMAGE_SECTION_HEADER* pSections = (const IMAGE_SECTION_HEADER*)(m_base + sizeof(WebCILHeader));
 
     // Validate every section header.
     // This mirrors the spirit of CheckNTHeaders() for PE files:
@@ -507,9 +507,9 @@ CHECK PEDecoder::CheckHeaders() const
     CONTRACT_CHECK_END;
 
 #ifdef TARGET_BROWSER
-    if (HasWebcilHeaders())
+    if (HasWebCILHeaders())
     {
-        CHECK(CheckWebcilHeaders());
+        CHECK(CheckWebCILHeaders());
         CHECK_OK;
     }
 #endif
@@ -1173,11 +1173,11 @@ CHECK PEDecoder::CheckCorHeader() const
         CHECK_OK;
 
 #ifdef TARGET_BROWSER
-    if (HasWebcilHeaders())
+    if (HasWebCILHeaders())
     {
         CHECK(HasCorHeader());
 
-        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
         CHECK(VAL32(pWC->pe_cli_header_size) >= sizeof(IMAGE_COR20_HEADER));
         CHECK(CheckRva(VAL32(pWC->pe_cli_header_rva), sizeof(IMAGE_COR20_HEADER)));
     }
@@ -1538,7 +1538,7 @@ CHECK PEDecoder::CheckILOnly() const
     CHECK(CheckCorHeader());
 
 #ifdef TARGET_BROWSER
-    if (HasWebcilHeaders())
+    if (HasWebCILHeaders())
     {
         // WebCIL images are always IL-only by definition.
         const_cast<PEDecoder *>(this)->m_flags |= FLAG_IL_ONLY_CHECKED;

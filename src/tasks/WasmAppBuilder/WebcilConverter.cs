@@ -13,17 +13,17 @@ using WasmAppBuilder;
 namespace Microsoft.WebAssembly.Build.Tasks;
 
 /// <summary>
-/// Reads a .NET assembly in a normal PE COFF file and writes it out as a Webcil file
+/// Reads a .NET assembly in a normal PE COFF file and writes it out as a WebCIL file
 /// </summary>
-public class WebcilConverter
+public class WebCILConverter
 {
     private readonly string _inputPath;
     private readonly string _outputPath;
 
-    private readonly NET.WebAssembly.Webcil.WebcilConverter _converter;
+    private readonly NET.WebAssembly.WebCIL.WebCILConverter _converter;
 
     private LogAdapter Log { get; }
-    private WebcilConverter(NET.WebAssembly.Webcil.WebcilConverter converter, string inputPath, string outputPath, LogAdapter logger)
+    private WebCILConverter(NET.WebAssembly.WebCIL.WebCILConverter converter, string inputPath, string outputPath, LogAdapter logger)
     {
         _converter = converter;
         _inputPath = inputPath;
@@ -31,16 +31,16 @@ public class WebcilConverter
         Log = logger;
     }
 
-    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger)
+    public static WebCILConverter FromPortableExecutable(string inputPath, string outputPath, LogAdapter logger)
     {
-        var converter = NET.WebAssembly.Webcil.WebcilConverter.FromPortableExecutable(inputPath, outputPath);
-        return new WebcilConverter(converter, inputPath, outputPath, logger);
+        var converter = NET.WebAssembly.WebCIL.WebCILConverter.FromPortableExecutable(inputPath, outputPath);
+        return new WebCILConverter(converter, inputPath, outputPath, logger);
     }
 
-    public void ConvertToWebcil()
+    public void ConvertToWebCIL()
     {
-        Log.LogMessage(MessageImportance.Low, $"Converting to Webcil: input {_inputPath} output: {_outputPath}");
-        _converter.ConvertToWebcil();
+        Log.LogMessage(MessageImportance.Low, $"Converting to WebCIL: input {_inputPath} output: {_outputPath}");
+        _converter.ConvertToWebCIL();
     }
 
 }

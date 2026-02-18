@@ -205,7 +205,7 @@ public class GenerateWasmBootJson : Task
             var lazyLoadAssembliesWithoutExtension = (LazyLoadedAssemblies ?? Array.Empty<ITaskItem>()).ToDictionary(l =>
             {
                 var extension = Path.GetExtension(l.ItemSpec);
-                if (extension == ".dll" || extension == Utils.WebcilInWasmExtension)
+                if (extension == ".dll" || extension == Utils.WebCILInWasmExtension)
                     return Path.GetFileNameWithoutExtension(l.ItemSpec);
 
                 return l.ItemSpec;
@@ -532,7 +532,7 @@ public class GenerateWasmBootJson : Task
     private static bool TryGetLazyLoadedAssembly(Dictionary<string, ITaskItem> lazyLoadAssembliesNoExtension, string fileName, out ITaskItem lazyLoadedAssembly)
     {
         var extension = Path.GetExtension(fileName);
-        if (extension == ".dll" || extension == Utils.WebcilInWasmExtension)
+        if (extension == ".dll" || extension == Utils.WebCILInWasmExtension)
             fileName = Path.GetFileNameWithoutExtension(fileName);
 
         return lazyLoadAssembliesNoExtension.TryGetValue(fileName, out lazyLoadedAssembly);

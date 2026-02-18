@@ -51,8 +51,8 @@ export async function instantiateWebCILModule(webCILPromise: Promise<Response>, 
     const sp = _ems_.stackSave();
     try {
         const sizePtr = _ems_.stackAlloc(sizeOfPtr);
-        const getWebcilSize = instance.exports.getWebcilSize as (destPtr: number) => void;
-        getWebcilSize(sizePtr as any);
+        const getWebCILSize = instance.exports.getWebCILSize as (destPtr: number) => void;
+        getWebCILSize(sizePtr as any);
         const payloadSize = _ems_.HEAPU32[sizePtr as any >>> 2];
 
         if (payloadSize === 0) {
@@ -66,8 +66,8 @@ export async function instantiateWebCILModule(webCILPromise: Promise<Response>, 
 
         const payloadPtr = _ems_.HEAPU32[ptrPtr as any >>> 2];
 
-        const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
-        getWebcilPayload(payloadPtr, payloadSize);
+        const getWebCILPayload = instance.exports.getWebCILPayload as (ptr: number, size: number) => void;
+        getWebCILPayload(payloadPtr, payloadSize);
 
         const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
         _ems_.dotnetLogger.debug(`Registered WebCIL assembly '${virtualPath}' (name: '${name}') at ${payloadPtr.toString(16)} length ${payloadSize}`);
