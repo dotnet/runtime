@@ -1129,6 +1129,8 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
             ValueNum lenVN   = curAssertion.GetOp2().GetCheckedBound();
+            ValueNum indexOp1VN;
+            int      indexOp2Cns;
 
             assert(curAssertion.GetOp2().GetCheckedBoundConstant() == 0);
             assert(curAssertion.GetOp2().IsCheckedBoundNeverNegative());
@@ -1161,6 +1163,14 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     }
                 }
             }
+            // Example: we have IsBoundsCheckNoThrow assertion for arr[i - 2] with i == normalLclVN
+            // This means i >= 2. NOTE: "i - 2" is VNF_ADD(i, -2).
+            else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
+                     (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
+            {
+                cmpOper = GT_GE;
+                limit   = Limit(Limit::keConstant, -indexOp2Cns);
+            }
             else if (normalLclVN == lenVN)
             {
                 if (comp->vnStore->IsVNInt32Constant(indexVN))
@@ -1179,23 +1189,10 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 }
                 else
                 {
-                    // Check if indexVN is VNF_ADD(lenVN, -CNS) which means lenVN >= CNS.
-                    // Example: arr[arr.Length - 4] is in bounds implies arr.Length >= 4.
-                    ValueNum addOpVN;
-                    int      addOpCns;
-                    if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &addOpVN, &addOpCns) &&
-                        (addOpVN == lenVN) && (addOpCns < 0) && (addOpCns > INT_MIN))
-                    {
-                        cmpOper = GT_GT;
-                        limit   = Limit(Limit::keConstant, -addOpCns - 1);
-                    }
-                    else
-                    {
-                        // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
-                        // This means the array has at least one element, so we can deduce "normalLclVN > 0".
-                        cmpOper = GT_GT;
-                        limit   = Limit(Limit::keConstant, 0);
-                    }
+                    // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
+                    // This means the array has at least one element, so we can deduce "normalLclVN > 0".
+                    cmpOper = GT_GT;
+                    limit   = Limit(Limit::keConstant, 0);
                 }
             }
             else
