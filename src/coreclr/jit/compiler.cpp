@@ -5947,6 +5947,16 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
             }
+
+#ifdef DEBUG
+            if (JitConfig.JitUseScalableVectorT() &&
+                currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
+            }
+#endif
         }
 
         instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);

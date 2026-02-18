@@ -14,7 +14,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
     [SetupCompileArgument("/features:runtime-async=on")]
-    [SetupCompileArgument("/nowarn:SYSLIB5007")]
     [ExpectedNoWarnings]
     public class RuntimeAsyncMethods
     {
