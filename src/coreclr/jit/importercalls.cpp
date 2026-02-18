@@ -8480,7 +8480,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         default:
             return false;
     }
-}
+
 #elif defined(TARGET_WASM)
 
     // TODO-WASM-CQ: we can likely support more intrinsics here
