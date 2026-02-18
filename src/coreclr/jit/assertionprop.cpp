@@ -5167,49 +5167,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                     }
                 }
             }
-            // Check if both the asserted index and the current index are of the form
-            // VNF_ADD(vnLen, -cns), where vnLen is the checked bound.
-            // If the asserted constant is more negative (larger absolute value),
-            // the current bounds check is redundant.
-            //   a[a.Len-K1] followed by a[a.Len-K2] where 0 < K2 <= K1
-            {
-                VNFuncApp assertionIdxFunc;
-                VNFuncApp curIdxFunc;
-                if (vnStore->GetVNFunc(curAssertion.GetOp1().GetVN(), &assertionIdxFunc) &&
-                    assertionIdxFunc.m_func == VNF_ADD &&
-                    vnStore->GetVNFunc(vnCurIdx, &curIdxFunc) &&
-                    curIdxFunc.m_func == VNF_ADD)
-                {
-                    // Normalize constants to the right side.
-                    if (!vnStore->IsVNInt32Constant(assertionIdxFunc.m_args[1]))
-                    {
-                        std::swap(assertionIdxFunc.m_args[0], assertionIdxFunc.m_args[1]);
-                    }
-                    if (!vnStore->IsVNInt32Constant(curIdxFunc.m_args[1]))
-                    {
-                        std::swap(curIdxFunc.m_args[0], curIdxFunc.m_args[1]);
-                    }
-
-                    // Both must have the checked bound (array length) as the non-constant operand.
-                    if (assertionIdxFunc.m_args[0] == vnCurLen &&
-                        curIdxFunc.m_args[0] == vnCurLen &&
-                        vnStore->IsVNInt32Constant(assertionIdxFunc.m_args[1]) &&
-                        vnStore->IsVNInt32Constant(curIdxFunc.m_args[1]))
-                    {
-                        int assertionDelta = vnStore->GetConstantInt32(assertionIdxFunc.m_args[1]);
-                        int curDelta       = vnStore->GetConstantInt32(curIdxFunc.m_args[1]);
-
-                        // Both deltas must be negative (indexing from end of array).
-                        // assertionDelta <= curDelta means the asserted index was further from the end.
-                        if (assertionDelta < 0 && curDelta < 0 && assertionDelta <= curDelta)
-                        {
-                            return dropBoundsCheck(
-                                INDEBUG("a[a.Len-K1] followed by a[a.Len-K2], with 0 < K2 <= K1"));
-                        }
-                    }
-                }
-            }
-
             // Extend this to remove additional redundant bounds checks:
             // i.e.  a[i+1] followed by a[i]  by using the VN(i+1) >= VN(i)
             //       a[i]   followed by a[j]  when j is known to be >= i

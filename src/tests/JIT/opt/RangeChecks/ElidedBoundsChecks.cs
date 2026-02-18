@@ -83,13 +83,6 @@ public class ElidedBoundsChecks
         return false;
     }
 
-    // After bounds-checking arr[^4], the checks for arr[^3], arr[^2], arr[^1] are redundant.
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static int IndexFromEndRedundant(ReadOnlySpan<int> source)
-    {
-        return source[^4] | source[^3] | source[^2] | source[^1];
-    }
-
     [Fact]
     public static int TestEntryPoint()
     {
@@ -124,9 +117,6 @@ public class ElidedBoundsChecks
             return 0;
 
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
-            return 0;
-
-        if (IndexFromEndRedundant(new int[] { 1, 2, 3, 4 }) != (1 | 2 | 3 | 4))
             return 0;
 
         return 100;

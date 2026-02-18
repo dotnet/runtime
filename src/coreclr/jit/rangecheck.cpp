@@ -1179,10 +1179,23 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 }
                 else
                 {
-                    // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
-                    // This means the array has at least one element, so we can deduce "normalLclVN > 0".
-                    cmpOper = GT_GT;
-                    limit   = Limit(Limit::keConstant, 0);
+                    // Check if indexVN is VNF_ADD(lenVN, -CNS) which means lenVN >= CNS.
+                    // Example: arr[arr.Length - 4] is in bounds implies arr.Length >= 4.
+                    ValueNum addOpVN;
+                    int      addOpCns;
+                    if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &addOpVN, &addOpCns) &&
+                        (addOpVN == lenVN) && (addOpCns < 0) && (addOpCns > INT_MIN))
+                    {
+                        cmpOper = GT_GT;
+                        limit   = Limit(Limit::keConstant, -addOpCns - 1);
+                    }
+                    else
+                    {
+                        // We've seen arr[unknown_index] assertion while normalLclVN == arr.Length.
+                        // This means the array has at least one element, so we can deduce "normalLclVN > 0".
+                        cmpOper = GT_GT;
+                        limit   = Limit(Limit::keConstant, 0);
+                    }
                 }
             }
             else
