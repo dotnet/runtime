@@ -12,7 +12,6 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsiOSLike Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsiOSLike>
-    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
@@ -142,8 +141,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcessPriorityBoost.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetProcessPriorityBoost.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SetProcessPriorityBoost.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetWindowsDirectoryW.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.GetWindowsDirectoryW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenThread.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.OpenThread.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadPriority.cs"
