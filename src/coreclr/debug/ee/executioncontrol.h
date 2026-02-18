@@ -40,6 +40,7 @@ public:
 
     // Set bypass on the InterpMethodContextFrame so the interpreter executes
     // the original opcode instead of re-hitting the breakpoint.
+    // The bypass is cleared when the breakpoint is hit and the original opcode is executed.
     virtual void BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx) override;
 
 private:

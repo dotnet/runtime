@@ -6351,6 +6351,8 @@ bool DebuggerStepper::TrapInterpreterCodeStep(ControllerStackInfo *info, bool in
             else
             {
                 // Indirect call - enable JMC backstop
+                // TODO: This will not work correctly if the indirect call target is resolved JIT/R2R compiled code.
+                // https://github.com/dotnet/runtime/issues/124547
                 LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Indirect call, enabling MethodEnter backstop\n"));
                 EnableJMCBackStop(info->m_activeFrame.md);
                 return true;
