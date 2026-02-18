@@ -262,7 +262,7 @@ namespace System.Reflection.Emit
             if (returnTypeToWrite.IsSignatureType)
                 returnTypeToWrite = returnTypeToWrite.UnderlyingSystemType;
 
-            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
+            WriteSignatureForType(retTypeEncoder.Type(), returnTypeToWrite, module);
 
             foreach (Type paramType in paramTypes)
             {
