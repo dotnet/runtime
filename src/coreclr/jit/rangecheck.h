@@ -368,27 +368,71 @@ struct RangeOps
 
     static Range Multiply(const Range& r1, const Range& r2, bool unsignedMul = false)
     {
-        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        const Limit& r1lo = r1.LowerLimit();
+        const Limit& r1hi = r1.UpperLimit();
+        const Limit& r2lo = r2.LowerLimit();
+        const Limit& r2hi = r2.UpperLimit();
+
+        // Check if any bounds are dependent
+        bool anyDep = r1lo.IsDependent() || r1hi.IsDependent() || r2lo.IsDependent() || r2hi.IsDependent();
+
+        // If both ranges are fully constant, perform the multiplication as before
+        if (!anyDep && r1.IsConstantRange() && r2.IsConstantRange())
         {
-            return Limit(Limit::keUnknown);
+            int r1loVal = r1lo.GetConstant();
+            int r1hiVal = r1hi.GetConstant();
+            int r2loVal = r2lo.GetConstant();
+            int r2hiVal = r2hi.GetConstant();
+
+            static_assert(CheckedOps::Unsigned == true);
+            if (CheckedOps::MulOverflows(r1loVal, r2loVal, unsignedMul) ||
+                CheckedOps::MulOverflows(r1loVal, r2hiVal, unsignedMul) ||
+                CheckedOps::MulOverflows(r1hiVal, r2loVal, unsignedMul) ||
+                CheckedOps::MulOverflows(r1hiVal, r2hiVal, unsignedMul))
+            {
+                return Limit(Limit::keUnknown);
+            }
+
+            int lo = min(min(r1loVal * r2loVal, r1loVal * r2hiVal), min(r1hiVal * r2loVal, r1hiVal * r2hiVal));
+            int hi = max(max(r1loVal * r2loVal, r1loVal * r2hiVal), max(r1hiVal * r2loVal, r1hiVal * r2hiVal));
+            assert(hi >= lo);
+            return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
         }
 
-        int r1lo = r1.LowerLimit().GetConstant();
-        int r1hi = r1.UpperLimit().GetConstant();
-        int r2lo = r2.LowerLimit().GetConstant();
-        int r2hi = r2.UpperLimit().GetConstant();
-
-        static_assert(CheckedOps::Unsigned == true);
-        if (CheckedOps::MulOverflows(r1lo, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1lo, r2hi, unsignedMul) ||
-            CheckedOps::MulOverflows(r1hi, r2lo, unsignedMul) || CheckedOps::MulOverflows(r1hi, r2hi, unsignedMul))
+        // If one or more bounds are dependent, check if the constant bounds (if any) would overflow.
+        // If they would overflow, give up. Otherwise, return a range with dependent bounds.
+        if (anyDep)
         {
-            return Limit(Limit::keUnknown);
+            // Check all constant bound combinations for overflow
+            bool wouldOverflow = false;
+            if (r1lo.IsConstant() && r2lo.IsConstant())
+            {
+                wouldOverflow |= CheckedOps::MulOverflows(r1lo.GetConstant(), r2lo.GetConstant(), unsignedMul);
+            }
+            if (r1lo.IsConstant() && r2hi.IsConstant())
+            {
+                wouldOverflow |= CheckedOps::MulOverflows(r1lo.GetConstant(), r2hi.GetConstant(), unsignedMul);
+            }
+            if (r1hi.IsConstant() && r2lo.IsConstant())
+            {
+                wouldOverflow |= CheckedOps::MulOverflows(r1hi.GetConstant(), r2lo.GetConstant(), unsignedMul);
+            }
+            if (r1hi.IsConstant() && r2hi.IsConstant())
+            {
+                wouldOverflow |= CheckedOps::MulOverflows(r1hi.GetConstant(), r2hi.GetConstant(), unsignedMul);
+            }
+
+            if (wouldOverflow)
+            {
+                return Limit(Limit::keUnknown);
+            }
+
+            // If no overflow in constant bounds, return a dependent range
+            return Range(Limit(Limit::keDependent), Limit(Limit::keDependent));
         }
 
-        int lo = min(min(r1lo * r2lo, r1lo * r2hi), min(r1hi * r2lo, r1hi * r2hi));
-        int hi = max(max(r1lo * r2lo, r1lo * r2hi), max(r1hi * r2lo, r1hi * r2hi));
-        assert(hi >= lo);
-        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
+        // Neither range is constant, give up
+        return Limit(Limit::keUnknown);
     }
 
     static Range ShiftRight(const Range& r1, const Range& r2, bool logical)
