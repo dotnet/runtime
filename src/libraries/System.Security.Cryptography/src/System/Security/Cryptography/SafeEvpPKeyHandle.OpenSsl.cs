@@ -67,10 +67,6 @@ namespace System.Security.Cryptography
             if (IsInvalid)
                 throw new InvalidOperationException(SR.Cryptography_OpenInvalidHandle);
 
-            // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
-            // that we don't lose a tracked reference in low-memory situations.
-            SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
-
             // Keep the source handle alive so that a concurrent Dispose on another
             // thread does not zero the handle field between UpRef and the copy below.
             bool addedRef = false;
@@ -78,6 +74,10 @@ namespace System.Security.Cryptography
             try
             {
                 DangerousAddRef(ref addedRef);
+
+                // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
+                // that we don't lose a tracked reference in low-memory situations.
+                SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
 
                 int success = Interop.Crypto.UpRefEvpPkey(this);
 
@@ -95,11 +95,7 @@ namespace System.Security.Cryptography
                 safeHandle.SetHandle(handle);
                 // ExtraHandle is upref'd by UpRefEvpPkey
                 safeHandle.ExtraHandle = ExtraHandle;
-            }
-            catch
-            {
-                safeHandle.Dispose();
-                throw;
+                return safeHandle;
             }
             finally
             {
@@ -108,8 +104,6 @@ namespace System.Security.Cryptography
                     DangerousRelease();
                 }
             }
-
-            return safeHandle;
         }
 
         /// <summary>
