@@ -628,27 +628,23 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 //
 static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (!node->OperIsLocalStore() && !node->OperIs(GT_LCL_ADDR))
+    if ((!node->OperIsLocalStore() || IsDefaultValue(node->AsLclVarCommon()->Data())) && !node->OperIs(GT_LCL_ADDR))
     {
         return;
     }
 
-    LclVarDsc* varDsc    = compiler->lvaGetDesc(node->AsLclVarCommon());
-    bool       isMutated = node->OperIs(GT_LCL_ADDR) || !IsDefaultValue(node->AsLclVarCommon()->Data());
+    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
 
     if (varDsc->lvTracked)
     {
-        if (isMutated)
-        {
-            VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        }
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
         return;
     }
 
-    // For dependently promoted structs the parent is not tracked but the
-    // field locals are. When the parent is mutated, all tracked fields must
-    // be marked as mutated as well.
-    if (isMutated && (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
+    // For promoted structs the parent may not be tracked but the field locals
+    // are. When the parent is mutated, all tracked fields must be marked as
+    // mutated as well.
+    if (varDsc->lvPromoted)
     {
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
