@@ -95,7 +95,6 @@ public:
 private:
     // Thread list management
     EbrThreadData* GetOrCreateThreadData();
-    void UnlinkThreadData(EbrThreadData* pData);
 
     // Epoch management
     bool CanAdvanceEpoch();
@@ -131,12 +130,14 @@ public:
     EbrCriticalRegionHolder(EbrCollector* pCollector, bool fEnable)
         : m_pCollector(fEnable ? pCollector : nullptr)
     {
+        WRAPPER_NO_CONTRACT;
         if (m_pCollector != nullptr)
             m_pCollector->EnterCriticalRegion();
     }
 
     ~EbrCriticalRegionHolder()
     {
+        WRAPPER_NO_CONTRACT;
         if (m_pCollector != nullptr)
             m_pCollector->ExitCriticalRegion();
     }

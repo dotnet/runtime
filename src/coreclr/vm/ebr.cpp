@@ -15,20 +15,20 @@ static constexpr uint32_t ACTIVE_FLAG = 0x80000000U;
 
 struct EbrThreadData
 {
-    EbrCollector*      m_pCollector;
+    EbrCollector*      m_pCollector = nullptr;
 
     // Local epoch with ACTIVE_FLAG. When the thread is quiescent (outside a
     // critical region) ACTIVE_FLAG is cleared and the epoch bits are zero.
     Volatile<uint32_t> m_localEpoch;
 
     // Nesting depth for re-entrant critical regions.
-    uint32_t           m_criticalDepth;
+    uint32_t           m_criticalDepth = 0;
 
     // Logically deleted from the thread list.
     Volatile<BOOL>     m_detached;
 
     // Intrusive linked list through the collector's thread list.
-    EbrThreadData*     m_pNext;
+    EbrThreadData*     m_pNext = nullptr;
 };
 
 // Singly-linked list node for pending deletions.
@@ -47,11 +47,28 @@ struct EbrPendingEntry final
     EbrPendingEntry* m_pNext;
 };
 
-// Each thread holds its own EbrThreadData via thread_local.
-// We support only a single collector per process; if multiple collectors
-// are needed this can be extended to a per-collector TLS map, but for the
-// HashMap use-case a single global collector suffices.
-static thread_local EbrThreadData t_pThreadData = {};
+// Each thread holds a pointer to its heap-allocated EbrThreadData. The node
+// must outlive the thread because it remains linked in the collector's thread
+// list until TryAdvanceEpoch physically prunes and deletes it.
+static thread_local EbrThreadData* t_pThreadData = nullptr;
+
+// Destructor that runs when the thread's C++ thread_local storage is torn
+// down. This ensures EBR cleanup happens for *all* threads that entered a
+// critical region, not only threads that have a runtime Thread object (which
+// is required for the RuntimeThreadShutdown / ThreadDetaching path).
+struct EbrTlsDestructor final
+{
+    ~EbrTlsDestructor()
+    {
+        EbrThreadData* pData = t_pThreadData;
+        if (pData != nullptr && pData->m_pCollector != nullptr)
+        {
+            pData->m_pCollector->ThreadDetach();
+            t_pThreadData = nullptr;
+        }
+    }
+};
+static thread_local EbrTlsDestructor t_ebrTlsDestructor;
 
 // Global EBR collector for HashMap's async mode.
 // If you want to add another usage for Ebr in the future, please consider
@@ -119,15 +136,18 @@ EbrCollector::GetOrCreateThreadData()
     }
     CONTRACTL_END;
 
-    EbrThreadData* pData = &t_pThreadData;
-    if (pData->m_pCollector == this)
+    EbrThreadData* pData = t_pThreadData;
+    if (pData != nullptr && pData->m_pCollector == this)
         return pData;
 
+    // Heap-allocate so the node outlives the thread. It will be freed
+    // when TryAdvanceEpoch prunes detached nodes.
+    pData = new (nothrow) EbrThreadData();
+    if (pData == nullptr)
+        return nullptr;
+
     pData->m_pCollector = this;
-    pData->m_localEpoch = 0;
-    pData->m_criticalDepth = 0;
-    pData->m_detached = FALSE;
-    pData->m_pNext = nullptr;
+    t_pThreadData = pData;
 
     // Link into the collector's thread list.
     // See TryAdvanceEpoch for the removal semantics of detached nodes.
@@ -139,18 +159,6 @@ EbrCollector::GetOrCreateThreadData()
     } while (InterlockedCompareExchangeT(&m_pThreadListHead, pData, pHead) != pHead);
 
     return pData;
-}
-
-void
-EbrCollector::UnlinkThreadData(EbrThreadData* pData)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pData == nullptr)
-        return;
-
-    // Logically detach: the epoch scanner skips detached nodes.
-    pData->m_detached = TRUE;
 }
 
 // ============================================
@@ -201,7 +209,8 @@ EbrCollector::ExitCriticalRegion()
 
     _ASSERTE(m_initialized);
 
-    EbrThreadData* pData = &t_pThreadData;
+    EbrThreadData* pData = t_pThreadData;
+    _ASSERTE(pData != nullptr);
     _ASSERTE(pData->m_pCollector == this);
     _ASSERTE(pData->m_criticalDepth > 0);
 
@@ -221,8 +230,8 @@ EbrCollector::InCriticalRegion()
 {
     LIMITED_METHOD_CONTRACT;
 
-    EbrThreadData* pData = &t_pThreadData;
-    if (pData->m_pCollector != this)
+    EbrThreadData* pData = t_pThreadData;
+    if (pData == nullptr || pData->m_pCollector != this)
         return false;
     return pData->m_criticalDepth > 0;
 }
@@ -237,14 +246,15 @@ EbrCollector::ThreadDetach()
     }
     CONTRACTL_END;
 
-    EbrThreadData* pData = &t_pThreadData;
-    if (pData->m_pCollector != this)
+    EbrThreadData* pData = t_pThreadData;
+    if (pData == nullptr || pData->m_pCollector != this)
         return;
 
     _ASSERTE(!InCriticalRegion());
 
-    UnlinkThreadData(pData);
-    t_pThreadData = {}; // Clear thread_local to prevent reuse after detach.
+    // Logically detach: the epoch scanner skips detached nodes.
+    // The heap-allocated node is freed later by TryAdvanceEpoch.
+    pData->m_detached = TRUE;
 }
 
 // ============================================
@@ -306,16 +316,22 @@ EbrCollector::TryAdvanceEpoch()
     uint32_t newEpoch = ((uint32_t)m_globalEpoch + 1) % EBR_EPOCHS;
     m_globalEpoch = newEpoch;
 
-    // Physically prune detached nodes. New nodes are only ever CAS-pushed at
-    // the head, so unlinking interior nodes here is safe without interfering
-    // with concurrent inserts.
+    // Physically prune and delete detached nodes. New nodes are only ever
+    // CAS-pushed at the head, so unlinking interior nodes here is safe
+    // without interfering with concurrent inserts.
     EbrThreadData** pp = &m_pThreadListHead;
     while (*pp != nullptr)
     {
         if ((*pp)->m_detached)
-            *pp = (*pp)->m_pNext;
+        {
+            EbrThreadData* pDetached = *pp;
+            *pp = pDetached->m_pNext;
+            delete pDetached;
+        }
         else
+        {
             pp = &(*pp)->m_pNext;
+        }
     }
 
     return true;
@@ -395,7 +411,7 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     _ASSERTE(pfnDelete != nullptr);
 
     // Must be in a critical region.
-    EbrThreadData* pData = &t_pThreadData;
+    EbrThreadData* pData = t_pThreadData;
     _ASSERTE(pData->m_pCollector == this && pData->m_criticalDepth > 0);
 
     // Allocate pending entry.
