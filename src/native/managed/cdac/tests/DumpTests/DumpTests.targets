@@ -131,9 +131,4 @@
     <Error Text="Dump file was not created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
 
-  <!-- Expose dump paths as properties for tests -->
-  <PropertyGroup>
-    <BasicThreadsLocalDumpPath>$([MSBuild]::NormalizePath('$(DumpOutputDir)', 'local', 'BasicThreads', 'BasicThreads.dmp'))</BasicThreadsLocalDumpPath>
-    <BasicThreadsNet10DumpPath>$([MSBuild]::NormalizePath('$(DumpOutputDir)', 'net10.0', 'BasicThreads', 'BasicThreads.dmp'))</BasicThreadsNet10DumpPath>
-  </PropertyGroup>
 </Project>

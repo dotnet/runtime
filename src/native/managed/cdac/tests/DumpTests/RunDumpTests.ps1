@@ -3,10 +3,14 @@
     Generates crash dumps and/or runs cDAC dump-based integration tests.
 
 .DESCRIPTION
-    This script orchestrates the cDAC dump test workflow:
+    This script orchestrates the cDAC dump test workflow on Windows:
       1. Build debuggee apps for the selected runtime version(s)
       2. Run them to produce crash dumps
       3. Build and run the dump analysis tests
+
+    NOTE: This script is Windows-only. For cross-platform CI builds,
+    the MSBuild-based DumpTests.targets handles platform detection
+    automatically via $(HostOS), $(ExeSuffix), and $(PortableTargetRid).
 
     Dumps are written to: artifacts\dumps\cdac\{version}\{debuggee}\
     The script must be run from the DumpTests directory.
