@@ -20,6 +20,7 @@ namespace System.Net
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
         private readonly SafeSslHandle _sslContext;
+        private readonly object _lock = new object();
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -205,7 +206,7 @@ namespace System.Net
                 SafeSslHandle sslContext = _sslContext;
                 if (null != sslContext)
                 {
-                    lock (_sslContext)
+                    lock (_lock)
                     {
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
@@ -228,7 +229,7 @@ namespace System.Net
             // but if we were to pool the buffers we would have a potential use-after-free issue.
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     ulong length = (ulong)*dataLength;
                     Debug.Assert(length <= int.MaxValue);
@@ -260,7 +261,7 @@ namespace System.Net
 
             try
             {
-                lock (context)
+                lock (context._lock)
                 {
                     ulong toRead = (ulong)*dataLength;
 
@@ -297,7 +298,7 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
@@ -309,7 +310,7 @@ namespace System.Net
 
         internal void ReadPendingWrites(ref ProtocolToken token)
         {
-            lock (_sslContext)
+            lock (_lock)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
@@ -331,7 +332,7 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            lock (_sslContext)
+            lock (_lock)
             {
                 int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
