@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <ServicingVersion>2</ServicingVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageDescription>Provides support for CBOR Object Signing and Encryption (COSE).</PackageDescription>
   </PropertyGroup>
 
