@@ -196,6 +196,13 @@ namespace Internal.ReadyToRunConstants
         // (used in cases inlining brings in references to assemblies not seen in the MSIL).
     }
 
+    [Flags]
+    public enum ReadyToRunTypePreinitializationFlags : uint
+    {
+        None = 0x0,
+        TypeIsPreinitialized = 0x1,
+    }
+
     //
     // Intrinsics and helpers
     // Keep in sync with https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h

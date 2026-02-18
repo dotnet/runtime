@@ -69,6 +69,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NodeFactory
     {
         private bool _markingComplete;
+        private DependencyAnalyzerBase<NodeFactory> _graph;
 
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
@@ -84,6 +85,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public MetadataManager MetadataManager { get; }
 
+        public ILCompiler.PreinitializationManager PreinitializationManager { get; }
+
+        internal ReadyToRunPreinitializationManager ReadyToRunPreinitializationManager { get; }
+
         public CompositeImageSettings CompositeImageSettings { get; set; }
 
         public readonly NodeFactoryOptimizationFlags OptimizationFlags;
@@ -93,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis
         List<ILBodyFixupSignature> _markedILBodyFixupSignatures = new List<ILBodyFixupSignature>();
 
         public bool MarkingComplete => _markingComplete;
+
+        internal void AddCompilationRoot(DependencyNodeCore<NodeFactory> node, string reason)
+        {
+            _graph?.AddRoot(node, reason);
+        }
 
         public void GenerateHotColdMap(DependencyAnalyzerBase<NodeFactory> dependencyGraph)
         {
@@ -206,6 +216,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
+            ILCompiler.PreinitializationManager preinitializationManager,
             int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
@@ -215,6 +226,8 @@ namespace ILCompiler.DependencyAnalysis
             Target = context.Target;
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);
+            PreinitializationManager = preinitializationManager;
+            ReadyToRunPreinitializationManager = new ReadyToRunPreinitializationManager(this);
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
@@ -412,6 +425,8 @@ namespace ILCompiler.DependencyAnalysis
         public ImportSectionNode DispatchImports;
 
         public ImportSectionNode StringImports;
+
+        public ImportSectionNode PreinitializationImports;
 
         public ImportSectionNode HelperImports;
 
@@ -698,6 +713,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
         {
+            _graph = graph;
+
             graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
 
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
@@ -786,6 +803,9 @@ namespace ILCompiler.DependencyAnalysis
                     var node = new MethodIsGenericMapNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
                 }
+
+                TypePreinitializationMapNode typePreinitializationMap = new TypePreinitializationMapNode(inputModule);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypePreinitializationMap, typePreinitializationMap, typePreinitializationMap);
             }
 
             InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
@@ -912,11 +932,21 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(StringImports);
 
+            PreinitializationImports = new ImportSectionNode(
+                "PreinitializationImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.None,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(PreinitializationImports);
+
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
             graph.AddRoot(ModuleImport, "Module import is always generated");
             graph.AddRoot(EagerImports, "Eager imports are always generated");
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
+            graph.AddRoot(PreinitializationImports, "Preinitialization imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(ILBodyPrecodeImports, "IL body precode imports are always generated");

@@ -216,6 +216,12 @@
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
   </data>
+  <data name="PreinitStaticsOption" xml:space="preserve">
+    <value>Interpret static constructors at compile time if possible (implied by -O)</value>
+  </data>
+  <data name="NoPreinitStaticsOption" xml:space="preserve">
+    <value>Do not interpret static constructors at compile time</value>
+  </data>
   <data name="OutNearInputOption" xml:space="preserve">
     <value>Create output files near input files with ni.dll suffix</value>
   </data>

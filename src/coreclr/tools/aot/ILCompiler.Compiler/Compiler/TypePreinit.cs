@@ -13,7 +13,11 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+#if READYTORUN
+using FlowAnnotations = ILCompiler.FlowAnnotations;
+#else
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+#endif
 
 namespace ILCompiler
 {
@@ -3247,7 +3251,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+                Debug.Assert(_methodPointed.Signature.IsStatic || _firstParameter != null);
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -3255,9 +3259,47 @@ namespace ILCompiler
 
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
+#if !READYTORUN
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed this
+#endif
                 builder.EmitPointerReloc(node);
 
+#if READYTORUN
+                // CoreCLR delegate layout:
+                // Delegate: _target, _methodBase, _methodPtr, _methodPtrAux
+                // MulticastDelegate: _invocationList, _invocationCount
+                if (_methodPointed.Signature.IsStatic)
+                {
+                    if (_firstParameter == null)
+                    {
+                        // Open static delegate.
+                        builder.EmitPointerReloc(thisNode);                            // _target
+                        builder.EmitZeroPointer();                                     // _methodBase
+                        Debug.Assert(creationInfo.Thunk != null);
+                        builder.EmitPointerReloc(creationInfo.Thunk);                  // _methodPtr
+                        builder.EmitPointerReloc(creationInfo.GetTargetNode(factory)); // _methodPtrAux
+                    }
+                    else
+                    {
+                        // Closed static delegate.
+                        _firstParameter.WriteFieldData(ref builder, factory);          // _target
+                        builder.EmitZeroPointer();                                     // _methodBase
+                        builder.EmitPointerReloc(creationInfo.GetTargetNode(factory)); // _methodPtr
+                        builder.EmitZeroPointer();                                     // _methodPtrAux
+                    }
+                }
+                else
+                {
+                    // Closed instance delegate.
+                    _firstParameter.WriteFieldData(ref builder, factory);          // _target
+                    builder.EmitZeroPointer();                                     // _methodBase
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory)); // _methodPtr
+                    builder.EmitZeroPointer();                                     // _methodPtrAux
+                }
+
+                builder.EmitZeroPointer(); // _invocationList
+                builder.EmitZeroPointer(); // _invocationCount
+#else
                 if (_methodPointed.Signature.IsStatic)
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name.SequenceEqual("InitializeOpenStaticThunk"u8));
@@ -3291,6 +3333,7 @@ namespace ILCompiler
                     // _functionPointer
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
+#endif
             }
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
@@ -3370,7 +3413,9 @@ namespace ILCompiler
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
+#if !READYTORUN
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Arrays are always local
+#endif
                 builder.EmitPointerReloc(node);
 
                 // numComponents
@@ -3551,7 +3596,9 @@ namespace ILCompiler
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
+#if !READYTORUN
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed preinitializing this
+#endif
                 builder.EmitPointerReloc(node);
 
                 // We skip the first pointer because that's the MethodTable pointer
@@ -3708,11 +3755,11 @@ namespace ILCompiler
 
         public class PreinitializationInfo
         {
-            private readonly Dictionary<FieldDesc, ISerializableValue> _fieldValues;
+            private Dictionary<FieldDesc, ISerializableValue> _fieldValues;
 
             public MetadataType Type { get; }
 
-            public string FailureReason { get; }
+            public string FailureReason { get; private set; }
 
             public bool IsPreinitialized => _fieldValues != null;
 
@@ -3736,6 +3783,14 @@ namespace ILCompiler
                 Debug.Assert(field.OwningType == Type);
                 Debug.Assert(field.IsStatic && !field.HasRva && !field.IsThreadStatic && !field.IsLiteral);
                 return _fieldValues[field];
+            }
+
+            public void SetPostScanFailure(string failureReason)
+            {
+                if (!IsPreinitialized) return;
+
+                FailureReason = failureReason;
+                _fieldValues = null;
             }
         }
 

@@ -521,6 +521,17 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
+        private static bool ShouldSkipPreinitializedTypeCctorCompilation(ReadyToRunPreinitializationManager preinitializationManager, MethodDesc method)
+        {
+            if (!method.IsStaticConstructor)
+                return false;
+
+            if (method.OwningType is MetadataType metadataType)
+                return preinitializationManager.IsTypePreinitialized(metadataType);
+
+            return false;
+        }
+
         public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
         {
             if (methodNeedingCode.IsAggressiveOptimization)
@@ -761,6 +772,13 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
+                    return;
+                }
+
+                if (ShouldSkipPreinitializedTypeCctorCompilation(_compilation.NodeFactory.ReadyToRunPreinitializationManager, MethodBeingCompiled))
+                {
+                    if (logger.IsVerbose)
+                        logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is a static constructor for a preinitialized type.");
                     return;
                 }
 
@@ -1625,20 +1643,25 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            var uninstantiatedType = type.GetTypeDefinition();
 
-            if (_preInitedTypes.TryGetValue(uninstantiatedType, out bool preInited))
+            if (_preInitedTypes.TryGetValue(type, out bool preInited))
             {
                 return preInited;
             }
 
-            preInited = ComputeIsClassPreInited(type);
-            _preInitedTypes.Add(uninstantiatedType, preInited);
+            preInited = ComputeIsClassPreInited(type, _compilation.NodeFactory);
+            _preInitedTypes.Add(type, preInited);
             return preInited;
 
-            static bool ComputeIsClassPreInited(TypeDesc type)
+            static bool ComputeIsClassPreInited(TypeDesc type, NodeFactory factory)
             {
                 if (type.IsGenericDefinition)
+                {
+                    return true;
+                }
+
+                if (type is MetadataType metadataType &&
+                    factory.ReadyToRunPreinitializationManager.IsTypePreinitialized(metadataType))
                 {
                     return true;
                 }

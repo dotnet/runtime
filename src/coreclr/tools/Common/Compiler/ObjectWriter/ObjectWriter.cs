@@ -375,7 +375,7 @@ namespace ILCompiler.ObjectWriter
 
                 logger.LogMessage($"Writing {count} object nodes...");
 
-                progressReporter = new ProgressReporter(logger, count);
+                progressReporter = new ProgressReporter(logger, nodes.Count);
             }
 
             List<ISymbolRangeNode> symbolRangeNodes = [];
@@ -768,7 +768,7 @@ namespace ILCompiler.ObjectWriter
             public ProgressReporter(Logger logger, int total)
             {
                 _logger = logger;
-                _increment = total / Steps;
+                _increment = int.Max(1, total / Steps);
                 _current = 0;
             }
 

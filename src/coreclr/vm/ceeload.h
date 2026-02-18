@@ -726,7 +726,7 @@ private:
     #define FIELD_DEF_MAP_ALL_FLAGS                   NO_MAP_FLAGS
 
     #define MEMBER_REF_MAP_ALL_FLAGS                  ((TADDR)0x00000003)
-	// For member ref hash table, 0x1 is reserved for IsHot bit
+    // For member ref hash table, 0x1 is reserved for IsHot bit
         #define IS_FIELD_MEMBER_REF                   ((TADDR)0x00000002)      // denotes that target is a FieldDesc
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
@@ -1476,6 +1476,9 @@ public:
     BYTE *GetProfilerBase();
 
     BYTE* GetNativeFixupBlobData(RVA fixup);
+    bool IsReadyToRunTypePreinitialized(MethodTable * pMT);
+    bool TryGetReadyToRunPreinitializedNonGCStaticsData(MethodTable * pMT, PTR_BYTE * ppData, DWORD * pcbData);
+    bool TryGetReadyToRunPreinitializedGCStaticsData(MethodTable * pMT, PTR_BYTE * ppData, DWORD * pcbData);
 
     IMDInternalImport *GetNativeAssemblyImport(BOOL loadAllowed = TRUE);
     IMDInternalImport *GetNativeAssemblyImportIfLoaded();
@@ -1566,6 +1569,7 @@ public:
 public:
     const ReadyToRun_MethodIsGenericMap *m_pMethodIsGenericMap = &ReadyToRun_MethodIsGenericMap::EmptyInstance;
     const ReadyToRun_TypeGenericInfoMap *m_pTypeGenericInfoMap = &ReadyToRun_TypeGenericInfoMap::EmptyInstance;
+    const ReadyToRun_TypePreinitializationMap *m_pTypePreinitializationMap = &ReadyToRun_TypePreinitializationMap::EmptyInstance;
 
 protected:
 

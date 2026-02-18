@@ -3513,6 +3513,158 @@ BYTE* Module::GetNativeFixupBlobData(RVA rva)
 
     RETURN(BYTE*) GetReadyToRunImage()->GetRvaData(rva);
 }
+
+static bool TryGetReadyToRunPreinitializedStaticsDataInfo(
+    Module *pModule,
+    MethodTable *pMT,
+    TADDR *pDataAddress,
+    DWORD *pNonGCDataSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(CheckPointer(pDataAddress));
+        PRECONDITION(CheckPointer(pNonGCDataSize));
+    }
+    CONTRACTL_END;
+
+    *pDataAddress = 0;
+    *pNonGCDataSize = 0;
+
+    if (!pModule->IsReadyToRun() || pMT->IsSharedByGenericInstantiations() || (pMT->GetModule() != pModule))
+        return false;
+
+    if (!pModule->IsReadyToRunTypePreinitialized(pMT))
+        return false;
+
+    bool foundResult;
+    uint32_t dataRva;
+    uint32_t dataSize;
+    if (!pModule->m_pTypePreinitializationMap->TryGetNonGCData(pModule, pMT, &dataRva, &dataSize, &foundResult) || !foundResult)
+        return false;
+
+    DWORD expectedNonGCDataSize = pMT->GetClass()->GetNonGCRegularStaticFieldBytes();
+    if (dataSize != expectedNonGCDataSize)
+        return false;
+
+    if (dataRva == 0)
+        return false;
+
+    ReadyToRunLoadedImage *pImage = pModule->GetReadyToRunImage();
+    TADDR imageBase = pImage->GetBase();
+    uint32_t imageSize = pImage->GetVirtualSize();
+
+    TADDR imageEnd = imageBase + imageSize;
+    TADDR dataAddress = pImage->GetRvaData(dataRva);
+    if ((dataAddress < imageBase) || (dataAddress > imageEnd))
+        return false;
+
+    if (static_cast<uint32_t>(imageEnd - dataAddress) < dataSize)
+        return false;
+
+    *pDataAddress = dataAddress;
+    *pNonGCDataSize = dataSize;
+    return true;
+}
+
+bool Module::IsReadyToRunTypePreinitialized(MethodTable * pMT)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMT));
+    }
+    CONTRACTL_END;
+
+    if (!IsReadyToRun() || pMT->IsSharedByGenericInstantiations() || (pMT->GetModule() != this))
+        return false;
+
+    bool foundResult;
+    bool isPreinitialized = m_pTypePreinitializationMap->IsTypePreinitialized(this, pMT, &foundResult);
+    return foundResult && isPreinitialized;
+}
+
+bool Module::TryGetReadyToRunPreinitializedNonGCStaticsData(MethodTable * pMT, PTR_BYTE * ppData, DWORD * pcbData)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(CheckPointer(ppData));
+        PRECONDITION(CheckPointer(pcbData));
+    }
+    CONTRACTL_END;
+
+    *ppData = NULL;
+    *pcbData = 0;
+
+    TADDR dataAddress;
+    DWORD nonGCDataSize;
+    if (!TryGetReadyToRunPreinitializedStaticsDataInfo(this, pMT, &dataAddress, &nonGCDataSize))
+        return false;
+
+    if (nonGCDataSize == 0)
+        return false;
+
+    *ppData = dac_cast<PTR_BYTE>(dataAddress);
+    *pcbData = nonGCDataSize;
+    return true;
+}
+
+bool Module::TryGetReadyToRunPreinitializedGCStaticsData(MethodTable * pMT, PTR_BYTE * ppData, DWORD * pcbData)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(CheckPointer(ppData));
+        PRECONDITION(CheckPointer(pcbData));
+    }
+    CONTRACTL_END;
+
+    *ppData = NULL;
+    *pcbData = 0;
+
+    DWORD cbGCStatics = pMT->GetClass()->GetNumHandleRegularStatics() * sizeof(TADDR);
+    if (cbGCStatics == 0)
+        return false;
+
+    TADDR dataAddress;
+    DWORD nonGCDataSize;
+    if (!TryGetReadyToRunPreinitializedStaticsDataInfo(this, pMT, &dataAddress, &nonGCDataSize))
+        return false;
+
+    DWORD alignedNonGCDataSize = (DWORD)ALIGN_UP(nonGCDataSize, TARGET_POINTER_SIZE);
+
+    TADDR gcDataAddress = dataAddress + alignedNonGCDataSize;
+    ReadyToRunLoadedImage *pImage = GetReadyToRunImage();
+    TADDR imageBase = pImage->GetBase();
+    uint32_t imageSize = pImage->GetVirtualSize();
+
+    TADDR imageEnd = imageBase + imageSize;
+    if ((gcDataAddress < imageBase) || (gcDataAddress > imageEnd))
+        return false;
+
+    if (static_cast<uint32_t>(imageEnd - gcDataAddress) < cbGCStatics)
+        return false;
+
+    *ppData = dac_cast<PTR_BYTE>(gcDataAddress);
+    *pcbData = cbGCStatics;
+    return true;
+}
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE

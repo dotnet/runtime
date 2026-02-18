@@ -21,6 +21,7 @@ typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 class NativeImage;
 class PrepareCodeConfig;
 class ReadyToRunLoadedImage;
+class MethodTable;
 
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
 typedef DPTR(class ReadyToRunLoadedImage) PTR_ReadyToRunLoadedImage;
@@ -95,6 +96,21 @@ public:
 
     const static ReadyToRun_MethodIsGenericMap EmptyInstance;
     bool IsGeneric(mdMethodDef input, bool *foundResult) const;
+};
+
+class ReadyToRun_TypePreinitializationMap
+{
+    uint32_t TypeCount = 0;
+    ReadyToRun_TypePreinitializationMap() = default;
+    bool TryGetTypeDefEntry(mdTypeDef input, const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY **ppEntry, bool *foundResult) const;
+    bool TryGetInstantiationEntry(Module *pModule, MethodTable *pMT, const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY **ppEntry, bool *foundResult) const;
+public:
+    ReadyToRun_TypePreinitializationMap& operator=(const ReadyToRun_TypePreinitializationMap& other) = delete;
+    ReadyToRun_TypePreinitializationMap(const ReadyToRun_TypePreinitializationMap& other) = delete;
+
+    const static ReadyToRun_TypePreinitializationMap EmptyInstance;
+    bool IsTypePreinitialized(Module *pModule, MethodTable *pMT, bool *foundResult) const;
+    bool TryGetNonGCData(Module *pModule, MethodTable *pMT, uint32_t *pDataRva, uint32_t *pDataSize, bool *foundResult) const;
 };
 
 class ReadyToRunInfo

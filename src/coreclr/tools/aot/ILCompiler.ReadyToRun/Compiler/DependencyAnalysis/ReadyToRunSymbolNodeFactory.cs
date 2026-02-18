@@ -313,6 +313,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateGCStaticBaseHelper(TypeDesc type)
         {
+            if (type is MetadataType metadataType)
+            {
+                _codegenNodeFactory.ReadyToRunPreinitializationManager.GetTypeRecord(metadataType);
+            }
+
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
@@ -322,6 +327,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateNonGCStaticBaseHelper(TypeDesc type)
         {
+            if (type is MetadataType metadataType)
+            {
+                _codegenNodeFactory.ReadyToRunPreinitializationManager.GetTypeRecord(metadataType);
+            }
+
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,

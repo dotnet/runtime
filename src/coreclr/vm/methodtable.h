@@ -1224,6 +1224,20 @@ public:
 
 private:
     bool IsInitedIfStaticDataAllocated();
+    
+    // ReadyToRun statics pre-initialization
+
+    class MaterializedPreinitializedObjectCache;
+
+    bool TryResolveReadyToRunImportCellAddress(TADDR encodedAddress, TADDR *pResolvedAddress, BYTE *pFixupKind);
+    TADDR ResolveReadyToRunEncodedPointer(TADDR encodedAddress, BYTE *pFixupKind = nullptr);
+    void ResolveReadyToRunEncodedPointersInValueTypeData(PTR_BYTE pValueData, MethodTable *pValueType);
+    OBJECTREF ResolveReadyToRunPreinitializedObjectReference(TADDR encodedAddress, MaterializedPreinitializedObjectCache* pCache);
+    OBJECTREF MaterializeReadyToRunPreinitializedClassData(TADDR templateDataAddress, MaterializedPreinitializedObjectCache* pCache);
+    void MaterializeReadyToRunPreinitializedValueTypeData(PTR_BYTE pValueData, PTR_BYTE pTemplateData, MethodTable *pValueType, MaterializedPreinitializedObjectCache* pCache);
+
+    void ApplyReadyToRunPreinitializedData(DynamicStaticsInfo* pDynamicStaticsInfo);
+
 public:
     // Is the MethodTable current initialized, and/or can the runtime initialize the MethodTable
     // without running any user code. (This function may allocate memory, and may throw OutOfMemory)

@@ -6,7 +6,11 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
 
+#if READYTORUN
+using FlowAnnotations = ILCompiler.FlowAnnotations;
+#else
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+#endif
 
 namespace ILCompiler
 {

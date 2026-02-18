@@ -1436,7 +1436,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //    |     \--*  CNS_INT   int    -8 (offset)
     //    \--*  CNS_INT   int    0
     //
-    assert(flagAddr.accessType == IAT_VALUE);
+    assert((flagAddr.accessType == IAT_VALUE) || (flagAddr.accessType == IAT_PVALUE));
 
     GenTree* cachedStaticBase = nullptr;
     GenTree* isInitedActualValueNode;
@@ -1463,7 +1463,17 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     {
         assert(isInitOffset == 0);
 
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
+        if (flagAddr.accessType == IAT_VALUE)
+        {
+            isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
+        }
+        else
+        {
+            assert(flagAddr.accessType == IAT_PVALUE);
+            GenTree* flagAddrNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
+            isInitedActualValueNode = gtNewIndir(TYP_INT, flagAddrNode, GTF_IND_NONFAULTING);
+        }
+
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
         isInitedActualValueNode->SetHasOrderingSideEffect();
 

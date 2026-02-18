@@ -515,6 +515,7 @@ namespace ILCompiler
                 format: ReadyToRunContainerFormat.PE,
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
+                preinitializationManager: _nodeFactory.PreinitializationManager,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
                 genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 

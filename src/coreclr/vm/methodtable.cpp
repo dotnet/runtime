@@ -3901,6 +3901,582 @@ void MethodTable::CheckRunClassInitThrowing()
     DoRunClassInitThrowing();
 }
 
+// Materialized preinitialized objects cache to avoid multiple materializations
+// of the same preinitialized object in a graph in case of circular references.
+//
+class MethodTable::MaterializedPreinitializedObjectCache
+{
+    struct MaterializedPreinitializedObjectCacheEntry
+    {
+        TADDR TemplateDataAddress;
+        OBJECTHANDLE Handle;
+    };
+
+public:
+    ~MaterializedPreinitializedObjectCache()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        for (SIZE_T i = 0; i < _entries.Size(); i++)
+            DestroyHandle(_entries[i].Handle);
+    }
+
+    bool TryGet(TADDR templateDataAddress, OBJECTREF *pObjectRef) const
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(CheckPointer(pObjectRef));
+        }
+        CONTRACTL_END;
+
+        for (SIZE_T i = 0; i < _entries.Size(); i++)
+        {
+            if (_entries[i].TemplateDataAddress == templateDataAddress)
+            {
+                *pObjectRef = ObjectFromHandle(_entries[i].Handle);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void Add(TADDR templateDataAddress, OBJECTREF objectRef)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        MaterializedPreinitializedObjectCacheEntry entry{
+            templateDataAddress,
+            AppDomain::GetCurrentDomain()->CreateHandle(objectRef)
+        };
+        _entries.Push(entry);
+    }
+
+private:
+    CQuickArrayList<MaterializedPreinitializedObjectCacheEntry> _entries;
+};
+
+static bool IsPointerLikeCorElementType(CorElementType corType)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return (corType == ELEMENT_TYPE_I) ||
+        (corType == ELEMENT_TYPE_U) ||
+        (corType == ELEMENT_TYPE_PTR) ||
+        (corType == ELEMENT_TYPE_FNPTR);
+}
+
+static bool IsAddressInReadyToRunImage(Module *pModule, TADDR address)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!pModule->IsReadyToRun())
+        return false;
+
+    ReadyToRunLoadedImage *pImage = pModule->GetReadyToRunImage();
+    TADDR imageBase = pImage->GetBase();
+    return (address >= imageBase) && (address < (imageBase + pImage->GetVirtualSize()));
+}
+
+bool MethodTable::TryResolveReadyToRunImportCellAddress(TADDR encodedAddress, TADDR *pResolvedAddress, BYTE *pFixupKind)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(CheckPointer(pResolvedAddress));
+    }
+    CONTRACTL_END;
+
+    if (pFixupKind != nullptr)
+        *pFixupKind = 0;
+
+    if (!IsAddressInReadyToRunImage(GetModule(), encodedAddress))
+        return false;
+
+    ReadyToRunLoadedImage *pImage = GetModule()->GetReadyToRunImage();
+    RVA encodedRva = pImage->GetDataRva(encodedAddress);
+    PTR_READYTORUN_IMPORT_SECTION pSection = GetModule()->GetImportSectionForRVA(encodedRva);
+    if (pSection == NULL)
+        return false;
+
+    DWORD sectionRva = VAL32(pSection->Section.VirtualAddress);
+    DWORD sectionSize = VAL32(pSection->Section.Size);
+    BYTE entrySize = pSection->EntrySize;
+
+    if ((entrySize == 0) || (encodedRva < sectionRva) || (encodedRva >= (sectionRva + sectionSize)))
+        return false;
+
+    DWORD offsetInSection = encodedRva - sectionRva;
+    DWORD importIndex = offsetInSection / entrySize;
+    DWORD importDelta = offsetInSection - (importIndex * entrySize);
+    DWORD importCount = sectionSize / entrySize;
+    if (importIndex >= importCount)
+        return false;
+
+    TADDR importCellAddress = pImage->GetRvaData(sectionRva + (importIndex * entrySize));
+    PTR_SIZE_T pImportCell = dac_cast<PTR_SIZE_T>(importCellAddress);
+    TADDR importCellValue = VolatileLoadWithoutBarrier(pImportCell);
+
+    if (importCellValue == 0)
+    {
+        GCX_PREEMP();
+        if (!GetModule()->FixupNativeEntry(pSection, importIndex, pImportCell))
+            COMPlusThrow(kInvalidProgramException);
+
+        importCellValue = VolatileLoadWithoutBarrier(pImportCell);
+    }
+
+    *pResolvedAddress = importCellValue + importDelta;
+
+    if ((pFixupKind != nullptr) && (pSection->Signatures != 0))
+    {
+        PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pImage->GetRvaData(pSection->Signatures));
+        RVA signatureRva = pSignatures[importIndex];
+        if (signatureRva != 0)
+        {
+            PCCOR_SIGNATURE pBlob = GetModule()->GetNativeFixupBlobData(signatureRva);
+            BYTE kind = *pBlob++;
+            if ((kind & READYTORUN_FIXUP_ModuleOverride) != 0)
+            {
+                CorSigUncompressData(pBlob);
+                kind &= ~READYTORUN_FIXUP_ModuleOverride;
+            }
+
+            *pFixupKind = kind;
+        }
+    }
+
+    return true;
+}
+
+TADDR MethodTable::ResolveReadyToRunEncodedPointer(TADDR encodedAddress, BYTE *pFixupKind)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    TADDR resolvedAddress;
+    if (TryResolveReadyToRunImportCellAddress(encodedAddress, &resolvedAddress, pFixupKind))
+        return resolvedAddress;
+
+    if (pFixupKind != nullptr)
+        *pFixupKind = 0;
+
+    return encodedAddress;
+}
+
+void MethodTable::ResolveReadyToRunEncodedPointersInValueTypeData(PTR_BYTE pValueData, MethodTable *pValueType)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pValueData));
+        PRECONDITION(CheckPointer(pValueType));
+        PRECONDITION(pValueType->IsValueType());
+    }
+    CONTRACTL_END;
+
+    DeepFieldDescIterator fieldIterator(pValueType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    while (FieldDesc *pField = fieldIterator.Next())
+    {
+        _ASSERTE(!pField->IsStatic());
+        SIZE_T fieldOffset = pField->GetOffset();
+        PTR_BYTE pFieldAddress = pValueData + fieldOffset;
+
+        if (IsPointerLikeCorElementType(pField->GetFieldType()))
+        {
+            PTR_TADDR pPointerField = dac_cast<PTR_TADDR>(pFieldAddress);
+            *pPointerField = ResolveReadyToRunEncodedPointer(*pPointerField);
+            continue;
+        }
+
+        if (pField->IsObjRef())
+            continue;
+
+        if (pField->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
+            continue;
+
+        TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+        if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+        {
+            MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+            if (pFieldType->IsValueType())
+                ResolveReadyToRunEncodedPointersInValueTypeData(pFieldAddress, pFieldType);
+        }
+    }
+}
+
+void MethodTable::MaterializeReadyToRunPreinitializedValueTypeData(PTR_BYTE pValueData, PTR_BYTE pTemplateData, MethodTable *pValueType, MaterializedPreinitializedObjectCache* pCache)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pValueData));
+        PRECONDITION(CheckPointer(pTemplateData));
+        PRECONDITION(CheckPointer(pValueType));
+        PRECONDITION(pValueType->IsValueType());
+        PRECONDITION(CheckPointer(pCache));
+    }
+    CONTRACTL_END;
+
+    DeepFieldDescIterator fieldIterator(pValueType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    while (FieldDesc *pField = fieldIterator.Next())
+    {
+        _ASSERTE(!pField->IsStatic());
+        SIZE_T fieldOffset = pField->GetOffset();
+        PTR_BYTE pFieldAddress = pValueData + fieldOffset;
+        PTR_BYTE pTemplateFieldAddress = pTemplateData + fieldOffset;
+
+        if (pField->IsObjRef())
+        {
+            TADDR encodedFieldReference = VolatileLoadWithoutBarrier(dac_cast<PTR_SIZE_T>(pTemplateFieldAddress));
+            SetObjectReference(dac_cast<PTR_OBJECTREF>(pFieldAddress), ResolveReadyToRunPreinitializedObjectReference(encodedFieldReference, pCache));
+            continue;
+        }
+
+        CorElementType fieldType = pField->GetFieldType();
+        if (fieldType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+            if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+            {
+                MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+                if (pFieldType->IsValueType() && pFieldType->ContainsGCPointers())
+                {
+                    MaterializeReadyToRunPreinitializedValueTypeData(pFieldAddress, pTemplateFieldAddress, pFieldType, pCache);
+                    continue;
+                }
+            }
+        }
+
+        memcpyNoGCRefs((void *)pFieldAddress, (void *)pTemplateFieldAddress, pField->LoadSize());
+
+        if (IsPointerLikeCorElementType(pField->GetFieldType()))
+        {
+            PTR_TADDR pPointerField = dac_cast<PTR_TADDR>(pFieldAddress);
+            *pPointerField = ResolveReadyToRunEncodedPointer(*pPointerField);
+            continue;
+        }
+
+        if (fieldType != ELEMENT_TYPE_VALUETYPE)
+            continue;
+
+        TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+        if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+        {
+            MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+            if (pFieldType->IsValueType())
+                ResolveReadyToRunEncodedPointersInValueTypeData(pFieldAddress, pFieldType);
+        }
+    }
+}
+
+OBJECTREF MethodTable::MaterializeReadyToRunPreinitializedClassData(TADDR templateDataAddress, MaterializedPreinitializedObjectCache* pCache)
+{
+    CONTRACT(OBJECTREF)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(templateDataAddress != 0);
+        PRECONDITION(CheckPointer(pCache));
+    }
+    CONTRACT_END;
+
+    OBJECTREF cachedObject;
+    if (pCache->TryGet(templateDataAddress, &cachedObject))
+        RETURN(cachedObject);
+
+    if (!IsAddressInReadyToRunImage(GetModule(), templateDataAddress))
+        COMPlusThrow(kInvalidProgramException);
+
+    TADDR encodedMethodTableAddress = VolatileLoadWithoutBarrier(dac_cast<PTR_SIZE_T>(templateDataAddress));
+    BYTE methodTableFixupKind = 0;
+    TADDR methodTableAddress = ResolveReadyToRunEncodedPointer(encodedMethodTableAddress, &methodTableFixupKind);
+    if (methodTableFixupKind != READYTORUN_FIXUP_TypeHandle)
+        COMPlusThrow(kInvalidProgramException);
+
+    TypeHandle th = TypeHandle::FromTAddr(methodTableAddress);
+    if (th.IsNull() || th.IsTypeDesc())
+        COMPlusThrow(kInvalidProgramException);
+
+    MethodTable *pObjectType = th.AsMethodTable();
+    pObjectType->EnsureInstanceActive();
+
+    if (pObjectType->IsArray())
+    {
+        _ASSERTE(!pObjectType->IsMultiDimArray());
+
+        INT32 arrayLength = GET_UNALIGNED_VAL32((PTR_BYTE)(templateDataAddress + TARGET_POINTER_SIZE));
+        OBJECTREF arrayRef = AllocateSzArray(pObjectType, arrayLength);
+
+        GCPROTECT_BEGIN(arrayRef);
+        {
+            pCache->Add(templateDataAddress, arrayRef);
+
+            SIZE_T dataOffset = ArrayBase::GetDataPtrOffset(pObjectType);
+            SIZE_T componentSize = pObjectType->RawGetComponentSize();
+            SIZE_T cbData = (SIZE_T)arrayLength * componentSize;
+
+            if (cbData > 0)
+            {
+                TypeHandle elementTypeHandle = pObjectType->GetArrayElementTypeHandle();
+                PTR_BYTE pArrayData = ((ArrayBase *)OBJECTREFToObject(arrayRef))->GetDataPtr();
+                if (!elementTypeHandle.IsTypeDesc() && !elementTypeHandle.AsMethodTable()->IsValueType())
+                {
+                    PTR_OBJECTREF pArrayRefs = dac_cast<PTR_OBJECTREF>(pArrayData);
+                    PTR_TADDR pTemplateRefs = dac_cast<PTR_TADDR>(templateDataAddress + dataOffset);
+
+                    for (INT32 i = 0; i < arrayLength; i++)
+                    {
+                        TADDR encodedElementReference = VolatileLoadWithoutBarrier(pTemplateRefs + i);
+                        SetObjectReference(pArrayRefs + i, ResolveReadyToRunPreinitializedObjectReference(encodedElementReference, pCache));
+                    }
+                }
+                else
+                {
+                    if (!elementTypeHandle.IsTypeDesc() && elementTypeHandle.AsMethodTable()->ContainsGCPointers())
+                    {
+                        MethodTable *pElementType = elementTypeHandle.AsMethodTable();
+                        PTR_BYTE pTemplateArrayData = dac_cast<PTR_BYTE>(templateDataAddress + dataOffset);
+
+                        for (INT32 i = 0; i < arrayLength; i++)
+                        {
+                            PTR_BYTE pElementData = pArrayData + ((SIZE_T)i * componentSize);
+                            PTR_BYTE pTemplateElementData = pTemplateArrayData + ((SIZE_T)i * componentSize);
+                            MaterializeReadyToRunPreinitializedValueTypeData(pElementData, pTemplateElementData, pElementType, pCache);
+                        }
+                    }
+                    else
+                    {
+                        memcpyNoGCRefs((void *)pArrayData, (void *)(templateDataAddress + dataOffset), cbData);
+
+                        SIZE_T componentSize = pObjectType->RawGetComponentSize();
+                        TypeHandle elementTypeHandle = pObjectType->GetArrayElementTypeHandle();
+                        CorElementType elementCorType = elementTypeHandle.GetSignatureCorElementType();
+
+                        if (IsPointerLikeCorElementType(elementCorType))
+                        {
+                            for (INT32 i = 0; i < arrayLength; i++)
+                            {
+                                PTR_TADDR pElement = dac_cast<PTR_TADDR>(pArrayData + ((SIZE_T)i * componentSize));
+                                *pElement = ResolveReadyToRunEncodedPointer(*pElement);
+                            }
+                        }
+                        else if (!elementTypeHandle.IsTypeDesc() && elementTypeHandle.AsMethodTable()->IsValueType())
+                        {
+                            for (INT32 i = 0; i < arrayLength; i++)
+                            {
+                                PTR_BYTE pElementData = pArrayData + ((SIZE_T)i * componentSize);
+                                ResolveReadyToRunEncodedPointersInValueTypeData(pElementData, elementTypeHandle.AsMethodTable());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        GCPROTECT_END();
+        RETURN(arrayRef);
+    }
+
+    OBJECTREF objectRef = AllocateObject(pObjectType);
+
+    GCPROTECT_BEGIN(objectRef);
+    {
+        pCache->Add(templateDataAddress, objectRef);
+
+        PTR_BYTE pObjectData = OBJECTREFToObject(objectRef)->GetData();
+        PTR_BYTE pTemplateData = dac_cast<PTR_BYTE>(templateDataAddress + TARGET_POINTER_SIZE);
+
+        DeepFieldDescIterator fieldIterator(pObjectType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+        while (FieldDesc *pField = fieldIterator.Next())
+        {
+            _ASSERTE(!pField->IsStatic());
+            SIZE_T fieldOffset = pField->GetOffset();
+            PTR_BYTE pFieldAddress = pObjectData + fieldOffset;
+            PTR_BYTE pTemplateFieldAddress = pTemplateData + fieldOffset;
+
+            if (pField->IsObjRef())
+            {
+                TADDR encodedFieldReference = VolatileLoadWithoutBarrier(dac_cast<PTR_SIZE_T>(pTemplateFieldAddress));
+                SetObjectReference(dac_cast<PTR_OBJECTREF>(pFieldAddress), ResolveReadyToRunPreinitializedObjectReference(encodedFieldReference, pCache));
+            }
+            else
+            {
+                CorElementType fieldType = pField->GetFieldType();
+                if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+                    if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+                    {
+                        MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+                        if (pFieldType->IsValueType() && pFieldType->ContainsGCPointers())
+                        {
+                            MaterializeReadyToRunPreinitializedValueTypeData(pFieldAddress, pTemplateFieldAddress, pFieldType, pCache);
+                            continue;
+                        }
+                    }
+                }
+
+                memcpyNoGCRefs((void *)pFieldAddress, (void *)pTemplateFieldAddress, pField->LoadSize());
+
+                if (IsPointerLikeCorElementType(pField->GetFieldType()))
+                {
+                    PTR_TADDR pPointerField = dac_cast<PTR_TADDR>(pFieldAddress);
+                    *pPointerField = ResolveReadyToRunEncodedPointer(*pPointerField);
+                    continue;
+                }
+
+                if (fieldType != ELEMENT_TYPE_VALUETYPE)
+                    continue;
+
+                TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+                if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+                {
+                    MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+                    if (pFieldType->IsValueType())
+                        ResolveReadyToRunEncodedPointersInValueTypeData(pFieldAddress, pFieldType);
+                }
+            }
+        }
+    }
+    GCPROTECT_END();
+
+    RETURN(objectRef);
+}
+
+OBJECTREF MethodTable::ResolveReadyToRunPreinitializedObjectReference(TADDR encodedAddress, MaterializedPreinitializedObjectCache* pCache)
+{
+    CONTRACT(OBJECTREF)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pCache));
+    }
+    CONTRACT_END;
+
+    if (encodedAddress == 0)
+        RETURN(NULL);
+
+    TADDR resolvedAddress = 0;
+    BYTE fixupKind = 0;
+    if (TryResolveReadyToRunImportCellAddress(encodedAddress, &resolvedAddress, &fixupKind))
+    {
+        switch (fixupKind)
+        {
+        case READYTORUN_FIXUP_StringHandle:
+            {
+                TADDR objectAddress = VolatileLoadWithoutBarrier(dac_cast<PTR_SIZE_T>(resolvedAddress));
+                RETURN(objectAddress != 0 ? ObjectToOBJECTREF(dac_cast<PTR_Object>(objectAddress)) : NULL);
+            }
+        case READYTORUN_FIXUP_TypeHandle:
+        case READYTORUN_FIXUP_TypeDictionary:
+            {
+                TypeHandle th = TypeHandle::FromTAddr(resolvedAddress);
+                if (th.IsNull())
+                    COMPlusThrow(kInvalidProgramException);
+                RETURN(th.GetManagedClassObject());
+            }
+        default:
+            COMPlusThrow(kInvalidProgramException);
+        }
+    }
+
+    OBJECTREF materialized = MaterializeReadyToRunPreinitializedClassData(encodedAddress, pCache);
+    RETURN(materialized);
+}
+
+void MethodTable::ApplyReadyToRunPreinitializedData(DynamicStaticsInfo* pDynamicStaticsInfo)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        PRECONDITION(CheckPointer(pDynamicStaticsInfo));
+    }
+    CONTRACTL_END;
+
+    PTR_BYTE pPreinitializedData = NULL;
+    DWORD cbPreinitializedData = 0;
+
+    if (pDynamicStaticsInfo->GetNonGCStaticsPointer() != NULL &&
+        GetModule()->TryGetReadyToRunPreinitializedNonGCStaticsData(this, &pPreinitializedData, &cbPreinitializedData))
+    {
+        memcpy(pDynamicStaticsInfo->GetNonGCStaticsPointer(), pPreinitializedData, cbPreinitializedData);
+
+        ApproxFieldDescIterator fdIterator(this, ApproxFieldDescIterator::IteratorType::STATIC_FIELDS);
+        PTR_FieldDesc pField;
+        while ((pField = fdIterator.Next()) != NULL)
+        {
+            CorElementType fieldType = pField->GetFieldType();
+
+            if (pField->IsSpecialStatic() ||
+                fieldType == ELEMENT_TYPE_CLASS)
+            {
+                continue;
+            }
+
+            PTR_BYTE pFieldAddress = pDynamicStaticsInfo->GetNonGCStaticsPointer() + pField->GetOffset();
+
+            if (IsPointerLikeCorElementType(fieldType))
+            {
+                PTR_TADDR pPointerFieldAddress = dac_cast<PTR_TADDR>(pFieldAddress);
+                *pPointerFieldAddress = ResolveReadyToRunEncodedPointer(*pPointerFieldAddress);
+                continue;
+            }
+
+            if (fieldType == ELEMENT_TYPE_VALUETYPE)
+            {
+                TypeHandle fieldTypeHandle = pField->GetApproxFieldTypeHandleThrowing();
+                if (!fieldTypeHandle.IsNull() && !fieldTypeHandle.IsTypeDesc())
+                {
+                    MethodTable *pFieldType = fieldTypeHandle.AsMethodTable();
+                    if (pFieldType->IsValueType())
+                        ResolveReadyToRunEncodedPointersInValueTypeData(pFieldAddress, pFieldType);
+                }
+            }
+        }
+    }
+    
+    if (pDynamicStaticsInfo->GetGCStaticsPointer() != NULL &&
+        GetModule()->TryGetReadyToRunPreinitializedGCStaticsData(this, &pPreinitializedData, &cbPreinitializedData))
+    {
+        DWORD cRegularGCStatics = GetClass()->GetNumHandleRegularStatics();
+        
+        GCX_COOP();
+
+        PTR_OBJECTREF pGCStatics = pDynamicStaticsInfo->GetGCStaticsPointer();
+        PTR_TADDR pGCPreinitializedData = dac_cast<PTR_TADDR>(pPreinitializedData);
+
+        MaterializedPreinitializedObjectCache cache{};
+
+        for (DWORD i = 0; i < cRegularGCStatics; i++)
+        {
+            OBJECTREF value = ResolveReadyToRunPreinitializedObjectReference(pGCPreinitializedData[i], &cache);
+            SetObjectReference(pGCStatics + i, value);
+        }
+    }
+}
+
 void MethodTable::EnsureStaticDataAllocated()
 {
     CONTRACTL
@@ -3924,6 +4500,8 @@ void MethodTable::EnsureStaticDataAllocated()
 
             if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
                 GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL, isInitedIfStaticDataAllocated);
+
+            ApplyReadyToRunPreinitializedData(pDynamicStaticsInfo);
         }
         pAuxiliaryData->SetIsStaticDataAllocated(isInitedIfStaticDataAllocated);
     }
@@ -3964,8 +4542,32 @@ bool MethodTable::IsInitedIfStaticDataAllocated()
 
     if (HasClassConstructor())
     {
-        // If there is a class constructor, then the class cannot be preinitted.
-        return false;
+        if (!GetModule()->IsReadyToRunTypePreinitialized(this))
+            return false;
+
+        PTR_BYTE pPreinitializedData = NULL;
+        DWORD cbPreinitializedData = 0;
+
+        DWORD cbExpectedNonGCStatics = GetClass()->GetNonGCRegularStaticFieldBytes();
+        if (cbExpectedNonGCStatics != 0 &&
+            (!GetModule()->TryGetReadyToRunPreinitializedNonGCStaticsData(this, &pPreinitializedData, &cbPreinitializedData) ||
+            (cbPreinitializedData != cbExpectedNonGCStatics)))
+        {
+            return false;
+        }
+
+        DWORD cExpectedGCStatics = GetClass()->GetNumHandleRegularStatics();
+        if (cExpectedGCStatics != 0)
+        {
+            DWORD cbExpectedGCStatics = cExpectedGCStatics * sizeof(TADDR);
+            if (!GetModule()->TryGetReadyToRunPreinitializedGCStaticsData(this, &pPreinitializedData, &cbPreinitializedData) ||
+                (cbPreinitializedData != cbExpectedGCStatics))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
