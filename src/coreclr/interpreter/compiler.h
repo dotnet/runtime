@@ -927,7 +927,6 @@ private:
     bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
-    bool ResolveAsyncCallToken(const uint8_t* ip);
     enum class ContinuationContextHandling : uint8_t
     {
         ContinueOnCapturedContext,
