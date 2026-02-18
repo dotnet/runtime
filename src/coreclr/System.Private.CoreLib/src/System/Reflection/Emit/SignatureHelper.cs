@@ -439,12 +439,12 @@ namespace System.Reflection.Emit
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_BYREF);
                 clsArgument = clsArgument.GetElementType()!;
-                AddOneArgTypeHelper(clsArgument);
+                AddOneArgTypeHelper(clsArgument, scope);
             }
             else if (clsArgument.IsPointer)
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_PTR);
-                AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
             }
             else if (clsArgument.IsArray)
             {
@@ -452,13 +452,13 @@ namespace System.Reflection.Emit
                 {
                     AddElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
 
-                    AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                    AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
                 }
                 else
                 {
                     AddElementType(CorElementType.ELEMENT_TYPE_ARRAY);
 
-                    AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                    AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
 
                     // put the rank information
                     int rank = clsArgument.GetArrayRank();
