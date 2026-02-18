@@ -501,9 +501,6 @@ namespace System.Net
                 throw invalidDomainException!;
             }
 
-            // Track if this is a localhost subdomain for fallback handling.
-            bool isLocalhostSubdomain = IsLocalhostSubdomain(hostName);
-
             bool fallbackToLocalhost = false;
             object? result = null;
             try
@@ -513,7 +510,7 @@ namespace System.Net
                 if (errorCode != SocketError.Success)
                 {
                     // RFC 6761 Section 6.3: If localhost subdomain fails, fall back to resolving plain "localhost".
-                    if (isLocalhostSubdomain)
+                    if (IsLocalhostSubdomain(hostName))
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain resolution failed, falling back to 'localhost'");
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: CreateException(errorCode, nativeErrorCode));
@@ -525,7 +522,7 @@ namespace System.Net
                         throw CreateException(errorCode, nativeErrorCode);
                     }
                 }
-                else if (addresses.Length == 0 && isLocalhostSubdomain)
+                else if (addresses.Length == 0 && IsLocalhostSubdomain(hostName))
                 {
                     // RFC 6761 Section 6.3: If localhost subdomain returns empty addresses, fall back to plain "localhost".
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(hostName, "RFC 6761: Localhost subdomain returned empty, falling back to 'localhost'");
@@ -798,10 +795,8 @@ namespace System.Net
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
-                        // Resolve plain "localhost" instead
-                        return await ((Task<T>)(justAddresses
-                            ? (Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)
-                            : Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken))).ConfigureAwait(false);
+                        // result is IPAddress[] so justAddresses is guaranteed true here.
+                        return await ((Task<T>)(Task)Dns.GetHostAddressesAsync(Localhost, addressFamily, cancellationToken)).ConfigureAwait(false);
                     }
 
                     if (isLocalhostSubdomain && result is IPHostEntry entry && entry.AddressList.Length == 0)
@@ -810,7 +805,7 @@ namespace System.Net
                         NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: result, exception: null);
                         fallbackOccurred = true;
 
-                        // Resolve plain "localhost" instead
+                        // result is IPHostEntry so justAddresses is guaranteed false here.
                         return await ((Task<T>)(Task)Dns.GetHostEntryAsync(Localhost, addressFamily, cancellationToken)).ConfigureAwait(false);
                     }
 
