@@ -145,7 +145,7 @@ The most common combination is `-linux_amd -windows_intel -osx_arm64`. Do not in
 
 ### Common Options
 
-Use `-profiler` when absolutely necessary along with `-linux_arm64` or/and `-linux_amd` to include `perf` profiling and disassembly in the results.
+Use `-profiler` when absolutely necessary along with `-linux_arm64` and/or `-linux_amd` to include `perf` profiling and disassembly in the results.
 
 ### Example: Basic PR Benchmark
 
