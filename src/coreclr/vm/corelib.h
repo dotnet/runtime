@@ -1171,6 +1171,7 @@ DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED,               ClearManag
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_NATIVE_UCO,  ConvertContentsToNative,    SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CONVERT_CONTENTS_TO_MANAGED_UCO, ConvertContentsToManaged,   SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
 DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, CLEAR_MANAGED_UCO,               ClearManaged,               SM_PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(MNGD_REF_CUSTOM_MARSHALER, GET_CUSTOM_MARSHALER_INSTANCE,    GetCustomMarshalerInstance,  SM_PtrVoid_PtrByte_Int_PtrObj_PtrException_RetVoid)
 
 DEFINE_CLASS(ASANY_MARSHALER,            StubHelpers,                 AsAnyMarshaler)
 DEFINE_METHOD(ASANY_MARSHALER,           CTOR,                        .ctor,                      IM_IntPtr_RetVoid)
