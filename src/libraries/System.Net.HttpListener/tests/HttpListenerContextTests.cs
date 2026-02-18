@@ -243,7 +243,7 @@ namespace System.Net.Tests
         {
             using (Socket client = Factory.GetConnectedSocket())
             {
-                client.Send(Factory.GetContent("1.1", "POST", null, "Text", headers, true));
+                await client.SendAsync(Factory.GetContent("1.1", "POST", null, "Text", headers, true));
 
                 HttpListener listener = Factory.GetListener();
                 await contextAction(await listener.GetContextAsync());
