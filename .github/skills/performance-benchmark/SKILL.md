@@ -141,7 +141,7 @@ Post a comment on the PR to trigger EgorBot with your benchmark. The general for
 - `-linux_arm64`
 - `-osx_arm64` (baremetal, feel free to always include it)
 
-The most common combination is `-linux_amd -windows_intel -osx_arm64`. Do not include more than 4 targets.
+The most common combination is `-linux_amd -osx_arm64`. Do not include more than 4 targets.
 
 ### Common Options
 
@@ -151,7 +151,7 @@ Use `-profiler` when absolutely necessary along with `-linux_arm64` and/or `-lin
 
 To benchmark the current PR changes against the base branch:
 
-@EgorBot -linux_amd -windows_intel -osx_arm64
+@EgorBot -linux_amd -osx_arm64
 
 ```cs
 using BenchmarkDotNet.Attributes;
