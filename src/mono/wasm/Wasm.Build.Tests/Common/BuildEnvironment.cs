@@ -130,7 +130,7 @@ namespace Wasm.Build.Tests
             if (!UseWebCIL)
             {
                 // Default is 'true'
-                EnvVars["WasmEnableWebCIL"] = "false";
+                EnvVars["WasmEnableWebcil"] = "false";
             }
 
             if (!EnvironmentVariables.UseFingerprinting)
