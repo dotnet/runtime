@@ -198,13 +198,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ContinuationTypeSymbol(AsyncContinuationType key)
         {
             return _continuationTypeFixups.GetOrAdd(key);
-
-            _ecmaModuleFixupCache = new NodeCache<IEcmaModule, Import>(key =>
-            {
-                return new PrecodeHelperImport(
-                    _codegenNodeFactory,
-                    new ReadyToRunModuleSignature(key));
-            });
         }
 
         private NodeCache<ModuleToken, Import> _importStrings;

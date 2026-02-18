@@ -149,7 +149,6 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 struct CallbackContext final
 {
     OBJECTREF _currAssembly;
-    OBJECTREF _groupType;
     OBJECTREF _externalTypeMap;
     OBJECTREF _proxyTypeMap;
     OBJECTREF _creationException;

@@ -38,16 +38,13 @@ namespace ILCompiler.DependencyAnalysis
             return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
         }
 
-        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToMethod(NativeWriter writer, MethodDesc method) => throw new NotImplementedException();
-        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToType(NativeWriter writer, TypeDesc type)
-        {
-            Import typeImport = GetImportToType(type);
-            return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
-        }
         internal Vertex EncodeReferenceToType(NativeWriter writer, TypeDesc type)
         {
             Import typeImport = GetImportToType(type);
             return writer.GetTuple(writer.GetUnsignedConstant((uint)typeImport.Table.IndexFromBeginningOfArray), writer.GetUnsignedConstant((uint)typeImport.IndexFromBeginningOfArray));
         }
+
+        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToMethod(NativeWriter writer, MethodDesc method) => throw new NotImplementedException();
+        Vertex INativeFormatTypeReferenceProvider.EncodeReferenceToType(NativeWriter writer, TypeDesc type) => EncodeReferenceToType(writer, type);
     }
 }
