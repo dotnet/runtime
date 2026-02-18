@@ -42,7 +42,7 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
         }
     };
 
-    const { instance } = await instantiateWasm(webcilPromise, imports, false);
+    const { instance } = await instantiateWasm(webcilPromise, imports);
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
     if (webcilVersion !== 0) {
         throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
@@ -138,7 +138,7 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     _ems_.FS.createDataFile(parentDirectory, fileName, bytes, true /* canRead */, true /* canWrite */, true /* canOwn */);
 }
 
-export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports, isMainModule: boolean): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
+export async function instantiateWasm(wasmPromise: Promise<Response>, imports: WebAssembly.Imports): Promise<{ instance: WebAssembly.Instance; module: WebAssembly.Module; }> {
     let instance: WebAssembly.Instance;
     let module: WebAssembly.Module;
     const res = await checkResponseOk(wasmPromise);

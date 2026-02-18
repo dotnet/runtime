@@ -66,7 +66,7 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
 }
 
 export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true);
+    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports);
     onDownloadedAsset();
     successCallback(instance, module);
     const memory = dotnetNativeBrowserExports.getWasmMemory();
