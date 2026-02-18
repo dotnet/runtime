@@ -3,14 +3,15 @@
     DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
     and makes dump paths available to the test project.
 
-    Dump output: $(DumpOutputDir)\{RuntimeVersion}\{DebugeeName}\{DebugeeName}.dmp
+    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DebugeeName}/{DebugeeName}.dmp
 
     Each Debuggee × RuntimeVersion combination produces one dump.
 
     Properties:
-      DumpOutputDir          — Where dumps are written (default: artifacts\dumps\cdac\)
+      DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
       TestHostDir            — Path to the local-build testhost runtime (auto-detected)
       DebuggeeConfiguration  — Build configuration for debuggees (default: Release)
+      CIDumpVersionsOnly     — When 'true', only generate dumps for "local" version (CI mode)
 
     RuntimeVersion values:
       "local"  — framework-dependent build, run with the repo's testhost
@@ -18,9 +19,11 @@
   -->
 
   <PropertyGroup>
-    <DumpOutputDir Condition="'$(DumpOutputDir)' == ''">$(RepoRoot)artifacts\dumps\cdac\</DumpOutputDir>
+    <DumpOutputDir Condition="'$(DumpOutputDir)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'dumps', 'cdac'))</DumpOutputDir>
     <DebuggeeConfiguration Condition="'$(DebuggeeConfiguration)' == ''">Release</DebuggeeConfiguration>
-    <DebuggeesDir>$(MSBuildThisFileDirectory)Debuggees\</DebuggeesDir>
+    <DebuggeesDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'Debuggees'))</DebuggeesDir>
+    <!-- Platform-aware dotnet host and exe suffix -->
+    <_DotNetExe>$([MSBuild]::NormalizePath('$(RepoRoot)', '.dotnet', 'dotnet$(ExeSuffix)'))</_DotNetExe>
   </PropertyGroup>
 
   <!-- Auto-detect testhost from repo artifacts (used for "local" runtime version). -->
@@ -29,7 +32,7 @@
     <_TestHostConfig Condition="'$(TestHostConfiguration)' != ''">$(TestHostConfiguration)</_TestHostConfig>
     <_HostArch>$(TargetArchitecture)</_HostArch>
     <_HostArch Condition="'$(_HostArch)' == ''">x64</_HostArch>
-    <TestHostDir>$(RepoRoot)artifacts\bin\testhost\$(NetCoreAppCurrent)-windows-$(_TestHostConfig)-$(_HostArch)\</TestHostDir>
+    <TestHostDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(HostOS)-$(_TestHostConfig)-$(_HostArch)'))</TestHostDir>
   </PropertyGroup>
 
   <!-- Debuggees to build and crash -->
@@ -42,10 +45,11 @@
   </ItemGroup>
 
   <!-- Runtime versions to create dumps for.
-       "local" uses the repo's testhost; others publish self-contained. -->
+       "local" uses the repo's testhost; others publish self-contained.
+       Set CIDumpVersionsOnly=true to only generate "local" dumps (for CI). -->
   <ItemGroup>
     <DumpRuntimeVersion Include="local" />
-    <DumpRuntimeVersion Include="net10.0" />
+    <DumpRuntimeVersion Include="net10.0" Condition="'$(CIDumpVersionsOnly)' != 'true'" />
   </ItemGroup>
 
   <Target Name="GenerateAllDumps" BeforeTargets="Build">
@@ -62,9 +66,9 @@
 
   <Target Name="_GenerateSingleDump">
     <PropertyGroup>
-      <_DebuggeeDir>$(DebuggeesDir)$(DebuggeeName)\</_DebuggeeDir>
-      <_DumpDir>$(DumpOutputDir)$(DumpRuntimeVersion)\$(DebuggeeName)\</_DumpDir>
-      <_DumpFile>$(_DumpDir)$(DebuggeeName).dmp</_DumpFile>
+      <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
+      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(DebuggeeName)'))</_DumpDir>
+      <_DumpFile>$([MSBuild]::NormalizePath('$(_DumpDir)', '$(DebuggeeName).dmp'))</_DumpFile>
     </PropertyGroup>
 
     <!-- Skip if dump already exists -->
@@ -87,15 +91,18 @@
   <!-- Local build: framework-dependent, run with testhost -->
   <Target Name="_GenerateLocalDump">
     <PropertyGroup>
-      <_DebuggeeBinDir>$(RepoRoot)artifacts\bin\DumpTests\$(DebuggeeName)\$(DebuggeeConfiguration)\$(NetCoreAppCurrent)\</_DebuggeeBinDir>
+      <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
+      <_TestHostDotNet>$([MSBuild]::NormalizePath('$(TestHostDir)', 'dotnet$(ExeSuffix)'))</_TestHostDotNet>
+      <_DebuggeeDll>$([MSBuild]::NormalizePath('$(_DebuggeeBinDir)', '$(DebuggeeName).dll'))</_DebuggeeDll>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(RepoRoot).dotnet\dotnet.exe&quot; build &quot;$(_DebuggeeDir)$(DebuggeeName).csproj&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
 
-    <Exec Command="&quot;$(TestHostDir)dotnet.exe&quot; exec &quot;$(_DebuggeeBinDir)$(DebuggeeName).dll&quot;"
+    <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
           EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
@@ -106,15 +113,17 @@
   <!-- Released runtime: self-contained publish, run the exe directly -->
   <Target Name="_GeneratePublishedDump">
     <PropertyGroup>
-      <_PublishDir>$(RepoRoot)artifacts\bin\DumpTests\$(DebuggeeName)\$(DebuggeeConfiguration)\$(DumpRuntimeVersion)-publish\</_PublishDir>
+      <_PublishDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(DumpRuntimeVersion)-publish'))</_PublishDir>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+      <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(RepoRoot).dotnet\dotnet.exe&quot; publish &quot;$(_DebuggeeDir)$(DebuggeeName).csproj&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r win-x64 --self-contained -o &quot;$(_PublishDir)&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained -o &quot;$(_PublishDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
 
-    <Exec Command="&quot;$(_PublishDir)$(DebuggeeName).exe&quot;"
+    <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
           EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
@@ -124,7 +133,7 @@
 
   <!-- Expose dump paths as properties for tests -->
   <PropertyGroup>
-    <BasicThreadsLocalDumpPath>$(DumpOutputDir)local\BasicThreads\BasicThreads.dmp</BasicThreadsLocalDumpPath>
-    <BasicThreadsNet10DumpPath>$(DumpOutputDir)net10.0\BasicThreads\BasicThreads.dmp</BasicThreadsNet10DumpPath>
+    <BasicThreadsLocalDumpPath>$([MSBuild]::NormalizePath('$(DumpOutputDir)', 'local', 'BasicThreads', 'BasicThreads.dmp'))</BasicThreadsLocalDumpPath>
+    <BasicThreadsNet10DumpPath>$([MSBuild]::NormalizePath('$(DumpOutputDir)', 'net10.0', 'BasicThreads', 'BasicThreads.dmp'))</BasicThreadsNet10DumpPath>
   </PropertyGroup>
 </Project>
