@@ -68,7 +68,7 @@ namespace ILCompiler.ObjectWriter
 
         private void MaybeWriteType(MethodDesc desc)
         {
-            WasmFuncType signature = WasmAbiContext.GetSignature(desc);
+            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(desc);
             if (_uniqueSignatures.ContainsKey(signature))
             {
                 return;
@@ -89,7 +89,7 @@ namespace ILCompiler.ObjectWriter
         {
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
-            WasmFuncType signature = WasmAbiContext.GetSignature(desc);
+            WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(desc);
             if (!_uniqueSignatures.TryGetValue(signature, out int signatureIndex))
             {
                 throw new InvalidOperationException($"Signature index not found for function: {desc.GetName()}");
@@ -382,103 +382,6 @@ namespace ILCompiler.ObjectWriter
             PrependCount(_sections[exportIdx], _numExports);
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
-        }
-    }
-
-    // TODO-WASM: The logic here isn't comprehensive yet. It should cover primitive types and references,
-    // but by-value structs + nullable types aren't handled yet.
-    public static class WasmAbiContext
-    {
-        private static WasmValueType LowerType(TypeDesc type)
-        {
-            if ((type.IsValueType && !type.IsPrimitive) || type.IsNullable)
-            {
-                throw new NotImplementedException($"By-value struct types are not yet supported: {type}");
-            }
-
-            switch (type.UnderlyingType.Category)
-            {
-                case TypeFlags.Int32:
-                case TypeFlags.UInt32:
-                case TypeFlags.Boolean:
-                case TypeFlags.Char:
-                case TypeFlags.Byte:
-                case TypeFlags.SByte:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt16:
-                    return WasmValueType.I32;
-
-                case TypeFlags.Int64:
-                case TypeFlags.UInt64:
-                    return WasmValueType.I64;
-
-                case TypeFlags.Single:
-                    return WasmValueType.F32;
-
-                case TypeFlags.Double:
-                    return WasmValueType.F64;
-
-                // Pointer and reference types
-                case TypeFlags.IntPtr:
-                case TypeFlags.UIntPtr:
-                case TypeFlags.Class:
-                case TypeFlags.Interface:
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                case TypeFlags.ByRef:
-                case TypeFlags.Pointer:
-                case TypeFlags.FunctionPointer:
-                    return WasmValueType.I32;
-
-                default:
-                    throw new NotSupportedException($"Unknown wasm mapping for type: {type.UnderlyingType.Category}");
-            }
-        }
-
-        /// <summary>
-        /// Gets the Wasm-level signature for a given MethodDesc.
-        ///
-        /// Parameters for managed Wasm calls have the following layout:
-        /// i32 (SP), loweredParam0, ..., loweredParamN, i32 (PE entrypoint)
-        ///
-        /// For unmanaged callers only (reverse P/Invoke), the layout is simply the native signature
-        /// which is just the lowered parameters+return.
-        /// </summary>
-        /// <param name="method"></param>
-        /// <returns></returns>
-        public static WasmFuncType GetSignature(MethodDesc method)
-        {
-            // TODO-WASM: handle struct by-value return (extra parameter pointing to buffer must be in signature)
-            // TODO-WASM: handle seemingly by-value struct arguments that are actually passed implicitly by reference
-
-            MethodSignature signature = method.Signature;
-            TypeDesc returnType = signature.ReturnType;
-            Span<WasmValueType> wasmParameters, lowered;
-            if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
-            {
-                wasmParameters = new WasmValueType[signature.Length];
-                lowered = wasmParameters;
-            }
-            else // managed call
-            {
-                wasmParameters = new WasmValueType[signature.Length + 2];
-                wasmParameters[0] = WasmValueType.I32; // Stack pointer parameter
-                wasmParameters[wasmParameters.Length - 1] = WasmValueType.I32; // PE entrypoint parameter
-
-                lowered = wasmParameters.Slice(1, wasmParameters.Length - 2);
-            }
-
-            Debug.Assert(lowered.Length == signature.Length);
-            for (int i = 0; i < signature.Length; i++)
-            {
-                lowered[i] = LowerType(signature[i]);
-            }
-
-            WasmResultType ps = new(wasmParameters.ToArray());
-            WasmResultType ret = signature.ReturnType.IsVoid ? new(Array.Empty<WasmValueType>())
-                : new([LowerType(returnType)]);
-
-            return new WasmFuncType(ps, ret);
         }
     }
 

@@ -112,7 +112,6 @@ HRESULT EEConfig::Init()
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
-    fForceEnc = false;
 
     INDEBUG(fStressLog = true;)
 
@@ -439,7 +438,6 @@ HRESULT EEConfig::sync()
     }
 #endif
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
