@@ -6645,6 +6645,10 @@ void Interpreter::RefanyType()
 OBJECTREF Interpreter::TypeHandleToTypeRef(TypeHandle* pth)
 {
     OBJECTREF typePtr = NULL;
+    if (pth->IsNull())
+    {
+        return NULL;
+    }
     if (!pth->IsTypeDesc())
     {
         // Most common... and fastest case
@@ -10246,6 +10250,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             {
                 thisArgHnd = OpStackGetAddr<Object*>(argsBase);
             }
+            _ASSERTE(thisArgHnd != NULL);
+            ThrowOnInvalidPointer(*thisArgHnd);
         }
 
         Frame* topFrameBefore = thr->GetFrame();

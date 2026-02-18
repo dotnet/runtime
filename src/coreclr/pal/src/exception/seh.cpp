@@ -268,6 +268,7 @@ SEHProcessException(PAL_SEHException* exception)
                 if (g_hardwareExceptionHandler(exception))
                 {
                     // The exception happened in managed code and the execution should continue.
+                    g_SEHProcessExceptionReturnAddress = NULL;  // Reset to prevent stale value false matches
                     return TRUE;
                 }
 
@@ -284,6 +285,7 @@ SEHProcessException(PAL_SEHException* exception)
     }
 
     // Unhandled hardware exception pointers->ExceptionRecord->ExceptionCode at pointers->ExceptionRecord->ExceptionAddress
+    g_SEHProcessExceptionReturnAddress = NULL;  // Reset to prevent stale value false matches
     return FALSE;
 }
 

@@ -1399,6 +1399,13 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
+    // For dynamic scopes (LCG methods, IL stubs), use the resolver's own
+    // ConstructStringLiteral method which has access to the string table.
+    if (IsDynamicScope(scopeHnd))
+    {
+        return GetDynamicResolver(scopeHnd)->ConstructStringLiteral(metaTok);
+    }
+
     Module* module = GetModule(scopeHnd);
     return module->ResolveStringRef(metaTok, ppPinnedString);
 }
