@@ -131,7 +131,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public void SymbolMapFileEmitted(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
-        string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLower()}</WasmEmitSymbolMap>";
+        string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp,
             $"SymbolMapFile_{emitSymbolMap}_{isPublish}", extraProperties: extraProperties);
 

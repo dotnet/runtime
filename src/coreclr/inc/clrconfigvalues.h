@@ -347,6 +347,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNo
 
 #endif
 
+#ifdef TARGET_ARM64
+// This feature is for development of SVE acceleration and should be removed once complete.
+CONFIG_DWORD_INFO(INTERNAL_JitUseScalableVectorT, W("JitUseScalableVectorT"), 0, "Accelerate Vector<T> with SVE if available.")
+#endif
+
 ///
 /// Loader heap
 ///
