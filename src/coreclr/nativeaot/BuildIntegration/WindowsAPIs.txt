@@ -2341,6 +2341,12 @@ ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
 
 #
+# Synchronization.lib
+#
+api-ms-win-core-synch-l1-2-0!WaitOnAddress
+api-ms-win-core-synch-l1-2-0!WakeByAddressSingle
+
+#
 # Include all memory allocation APIs from ucrt to ensure that all of them use allocator
 # from the same ucrt copy. Also include the frequently used basic memory manipulation APIs.
 #

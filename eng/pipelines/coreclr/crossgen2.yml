@@ -106,13 +106,13 @@ extends:
           buildConfig: Release
           platforms:
             - linux_x64
+            # - osx_x64 Not included to reduce pressure on osx_x64 machines
             - windows_x64
           jobParameters:
             testGroup: innerloop
             buildArgs: -s clr+libs+libs.tests
                        -c $(_BuildConfig)
                        /p:TestReadyToRun=true
-                       /p:TestRuntimeAsync=true
                        /p:UseRuntimeAsync=true
                        /p:ArchiveTests=true
             nameSuffix: TestReadyToRun_RuntimeAsync_Libraries

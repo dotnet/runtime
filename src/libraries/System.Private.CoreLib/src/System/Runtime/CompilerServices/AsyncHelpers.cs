@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +24,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="awaiter">The awaiter to await.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion
         {
@@ -49,7 +47,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="awaiter">The awaiter to await.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
         {
@@ -71,7 +68,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static T Await<T>(Task<T> task)
         {
@@ -91,7 +87,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void Await(Task task)
         {
@@ -112,7 +107,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static T Await<T>(ValueTask<T> task)
         {
@@ -132,7 +126,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void Await(ValueTask task)
         {
@@ -152,7 +145,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void Await(ConfiguredTaskAwaitable configuredAwaitable)
         {
@@ -172,7 +164,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static void Await(ConfiguredValueTaskAwaitable configuredAwaitable)
         {
@@ -193,7 +184,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredTaskAwaitable<T> configuredAwaitable)
         {
@@ -214,7 +204,6 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         [StackTraceHidden]
         public static T Await<T>(ConfiguredValueTaskAwaitable<T> configuredAwaitable)
         {
@@ -227,26 +216,16 @@ namespace System.Runtime.CompilerServices
             return awaiter.GetResult();
         }
 #else
-        [RequiresPreviewFeatures]
-        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static void Await(System.Threading.Tasks.Task task) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static void Await(System.Threading.Tasks.ValueTask task) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw new NotImplementedException(); }
-        [RequiresPreviewFeatures]
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw new NotImplementedException(); }
+        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Threading.Tasks.Task task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Threading.Tasks.ValueTask task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw new PlatformNotSupportedException("Runtime Async is not supported on this platform."); }
 #endif
     }
 }

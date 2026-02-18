@@ -79,6 +79,7 @@
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
     <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
+    <EnableUnsafeAnalyzer>true</EnableUnsafeAnalyzer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>

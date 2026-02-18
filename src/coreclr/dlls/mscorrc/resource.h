@@ -180,7 +180,6 @@
 #define IDS_EE_NDIRECT_BADNATL_CALLCONV         0x17df
 #define IDS_EE_CANNOTCAST                       0x17e0
 
-#define IDS_EE_NOCUSTOMMARSHALER                0x17e7
 #define IDS_EE_SIZECONTROLOUTOFRANGE            0x17e8
 #define IDS_EE_SIZECONTROLBADTYPE               0x17e9
 #define IDS_EE_SAFEARRAYSZARRAYMISMATCH         0x17eb
@@ -217,7 +216,6 @@
 #define IDS_EE_BAD_COMEVENTITF_CLASS            0x1a25
 
 #define IDS_EE_ICUSTOMMARSHALERNOTIMPL          0x1a2e
-#define IDS_EE_GETINSTANCENOTIMPL               0x1a2f
 
 #define IDS_EE_BADMARSHAL_CUSTOMMARSHALER       0x1a30
 

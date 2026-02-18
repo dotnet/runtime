@@ -405,24 +405,10 @@
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
-  <Target Name="GetTestExclusionList" Returns="@(FilteredTestExclusionList)" Condition="'$(TargetsMobile)' == 'true'">
-    <ItemGroup>
-      <_ExcludeListProject Include="$(RepoRoot)src/tests/issues.targets">
-        <AdditionalProperties>XunitTestBinBase=$(TestBinDir);$(_PropertiesToPass)</AdditionalProperties>
-      </_ExcludeListProject>
-    </ItemGroup>
-    <MSBuild Projects="@(_ExcludeListProject)"
-             Targets="GetFilteredExcludeList">
-      <Output TaskParameter="TargetOutputs" ItemName="FilteredTestExclusionList" />
-    </MSBuild>
-  </Target>
-
-  <UsingTask TaskName="PatchExclusionListInApks" AssemblyFile="$(TestExclusionListTasksAssemblyPath)" />
-
   <Target Name="PrepareMergedTestPayloadDirectoryForAndroid"
       Condition="'$(TargetsAndroid)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
-      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+      DependsOnTargets="DiscoverMergedTestWrappers">
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.(MergedTestAssembly(ForStress)?(\.\d+\.\d+)?|StandaloneTestRunner)$', ''))</_MergedWrapperName>
@@ -442,16 +428,12 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" Condition="'@(_MergedPayloadFiles)' != ''" />
-    <PatchExclusionListInApks
-      ApkPaths="@(_MergedPayloadApkFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
-      ExcludedTests="@(FilteredTestExclusionList)"
-      Condition="'@(_MergedPayloadApkFiles)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
       Condition="'$(TargetsBrowser)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
-      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+      DependsOnTargets="DiscoverMergedTestWrappers">
     <ItemGroup>
       <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/RunTests.$(TestScriptExtension)')" />
     </ItemGroup>
@@ -472,14 +454,9 @@
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
-      <!-- Remove the placeholder test exclusion list here -->
-      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
-      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
     <ItemGroup>
-      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
-      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
       <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
@@ -487,16 +464,12 @@
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
-    <!-- Write the real test exclusion list instead of the placeholder. -->
-    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
-                      Lines="@(FilteredTestExclusionList)"
-                      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
       Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' != 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
-      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+      DependsOnTargets="DiscoverMergedTestWrappers">
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
@@ -521,24 +494,17 @@
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
-      <!-- Remove the placeholder test exclusion list here -->
-      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
-      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
-    <!-- Write the real test exclusion list instead of the placeholder. -->
-    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
-      Lines="@(FilteredTestExclusionList)"
-      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix"
       Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
-      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+      DependsOnTargets="DiscoverMergedTestWrappers">
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
@@ -555,16 +521,9 @@
       </_MergedPayloadFiles>
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" FileRelativeToPayloadsRootDirectory="ExpectedExitCode.txt" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" Condition="Exists('$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner')" FileRelativeToPayloadsRootDirectory="$(_MergedWrapperName).XHarnessNoRunner" />
-      <!-- Remove the placeholder test exclusion list here -->
-      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
-      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
-    <!-- Write the real test exclusion list instead of the placeholder. -->
-    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
-      Lines="@(FilteredTestExclusionList)"
-      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory"
@@ -912,14 +871,12 @@
 
   <ItemGroup>
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
-      <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>
       <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessAppBundleToTest>
