@@ -4361,8 +4361,8 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == g_knownQueryInterfaceImplementations[0]
-        || qiAddress == g_knownQueryInterfaceImplementations[1]);
+    return (PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[0]
+        || PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[1]);
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
