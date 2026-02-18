@@ -24,9 +24,6 @@ struct EbrThreadData
     // Nesting depth for re-entrant critical regions.
     uint32_t           m_criticalDepth = 0;
 
-    // Logically deleted from the thread list.
-    Volatile<BOOL>     m_detached;
-
     // Intrusive linked list through the collector's thread list.
     EbrThreadData*     m_pNext = nullptr;
 };
@@ -47,10 +44,8 @@ struct EbrPendingEntry final
     EbrPendingEntry* m_pNext;
 };
 
-// Each thread holds a pointer to its heap-allocated EbrThreadData. The node
-// must outlive the thread because it remains linked in the collector's thread
-// list until TryAdvanceEpoch physically prunes and deletes it.
-static thread_local EbrThreadData* t_pThreadData = nullptr;
+// Each thread has a thread_local EbrThreadData instance.
+static thread_local EbrThreadData t_pThreadData{};
 
 // Destructor that runs when the thread's C++ thread_local storage is torn
 // down. This ensures EBR cleanup happens for *all* threads that entered a
@@ -60,11 +55,11 @@ struct EbrTlsDestructor final
 {
     ~EbrTlsDestructor()
     {
-        EbrThreadData* pData = t_pThreadData;
-        if (pData != nullptr && pData->m_pCollector != nullptr)
+        EbrThreadData* pData = &t_pThreadData;
+        if (pData->m_pCollector != nullptr)
         {
             pData->m_pCollector->ThreadDetach();
-            t_pThreadData = nullptr;
+            *pData = {};
         }
     }
 };
@@ -136,21 +131,14 @@ EbrCollector::GetOrCreateThreadData()
     }
     CONTRACTL_END;
 
-    EbrThreadData* pData = t_pThreadData;
-    if (pData != nullptr && pData->m_pCollector == this)
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector == this)
         return pData;
 
-    // Heap-allocate so the node outlives the thread. It will be freed
-    // when TryAdvanceEpoch prunes detached nodes.
-    pData = new (nothrow) EbrThreadData();
-    if (pData == nullptr)
-        return nullptr;
-
     pData->m_pCollector = this;
-    t_pThreadData = pData;
 
     // Link into the collector's thread list.
-    // See TryAdvanceEpoch for the removal semantics of detached nodes.
+    // See ThreadDetach() for the removal semantics of detached nodes.
     EbrThreadData* pHead;
     do
     {
@@ -190,7 +178,7 @@ EbrCollector::EnterCriticalRegion()
         pData->m_localEpoch = (epoch | ACTIVE_FLAG);
 
         // Full fence to ensure the epoch observation is visible before any
-        // reads in the critical region. This pairs with the acquire fence
+        // reads in the critical region. This pairs with the full fence
         // in TryAdvanceEpoch's scan.
         MemoryBarrier();
     }
@@ -209,8 +197,7 @@ EbrCollector::ExitCriticalRegion()
 
     _ASSERTE(m_initialized);
 
-    EbrThreadData* pData = t_pThreadData;
-    _ASSERTE(pData != nullptr);
+    EbrThreadData* pData = &t_pThreadData;
     _ASSERTE(pData->m_pCollector == this);
     _ASSERTE(pData->m_criticalDepth > 0);
 
@@ -230,8 +217,8 @@ EbrCollector::InCriticalRegion()
 {
     LIMITED_METHOD_CONTRACT;
 
-    EbrThreadData* pData = t_pThreadData;
-    if (pData == nullptr || pData->m_pCollector != this)
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector != this)
         return false;
     return pData->m_criticalDepth > 0;
 }
@@ -245,16 +232,25 @@ EbrCollector::ThreadDetach()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    EbrThreadData* pData = t_pThreadData;
-    if (pData == nullptr || pData->m_pCollector != this)
-        return;
-
     _ASSERTE(!InCriticalRegion());
 
-    // Logically detach: the epoch scanner skips detached nodes.
-    // The heap-allocated node is freed later by TryAdvanceEpoch.
-    pData->m_detached = TRUE;
+    EbrThreadData* pData = &t_pThreadData;
+    if (pData->m_pCollector != this)
+        return;
+
+    CrstHolder lock(&m_threadListLock);
+
+    // Physically prune detached nodes. New nodes are only ever CAS-pushed at
+    // the head, so unlinking interior nodes here is safe without interfering
+    // with concurrent inserts.
+    EbrThreadData** pp = &m_pThreadListHead;
+    while (*pp != nullptr)
+    {
+        if ((*pp) == pData)
+            *pp = (*pp)->m_pNext;
+        else
+            pp = &(*pp)->m_pNext;
+    }
 }
 
 // ============================================
@@ -264,24 +260,27 @@ EbrCollector::ThreadDetach()
 bool
 EbrCollector::CanAdvanceEpoch()
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    _ASSERTE(m_threadListLock.OwnedByCurrentThread());
 
     uint32_t currentEpoch = m_globalEpoch;
 
     EbrThreadData* pData = VolatileLoad(&m_pThreadListHead);
     while (pData != nullptr)
     {
-        if (!pData->m_detached)
+        uint32_t localEpoch = pData->m_localEpoch;
+        bool active = (localEpoch & ACTIVE_FLAG) != 0;
+        if (active)
         {
-            uint32_t localEpoch = pData->m_localEpoch;
-            bool active = (localEpoch & ACTIVE_FLAG) != 0;
-            if (active)
-            {
-                // If an active thread has not yet observed the current epoch,
-                // we cannot advance.
-                if (localEpoch != (currentEpoch | ACTIVE_FLAG))
-                    return false;
-            }
+            // If an active thread has not yet observed the current epoch,
+            // we cannot advance.
+            if (localEpoch != (currentEpoch | ACTIVE_FLAG))
+                return false;
         }
 
         pData = pData->m_pNext;
@@ -301,12 +300,12 @@ EbrCollector::TryAdvanceEpoch()
     CONTRACTL_END;
     _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
-    // Serialize scan, epoch advance, and pruning under the lock. This prevents
-    // two concurrent callers from double-advancing the epoch and ensures the
-    // CanAdvanceEpoch result is still valid when we act on it.
+    // Epoch advance under the lock. This prevents two concurrent callers
+    // from double-advancing the epoch and ensures the CanAdvanceEpoch result
+    // is still valid when we act on it.
     CrstHolder lock(&m_threadListLock);
 
-    // Acquire fence to synchronize with the MemoryBarrier() calls in
+    // Full fence to synchronize with the MemoryBarrier() calls in
     // EnterCriticalRegion / ExitCriticalRegion.
     MemoryBarrier();
 
@@ -315,24 +314,6 @@ EbrCollector::TryAdvanceEpoch()
 
     uint32_t newEpoch = ((uint32_t)m_globalEpoch + 1) % EBR_EPOCHS;
     m_globalEpoch = newEpoch;
-
-    // Physically prune and delete detached nodes. New nodes are only ever
-    // CAS-pushed at the head, so unlinking interior nodes here is safe
-    // without interfering with concurrent inserts.
-    EbrThreadData** pp = &m_pThreadListHead;
-    while (*pp != nullptr)
-    {
-        if ((*pp)->m_detached)
-        {
-            EbrThreadData* pDetached = *pp;
-            *pp = pDetached->m_pNext;
-            delete pDetached;
-        }
-        else
-        {
-            pp = &(*pp)->m_pNext;
-        }
-    }
 
     return true;
 }
@@ -411,7 +392,7 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     _ASSERTE(pfnDelete != nullptr);
 
     // Must be in a critical region.
-    EbrThreadData* pData = t_pThreadData;
+    EbrThreadData* pData = &t_pThreadData;
     _ASSERTE(pData->m_pCollector == this && pData->m_criticalDepth > 0);
 
     // Allocate pending entry.

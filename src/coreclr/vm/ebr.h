@@ -109,7 +109,7 @@ private:
     // Global epoch counter [0, EBR_EPOCHS-1]
     Volatile<uint32_t> m_globalEpoch;
 
-    // Registered thread list (lock-free CAS insert; m_threadListLock used only for pruning)
+    // Registered thread list (m_threadListLock used for pruning and epoch scanning)
     CrstStatic       m_threadListLock;
     EbrThreadData*   m_pThreadListHead = nullptr;
 
