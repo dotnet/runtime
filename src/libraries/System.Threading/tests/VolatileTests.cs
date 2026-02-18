@@ -24,123 +24,58 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public void ReadBarrier_EnsuresMemoryOrdering()
+        public void BarriersAndVolatileOperations()
         {
-            // Test that ReadBarrier can be called multiple times without issues
-            int x = 0;
-            int y = 0;
+            // Test ReadBarrier, WriteBarrier, and other Volatile APIs
+            int value1 = 0;
+            int value2 = 0;
+            long value3 = 0;
 
-            x = 1;
+            // Test direct calls
             Volatile.ReadBarrier();
-            y = x;
-
-            Assert.Equal(1, y);
-        }
-
-        [Fact]
-        public void WriteBarrier_EnsuresMemoryOrdering()
-        {
-            // Test that WriteBarrier can be called multiple times without issues
-            int x = 0;
-            int y = 0;
-
-            x = 1;
             Volatile.WriteBarrier();
-            y = x;
 
-            Assert.Equal(1, y);
-        }
+            // Test with Volatile.Read and Volatile.Write
+            Volatile.Write(ref value1, 42);
+            Volatile.WriteBarrier();
+            Assert.Equal(42, value1);
 
-        [Fact]
-        public void ReadBarrier_WithVolatileReads()
-        {
-            // Test ReadBarrier in conjunction with Volatile.Read
-            int value = 42;
             Volatile.ReadBarrier();
-            int result = Volatile.Read(ref value);
-            Assert.Equal(42, result);
-        }
+            int result1 = Volatile.Read(ref value1);
+            Assert.Equal(42, result1);
 
-        [Fact]
-        public void WriteBarrier_WithVolatileWrites()
-        {
-            // Test WriteBarrier in conjunction with Volatile.Write
-            int value = 0;
-            Volatile.Write(ref value, 42);
-            Volatile.WriteBarrier();
-            Assert.Equal(42, value);
-        }
-
-        [Fact]
-        public void ReadBarrier_MultipleCallsSequence()
-        {
-            // Test multiple sequential calls to ReadBarrier
+            // Test multiple sequential calls
             Volatile.ReadBarrier();
             Volatile.ReadBarrier();
+            Volatile.WriteBarrier();
+            Volatile.WriteBarrier();
+
+            // Test interleaved barriers with Volatile operations
+            Volatile.Write(ref value2, 100);
+            Volatile.WriteBarrier();
             Volatile.ReadBarrier();
-        }
+            int result2 = Volatile.Read(ref value2);
+            Assert.Equal(100, result2);
 
-        [Fact]
-        public void WriteBarrier_MultipleCallsSequence()
-        {
-            // Test multiple sequential calls to WriteBarrier
-            Volatile.WriteBarrier();
-            Volatile.WriteBarrier();
-            Volatile.WriteBarrier();
-        }
-
-        [Fact]
-        public void ReadWriteBarrier_Interleaved()
-        {
-            // Test interleaved calls to both barriers
-            int x = 0;
-            int y = 0;
-
-            x = 1;
-            Volatile.WriteBarrier();
-            y = 2;
+            // Test with different types
+            Volatile.Write(ref value3, 123456789L);
             Volatile.ReadBarrier();
-            int sum = x + y;
+            long result3 = Volatile.Read(ref value3);
+            Assert.Equal(123456789L, result3);
 
-            Assert.Equal(3, sum);
-        }
+            // Test via delegates
+            Action readBarrierDelegate = Volatile.ReadBarrier;
+            Action writeBarrierDelegate = Volatile.WriteBarrier;
+            readBarrierDelegate();
+            writeBarrierDelegate();
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Action ReadBarrierDelegate() => Volatile.ReadBarrier;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Action WriteBarrierDelegate() => Volatile.WriteBarrier;
-
-        [Fact]
-        public void ReadBarrier_CanBeCalledViaDelegate()
-        {
-            // Verify ReadBarrier can be called through a delegate
-            ReadBarrierDelegate()();
-        }
-
-        [Fact]
-        public void WriteBarrier_CanBeCalledViaDelegate()
-        {
-            // Verify WriteBarrier can be called through a delegate
-            WriteBarrierDelegate()();
-        }
-
-        [Fact]
-        public void ReadBarrier_CanBeCalledViaReflection()
-        {
-            // Verify ReadBarrier can be called via reflection
-            MethodInfo method = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
-            Assert.NotNull(method);
-            method.Invoke(null, null);
-        }
-
-        [Fact]
-        public void WriteBarrier_CanBeCalledViaReflection()
-        {
-            // Verify WriteBarrier can be called via reflection
-            MethodInfo method = typeof(Volatile).GetMethod(nameof(Volatile.WriteBarrier), BindingFlags.Public | BindingFlags.Static);
-            Assert.NotNull(method);
-            method.Invoke(null, null);
+            // Test via reflection
+            MethodInfo readBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
+            MethodInfo writeBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.WriteBarrier), BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(readBarrierMethod);
+            Assert.NotNull(writeBarrierMethod);
+            readBarrierMethod.Invoke(null, null);
+            writeBarrierMethod.Invoke(null, null);
         }
     }
 }
