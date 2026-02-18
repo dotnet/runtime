@@ -139,6 +139,7 @@ extends:
     # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
     #
     - stage: DumpCreation
+      dependsOn: []
       jobs:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
