@@ -6,7 +6,7 @@ description: Generate and run ad hoc performance benchmarks to validate code cha
 # Ad Hoc Performance Benchmarking with @EgorBot
 
 When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and trigger @EgorBot to run it.
-The bot will trigger you back so don't wait for the results.
+The bot will notify you when results are ready, so don't wait for them.
 
 ## Step 1: Write the Benchmark
 
