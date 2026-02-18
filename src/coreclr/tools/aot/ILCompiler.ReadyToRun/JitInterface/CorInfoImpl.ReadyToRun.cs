@@ -2035,32 +2035,6 @@ namespace Internal.JitInterface
             //
 
             targetMethod = methodAfterConstraintResolution;
-            bool constrainedTypeNeedsRuntimeLookup = (constrainedType != null && constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-            if (targetMethod.HasInstantiation)
-            {
-                pResult->contextHandle = contextFromMethod(targetMethod);
-                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || targetMethod.IsSharedByGenericInstantiations;
-            }
-            else
-            {
-                pResult->contextHandle = contextFromType(exactType);
-                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
-
-                // Use main method as the context as long as the methods are called on the same type
-                if (pResult->exactContextNeedsRuntimeLookup &&
-                    pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
-                    constrainedType == null &&
-                    exactType == MethodBeingCompiled.OwningType)
-                {
-                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                    var rawMethod = (MethodDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token);
-                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
-                    {
-                        pResult->contextHandle = contextFromMethodBeingCompiled();
-                    }
-                }
-            }
 
             //
             // Determine whether to perform direct call
@@ -2134,6 +2108,59 @@ namespace Internal.JitInterface
                 {
                     resolvedCallVirt = true;
                     directCall = true;
+                }
+            }
+
+            // See if we can resolve to an async variant. Task-returning methods may
+            // not always have such a variant (for a T return where T is task, for
+            // example).
+            pResult->resolvedAsyncVariant = null;
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWASYNCVARIANT) != 0 &&
+                originalMethod.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask() &&
+                !originalMethod.OwningType.IsDelegate)
+            {
+                if (!directCall || targetMethod.IsAsync)
+                {
+                    // Either a virtual call or a direct call where the async variant
+                    // is user-defined. Switch to the async variant in these cases.
+                    if (originalMethod == targetMethod)
+                    {
+                        originalMethod = targetMethod = _compilation.TypeSystemContext.GetAsyncVariantMethod(originalMethod);
+                    }
+                    else
+                    {
+                        originalMethod = _compilation.TypeSystemContext.GetAsyncVariantMethod(originalMethod);
+                        targetMethod = _compilation.TypeSystemContext.GetAsyncVariantMethod(targetMethod);
+                    }
+
+                    pResult->resolvedAsyncVariant = ObjectToHandle(originalMethod);
+                }
+            }
+
+            bool constrainedTypeNeedsRuntimeLookup = (constrainedType != null && constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+            if (targetMethod.HasInstantiation)
+            {
+                pResult->contextHandle = contextFromMethod(targetMethod);
+                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || targetMethod.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                pResult->contextHandle = contextFromType(exactType);
+                pResult->exactContextNeedsRuntimeLookup = constrainedTypeNeedsRuntimeLookup || exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+
+                // Use main method as the context as long as the methods are called on the same type
+                if (pResult->exactContextNeedsRuntimeLookup &&
+                    pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
+                    constrainedType == null &&
+                    exactType == MethodBeingCompiled.OwningType)
+                {
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILScopeDefinition().GetObject((int)pResolvedToken.token);
+                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
+                    {
+                        pResult->contextHandle = contextFromMethodBeingCompiled();
+                    }
                 }
             }
 
