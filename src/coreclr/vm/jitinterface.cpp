@@ -4958,7 +4958,6 @@ void CEEInfo::getCallInfo(
     INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     pResult->stubLookup.lookupKind.needsRuntimeLookup = false;
-    pResult->resolvedAsyncVariant = NULL;
 
     MethodDesc* pMD = (MethodDesc *)pResolvedToken->hMethod;
     TypeHandle th(pResolvedToken->hClass);
@@ -5176,7 +5175,8 @@ void CEEInfo::getCallInfo(
     // See if we can resolve to an async variant. Task-returning methods may
     // not always have such a variant (for a T return where T is task, for
     // example).
-    if ((flags & CORINFO_CALLINFO_ALLOWASYNCVARIANT) && pTargetMD->ReturnsTaskOrValueTask())
+    pResult->resolvedAsyncVariant = NULL;
+    if ((flags & CORINFO_CALLINFO_ALLOWASYNCVARIANT) && pMD->ReturnsTaskOrValueTask())
     {
         if (!directCall || pTargetMD->IsAsyncThunkMethod())
         {
@@ -5184,7 +5184,7 @@ void CEEInfo::getCallInfo(
             // is user-defined. Switch to the async variant in these cases.
             if (pMD == pTargetMD)
             {
-                pMD = pTargetMD = pMD->GetAsyncVariant(/*allowInstParam */ FALSE);
+                pMD = pTargetMD = pMD->GetAsyncVariant(/* allowInstParam */ FALSE);
             }
             else
             {

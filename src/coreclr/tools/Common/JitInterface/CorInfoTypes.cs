@@ -411,7 +411,7 @@ namespace Internal.JitInterface
         CORINFO_CALLINFO_NONE = 0x0000,
         CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001, // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
         CORINFO_CALLINFO_CALLVIRT = 0x0002, // Is it a virtual call?
-        // UNUSED = 0x0004,
+        CORINFO_CALLINFO_ALLOWASYNCVARIANT = 0x0004, // allow resolution to an async variant
         CORINFO_CALLINFO_DISALLOW_STUB = 0x0008, // Do not use a stub for this call, even if it is a virtual call.
         CORINFO_CALLINFO_SECURITYCHECKS = 0x0010, // Perform security checks.
         CORINFO_CALLINFO_LDFTN = 0x0020, // Resolving target of LDFTN
@@ -1146,6 +1146,8 @@ namespace Internal.JitInterface
 
         public byte _wrapperDelegateInvoke;
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
+
+        public CORINFO_METHOD_STRUCT_* resolvedAsyncVariant;
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1477,10 +1479,6 @@ namespace Internal.JitInterface
 
         // token comes from resolved static virtual method
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
-
-        // token comes from runtime async awaiting pattern
-        CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-        CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
