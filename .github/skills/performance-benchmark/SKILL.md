@@ -125,7 +125,7 @@ public class Bench
 
 Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
 
-@EgorBot [target] [options] [BenchmarkDotNet args]
+@EgorBot [targets] [options] [BenchmarkDotNet args]
 
 ```cs
 // Your benchmark code here
