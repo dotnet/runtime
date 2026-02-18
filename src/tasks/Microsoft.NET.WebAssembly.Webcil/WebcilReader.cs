@@ -373,6 +373,13 @@ public sealed partial class WebcilReader : IDisposable
                 secheader.VirtualAddress = BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress);
                 secheader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData);
                 secheader.PointerToRawData = BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData);
+                // Remaining fields are specified as zero in WebCIL v1.0;
+                // zero them out so we don't mis-interpret garbage on big-endian.
+                secheader.PointerToRelocations = 0;
+                secheader.PointerToLinenumbers = 0;
+                secheader.NumberOfRelocations = 0;
+                secheader.NumberOfLinenumbers = 0;
+                secheader.Characteristics = 0;
             }
             sections.Add(secheader);
         }

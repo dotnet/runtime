@@ -292,7 +292,17 @@ public class WebcilConverter
         {
             if (relativeVirtualAddress >= section.VirtualAddress && relativeVirtualAddress < section.VirtualAddress + section.VirtualSize)
             {
-                FilePosition pos = section.PointerToRawData + ((int)relativeVirtualAddress - section.VirtualAddress);
+                uint offsetInSection = relativeVirtualAddress - (uint)section.VirtualAddress;
+                // The RVA is within the section's virtual extent, but ensure
+                // it also falls within the raw data backed region.  If
+                // VirtualSize > SizeOfRawData, offsets beyond SizeOfRawData
+                // are zero-fill and have no file backing.
+                if (offsetInSection >= (uint)section.SizeOfRawData)
+                {
+                    throw new InvalidOperationException(
+                        $"relative virtual address 0x{relativeVirtualAddress:X} is in virtual tail of section (offset {offsetInSection} >= SizeOfRawData {section.SizeOfRawData})");
+                }
+                FilePosition pos = section.PointerToRawData + (int)offsetInSection;
                 return pos;
             }
         }

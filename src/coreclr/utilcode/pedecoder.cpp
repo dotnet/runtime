@@ -293,8 +293,21 @@ CHECK PEDecoder::CheckWebcilHeaders() const
     //   - raw data must lie within the file
     //   - no arithmetic overflow on ptr + size
     //   - sections must be ordered by VirtualAddress and must not overlap
+    //   - section data must not overlap the header/section-table area
+    //   - section data must be 16-byte aligned (v1.0 format requirement)
+
+    // Compute the size of the header + section table so we can ensure
+    // section raw data doesn't overlap it.
+    S_SIZE_T cbHeaderAndSections(S_SIZE_T(sizeof(WebCILHeader)) +
+                                 S_SIZE_T(static_cast<SIZE_T>(nSections)) * S_SIZE_T(sizeof(IMAGE_SECTION_HEADER)));
+    CHECK(!cbHeaderAndSections.IsOverflow());
+    // Round up to 16-byte alignment — section data starts at the first
+    // aligned offset after the section table.
+    SIZE_T headerAndSectionTableSize = cbHeaderAndSections.Value();
+    SIZE_T alignedHeaderEnd = (headerAndSectionTableSize + 15) & ~static_cast<SIZE_T>(15);
+
     UINT32 previousVAEnd = 0;
-    UINT32 previousOffsetEnd = 0;
+    UINT32 previousOffsetEnd = static_cast<UINT32>(alignedHeaderEnd);
     for (uint16_t i = 0; i < nSections; i++)
     {
         UINT32 vaStart   = VAL32(pSections[i].VirtualAddress);
@@ -316,9 +329,13 @@ CHECK PEDecoder::CheckWebcilHeaders() const
         // Sections must be ordered by VA and must not overlap
         CHECK(vaStart >= previousVAEnd);
 
-        // Raw data regions must not overlap (allow rawSize == 0 gaps)
+        // Raw data must not overlap the header/section-table and must be
+        // 16-byte aligned per the v1.0 format specification.
         if (rawSize != 0)
+        {
             CHECK(rawOffset >= previousOffsetEnd);
+            CHECK((rawOffset % 16) == 0);
+        }
 
         previousVAEnd = (UINT32)vaEnd.Value();
         previousOffsetEnd = (UINT32)endInFile.Value();
