@@ -149,8 +149,8 @@ extern "C" int BrowserHost_ShutdownDotnet(int exit_code)
     if (result < 0)
     {
         std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", result);
-        exit_code = -1;
+        return -1;
     }
 
-    return exit_code;
+    return latched_exit_code;
 }
