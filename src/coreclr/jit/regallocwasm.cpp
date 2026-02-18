@@ -282,6 +282,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_CALL:
+            CollectReferencesForCall(node->AsCall());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -302,6 +306,24 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 {
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp2() DEBUGARG("div-by-zero / overflow check"));
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp1() DEBUGARG("div-by-zero / overflow check"));
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForCall: Collect virtual register references for a call.
+//
+// Consumes temporary registers for the div-by-zero and overflow checks.
+//
+// Arguments:
+//    callNode - The GT_CALL node
+//
+void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
+{
+    if (callNode->NeedsNullCheck())
+    {
+        CallArg* thisArg  = callNode->gtArgs.GetThisArg();
+        GenTree* thisNode = thisArg->GetNode();
+        ConsumeTemporaryRegForOperand(thisNode DEBUGARG("null check for call"));
+    }
 }
 
 //------------------------------------------------------------------------

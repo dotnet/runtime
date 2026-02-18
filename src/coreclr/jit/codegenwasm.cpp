@@ -1629,14 +1629,22 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
+// Arguments:
+//    call - the GT_CALL node
+//
 void CodeGen::genCall(GenTreeCall* call)
 {
+    assert(!call->IsTailCall());
+
+    regNumber thisReg = REG_NA;
+
     if (call->NeedsNullCheck())
     {
-        NYI_WASM("Insert nullchecks for calls that need it in lowering");
+        CallArg* thisArg  = call->gtArgs.GetThisArg();
+        GenTree* thisNode = thisArg->GetNode();
+        thisReg           = GetMultiUseOperandReg(thisNode);
+        assert(thisReg != REG_NA);
     }
-
-    assert(!call->IsTailCall());
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
@@ -1646,6 +1654,14 @@ void CodeGen::genCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         genConsumeReg(arg.GetLateNode());
+    }
+
+    if (call->NeedsNullCheck())
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(thisReg));
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
+        GetEmitter()->emitIns(INS_I_le_u);
+        genJumpToThrowHlpBlk(SCK_NULL_CHECK);
     }
 
     genCallInstruction(call);
