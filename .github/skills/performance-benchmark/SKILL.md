@@ -134,12 +134,12 @@ NOTE: The @EgorBot command must not be inside the code block. Only the benchmark
 
 ### Target Flags
 
--linux_amd
--linux_intel
--windows_amd
--windows_intel
--linux_arm64
--osx_arm64 (baremetal, feel free to always include it)
+- `-linux_amd`
+- `-linux_intel`
+- `-windows_amd`
+- `-windows_intel`
+- `-linux_arm64`
+- `-osx_arm64` (baremetal, feel free to always include it)
 
 The most common combination is `-linux_amd -windows_intel -osx_arm64`. Do not include more than 4 targets.
 
