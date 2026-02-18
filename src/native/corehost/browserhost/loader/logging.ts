@@ -54,7 +54,7 @@ export function normalizeException(reason: any) {
     let stack: string | undefined;
     if (reason) {
         if (typeof reason === "object" && reason.status === undefined) {
-            if (stack !== undefined) {
+            if (reason.stack !== undefined) {
                 stack = reason.stack;
             } else {
                 stack = new Error().stack + "";
