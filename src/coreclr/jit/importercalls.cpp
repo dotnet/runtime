@@ -3385,6 +3385,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend)
     {
+        if (compIsForInlining())
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_ASYNC_SUSPEND);
+            return nullptr;
+        }
+
         GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;

@@ -228,7 +228,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\RandomizedStringEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\NonRandomizedStringEqualityComparer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\HashHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\HashHelpers.SerializationInfoTable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Hashtable.cs" />
@@ -1513,6 +1512,9 @@
     <Compile Include="$(CommonPath)System\Collections\Generic\BitHelper.cs">
       <Link>Common\System\Collections\Generic\BitHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs">
+      <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\IO\PathInternal.cs">
       <Link>Common\System\IO\PathInternal.cs</Link>
     </Compile>
@@ -1597,11 +1599,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipeMetadataGenerator.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventPipePayloadDecoder.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventListener.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSourceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingEventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingPollingCounter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ManifestBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Exceptions.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Exceptions.NativeSinks.Internal.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureNativeAot)' == 'true'" />

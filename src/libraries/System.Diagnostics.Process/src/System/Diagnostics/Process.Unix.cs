@@ -663,7 +663,7 @@ namespace System.Diagnostics
                 // find filename on PATH
                 else
                 {
-                    resolvedFilename = FindProgramInPath(filename);
+                    resolvedFilename = ProcessUtils.FindProgramInPath(filename);
                 }
             }
 
@@ -726,93 +726,7 @@ namespace System.Diagnostics
             }
 
             // Then check each directory listed in the PATH environment variables
-            return FindProgramInPath(filename);
-        }
-
-        /// <summary>
-        /// Gets the path to the program
-        /// </summary>
-        /// <param name="program"></param>
-        /// <returns></returns>
-        private static string? FindProgramInPath(string program)
-        {
-            string path;
-            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar != null)
-            {
-                var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
-                while (pathParser.MoveNext())
-                {
-                    string subPath = pathParser.ExtractCurrent();
-                    path = Path.Combine(subPath, program);
-                    if (IsExecutable(path))
-                    {
-                        return path;
-                    }
-                }
-            }
-            return null;
-        }
-
-        private static bool IsExecutable(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            // Check if the path is a directory.
-            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
-            {
-                return false;
-            }
-
-            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
-
-            // Avoid checking user/group when permission.
-            if (permissions == AllExecute)
-            {
-                return true;
-            }
-            else if (permissions == 0)
-            {
-                return false;
-            }
-
-            uint euid = Interop.Sys.GetEUid();
-
-            if (euid == 0)
-            {
-                return true; // We're root.
-            }
-
-            if (euid == fileinfo.Uid)
-            {
-                // We own the file.
-                return (permissions & UnixFileMode.UserExecute) != 0;
-            }
-
-            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
-            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
-
-            // Avoid group check when group and other have same permissions.
-            if (groupCanExecute == otherCanExecute)
-            {
-                return groupCanExecute;
-            }
-
-            if (Interop.Sys.IsMemberOfGroup(fileinfo.Gid))
-            {
-                return groupCanExecute;
-            }
-            else
-            {
-                return otherCanExecute;
-            }
+            return ProcessUtils.FindProgramInPath(filename);
         }
 
         private static long s_ticksPerSecond;

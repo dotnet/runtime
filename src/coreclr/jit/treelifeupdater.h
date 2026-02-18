@@ -13,6 +13,7 @@ class TreeLifeUpdater
 {
 public:
     TreeLifeUpdater(Compiler* compiler);
+    template <bool GeneralLclAddrHandling>
     void UpdateLife(GenTree* tree);
     bool UpdateLifeFieldVar(GenTreeLclVar* lclNode, unsigned multiRegIndex);
 

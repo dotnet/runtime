@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj" />
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
