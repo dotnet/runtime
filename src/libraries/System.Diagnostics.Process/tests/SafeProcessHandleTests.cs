@@ -17,6 +17,19 @@ namespace System.Diagnostics.Tests
         private static ProcessStartOptions CreateTenSecondSleep() => new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
 
         [Fact]
+        public static void Start_WithNoArguments_Succeeds()
+        {
+            ProcessStartOptions options = new("hostname");
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            ProcessExitStatus exitStatus = processHandle.WaitForExit();
+            Assert.Equal(0, exitStatus.ExitCode);
+            Assert.False(exitStatus.Canceled);
+            Assert.Null(exitStatus.Signal);
+        }
+
+        [Fact]
         public static void GetProcessId_ReturnsValidPid()
         {
             ProcessStartOptions info = new("cmd.exe") { Arguments = { "/c", "echo test" } };
