@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.Runtime
         public static bool StartsWith(string s1, string s2)
         {
             //return collation.IsPrefix(s1, s2);
-            return s1.Length >= s2.Length && s1.StartsWith(s2, StringComparison.Ordinal);
+            return s1.StartsWith(s2, StringComparison.Ordinal);
         }
 
         public static bool Contains(string s1, string s2)

@@ -1542,7 +1542,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
-                                            if (dnString.AsSpan(10, 1).Equals("0", StringComparison.OrdinalIgnoreCase))
+                                            if (dnString[10] == '0')
                                             {
                                                 // this server has the partition fully instantiated
                                                 ntdsaNames.Add(ntdsaName);
@@ -1677,7 +1677,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         {
                                             foundPartitionEntry = true;
 
-                                            if (dnString.AsSpan(10, 1).Equals("0", StringComparison.OrdinalIgnoreCase))
+                                            if (dnString[10] == '0')
                                             {
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)

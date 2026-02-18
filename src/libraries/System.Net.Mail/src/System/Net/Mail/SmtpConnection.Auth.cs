@@ -50,8 +50,7 @@ namespace System.Net.Mail
                     continue;
                 }
 
-                if (string.Compare(extension, 0, AuthExtension, 0,
-                    SizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
+                if (extension.StartsWith(AuthExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     // remove the AUTH text including the following character
                     // to ensure that split only gets the modules supported

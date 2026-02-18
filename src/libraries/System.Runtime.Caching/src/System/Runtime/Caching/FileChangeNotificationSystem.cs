@@ -45,10 +45,6 @@ namespace System.Runtime.Caching
                 {
                     return false;
                 }
-                if (s2.Length != s1.Length)
-                {
-                    return false;
-                }
                 return string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
             }
 

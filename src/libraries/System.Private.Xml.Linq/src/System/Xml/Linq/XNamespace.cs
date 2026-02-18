@@ -251,8 +251,8 @@ namespace System.Xml.Linq
                 if (!s_namespaces.TryGetValue(namespaceName, index, count, out refNamespace))
                 {
                     // If it is not there, first determine whether it's a special namespace
-                    if (count == xmlPrefixNamespace.Length && namespaceName.AsSpan(index, count).Equals(xmlPrefixNamespace, StringComparison.Ordinal)) return Xml;
-                    if (count == xmlnsPrefixNamespace.Length && namespaceName.AsSpan(index, count).Equals(xmlnsPrefixNamespace, StringComparison.Ordinal)) return Xmlns;
+                    if (namespaceName.AsSpan(index, count).Equals(xmlPrefixNamespace, StringComparison.Ordinal)) return Xml;
+                    if (namespaceName.AsSpan(index, count).Equals(xmlnsPrefixNamespace, StringComparison.Ordinal)) return Xmlns;
 
                     // Go ahead and create the namespace and add it to the table
                     refNamespace = s_namespaces.Add(new WeakReference<XNamespace>(new XNamespace(namespaceName.Substring(index, count))));

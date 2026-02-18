@@ -17,13 +17,13 @@ namespace System.Configuration
 
         internal static bool StartsWithOrdinal(string s1, string s2)
         {
-            if (s2 == null) return false;
+            if (s1 is null || s2 is null) return false;
             return s1.StartsWith(s2, StringComparison.Ordinal);
         }
 
         internal static bool StartsWithOrdinalIgnoreCase(string s1, string s2)
         {
-            if (s2 == null) return false;
+            if (s1 is null || s2 is null) return false;
             return s1.StartsWith(s2, StringComparison.OrdinalIgnoreCase);
         }
 
