@@ -510,9 +510,9 @@ inline BOOL PEDecoder::HasDirectoryEntry(int entry) const
     CONTRACTL_END;
 
 #ifdef TARGET_BROWSER
-    if (HasWebCILHeaders())
+    if (HasWebcilHeaders())
     {
-        const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
         if (entry == IMAGE_DIRECTORY_ENTRY_COMHEADER)
             return VAL32(pWC->pe_cli_header_rva) != 0;
         if (entry == IMAGE_DIRECTORY_ENTRY_DEBUG)
@@ -559,7 +559,7 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckHeaders());
-        PRECONDITION((HasWebCILHeaders() || CheckDirectoryEntry(entry, 0, NULL_OK)));
+        PRECONDITION((HasWebcilHeaders() || CheckDirectoryEntry(entry, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -570,9 +570,9 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
     CONTRACT_END;
 
 #ifdef TARGET_BROWSER
-    if (HasWebCILHeaders())
+    if (HasWebcilHeaders())
     {
-        const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
         RVA rva = 0;
         COUNT_T size = 0;
         if (entry == IMAGE_DIRECTORY_ENTRY_COMHEADER)
@@ -587,8 +587,8 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
         }
         else
         {
-            // WebCIL only supports COMHEADER and DEBUG directory entries.
-            _ASSERTE(!"Unsupported directory entry for WebCIL");
+            // Webcil only supports COMHEADER and DEBUG directory entries.
+            _ASSERTE(!"Unsupported directory entry for Webcil");
             if (pSize != NULL)
                 *pSize = 0;
             RETURN (TADDR)NULL;
@@ -596,7 +596,7 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
 
         // Validate that the {rva, size} range falls within a section's
         // backed data.  The normal PE path does this via CheckDirectoryEntry
-        // / CheckRva; for WebCIL we must check explicitly.
+        // / CheckRva; for Webcil we must check explicitly.
         if (rva == 0)
         {
             if (pSize != NULL)
@@ -648,7 +648,7 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckHeaders());
-        PRECONDITION((HasWebCILHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
+        PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -666,7 +666,7 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pS
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckHeaders());
-        PRECONDITION((HasWebCILHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
+        PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize));
         NOTHROW;
         GC_NOTRIGGER;
@@ -950,7 +950,7 @@ inline BOOL PEDecoder::IsNativeMachineFormat() const
 {
     if (!HasContents() || !HasHeaders() )
         return FALSE;
-    if (HasWebCILHeaders())
+    if (HasWebcilHeaders())
         return FALSE;
     _ASSERTE(m_pNTHeaders);
     WORD expectedFormat = HasCorHeader() && HasReadyToRunHeader() ?
@@ -964,7 +964,7 @@ inline BOOL PEDecoder::IsI386() const
 {
     if (!HasContents() || !HasHeaders() )
         return FALSE;
-    if (HasWebCILHeaders())
+    if (HasWebcilHeaders())
         return FALSE;
     _ASSERTE(m_pNTHeaders);
     //do not call GetNTHeaders as we do not want to bother with PE32->PE32+ conversion
@@ -996,9 +996,9 @@ inline COUNT_T PEDecoder::GetNumberOfSections() const
     CONTRACTL_END;
 
 #ifdef TARGET_BROWSER
-    if (HasWebCILHeaders())
+    if (HasWebcilHeaders())
     {
-        const WebCILHeader* pWC = (const WebCILHeader*)(TADDR)m_base;
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
         return VAL16(pWC->coff_sections);
     }
 #endif
@@ -1028,8 +1028,8 @@ inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection() const
     CONTRACT_END;
 
 #ifdef TARGET_BROWSER
-    if (HasWebCILHeaders())
-        RETURN dac_cast<PTR_IMAGE_SECTION_HEADER>(m_base + sizeof(WebCILHeader));
+    if (HasWebcilHeaders())
+        RETURN dac_cast<PTR_IMAGE_SECTION_HEADER>(m_base + sizeof(WebcilHeader));
 #endif
 
     RETURN FindFirstSection(FindNTHeaders());
@@ -1123,7 +1123,7 @@ inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)
     DWORD dwKind=0,dwMachine=0;
     if(HasContents() && HasHeaders())
     {
-        if (HasWebCILHeaders())
+        if (HasWebcilHeaders())
         {
             dwKind = peILonly;
             dwMachine = IMAGE_FILE_MACHINE_I386;

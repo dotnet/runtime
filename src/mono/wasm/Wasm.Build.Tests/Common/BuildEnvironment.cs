@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         public string                           WorkloadPacksDir              { get; init; }
         public string                           BuiltNuGetsPath               { get; init; }
 
-        public bool UseWebCIL { get; init; }
+        public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
                             $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
             }
 
-            UseWebCIL = EnvironmentVariables.UseWebCIL;
+            UseWebcil = EnvironmentVariables.UseWebcil;
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
@@ -127,7 +127,7 @@ namespace Wasm.Build.Tests
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
 
-            if (!UseWebCIL)
+            if (!UseWebcil)
             {
                 // Default is 'true'
                 EnvVars["WasmEnableWebcil"] = "false";

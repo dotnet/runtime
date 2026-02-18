@@ -8,7 +8,7 @@ import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
 import GitHash from "consts:gitHash";
 
 import { runMain, runMainAndExit, initializeCoreCLR } from "./host";
-import { registerPdbBytes, instantiateWebCILModule, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
+import { registerPdbBytes, instantiateWebcilModule, registerDllBytes, installVfsFile, loadIcuData, instantiateWasm, } from "./assets";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -30,7 +30,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         initializeCoreCLR,
         registerPdbBytes,
         instantiateWasm,
-        instantiateWebCILModule,
+        instantiateWebcilModule,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -45,7 +45,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.initializeCoreCLR,
             map.registerPdbBytes,
             map.instantiateWasm,
-            map.instantiateWebCILModule,
+            map.instantiateWebcilModule,
         ];
     }
 }

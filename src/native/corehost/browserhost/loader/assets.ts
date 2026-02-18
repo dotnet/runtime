@@ -100,11 +100,11 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         : browserVirtualAppBase + assetInternal.virtualPath;
     if (assetInternal.virtualPath.endsWith(".wasm")) {
         assetInternal.behavior = "webcil01";
-        const webCILPromise = loadResource(assetInternal);
+        const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
         const virtualPath = assetInternal.virtualPath.replace(/\.wasm$/, ".dll");
-        await dotnetBrowserHostExports.instantiateWebCILModule(webCILPromise, memory, virtualPath);
+        await dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, virtualPath);
         onDownloadedAsset();
     } else {
         assetInternal.behavior = "assembly";

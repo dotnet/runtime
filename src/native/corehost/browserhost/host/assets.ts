@@ -34,7 +34,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string) {
     }
 }
 
-export async function instantiateWebCILModule(webCILPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string): Promise<void> {
+export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string): Promise<void> {
 
     const imports: WebAssembly.Imports = {
         webcil: {
@@ -42,35 +42,35 @@ export async function instantiateWebCILModule(webCILPromise: Promise<Response>, 
         }
     };
 
-    const { instance } = await instantiateWasm(webCILPromise, imports, false);
+    const { instance } = await instantiateWasm(webcilPromise, imports, false);
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
     if (webcilVersion !== 0) {
-        throw new Error(`Unsupported WebCIL version: ${webcilVersion}`);
+        throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
     }
 
     const sp = _ems_.stackSave();
     try {
         const sizePtr = _ems_.stackAlloc(sizeOfPtr);
-        const getWebCILSize = instance.exports.getWebCILSize as (destPtr: number) => void;
-        getWebCILSize(sizePtr as any);
+        const getWebcilSize = instance.exports.getWebcilSize as (destPtr: number) => void;
+        getWebcilSize(sizePtr as any);
         const payloadSize = _ems_.HEAPU32[sizePtr as any >>> 2];
 
         if (payloadSize === 0) {
-            throw new Error("WebCIL payload size is 0");
+            throw new Error("Webcil payload size is 0");
         }
 
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
         if (_ems_._posix_memalign(ptrPtr as any, 16, payloadSize)) {
-            throw new Error("posix_memalign failed for WebCIL payload");
+            throw new Error("posix_memalign failed for Webcil payload");
         }
 
         const payloadPtr = _ems_.HEAPU32[ptrPtr as any >>> 2];
 
-        const getWebCILPayload = instance.exports.getWebCILPayload as (ptr: number, size: number) => void;
-        getWebCILPayload(payloadPtr, payloadSize);
+        const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
+        getWebcilPayload(payloadPtr, payloadSize);
 
         const name = virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
-        _ems_.dotnetLogger.debug(`Registered WebCIL assembly '${virtualPath}' (name: '${name}') at ${payloadPtr.toString(16)} length ${payloadSize}`);
+        _ems_.dotnetLogger.debug(`Registered Webcil assembly '${virtualPath}' (name: '${name}') at ${payloadPtr.toString(16)} length ${payloadSize}`);
         loadedAssemblies.set(virtualPath, { ptr: payloadPtr, length: payloadSize });
         loadedAssemblies.set(name, { ptr: payloadPtr, length: payloadSize });
     } finally {

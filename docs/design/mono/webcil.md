@@ -1,9 +1,9 @@
-# WebCIL assembly format
+# Webcil assembly format
 
 ## Version
 
-This is version 1.0 of the WebCIL payload format.
-This is version 0 of the WebAssembly module WebCIL wrapper.
+This is version 1.0 of the Webcil payload format.
+This is version 0 of the WebAssembly module Webcil wrapper.
 
 ## Motivation
 
@@ -12,14 +12,14 @@ customers that certain users are unable to use their apps because firewalls and 
 may prevent browsers from downloading or caching assemblies with a .DLL extension and PE contents.
 
 This document defines a new container format for ECMA-335 assemblies that uses the `.wasm` extension
-and uses a new WebCIL metadata payload format wrapped in a WebAssembly module.
+and uses a new Webcil metadata payload format wrapped in a WebAssembly module.
 
 
 ## Specification
 
-### WebCIL WebAssembly module
+### Webcil WebAssembly module
 
-WebCIL consists of a standard [binary WebAssembly version 0 module](https://webassembly.github.io/spec/core/binary/index.html) containing the following WAT module:
+Webcil consists of a standard [binary WebAssembly version 0 module](https://webassembly.github.io/spec/core/binary/index.html) containing the following WAT module:
 
 ``` wat
 (module
@@ -27,12 +27,12 @@ WebCIL consists of a standard [binary WebAssembly version 0 module](https://weba
   (data "webcil Payload\cc")  ;; data segment 1: webcil payload
   (memory (import "webcil" "memory") 1)
   (global (export "webcilVersion") i32 (i32.const 0))
-  (func (export "getWebCILSize") (param $destPtr i32) (result)
+  (func (export "getWebcilSize") (param $destPtr i32) (result)
     local.get $destPtr
     i32.const 0
     i32.const 4
     memory.init 0)
-  (func (export "getWebCILPayload") (param $d i32) (param $n i32) (result)
+  (func (export "getWebcilPayload") (param $d i32) (param $n i32) (result)
     local.get $d
     i32.const 0
     local.get $n
@@ -41,12 +41,12 @@ WebCIL consists of a standard [binary WebAssembly version 0 module](https://weba
 
 That is, the module imports linear memory 0 and exports:
 * a global `i32` `webcilVersion` encoding the version of the WebAssembly wrapper (currently 0),
-* a function `getWebCILSize : i32 -> ()` that writes the size of the WebCIL payload to the specified
+* a function `getWebcilSize : i32 -> ()` that writes the size of the Webcil payload to the specified
   address in linear memory as a `u32` (that is: 4 LE bytes).
-* a function `getWebCILPayload : i32 i32 -> ()` that writes `$n` bytes of the content of the WebCIL
+* a function `getWebcilPayload : i32 i32 -> ()` that writes `$n` bytes of the content of the Webcil
   payload at the spcified address `$d` in linear memory.
 
-The WebCIL payload size and payload content are stored in the data section of the WebAssembly module
+The Webcil payload size and payload content are stored in the data section of the WebAssembly module
 as passive data segments 0 and 1, respectively.  The module must not contain additional data
 segments. The module must store the payload size in data segment 0, and the payload content in data
 segment 1.
@@ -58,24 +58,24 @@ data segment 1's content.
 (**Rationale**: With this wrapper it is possible to split the WebAssembly module into a *prefix*
 consisting of everything before the data section, the data section, and a *suffix* that consists of
 everything after the data section.  The prefix and suffix do not depend on the contents of the
-WebCIL payload and a tool that generates WebCIL files could simply emit the prefix and suffix from
-constant data.  The data section is the only variable content between different WebCIL-encoded .NET
+Webcil payload and a tool that generates Webcil files could simply emit the prefix and suffix from
+constant data.  The data section is the only variable content between different Webcil-encoded .NET
 assemblies)
 
 (**Rationale**: Encoding the payload in the data section in passive data segments with known indices
 allows a runtime that does not include a WebAssembly host or a runtime that does not wish to
 instantiate the WebAssembly module to extract the payload by traversing the WebAssembly module and
-locating the WebCIL payload in the data section at segment 1.)
+locating the Webcil payload in the data section at segment 1.)
 
 (**Rationale**: The alignment requirement is due to ECMA-335 metadata requiring certain portions of
 the physical layout to be 4-byte aligned, for example ECMA-335 Section II.25.4 and II.25.4.5.
-Aligning the WebCIL content within the wasm module allows tools that directly examine the wasm
-module without instantiating it to properly parse the ECMA-335 metadata in the WebCIL payload.)
+Aligning the Webcil content within the wasm module allows tools that directly examine the wasm
+module without instantiating it to properly parse the ECMA-335 metadata in the Webcil payload.)
 
 (**Note**: the wrapper may be versioned independently of the payload.)
 
 
-### WebCIL payload
+### Webcil payload
 
 The webcil payload contains the ECMA-335 metadata, IL and resources comprising a .NET assembly.
 
@@ -92,25 +92,25 @@ runtime file format" from ECMA-335 6th Edition.
 
 
 
-A WebCIL file follows a similar structure
+A Webcil file follows a similar structure
 
 
 | |
 |--------|
-| WebCIL Headers |
+| Webcil Headers |
 | CLI Header |
 | CLI Data |
 | |
 
-### WebCIL Headers
+### Webcil Headers
 
-The WebCIL headers consist of a WebCIL header followed by a sequence of section headers.
+The Webcil headers consist of a Webcil header followed by a sequence of section headers.
 (All multi-byte integers are in little endian format).
 
-#### WebCIL Header
+#### Webcil Header
 
 ``` c
-struct WebCILHeader {
+struct WebcilHeader {
   uint8_t id[4]; // 'W' 'b' 'I' 'L'
   // 4 bytes
   uint16_t version_major; // 1
@@ -130,7 +130,7 @@ struct WebCILHeader {
 };
 ```
 
-The WebCIL header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
+The Webcil header starts with the magic characters 'W' 'b' 'I' 'L' followed by the version in major
 minor format (must be 1 and 0).  Then a count of the section headers and two reserved bytes.
 
 The next pairs of integers are a subset of the PE Header data directory specifying the RVA and size
@@ -139,7 +139,7 @@ of the CLI header, as well as the directory entry for the PE debug directory.
 
 #### Section header table
 
-Immediately following the WebCIL header is a sequence (whose length is given by `coff_sections`
+Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
 above) of PE/COFF `IMAGE_SECTION_HEADER` structures (40 bytes each).  Each header contains the
 section name, virtual address and size, file offset and size, and other PE section attributes.
 Unused fields (such as `PointerToRelocations`, `NumberOfRelocations`, `PointerToLinenumbers`,
@@ -165,7 +165,7 @@ struct SectionHeader {
 };
 ```
 
-(**Note**: the `PointerToRawData` member is an offset from the beginning of the WebCIL payload, not from the beginning of the WebAssembly wrapper module.)
+(**Note**: the `PointerToRawData` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
 
 #### Sections
 
@@ -191,7 +191,7 @@ A goal is for the files not to be executable by .NET Framework.
 
 Unlike PE files, mixing native and managed code is not a goal.
 
-Lossless conversion from WebCIL back to PE is not intended to be supported.  The format is being
+Lossless conversion from Webcil back to PE is not intended to be supported.  The format is being
 documented in order to support diagnostic tooling and utilities such as decompilers, disassemblers,
 file identification utilities, dependency analyzers, etc.
 

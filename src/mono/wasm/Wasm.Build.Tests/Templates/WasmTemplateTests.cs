@@ -252,7 +252,7 @@ namespace Wasm.Build.Tests
 
             if (expectILStripping)
             {
-                if (!UseWebCIL)
+                if (!UseWebcil)
                 {
                     string compressedStrippedAssembly = Utils.GZipCompress(strippedAssembly);
                     FileInfo compressedStrippedAssembly_fi = new FileInfo(compressedStrippedAssembly);
@@ -265,7 +265,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                if (!UseWebCIL)
+                if (!UseWebcil)
                 {
                     // FIXME: The bundled file would be .wasm in case of webcil, so can't compare size
                     Assert.True(compressedOriginalAssembly_fi.Length == compressedBundledAssembly_fi.Length);

@@ -30,7 +30,7 @@ internal static class Utils
         Base64Safe
     };
 
-    public static string WebCILInWasmExtension = ".wasm";
+    public static string WebcilInWasmExtension = ".wasm";
 
     private static readonly object s_SyncObj = new object();
 

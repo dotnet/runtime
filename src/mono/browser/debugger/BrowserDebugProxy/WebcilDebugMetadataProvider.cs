@@ -7,15 +7,15 @@ using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using Microsoft.NET.WebAssembly.WebCIL;
+using Microsoft.NET.WebAssembly.Webcil;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
 public class WebcilDebugMetadataProvider : IDebugMetadataProvider
 {
-    private readonly WebCILReader _webcilReader;
+    private readonly WebcilReader _webcilReader;
 
-    public WebcilDebugMetadataProvider(WebCILReader webcilReader)
+    public WebcilDebugMetadataProvider(WebcilReader webcilReader)
     {
         _webcilReader = webcilReader;
     }

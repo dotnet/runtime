@@ -10,7 +10,7 @@ using WasmAppBuilder;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
-public class ConvertDllsToWebCIL : Task
+public class ConvertDllsToWebcil : Task
 {
     [Required]
     public ITaskItem[] Candidates { get; set; }
@@ -25,7 +25,7 @@ public class ConvertDllsToWebCIL : Task
     public bool IsEnabled { get; set; }
 
     [Output]
-    public ITaskItem[] WebCILCandidates { get; set; }
+    public ITaskItem[] WebcilCandidates { get; set; }
 
     protected readonly List<string> _fileWrites = new();
 
@@ -34,11 +34,11 @@ public class ConvertDllsToWebCIL : Task
 
     public override bool Execute()
     {
-        var webCILCandidates = new List<ITaskItem>();
+        var webcilCandidates = new List<ITaskItem>();
 
         if (!IsEnabled)
         {
-            WebCILCandidates = Candidates;
+            WebcilCandidates = Candidates;
             return true;
         }
 
@@ -56,14 +56,14 @@ public class ConvertDllsToWebCIL : Task
 
             if (extension != ".dll")
             {
-                webCILCandidates.Add(candidate);
+                webcilCandidates.Add(candidate);
                 continue;
             }
 
             try
             {
                 TaskItem webcilItem = ConvertDll(tmpDir, candidate);
-                webCILCandidates.Add(webcilItem);
+                webcilCandidates.Add(webcilItem);
             }
             catch (Exception ex)
             {
@@ -74,50 +74,50 @@ public class ConvertDllsToWebCIL : Task
 
         Directory.Delete(tmpDir, true);
 
-        WebCILCandidates = webCILCandidates.ToArray();
+        WebcilCandidates = webcilCandidates.ToArray();
         return true;
     }
 
     private TaskItem ConvertDll(string tmpDir, ITaskItem candidate)
     {
         var dllFilePath = candidate.ItemSpec;
-        var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebCILInWasmExtension;
+        var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
         string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
             ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
             : OutputPath;
 
-        string finalWebCIL = Path.Combine(candidatePath, webcilFileName);
+        string finalWebcil = Path.Combine(candidatePath, webcilFileName);
 
-        if (Utils.IsNewerThan(dllFilePath, finalWebCIL))
+        if (Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
-            var tmpWebCIL = Path.Combine(tmpDir, webcilFileName);
+            var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new LogAdapter(Log);
-            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebCILConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebCIL, logger: logAdapter);
-            webcilWriter.ConvertToWebCIL();
+            var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: dllFilePath, outputPath: tmpWebcil, logger: logAdapter);
+            webcilWriter.ConvertToWebcil();
 
             if (!Directory.Exists(candidatePath))
                 Directory.CreateDirectory(candidatePath);
 
-            if (Utils.MoveIfDifferent(tmpWebCIL, finalWebCIL))
-                Log.LogMessage(MessageImportance.Low, $"Generated {finalWebCIL} .");
+            if (Utils.MoveIfDifferent(tmpWebcil, finalWebcil))
+                Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
             else
-                Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebCIL} as the contents are unchanged.");
+                Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
         }
         else
         {
-            Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebCIL}");
+            Log.LogMessage(MessageImportance.Low, $"Skipping {dllFilePath} as it is older than the output file {finalWebcil}");
         }
 
-        _fileWrites.Add(finalWebCIL);
+        _fileWrites.Add(finalWebcil);
 
-        var webcilItem = new TaskItem(finalWebCIL, candidate.CloneCustomMetadata());
-        webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebCILInWasmExtension));
-        webcilItem.SetMetadata("OriginalItemSpec", finalWebCIL);
+        var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
+        webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));
+        webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
 
         if (webcilItem.GetMetadata("AssetTraitName") == "Culture")
         {
             string relatedAsset = webcilItem.GetMetadata("RelatedAsset");
-            relatedAsset = Path.ChangeExtension(relatedAsset, Utils.WebCILInWasmExtension);
+            relatedAsset = Path.ChangeExtension(relatedAsset, Utils.WebcilInWasmExtension);
             webcilItem.SetMetadata("RelatedAsset", relatedAsset);
             Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
         }

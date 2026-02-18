@@ -25,7 +25,7 @@ using Microsoft.SymbolStore;
 using Microsoft.SymbolStore.SymbolStores;
 using Microsoft.FileFormats.PE;
 using Microsoft.Extensions.Primitives;
-using Microsoft.NET.WebAssembly.WebCIL;
+using Microsoft.NET.WebAssembly.Webcil;
 using System.Net.Security;
 using Microsoft.FileFormats.PDB;
 
@@ -868,7 +868,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
         //The caller must keep the PEReader alive and undisposed throughout the lifetime of the metadata reader
-        private IDisposable peReaderOrWebCILReader;
+        private IDisposable peReaderOrWebcilReader;
         internal MetadataReader asmMetadataReader { get; set; }
         internal MetadataReader pdbMetadataReader { get; set; }
 
@@ -894,7 +894,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    // First try to read it as a PE file, otherwise try it as a WebCIL file
+                    // First try to read it as a PE file, otherwise try it as a Webcil file
                     var peReader = new PEReader(asmStream);
                     if (!peReader.HasMetadata)
                         throw new BadImageFormatException();
@@ -904,8 +904,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     // This is a WebAssembly file
                     asmStream.Seek(0, SeekOrigin.Begin);
-                    var webcilReader = new WebCILReader(asmStream);
-                    FromWebCILReader(monoProxy, sessionId, webcilReader, assemblyAndPdbData.PdbBytes, logger, token);
+                    var webcilReader = new WebcilReader(asmStream);
+                    FromWebcilReader(monoProxy, sessionId, webcilReader, assemblyAndPdbData.PdbBytes, logger, token);
                 }
             }
         }
@@ -971,7 +971,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             LoadAssemblyInfo(peReader, name, asmMetadataReader, summary, logger);
         }
 
-        private void FromWebCILReader(MonoProxy monoProxy, SessionId sessionId, WebCILReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
+        private void FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new WebcilDebugMetadataProvider(wcReader);
             var asmMetadataReader = wcReader.GetMetadataReader();
@@ -990,7 +990,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private unsafe void LoadAssemblyInfo(IDisposable owningReader, string name, MetadataReader asmMetadataReader, MetadataDebugSummary summary, ILogger logger)
         {
-            peReaderOrWebCILReader = owningReader;
+            peReaderOrWebcilReader = owningReader;
             var codeViewData = summary.CodeViewData;
             if (codeViewData != null)
             {

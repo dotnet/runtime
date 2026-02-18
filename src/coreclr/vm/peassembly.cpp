@@ -84,8 +84,8 @@ void PEAssembly::EnsureLoaded()
     ValidatePEFileMachineType(this);
 
 #if !defined(TARGET_64BIT)
-    // WebCIL images don't have NT headers (HasNTHeaders() returns FALSE),
-    // so this guard correctly skips the check for WebCIL on 32-bit platforms.
+    // Webcil images don't have NT headers (HasNTHeaders() returns FALSE),
+    // so this guard correctly skips the check for Webcil on 32-bit platforms.
     if (GetPEImage()->HasNTHeaders() && !GetPEImage()->Has32BitNTHeaders())
     {
         // Tried to load 64-bit assembly on 32-bit platform.

@@ -15,7 +15,7 @@
 
 #pragma pack(push, 1)
 
-struct WebCILHeader {
+struct WebcilHeader {
     uint8_t  id[4];
     uint16_t version_major;
     uint16_t version_minor;
@@ -29,7 +29,7 @@ struct WebCILHeader {
 
 #pragma pack(pop)
 
-static_assert(sizeof(WebCILHeader) == 28, "WebCILHeader must be 28 bytes");
-// Section headers following WebCILHeader are standard IMAGE_SECTION_HEADER (40 bytes each).
+static_assert(sizeof(WebcilHeader) == 28, "WebcilHeader must be 28 bytes");
+// Section headers following WebcilHeader are standard IMAGE_SECTION_HEADER (40 bytes each).
 
 #endif // WEBCIL_H_

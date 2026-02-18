@@ -10,10 +10,10 @@ using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-namespace Microsoft.NET.WebAssembly.WebCIL;
+namespace Microsoft.NET.WebAssembly.Webcil;
 
 
-public sealed partial class WebCILReader
+public sealed partial class WebcilReader
 {
 
     // Helpers to call into System.Reflection.Metadata internals

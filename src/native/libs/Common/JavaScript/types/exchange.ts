@@ -6,7 +6,7 @@ import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, ab
 import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
 
 import type { initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
-import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebCILModule } from "../../../../corehost/browserhost/host/assets";
+import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../../../../corehost/browserhost/host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
@@ -100,7 +100,7 @@ export type BrowserHostExports = {
     initializeCoreCLR: typeof initializeCoreCLR
     registerPdbBytes: typeof registerPdbBytes
     instantiateWasm: typeof instantiateWasm
-    instantiateWebCILModule: typeof instantiateWebCILModule
+    instantiateWebcilModule: typeof instantiateWebcilModule
 }
 
 export type BrowserHostExportsTable = [
@@ -110,7 +110,7 @@ export type BrowserHostExportsTable = [
     typeof initializeCoreCLR,
     typeof registerPdbBytes,
     typeof instantiateWasm,
-    typeof instantiateWebCILModule,
+    typeof instantiateWebcilModule,
 ]
 
 export type InteropJavaScriptExports = {

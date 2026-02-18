@@ -172,11 +172,11 @@ class PEDecoder
     CHECK CheckNTHeaders() const;
 
 #ifdef TARGET_BROWSER
-    BOOL HasWebCILHeaders() const;
-    CHECK CheckWebCILHeaders() const;
-    inline BOOL HasHeaders() const { return HasWebCILHeaders() || HasNTHeaders(); }
+    BOOL HasWebcilHeaders() const;
+    CHECK CheckWebcilHeaders() const;
+    inline BOOL HasHeaders() const { return HasWebcilHeaders() || HasNTHeaders(); }
 #else
-    inline BOOL HasWebCILHeaders() const { return FALSE; }
+    inline BOOL HasWebcilHeaders() const { return FALSE; }
     inline BOOL HasHeaders() const { return HasNTHeaders(); }
 #endif
 

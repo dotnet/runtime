@@ -5,13 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Microsoft.NET.WebAssembly.WebCIL;
+namespace Microsoft.NET.WebAssembly.Webcil;
 
 /// <summary>
-/// WebCIL v1.0 section header — binary-compatible with IMAGE_SECTION_HEADER (40 bytes).
+/// Webcil v1.0 section header — binary-compatible with IMAGE_SECTION_HEADER (40 bytes).
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct WebCILSectionHeader
+public unsafe struct WebcilSectionHeader
 {
     public fixed byte Name[8];
     public int VirtualSize;
@@ -24,7 +24,7 @@ public unsafe struct WebCILSectionHeader
     public ushort NumberOfLinenumbers;
     public int Characteristics;
 
-    public WebCILSectionHeader(string name, int virtualSize, int virtualAddress, int sizeOfRawData, int pointerToRawData)
+    public WebcilSectionHeader(string name, int virtualSize, int virtualAddress, int sizeOfRawData, int pointerToRawData)
     {
         this = default;
         VirtualSize = virtualSize;

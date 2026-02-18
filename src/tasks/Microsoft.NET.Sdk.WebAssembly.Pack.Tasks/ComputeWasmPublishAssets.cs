@@ -60,7 +60,7 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EmitSymbolMap { get; set; }
 
-    public bool IsWebCILEnabled { get; set; }
+    public bool IsWebcilEnabled { get; set; }
 
     public bool FingerprintAssets { get; set; }
 
@@ -454,7 +454,7 @@ public class ComputeWasmPublishAssets : Task
             var asset = kvp.Value;
             var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(asset));
             var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
-            if (IsWebCILEnabled)
+            if (IsWebcilEnabled)
                 fileName = Path.ChangeExtension(fileName, ".dll");
 
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
@@ -484,7 +484,7 @@ public class ComputeWasmPublishAssets : Task
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
                 var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(satelliteAssembly));
-                if (IsWebCILEnabled)
+                if (IsWebcilEnabled)
                     fileName = Path.ChangeExtension(fileName, ".dll");
 
                 if (satelliteAssemblies.TryGetValue((culture, fileName), out var existing))
@@ -700,7 +700,7 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, Utils.WebCILInWasmExtension, StringComparison.Ordinal))
+            if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
                 var inferredCulture = candidate.GetMetadata("DestinationSubDirectory").Replace("\\", "/").Trim('/');

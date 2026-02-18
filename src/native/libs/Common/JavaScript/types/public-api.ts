@@ -407,7 +407,7 @@ export type AssetBehaviors = SingleAssetBehaviors |
      */
     | "js-module-library-initializer"
     /**
-     * Managed assembly packaged as WebCIL v 1.0
+     * Managed assembly packaged as Webcil v 1.0
      */
     | "webcil01"
     ;

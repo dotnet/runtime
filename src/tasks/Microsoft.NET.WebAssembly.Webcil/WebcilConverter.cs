@@ -8,12 +8,12 @@ using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.NET.WebAssembly.WebCIL;
+namespace Microsoft.NET.WebAssembly.Webcil;
 
 /// <summary>
 /// Reads a .NET assembly in a normal PE COFF file and writes it out as a Webcil file
 /// </summary>
-public class WebCILConverter
+public class WebcilConverter
 {
 
     // Interesting stuff we've learned about the input PE file
@@ -29,9 +29,9 @@ public class WebCILConverter
     // Intersting stuff we know about the webcil file we're writing
     public record WCFileInfo(
         // The header of the webcil file
-        WebCILHeader Header,
+        WebcilHeader Header,
         // The section directory of the webcil file
-        ImmutableArray<WebCILSectionHeader> SectionHeaders,
+        ImmutableArray<WebcilSectionHeader> SectionHeaders,
         // The file offset of the sections, following the section directory
         FilePosition SectionStart
     );
@@ -50,16 +50,16 @@ public class WebCILConverter
 
     public bool WrapInWebAssembly { get; set; } = true;
 
-    private WebCILConverter(string inputPath, string outputPath)
+    private WebcilConverter(string inputPath, string outputPath)
     {
         _inputPath = inputPath;
         _outputPath = outputPath;
     }
 
-    public static WebCILConverter FromPortableExecutable(string inputPath, string outputPath)
-        => new WebCILConverter(inputPath, outputPath);
+    public static WebcilConverter FromPortableExecutable(string inputPath, string outputPath)
+        => new WebcilConverter(inputPath, outputPath);
 
-    public void ConvertToWebCIL()
+    public void ConvertToWebcil()
     {
         using var inputStream = File.Open(_inputPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         PEFileInfo peInfo;
@@ -82,9 +82,9 @@ public class WebCILConverter
             using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
             memoryStream.Flush();
-            var wrapper = new WebCILWasmWrapper(memoryStream);
+            var wrapper = new WebcilWasmWrapper(memoryStream);
             memoryStream.Seek(0, SeekOrigin.Begin);
-            wrapper.WriteWasmWrappedWebCIL(outputStream);
+            wrapper.WriteWasmWrappedWebcil(outputStream);
         }
     }
 
@@ -115,7 +115,7 @@ public class WebCILConverter
 
     private static unsafe int SizeOfHeader()
     {
-        return sizeof(WebCILHeader);
+        return sizeof(WebcilHeader);
     }
 
     public unsafe void GatherInfo(PEReader peReader, out WCFileInfo wcInfo, out PEFileInfo peInfo)
@@ -124,7 +124,7 @@ public class WebCILConverter
         var peHeader = headers.PEHeader!;
         var coffHeader = headers.CoffHeader!;
         var sections = headers.SectionHeaders;
-        WebCILHeader header;
+        WebcilHeader header;
         header.id[0] = (byte)'W';
         header.id[1] = (byte)'b';
         header.id[2] = (byte)'I';
@@ -142,16 +142,16 @@ public class WebCILConverter
         FilePosition pos = SizeOfHeader();
         // position of the current section in the output file
         // initially it's after all the section headers
-        FilePosition curSectionPos = pos + sizeof(WebCILSectionHeader) * coffHeader.NumberOfSections;
+        FilePosition curSectionPos = pos + sizeof(WebcilSectionHeader) * coffHeader.NumberOfSections;
         // Align section data so that RVA static fields maintain their natural alignment.
         curSectionPos += (SectionAlignment - (curSectionPos.Position % SectionAlignment)) % SectionAlignment;
         // The first WC section is immediately after the section directory (plus alignment padding)
         FilePosition firstWCSection = curSectionPos;
 
-        ImmutableArray<WebCILSectionHeader>.Builder headerBuilder = ImmutableArray.CreateBuilder<WebCILSectionHeader>(coffHeader.NumberOfSections);
+        ImmutableArray<WebcilSectionHeader>.Builder headerBuilder = ImmutableArray.CreateBuilder<WebcilSectionHeader>(coffHeader.NumberOfSections);
         foreach (var sectionHeader in sections)
         {
-            var newHeader = new WebCILSectionHeader
+            var newHeader = new WebcilSectionHeader
             (
                 name: sectionHeader.Name,
                 virtualSize: sectionHeader.VirtualSize,
@@ -160,7 +160,7 @@ public class WebCILConverter
                 pointerToRawData: curSectionPos.Position
             );
 
-            pos += sizeof(WebCILSectionHeader);
+            pos += sizeof(WebcilSectionHeader);
             curSectionPos += sectionHeader.SizeOfRawData;
             // Align next section so that RVA static fields maintain their natural alignment.
             curSectionPos += (SectionAlignment - (curSectionPos.Position % SectionAlignment)) % SectionAlignment;
@@ -178,7 +178,7 @@ public class WebCILConverter
                                 SectionStart: firstWCSection);
     }
 
-    private static void WriteHeader(Stream s, WebCILHeader webcilHeader)
+    private static void WriteHeader(Stream s, WebcilHeader webcilHeader)
     {
         if (!BitConverter.IsLittleEndian)
         {
@@ -193,7 +193,7 @@ public class WebCILConverter
         WriteStructure(s, webcilHeader);
     }
 
-    private static void WriteSectionHeaders(Stream s, ImmutableArray<WebCILSectionHeader> sectionsHeaders)
+    private static void WriteSectionHeaders(Stream s, ImmutableArray<WebcilSectionHeader> sectionsHeaders)
     {
         foreach (var sectionHeader in sectionsHeaders)
         {
@@ -201,7 +201,7 @@ public class WebCILConverter
         }
     }
 
-    private static void WriteSectionHeader(Stream s, WebCILSectionHeader sectionHeader)
+    private static void WriteSectionHeader(Stream s, WebcilSectionHeader sectionHeader)
     {
         if (!BitConverter.IsLittleEndian)
         {
@@ -286,7 +286,7 @@ public class WebCILConverter
     }
 #endif
 
-    private static FilePosition GetPositionOfRelativeVirtualAddress(ImmutableArray<WebCILSectionHeader> wcSections, uint relativeVirtualAddress)
+    private static FilePosition GetPositionOfRelativeVirtualAddress(ImmutableArray<WebcilSectionHeader> wcSections, uint relativeVirtualAddress)
     {
         foreach (var section in wcSections)
         {
@@ -312,9 +312,9 @@ public class WebCILConverter
 
     // Make a new set of debug directory entries whose DataPointer fields
     // are correct for the webcil layout.  DataPointer is a file offset, and
-    // the mapping from RVA→file-offset differs between PE and WebCIL because
+    // the mapping from RVA→file-offset differs between PE and Webcil because
     // inter-section alignment padding may differ (PE uses FileAlignment, e.g.
-    // 512 bytes; WebCIL uses SectionAlignment, e.g. 16 bytes).  We therefore
+    // 512 bytes; Webcil uses SectionAlignment, e.g. 16 bytes).  We therefore
     // derive each entry's new DataPointer from its DataRelativeVirtualAddress
     // (which is the same in both formats) rather than applying a single constant
     // offset that is only correct when all per-section padding happens to match.
@@ -332,7 +332,7 @@ public class WebCILConverter
             }
             else
             {
-                // Map the entry's RVA to the corresponding file offset in the WebCIL layout.
+                // Map the entry's RVA to the corresponding file offset in the Webcil layout.
                 int newDataPointer = GetPositionOfRelativeVirtualAddress(
                     wcInfo.SectionHeaders, (uint)entry.DataRelativeVirtualAddress).Position;
                 newEntry = new DebugDirectoryEntry(entry.Stamp, entry.MajorVersion, entry.MinorVersion, entry.Type, entry.DataSize, entry.DataRelativeVirtualAddress, newDataPointer);
