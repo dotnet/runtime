@@ -178,5 +178,6 @@ internal sealed class ClrMdDumpHost : IDisposable
     public void Dispose()
     {
         _dataTarget?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

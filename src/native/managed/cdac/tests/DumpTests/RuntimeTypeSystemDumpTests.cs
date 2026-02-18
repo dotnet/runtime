@@ -47,7 +47,7 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, objectMT);
 
         TypeHandle handle = rts.GetTypeHandle(objectMT);
-        Assert.True(rts.IsFreeObjectMethodTable(handle) == false);
+        Assert.False(rts.IsFreeObjectMethodTable(handle));
     }
 
     [Fact]

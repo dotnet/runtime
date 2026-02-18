@@ -107,7 +107,7 @@ if ($Force -and $Action -in @("dumps", "all")) {
 $localTfm = $null
 function Get-LocalTfm {
     if ($null -eq $script:localTfm) {
-        $script:localTfm = & $dotnet msbuild $dumpTestsProj /nologo /t:PrintNothing /v:m "/getProperty:NetCoreAppCurrent" 2>$null
+        $script:localTfm = & $dotnet msbuild $dumpTestsProj /nologo /v:m "/getProperty:NetCoreAppCurrent" 2>$null
         if ([string]::IsNullOrWhiteSpace($script:localTfm)) { $script:localTfm = "net11.0" }
     }
     return $script:localTfm

@@ -3,7 +3,7 @@
     DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
     and makes dump paths available to the test project.
 
-    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DebugeeName}/{DebugeeName}.dmp
+    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
 
     Each Debuggee × RuntimeVersion combination produces one dump.
 
