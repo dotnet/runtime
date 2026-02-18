@@ -435,10 +435,8 @@ namespace ILCompiler.ObjectWriter
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
-                bool recordSize = isMethod;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 #else
-                bool recordSize = true;
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
@@ -462,7 +460,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
-                        n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 ? nodeContents.Data.Length : 0);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
@@ -473,7 +471,7 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
-                            n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
+                            n.Offset == 0 ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 
                         if (n is IMethodNode)
