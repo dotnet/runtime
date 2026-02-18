@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -27,10 +26,9 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </remarks>
 public abstract class DumpTestBase : IAsyncLifetime, IDisposable
 {
-    private static readonly ConcurrentDictionary<string, string?> s_targetOSCache = new();
-
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
+    private string? _targetOS;
 
     /// <summary>
     /// The name of the debuggee that produced the dump (e.g., "BasicThreads").
@@ -48,7 +46,14 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
     protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
 
     /// <summary>
+    /// The target operating system of the dump, resolved from the RuntimeInfo contract.
+    /// May be <c>null</c> if the contract is unavailable.
+    /// </summary>
+    protected string TargetOS => _targetOS ?? string.Empty;
+
+    /// <summary>
     /// Loads the dump and creates the cDAC Target before each test.
+    /// Also resolves the target OS from the RuntimeInfo contract.
     /// </summary>
     public Task InitializeAsync()
     {
@@ -69,6 +74,15 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
 
+        try
+        {
+            _targetOS = _target!.Contracts.RuntimeInfo.GetTargetOperatingSystem().ToString();
+        }
+        catch
+        {
+            _targetOS = null;
+        }
+
         return Task.CompletedTask;
     }
 
@@ -86,14 +100,12 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
 
     /// <summary>
     /// Skips the current test if the dump's target OS matches <paramref name="operatingSystem"/>.
-    /// Uses the cDAC RuntimeInfo contract. Results are cached per dump path.
     /// Must be used with <c>[ConditionalFact]</c> for xunit to report the test as skipped.
     /// </summary>
     protected void SkipIfTargetOS(string operatingSystem, string reason)
     {
-        string? targetOS = ResolveTargetOS();
-        if (targetOS is not null && string.Equals(targetOS, operatingSystem, StringComparison.OrdinalIgnoreCase))
-            throw new SkipTestException($"[TargetOS={targetOS}] {reason}");
+        if (string.Equals(TargetOS, operatingSystem, StringComparison.OrdinalIgnoreCase))
+            throw new SkipTestException($"[TargetOS={TargetOS}] {reason}");
     }
 
     private string GetDumpPath()
@@ -109,39 +121,6 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
         }
 
         return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
-    }
-
-    private string? ResolveTargetOS()
-    {
-        string dumpPath = GetDumpPath();
-        return s_targetOSCache.GetOrAdd(dumpPath, static path =>
-        {
-            if (!File.Exists(path))
-                return null;
-
-            using ClrMdDumpHost host = ClrMdDumpHost.Open(path);
-            ulong descriptor = host.FindContractDescriptorAddress();
-
-            if (!ContractDescriptorTarget.TryCreate(
-                    descriptor,
-                    host.ReadFromTarget,
-                    writeToTarget: null!,
-                    host.GetThreadContext,
-                    additionalFactories: [],
-                    out ContractDescriptorTarget? target))
-            {
-                return null;
-            }
-
-            try
-            {
-                return target.Contracts.RuntimeInfo.GetTargetOperatingSystem().ToString();
-            }
-            catch
-            {
-                return null;
-            }
-        });
     }
 
     private static string? FindRepoRoot()
