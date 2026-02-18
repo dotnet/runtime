@@ -138,6 +138,8 @@ namespace System.Diagnostics
 
         internal bool HasInheritedHandlesBeenAccessed => _inheritedHandles is not null;
 
+        internal bool HasArgumentsBeenAccessed => _arguments is not null;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ProcessStartOptions"/> class.
         /// </summary>

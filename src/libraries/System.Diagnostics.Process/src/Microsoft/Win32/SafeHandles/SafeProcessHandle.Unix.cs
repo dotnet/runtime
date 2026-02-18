@@ -32,11 +32,6 @@ namespace Microsoft.Win32.SafeHandles
             handle.DangerousAddRef(ref _releaseRef);
         }
 
-        /// <summary>
-        /// Gets the process ID.
-        /// </summary>
-        public int ProcessId { get; private set; }
-
         protected override bool ReleaseHandle()
         {
             if (_releaseRef)

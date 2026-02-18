@@ -20,6 +20,11 @@ namespace Microsoft.Win32.SafeHandles
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
         /// <summary>
+        /// Gets the process ID.
+        /// </summary>
+        public int ProcessId { get; private set; }
+
+        /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeProcessHandle" />.
         /// </summary>
         public SafeProcessHandle()
@@ -232,10 +237,14 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
-        /// Resumes a suspended process.
+        /// Resumes a process that was created via <see cref="StartSuspended"/>.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the process was not started in a suspended state, or has already been resumed.</exception>
         /// <exception cref="Win32Exception">Thrown when the resume operation fails.</exception>
+        /// <remarks>
+        /// This method can only be called once. After the process has been resumed, calling this method again will throw an <see cref="InvalidOperationException"/>.
+        /// This is not a general purpose process resume (like <c>NtResumeProcess</c>). It can only resume processes created via <see cref="StartSuspended"/>.
+        /// </remarks>
         public void Resume()
         {
             Validate();

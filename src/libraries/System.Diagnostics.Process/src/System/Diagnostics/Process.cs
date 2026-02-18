@@ -24,7 +24,6 @@ namespace System.Diagnostics
     [Designer("System.Diagnostics.Design.ProcessDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class Process : Component
     {
-        internal static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
         private bool _haveProcessId;
         private int _processId;

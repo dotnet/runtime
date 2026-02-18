@@ -500,7 +500,7 @@ namespace System.Diagnostics
 
             // Lock to avoid races with OnSigChild
             // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-            s_processStartLock.EnterReadLock();
+            ProcessUtils.s_processStartLock.EnterReadLock();
             try
             {
                 if (usesTerminal)
@@ -547,14 +547,14 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitReadLock();
+                ProcessUtils.s_processStartLock.ExitReadLock();
 
                 if (_waitStateHolder == null && usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
-                    s_processStartLock.EnterWriteLock();
+                    ProcessUtils.s_processStartLock.EnterWriteLock();
                     ConfigureTerminalForChildProcesses(-1);
-                    s_processStartLock.ExitWriteLock();
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
                 }
             }
         }
@@ -1016,7 +1016,7 @@ namespace System.Diagnostics
             // DelayedSigChildConsoleConfiguration will be called.
 
             // Lock to avoid races with Process.Start
-            s_processStartLock.EnterWriteLock();
+            ProcessUtils.s_processStartLock.EnterWriteLock();
             try
             {
                 bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
@@ -1028,7 +1028,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                s_processStartLock.ExitWriteLock();
+                ProcessUtils.s_processStartLock.ExitWriteLock();
             }
         }
 

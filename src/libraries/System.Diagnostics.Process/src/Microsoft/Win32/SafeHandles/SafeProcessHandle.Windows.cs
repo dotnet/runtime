@@ -30,11 +30,6 @@ namespace Microsoft.Win32.SafeHandles
         // This is specific to each process and is used to terminate the entire process group
         private IntPtr _processGroupJobHandle;
 
-        /// <summary>
-        /// Gets the process ID.
-        /// </summary>
-        public int ProcessId { get; private set; }
-
         private SafeProcessHandle(IntPtr processHandle, IntPtr threadHandle, IntPtr processGroupJobHandle, int processId)
             : base(ownsHandle: true)
         {
@@ -99,14 +94,14 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
         {
-            Process.s_processStartLock.EnterReadLock();
+            ProcessUtils.s_processStartLock.EnterReadLock();
             try
             {
                 return StartCoreSerialized(options, inputHandle, outputHandle, errorHandle, createSuspended);
             }
             finally
             {
-                Process.s_processStartLock.ExitReadLock();
+                ProcessUtils.s_processStartLock.ExitReadLock();
             }
         }
 
@@ -120,6 +115,11 @@ namespace Microsoft.Win32.SafeHandles
             IntPtr attributeListBuffer = IntPtr.Zero;
             Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST attributeList = default;
 
+            // In certain scenarios, the same handle may be passed for multiple stdio streams:
+            // - NUL file for all three
+            // - A single pipe/socket for both stdout and stderr (for combined output)
+            // - A single pipe/socket for stdin and stdout (for terminal emulation)
+            // - A single handle for all three streams
             using SafeFileHandle duplicatedInput = Duplicate(inputHandle, currentProcHandle);
             using SafeFileHandle duplicatedOutput = inputHandle.DangerousGetHandle() == outputHandle.DangerousGetHandle()
                 ? duplicatedInput
@@ -132,7 +132,7 @@ namespace Microsoft.Win32.SafeHandles
 
             int maxHandleCount = 3 + (options.HasInheritedHandlesBeenAccessed ? options.InheritedHandles.Count : 0);
 
-            IntPtr heapHandlesPtr = Marshal.AllocHGlobal(maxHandleCount * sizeof(IntPtr));
+            IntPtr heapHandlesPtr = (IntPtr)NativeMemory.Alloc((nuint)maxHandleCount, (nuint)sizeof(IntPtr));
             IntPtr* handlesToInherit = (IntPtr*)heapHandlesPtr;
             IntPtr processGroupJobHandle = IntPtr.Zero;
 
@@ -148,6 +148,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (options.CreateNewProcessGroup)
                 {
+                    // This must happen before starting the process to ensure atomicity.
                     processGroupJobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
                     if (processGroupJobHandle == IntPtr.Zero)
                     {
@@ -163,7 +164,7 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
                 Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, attributeCount, 0, ref size);
 
-                attributeListBuffer = Marshal.AllocHGlobal(size);
+                attributeListBuffer = (IntPtr)NativeMemory.Alloc((nuint)size);
                 attributeList.AttributeList = attributeListBuffer;
 
                 if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, attributeCount, 0, ref size))
@@ -221,7 +222,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (options.HasEnvironmentBeenAccessed)
                 {
                     creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
-                    environmentBlock = Process.GetEnvironmentVariablesBlock(options.Environment);
+                    environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(options.Environment);
                 }
 
                 string? workingDirectory = options.WorkingDirectory;
@@ -231,7 +232,7 @@ namespace Microsoft.Win32.SafeHandles
                 ValueStringBuilder commandLine = new(stackalloc char[256]);
                 try
                 {
-                    ProcessUtils.BuildArgs(options, ref applicationName, ref commandLine);
+                    ProcessUtils.BuildArgs(options.FileName, options.HasArgumentsBeenAccessed ? options.Arguments : null, ref applicationName, ref commandLine);
 
                     fixed (char* environmentBlockPtr = environmentBlock)
                     fixed (char* applicationNamePtr = &applicationName.GetPinnableReference())
@@ -277,12 +278,12 @@ namespace Microsoft.Win32.SafeHandles
             }
             finally
             {
-                Marshal.FreeHGlobal(heapHandlesPtr);
+                NativeMemory.Free((void*)heapHandlesPtr);
 
                 if (attributeListBuffer != IntPtr.Zero)
                 {
                     Interop.Kernel32.DeleteProcThreadAttributeList(attributeList);
-                    Marshal.FreeHGlobal(attributeListBuffer);
+                    NativeMemory.Free((void*)attributeListBuffer);
                 }
 
                 if (procSH is null)
@@ -308,6 +309,10 @@ namespace Microsoft.Win32.SafeHandles
 
             static SafeFileHandle Duplicate(SafeFileHandle sourceHandle, nint currentProcHandle)
             {
+                // From https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute:
+                // PROC_THREAD_ATTRIBUTE_HANDLE_LIST: "These handles must be created as inheritable handles and must not include pseudo handles".
+                // To ensure the handles we pass are inheritable, they are duplicated here.
+
                 if (!Interop.Kernel32.DuplicateHandle(
                     currentProcHandle,
                     sourceHandle,
@@ -512,15 +517,23 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ResumeCore()
         {
-            if (_threadHandle == IntPtr.Zero)
+            IntPtr threadHandle = Interlocked.Exchange(ref _threadHandle, IntPtr.Zero);
+            if (threadHandle == IntPtr.Zero)
             {
                 throw new InvalidOperationException(SR.CannotResumeNonSuspendedProcess);
             }
 
-            int result = Interop.Kernel32.ResumeThread(_threadHandle);
-            if (result == -1)
+            try
             {
-                throw new Win32Exception();
+                int result = Interop.Kernel32.ResumeThread(threadHandle);
+                if (result == -1)
+                {
+                    throw new Win32Exception();
+                }
+            }
+            finally
+            {
+                Interop.Kernel32.CloseHandle(threadHandle);
             }
         }
 
