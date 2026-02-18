@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && GetKernelFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+        internal bool CanSeek => !IsClosed && GetFileType() == System.IO.FileType.RegularFile;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -251,25 +251,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return _fileOptions = result;
-        }
-
-        private int GetKernelFileType()
-        {
-            int cachedType = _cachedFileType;
-            if (cachedType != -1)
-            {
-                // Return the Kernel file type from cached FileType enum
-                System.IO.FileType fileType = (System.IO.FileType)cachedType;
-                return fileType switch
-                {
-                    System.IO.FileType.CharacterDevice => Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
-                    System.IO.FileType.Pipe or System.IO.FileType.Socket => Interop.Kernel32.FileTypes.FILE_TYPE_PIPE,
-                    System.IO.FileType.RegularFile or System.IO.FileType.Directory or System.IO.FileType.SymbolicLink => Interop.Kernel32.FileTypes.FILE_TYPE_DISK,
-                    _ => Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
-                };
-            }
-
-            return Interop.Kernel32.GetFileType(this);
         }
 
         internal unsafe System.IO.FileType GetFileTypeCore()
