@@ -286,6 +286,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForCall(node->AsCall());
             break;
 
+        case GT_CAST:
+            CollectReferencesForCast(node->AsOp());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -311,7 +315,7 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 //------------------------------------------------------------------------
 // CollectReferencesForCall: Collect virtual register references for a call.
 //
-// Consumes temporary registers for the div-by-zero and overflow checks.
+// Consumes temporary registers for a call.
 //
 // Arguments:
 //    callNode - The GT_CALL node
@@ -323,6 +327,22 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
         CallArg* thisArg  = callNode->gtArgs.GetThisArg();
         GenTree* thisNode = thisArg->GetNode();
         ConsumeTemporaryRegForOperand(thisNode DEBUGARG("null check for call"));
+    }
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForCast: Collect virtual register references for a cast.
+//
+// Consumes temporary registers for a cast.
+//
+// Arguments:
+//    castNode - The GT_CAST node
+//
+void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
+{
+    if (castNode->gtOverflow())
+    {
+        ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
     }
 }
 
@@ -401,6 +421,14 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     refs->Nodes[m_lastVirtualRegRefsCount++] = node;
 }
 
+//------------------------------------------------------------------------
+// RequestTemporaryRegisterForMultiplyUsedNode: request a temporary register for a node with multiple uses.
+//
+// To be later assigned a physical register.
+//
+// Arguments:
+//    node - A node possibly needing a temporary register
+//
 void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 {
     if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)

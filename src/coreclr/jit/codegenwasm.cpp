@@ -747,16 +747,20 @@ static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    if (cast->gtOverflow())
+    GenIntCastDesc desc(cast);
+
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
-        NYI_WASM("Overflow checks");
+        GenTree*  castValue = cast->gtGetOp1();
+        regNumber castReg   = GetMultiUseOperandReg(castValue);
+        assert(castReg != REG_NA);
+        genIntCastOverflowCheck(cast, desc, castReg);
     }
 
-    GenIntCastDesc desc(cast);
-    var_types      toType     = genActualType(cast->CastToType());
-    var_types      fromType   = genActualType(cast->CastOp());
-    int            extendSize = desc.ExtendSrcSize();
-    instruction    ins        = INS_none;
+    var_types   toType     = genActualType(cast->CastToType());
+    var_types   fromType   = genActualType(cast->CastOp());
+    int         extendSize = desc.ExtendSrcSize();
+    instruction ins        = INS_none;
     assert(fromType == TYP_INT || fromType == TYP_LONG);
 
     genConsumeOperands(cast);
@@ -817,6 +821,92 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         GetEmitter()->emitIns(ins);
     }
     WasmProduceReg(cast);
+}
+
+//------------------------------------------------------------------------
+// genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//    desc - The cast description
+//    reg  - The register containing the value to check
+//
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
+{
+    bool const     is64BitSrc  = (desc.CheckSrcSize() == 8);
+    emitAttr const srcSize     = is64BitSrc ? EA_8BYTE : EA_4BYTE;
+    bool const     srcUnsigned = cast->IsUnsigned();
+
+    GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+
+    switch (desc.CheckKind())
+    {
+
+        case GenIntCastDesc::CHECK_POSITIVE:
+        {
+            // INT to ULONG
+            assert(!is64BitSrc);
+            GetEmitter()->emitIns_I(INS_i32_const, srcSize, 0);
+            GetEmitter()->emitIns(INS_i32_lt_s);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_UINT_RANGE:
+        {
+            // (U)LONG to UINT
+            assert(is64BitSrc);
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, UINT32_MAX);
+            // We can re-interpret LONG as ULONG
+            // Then negative values will be larger than UINT32_MAX
+            GetEmitter()->emitIns(INS_i64_gt_u);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
+        {
+            // ULONG to INT
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MAX);
+            GetEmitter()->emitIns(INS_i64_gt_u);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_INT_RANGE:
+        {
+            // LONG to INT
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MAX);
+            GetEmitter()->emitIns(INS_i64_gt_s);
+            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MIN);
+            GetEmitter()->emitIns(INS_i64_lt_s);
+            GetEmitter()->emitIns(INS_i32_or);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_SMALL_INT_RANGE:
+        {
+            // (U)(INT|LONG) to Small INT
+            const int castMaxValue = desc.CheckSmallIntMax();
+            const int castMinValue = desc.CheckSmallIntMin();
+
+            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
+            GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_gt_u : INS_i64_gt_s)
+                                             : (srcUnsigned ? INS_i32_gt_u : INS_i32_gt_s));
+            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
+            GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_lt_u : INS_i64_lt_s)
+                                             : (srcUnsigned ? INS_i32_lt_u : INS_i32_lt_s));
+            GetEmitter()->emitIns(INS_i32_or);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------

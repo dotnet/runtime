@@ -221,6 +221,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperIs(GT_CAST));
+
+    if (tree->gtOverflow())
+    {
+        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
     ContainCheckCast(tree->AsCast());
 }
 
