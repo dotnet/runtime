@@ -145,7 +145,7 @@ The most common combination is `-linux_amd -windows_intel -osx_arm64`. Do not in
 
 ### Common Options
 
-Use `-profiler` when absolutely necessary along with `-linux_arm64` or/and `-linux_amd64` to include `perf` profiling and disassembly in the results.
+Use `-profiler` when absolutely necessary along with `-linux_arm64` or/and `-linux_amd` to include `perf` profiling and disassembly in the results.
 
 ### Example: Basic PR Benchmark
 
@@ -177,10 +177,10 @@ public class Bench
 - **Supported repositories**: EgorBot monitors `dotnet/runtime` and `EgorBot/runtime-utils`
 - **PR mode (default)**: When posting in a PR, EgorBot automatically compares the PR changes against the base branch
 - **Results variability**: Results may vary between runs due to VM differences. Do not compare results across different architectures or cloud providers
-- **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/egorbo/EgorBot?tab=readme-ov-file#github-usage) for advanced options
+- **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/EgorBo/EgorBot?tab=readme-ov-file#github-usage) for advanced options
 
 ## Additional Resources
 
 - [Microbenchmark Design Guidelines](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md) - Essential reading for writing effective benchmarks
 - [BenchmarkDotNet CLI Arguments](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/guides/console-args.md)
-- [EgorBot Manual](https://github.com/egorbo/EgorBot?tab=readme-ov-file#github-usage)
+- [EgorBot Manual](https://github.com/EgorBo/EgorBot?tab=readme-ov-file#github-usage)
