@@ -72,6 +72,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private static void EncodeTypeLayout(ObjectDataSignatureBuilder dataBuilder, TypeDesc type)
         {
+            Debug.Assert(type.IsValueType);
             MetadataType defType = (MetadataType)type;
 
             int pointerSize = type.Context.Target.PointerSize;

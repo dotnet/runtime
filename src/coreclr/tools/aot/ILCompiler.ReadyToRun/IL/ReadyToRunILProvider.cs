@@ -137,6 +137,7 @@ namespace Internal.IL
 
             if (method.IsAsync)
             {
+                Debug.Assert(NeedsTaskReturningThunk(method));
                 if (!wrappedMethodIL.Initialize(_manifestMutableModule, GetMethodILForAsyncMethod(method), (EcmaMethod)method, false))
                 {
                     // If we could not initialize the wrapped method IL, we should store a null.
@@ -147,6 +148,7 @@ namespace Internal.IL
             }
             else if (method.IsAsyncVariant())
             {
+                Debug.Assert(NeedsAsyncThunk(method));
                 if (!wrappedMethodIL.Initialize(_manifestMutableModule,
                     AsyncThunkILEmitter.EmitAsyncMethodThunk(method, method.GetTargetOfAsyncVariant()),
                     method,
@@ -204,6 +206,7 @@ namespace Internal.IL
 
         bool NeedsTaskReturningThunk(MethodDesc method)
         {
+            Debug.Assert(method.IsTypicalMethodDefinition);
             if (method is not EcmaMethod ecmaMethod)
                 return false;
 
@@ -221,6 +224,7 @@ namespace Internal.IL
 
         bool NeedsAsyncThunk(MethodDesc method)
         {
+            Debug.Assert(method.IsTypicalMethodDefinition);
             if (method is not AsyncMethodVariant)
                 return false;
             return !method.IsAsync;
@@ -269,7 +273,7 @@ namespace Internal.IL
                     return methodIL;
 
                 return NeedsAsyncThunk(amv) ?
-                    null // Async thunks not supported yet
+                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, amv.GetTargetOfAsyncVariant())
                     : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create((EcmaMethod)method.GetTargetOfAsyncVariant()));
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
@@ -324,7 +328,6 @@ namespace Internal.IL
 
             public bool Initialize(MutableModule mutableModule, MethodIL wrappedMethod, MethodDesc owningMethod, bool validateStandaloneMetadata)
             {
-                Debug.Assert(owningMethod.IsTypicalMethodDefinition);
                 HashSet<MethodDesc> methodsWhichCannotHaveAsyncVariants = null;
                 _methodsWithAsyncVariants = null;
 

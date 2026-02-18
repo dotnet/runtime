@@ -12,12 +12,6 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
-
-  <!-- Allow explicitly enabling runtime async for test projects via TestRuntimeAsync. -->
-  <PropertyGroup Condition="'$(TestRuntimeAsync)' == 'true'">
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <Features>$(Features);runtime-async=on</Features>
-  </PropertyGroup>
   <PropertyGroup>
     <RunScriptWindowsCmd Condition="'$(OS)' == 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
     <RunScriptWindowsCmd Condition="'$(OS)' != 'Windows_NT' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>

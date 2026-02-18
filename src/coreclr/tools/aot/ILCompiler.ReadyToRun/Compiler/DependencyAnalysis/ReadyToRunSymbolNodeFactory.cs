@@ -413,7 +413,7 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.MethodDictionary,
+                    ReadyToRunFixupKind.MethodDictionary, 
                     method,
                     isInstantiatingStub: true));
         }

@@ -62,6 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
                 }
+
                 if (_typeToRefTokens.TryGetValue(ecmaType, out token))
                 {
                     return token;
@@ -129,31 +130,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
-        {
-            if (token.TokenType == CorTokenType.mdtMethodSpec)
-            {
-                MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
-                DecodeMethodSpecificationSignatureToDiscoverUsedTypeTokens(methodSpec.Signature, token);
-                token = new ModuleToken(token.Module, methodSpec.Method);
-            }
-
-            if (token.TokenType == CorTokenType.mdtMemberRef)
-            {
-                MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
-                EntityHandle owningTypeHandle = memberRef.Parent;
-                TypeDesc owningType = (TypeDesc)token.Module.GetObject(owningTypeHandle, NotFoundBehavior.Throw);
-                AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
-                DecodeMethodSignatureToDiscoverUsedTypeTokens(memberRef.Signature, token);
-            }
-            if (token.TokenType == CorTokenType.mdtMethodDef)
-            {
-                MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)token.Handle);
-                TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
-                DecodeMethodSignatureToDiscoverUsedTypeTokens(methodDef.Signature, token);
-            }
-        }
-
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
         {
             if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
@@ -182,6 +158,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 return default(ModuleToken);
+            }
+        }
+
+        public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
+        {
+            if (token.TokenType == CorTokenType.mdtMethodSpec)
+            {
+                MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
+                DecodeMethodSpecificationSignatureToDiscoverUsedTypeTokens(methodSpec.Signature, token);
+                token = new ModuleToken(token.Module, methodSpec.Method);
+            }
+
+            if (token.TokenType == CorTokenType.mdtMemberRef)
+            {
+                MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
+                EntityHandle owningTypeHandle = memberRef.Parent;
+                TypeDesc owningType = (TypeDesc)token.Module.GetObject(owningTypeHandle, NotFoundBehavior.Throw);
+                AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
+                DecodeMethodSignatureToDiscoverUsedTypeTokens(memberRef.Signature, token);
+            }
+            if (token.TokenType == CorTokenType.mdtMethodDef)
+            {
+                MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)token.Handle);
+                TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+                DecodeMethodSignatureToDiscoverUsedTypeTokens(methodDef.Signature, token);
             }
         }
 

@@ -53,17 +53,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
         {
-            EcmaMethod ecmaMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
+            EcmaMethod typicalMethod = (EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
             ModuleToken moduleToken;
-            if (factory.CompilationModuleGroup.VersionsWithMethodBody(ecmaMethod))
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
             {
-                moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
             }
             else
             {
                 MutableModule manifestMetadata = factory.ManifestMetadataTable._mutableModule;
-                var handle = manifestMetadata.TryGetExistingEntityHandle(ecmaMethod);
+                var handle = manifestMetadata.TryGetExistingEntityHandle(typicalMethod);
                 Debug.Assert(handle.HasValue);
                 moduleToken = new ModuleToken(factory.ManifestMetadataTable._mutableModule, handle.Value);
             }

@@ -1281,24 +1281,18 @@ namespace Internal.JitInterface
                     var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
                     return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                    //id = ReadyToRunHelper.AllocContinuation;
-                    //break;
                 }
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
                 {
                     var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationMethod"u8, null);
                     var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
                     return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                    //id = ReadyToRunHelper.AllocContinuationMethod;
-                    //break;
                 }
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
                 {
                     var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8, null);
                     var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
                     return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                    //id = ReadyToRunHelper.AllocContinuationClass;
-                    //break;
                 }
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
@@ -1850,18 +1844,18 @@ namespace Internal.JitInterface
                         fieldOffset = 0;
                     }
                     else
-                        if (helperId != ReadyToRunHelperId.Invalid)
+                    if (helperId != ReadyToRunHelperId.Invalid)
+                    {
+                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
                         {
-                            if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
-                            {
-                                // ENCODE_CHECK_FIELD_OFFSET
-                                AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(ComputeFieldWithToken(field, ref pResolvedToken)));
-                            }
-
-                            pResult->fieldLookup = CreateConstLookupToSymbol(
-                                _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
-                                );
+                            // ENCODE_CHECK_FIELD_OFFSET
+                            AddPrecodeFixup(_compilation.SymbolNodeFactory.CheckFieldOffset(ComputeFieldWithToken(field, ref pResolvedToken)));
                         }
+
+                        pResult->fieldLookup = CreateConstLookupToSymbol(
+                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
+                            );
+                    }
                 }
             }
             else
@@ -2522,7 +2516,7 @@ namespace Internal.JitInterface
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
                         UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
                     }
-                break;
+                    break;
 
 
                 case CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER:
