@@ -14,11 +14,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </summary>
 public abstract class LoaderDumpTestsBase : DumpTestBase
 {
-    protected LoaderDumpTestsBase()
-    {
-        LoadDump();
-    }
-
     protected override string DebuggeeName => "MultiModule";
 
     [Fact]
@@ -32,10 +27,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_RootAssemblyHasModule()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
 
@@ -45,10 +40,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_CanGetModulePath()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
 
@@ -76,10 +71,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_RootModuleHasFileName()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -91,10 +86,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_RootModuleIsNotDynamic()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -103,10 +98,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_RootModuleHasLoaderAllocator()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -116,10 +111,10 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void Loader_RootModuleHasILBase()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);

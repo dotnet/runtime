@@ -13,11 +13,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </summary>
 public abstract class RuntimeInfoDumpTestsBase : DumpTestBase
 {
-    protected RuntimeInfoDumpTestsBase()
-    {
-        LoadDump();
-    }
-
     protected override string DebuggeeName => "BasicThreads";
 
     [Fact]

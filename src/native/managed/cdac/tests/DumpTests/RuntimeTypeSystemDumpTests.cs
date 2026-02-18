@@ -16,18 +16,13 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </summary>
 public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
 {
-    protected RuntimeTypeSystemDumpTestsBase()
-    {
-        LoadDump();
-    }
-
     protected override string DebuggeeName => "TypeHierarchy";
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
-    [SkipOnRuntimeVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor")]
     public void RuntimeTypeSystem_CanGetMethodTableFromModule()
     {
+        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        SkipIfVersion("local", "Assembly type does not include IsLoaded field in current contract descriptor");
         ILoader loader = Target.Contracts.Loader;
         Assert.NotNull(loader);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;

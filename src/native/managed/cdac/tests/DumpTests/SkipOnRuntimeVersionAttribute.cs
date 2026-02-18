@@ -6,8 +6,9 @@ using System;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Apply to a test method to skip it for specific runtime versions.
-/// Evaluated automatically by <see cref="CheckSkipOnRuntimeVersionAttribute"/>.
+/// Marker attribute for documenting which runtime versions a test should skip.
+/// Skip logic is evaluated by calling <see cref="DumpTestBase.SkipIfVersion"/>
+/// at the start of the test method.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 public sealed class SkipOnRuntimeVersionAttribute : Attribute
@@ -23,9 +24,9 @@ public sealed class SkipOnRuntimeVersionAttribute : Attribute
 }
 
 /// <summary>
-/// Apply to a test method to skip it when the dump's target OS matches.
-/// The OS is determined from the dump via the cDAC RuntimeInfo contract.
-/// Evaluated automatically by <see cref="CheckSkipOnRuntimeVersionAttribute"/>.
+/// Marker attribute for documenting which target OS a test should skip.
+/// Skip logic is evaluated by calling <see cref="DumpTestBase.SkipIfTargetOS"/>
+/// at the start of the test method.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 public sealed class SkipOnTargetOSAttribute : Attribute

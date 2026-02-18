@@ -72,7 +72,7 @@ if (-not (Test-Path $dotnet)) {
 }
 
 # --- Debuggees and versions ---
-$allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots")
+$allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots", "StackWalk")
 $allVersions = @("local", "net10.0")
 
 if ($Versions -eq "all") {
@@ -163,7 +163,11 @@ if ($Action -in @("dumps", "all")) {
                 if ($LASTEXITCODE -ne 0) { Write-Error "  [$version/$debuggee] Build failed."; exit 1 }
 
                 Set-DumpEnvVars (Join-Path $dumpDir "$debuggee.dmp")
+                # The debuggee crashes on purpose (FailFast), so suppress stderr errors.
+                $saved = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
                 & "$testHostDir\dotnet.exe" exec "$binDir\$debuggee.dll" 2>&1 | ForEach-Object { Write-Host "    $_" }
+                $ErrorActionPreference = $saved
                 Clear-DumpEnvVars
             }
             else {
@@ -173,7 +177,11 @@ if ($Action -in @("dumps", "all")) {
                 if ($LASTEXITCODE -ne 0) { Write-Error "  [$version/$debuggee] Publish failed."; exit 1 }
 
                 Set-DumpEnvVars (Join-Path $dumpDir "$debuggee.dmp")
+                # The debuggee crashes on purpose (FailFast), so suppress stderr errors.
+                $saved = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
                 & "$publishDir\$debuggee.exe" 2>&1 | ForEach-Object { Write-Host "    $_" }
+                $ErrorActionPreference = $saved
                 Clear-DumpEnvVars
             }
 
@@ -211,9 +219,14 @@ if ($Action -in @("test", "all")) {
     }
     $filterExpr = $filters -join " | "
 
+    # dotnet test writes failure details to stderr; suppress termination so we see full results.
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     & $dotnet test $dumpTestsProj --no-build --filter $filterExpr --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
+    $testExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $saved
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($testExitCode -ne 0) {
         Write-Host ""
         Write-Host "TESTS FAILED" -ForegroundColor Red
         exit 1

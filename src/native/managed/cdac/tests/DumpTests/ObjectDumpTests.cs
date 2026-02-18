@@ -13,11 +13,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// </summary>
 public abstract class ObjectDumpTestsBase : DumpTestBase
 {
-    protected ObjectDumpTestsBase()
-    {
-        LoadDump();
-    }
-
     protected override string DebuggeeName => "GCRoots";
 
     [Fact]
@@ -28,26 +23,26 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_ContractIsAvailable()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         Assert.NotNull(gcContract);
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_HeapCountIsNonZero()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         uint heapCount = gcContract.GetGCHeapCount();
         Assert.True(heapCount > 0, "Expected at least one GC heap");
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_MaxGenerationIsReasonable()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         uint maxGen = gcContract.GetMaxGeneration();
         // .NET typically has gen0, gen1, gen2 (maxGen = 2)
@@ -56,9 +51,9 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_CanGetHeapData()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         GCHeapData heapData = gcContract.GetHeapData();
         Assert.NotNull(heapData.GenerationTable);
@@ -66,18 +61,18 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_StructuresAreValid()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         bool valid = gcContract.GetGCStructuresValid();
         Assert.True(valid, "Expected GC structures to be valid in a dump taken outside of GC");
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_CanEnumerateHeaps()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         uint heapCount = gcContract.GetGCHeapCount();
 
@@ -96,9 +91,9 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
     }
 
     [ConditionalFact]
-    [SkipOnRuntimeVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void GC_BoundsAreReasonable()
     {
+        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         gcContract.GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr);
         // Min address should be less than max address

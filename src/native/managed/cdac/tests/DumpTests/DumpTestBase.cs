@@ -2,72 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.IO;
-using System.Reflection;
-using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Automatically checks <see cref="SkipOnRuntimeVersionAttribute"/> and
-/// <see cref="SkipOnTargetOSAttribute"/> on test methods before they execute.
-/// Applied at the class level on <see cref="DumpTestBase"/>, so all derived
-/// test classes get automatic version-aware and OS-aware skipping.
-/// </summary>
-public sealed class CheckSkipOnRuntimeVersionAttribute : BeforeAfterTestAttribute
-{
-    public override void Before(MethodInfo methodUnderTest)
-    {
-        string? version = DumpTestBase.CurrentRuntimeVersion.Value;
-        if (version is not null)
-        {
-            foreach (SkipOnRuntimeVersionAttribute attr in methodUnderTest.GetCustomAttributes<SkipOnRuntimeVersionAttribute>())
-            {
-                if (string.Equals(attr.Version, version, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new SkipTestException($"[{version}] {attr.Reason}");
-                }
-            }
-        }
-
-        string? targetOS = DumpTestBase.CurrentTargetOS.Value;
-        if (targetOS is not null)
-        {
-            foreach (SkipOnTargetOSAttribute attr in methodUnderTest.GetCustomAttributes<SkipOnTargetOSAttribute>())
-            {
-                if (string.Equals(attr.OperatingSystem, targetOS, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new SkipTestException($"[TargetOS={targetOS}] {attr.Reason}");
-                }
-            }
-        }
-    }
-}
-
-/// <summary>
 /// Base class for dump-based cDAC integration tests.
-/// Loads a crash dump, creates a <see cref="ContractDescriptorTarget"/>, and provides
-/// shared helpers for assertions.
+/// Loads a crash dump via <see cref="IAsyncLifetime"/>, creates a
+/// <see cref="ContractDescriptorTarget"/>, and provides helpers for
+/// version-aware and OS-aware test skipping.
 /// </summary>
 /// <remarks>
-/// Tests that need version-aware or OS-aware skipping should:
+/// Tests that need conditional skipping should:
 /// <list type="number">
 ///   <item>Use <c>[ConditionalFact]</c> instead of <c>[Fact]</c></item>
-///   <item>Apply <c>[SkipOnRuntimeVersion("version", "reason")]</c> or
-///         <c>[SkipOnTargetOS("Windows", "reason")]</c> to the method</item>
+///   <item>Call <see cref="SkipIfVersion"/> or <see cref="SkipIfTargetOS"/>
+///         at the start of the test method</item>
 /// </list>
-/// The <see cref="CheckSkipOnRuntimeVersionAttribute"/> on this class automatically
-/// evaluates skip conditions — no manual skip call required.
 /// </remarks>
-[CheckSkipOnRuntimeVersion]
-public abstract class DumpTestBase : IDisposable
+public abstract class DumpTestBase : IAsyncLifetime, IDisposable
 {
-    internal static readonly AsyncLocal<string?> CurrentRuntimeVersion = new();
-    internal static readonly AsyncLocal<string?> CurrentTargetOS = new();
+    private static readonly ConcurrentDictionary<string, string?> s_targetOSCache = new();
 
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
@@ -85,37 +45,13 @@ public abstract class DumpTestBase : IDisposable
     /// <summary>
     /// The cDAC Target created from the dump.
     /// </summary>
-    protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded. Call LoadDump() first.");
+    protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
 
     /// <summary>
-    /// Resolves the dump file path for the current debuggee and runtime version.
-    /// If the <c>CDAC_DUMP_ROOT</c> environment variable is set, uses that as the base directory.
-    /// Otherwise falls back to <c>{RepoRoot}/artifacts/dumps/cdac/</c>.
-    /// Convention: {root}/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
+    /// Loads the dump and creates the cDAC Target before each test.
     /// </summary>
-    protected string GetDumpPath()
+    public Task InitializeAsync()
     {
-        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
-        if (string.IsNullOrEmpty(dumpRoot))
-        {
-            string? repoRoot = FindRepoRoot();
-            if (repoRoot is null)
-                throw new InvalidOperationException("Could not locate the repository root.");
-
-            dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
-        }
-
-        return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
-    }
-
-    /// <summary>
-    /// Load the dump and create the cDAC Target.
-    /// Throws if the dump file does not exist.
-    /// </summary>
-    protected void LoadDump()
-    {
-        CurrentRuntimeVersion.Value = RuntimeVersion;
-
         string dumpPath = GetDumpPath();
         if (!File.Exists(dumpPath))
             throw new FileNotFoundException($"Dump file not found: {dumpPath}. Run dump generation first.");
@@ -133,16 +69,79 @@ public abstract class DumpTestBase : IDisposable
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
 
-        // Set the target OS for SkipOnTargetOS attribute evaluation
-        try
+        return Task.CompletedTask;
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    /// <summary>
+    /// Skips the current test if <see cref="RuntimeVersion"/> matches <paramref name="version"/>.
+    /// Must be used with <c>[ConditionalFact]</c> for xunit to report the test as skipped.
+    /// </summary>
+    protected void SkipIfVersion(string version, string reason)
+    {
+        if (string.Equals(RuntimeVersion, version, StringComparison.OrdinalIgnoreCase))
+            throw new SkipTestException($"[{version}] {reason}");
+    }
+
+    /// <summary>
+    /// Skips the current test if the dump's target OS matches <paramref name="operatingSystem"/>.
+    /// Uses the cDAC RuntimeInfo contract. Results are cached per dump path.
+    /// Must be used with <c>[ConditionalFact]</c> for xunit to report the test as skipped.
+    /// </summary>
+    protected void SkipIfTargetOS(string operatingSystem, string reason)
+    {
+        string? targetOS = ResolveTargetOS();
+        if (targetOS is not null && string.Equals(targetOS, operatingSystem, StringComparison.OrdinalIgnoreCase))
+            throw new SkipTestException($"[TargetOS={targetOS}] {reason}");
+    }
+
+    private string GetDumpPath()
+    {
+        string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
+        if (string.IsNullOrEmpty(dumpRoot))
         {
-            RuntimeInfoOperatingSystem os = _target!.Contracts.RuntimeInfo.GetTargetOperatingSystem();
-            CurrentTargetOS.Value = os.ToString();
+            string? repoRoot = FindRepoRoot();
+            if (repoRoot is null)
+                throw new InvalidOperationException("Could not locate the repository root.");
+
+            dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
         }
-        catch
+
+        return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
+    }
+
+    private string? ResolveTargetOS()
+    {
+        string dumpPath = GetDumpPath();
+        return s_targetOSCache.GetOrAdd(dumpPath, static path =>
         {
-            // RuntimeInfo contract may not be available; leave CurrentTargetOS null
-        }
+            if (!File.Exists(path))
+                return null;
+
+            using ClrMdDumpHost host = ClrMdDumpHost.Open(path);
+            ulong descriptor = host.FindContractDescriptorAddress();
+
+            if (!ContractDescriptorTarget.TryCreate(
+                    descriptor,
+                    host.ReadFromTarget,
+                    writeToTarget: null!,
+                    host.GetThreadContext,
+                    additionalFactories: [],
+                    out ContractDescriptorTarget? target))
+            {
+                return null;
+            }
+
+            try
+            {
+                return target.Contracts.RuntimeInfo.GetTargetOperatingSystem().ToString();
+            }
+            catch
+            {
+                return null;
+            }
+        });
     }
 
     private static string? FindRepoRoot()
