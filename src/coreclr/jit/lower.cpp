@@ -6468,18 +6468,26 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     GenTree* newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
 
+#if HAS_FIXED_REGISTER_SET
     // Insert the new 'this' arg right before the call to get the correct null
     // behavior (the NRE that would logically happen inside Delegate.Invoke
     // should happen after all args are evaluated). We must also move the
     // PUTARG_REG node ahead.
-#if HAS_FIXED_REGISTER_SET
     thisArgNode->AsOp()->gtOp1 = newThis;
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 #else
+    // CallArgs::ArgsComplete should have arranged for all args to
+    // be evaluated to temps, so we don't need to reorder nodes to
+    // get the proper side effect ordering.
+    BlockRange().InsertAfter(thisArgNode, newThisAddr, newThis);
     thisExprUse.ReplaceWith(newThis);
-    BlockRange().Remove(thisExpr);
-    BlockRange().InsertBefore(call, thisExpr, newThisAddr, newThis);
+
+    // Make the null check on the original this explicit.
+    // TODO-WASM-CQ: add this explicit null check in an earlier phase and try to optimize it away.
+    GenTree* nullCheckBase = m_compiler->gtNewLclvNode(base->AsLclVar()->GetLclNum(), base->TypeGet());
+    GenTree* nullCheck     = m_compiler->gtNewNullCheck(nullCheckBase);
+    BlockRange().InsertBefore(thisArgNode, nullCheckBase, nullCheck);
 #endif
 
     ContainCheckIndir(newThis->AsIndir());
