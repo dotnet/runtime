@@ -497,15 +497,8 @@ namespace Microsoft.Win32.SafeHandles
             return canSeek == NullableBool.True;
         }
 
-        /// <summary>
-        /// Gets the type of the file that this handle represents.
-        /// </summary>
-        /// <returns>The type of the file.</returns>
-        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        public System.IO.FileType GetFileType()
+        internal System.IO.FileType GetFileTypeCore()
         {
-            ObjectDisposedException.ThrowIf(IsClosed, this);
-
             int cachedType = _cachedFileType;
             if (cachedType != -1)
             {
@@ -513,15 +506,15 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // If we don't have a cached value, call FStat to get it
-            if (Interop.Sys.FStat(this, out Interop.Sys.FileStatus status) == 0)
+            int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
+            if (result != 0)
             {
-                System.IO.FileType fileType = MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
-                _cachedFileType = (int)fileType;
-                return fileType;
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
             }
 
-            // If FStat fails, return Unknown
-            return System.IO.FileType.Unknown;
+            System.IO.FileType fileType = MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
+            _cachedFileType = (int)fileType;
+            return fileType;
         }
 
         private static System.IO.FileType MapUnixFileTypeToFileType(int unixFileType)

@@ -16,7 +16,6 @@ namespace Microsoft.Win32.SafeHandles
         private long _length = -1; // negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
         private volatile FileOptions _fileOptions = (FileOptions)(-1);
-        private volatile int _fileType = -1;
 
         public SafeFileHandle() : base(true)
         {
@@ -26,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
+        internal bool CanSeek => !IsClosed && GetKernelFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -254,38 +253,34 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        internal int GetFileType()
+        private int GetKernelFileType()
         {
-            int fileType = _fileType;
-            if (fileType == -1)
+            int cachedType = _cachedFileType;
+            if (cachedType != -1)
             {
-                _fileType = fileType = Interop.Kernel32.GetFileType(this);
-
-                Debug.Assert(fileType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK
-                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE
-                    || fileType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
-                    $"Unknown file type: {fileType}");
+                // Return the Kernel file type from cached FileType enum
+                System.IO.FileType fileType = (System.IO.FileType)cachedType;
+                return fileType switch
+                {
+                    System.IO.FileType.CharacterDevice => Interop.Kernel32.FileTypes.FILE_TYPE_CHAR,
+                    System.IO.FileType.Pipe or System.IO.FileType.Socket => Interop.Kernel32.FileTypes.FILE_TYPE_PIPE,
+                    System.IO.FileType.RegularFile or System.IO.FileType.Directory or System.IO.FileType.SymbolicLink => Interop.Kernel32.FileTypes.FILE_TYPE_DISK,
+                    _ => Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN
+                };
             }
 
-            return fileType;
+            return Interop.Kernel32.GetFileType(this);
         }
 
-        /// <summary>
-        /// Gets the type of the file that this handle represents.
-        /// </summary>
-        /// <returns>The type of the file.</returns>
-        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        public unsafe System.IO.FileType GetFileType()
+        internal unsafe System.IO.FileType GetFileTypeCore()
         {
-            ObjectDisposedException.ThrowIf(IsClosed, this);
-
             int cachedType = _cachedFileType;
             if (cachedType != -1)
             {
                 return (System.IO.FileType)cachedType;
             }
 
-            int kernelFileType = GetFileType();
+            int kernelFileType = Interop.Kernel32.GetFileType(this);
 
             System.IO.FileType result = kernelFileType switch
             {
