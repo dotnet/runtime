@@ -5358,14 +5358,14 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
         {
             assert(!call->tailCallInfo->GetSig()->hasTypeArg());
 
-            CORINFO_CALL_INFO callInfo;
-            unsigned          flags = CORINFO_CALLINFO_LDFTN;
+            CORINFO_CALL_INFO      callInfo;
+            CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_LDFTN;
             if (call->tailCallInfo->IsCallvirt())
             {
                 flags |= CORINFO_CALLINFO_CALLVIRT;
             }
 
-            eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
+            eeGetCallInfo(call->tailCallInfo->GetToken(), nullptr, flags, &callInfo);
             target = getVirtMethodPointerTree(thisPtrStubArg, call->tailCallInfo->GetToken(), &callInfo);
         }
 
