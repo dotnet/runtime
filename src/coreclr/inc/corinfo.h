@@ -1434,14 +1434,14 @@ enum CORINFO_THIS_TRANSFORM
 
 enum CORINFO_CALLINFO_FLAGS
 {
-    CORINFO_CALLINFO_NONE           = 0x0000,
-    CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
-    CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
-    // UNUSED                       = 0x0004,
-    CORINFO_CALLINFO_DISALLOW_STUB  = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
-    CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
-    CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
-    // UNUSED                       = 0x0040,
+    CORINFO_CALLINFO_NONE              = 0x0000,
+    CORINFO_CALLINFO_ALLOWINSTPARAM    = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
+    CORINFO_CALLINFO_CALLVIRT          = 0x0002,   // Is it a virtual call?
+    CORINFO_CALLINFO_ALLOWASYNCVARIANT = 0x0004,   // allow resolution to an async variant
+    CORINFO_CALLINFO_DISALLOW_STUB     = 0x0008,   // Do not use a stub for this call, even if it is a virtual call.
+    CORINFO_CALLINFO_SECURITYCHECKS    = 0x0010,   // Perform security checks.
+    CORINFO_CALLINFO_LDFTN             = 0x0020,   // Resolving target of LDFTN
+    // UNUSED                          = 0x0040,
 };
 
 enum CorInfoIsAccessAllowedResult
@@ -1484,10 +1484,6 @@ enum CorInfoTokenKind
 
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
-
-    // token comes from runtime async awaiting pattern
-    CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-    CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -1560,6 +1556,12 @@ struct CORINFO_CALL_INFO
     CORINFO_CONST_LOOKUP    instParamLookup;
 
     bool                    wrapperDelegateInvoke;
+
+    // If CORINFO_CALLINFO_ALLOWASYNCVARIANT was passed, this is the resolved
+    // async variant or NULL if no async variant was resolved.
+    // This is the async variant of the token's method and differs from hMethod
+    // of this class in cases of sharing, constrained resolution etc.
+    CORINFO_METHOD_HANDLE   resolvedAsyncVariant;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL

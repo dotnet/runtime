@@ -6917,11 +6917,6 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
             JITDUMP("  Continuation continues on thread pool\n");
         }
     }
-    else if (opcode == CEE_CALLI)
-    {
-        // Used for unboxing/instantiating stubs
-        JITDUMP("Call is an async calli\n");
-    }
     else
     {
         JITDUMP("Call is an async non-task await\n");

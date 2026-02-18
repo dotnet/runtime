@@ -1080,42 +1080,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             th = ClassLoader::LoadArrayTypeThrowing(th);
             break;
 
-        case CORINFO_TOKENKIND_Await:
-        case CORINFO_TOKENKIND_AwaitVirtual:
-            {
-                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                // we cannot resolve to an Async variant in such case.
-                // return NULL, so that caller would re-resolve as a regular method call
-                bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
-                if (allowAsyncVariant)
-                {
-                    bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
-                    if (!isDirect)
-                    {
-                        DWORD attrs = pMD->GetAttrs();
-                        if (pMD->GetMethodTable()->IsInterface())
-                        {
-                            isDirect = !IsMdVirtual(attrs);
-                        }
-                        else
-                        {
-                            isDirect = !IsMdVirtual(attrs) || IsMdFinal(attrs) || pMD->GetMethodTable()->IsSealed();
-                        }
-                    }
-
-                    if (isDirect && !pMD->IsAsyncThunkMethod())
-                    {
-                        // Async variant would be a thunk. Do not resolve direct calls
-                        // to async thunks. That just creates and JITs unnecessary
-                        // thunks, and the thunks are harder for the JIT to optimize.
-                        allowAsyncVariant = false;
-                    }
-                }
-
-                pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
-            }
-            break;
-
         default:
             // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
             if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
@@ -4994,6 +4958,7 @@ void CEEInfo::getCallInfo(
     INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     pResult->stubLookup.lookupKind.needsRuntimeLookup = false;
+    pResult->resolvedAsyncVariant = NULL;
 
     MethodDesc* pMD = (MethodDesc *)pResolvedToken->hMethod;
     TypeHandle th(pResolvedToken->hClass);
@@ -5145,35 +5110,6 @@ void CEEInfo::getCallInfo(
     //
 
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
-    DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
-
-    pResult->exactContextNeedsRuntimeLookup = (fIsStaticVirtualMethod && !fResolvedConstraint && !constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
-
-    if (pTargetMD->HasMethodInstantiation())
-    {
-        pResult->contextHandle = MAKE_METHODCONTEXT(pTargetMD);
-        if (pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation()))
-        {
-            pResult->exactContextNeedsRuntimeLookup = TRUE;
-        }
-    }
-    else
-    {
-        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
-        {
-            // Because of .NET's notion of base calls, exactType may point to a sub-class
-            // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
-            // important that they 'match', so we fix exactType here.
-            exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
-            _ASSERTE(!exactType.IsNull());
-        }
-
-        pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
-        if (exactType.IsSharedByGenericInstantiations())
-        {
-            pResult->exactContextNeedsRuntimeLookup = TRUE;
-        }
-    }
 
     //
     // Determine whether to perform direct call
@@ -5181,6 +5117,7 @@ void CEEInfo::getCallInfo(
 
     bool directCall = false;
     bool resolvedCallVirt = false;
+    DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
     if ((flags & CORINFO_CALLINFO_LDFTN) && (!fIsStaticVirtualMethod || fResolvedConstraint))
     {
@@ -5233,6 +5170,57 @@ void CEEInfo::getCallInfo(
         {
             resolvedCallVirt = true;
             directCall = true;
+        }
+    }
+
+    // See if we can resolve to an async variant. Task-returning methods may
+    // not always have such a variant (for a T return where T is task, for
+    // example).
+    if ((flags & CORINFO_CALLINFO_ALLOWASYNCVARIANT) && pTargetMD->ReturnsTaskOrValueTask())
+    {
+        if (!directCall || pTargetMD->IsAsyncThunkMethod())
+        {
+            // Either a virtual call or a direct call where the async variant
+            // is user-defined. Switch to the async variant in these cases.
+            if (pMD == pTargetMD)
+            {
+                pMD = pTargetMD = pMD->GetAsyncVariant(/*allowInstParam */ FALSE);
+            }
+            else
+            {
+                pMD = pMD->GetAsyncVariant(/* allowInstParam */ FALSE);
+                pTargetMD = pTargetMD->GetAsyncVariant(/* allowInstParam */ FALSE);
+            }
+
+            pResult->resolvedAsyncVariant = CORINFO_METHOD_HANDLE(pMD);
+        }
+    }
+
+    pResult->exactContextNeedsRuntimeLookup = (fIsStaticVirtualMethod && !fResolvedConstraint && !constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+
+    if (pTargetMD->HasMethodInstantiation())
+    {
+        pResult->contextHandle = MAKE_METHODCONTEXT(pTargetMD);
+        if (pTargetMD->GetMethodTable()->IsSharedByGenericInstantiations() || TypeHandle::IsCanonicalSubtypeInstantiation(pTargetMD->GetMethodInstantiation()))
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
+        }
+    }
+    else
+    {
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
+        {
+            // Because of .NET's notion of base calls, exactType may point to a sub-class
+            // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
+            // important that they 'match', so we fix exactType here.
+            exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
+            _ASSERTE(!exactType.IsNull());
+        }
+
+        pResult->contextHandle = MAKE_CLASSCONTEXT(exactType.AsPtr());
+        if (exactType.IsSharedByGenericInstantiations())
+        {
+            pResult->exactContextNeedsRuntimeLookup = TRUE;
         }
     }
 
