@@ -520,7 +520,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if !NETFRAMEWORK
-        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
