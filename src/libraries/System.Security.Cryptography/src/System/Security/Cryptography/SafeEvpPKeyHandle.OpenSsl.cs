@@ -77,7 +77,7 @@ namespace System.Security.Cryptography
 
                 // Since we didn't actually create a new handle, copy the handle
                 // to the new SafeHandle. DangerousAddRef prevents ReleaseHandle
-                // from being called, so handle and ExtraHandle are stable here.
+                // from being called, so handle is stable here.
                 safeHandle.SetHandle(handle);
                 return safeHandle;
             }
