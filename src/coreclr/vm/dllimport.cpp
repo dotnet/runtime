@@ -229,10 +229,10 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
-    {
-        return false;
-    }
+    // Forward P/Invoke stubs (non-CALLI, non-vararg) are not shared across different
+    // target methods, but they still use the ILStubCache for de-duplication when
+    // multiple threads race to create a stub for the same target. The hash blob for
+    // these stubs is keyed by target MethodDesc rather than by signature.
 
     return true;
 }
@@ -4081,9 +4081,31 @@ namespace
         PCCOR_SIGNATURE pvNativeType;
     };
 
-    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams)
+    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams, MethodDesc* pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+
+        DWORD dwStubFlags = pParams->m_dwStubFlags;
+
+        // The target MethodDesc may be NULL for field marshalling.
+        // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
+        // so the hash blob is just the target MethodDesc pointer. This ensures racing
+        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
+        // ILStubCache, while different P/Invoke methods get distinct cache entries.
+        if (pTargetMD != NULL
+            && SF_IsForwardPInvokeStub(dwStubFlags)
+            && !SF_IsCALLIStub(dwStubFlags)
+            && !SF_IsVarArgStub(dwStubFlags))
+        {
+            size_t blobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            ZeroMemory(pBytes, blobSize);
+            ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
+            pBlob->m_cbSizeOfBlob = blobSize;
+            memcpy(pBlob->m_rgbBlobData, &pTargetMD, sizeof(pTargetMD));
+            pBytes.SuppressRelease();
+            return pBlob;
+        }
 
         PInvokeStubHashBlob*    pBlob;
 
@@ -4795,16 +4817,14 @@ namespace
     class ILStubCreatorHelper
     {
     public:
-        ILStubCreatorHelper(MethodDesc *pTargetMD,
-                            PInvokeStubParameters* pParams
-                            ) :
-            m_pTargetMD(pTargetMD),
-            m_pParams(pParams),
-            m_pStubMD(NULL),
-            m_bILStubCreator(false)
+        ILStubCreatorHelper(PInvokeStubParameters* pParams, MethodDesc *pTargetMD)
+            : m_pParams(pParams)
+            , m_pTargetMD(pTargetMD)
+            , m_pStubMD(NULL)
+            , m_bILStubCreator(false)
         {
             STANDARD_VM_CONTRACT;
-            m_pHashParams = CreateHashBlob(m_pParams);
+            m_pHashParams = CreateHashBlob(m_pParams, m_pTargetMD);
         }
 
         ~ILStubCreatorHelper()
@@ -4866,11 +4886,10 @@ namespace
         }
 
     private:
-        MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
-        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-        AllocMemTracker*                 m_pAmTracker;
+        MethodDesc*                      m_pTargetMD;
         MethodDesc*                      m_pStubMD;
+        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
@@ -4966,7 +4985,7 @@ namespace
         // remove it from cache if OOM occurs
 
         {
-            ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
+            ILStubCreatorHelper ilStubCreatorHelper(&params, pTargetMD);
 
             // take the domain level lock
             ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
@@ -5686,16 +5705,11 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     }
 
     //
-    // NOTE: there is a race in updating this MethodDesc.  We depend on all
-    // threads getting back the same DynamicMethodDesc for a particular
-    // PInvokeMethodDesc, in that case, the locking around the actual JIT
-    // operation will prevent the code from being jitted more than once.
-    // By the time we get here, all threads get the same address of code
-    // back from the JIT operation and they all just fill in the same value
-    // here.
-    //
-    // In the NGEN case, all threads will get the same preimplemented code
-    // address much like the JIT case.
+    // NOTE: For P/Invoke stubs, racing threads will resolve to the same
+    // DynamicMethodDesc via the ILStubCache (keyed by target MethodDesc), so the
+    // locking around the JIT operation prevents the code from being jitted more
+    // than once, and all threads get back the same PCODE. See CreateHashBlob()
+    // for the hashing logic.
     //
 
     return pStub;
