@@ -3,6 +3,7 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -16,8 +17,7 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
-            IntPtr fd = Interop.Sys.Open(path, Interop.Sys.OpenFlags.O_RDONLY, 0);
-            using SafeFileHandle handle = new SafeFileHandle(fd, ownsHandle: true);
+            using SafeFileHandle handle = Interop.Sys.Open(path, Interop.Sys.OpenFlags.O_RDONLY, 0);
             Assert.False(handle.IsInvalid);
             Assert.Equal(FileType.Directory, handle.GetFileType());
         }
@@ -48,8 +48,7 @@ namespace System.IO.Tests
             File.WriteAllText(targetPath, "test");
             File.CreateSymbolicLink(linkPath, targetPath);
 
-            IntPtr fd = Interop.Sys.Open(linkPath, Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_NOFOLLOW, 0);
-            using SafeFileHandle handle = new SafeFileHandle(fd, ownsHandle: true);
+            using SafeFileHandle handle = Interop.Sys.Open(linkPath, Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_NOFOLLOW, 0);
             
             if (!handle.IsInvalid)
             {
@@ -80,13 +79,12 @@ namespace System.IO.Tests
 
             try
             {
-                IntPtr fd = Interop.Sys.Open(blockDevice, Interop.Sys.OpenFlags.O_RDONLY, 0);
-                if (fd == (IntPtr)(-1))
+                using SafeFileHandle handle = Interop.Sys.Open(blockDevice, Interop.Sys.OpenFlags.O_RDONLY, 0);
+                if (handle.IsInvalid)
                 {
                     throw new SkipTestException($"Could not open {blockDevice}");
                 }
 
-                using SafeFileHandle handle = new SafeFileHandle(fd, ownsHandle: true);
                 Assert.Equal(FileType.BlockDevice, handle.GetFileType());
             }
             catch (UnauthorizedAccessException)

@@ -105,6 +105,8 @@
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs"
+             Link="Common\Interop\Unix\Interop.MkFifo.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
