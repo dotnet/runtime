@@ -8,6 +8,9 @@
       2. Run them to produce crash dumps
       3. Build and run the dump analysis tests
 
+    Alternatively, use -DumpArchive to import a tar.gz archive of dumps
+    downloaded from CI and run the tests against those dumps.
+
     NOTE: This script is Windows-only. For cross-platform CI builds,
     the MSBuild-based DumpTests.targets handles platform detection
     automatically via $(HostOS), $(ExeSuffix), and $(PortableTargetRid).
@@ -36,6 +39,12 @@
     Examples: "*StackWalk*", "*Thread*", "*GC_Heap*"
     Default: "" (run all tests)
 
+.PARAMETER DumpArchive
+    Path to a tar.gz archive of dumps downloaded from CI.
+    When specified, the archive is extracted and tests are run against
+    the extracted dumps. Skips dump generation entirely.
+    The archive should contain: {version}/{debuggee}/{debuggee}.dmp
+
 .EXAMPLE
     .\RunDumpTests.ps1
 
@@ -50,6 +59,9 @@
 
 .EXAMPLE
     .\RunDumpTests.ps1 -Filter "*StackWalk*"
+
+.EXAMPLE
+    .\RunDumpTests.ps1 -DumpArchive C:\Downloads\CdacDumps_linux_x64.tar.gz
 #>
 
 [CmdletBinding()]
@@ -63,7 +75,9 @@ param(
 
     [string]$TestHostConfiguration = "Release",
 
-    [string]$Filter = ""
+    [string]$Filter = "",
+
+    [string]$DumpArchive = ""
 )
 
 Set-StrictMode -Version Latest
@@ -84,6 +98,98 @@ if (-not (Test-Path $dotnet)) {
 # --- Debuggees and versions ---
 $allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots", "StackWalk")
 $allVersions = @("local", "net10.0")
+
+# --- DumpArchive mode: extract and test CI dumps ---
+if ($DumpArchive) {
+    if (-not (Test-Path $DumpArchive)) {
+        Write-Error "Dump archive not found: $DumpArchive"
+        exit 1
+    }
+
+    $extractDir = Join-Path $repoRoot "artifacts\dumps\ci-imported"
+    if (Test-Path $extractDir) {
+        Write-Host "Cleaning previous import: $extractDir" -ForegroundColor Yellow
+        Remove-Item $extractDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
+
+    Write-Host ""
+    Write-Host "=== cDAC Dump Tests (CI Archive) ===" -ForegroundColor Cyan
+    Write-Host "  Archive: $DumpArchive"
+    Write-Host "  Extract: $extractDir"
+    if ($Filter) { Write-Host "  Filter:  $Filter" }
+    Write-Host ""
+
+    Write-Host "--- Extracting archive ---" -ForegroundColor Cyan
+    tar -xzf $DumpArchive -C $extractDir
+    if ($LASTEXITCODE -ne 0) { Write-Error "Failed to extract archive."; exit 1 }
+
+    # List extracted dumps
+    $dumpFiles = Get-ChildItem -Path $extractDir -Recurse -Filter "*.dmp"
+    if ($dumpFiles.Count -eq 0) {
+        Write-Error "No .dmp files found in archive."
+        exit 1
+    }
+    foreach ($f in $dumpFiles) {
+        $rel = $f.FullName.Substring($extractDir.Length + 1)
+        $size = [math]::Round($f.Length / 1MB, 1)
+        Write-Host "  Found: $rel (${size} MB)" -ForegroundColor Green
+    }
+
+    # Detect which versions are present in the archive and skip the rest
+    $presentVersions = Get-ChildItem -Path $extractDir -Directory | Select-Object -ExpandProperty Name
+    $skipVersions = $allVersions | Where-Object { $_ -notin $presentVersions }
+    if ($skipVersions) {
+        $skipVersionsStr = $skipVersions -join ";"
+        Write-Host "  Versions in archive: $($presentVersions -join ', ')" -ForegroundColor Green
+        Write-Host "  Skipping versions:   $($skipVersions -join ', ')" -ForegroundColor Yellow
+    }
+    else {
+        $skipVersionsStr = ""
+        Write-Host "  Versions in archive: $($presentVersions -join ', ')" -ForegroundColor Green
+    }
+
+    Write-Host ""
+    Write-Host "--- Building test project ---" -ForegroundColor Cyan
+    $buildArgs = @($dumpTestsProj, "--nologo", "-v", "q")
+    if ($skipVersionsStr) {
+        $buildArgs += "/p:SkipDumpVersions=$skipVersionsStr"
+    }
+    & $dotnet build @buildArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { Write-Error "Test project build failed."; exit 1 }
+
+    Write-Host ""
+    Write-Host "--- Running tests against CI dumps ---" -ForegroundColor Cyan
+
+    $filterExpr = ""
+    if ($Filter) {
+        $namePattern = $Filter.Replace("*", "")
+        $filterExpr = "FullyQualifiedName~$namePattern"
+    }
+
+    $env:CDAC_DUMP_ROOT = $extractDir
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    if ($filterExpr) {
+        & $dotnet test $dumpTestsProj --no-build --filter $filterExpr --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
+    }
+    else {
+        & $dotnet test $dumpTestsProj --no-build --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
+    }
+    $testExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $saved
+    Remove-Item Env:\CDAC_DUMP_ROOT -ErrorAction SilentlyContinue
+
+    if ($testExitCode -ne 0) {
+        Write-Host ""
+        Write-Host "TESTS FAILED" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "ALL TESTS PASSED" -ForegroundColor Green
+    exit 0
+}
 
 if ($Versions -eq "all") {
     $selectedVersions = $allVersions
