@@ -432,7 +432,7 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 //     1. Per-block: compute which tracked locals are mutated (assigned a
 //        non-default value or have their address taken) in each block.
 //     2. Inter-block: forward dataflow to propagate default value information
-//        across blocks. At merge points the sets are union (a local is mutated
+//        across blocks. At merge points the sets are unioned (a local is mutated
 //        if it is mutated on any incoming path).
 //
 class DefaultValueAnalysis
