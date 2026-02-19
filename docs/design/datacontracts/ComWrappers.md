@@ -25,7 +25,7 @@ Data descriptors used:
 | `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
 | `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
 | `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
-| `ComWrappersVtablePtrs` | `Size` | Number of entries in vtable pointers array |
+| `ComWrappersVtablePtrs` | `Size` | Size of vtable pointers array |
 
 Global variables used:
 | Global Name | Type | Purpose |

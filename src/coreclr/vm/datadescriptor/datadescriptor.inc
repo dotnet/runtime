@@ -1019,7 +1019,7 @@ CDAC_TYPE_END(DynamicILBlobTable)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
-CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations)
+CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
 CDAC_TYPE_END(ComWrappersVtablePtrs)
 #endif
 
