@@ -832,9 +832,8 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
-    bool const     is64BitSrc  = (desc.CheckSrcSize() == 8);
-    emitAttr const srcSize     = is64BitSrc ? EA_8BYTE : EA_4BYTE;
-    bool const     srcUnsigned = cast->IsUnsigned();
+    bool const     is64BitSrc = (desc.CheckSrcSize() == 8);
+    emitAttr const srcSize    = is64BitSrc ? EA_8BYTE : EA_4BYTE;
 
     GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
 
@@ -897,13 +896,12 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             }
             else
             {
+                assert(!cast->IsUnsigned());
                 GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
-                GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_gt_u : INS_i64_gt_s)
-                                                 : (srcUnsigned ? INS_i32_gt_u : INS_i32_gt_s));
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_s : INS_i32_gt_s);
                 GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
                 GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
-                GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_lt_u : INS_i64_lt_s)
-                                                 : (srcUnsigned ? INS_i32_lt_u : INS_i32_lt_s));
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_lt_s : INS_i32_lt_s);
                 GetEmitter()->emitIns(INS_i32_or);
             }
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
