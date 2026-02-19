@@ -31042,7 +31042,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 
 #elif defined(TARGET_WASM)
 
-            // Nothing to do here.
+            // For Wasm, structs are either returned by-ref or as primitives.
+            unreached();
 
 #else //  TARGET_XXX
 

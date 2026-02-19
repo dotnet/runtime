@@ -322,11 +322,11 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 //
 void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 {
-    if (callNode->NeedsNullCheck())
+    CallArg* thisArg = callNode->gtArgs.GetThisArg();
+
+    if (thisArg != nullptr)
     {
-        CallArg* thisArg  = callNode->gtArgs.GetThisArg();
-        GenTree* thisNode = thisArg->GetNode();
-        ConsumeTemporaryRegForOperand(thisNode DEBUGARG("null check for call"));
+        ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
     }
 }
 
@@ -340,10 +340,7 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 //
 void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
 {
-    if (castNode->gtOverflow())
-    {
-        ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
-    }
+    ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
 }
 
 //------------------------------------------------------------------------

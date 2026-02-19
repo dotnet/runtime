@@ -2012,7 +2012,23 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     LegalizeArgPlacement(call);
+    AfterLowerArgsForCall(call);
 }
+
+#if !defined(TARGET_WASM)
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    // no-op for non-Wasm targets
+}
+
+#endif // !defined(TARGET_WASM)
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
 //------------------------------------------------------------------------
@@ -2857,15 +2873,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
     if ((call->gtCallType == CT_INDIRECT) && m_compiler->opts.Tier0OptimizationEnabled())
     {
         OptimizeCallIndirectTargetEvaluation(call);
-    }
-#endif
-
-#if defined(TARGET_WASM)
-    if (call->NeedsNullCheck())
-    {
-        // Prepare for explicit null check
-        CallArg* thisArg = call->gtArgs.GetThisArg();
-        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
     }
 #endif
 

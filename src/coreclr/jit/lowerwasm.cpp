@@ -475,3 +475,19 @@ void Lowering::AfterLowerBlock()
     Stackifier stackifier(this);
     stackifier.StackifyCurrentBlock();
 }
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        // Prepare for explicit null check
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+}

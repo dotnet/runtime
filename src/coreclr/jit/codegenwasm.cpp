@@ -753,7 +753,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
     {
         GenTree*  castValue = cast->gtGetOp1();
         regNumber castReg   = GetMultiUseOperandReg(castValue);
-        assert(castReg != REG_NA);
         genIntCastOverflowCheck(cast, desc, castReg);
     }
 
@@ -844,10 +843,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
         case GenIntCastDesc::CHECK_POSITIVE:
         {
-            // INT to ULONG
-            assert(!is64BitSrc);
-            GetEmitter()->emitIns_I(INS_i32_const, srcSize, 0);
-            GetEmitter()->emitIns(INS_i32_lt_s);
+            // INT or LONG to ULONG
+            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, 0);
+            GetEmitter()->emitIns(is64BitSrc ? INS_i64_lt_s : INS_i32_lt_s);
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
             break;
         }
@@ -876,12 +874,10 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
             // LONG to INT
-            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MAX);
-            GetEmitter()->emitIns(INS_i64_gt_s);
             GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
-            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MIN);
-            GetEmitter()->emitIns(INS_i64_lt_s);
-            GetEmitter()->emitIns(INS_i32_or);
+            GetEmitter()->emitIns(INS_i32_wrap_i64);
+            GetEmitter()->emitIns(INS_i64_extend32_s);
+            GetEmitter()->emitIns(INS_i64_ne);
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
             break;
         }
@@ -1458,6 +1454,22 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
+    genEmitNullCheck(REG_NA);
+}
+
+//---------------------------------------------------------------------
+// genEmitNullCheck - generate code for a null check
+//
+// Arguments:
+//    regNum - register to check, or REG_NA if value to check is on the stack
+//
+void CodeGen::genEmitNullCheck(regNumber reg)
+{
+    if (reg != REG_NA)
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(reg));
+    }
+
     GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
     GetEmitter()->emitIns(INS_I_le_u);
     genJumpToThrowHlpBlk(SCK_NULL_CHECK);
@@ -1733,7 +1745,6 @@ void CodeGen::genCall(GenTreeCall* call)
         CallArg* thisArg  = call->gtArgs.GetThisArg();
         GenTree* thisNode = thisArg->GetNode();
         thisReg           = GetMultiUseOperandReg(thisNode);
-        assert(thisReg != REG_NA);
     }
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
@@ -1748,10 +1759,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     if (call->NeedsNullCheck())
     {
-        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(thisReg));
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
-        GetEmitter()->emitIns(INS_I_le_u);
-        genJumpToThrowHlpBlk(SCK_NULL_CHECK);
+        genEmitNullCheck(thisReg);
     }
 
     genCallInstruction(call);
