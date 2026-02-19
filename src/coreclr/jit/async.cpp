@@ -460,10 +460,6 @@ class DefaultValueAnalysis
         {
             // Save the current in set for change detection later.
             VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
-
-            // Optimistically assume no locals have been mutated; Merge will
-            // grow via union.
-            VarSetOps::ClearD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum]);
         }
 
         void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
@@ -695,7 +691,7 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
         VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
-    // Parameters and OSR locals do not have default values at method entry.
+    // Parameters and OSR locals are considered mutated at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
         unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
