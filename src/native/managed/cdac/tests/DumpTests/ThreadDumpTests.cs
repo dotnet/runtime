@@ -33,8 +33,6 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void EnumerateThreads_CanWalkThreadList()
     {
-        SkipIfTargetOS("Unix", "Thread.UEWatsonBucketTrackerBuckets is only supported on Windows");
-        SkipIfVersion("net10.0", "Thread.UEWatsonBucketTrackerBuckets field not present in .NET 10 contract descriptor");
         IThread threadContract = Target.Contracts.Thread;
         Assert.NotNull(threadContract);
 
@@ -77,8 +75,6 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void Threads_HaveValidIds()
     {
-        SkipIfTargetOS("Unix", "Thread.UEWatsonBucketTrackerBuckets is only supported on Windows");
-        SkipIfVersion("net10.0", "Thread.UEWatsonBucketTrackerBuckets field not present in .NET 10 contract descriptor");
         IThread threadContract = Target.Contracts.Thread;
         ThreadStoreData storeData = threadContract.GetThreadStoreData();
 
