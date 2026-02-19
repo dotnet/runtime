@@ -11269,6 +11269,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeIndexedOpt(id->idInsOpt()); // PP
             if (ins == INS_ldapur && isVectorRegister(id->idReg1()))
             {
+                assert(insOptsNone(id->idInsOpt()));
                 // PP is different for vector LDAPUR
                 code |= 0x00000800; // set the bit at location 11
             }
