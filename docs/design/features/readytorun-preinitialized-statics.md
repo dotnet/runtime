@@ -17,6 +17,8 @@ The preintialization interpreter is shared with the NativeAOT ILCompiler, so cla
 | Generic instantiations | Concrete, non-canonical instantiations that can be statically resolved |
 | Delegates | Supported for closed delegates |
 
+A restriction for R2R is that the preinitializer cannot inline any methods that cross the version bubble.
+
 ## Enabling
 
 In crossgen2, preinitialized statics can be controlled with:
@@ -146,7 +148,7 @@ This is best-effort: if serialization/validation of the preinitialized graph fai
 
 Generic instantiations are supported on a best-effort basis. Only concrete, non-canonical, non-runtime-determined instantiations that are statically referenced from the code are recorded in the map and have preinitialization support.
 
-To ensure the map covers needed generic instantiations, static-base helper paths trigger record materialization in `GenericLookupResult`, `ReadyToRunGenericHelperNode`, and `ReadyToRunSymbolNodeFactory`.
+To ensure the map covers needed generic instantiations, static-base helper paths trigger record materialization in `ReadyToRunSymbolNodeFactory`.
 
 ### Serialized object templates
 
@@ -197,4 +199,4 @@ When decoding encoded references in GC payloads, runtime currently accepts impor
 
 ### GC object allocation strategy
 
-We may be able to allocate GC objects in Frozen Object Heap, but it comes with the complication of collectible vs non-collectible types, as well as the fact that frozen objects cannot reference non-frozen objects. For simplicity, the initial implementation allocates GC statics in regular GC heap, and we can explore frozen heap support in the future if needed.
+The preinitializer will reject cases where a GC static field contains a reference to non-frozen objects. As a result we can safely allocate GC static objects in the frozen object heap, and allow them to be accessed directly.

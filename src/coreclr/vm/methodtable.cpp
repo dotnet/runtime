@@ -4226,7 +4226,8 @@ OBJECTREF MethodTable::MaterializeReadyToRunPreinitializedClassData(TADDR templa
         _ASSERTE(!pObjectType->IsMultiDimArray());
 
         INT32 arrayLength = GET_UNALIGNED_VAL32((PTR_BYTE)(templateDataAddress + TARGET_POINTER_SIZE));
-        OBJECTREF arrayRef = AllocateSzArray(pObjectType, arrayLength);
+        OBJECTREF arrayRef = TryAllocateFrozenSzArray(pObjectType, arrayLength);
+        _ASSERTE(arrayRef != NULL);
 
         GCPROTECT_BEGIN(arrayRef);
         {
@@ -4297,7 +4298,8 @@ OBJECTREF MethodTable::MaterializeReadyToRunPreinitializedClassData(TADDR templa
         RETURN(arrayRef);
     }
 
-    OBJECTREF objectRef = AllocateObject(pObjectType);
+    OBJECTREF objectRef = TryAllocateFrozenObject(pObjectType);
+    _ASSERTE(objectRef != NULL);
 
     GCPROTECT_BEGIN(objectRef);
     {
