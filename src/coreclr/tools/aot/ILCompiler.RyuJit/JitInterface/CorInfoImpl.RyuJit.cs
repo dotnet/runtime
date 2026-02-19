@@ -374,7 +374,7 @@ namespace Internal.JitInterface
             MethodDesc expectedTargetMethod = HandleToObject(pTargetMethod.hMethod);
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
 
-            MethodDesc targetMethod = GetRuntimeDeterminedMethodForTokenWithTemplate(ref pTargetMethod, expectedTargetMethod);
+            MethodDesc targetMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pTargetMethod, expectedTargetMethod.IsAsyncVariant());
 
             // If this was a constrained+ldftn sequence, we need to resolve the constraint
             TypeDesc constrainedType = null;
@@ -1432,7 +1432,7 @@ namespace Internal.JitInterface
                 ReadyToRunHelperId lookupHelper;
                 if (forceUseRuntimeLookup)
                 {
-                    MethodDesc runtimeDeterminedInterfaceMethod = GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method);
+                    MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null);
 
                     targetOfLookup = new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod);
                     lookupHelper = ReadyToRunHelperId.ConstrainedDirectCall;
@@ -1452,7 +1452,7 @@ namespace Internal.JitInterface
                         lookupMethod = targetMethod.GetMethodDefinition();
                     if (lookupMethod.HasInstantiation)
                     {
-                        var methodToGetInstantiation = GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method);
+                        var methodToGetInstantiation = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null);
                         lookupMethod = lookupMethod.MakeInstantiatedMethod(methodToGetInstantiation.Instantiation);
                     }
                     Debug.Assert(lookupMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
@@ -1488,7 +1488,7 @@ namespace Internal.JitInterface
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
                     pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
                     pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method));
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null));
                 }
                 else
                 {
@@ -1592,7 +1592,7 @@ namespace Internal.JitInterface
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
                 TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
-                MethodDesc runtimeDeterminedInterfaceMethod = GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method);
+                MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null);
 
                 var constrainedCallInfo = new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod);
                 var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
@@ -1619,7 +1619,7 @@ namespace Internal.JitInterface
                 pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult->nullInstanceCheck = true;
 
-                MethodDesc targetOfLookup = _compilation.GetTargetOfGenericVirtualMethodCall((MethodDesc)GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method));
+                MethodDesc targetOfLookup = _compilation.GetTargetOfGenericVirtualMethodCall((MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null));
 
                 _compilation.DetectGenericCycles(
                     ((MethodILScope)HandleToObject((void*)pResolvedToken.tokenScope)).OwningMethod,
@@ -1644,7 +1644,7 @@ namespace Internal.JitInterface
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
                     ComputeLookup(ref pResolvedToken,
-                        GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, method),
+                        (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, pResult->resolvedAsyncVariant != null),
                         ReadyToRunHelperId.VirtualDispatchCell,
                         HandleToObject(callerHandle),
                         ref pResult->codePointerOrStubLookup);
@@ -1776,7 +1776,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
 
-                target = GetRuntimeDeterminedMethodForTokenWithTemplate(ref pResolvedToken, md);
+                target = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken, md.IsAsyncVariant());
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
