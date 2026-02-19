@@ -497,11 +497,14 @@ void Lowering::AfterLowerBlock()
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
 #ifdef DEBUG
-                    printf("node==");
-                    Compiler::printTreeID(node);
-                    printf(" prev==");
-                    Compiler::printTreeID(prev);
-                    printf("\n");
+                    if (JitTls::GetCompiler()->verbose)
+                    {
+                        printf("node==");
+                        Compiler::printTreeID(node);
+                        printf(" prev==");
+                        Compiler::printTreeID(prev);
+                        printf("\n");
+                    }
 #endif
                     NYI_WASM("IR not in a stackified form");
                 }
