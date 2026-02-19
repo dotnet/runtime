@@ -153,6 +153,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             yield return new object[] { null };
         }
 
+        public static IEnumerable<object[]> MarshalSingleArrayCases()
+        {
+            yield return new object[] { new float[] { 1, 2, 3, float.MaxValue, float.MinValue, float.Pi, float.NegativeInfinity, float.PositiveInfinity, float.NaN } };
+            yield return new object[] { new float[] { } };
+            yield return new object[] { null };
+        }
+
         public static IEnumerable<object[]> MarshalStringArrayCases()
         {
             yield return new object[] { new string[] { "\u0050\u0159\u00ed\u006c\u0069\u0161", "\u017e\u006c\u0075\u0165\u006f\u0075\u010d\u006b\u00fd" } };

@@ -41,6 +41,7 @@
                                    '$(PgoInstrument)' != 'true'"
                                    Include="-enforcepgo" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja" />
+      <_CoreClrBuildArg Condition="'$(Ninja)' != 'true' and !$([MSBuild]::IsOsPlatform(Windows))" Include="-ninja false" />
       <_CoreClrBuildArg Condition="'$(Ninja)' == 'false' and $([MSBuild]::IsOsPlatform(Windows))" Include="-msbuild" />
       <_CoreClrBuildArg Condition="'$(PgoInstrument)' == 'true'" Include="-pgoinstrument" />
       <_CoreClrBuildArg Condition="'$(NativeOptimizationDataSupported)' == 'true' and '$(NoPgoOptimize)' != 'true' and '$(PgoInstrument)' != 'true'" Include="-pgodatapath &quot;$(PgoPackagePath)&quot;" />
@@ -50,11 +51,11 @@
       <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(PortableTargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
-      <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureDynamicCodeCompiled)' == 'true' or '$(FeatureDynamicCodeCompiled)' == ''" Include="-cmakeargs &quot;-DFEATURE_DYNAMIC_CODE_COMPILED=1&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
