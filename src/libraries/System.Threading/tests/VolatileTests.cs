@@ -61,7 +61,11 @@ namespace System.Threading.Tests
             Volatile.ReadBarrier();
             long result3 = Volatile.Read(ref value3);
             Assert.Equal(123456789L, result3);
+        }
 
+        [Fact]
+        public void BarriersViaReflection()
+        {
             // Test via reflection
             MethodInfo readBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
             MethodInfo writeBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.WriteBarrier), BindingFlags.Public | BindingFlags.Static);
