@@ -874,9 +874,8 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
             // LONG to INT
-            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
-            GetEmitter()->emitIns(INS_i32_wrap_i64);
             GetEmitter()->emitIns(INS_i64_extend32_s);
+            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
             GetEmitter()->emitIns(INS_i64_ne);
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
             break;
