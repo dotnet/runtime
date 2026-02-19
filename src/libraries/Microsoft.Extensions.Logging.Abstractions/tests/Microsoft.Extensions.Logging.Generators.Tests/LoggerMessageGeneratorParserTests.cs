@@ -860,6 +860,60 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task ParamsParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params object?[] args);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public async Task RefReadOnlyParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, ref readonly int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task ScopedRefParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task ScopedRefReadOnlyParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref readonly int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+#endif
+
+        [Fact]
         public async Task MalformedFormatString()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

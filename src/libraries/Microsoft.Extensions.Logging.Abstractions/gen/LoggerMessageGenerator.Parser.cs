@@ -366,6 +366,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                             break;
                                         }
+                                        else if (paramSymbol.RefKind == (RefKind)4) // RefKind.RefReadOnlyParameter, added in Roslyn 4.8
+                                        {
+                                            qualifier = "ref readonly";
+                                        }
 
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
@@ -383,6 +387,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                             IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm.Compilation) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm.Compilation),
                                             IsParams = paramSymbol.IsParams,
                                         };
+#if ROSLYN4_4_OR_GREATER
+                                        lp.IsScoped = paramSymbol.ScopedKind != ScopedKind.None;
+#endif
 
                                         foundLogger |= lp.IsLogger;
                                         foundException |= lp.IsException;
@@ -1023,6 +1030,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsLogLevel;
             public bool IsEnumerable;
             public bool IsParams;
+            public bool IsScoped;
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
@@ -1037,7 +1045,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 IsException = IsException,
                 IsLogLevel = IsLogLevel,
                 IsEnumerable = IsEnumerable,
-                IsParams = IsParams
+                IsParams = IsParams,
+                IsScoped = IsScoped
             };
         }
 
@@ -1055,6 +1064,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public required bool IsLogLevel { get; init; }
             public required bool IsEnumerable { get; init; }
             public required bool IsParams { get; init; }
+            public required bool IsScoped { get; init; }
 
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
@@ -1072,7 +1082,8 @@ namespace Microsoft.Extensions.Logging.Generators
                        IsException == other.IsException &&
                        IsLogLevel == other.IsLogLevel &&
                        IsEnumerable == other.IsEnumerable &&
-                       IsParams == other.IsParams;
+                       IsParams == other.IsParams &&
+                       IsScoped == other.IsScoped;
             }
 
             public override int GetHashCode()
@@ -1086,6 +1097,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 hash = HashHelpers.Combine(hash, IsLogLevel.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsEnumerable.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsParams.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsScoped.GetHashCode());
                 return hash;
             }
         }
