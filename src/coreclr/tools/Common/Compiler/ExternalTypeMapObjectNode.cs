@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         public override bool IsShareable => false;
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
         public override int ClassCode => (int)ObjectNodeOrder.ExternalTypeMapObjectNode;
