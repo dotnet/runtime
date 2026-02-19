@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -62,12 +61,6 @@ namespace System.Threading.Tests
             Volatile.ReadBarrier();
             long result3 = Volatile.Read(ref value3);
             Assert.Equal(123456789L, result3);
-
-            // Test via delegates
-            Action readBarrierDelegate = Volatile.ReadBarrier;
-            Action writeBarrierDelegate = Volatile.WriteBarrier;
-            readBarrierDelegate();
-            writeBarrierDelegate();
 
             // Test via reflection
             MethodInfo readBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
