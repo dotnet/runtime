@@ -556,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                         await server.HandleRequestAsync(content: "Hello World");
                     }
                     catch (Exception) { }
-                });
+                }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 #endif
 
