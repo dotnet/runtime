@@ -11,14 +11,12 @@ namespace System.Threading.Tests
         [Fact]
         public void ReadBarrier_DoesNotThrow()
         {
-            // ReadBarrier should not throw and should complete successfully
             Volatile.ReadBarrier();
         }
 
         [Fact]
         public void WriteBarrier_DoesNotThrow()
         {
-            // WriteBarrier should not throw and should complete successfully
             Volatile.WriteBarrier();
         }
 
@@ -66,7 +64,6 @@ namespace System.Threading.Tests
         [Fact]
         public void BarriersViaReflection()
         {
-            // Test via reflection
             MethodInfo readBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.ReadBarrier), BindingFlags.Public | BindingFlags.Static);
             MethodInfo writeBarrierMethod = typeof(Volatile).GetMethod(nameof(Volatile.WriteBarrier), BindingFlags.Public | BindingFlags.Static);
             Assert.NotNull(readBarrierMethod);
