@@ -109,16 +109,16 @@ Write-Host ""
 if (-not $SkipBuild) {
     Write-Host "--- Step 1: Build + Prepare Helix Payload ---" -ForegroundColor Cyan
 
-    # Clean previous payload
-    if (Test-Path $workItemPayload) {
-        Remove-Item $workItemPayload -Recurse -Force
-    }
+    # Clean previous payload (preserve dumps)
+    if (Test-Path $testsDir) { Remove-Item $testsDir -Recurse -Force }
+    if (Test-Path $debuggeesDir) { Remove-Item $debuggeesDir -Recurse -Force }
 
     & $dotnet build $dumpTestsProj `
         /tl:off `
         /p:SkipDumpGeneration=true `
         /p:PrepareHelixPayload=true `
-        /p:HelixPayloadDir=$workItemPayload
+        /p:HelixPayloadDir=$workItemPayload `
+        /p:SkipDumpVersions=net10.0
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build and prepare Helix payload."
         exit 1
@@ -142,7 +142,7 @@ if (-not $SkipDumpGeneration) {
     foreach ($name in $debuggees) {
         $debuggeeDll = Join-Path $debuggeesDir "$name\$name.dll"
         if (-not (Test-Path $debuggeeDll)) {
-            Write-Host "  SKIP $name — DLL not found: $debuggeeDll" -ForegroundColor Yellow
+            Write-Host "  SKIP $name - DLL not found: $debuggeeDll" -ForegroundColor Yellow
             continue
         }
 
@@ -151,7 +151,7 @@ if (-not $SkipDumpGeneration) {
 
         if (Test-Path $dumpFile) {
             $sizeMB = [math]::Round((Get-Item $dumpFile).Length / 1MB, 1)
-            Write-Host "  SKIP $name — dump exists (${sizeMB} MB)" -ForegroundColor DarkGray
+            Write-Host "  SKIP $name - dump exists (${sizeMB} MB)" -ForegroundColor DarkGray
             continue
         }
 
@@ -160,7 +160,7 @@ if (-not $SkipDumpGeneration) {
         Write-Host "  Running $name..." -ForegroundColor White -NoNewline
 
         $env:DOTNET_DbgEnableMiniDump = "1"
-        $env:DOTNET_DbgMiniDumpType = "2"
+        $env:DOTNET_DbgMiniDumpType = "4"
         $env:DOTNET_DbgMiniDumpName = $dumpFile
 
         $proc = Start-Process -FilePath $testhostDotnet `
@@ -176,7 +176,7 @@ if (-not $SkipDumpGeneration) {
             $sizeMB = [math]::Round((Get-Item $dumpFile).Length / 1MB, 1)
             Write-Host " dump created (${sizeMB} MB)" -ForegroundColor Green
         } else {
-            Write-Host " FAILED — no dump file" -ForegroundColor Red
+            Write-Host " FAILED - no dump file" -ForegroundColor Red
         }
     }
 } else {
