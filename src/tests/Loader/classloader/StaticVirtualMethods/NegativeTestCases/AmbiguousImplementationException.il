@@ -350,7 +350,16 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/124260')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasm')
+    }
     .entrypoint
     // Code size       452 (0x1c4)
     .maxstack  2

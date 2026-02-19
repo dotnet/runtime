@@ -68,7 +68,8 @@ namespace GitHub_19438
         public static void TestEntryPoint()
         {
             const int iterationCount = 10;
-            const int itemCount = 1000000;
+            // WASM-TODO: active issue https://github.com/dotnet/runtime/issues/124218
+            int itemCount = TestLibrary.PlatformDetection.IsWasm ? 1000 : 1000000;
 
             long totalTaskTime = 0;
 
