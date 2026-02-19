@@ -1989,7 +1989,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
     {
-        TBase elem = ((mask >> (i * sizeof(TBase))) & allTBaseBits);
+        TBase elem = (TBase)((mask >> (i * sizeof(TBase))) & allTBaseBits);
         if (elem == 0)
         {
             // Found the first zero
@@ -2007,7 +2007,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     // Find an unbroken sequence of 0s.
     for (uint32_t i = firstZero; i < count; i++)
     {
-        TBase elem = ((mask >> (i * sizeof(TBase))) & allTBaseBits);
+        TBase elem = (TBase)((mask >> (i * sizeof(TBase))) & allTBaseBits);
         if (elem != 0)
         {
             // Either a 1 or other bits are set. Invalid sequence
