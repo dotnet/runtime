@@ -3,7 +3,7 @@
 
 import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable, LoaderConfigInternal } from "./types";
 import { InternalExchangeIndex } from "./types";
-import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import { _ems_ } from "../ems-ambient";
 
 import GitHash from "consts:gitHash";
 
