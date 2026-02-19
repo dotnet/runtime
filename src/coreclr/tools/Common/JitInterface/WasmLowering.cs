@@ -160,10 +160,6 @@ namespace Internal.JitInterface
                 {
                     explicitThis = true;
                 }
-                else
-                {
-                    throw new NotImplementedException("Implicit this");
-                }
             }
 
             if (method.IsUnmanagedCallersOnly) // reverse P/Invoke

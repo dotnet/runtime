@@ -496,16 +496,8 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
-#ifdef DEBUG
-                    if (JitTls::GetCompiler()->verbose)
-                    {
-                        printf("node==");
-                        Compiler::printTreeID(node);
-                        printf(" prev==");
-                        Compiler::printTreeID(prev);
-                        printf("\n");
-                    }
-#endif
+
+                    JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
                 }
 
