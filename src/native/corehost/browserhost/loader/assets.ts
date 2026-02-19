@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback } from "./types";
+import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetNativeBrowserExports } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -99,7 +99,7 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         ? assetInternal.virtualPath
         : browserVirtualAppBase + assetInternal.virtualPath;
     if (assetInternal.virtualPath.endsWith(".wasm")) {
-        assetInternal.behavior = "webcil01";
+        assetInternal.behavior = "webcil10";
         const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
@@ -154,6 +154,19 @@ export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
     }
 }
 
+export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
+    totalAssetsToDownload++;
+    const assetInternal = asset as AssetEntryInternal;
+    if (assetInternal.name && !asset.resolvedUrl) {
+        asset.resolvedUrl = locateFile(assetInternal.name);
+    }
+    assetInternal.behavior = "symbols";
+    assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
+    const table = await fetchText(assetInternal);
+    onDownloadedAsset();
+    dotnetDiagnosticsExports.installNativeSymbols(table || "");
+}
+
 async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null> {
     dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
     const response = await loadResource(asset);
@@ -168,8 +181,21 @@ async function fetchBytes(asset: AssetEntryInternal): Promise<Uint8Array | null>
     return new Uint8Array(buffer);
 }
 
+async function fetchText(asset: AssetEntryInternal): Promise<string | null> {
+    dotnetAssert.check(asset && asset.resolvedUrl, "Bad asset.resolvedUrl");
+    const response = await loadResource(asset);
+    if (!response.ok) {
+        if (asset.isOptional) {
+            dotnetLogger.warn(`Optional resource '${asset.name}' failed to load from '${asset.resolvedUrl}'. HTTP status: ${response.status} ${response.statusText}`);
+            return null;
+        }
+        throw new Error(`Failed to load resource '${asset.name}' from '${asset.resolvedUrl}'. HTTP status: ${response.status} ${response.statusText}`);
+    }
+    return response.text();
+}
+
 function loadResource(asset: AssetEntryInternal): Promise<Response> {
-    if ("dotnetwasm" === asset.behavior || "webcil01" === asset.behavior) {
+    if (noThrottleNoRetry[asset.behavior]) {
         // `response.arrayBuffer()` can't be called twice.
         return loadResourceFetch(asset);
     }
@@ -326,8 +352,9 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "icu": "globalization",
     "vfs": "configuration",
     "manifest": "manifest",
+    "symbols": "pdb",
     "dotnetwasm": "dotnetwasm",
-    "webcil01": "dotnetwasm",
+    "webcil10": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
@@ -341,6 +368,13 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "icu": "application/octet-stream",
     "vfs": "application/octet-stream",
     "manifest": "application/json",
+    "symbols": "text/plain; charset=utf-8",
     "dotnetwasm": "application/wasm",
-    "webcil01": "application/wasm",
+    "webcil10": "application/wasm",
+};
+
+const noThrottleNoRetry: { [key: string]: number | undefined } = {
+    "dotnetwasm": 1,
+    "symbols": 1,
+    "webcil10": 1,
 };

@@ -418,7 +418,7 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(COMWRAPPERS,                 Interop,          ComWrappers)
 DEFINE_CLASS(CREATEOBJECTFLAGS,           Interop,          CreateObjectFlags)
 DEFINE_CLASS(MANAGED_OBJECT_WRAPPER_HOLDER,Interop,         ComWrappers+ManagedObjectWrapperHolder)
-DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObjectWrapper)
+DEFINE_CLASS(NATIVE_OBJECT_WRAPPER,       Interop,         ComWrappers+NativeObjectWrapper) // cDAC depends on the exact namespace and name
 DEFINE_METHOD(COMWRAPPERS,     CALL_ICUSTOMQUERYINTERFACE,  CallICustomQueryInterface,  SM_ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_COM_INTERFACE_FOR_OBJECT_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateComInterfaceForObjectWithGlobalMarshallingInstance, SM_Obj_RetIntPtr)
 DEFINE_METHOD(COMWRAPPERS, GET_OR_CREATE_OBJECT_FOR_COM_INSTANCE_WITH_GLOBAL_MARSHALLING_INSTANCE, GetOrCreateObjectForComInstanceWithGlobalMarshallingInstance, SM_IntPtr_CreateObjectFlags_RetObj)
