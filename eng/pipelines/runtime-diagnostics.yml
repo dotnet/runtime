@@ -5,6 +5,16 @@ parameters:
   displayName: Diagnostics Branch
   type: string
   default: main
+- name: cdacDumpPlatforms
+  displayName: cDAC Dump Platforms
+  type: object
+  default:
+    - windows_x64
+    - windows_arm64
+    - linux_x64
+    - linux_arm64
+    - osx_x64
+    - osx_arm64
 
 resources:
   repositories:
@@ -145,9 +155,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          platforms:
-          - windows_x64
-          - linux_x64
+          platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
             buildArgs: -s clr+libs+tools.cdac -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig)
             nameSuffix: CdacDumpGeneration
@@ -178,68 +186,38 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
-          platforms:
-          - windows_x64
-          - linux_x64
+          platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
             buildArgs: -s tools.cdacdumptests /p:SkipDumpGeneration=true /p:SkipDumpVersions=net10.0
             nameSuffix: CdacDumpTests
             timeoutInMinutes: 60
             postBuildSteps:
-            # Download dumps from all platforms
-            - template: /eng/pipelines/common/download-artifact-step.yml
-              parameters:
-                artifactName: CdacDumps_windows_x64
-                artifactFileName: CdacDumps_windows_x64.tar.gz
-                unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/windows_x64
-                displayName: 'Windows x64 Dumps'
-            - template: /eng/pipelines/common/download-artifact-step.yml
-              parameters:
-                artifactName: CdacDumps_linux_x64
-                artifactFileName: CdacDumps_linux_x64.tar.gz
-                unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/linux_x64
-                displayName: 'Linux x64 Dumps'
-            # Run tests against Windows dumps
-            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
-                $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
-                --no-build
-                --logger "trx;LogFileName=CdacDumpTests_windows_x64.trx"
-                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/windows_x64
-              displayName: 'Run cDAC Dump Tests (windows_x64 dumps)'
-              continueOnError: true
-              env:
-                CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/windows_x64
-            - task: PublishTestResults@2
-              displayName: 'Publish Results ($(osGroup)-$(archType) → windows_x64)'
-              inputs:
-                testResultsFormat: VSTest
-                testResultsFiles: '**/*.trx'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/windows_x64'
-                testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → windows_x64'
-                failTaskOnFailedTests: true
-                publishRunAttachments: true
-                buildConfiguration: $(_BuildConfig)
-              continueOnError: true
-              condition: always()
-            # Run tests against Linux dumps
-            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
-                $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
-                --no-build
-                --logger "trx;LogFileName=CdacDumpTests_linux_x64.trx"
-                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/linux_x64
-              displayName: 'Run cDAC Dump Tests (linux_x64 dumps)'
-              continueOnError: true
-              env:
-                CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/linux_x64
-            - task: PublishTestResults@2
-              displayName: 'Publish Results ($(osGroup)-$(archType) → linux_x64)'
-              inputs:
-                testResultsFormat: VSTest
-                testResultsFiles: '**/*.trx'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/linux_x64'
-                testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → linux_x64'
-                failTaskOnFailedTests: true
-                publishRunAttachments: true
-                buildConfiguration: $(_BuildConfig)
-              continueOnError: true
-              condition: always()
+            # Download and test against dumps from each platform
+            - ${{ each dumpPlatform in parameters.cdacDumpPlatforms }}:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CdacDumps_${{ dumpPlatform }}
+                  artifactFileName: CdacDumps_${{ dumpPlatform }}.tar.gz
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
+                  displayName: '${{ dumpPlatform }} Dumps'
+              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
+                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                  --no-build
+                  --logger "trx;LogFileName=CdacDumpTests_${{ dumpPlatform }}.trx"
+                  --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}
+                displayName: 'Run cDAC Dump Tests (${{ dumpPlatform }} dumps)'
+                continueOnError: true
+                env:
+                  CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
+              - task: PublishTestResults@2
+                displayName: 'Publish Results ($(osGroup)-$(archType) → ${{ dumpPlatform }})'
+                inputs:
+                  testResultsFormat: VSTest
+                  testResultsFiles: '**/*.trx'
+                  searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}'
+                  testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → ${{ dumpPlatform }}'
+                  failTaskOnFailedTests: true
+                  publishRunAttachments: true
+                  buildConfiguration: $(_BuildConfig)
+                continueOnError: true
+                condition: always()
