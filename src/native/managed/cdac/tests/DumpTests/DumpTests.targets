@@ -43,6 +43,7 @@
     <Debuggee Include="ExceptionState" />
     <Debuggee Include="MultiModule" />
     <Debuggee Include="GCRoots" />
+    <Debuggee Include="ServerGC" />
     <Debuggee Include="StackWalk" />
   </ItemGroup>
 

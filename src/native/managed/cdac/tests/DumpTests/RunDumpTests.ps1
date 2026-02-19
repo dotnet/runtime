@@ -109,7 +109,7 @@ if (-not (Test-Path $dotnet)) {
 }
 
 # --- Debuggees and versions ---
-$allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots", "StackWalk")
+$allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots", "ServerGC", "StackWalk")
 $allVersions = @("local", "net10.0")
 
 # --- DumpArchive mode: extract and test CI dumps ---
