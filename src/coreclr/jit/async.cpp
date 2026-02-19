@@ -604,9 +604,11 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
         // mutated if we know the prolog will zero it anyway (otherwise we
         // could be skipping this explicit zero init on resumption).
         // We could improve this a bit by still skipping it but inserting
-        // explicit zero init on resumption, but these cases seem to be rare.
+        // explicit zero init on resumption, but these cases seem to be rare
+        // and that would require tracking additional information.
         if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
-            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), false, false))
+            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
+                                                  /* bbIsReturn */ false))
         {
             return;
         }
