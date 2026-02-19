@@ -19,12 +19,12 @@ namespace System.Net.Tests
         private readonly ITestOutputHelper _output;
         private const string FtpServerUrl = "apacheweb.linux.contoso.com";
         private const string FtpUsername = "ftpuser";
-        private const string FtpPassword = "ftppass";
+        private const string FtpPassword = "PLACEHOLDER_FTP_PASSWORD";
 
         public FtpWebRequestAuthenticationTest(ITestOutputHelper output)
         {
             _output = output;
-            
+
             // Set up certificate validation callback to accept self-signed certificates in test environment
 #pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
             ServicePointManager.ServerCertificateValidationCallback = ValidateServerCertificate;
@@ -94,7 +94,7 @@ namespace System.Net.Tests
 
         [ConditionalTheory(typeof(EnterpriseTestConfiguration), nameof(EnterpriseTestConfiguration.Enabled))]
         [InlineData(false)] // Test without SSL
-        [InlineData(true)]  // Test with SSL  
+        [InlineData(true)]  // Test with SSL
         public async Task FtpDownload_StreamDisposal(bool useSsl)
         {
             string fileName = $"test_{Guid.NewGuid()}.txt";
