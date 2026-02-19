@@ -300,7 +300,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void LoadWrappingCertificate_PEM_WithTrailingData()
         {
-            byte[] source = [..TestData.NestedCertificates, 1 ,2, 3, 4];
+            byte[] source = [..TestData.NestedCertificates, 1, 2, 3, 4];
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 
