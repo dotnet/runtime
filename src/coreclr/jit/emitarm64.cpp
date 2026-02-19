@@ -12308,7 +12308,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
             code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             code |= insEncodeReg_Vm(id->idReg3()); // mmmmm
-            code |= ((code_t)imm << 10);           // iiii
+            code |= ((code_t)imm << 10);           // iiiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
