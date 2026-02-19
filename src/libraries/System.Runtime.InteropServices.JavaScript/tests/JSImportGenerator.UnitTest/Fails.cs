@@ -43,6 +43,7 @@ namespace JSImportGenerator.Unit.Tests
                 "Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of global::System.Threading.Tasks.Task<global::System.DateTimeOffset>. The generated source will not handle marshalling of parameter 'a13'. For more information see https://aka.ms/dotnet-wasm-jsinterop",
                 "Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of global::System.Threading.Tasks.Task<long>. The generated source will not handle marshalling of parameter 'a14'. For more information see https://aka.ms/dotnet-wasm-jsinterop",
                 "Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of global::System.Threading.Tasks.Task<long>. The generated source will not handle marshalling of parameter 'a15'. For more information see https://aka.ms/dotnet-wasm-jsinterop",
+                "Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of global::System.ArraySegment<float>. The generated source will not handle marshalling of parameter 'a16'. For more information see https://aka.ms/dotnet-wasm-jsinterop",
             },null };
             yield return new object?[] { CodeSnippets.InOutRef, new string[] {
                 "Parameters with 'in', 'out' and 'ref' modifiers are not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter 'a1'. For more information see https://aka.ms/dotnet-wasm-jsinterop",
