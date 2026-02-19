@@ -266,11 +266,14 @@ namespace System.Threading.Channels
                 ctx as ExecutionContext ??
                 (ctx as CapturedSchedulerAndExecutionContext)?._executionContext;
 
+            _capturedContext = null;
             if (ec is null)
             {
                 Action<object?> c = _continuation!;
                 _continuation = s_completedSentinel;
-                c(_continuationState);
+                object? state = _continuationState;
+                _continuationState = null;
+                c(state);
             }
             else
             {
@@ -279,7 +282,9 @@ namespace System.Threading.Channels
                     var thisRef = (AsyncOperation)s!;
                     Action<object?> c = thisRef._continuation!;
                     thisRef._continuation = s_completedSentinel;
-                    c(thisRef._continuationState);
+                    object? state = thisRef._continuationState;
+                    thisRef._continuationState = null;
+                    c(state);
                 }, this);
             }
         }

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04
 
 # Prevents dialog prompting when installing packages
 ARG DEBIAN_FRONTEND=noninteractive

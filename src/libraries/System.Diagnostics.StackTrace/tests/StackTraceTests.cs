@@ -583,37 +583,42 @@ namespace System.Diagnostics.Tests
             }, regPattern).Dispose();
         }
 
+        // On Android, stack traces do not include file names and line numbers
+        // Tracking issue: https://github.com/dotnet/runtime/issues/124087
+        private static string FileInfoPattern(string fileLinePattern) =>
+            PlatformDetection.IsAndroid ? "" : fileLinePattern;
+
         public static Dictionary<string, string[]> MethodExceptionStrings = new()
         {
             { "Foo", new[] {
                 @"Exception from Foo2",
-                @"V2Methods\.Foo2\(Int32.*Foo2.*\.cs:line 10",
-                @"V2Methods\.Foo1\(Int32.*Foo1.*\.cs:line 6",
+                @"V2Methods\.Foo2\(Int32" + FileInfoPattern(@".*Foo2.*\.cs:line 10"),
+                @"V2Methods\.Foo1\(Int32" + FileInfoPattern(@".*Foo1.*\.cs:line 6"),
                 @"V1Methods.*Test1",
                 @"V1Methods.*Test0",
-                @"V2Methods\.Foo\(\).*Foo.*\.cs:line 6"
+                @"V2Methods\.Foo\(\)" + FileInfoPattern(@".*Foo.*\.cs:line 6")
             }},
             { "Bar", new[] {
                 @"Exception from Bar",
-                @"V2Methods\.Bar\(Int32.*Bar.*\.cs:line 4",
-                @"V2Methods\.Bar\(Int32.*Bar.*\.cs:line 5"
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 4"),
+                @"V2Methods\.Bar\(Int32" + FileInfoPattern(@".*Bar.*\.cs:line 5")
             }},
             {"Quux", new[] {
                 @"Exception from Quux1",
-                @"V2Methods\.Quux1\(Int32.*Quux1.*\.cs:line 6",
+                @"V2Methods\.Quux1\(Int32" + FileInfoPattern(@".*Quux1.*\.cs:line 6"),
                 @"V1Methods.*Test1",
                 @"V1Methods.*Test0",
-                @"V2Methods\.Quux\(\).*Quux.*\.cs:line 6"
+                @"V2Methods\.Quux\(\)" + FileInfoPattern(@".*Quux.*\.cs:line 6")
             }},
             { "Quuux", new[] {
                 @"Exception from Quuux2",
-                @"V2Methods\.Quuux2\(\).*Quuux2.*\.cs:line 4",
-                @"V2Methods\.Quuux\(\).*Quuux.*\.cs:line [35]" // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
+                @"V2Methods\.Quuux2\(\)" + FileInfoPattern(@".*Quuux2.*\.cs:line 4"),
+                @"V2Methods\.Quuux\(\)" + FileInfoPattern(@".*Quuux.*\.cs:line [35]") // if yield finishes before Task is awaited, line 3 else line 5. Either is ok.
             }},
             {"Bux", new[] {
                 @"Exception from Baz method.",
-                @"V2Methods\.Baz\(\).*Baz.*\.cs:line 4",
-                @"V2Methods\.Bux\(\).*Bux.*\.cs:line 6"
+                @"V2Methods\.Baz\(\)" + FileInfoPattern(@".*Baz.*\.cs:line 4"),
+                @"V2Methods\.Bux\(\)" + FileInfoPattern(@".*Bux.*\.cs:line 6")
             }},
         };
 
@@ -627,7 +632,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/123979", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124015", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of resources within the resource blob in the image.
     /// </summary>
-    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ResourceIndexNode : ObjectNode, ISymbolDefinitionNode
     {
         private ResourceDataNode _resourceDataNode;
 
@@ -22,10 +22,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _resourceDataNode = resourceDataNode;
         }
-
-        private int? _size;
-
-        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -104,7 +100,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] blob = nativeWriter.Save();
-            _size = blob.Length;
             return blob;
         }
 
