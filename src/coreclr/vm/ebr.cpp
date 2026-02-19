@@ -87,7 +87,7 @@ EbrCollector::Init()
 
     _ASSERTE(!m_initialized);
 
-    m_globalEpoch = 0;
+    m_globalEpoch.Store(0);
     m_pendingSizeInBytes = 0;
     m_pThreadListHead = nullptr;
     for (uint32_t i = 0; i < EBR_EPOCHS; i++)
@@ -178,8 +178,8 @@ EbrCollector::EnterCriticalRegion()
     if (pData->m_criticalDepth == 1)
     {
         // Outermost entry: observe the global epoch and set ACTIVE_FLAG.
-        uint32_t epoch = m_globalEpoch;
-        pData->m_localEpoch = (epoch | ACTIVE_FLAG);
+        uint32_t epoch = m_globalEpoch.Load();
+        pData->m_localEpoch.Store(epoch | ACTIVE_FLAG);
 
         // Full fence to ensure the epoch observation is visible before any
         // reads in the critical region. This pairs with the full fence
@@ -211,8 +211,7 @@ EbrCollector::ExitCriticalRegion()
     {
         // Outermost exit: ensure all stores in the critical path are visible
         // before clearing the active flag.
-        MemoryBarrier();
-        pData->m_localEpoch = 0;
+        pData->m_localEpoch.Store(0);
     }
 }
 
@@ -272,12 +271,12 @@ EbrCollector::CanAdvanceEpoch()
     CONTRACTL_END;
     _ASSERTE(m_threadListLock.OwnedByCurrentThread());
 
-    uint32_t currentEpoch = m_globalEpoch;
+    uint32_t currentEpoch = m_globalEpoch.Load();
 
     EbrThreadData* pData = VolatileLoad(&m_pThreadListHead);
     while (pData != nullptr)
     {
-        uint32_t localEpoch = pData->m_localEpoch;
+        uint32_t localEpoch = pData->m_localEpoch.Load();
         bool active = (localEpoch & ACTIVE_FLAG) != 0;
         if (active)
         {
@@ -309,15 +308,14 @@ EbrCollector::TryAdvanceEpoch()
     // is still valid when we act on it.
     CrstHolder lock(&m_threadListLock);
 
-    // Full fence to synchronize with the MemoryBarrier() calls in
-    // EnterCriticalRegion / ExitCriticalRegion.
+    // Full fence to synchronize with EnterCriticalRegion / ExitCriticalRegion.
     MemoryBarrier();
 
     if (!CanAdvanceEpoch())
         return false;
 
-    uint32_t newEpoch = ((uint32_t)m_globalEpoch + 1) % EBR_EPOCHS;
-    m_globalEpoch = newEpoch;
+    uint32_t newEpoch = (m_globalEpoch.Load() + 1) % EBR_EPOCHS;
+    m_globalEpoch.Store(newEpoch);
 
     return true;
 }
@@ -358,7 +356,7 @@ EbrCollector::CleanUpPending()
 
             // Objects retired 2 epochs ago are safe to delete. With 3 epochs
             // and clock arithmetic, the safe slot is (current + 1) % 3.
-            uint32_t currentEpoch = m_globalEpoch;
+            uint32_t currentEpoch = m_globalEpoch.Load();
             uint32_t safeSlot = (currentEpoch + 1) % EBR_EPOCHS;
 
             pDetached = DetachQueue(safeSlot);
@@ -413,7 +411,7 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     {
         CrstHolder lock(&m_pendingLock);
 
-        uint32_t slot = m_globalEpoch;
+        uint32_t slot = m_globalEpoch.Load();
         pEntry->m_pNext = m_pPendingHeads[slot];
         m_pPendingHeads[slot] = pEntry;
         m_pendingSizeInBytes = (size_t)m_pendingSizeInBytes + estimatedSize;
