@@ -8,7 +8,7 @@ Preinitialized statics feature was added in R2R format version **18.2**.
 
 ReadyToRun now can interpret eligible `.cctor` bodies at compile time, serialize the resulting static state into the R2R image, and mark types as preinitialized so runtime class-init can be skipped.
 
-The preintialization interpreter is shared with the NativeAOT ILCompiler, so class constructors that can be preinitialized for NativeAOT are also supported in R2R, with some additional constraints. There're various limitations on what can be preinitialized, and the supported scenarios are listed as follows.
+The preinitialization interpreter is shared with the NativeAOT ILCompiler, so class constructors that can be preinitialized for NativeAOT are also supported in R2R, with some additional constraints. There're various limitations on what can be preinitialized, and the supported scenarios are listed as follows.
 
 | Scenario | Support |
 | --- | --- |
