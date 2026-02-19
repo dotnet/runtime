@@ -29,6 +29,10 @@ set(XZ_TOOL_LZMAINFO OFF)
 set(XZ_TOOL_SYMLINKS OFF)
 set(XZ_TOOL_SYMLINKS_LZMA OFF)
 
+# trick xz's cmake to avoid compiling libgnu, which we exclude from vendored sources
+# since it is only used for cli tools and not for liblzma
+set(HAVE_GETOPT_LONG ON)
+
 set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(xz)
