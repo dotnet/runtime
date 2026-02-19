@@ -62,6 +62,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
         public bool IsComponentModule;
+        public bool StripInliningInfo;
+        public bool StripDebugInfo;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -753,7 +755,7 @@ namespace ILCompiler.DependencyAnalysis
                 TypesTableNode typesTable = new TypesTableNode(inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
 
-                if (CompilationModuleGroup.IsCompositeBuildMode)
+                if (CompilationModuleGroup.IsCompositeBuildMode && !OptimizationFlags.StripInliningInfo)
                 {
                     InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
@@ -788,10 +790,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
-                CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
-            this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            if (!OptimizationFlags.StripInliningInfo)
+            {
+                InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
+                    CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
+                this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
+            }
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
@@ -799,8 +804,11 @@ namespace ILCompiler.DependencyAnalysis
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
 
-            DebugInfoTable = new DebugInfoTableNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+            if (!OptimizationFlags.StripDebugInfo)
+            {
+                DebugInfoTable = new DebugInfoTableNode();
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+            }
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
