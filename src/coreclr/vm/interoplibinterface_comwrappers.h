@@ -77,6 +77,13 @@ private:
 public:
     OBJECTREF _wrappedObject;
     DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
+    friend struct ::cdac_data<ManagedObjectWrapperHolderObject>;
+};
+
+template<>
+struct cdac_data<ManagedObjectWrapperHolderObject>
+{
+    static constexpr size_t WrappedObject = offsetof(ManagedObjectWrapperHolderObject, _wrappedObject);
 };
 
 class NativeObjectWrapperObject : public Object
