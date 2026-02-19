@@ -373,6 +373,8 @@ export function marshalCsObjectToCs(arg: JSMarshalerArgument, value: any): void 
                 marshalArrayToCsImpl(arg, value, MarshalerType.Byte);
             } else if (value instanceof Float64Array) {
                 marshalArrayToCsImpl(arg, value, MarshalerType.Double);
+            } else if (value instanceof Float32Array) {
+                marshalArrayToCsImpl(arg, value, MarshalerType.Single);
             } else if (value instanceof Int32Array) {
                 marshalArrayToCsImpl(arg, value, MarshalerType.Int32);
             } else if (Array.isArray(value)) {
@@ -382,7 +384,6 @@ export function marshalCsObjectToCs(arg: JSMarshalerArgument, value: any): void 
                 || value instanceof Uint8ClampedArray
                 || value instanceof Uint16Array
                 || value instanceof Uint32Array
-                || value instanceof Float32Array
             ) {
                 throw new Error("NotImplementedException: TypedArray");
             } else if (isThenable(value)) {

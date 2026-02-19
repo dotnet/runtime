@@ -260,6 +260,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Byte], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Int32], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Double], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
+                (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Single], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
 
                 // function + action
                 (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, var argJSTypes) when argTypes.Length != argJSTypes.Length

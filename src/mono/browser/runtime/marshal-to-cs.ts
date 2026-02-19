@@ -400,6 +400,8 @@ export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): 
                 marshal_exception_to_cs(arg, value);
             } else if (value instanceof Uint8Array) {
                 marshal_array_to_cs_impl(arg, value, MarshalerType.Byte);
+            } else if (value instanceof Float32Array) {
+                marshal_array_to_cs_impl(arg, value, MarshalerType.Single);
             } else if (value instanceof Float64Array) {
                 marshal_array_to_cs_impl(arg, value, MarshalerType.Double);
             } else if (value instanceof Int32Array) {
@@ -411,7 +413,6 @@ export function marshal_cs_object_to_cs (arg: JSMarshalerArgument, value: any): 
                 || value instanceof Uint8ClampedArray
                 || value instanceof Uint16Array
                 || value instanceof Uint32Array
-                || value instanceof Float32Array
             ) {
                 throw new Error("NotImplementedException: TypedArray");
             } else if (isThenable(value)) {
