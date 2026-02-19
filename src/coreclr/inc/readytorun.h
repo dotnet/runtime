@@ -471,6 +471,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_AllocContinuation = 0x113,
     READYTORUN_HELPER_AllocContinuationClass = 0x114,
     READYTORUN_HELPER_AllocContinuationMethod = 0x115,
+
+    READYTORUN_HELPER_InitClass                 = 0x116,
+    READYTORUN_HELPER_InitInstClass             = 0x117,
 };
 
 #include "readytoruninstructionset.h"
