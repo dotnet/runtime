@@ -201,4 +201,5 @@ When decoding encoded references in GC payloads, runtime currently accepts impor
 
 ### GC object allocation strategy
 
-The preinitializer will reject cases where a GC static field contains a reference to non-frozen objects. As a result we can safely allocate GC static objects in the frozen object heap, and allow them to be accessed directly.
+The preinitializer will reject cases where a GC static field contains a reference to non-frozen objects that cannot be serialized. As a result we can safely allocate GC static objects in the frozen object heap, and allow them to be accessed directly. But it's possible that a GC type may contain GC pointers which can fail `TryAllocateFrozenObject`, in which case we will fall back to regular heap allocation.
+

@@ -4227,7 +4227,8 @@ OBJECTREF MethodTable::MaterializeReadyToRunPreinitializedClassData(TADDR templa
 
         INT32 arrayLength = GET_UNALIGNED_VAL32((PTR_BYTE)(templateDataAddress + TARGET_POINTER_SIZE));
         OBJECTREF arrayRef = TryAllocateFrozenSzArray(pObjectType, arrayLength);
-        _ASSERTE(arrayRef != NULL);
+        if (arrayRef == NULL)
+            arrayRef = AllocateSzArray(pObjectType, arrayLength);
 
         GCPROTECT_BEGIN(arrayRef);
         {
@@ -4299,7 +4300,8 @@ OBJECTREF MethodTable::MaterializeReadyToRunPreinitializedClassData(TADDR templa
     }
 
     OBJECTREF objectRef = TryAllocateFrozenObject(pObjectType);
-    _ASSERTE(objectRef != NULL);
+    if (objectRef == NULL)
+        objectRef = AllocateObject(pObjectType);
 
     GCPROTECT_BEGIN(objectRef);
     {
