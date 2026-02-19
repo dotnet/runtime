@@ -20,7 +20,7 @@ import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
-import { fixupPointer, free, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { fixupPointer, free, localHeapViewF32, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
@@ -536,6 +536,10 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         const bufferOffset = fixupPointer(buffer_ptr, 3);
         const sourceView = localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
+    } else if (element_type == MarshalerType.Single) {
+        const bufferOffset = fixupPointer(buffer_ptr, 2);
+        const sourceView = localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
+        result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
@@ -555,6 +559,8 @@ function _marshal_span_to_js (arg: JSMarshalerArgument, element_type?: Marshaler
         result = new Span(<any>buffer_ptr, length, MemoryViewType.Int32);
     } else if (element_type == MarshalerType.Double) {
         result = new Span(<any>buffer_ptr, length, MemoryViewType.Double);
+    } else if (element_type == MarshalerType.Single) {
+        result = new Span(<any>buffer_ptr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
@@ -573,6 +579,8 @@ function _marshal_array_segment_to_js (arg: JSMarshalerArgument, element_type?: 
         result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Int32);
     } else if (element_type == MarshalerType.Double) {
         result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Double);
+    } else if (element_type == MarshalerType.Single) {
+        result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }

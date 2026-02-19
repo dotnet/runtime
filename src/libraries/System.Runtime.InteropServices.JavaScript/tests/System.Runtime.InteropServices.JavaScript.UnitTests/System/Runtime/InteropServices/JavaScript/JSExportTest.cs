@@ -254,6 +254,42 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public void JsExportArraySegmentOfDouble()
+        {
+            ArraySegment<double> segment = new ArraySegment<double>([1, 2, 3, double.MaxValue, double.MinValue, double.Pi, double.NegativeInfinity, double.PositiveInfinity, double.NaN]);
+            ArraySegment<double> res = JavaScriptTestHelper.invoke1_ArraySegmentOfDouble(segment, nameof(JavaScriptTestHelper.EchoArraySegmentOfDouble));
+            Assert.Equal(segment.Count, res.Count);
+            Assert.Equal(segment.Array, res.Array);
+        }
+
+        [Fact]
+        public void JsExportArraySegmentOfSingle()
+        {
+            ArraySegment<float> segment = new ArraySegment<float>([1, 2, 3, float.MaxValue, float.MinValue, float.Pi, float.NegativeInfinity, float.PositiveInfinity, float.NaN]);
+            ArraySegment<float> res = JavaScriptTestHelper.invoke1_ArraySegmentOfSingle(segment, nameof(JavaScriptTestHelper.EchoArraySegmentOfSingle));
+            Assert.Equal(segment.Count, res.Count);
+            Assert.Equal(segment.Array, res.Array);
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalDoubleArrayCases))]
+        public void JsExportSpanOfDouble(double[] value)
+        {
+            Span<double> span = new Span<double>(value);
+            Span<double> res = JavaScriptTestHelper.invoke1_SpanDouble(span, nameof(JavaScriptTestHelper.EchoSpanDouble));
+            Assert.Equal(value, res);
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public void JsExportSpanOfSingle(float[] value)
+        {
+            Span<float> span = new Span<float>(value);
+            Span<float> res = JavaScriptTestHelper.invoke1_SpanSingle(span, nameof(JavaScriptTestHelper.EchoSpanSingle));
+            Assert.Equal(value, res);
+        }
+
+        [Fact]
         public void JsExportStringNoNs()
         {
             var actual = JavaScriptTestHelper.invoke2_String("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
