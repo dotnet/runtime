@@ -109,7 +109,7 @@
           IgnoreExitCode="true"
           EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
-    <Error Text="Dump file was not created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
+    <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
 
   <!-- Released runtime: self-contained publish, run the exe directly -->
@@ -130,7 +130,7 @@
           IgnoreExitCode="true"
           EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
-    <Error Text="Dump file was not created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
+    <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
 
 </Project>

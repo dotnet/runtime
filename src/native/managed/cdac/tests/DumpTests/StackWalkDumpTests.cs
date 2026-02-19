@@ -61,7 +61,7 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         // but the stack walk may include runtime helper frames and native transitions.
         // We just assert there are multiple frames visible.
         Assert.True(frameList.Count >= 1,
-            $"Expected multiple stack frames from the crashing thread, got {frameList.Count}");
+            $"Expected at least 1 stack frame from the crashing thread, got {frameList.Count}");
     }
 
     [ConditionalFact]

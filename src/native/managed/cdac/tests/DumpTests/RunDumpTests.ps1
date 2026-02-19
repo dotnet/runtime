@@ -84,7 +84,20 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 # --- Resolve paths ---
-$repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)))))
+function Find-RepoRoot([string]$startDir) {
+    $dir = $startDir
+    while ($dir) {
+        if (Test-Path (Join-Path $dir "global.json")) {
+            return $dir
+        }
+        $parent = Split-Path -Parent $dir
+        if ($parent -eq $dir) { break }
+        $dir = $parent
+    }
+    Write-Error "Could not find repository root (no global.json found above $startDir)"
+    exit 1
+}
+$repoRoot = Find-RepoRoot $PSScriptRoot
 $dotnet = Join-Path $repoRoot ".dotnet\dotnet.exe"
 $dumpTestsProj = Join-Path $PSScriptRoot "Microsoft.Diagnostics.DataContractReader.DumpTests.csproj"
 $dumpOutputDir = Join-Path $repoRoot "artifacts\dumps\cdac"

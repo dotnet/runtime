@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 ///         at the start of the test method</item>
 /// </list>
 /// </remarks>
-public abstract class DumpTestBase : IAsyncLifetime, IDisposable
+public abstract class DumpTestBase : IAsyncLifetime
 {
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
@@ -80,13 +80,20 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
         }
         catch
         {
+            // Resolving the target OS is best-effort. The RuntimeInfo contract may be
+            // unavailable in older dumps or throw for unexpected reasons. Treat the OS
+            // as unknown and allow tests to continue — they can handle a missing TargetOS.
             _targetOS = null;
         }
 
         return Task.CompletedTask;
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public Task DisposeAsync()
+    {
+        _host?.Dispose();
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Skips the current test if <see cref="RuntimeVersion"/> matches <paramref name="version"/>.
@@ -154,9 +161,4 @@ public abstract class DumpTestBase : IAsyncLifetime, IDisposable
         return null;
     }
 
-    public void Dispose()
-    {
-        _host?.Dispose();
-        System.GC.SuppressFinalize(this);
-    }
 }
