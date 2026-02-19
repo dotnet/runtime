@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
@@ -55,6 +56,7 @@ namespace System.Net
         //
         // Returns:
         // True if <prefixUri> is a prefix of this URI
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private bool IsPrefix(Uri uri, int prefixLen)
         {
             Debug.Assert(uri != null);
