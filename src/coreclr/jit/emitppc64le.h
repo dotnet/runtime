@@ -9,19 +9,4 @@
 
 //TODO POWERPC64
 
-inline static bool isFloatReg(regNumber reg)
-{
-    abort();
-}
-
-inline static bool isGeneralRegister(regNumber reg)
-{
-    abort();
-} // Excludes REG_ZR
-
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
-
-void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
-
-
 #endif
