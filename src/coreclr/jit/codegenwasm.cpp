@@ -887,14 +887,25 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             const int castMaxValue = desc.CheckSmallIntMax();
             const int castMinValue = desc.CheckSmallIntMin();
 
-            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
-            GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_gt_u : INS_i64_gt_s)
-                                             : (srcUnsigned ? INS_i32_gt_u : INS_i32_gt_s));
-            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
-            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
-            GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_lt_u : INS_i64_lt_s)
-                                             : (srcUnsigned ? INS_i32_lt_u : INS_i32_lt_s));
-            GetEmitter()->emitIns(INS_i32_or);
+            if (castMinValue == 0)
+            {
+                // When the minimum is 0, a single unsigned upper-bound check is sufficient.
+                // For signed sources, negative values become large unsigned values and
+                // thus also trigger the overflow via the same comparison.
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_u : INS_i32_gt_u);
+            }
+            else
+            {
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
+                GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_gt_u : INS_i64_gt_s)
+                                                 : (srcUnsigned ? INS_i32_gt_u : INS_i32_gt_s));
+                GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
+                GetEmitter()->emitIns(is64BitSrc ? (srcUnsigned ? INS_i64_lt_u : INS_i64_lt_s)
+                                                 : (srcUnsigned ? INS_i32_lt_u : INS_i32_lt_s));
+                GetEmitter()->emitIns(INS_i32_or);
+            }
             genJumpToThrowHlpBlk(SCK_OVERFLOW);
             break;
         }
