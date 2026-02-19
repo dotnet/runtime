@@ -631,7 +631,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
-    <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
+    <Compile Include="..\..\Common\Compiler\ReadOnlyFieldPolicy.cs" Link="Compiler\ReadOnlyFieldPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
@@ -685,9 +685,9 @@
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
-    <Compile Include="Compiler\PreinitializationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\PreinitializationManager.cs" Link="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\TypeMapManager.cs" />
-    <Compile Include="Compiler\TypePreinit.cs" />
+    <Compile Include="..\..\Common\Compiler\TypePreinit.cs" Link="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UsageBasedTypeMapManager.cs" />

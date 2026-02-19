@@ -173,6 +173,9 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs" Link="Compiler\ObjectWriter\WasmInstructions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
+    <Compile Include="..\..\Common\Compiler\ReadOnlyFieldPolicy.cs" Link="Compiler\ReadOnlyFieldPolicy.cs" />
+    <Compile Include="..\..\Common\Compiler\PreinitializationManager.cs" Link="Compiler\PreinitializationManager.cs" />
+    <Compile Include="..\..\Common\Compiler\TypePreinit.cs" Link="Compiler\TypePreinit.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />
@@ -204,9 +207,6 @@
     <Compile Include="Compiler\Preinitialization\PreinitializationExtensions.cs" />
     <Compile Include="Compiler\Preinitialization\ReadyToRunPreinitializationManager.cs" />
     <Compile Include="Compiler\Logger.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\ReadOnlyFieldPolicy.cs" Link="Compiler\ReadOnlyFieldPolicy.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\PreinitializationManager.cs" Link="Compiler\PreinitializationManager.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\TypePreinit.cs" Link="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />

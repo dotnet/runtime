@@ -3251,7 +3251,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic || _firstParameter != null);
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -3755,17 +3755,18 @@ namespace ILCompiler
 
         public class PreinitializationInfo
         {
-            private Dictionary<FieldDesc, ISerializableValue> _fieldValues;
+            private readonly Dictionary<FieldDesc, ISerializableValue> _fieldValues;
 
             public MetadataType Type { get; }
 
             public string FailureReason { get; private set; }
 
-            public bool IsPreinitialized => _fieldValues != null;
+            public bool IsPreinitialized { get; private set; }
 
             public PreinitializationInfo(MetadataType type, IEnumerable<KeyValuePair<FieldDesc, ISerializableValue>> fieldValues)
             {
                 Type = type;
+                IsPreinitialized = true;
                 _fieldValues = new Dictionary<FieldDesc, ISerializableValue>();
                 foreach (var field in fieldValues)
                     _fieldValues.Add(field.Key, field.Value);
@@ -3775,6 +3776,7 @@ namespace ILCompiler
             {
                 Type = type;
                 FailureReason = failureReason;
+                IsPreinitialized = false;
             }
 
             public ISerializableValue GetFieldValue(FieldDesc field)
@@ -3789,8 +3791,9 @@ namespace ILCompiler
             {
                 if (!IsPreinitialized) return;
 
+                _fieldValues.Clear();
                 FailureReason = failureReason;
-                _fieldValues = null;
+                IsPreinitialized = false;
             }
         }
 

@@ -72,9 +72,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int GCStaticsDataSize(TypeSystemContext context)
             => ComputeGCStaticsDataSize(Type);
 
-        public int AlignedNonGCStaticsDataSize(TargetDetails target)
-            => AlignmentHelper.AlignUp(NonGCStaticsDataSize, target.PointerSize);
-
         public static bool IsNonGCStaticField(FieldDesc field)
             => field.IsStatic && !field.HasRva && !field.IsLiteral && !field.IsThreadStatic && !field.HasGCStaticBase;
 
@@ -166,10 +163,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (gcDataSize > 0)
             {
                 // GC static payload is read as pointer-sized slots at runtime.
-                int alignedNonGCDataSize = AlignedNonGCStaticsDataSize(factory.Target);
-                int currentNonGCDataSize = builder.CountBytes - initialOffset;
-                if (currentNonGCDataSize < alignedNonGCDataSize)
-                    builder.EmitZeros(alignedNonGCDataSize - currentNonGCDataSize);
+                builder.PadAlignment(factory.Target.PointerSize);
 
                 int gcInitialOffset = 0;
                 int gcStartOffset = builder.CountBytes;
@@ -195,7 +189,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int totalSize = builder.CountBytes - initialOffset;
             Debug.Assert(totalSize >= NonGCStaticsDataSize);
-            Debug.Assert(gcDataSize == 0 || totalSize >= AlignedNonGCStaticsDataSize(factory.Target) + gcDataSize);
+            Debug.Assert(gcDataSize == 0 || totalSize >= AlignmentHelper.AlignUp(NonGCStaticsDataSize, factory.Target.PointerSize) + gcDataSize);
             Debug.Assert(totalSize >= 0);
             return builder.ToObjectData();
         }

@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
             TypePreinitializationRecord computed = ComputeTypeRecord(type);
             lock (_typeRecords)
             {
-                // It's possible another thread computed the same type record while we were computing, so check again before adding and rooting.
+                // It's possible another thread computed the same type record while we were computing, so check again before adding.
                 if (_typeRecords.TryGetValue(type, out TypePreinitializationRecord existing))
                 {
                     return existing;
