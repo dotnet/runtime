@@ -4097,7 +4097,7 @@ namespace
             && !SF_IsCALLIStub(dwStubFlags)
             && !SF_IsVarArgStub(dwStubFlags))
         {
-            size_t blobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+            size_t blobSize = sizeof(ILStubHashBlobBase) + sizeof(pTargetMD);
             NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
             ZeroMemory(pBytes, blobSize);
             ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
