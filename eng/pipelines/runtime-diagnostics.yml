@@ -10,8 +10,9 @@ parameters:
   type: object
   default:
     - windows_x64
+    - windows_arm64
     - linux_x64
-    - osx_x64
+    - linux_arm64
 
 resources:
   repositories:

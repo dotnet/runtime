@@ -97,12 +97,12 @@
   <!-- Pre-commands: enable mini dump generation and set dump root for tests -->
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
-    <HelixPreCommand Include="set DOTNET_DbgMiniDumpType=2" />
+    <HelixPreCommand Include="set DOTNET_DbgMiniDumpType=4" />
     <HelixPreCommand Include="set CDAC_DUMP_ROOT=%HELIX_WORKITEM_PAYLOAD%\dumps" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' != 'windows'">
     <HelixPreCommand Include="export DOTNET_DbgEnableMiniDump=1" />
-    <HelixPreCommand Include="export DOTNET_DbgMiniDumpType=2" />
+    <HelixPreCommand Include="export DOTNET_DbgMiniDumpType=4" />
     <HelixPreCommand Include="export CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps" />
     <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
   </ItemGroup>
