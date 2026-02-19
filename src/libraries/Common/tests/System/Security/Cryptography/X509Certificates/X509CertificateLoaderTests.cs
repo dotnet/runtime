@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(contentType, actualType);
                 }
             }
-            
+
             if (path is null)
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadCertificateNoFile(data));
@@ -300,13 +300,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void LoadWrappingCertificate_PEM_WithTrailingData()
         {
-            byte[] source = TestData.NestedCertificates;
-            Array.Resize(ref source, source.Length + 4);
-
-            BinaryPrimitives.WriteInt32LittleEndian(
-                source.AsSpan(TestData.NestedCertificates.Length),
-                Process.GetCurrentProcess().Id);
-
+            byte[] source = [..TestData.NestedCertificates, 1 ,2, 3, 4];
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 
