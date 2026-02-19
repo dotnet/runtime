@@ -607,7 +607,24 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 //
 static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if ((!node->OperIsLocalStore() || IsDefaultValue(node->AsLclVarCommon()->Data())) && !node->OperIs(GT_LCL_ADDR))
+    if (node->OperIsLocalStore())
+    {
+        // If this is a zero initialization then we do not need to consider it
+        // mutated if we know the prolog will zero it anyway (otherwise we
+        // could be skipping this explicit zero init on resumption).
+        // We could improve this a bit by still skipping it but inserting
+        // explicit zero init on resumption, but these cases seem to be rare.
+        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
+            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), false, false))
+        {
+            return;
+        }
+    }
+    else if (node->OperIs(GT_LCL_ADDR))
+    {
+        // Fall through
+    }
+    else
     {
         return;
     }
