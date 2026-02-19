@@ -6489,12 +6489,6 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // get the proper side effect ordering.
     BlockRange().InsertAfter(thisArgNode, newThisAddr, newThis);
     thisExprUse.ReplaceWith(newThis);
-
-    // Make the null check on the original this explicit.
-    // TODO-WASM-CQ: add this explicit null check in an earlier phase and try to optimize it away.
-    GenTree* nullCheckBase = m_compiler->gtNewLclvNode(base->AsLclVar()->GetLclNum(), base->TypeGet());
-    GenTree* nullCheck     = m_compiler->gtNewNullCheck(nullCheckBase);
-    BlockRange().InsertBefore(thisArgNode, nullCheckBase, nullCheck);
 #endif
 
     ContainCheckIndir(newThis->AsIndir());
