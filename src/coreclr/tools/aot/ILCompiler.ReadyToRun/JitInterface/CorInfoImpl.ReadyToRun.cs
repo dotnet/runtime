@@ -1442,10 +1442,6 @@ namespace Internal.JitInterface
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    if (resultMethod is PInvokeTargetNativeMethod pInvoke)
-                    {
-                        resultMethod = pInvoke.Target;
-                    }
                     resultMethod = resultMethod.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultMethod.OwningType))

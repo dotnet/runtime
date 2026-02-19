@@ -21,11 +21,12 @@ namespace ILCompiler.ReadyToRun.TypeSystem
             {
                 return method.GetUnboxedMethod().GetPrimaryMethodDesc();
             }
-            if (method is AsyncResumptionStub resumptionStub)
+            return method switch
             {
-                return resumptionStub.TargetMethod.GetPrimaryMethodDesc();
-            }
-            return method;
+                PInvokeTargetNativeMethod pinvokeTarget => pinvokeTarget.Target,
+                AsyncResumptionStub resumptionStub => resumptionStub.TargetMethod.GetPrimaryMethodDesc(),
+                _ => method,
+            };
         }
 
         public static bool IsPrimaryMethodDesc(this MethodDesc method)
