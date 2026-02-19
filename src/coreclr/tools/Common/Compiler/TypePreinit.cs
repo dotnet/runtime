@@ -13,11 +13,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
-#if READYTORUN
-using FlowAnnotations = ILCompiler.FlowAnnotations;
-#else
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
-#endif
 
 namespace ILCompiler
 {
@@ -3259,9 +3255,6 @@ namespace ILCompiler
 
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
-#if !READYTORUN
-                Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed this
-#endif
                 builder.EmitPointerReloc(node);
 
 #if READYTORUN
@@ -3413,9 +3406,6 @@ namespace ILCompiler
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
-#if !READYTORUN
-                Debug.Assert(!node.RepresentsIndirectionCell);  // Arrays are always local
-#endif
                 builder.EmitPointerReloc(node);
 
                 // numComponents
@@ -3596,9 +3586,6 @@ namespace ILCompiler
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
-#if !READYTORUN
-                Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed preinitializing this
-#endif
                 builder.EmitPointerReloc(node);
 
                 // We skip the first pointer because that's the MethodTable pointer
@@ -3759,14 +3746,13 @@ namespace ILCompiler
 
             public MetadataType Type { get; }
 
-            public string FailureReason { get; private set; }
+            public string FailureReason { get; }
 
-            public bool IsPreinitialized { get; private set; }
+            public bool IsPreinitialized => _fieldValues != null;
 
             public PreinitializationInfo(MetadataType type, IEnumerable<KeyValuePair<FieldDesc, ISerializableValue>> fieldValues)
             {
                 Type = type;
-                IsPreinitialized = true;
                 _fieldValues = new Dictionary<FieldDesc, ISerializableValue>();
                 foreach (var field in fieldValues)
                     _fieldValues.Add(field.Key, field.Value);
@@ -3776,7 +3762,6 @@ namespace ILCompiler
             {
                 Type = type;
                 FailureReason = failureReason;
-                IsPreinitialized = false;
             }
 
             public ISerializableValue GetFieldValue(FieldDesc field)
@@ -3785,15 +3770,6 @@ namespace ILCompiler
                 Debug.Assert(field.OwningType == Type);
                 Debug.Assert(field.IsStatic && !field.HasRva && !field.IsThreadStatic && !field.IsLiteral);
                 return _fieldValues[field];
-            }
-
-            public void SetPostScanFailure(string failureReason)
-            {
-                if (!IsPreinitialized) return;
-
-                _fieldValues.Clear();
-                FailureReason = failureReason;
-                IsPreinitialized = false;
             }
         }
 

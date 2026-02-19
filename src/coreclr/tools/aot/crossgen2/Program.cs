@@ -22,6 +22,8 @@ using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.IBC;
 
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+
 namespace ILCompiler
 {
     internal sealed class Program

@@ -114,11 +114,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MetadataType type = (MetadataType)_module.GetType(typeHandle);
                 var record = factory.ReadyToRunPreinitializationManager.GetTypeRecord(type);
-                if (factory.PreinitializationManager.IsPreinitialized(type) && !record.IsPreinitialized)
-                {
-                    factory.PreinitializationManager.GetPreinitializationInfo(type).SetPostScanFailure(record.FailureReason);
-                }
-
                 uint typeDefRid = (uint)MetadataTokens.GetRowNumber(typeHandle);
 
                 // TypeDef row: READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY

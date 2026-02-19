@@ -3,7 +3,7 @@
 
 using Internal.TypeSystem;
 
-namespace ILCompiler
+namespace ILLink.Shared.TrimAnalysis
 {
     public sealed class FlowAnnotations
     {
