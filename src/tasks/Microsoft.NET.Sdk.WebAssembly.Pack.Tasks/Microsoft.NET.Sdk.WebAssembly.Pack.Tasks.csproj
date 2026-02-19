@@ -24,7 +24,7 @@
         <SubFolder>net</SubFolder>
       </_PublishFramework>
       <_PublishFramework Include="$(NetFrameworkToolCurrent)" Condition="'$(NetFrameworkToolCurrent)' != ''">
-        <SubFolder>net-desktop</SubFolder>
+        <SubFolder>%(Identity)</SubFolder>
       </_PublishFramework>
 
       <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.SubFolder)" />

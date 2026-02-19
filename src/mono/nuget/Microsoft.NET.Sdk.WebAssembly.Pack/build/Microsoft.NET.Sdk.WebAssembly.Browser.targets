@@ -57,7 +57,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
     <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
     <_WebAssemblySdkTasksSubfolder Condition=" '$(MSBuildRuntimeType)' == 'Core'">net</_WebAssemblySdkTasksSubfolder>
-    <_WebAssemblySdkTasksSubfolder Condition=" '$(MSBuildRuntimeType)' != 'Core'">net-desktop</_WebAssemblySdkTasksSubfolder>
+    <_WebAssemblySdkTasksSubfolder Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksSubfolder>
     <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksSubfolder)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
