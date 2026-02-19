@@ -109,7 +109,7 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
+            if (callee.IsCompilerGeneratedILBodyForAsync() || callee.IsAsyncCall())
             {
                 return false;
             }

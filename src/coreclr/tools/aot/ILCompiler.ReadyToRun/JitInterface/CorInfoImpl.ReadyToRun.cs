@@ -1544,7 +1544,7 @@ namespace Internal.JitInterface
                 CORINFO_EH_CLAUSE_FLAGS flags = clause.Flags;
                 uint classTokenOrOffset = clause.ClassTokenOrOffset;
                 if (flags == CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_NONE
-                    && MethodBeingCompiled.IsAsyncThunk()
+                    && MethodBeingCompiled.IsCompilerGeneratedILBodyForAsync()
                     && ((TypeDesc)ResolveTokenInScope(_compilation.GetMethodIL(MethodBeingCompiled), MethodBeingCompiled, (mdToken)classTokenOrOffset)).IsWellKnownType(WellKnownType.Exception))
                 {
                     flags |= CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_R2R_SYSTEM_EXCEPTION;
@@ -3276,7 +3276,7 @@ namespace Internal.JitInterface
 
                 var typicalMethod = inlinee.GetTypicalMethodDefinition();
 
-                if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsAsyncThunk()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
+                if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsCompilerGeneratedILBodyForAsync()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
                 {
                     // TODO: fix this restriction in runtime async
                     // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
