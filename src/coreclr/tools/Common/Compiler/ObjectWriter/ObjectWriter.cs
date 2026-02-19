@@ -757,8 +757,9 @@ namespace ILCompiler.ObjectWriter
         private struct ProgressReporter
         {
             private readonly Logger _logger;
-            private readonly int _increment;
+            private readonly int _total;
             private int _current;
+            private int _lastReportedStep;
 
             // Will report progress every (100 / 10) = 10%
             private const int Steps = 10;
@@ -766,18 +767,20 @@ namespace ILCompiler.ObjectWriter
             public ProgressReporter(Logger logger, int total)
             {
                 _logger = logger;
-                _increment = total / Steps;
+                _total = total;
                 _current = 0;
+                _lastReportedStep = 0;
             }
 
             public void LogProgress()
             {
                 _current++;
 
-                int adjusted = _current + Steps - 1;
-                if ((adjusted % _increment) == 0)
+                int step = (_current * Steps) / _total;
+                if (step > _lastReportedStep)
                 {
-                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
+                    _logger.LogMessage($"{step * (100 / Steps)}%...");
+                    _lastReportedStep = step;
                 }
             }
         }
