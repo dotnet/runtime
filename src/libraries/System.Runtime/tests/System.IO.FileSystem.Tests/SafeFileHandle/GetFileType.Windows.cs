@@ -31,7 +31,7 @@ namespace System.IO.Tests
             Assert.Equal(FileType.Directory, handle.GetFileType());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))]
+        [Fact]
         public void GetFileType_NamedPipe()
         {
             string pipeName = Path.GetRandomFileName();
