@@ -69,7 +69,11 @@ internal sealed class ClrMdDumpHost : IDisposable
             if (fileName is null)
                 continue;
 
-            string name = System.IO.Path.GetFileName(fileName);
+            // Path.GetFileName doesn't handle Windows paths on a Linux/macOS host,
+            // so split on both separators to extract the file name correctly when
+            // analyzing cross-platform dumps.
+            int lastSep = Math.Max(fileName.LastIndexOf('/'), fileName.LastIndexOf('\\'));
+            string name = lastSep >= 0 ? fileName.Substring(lastSep + 1) : fileName;
             if (!IsRuntimeModule(name))
                 continue;
 
