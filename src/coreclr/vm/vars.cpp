@@ -95,7 +95,7 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
-GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, 2);
+GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_INTEROP_DEBUGGING
