@@ -30,11 +30,11 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a value indicating whether the specified span contains <see cref="char.IsWhiteSpace(char)">any
-        /// white-space characters</see>, and returns <see langword="true"/> if found. If not found, returns
-        /// <see langword="false"/>.
+        /// Indicates whether the specified span contains <see cref="char.IsWhiteSpace(char)">any
+        /// white-space characters</see>.
         /// </summary>
         /// <param name="span">The source span.</param>
+        /// <returns><see langword="true"/> if the span contains any whitespace characters, <see langword="false"/> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             string.SearchValuesStorage.WhiteSpaceChars.ContainsAny(span);
