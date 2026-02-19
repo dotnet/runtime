@@ -14,12 +14,46 @@ namespace System.Runtime.Intrinsics.X86
         /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        public static Vector128<byte> BitReverse(Vector128<byte> x) { throw new PlatformNotSupportedException(); }
-        public static Vector256<byte> BitReverse(Vector256<byte> x) { throw new PlatformNotSupportedException(); }
-        public static Vector512<byte> BitReverse(Vector512<byte> x) { throw new PlatformNotSupportedException(); }
-        public static Vector256<ushort> Vbmacor16x16x16(Vector256<ushort> x, Vector256<ushort> y, Vector256<ushort> z) { throw new PlatformNotSupportedException(); }
-        public static Vector512<ushort> Vbmacor16x16x16(Vector512<ushort> x, Vector512<ushort> y, Vector512<ushort> z) { throw new PlatformNotSupportedException(); }
-        public static Vector256<ushort> Vbmacxor16x16x16(Vector256<ushort> x, Vector256<ushort> y, Vector256<ushort> z) { throw new PlatformNotSupportedException(); }
-        public static Vector512<ushort> Vbmacxor16x16x16(Vector512<ushort> x, Vector512<ushort> y, Vector512<ushort> z) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   <para>__m128i _mm_bitrev_epi8 (__m128i values)</para>
+        ///   <para>  VBITREV  xmm1{k1}{z}, xmm2/m128</para>
+        /// </summary>
+        public static Vector128<byte> ReverseBits(Vector128<byte> values) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m256i _mm256_bitrev_epi8 (__m256i values)</para>
+        ///   <para>  VBITREV  ymm1{k1}{z}, ymm2/m256</para>
+        /// </summary>
+        public static Vector256<byte> ReverseBits(Vector256<byte> values) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m512i _mm512_bitrev_epi8 (__m512i values)</para>
+        ///   <para>  VBITREV  zmm1{k1}{z}, zmm2/m512</para>
+        /// </summary>
+        public static Vector512<byte> ReverseBits(Vector512<byte> values) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m256i _mm256_bmacor16x16x16 (__m256i left, __m256i right, __m256i addend)</para>
+        ///   <para>  VBMACOR16x16x16  ymm1, ymm2, ymm3/m256</para>
+        /// </summary>
+        public static Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector256<ushort> left, Vector256<ushort> right, Vector256<ushort> addend) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m512i _mm512_bmacor16x16x16 (__m512i left, __m512i right, __m512i addend)</para>
+        ///   <para>  VBMACOR16x16x16  zmm1, zmm2, zmm3/m256</para>
+        /// </summary>
+        public static Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector512<ushort> left, Vector512<ushort> right, Vector512<ushort> addend) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m256i _mm256_bmacxor16x16x16 (__m256i left, __m256i right, __m256i addend)</para>
+        ///   <para>  VBMACXOR16x16x16  ymm1, ymm2, ymm3/m256</para>
+        /// </summary>
+        public static Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector256<ushort> left, Vector256<ushort> right, Vector256<ushort> addend) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>__m512i _mm512_bmacxor16x16x16 (__m512i left, __m512i right, __m512i addend)</para>
+        ///   <para>  VBMACXOR16x16x16  zmm1, zmm2, zmm3/m256</para>
+        /// </summary>
+        public static Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector512<ushort> left, Vector512<ushort> right, Vector512<ushort> addend) { throw new PlatformNotSupportedException(); }
     }
 }
