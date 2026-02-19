@@ -45,7 +45,7 @@ struct EbrPendingEntry final
 };
 
 // Each thread has a thread_local EbrThreadData instance.
-static thread_local EbrThreadData t_pThreadData{};
+static thread_local EbrThreadData t_pThreadData;
 
 // Destructor that runs when the thread's C++ thread_local storage is torn
 // down. This ensures EBR cleanup happens for *all* threads that entered a
