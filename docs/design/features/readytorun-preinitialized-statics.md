@@ -8,7 +8,7 @@ Preinitialized statics feature was added in R2R format version **18.2**.
 
 ReadyToRun now can interpret eligible `.cctor` bodies at compile time, serialize the resulting static state into the R2R image, and mark types as preinitialized so runtime class-init can be skipped.
 
-The interpreter reuses the one in ilc so that any shape of `.cctor` that ilc can preinitialize is also supported in R2R, with some additional constraints. There're various limitations on what can be preinitialized, and the supported scenarios are listed as follows.
+The preintialization interpreter is shared with the NativeAOT ILCompiler, so class constructors that can be preinitialized for NativeAOT are also supported in R2R, with some additional constraints. There're various limitations on what can be preinitialized, and the supported scenarios are listed as follows.
 
 | Scenario | Support |
 | --- | --- |
@@ -78,7 +78,7 @@ Section payload emitted by `TypePreinitializationMapNode`:
 4. `InstantiationEntryCount * READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY` in TypeDef-order
 5. Concatenated instantiation type-signature blob bytes
 
-The section contains two tables: a TypeDef table and an instantiation table. For each TypeDef row, payload fields are interpreted as either `NonGCData.Rva/Size` (non-generic definition) or `Instantiation.Index/Count` (generic definition). Generic definitions do not have their own statics storage.
+The section contains two tables: a TypeDef table and an instantiation table. For each TypeDef row, payload fields are interpreted as either `NonGCData.Rva/Size` (when the type is not a generic definition) or `Instantiation.Index/Count` (generic definition type). Generic definitions do not have their own statics storage.
 
 TypeDef rows are sorted by `TypeDefRid`. Instantiation rows are sorted first by owner `TypeDefRid`, then by lexicographic signature bytes.
 
@@ -152,7 +152,7 @@ To ensure the map covers needed generic instantiations, static-base helper paths
 
 Object graphs for GC statics are emitted as templates where the first pointer is the object type handle/method table fixup and subsequent bytes encode fields/elements. Reference fields are emitted via relocations to other serialized templates, string imports, or runtime-type imports. Pointer-like non-reference fields can carry encoded import pointers.
 
-Delegate serialization in R2R mode supports both closed static and closed instance delegates. Open static delegates are rejected due to no available token, as emitted IL stub is not an EcmaMethod; and open instance delegates are currently not implemented.
+Delegate serialization in R2R mode supports both closed static and closed instance delegates. Open static delegates are rejected due to no available token, as the emitted IL stub is not an `EcmaMethod`; and open instance delegates are currently not implemented.
 
 ### Loader and map attachment
 
