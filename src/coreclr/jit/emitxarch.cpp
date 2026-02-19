@@ -3105,7 +3105,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM)) && leadingBytes >= 0x00 &&
+               ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM)) && leadingBytes >= 0x00 &&
                 leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
@@ -3167,7 +3167,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x06:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM));
             evexPrefix |= (0x6 << 16);
             break;
         }
