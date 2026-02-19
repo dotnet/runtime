@@ -42,6 +42,7 @@
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
       <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
+      <_BuildNativeArgs Condition="'$(Ninja)' != 'true'">$(_BuildNativeArgs) ninja false</_BuildNativeArgs>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
         then we should consider calling Environment.ProcessorCount

@@ -208,6 +208,10 @@ DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_knownQueryInterfaceImplementations, InteropLib::ABI::g_knownQueryInterfaceImplementations)
+#endif // FEATURE_COMWRAPPERS
+
 #ifndef TARGET_UNIX
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeLoadedBaseAddress, ::g_runtimeLoadedBaseAddress)
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeVirtualSize, ::g_runtimeVirtualSize)
