@@ -2076,7 +2076,7 @@ INST1(sm4ekey,   "sm4ekey",        0,      IF_DV_3H,  0xCE60C800)
                                    //  sm4ekey Vd.4S,Vn.4S,Vm.4S            DV_3H  11001110011mmmmm 110010nnnnnddddd      Vd Vn Vm    (vector)
 
 INST1(xar,       "xar",            0,      IF_DV_3I,  0xCE800000)
-                                   //  xar Vd.2D,Vn.2D,Vm.2D,#imm6          DV_3I  11001110100mmmmm iiiiiinnnnnddddd      Vd Vn Vm imm (vector)
+                                   //  xar Vd.2D,Vn.2D,Vm.2D,imm6           DV_3I  11001110100mmmmm iiiiiinnnnnddddd      Vd Vn Vm imm6 (vector)
 
 INST1(sha512su0, "sha512su0",      0,      IF_DV_2V,  0xCEC08000)
                                    //  sha512su0 Vd.2D,Vn.2D                DV_2V  1100111011000000 100000nnnnnddddd      Vd Vn       (vector)
