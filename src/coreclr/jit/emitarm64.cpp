@@ -796,7 +796,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
-        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn    (sha)
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Vd Vn    (sha)
         case IF_DV_2V: // DV_2V   ................ ......nnnnnddddd      Vd Vn      (vector)
             if (id->idIns() == INS_sha1h)
             {
@@ -12163,7 +12163,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd Sn   (sha)
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Vd Vn   (sha)
         case IF_DV_2V: // DV_2V   ................ ......nnnnnddddd      Vd Vn   (vector)
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Vd(id->idReg1()); // ddddd
@@ -13954,7 +13954,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg2(), size, false);
             break;
 
-        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Sd    Sn
+        case IF_DV_2U: // DV_2U   ................ ......nnnnnddddd      Vd    Vn
             if (ins == INS_sha1h)
             {
                 emitDispReg(id->idReg1(), size, true);
