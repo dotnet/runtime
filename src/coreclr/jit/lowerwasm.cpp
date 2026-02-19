@@ -125,9 +125,7 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     // To preserve stack order we must insert the zero before the entire
     // tree rooted at x.
     //
-    bool     isClosed;
-    GenTree* insertBefore = BlockRange().GetTreeRange(x, &isClosed).FirstNode();
-    assert(isClosed);
+    GenTree* insertBefore = x->gtFirstNodeInExecutionOrder();
     BlockRange().InsertBefore(insertBefore, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);

@@ -34185,3 +34185,26 @@ ValueSize ValueSize::FromJitType(var_types type)
             return ValueSize(genTypeSize(type));
     }
 }
+
+//------------------------------------------------------------------------
+// gtFirstNodeInExecutionOrder: return the first node of this tree
+//    in execution order
+//
+// Returns:
+//   If tree is a leaf, return the tree.
+//   If the tree has operands, recurse on the first executed operand.
+//
+GenTree* GenTree::gtFirstNodeInExecutionOrder()
+{
+    GenTree*             op = this;
+    GenTree::VisitResult visitResult;
+    do
+    {
+        visitResult = op->VisitOperands([&op](GenTree* operand) {
+            op = operand;
+            return GenTree::VisitResult::Abort;
+        });
+    } while (visitResult == GenTree::VisitResult::Abort);
+
+    return op;
+}
