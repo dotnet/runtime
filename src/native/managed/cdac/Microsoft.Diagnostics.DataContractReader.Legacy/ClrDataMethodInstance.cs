@@ -346,7 +346,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
+            // DAC function returns odd failure codes it doesn't make sense to match directly
+            Debug.Assert(hrLocal == hr || (hrLocal < 0 && hr < 0), $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
 
             if (hr == HResults.S_OK)
             {
