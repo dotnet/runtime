@@ -4085,6 +4085,11 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
+        // The hash blob for a forward P/Invoke stub is just the target MethodDesc pointer.
+        // In order to help avoid collisions, ensure various blob sizes are different.
+        // See asserts below.
+        constexpr size_t forwardPInvokeHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+
         DWORD dwStubFlags = pParams->m_dwStubFlags;
 
         // The target MethodDesc may be NULL for field marshalling.
@@ -4097,7 +4102,7 @@ namespace
             && !SF_IsCALLIStub(dwStubFlags)
             && !SF_IsVarArgStub(dwStubFlags))
         {
-            size_t blobSize = sizeof(ILStubHashBlobBase) + sizeof(pTargetMD);
+            const size_t blobSize = forwardPInvokeHashBlobSize;
             NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
             ZeroMemory(pBytes, blobSize);
             ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
@@ -4160,6 +4165,8 @@ namespace
 
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
+
+        _ASSERTE(cbSizeOfBlob.Value() != forwardPInvokeHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
@@ -5704,13 +5711,12 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         PInvokeLink(pNMD);
     }
 
-    //
-    // NOTE: For P/Invoke stubs, racing threads will resolve to the same
-    // DynamicMethodDesc via the ILStubCache (keyed by target MethodDesc), so the
-    // locking around the JIT operation prevents the code from being jitted more
-    // than once, and all threads get back the same PCODE. See CreateHashBlob()
-    // for the hashing logic.
-    //
+    // NOTE: For IL-stub-backed P/Invoke stubs (i.e., when *ppStubMD is non-null
+    // and the stub is obtained via JitILStub/ILStubCache), racing threads will
+    // resolve to the same DynamicMethodDesc via the ILStubCache (keyed by the
+    // target MethodDesc). The locking around the JIT operation prevents the
+    // code from being jitted more than once, and all threads get back the same
+    // PCODE. See CreateHashBlob() for the hashing logic.
 
     return pStub;
 }
