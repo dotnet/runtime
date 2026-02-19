@@ -50,6 +50,9 @@
     <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs">
       <Link>Compiler\JitHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs">
+      <Link>ObjectWriter\WasmNative</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
@@ -88,6 +91,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs">
       <Link>JitInterface\SwiftPhysicalLowering.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.cs">
+      <Link>JitInterface\WasmLowering.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>

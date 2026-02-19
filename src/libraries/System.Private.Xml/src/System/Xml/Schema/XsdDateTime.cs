@@ -120,6 +120,9 @@ namespace System.Xml.Schema
         private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
+        // Maximum DateTime.Ticks value that can safely have one day added without overflow
+        private static readonly long s_maxDateTimeTicksForEndOfDay = DateTime.MaxValue.Ticks - TimeSpan.TicksPerDay;
+
         private const int CharStackBufferSize = 64;
 
         /// <summary>
@@ -132,22 +135,43 @@ namespace System.Xml.Schema
             {
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, text, kinds));
             }
-            InitiateXsdDateTime(parser);
+            if (!TryInitiateXsdDateTime(parser))
+            {
+                throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, text, kinds));
+            }
         }
 
-        private XsdDateTime(Parser parser) : this()
+        private bool TryInitiateXsdDateTime(Parser parser)
         {
-            InitiateXsdDateTime(parser);
-        }
+            // Per ISO 8601, 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00). Set hour to 0 and add one day.
+            int hour = parser.hour;
+            bool isEndOfDay = hour == 24;
+            if (isEndOfDay)
+            {
+                Debug.Assert(parser.minute == 0, "minute must be zero when hour is 24");
+                Debug.Assert(parser.second == 0, "second must be zero when hour is 24");
+                Debug.Assert(parser.fraction == 0, "fraction must be zero when hour is 24");
+                hour = 0;
+            }
 
-        private void InitiateXsdDateTime(Parser parser)
-        {
-            _dt = new DateTime(parser.year, parser.month, parser.day, parser.hour, parser.minute, parser.second);
+            _dt = new DateTime(parser.year, parser.month, parser.day, hour, parser.minute, parser.second);
             if (parser.fraction != 0)
             {
                 _dt = _dt.AddTicks(parser.fraction);
             }
+
+            if (isEndOfDay)
+            {
+                if (_dt.Ticks > s_maxDateTimeTicksForEndOfDay)
+                {
+                    return false;
+                }
+                _dt = _dt.AddDays(1);
+            }
+
             _extra = (uint)(((int)parser.typeCode << TypeShift) | ((int)parser.kind << KindShift) | (parser.zoneHour << ZoneHourShift) | parser.zoneMinute);
+            return true;
         }
 
         internal static bool TryParse(string text, XsdDateTimeFlags kinds, out XsdDateTime result)
@@ -158,7 +182,11 @@ namespace System.Xml.Schema
                 result = default;
                 return false;
             }
-            result = new XsdDateTime(parser);
+            result = default;
+            if (!result.TryInitiateXsdDateTime(parser))
+            {
+                return false;
+            }
             return true;
         }
 
@@ -917,7 +945,7 @@ namespace System.Xml.Schema
             private bool ParseTime(ref int start)
             {
                 if (
-                    Parse2Dig(start, ref hour) && hour < 24 &&
+                    Parse2Dig(start, ref hour) && hour <= 24 &&
                     ParseChar(start + s_lzHH, ':') &&
                     Parse2Dig(start + s_lzHH_, ref minute) && minute < 60 &&
                     ParseChar(start + s_lzHH_mm, ':') &&
@@ -977,6 +1005,14 @@ namespace System.Xml.Schema
                             fraction += round;
                         }
                     }
+
+                    // Per ISO 8601, 24:00:00 represents end of a calendar day
+                    // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+                    if (hour == 24 && (minute != 0 || second != 0 || fraction != 0))
+                    {
+                        return false;
+                    }
+
                     return true;
                 }
                 // cleanup - conflict with gYear

@@ -694,6 +694,10 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#ifdef HOST_ANDROID
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+#endif // HOST_ANDROID
+
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
@@ -704,6 +708,10 @@ void EEStartupHelper()
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
+#endif
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
 #endif
 
 #ifdef FEATURE_PERFTRACING
@@ -731,7 +739,6 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_PERFMAP
-        PerfMap::Initialize();
         InitThreadManagerPerfMapData();
 #endif
 
@@ -820,6 +827,10 @@ void EEStartupHelper()
         COMDelegate::Init();
 
         ExecutionManager::Init();
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
 
         JitHost::Init();
 
@@ -918,9 +929,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects

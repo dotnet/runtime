@@ -486,6 +486,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Channels\src\System.Threading.Channels.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\src\System.Threading.ThreadPool.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression.Brotli\src\System.IO.Compression.Brotli.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression.Zstandard\src\System.IO.Compression.Zstandard.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi' ">

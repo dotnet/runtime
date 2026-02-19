@@ -31,6 +31,8 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
+using ILCompiler.ObjectWriter;
+
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
 #pragma warning disable IDE0060
@@ -381,7 +383,7 @@ namespace Internal.JitInterface
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
-            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION || result == CorJitResult.CORJIT_R2R_UNSUPPORTED)
             {
 #if READYTORUN
                 throw new RequiresRuntimeJitException("JIT implementation limitation");
@@ -427,6 +429,7 @@ namespace Internal.JitInterface
 
             PublishCode();
             PublishROData();
+            PublishRWData();
 
             return CompilationResult.CompilationComplete;
         }
@@ -599,6 +602,23 @@ namespace Internal.JitInterface
             _roDataBlob.InitializeData(objectData);
         }
 
+        private void PublishRWData()
+        {
+            if (_rwDataBlob == null)
+            {
+                return;
+            }
+
+            var relocs = _rwDataRelocs.ToArray();
+            Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
+            var objectData = new ObjectNode.ObjectData(_rwData,
+                                                       relocs,
+                                                       _rwDataAlignment,
+                                                       new ISymbolDefinitionNode[] { _rwDataBlob });
+
+            _rwDataBlob.InitializeData(objectData);
+        }
+
         private MethodDesc MethodBeingCompiled
         {
             get
@@ -653,8 +673,12 @@ namespace Internal.JitInterface
             _roData = null;
             _roDataBlob = null;
 
+            _rwData = null;
+            _rwDataBlob = null;
+
             _codeRelocs = default(ArrayBuilder<Relocation>);
             _roDataRelocs = default(ArrayBuilder<Relocation>);
+            _rwDataRelocs = default(ArrayBuilder<Relocation>);
 #if READYTORUN
             _coldCodeRelocs = default(ArrayBuilder<Relocation>);
 #endif
@@ -1340,13 +1364,6 @@ namespace Internal.JitInterface
             // Transform from the unboxing thunk to the normal method
             decl = decl.IsUnboxingThunk() ? decl.GetUnboxedMethod() : decl;
 
-            if (decl.HasInstantiation)
-            {
-                // We cannot devirtualize generic virtual methods in AOT yet
-                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL;
-                return false;
-            }
-
             if ((info->context != null) && decl.OwningType.IsInterface)
             {
                 TypeDesc ownerTypeDesc = typeFromContext(info->context);
@@ -1761,7 +1778,7 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
-            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
                 result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
 
             return result;
@@ -1851,7 +1868,7 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
                 {
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
@@ -1860,6 +1877,20 @@ namespace Internal.JitInterface
 
                     // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                     allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+#if !READYTORUN
+                    if (allowAsyncVariant)
+                    {
+                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || method.IsCallEffectivelyDirect();
+                        if (isDirect && !method.IsAsync)
+                        {
+                            // Async variant would be a thunk. Do not resolve direct calls
+                            // to async thunks. That just creates and JITs unnecessary
+                            // thunks, and the thunks are harder for the JIT to optimize.
+                            allowAsyncVariant = false;
+                        }
+                    }
+#endif
 
                     method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
@@ -3394,8 +3425,19 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = 0x1000;
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
+            if (_compilation.NodeFactory.Target.IsWasm)
+            {
+                // TODO: Set this value to 0 for Wasm
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 1024 - 1;
+            }
+            else if (_compilation.NodeFactory.Target.IsWindows)
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = 32 * 1024 - 1;
+            }
+            else
+            {
+                pEEInfoOut.maxUncheckedOffsetForNullObject = pEEInfoOut.osPageSize / 2 - 1;
+            }
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
@@ -3421,9 +3463,6 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
-#if READYTORUN
-            throw new NotImplementedException("getContinuationType");
-#else
             GCPointerMapBuilder gcMapBuilder = new GCPointerMapBuilder((int)dataSize, PointerSize);
             ReadOnlySpan<bool> bools = MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize);
             for (int i = 0; i < bools.Length; i++)
@@ -3433,7 +3472,6 @@ namespace Internal.JitInterface
             }
 
             return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
-#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3613,6 +3651,52 @@ namespace Internal.JitInterface
             else
             {
                 lowering.byIntegerCallConv = true;
+            }
+        }
+
+        private CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            TypeDesc type = HandleToObject(structHnd);
+
+#if READYTORUN
+            LayoutInt classSize = type.GetElementSize();
+
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            TypeDesc abiType = WasmLowering.LowerToAbiType(type);
+
+            if (abiType == null)
+            {
+                // Indicate type should be passed by-ref.
+                return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
+            }
+
+            WasmValueType wasmAbiType = WasmLowering.LowerType(abiType);
+
+            switch (wasmAbiType)
+            {
+                case WasmValueType.I32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32;
+                case WasmValueType.I64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I64;
+                case WasmValueType.F32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
+                case WasmValueType.F64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32; // unreachable
+
             }
         }
 
@@ -3799,6 +3883,10 @@ namespace Internal.JitInterface
         private MethodReadOnlyDataNode _roDataBlob;
         private int _roDataAlignment;
 
+        private byte[] _rwData;
+        private MethodReadWriteDataNode _rwDataBlob;
+        private int _rwDataAlignment;
+
         private int _numFrameInfos;
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
@@ -3816,56 +3904,103 @@ namespace Internal.JitInterface
 
         private void allocMem(ref AllocMemArgs args)
         {
-            args.hotCodeBlock = (void*)GetPin(_code = new byte[args.hotCodeSize]);
-            args.hotCodeBlockRW = args.hotCodeBlock;
+            Span<AllocMemChunk> chunks = new Span<AllocMemChunk>(args.chunks, checked((int)args.chunksCount));
 
-            if (args.coldCodeSize != 0)
-            {
-
-#if READYTORUN
-                this._methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
-#endif
-                args.coldCodeBlock = (void*)GetPin(_coldCode = new byte[args.coldCodeSize]);
-                args.coldCodeBlockRW = args.coldCodeBlock;
-            }
+            uint roDataSize = 0;
+            uint rwDataSize = 0;
 
             _codeAlignment = -1;
-            if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+            _roDataAlignment = -1;
+            _rwDataAlignment = -1;
+
+            // ELF/MachO do not support relocations from read-only sections to code sections, so we must put these
+            // into read-write sections.
+            bool ChunkNeedsReadWriteSection(in AllocMemChunk chunk)
+                => (chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE) != 0 && !_compilation.TypeSystemContext.Target.IsWindows;
+
+            foreach (ref AllocMemChunk chunk in chunks)
             {
-                _codeAlignment = 32;
+                if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_code = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+                    _codeAlignment = (int)chunk.alignment;
+                }
+                else if ((chunk.flags & CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE) != 0)
+                {
+                    chunk.block = (byte*)GetPin(_coldCode = new byte[chunk.size]);
+                    chunk.blockRW = chunk.block;
+                    Debug.Assert(chunk.alignment == 1);
+#if READYTORUN
+                    _methodColdCodeNode = new MethodColdCodeNode(MethodBeingCompiled);
+#endif
+                }
+                else if (ChunkNeedsReadWriteSection(chunk))
+                {
+                    // For ELF/MachO we need to put data containing relocations into .text into a RW section
+                    rwDataSize = (uint)((int)rwDataSize).AlignUp((int)chunk.alignment);
+                    rwDataSize += chunk.size;
+                    _rwDataAlignment = Math.Max(_rwDataAlignment, (int)chunk.alignment);
+                }
+                else
+                {
+                    roDataSize = (uint)((int)roDataSize).AlignUp((int)chunk.alignment);
+                    roDataSize += chunk.size;
+                    _roDataAlignment = Math.Max(_roDataAlignment, (int)chunk.alignment);
+                }
             }
-            else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+
+            if (roDataSize != 0)
             {
-                _codeAlignment = 16;
-            }
-
-            if (args.roDataSize != 0)
-            {
-                _roDataAlignment = 8;
-
-                if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 64;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 32;
-                }
-                else if ((args.flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-                {
-                    _roDataAlignment = 16;
-                }
-                else if (args.roDataSize < 8)
-                {
-                    _roDataAlignment = PointerSize;
-                }
-
-                _roData = new byte[args.roDataSize];
-
+                _roData = new byte[roDataSize];
                 _roDataBlob = new MethodReadOnlyDataNode(MethodBeingCompiled);
+                byte* roDataBlock = (byte*)GetPin(_roData);
+                int offset = 0;
 
-                args.roDataBlock = (void*)GetPin(_roData);
-                args.roDataBlockRW = args.roDataBlock;
+                foreach (ref AllocMemChunk chunk in chunks)
+                {
+                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+                    {
+                        continue;
+                    }
+
+                    if (ChunkNeedsReadWriteSection(chunk))
+                    {
+                        continue;
+                    }
+
+                    offset = offset.AlignUp((int)chunk.alignment);
+                    chunk.block = roDataBlock + offset;
+                    chunk.blockRW = chunk.block;
+                    offset += (int)chunk.size;
+                }
+
+                Debug.Assert(offset <= roDataSize);
+            }
+
+            if (rwDataSize != 0)
+            {
+                _rwData = new byte[rwDataSize];
+                _rwDataBlob = new MethodReadWriteDataNode(MethodBeingCompiled);
+                byte* rwDataBlock = (byte*)GetPin(_rwData);
+                int offset = 0;
+
+                foreach (ref AllocMemChunk chunk in chunks)
+                {
+                    if ((chunk.flags & (CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE | CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+                    {
+                        continue;
+                    }
+                    if (ChunkNeedsReadWriteSection(chunk))
+                    {
+                        offset = offset.AlignUp((int)chunk.alignment);
+                        chunk.block = rwDataBlock + offset;
+                        chunk.blockRW = chunk.block;
+                        offset += (int)chunk.size;
+                    }
+                }
+
+                Debug.Assert(offset <= rwDataSize);
             }
 
             if (_numFrameInfos > 0)
@@ -3979,6 +4114,7 @@ namespace Internal.JitInterface
 
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
+        private ArrayBuilder<Relocation> _rwDataRelocs;
 #if READYTORUN
         private ArrayBuilder<Relocation> _coldCodeRelocs;
 #endif
@@ -3996,8 +4132,10 @@ namespace Internal.JitInterface
             ColdCode = 1,
             /// <summary>Read-only data.</summary>
             ROData = 2,
+            /// <summary>Read-write data.</summary>
+            RWData = 3,
             /// <summary>Instrumented Block Count Data</summary>
-            BBCounts = 3
+            BBCounts = 4
         }
 
         private BlockType findKnownBlock(void* location, out int offset)
@@ -4035,6 +4173,18 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (_rwData != null)
+            {
+                fixed (byte* pRWData = _rwData)
+                {
+                    if (pRWData <= (byte*)location && (byte*)location < pRWData + _rwData.Length)
+                    {
+                        offset = (int)((byte*)location - pRWData);
+                        return BlockType.RWData;
+                    }
+                }
+            }
+
             {
                 BlockType retBlockType = BlockType.Unknown;
                 offset = 0;
@@ -4059,6 +4209,9 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     length = _roData.Length;
                     return ref _roDataRelocs;
+                case BlockType.RWData:
+                    length = _rwData.Length;
+                    return ref _rwDataRelocs;
 #if READYTORUN
                 case BlockType.ColdCode:
                     length = _coldCode.Length;
@@ -4094,6 +4247,12 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_CALL_PLT => RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT,
                 CorInfoReloc.RISCV64_PCREL_I => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I,
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
+                CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
+                CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
+                CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
+                CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
+                CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4127,6 +4286,10 @@ namespace Internal.JitInterface
 
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
+                    break;
+
+                case BlockType.RWData:
+                    relocTarget = _rwDataBlob;
                     break;
 
 #if READYTORUN
@@ -4328,7 +4491,12 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.IsAsyncCall())
+            if (this.MethodBeingCompiled.IsAsyncCall()
+#if !READYTORUN
+                || (_compilation.TypeSystemContext.IsSpecialUnboxingThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(this.MethodBeingCompiled).IsAsyncCall())
+                || (_compilation.TypeSystemContext.IsDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(this.MethodBeingCompiled).IsAsyncCall())
+#endif
+                )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }

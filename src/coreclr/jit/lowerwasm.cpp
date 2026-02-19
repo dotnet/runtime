@@ -120,7 +120,7 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     // For integer types (TYP_INT and TYP_LONG), NEG(x) ==> SUB(0, x)
     //
     GenTree* x    = node->gtGetOp1();
-    GenTree* zero = comp->gtNewZeroConNode(node->TypeGet());
+    GenTree* zero = m_compiler->gtNewZeroConNode(node->TypeGet());
     BlockRange().InsertBefore(x, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);
@@ -161,6 +161,30 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
     return binOp->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    divMod - the node to be lowered
+//
+void Lowering::LowerDivOrMod(GenTreeOp* divMod)
+{
+    ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
+    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+    else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
+    ContainCheckDivOrMod(divMod);
 }
 
 //------------------------------------------------------------------------

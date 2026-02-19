@@ -139,8 +139,8 @@ function fatalHandler(event: any, reason: any, type: string) {
             dotnetLogger.error("Unhandled error:", reason);
             dotnetApi.exit(1, reason);
         }
-    } catch (err) {
-        // no not re-throw from the fatal handler
+    } catch (error: any) {
+        // do not re-throw from the fatal handler
     }
 }
 

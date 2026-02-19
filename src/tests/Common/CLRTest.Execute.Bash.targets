@@ -132,14 +132,6 @@ then
   exit $(IncompatibleTestBashScriptExitCode)
 fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
-      <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
-$(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$CrossGen2SynthesizePgo" ]
-then
-  echo SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
-  exit $(IncompatibleTestBashScriptExitCode)
-fi
-      ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
 if [ ! -z "$SuperPMIShimPath" ]
@@ -560,7 +552,6 @@ $(IlasmRoundTripBashScript)
 $(SuperPMICollectionBashScript)
 # Allow test environment variables or precommands to override the ExePath
 ExePath=$(InputAssemblyName)
-export TestExclusionListPath=$CORE_ROOT/TestExclusionList.txt
 $(BashEnvironmentVariables)
 # PreCommands
 $(CLRTestBashPreCommands)

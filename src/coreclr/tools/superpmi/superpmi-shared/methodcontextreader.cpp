@@ -65,7 +65,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
     if (suffix_offset == std::string::npos || suffix_offset == 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
         return std::string();
 
-    if (test_filename_available(fileName))
+    if (!test_filename_available(fileName))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
