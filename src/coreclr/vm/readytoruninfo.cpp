@@ -1008,7 +1008,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 }
 
-static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
+// When matchResumptionStub is true, this matches only signatures with the
+// ENCODE_METHOD_SIG_ResumptionStub flag set, matching against the underlying
+// async variant method rather than a resumption stub MethodDesc. When false,
+// it performs normal method signature matching including async/resumption flag checks.
+static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule, bool matchResumptionStub = false)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1018,6 +1022,19 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
+
+    if (matchResumptionStub)
+    {
+        _ASSERTE(pMD->IsAsyncVariantMethod());
+        if ((methodFlags & ENCODE_METHOD_SIG_ResumptionStub) == 0)
+            return false;
+    }
+    else
+    {
+        bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
+        if (sigIsAsync != pMD->IsAsyncVariantMethod())
+            return false;
+    }
 
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
@@ -1099,186 +1116,11 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
             IfFailThrow(sig.SkipExactlyOne());
         }
     }
-    bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
-    if (sigIsAsync != pMD->IsAsyncVariantMethod())
-    {
-        return false;
-    }
 
-    bool sigIsResume = (methodFlags & ENCODE_METHOD_SIG_ResumptionStub) != 0;
-    bool methodIsResume = pMD->IsDynamicMethod() && ((DynamicMethodDesc*)pMD)->IsILStub() && ((DynamicMethodDesc*)pMD)->IsAsyncResumptionStub();
-    if (sigIsResume != methodIsResume)
-    {
-        return false;
-    }
 
     return true;
 }
 
-// Checks if sig matches pMD for resumption stub lookup.
-// This is similar to SigMatchesMethodDesc but specifically looks for
-// entries with ENCODE_METHOD_SIG_ResumptionStub flag that correspond
-// to the given async variant method.
-static bool SigMatchesResumptionStubForMethod(MethodDesc* pAsyncMD, SigPointer &sig, ModuleBase * pModule)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAsyncMD->IsAsyncVariantMethod());
-
-    ModuleBase *pOrigModule = pModule;
-    ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
-    ZapSig::Context *  pZapSigContext = &zapSigContext;
-
-    uint32_t methodFlags;
-    IfFailThrow(sig.GetData(&methodFlags));
-
-    // Must have ResumptionStub flag set
-    if ((methodFlags & ENCODE_METHOD_SIG_ResumptionStub) == 0)
-        return false;
-
-    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
-    _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
-             ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
-
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
-    {
-        uint32_t updatedModuleIndex;
-        IfFailThrow(sig.GetData(&updatedModuleIndex));
-        pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
-    }
-
-    if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
-    {
-        PCCOR_SIGNATURE pSigType;
-        uint32_t cbSigType;
-        sig.GetSignature(&pSigType, &cbSigType);
-        if (!ZapSig::CompareSignatureToTypeHandle(pSigType, pModule, TypeHandle(pAsyncMD->GetMethodTable()), pZapSigContext))
-            return false;
-
-        IfFailThrow(sig.SkipExactlyOne());
-    }
-
-    RID rid;
-    IfFailThrow(sig.GetData(&rid));
-
-    if ((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) != 0)
-    {
-        IMDInternalImport * pInternalImport = pModule->GetMDImport();
-
-        LPCUTF8     szMember;
-        PCCOR_SIGNATURE pSig;
-        DWORD       cSig;
-
-        IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(TokenFromRid(rid, mdtMemberRef), &pSig, &cSig, &szMember));
-
-        _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
-
-        if (strcmp(szMember, pAsyncMD->GetName()) != 0)
-            return false;
-
-        PCCOR_SIGNATURE pTargetMethodSig;
-        DWORD       cTargetMethodSig;
-
-        pAsyncMD->GetSig(&pTargetMethodSig, &cTargetMethodSig);
-        if (!MetaSig::CompareMethodSigs(pSig, cSig, pModule, NULL, pTargetMethodSig, cTargetMethodSig, pAsyncMD->GetModule(), NULL, FALSE))
-            return false;
-
-        rid = RidFromToken(pAsyncMD->GetMemberDef());
-    }
-
-    if (RidFromToken(pAsyncMD->GetMemberDef()) != rid)
-        return false;
-
-    if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
-    {
-        uint32_t numGenericArgs;
-        IfFailThrow(sig.GetData(&numGenericArgs));
-        Instantiation inst = pAsyncMD->GetMethodInstantiation();
-        if (numGenericArgs != inst.GetNumArgs())
-            return false;
-
-        for (uint32_t i = 0; i < numGenericArgs; i++)
-        {
-            PCCOR_SIGNATURE pSigArg;
-            uint32_t cbSigArg;
-            sig.GetSignature(&pSigArg, &cbSigArg);
-            if (!ZapSig::CompareSignatureToTypeHandle(pSigArg, pOrigModule, inst[i], pZapSigContext))
-                return false;
-
-            IfFailThrow(sig.SkipExactlyOne());
-        }
-    }
-
-    return true;
-}
-
-// Looks up the R2R entry point for the resumption stub corresponding to the given async variant method.
-// Returns NULL if not found. If found, also returns the runtime function index via pRuntimeFunctionIndex.
-PCODE ReadyToRunInfo::LookupResumptionStubEntryPoint(MethodDesc* pAsyncVariantMD, PrepareCodeConfig* pConfig, BOOL fFixups, uint* pRuntimeFunctionIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAsyncVariantMD->IsAsyncVariantMethod());
-
-    if (m_instMethodEntryPoints.IsNull())
-        return (PCODE)NULL;
-
-    // The resumption stub is stored with the same hash as the async variant method
-    NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pAsyncVariantMD));
-    NativeParser entryParser;
-    uint offset = (uint)-1;
-
-    while (lookup.GetNext(entryParser))
-    {
-        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-        SigPointer sig(pBlob);
-        if (SigMatchesResumptionStubForMethod(pAsyncVariantMD, sig, m_pModule))
-        {
-            offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-            break;
-        }
-    }
-
-    if (offset == (uint)-1)
-        return (PCODE)NULL;
-
-    uint id;
-    offset = m_nativeReader.DecodeUnsigned(offset, &id);
-
-    if (id & 1)
-    {
-        if (id & 2)
-        {
-            uint val;
-            m_nativeReader.DecodeUnsigned(offset, &val);
-            offset -= val;
-        }
-
-        if (fFixups)
-        {
-            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
-            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
-
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
-            {
-                pConfig->SetReadyToRunRejectedPrecompiledCode();
-                return (PCODE)NULL;
-            }
-        }
-
-        id >>= 2;
-    }
-    else
-    {
-        id >>= 1;
-    }
-
-    _ASSERTE(id < m_nRuntimeFunctions);
-    if (pRuntimeFunctionIndex != nullptr)
-        *pRuntimeFunctionIndex = id;
-
-    return dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
-}
 
 bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData)
 {
@@ -1350,6 +1192,74 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+// Looks up the R2R entry point for the resumption stub corresponding to the given async variant method.
+// Returns NULL if not found. If found, also returns the runtime function index via pRuntimeFunctionIndex.
+PCODE ReadyToRunInfo::LookupResumptionStubEntryPoint(MethodDesc* pAsyncVariantMD, PrepareCodeConfig* pConfig, BOOL fFixups, uint* pRuntimeFunctionIndex)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pAsyncVariantMD->IsAsyncVariantMethod());
+
+    if (m_instMethodEntryPoints.IsNull())
+        return (PCODE)NULL;
+
+    // The resumption stub is stored with the same hash as the async variant method
+    NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pAsyncVariantMD));
+    NativeParser entryParser;
+    uint offset = (uint)-1;
+
+    while (lookup.GetNext(entryParser))
+    {
+        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
+        SigPointer sig(pBlob);
+        if (SigMatchesMethodDesc(pAsyncVariantMD, sig, m_pModule, true))
+        {
+            offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
+            break;
+        }
+    }
+
+    if (offset == (uint)-1)
+        return (PCODE)NULL;
+
+    uint id;
+    offset = m_nativeReader.DecodeUnsigned(offset, &id);
+
+    if (id & 1)
+    {
+        if (id & 2)
+        {
+            uint val;
+            m_nativeReader.DecodeUnsigned(offset, &val);
+            offset -= val;
+        }
+
+        if (fFixups)
+        {
+            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
+            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
+
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
+            {
+                pConfig->SetReadyToRunRejectedPrecompiledCode();
+                return (PCODE)NULL;
+            }
+        }
+
+        id >>= 2;
+    }
+    else
+    {
+        id >>= 1;
+    }
+
+    _ASSERTE(id < m_nRuntimeFunctions);
+    if (pRuntimeFunctionIndex != nullptr)
+        *pRuntimeFunctionIndex = id;
+
+    return dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+}
+
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
@@ -1360,6 +1270,73 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     const char* szFullName = "";
     bool printedStart = false;
 #endif
+
+    PCODE pEntryPoint = (PCODE)NULL;
+    pEntryPoint = GetEntryPoint(pMD, pConfig, fFixups, false);
+    // ResumptionStub for async variants.
+
+    // For async variant methods, we also need to look up the corresponding resumption stub
+    // and create a DynamicMethodDesc wrapper for it so that GC stack walks work correctly.
+    if (pMD->IsAsyncVariantMethod())
+    {
+        uint stubRuntimeFunctionIndex = 0;
+        PCODE stubEntryPoint = GetEntryPoint(pMD, pConfig, fFixups, true);
+        if (stubEntryPoint != (PCODE)NULL)
+        {
+            // Create a DynamicMethodDesc wrapper for the R2R resumption stub
+            AllocMemTracker amTracker;
+            MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
+
+            // Build the resumption stub signature: object(object, ref byte)
+            // This matches BuildResumptionStubSignature in jitinterface.cpp
+            SigBuilder sigBuilder;
+            sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+            sigBuilder.AppendData(2);                           // 2 arguments
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object (continuation)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
+            sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
+
+            DWORD cbStubSig;
+            PVOID pStubSig = sigBuilder.GetSignature(&cbStubSig);
+
+            MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
+                pMD->GetLoaderAllocator(),
+                pStubMT,
+                stubEntryPoint,
+                DynamicMethodDesc::StubAsyncResume,
+                (PCCOR_SIGNATURE)pStubSig,
+                cbStubSig,
+                FALSE,
+                &amTracker);
+
+            amTracker.SuppressRelease();
+
+            // Register the stub's entry point so GC can find it during stack walks
+            m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
+        }
+        else
+        {
+            // If we cannot find the resumption stub, don't return an entry point for the async variant method
+            // TODO: This can cause valid async variant methods without an await to fail to resolve an entry point.
+            //  We should consider other ways to ensure a resumption stub is found when expected, and allow async
+            //  variants without awaits to be used without a resumption stub.
+            pEntryPoint = (PCODE)NULL;
+        }
+    }
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
+    {
+        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
+    }
+    return pEntryPoint;
+}
+
+PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(matchResumptionStub ? pMD->IsAsyncVariantMethod() : true);
 
     PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
@@ -1383,22 +1360,20 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         if (m_instMethodEntryPoints.IsNull())
             goto done;
 
+        offset = -1;
         NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
         NativeParser entryParser;
-        offset = (uint)-1;
         while (lookup.GetNext(entryParser))
         {
             PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
             SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
+            if (SigMatchesMethodDesc(pMD, sig, m_pModule, matchResumptionStub))
             {
                 // Get the updated SigPointer location, so we can calculate the size of the blob,
                 // in order to skip the blob and find the entry point data.
                 offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-                break;
             }
         }
-
         if (offset == (uint)-1)
             goto done;
     }
@@ -1462,53 +1437,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 
-    // For async variant methods, we also need to look up the corresponding resumption stub
-    // and create a DynamicMethodDesc wrapper for it so that GC stack walks work correctly.
-    if (pMD->IsAsyncVariantMethod())
-    {
-        uint stubRuntimeFunctionIndex = 0;
-        PCODE stubEntryPoint = LookupResumptionStubEntryPoint(pMD, pConfig, fFixups, &stubRuntimeFunctionIndex);
-        if (stubEntryPoint != (PCODE)NULL)
-        {
-            // Create a DynamicMethodDesc wrapper for the R2R resumption stub
-            AllocMemTracker amTracker;
-            MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
-
-            // Build the resumption stub signature: object(object, ref byte)
-            // This matches BuildResumptionStubSignature in jitinterface.cpp
-            SigBuilder sigBuilder;
-            sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-            sigBuilder.AppendData(2);                           // 2 arguments
-            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object (continuation)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
-
-            DWORD cbStubSig;
-            PVOID pStubSig = sigBuilder.GetSignature(&cbStubSig);
-
-            MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
-                pMD->GetLoaderAllocator(),
-                pStubMT,
-                stubEntryPoint,
-                DynamicMethodDesc::StubAsyncResume,
-                (PCCOR_SIGNATURE)pStubSig,
-                cbStubSig,
-                FALSE,
-                &amTracker);
-
-            amTracker.SuppressRelease();
-
-            // Register the stub's entry point so GC can find it during stack walks
-            m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
-        }
-        else
-        {
-            pEntryPoint = (PCODE)NULL;
-            goto done;
-        }
-    }
-
 #ifdef PROFILING_SUPPORTED
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
@@ -1524,10 +1452,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
 done:
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
-    {
-        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
-    }
     return pEntryPoint;
 }
 

@@ -145,6 +145,8 @@ class ReadyToRunInfo
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
+    PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub);
+
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
