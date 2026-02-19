@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -624,6 +627,59 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void SaveInterfaceOverrideWithCustomModifier()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyName name = new("TestAssembly");
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(name);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+
+                TypeBuilder tb = mb.DefineType("IMethodWithModifiersImpl", TypeAttributes.Class | TypeAttributes.Public);
+                tb.AddInterfaceImplementation(typeof(IMethodWithModifiers));
+                MethodInfo mRun = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run));
+                MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    // The first parameter will have modreqs specified from parameterTypeRequiredCustomModifiers, and the second from parameterTypes.
+                    parameterTypes: mRun.GetParameters().Select((x, i) => i == 0 ? x.ParameterType : x.GetModifiedParameterType()).ToArray(),
+                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)], null],
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m, mRun);
+                ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
+                pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m.GetILGenerator().Emit(OpCodes.Ret);
+                MethodInfo mRun2 = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run2));
+                MethodBuilder m2 = tb.DefineMethod("IMethodWithModifiers.Run2",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun2.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    parameterTypes: mRun2.GetParameters().Select(x => x.GetModifiedParameterType()).ToArray(),
+                    // Test that passing null gets modreqs from the parameter types.
+                    parameterTypeRequiredCustomModifiers: null,
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m2, mRun2);
+                ParameterBuilder pb2 = m2.DefineParameter(1, ParameterAttributes.In, "x");
+                pb2.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m2.GetILGenerator().Emit(OpCodes.Ret);
+
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                TestAssemblyLoadContext context = new();
+                // Load the assembly and check that loading the type does not throw.
+                Assembly loadedAsm = context.LoadFromAssemblyPath(file.Path);
+                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                context.Unload();
+            }
+        }
+
+        [Fact]
         public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
         {
             using (TempFile file = TempFile.Create())
@@ -789,6 +845,169 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("ValueTypeChildren", fields[1].Name);
             Assert.True(fields[1].FieldType.GetGenericArguments()[0].IsValueType);
         }
+
+        [Fact]
+        public void SaveFunctionPointerFields()
+        {
+            using TempFile file = TempFile.Create();
+            using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+            TypeBuilder tb = mb.DefineType("TestType", TypeAttributes.Public | TypeAttributes.Class);
+
+            // delegate*<int, int>
+            Type funcPtr1 = typeof(delegate*<int, int>);
+            tb.DefineField("FuncPtr1", funcPtr1, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Cdecl]<int, float, double>
+            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Cdecl]<int, float, double>),
+                [typeof(CallConvCdecl)]);
+            tb.DefineField("FuncPtr2", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Stdcall]<string, in int, void>
+            Type funcPtr5 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Stdcall]<string, in int, void>),
+                [typeof(CallConvStdcall)],
+                customParameterTypes: [typeof(string), new ModifiedTypeHelpers.ModifiedType(typeof(int).MakeByRefType(), [typeof(InAttribute)], [])]);
+            tb.DefineField("FuncPtr3", funcPtr5, FieldAttributes.Public | FieldAttributes.Static);
+
+            tb.CreateType();
+            ab.Save(file.Path);
+
+            Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+            Type testType = assemblyFromDisk.Modules.First().GetType("TestType");
+            Assert.NotNull(testType);
+
+            FieldInfo field1 = testType.GetField("FuncPtr1");
+            Assert.NotNull(field1);
+            Assert.True(field1.FieldType.IsFunctionPointer);
+            Assert.False(field1.FieldType.IsUnmanagedFunctionPointer);
+            Type[] paramTypes1 = field1.FieldType.GetFunctionPointerParameterTypes();
+            Assert.Equal(1, paramTypes1.Length);
+            Assert.Equal(typeof(int).FullName, paramTypes1[0].FullName);
+            Assert.Equal(typeof(int).FullName, field1.FieldType.GetFunctionPointerReturnType().FullName);
+
+            FieldInfo field2 = testType.GetField("FuncPtr2");
+            Type field2Type = field2.GetModifiedFieldType();
+            Assert.NotNull(field2);
+            Assert.True(field2Type.IsFunctionPointer);
+            Assert.True(field2Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes2 = field2Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(2, paramTypes2.Length);
+            Assert.Equal(typeof(int).FullName, paramTypes2[0].FullName);
+            Assert.Equal(typeof(float).FullName, paramTypes2[1].FullName);
+            Assert.Equal(typeof(double).FullName, field2Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions2 = field2Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions2, t => t.FullName == typeof(CallConvCdecl).FullName);
+
+            FieldInfo field3 = testType.GetField("FuncPtr3");
+            Type field3Type = field3.GetModifiedFieldType();
+            Assert.NotNull(field3);
+            Assert.True(field3Type.IsFunctionPointer);
+            Assert.True(field3Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes3 = field3Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(2, paramTypes3.Length);
+            Assert.Equal(typeof(string).FullName, paramTypes3[0].FullName);
+            Assert.Equal(typeof(int).MakeByRefType().FullName, paramTypes3[1].FullName);
+            Assert.Contains(paramTypes3[1].GetRequiredCustomModifiers(), t => t.FullName == typeof(InAttribute).FullName);
+            Assert.Equal(typeof(void).FullName, field3Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions3 = field3Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions3, t => t.FullName == typeof(CallConvStdcall).FullName);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
+        public void ConsumeFunctionPointerMembers()
+        {
+            // public unsafe class Container
+            // {
+            //     public static delegate*<int, int, int> Method;
+            //
+            //     public static int Add(int a, int b) => a + b;
+            //     public static void Init() => Method = &Add;
+            // }
+
+            TempFile assembly1Path = TempFile.Create();
+            PersistedAssemblyBuilder assembly1 = new(new AssemblyName("Assembly1"), typeof(object).Assembly);
+            ModuleBuilder mod1 = assembly1.DefineDynamicModule("Module1");
+            TypeBuilder containerType = mod1.DefineType("Container", TypeAttributes.Public | TypeAttributes.Class);
+            FieldBuilder methodField = containerType.DefineField("Method", typeof(delegate*<int, int, int>), FieldAttributes.Public | FieldAttributes.Static);
+            MethodBuilder addMethod = containerType.DefineMethod("Add", MethodAttributes.Public | MethodAttributes.Static);
+            addMethod.SetParameters(typeof(int), typeof(int));
+            addMethod.SetReturnType(typeof(int));
+            ILGenerator addMethodIL = addMethod.GetILGenerator();
+            addMethodIL.Emit(OpCodes.Ldarg_0);
+            addMethodIL.Emit(OpCodes.Ldarg_1);
+            addMethodIL.Emit(OpCodes.Add);
+            addMethodIL.Emit(OpCodes.Ret);
+            MethodBuilder initMethod = containerType.DefineMethod("Init", MethodAttributes.Public | MethodAttributes.Static);
+            initMethod.SetReturnType(typeof(void));
+            ILGenerator initMethodIL = initMethod.GetILGenerator();
+            initMethodIL.Emit(OpCodes.Ldftn, addMethod);
+            initMethodIL.Emit(OpCodes.Stsfld, methodField);
+            initMethodIL.Emit(OpCodes.Ret);
+            containerType.CreateType();
+            assembly1.Save(assembly1Path.Path);
+
+            // class Program
+            // {
+            //     public static int Main()
+            //     {
+            //         Container.Init();
+            //         return Container.Method(2, 3);
+            //     }
+            // }
+
+            TestAssemblyLoadContext context = new();
+
+            TempFile assembly2Path = TempFile.Create();
+            Assembly assembly1FromDisk = context.LoadFromAssemblyPath(assembly1Path.Path);
+            PersistedAssemblyBuilder assembly2 = new(new AssemblyName("Assembly2"), typeof(object).Assembly);
+            ModuleBuilder mod2 = assembly2.DefineDynamicModule("Module2");
+            TypeBuilder programType = mod2.DefineType("Program");
+            MethodBuilder mainMethod = programType.DefineMethod("Main", MethodAttributes.Public | MethodAttributes.Static);
+            mainMethod.SetReturnType(typeof(int));
+            ILGenerator il = mainMethod.GetILGenerator();
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field1"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field2"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field3"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field4"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerMembers).GetField("field5"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method1"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method2"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method3"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method4"));
+            il.Emit(OpCodes.Call, typeof(ClassWithFunctionPointerMembers).GetMethod("Method5"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldsfld, typeof(GenericClassWithFunctionPointerMembers<int>).GetField("Field"));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, typeof(GenericClassWithFunctionPointerMembers<Guid>).GetMethod("Method").MakeGenericMethod(typeof(string)));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Call, assembly1FromDisk.GetType("Container").GetMethod("Init"));
+            il.Emit(OpCodes.Ldc_I4_2);
+            il.Emit(OpCodes.Ldc_I4_3);
+            il.Emit(OpCodes.Ldsfld, assembly1FromDisk.GetType("Container").GetField("Method"));
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), [typeof(int), typeof(int)], null);
+            il.Emit(OpCodes.Ret);
+            programType.CreateType();
+            assembly2.Save(assembly2Path.Path);
+
+            Assembly assembly2FromDisk = context.LoadFromAssemblyPath(assembly2Path.Path);
+            int result = (int)assembly2FromDisk.GetType("Program").GetMethod("Main").Invoke(null, null);
+            Assert.Equal(5, result);
+
+            assembly1Path.Dispose();
+            assembly2Path.Dispose();
+        }
     }
 
     // Test Types
@@ -817,6 +1036,12 @@ namespace System.Reflection.Emit.Tests
         object Func(string a, short b);
     }
 
+    public interface IMethodWithModifiers
+    {
+        unsafe void Run(in int x, delegate*<in long, void> f);
+        void Run2(in int x);
+    }
+
     public struct EmptyStruct
     {
     }
@@ -835,5 +1060,26 @@ namespace System.Reflection.Emit.Tests
     {
         public EmptyTestClass field1;
         public byte field2;
+    }
+
+    public unsafe class ClassWithFunctionPointerMembers
+    {
+        public static delegate*<ClassWithFunctionPointerMembers> field1;
+        public static delegate* unmanaged<int> field2;
+        public static delegate* unmanaged[Cdecl]<Guid> field3;
+        public static delegate* unmanaged[Cdecl, SuppressGCTransition]<Vector<int>, Vector<int>> field4;
+        public static List<delegate* unmanaged[Stdcall, MemberFunction, SuppressGCTransition]<long>*[]> field5;
+
+        public static delegate*<int> Method1() => null;
+        public static delegate* unmanaged<string> Method2() => null;
+        public static delegate* unmanaged[Fastcall]<double> Method3() => null;
+        public static delegate* unmanaged[Cdecl]<delegate* unmanaged<int>, Guid> Method4() => null;
+        public static delegate* unmanaged[Cdecl]<int> Method5(delegate* unmanaged[Cdecl]<delegate* unmanaged<int>, Guid> funcPtr) => null;
+    }
+
+    public unsafe class GenericClassWithFunctionPointerMembers<T>
+    {
+        public static delegate* unmanaged[Cdecl]<T> Field;
+        public static delegate* unmanaged[Fastcall, MemberFunction]<T, U> Method<U>() => null;
     }
 }
