@@ -204,30 +204,42 @@ extends:
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
                 --no-build
                 --logger "trx;LogFileName=CdacDumpTests_windows_x64.trx"
-                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)
+                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/windows_x64
               displayName: 'Run cDAC Dump Tests (windows_x64 dumps)'
               continueOnError: true
               env:
                 CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/windows_x64
+            - task: PublishTestResults@2
+              displayName: 'Publish Results ($(osGroup)-$(archType) → windows_x64)'
+              inputs:
+                testResultsFormat: VSTest
+                testResultsFiles: '**/*.trx'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/windows_x64'
+                testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → windows_x64'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()
             # Run tests against Linux dumps
             - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
                 --no-build
                 --logger "trx;LogFileName=CdacDumpTests_linux_x64.trx"
-                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)
+                --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/linux_x64
               displayName: 'Run cDAC Dump Tests (linux_x64 dumps)'
               continueOnError: true
               env:
                 CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/linux_x64
             - task: PublishTestResults@2
+              displayName: 'Publish Results ($(osGroup)-$(archType) → linux_x64)'
               inputs:
                 testResultsFormat: VSTest
                 testResultsFiles: '**/*.trx'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType)'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/linux_x64'
+                testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → linux_x64'
                 failTaskOnFailedTests: true
                 publishRunAttachments: true
-                mergeTestResults: true
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
