@@ -7,19 +7,6 @@
 #include "trace.h"
 #include "bundle/runner.h"
 
-static pal::string_t normalize_dir_separator(const pal::string_t& path)
-{
-    // Entry relative path contains '/' separator, sanitize it to use
-    // platform separator. Perf: avoid extra copy if it matters.
-    pal::string_t normalized_path = path;
-    if (_X('/') != DIR_SEPARATOR)
-    {
-        replace_char(&normalized_path, _X('/'), DIR_SEPARATOR);
-    }
-
-    return normalized_path;
-}
-
 // -----------------------------------------------------------------------------
 // Given a "base" directory, determine the resolved path for this file.
 //
@@ -140,10 +127,10 @@ static bool to_path(const pal::string_t& base, const pal::string_t& relative_pat
 //
 bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options, bool& found_in_bundle) const
 {
-    pal::string_t relative_path = normalize_dir_separator(asset.local_path);
+    pal::string_t relative_path = asset.local_path;
     if (relative_path.empty())
     {
-        relative_path = normalize_dir_separator(asset.relative_path);
+        relative_path = asset.relative_path;
         if (library_type != _X("runtimepack")) // runtimepack assets set the path to the local path
         {
             pal::string_t file_name = get_filename(relative_path);
@@ -198,7 +185,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
 bool deps_entry_t::to_package_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const
 {
     bool found_in_bundle;
-    bool result = to_path(base, normalize_dir_separator(asset.relative_path), str, search_options, found_in_bundle);
+    bool result = to_path(base, asset.relative_path, str, search_options, found_in_bundle);
     assert(!found_in_bundle);
     return result;
 }

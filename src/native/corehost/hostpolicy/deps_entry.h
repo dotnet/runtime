@@ -19,10 +19,11 @@ struct deps_asset_t
 
     deps_asset_t(const pal::string_t& name, const pal::string_t& relative_path, const version_t& assembly_version, const version_t& file_version, const pal::string_t& local_path)
         : name(name)
-        , relative_path(get_replaced_char(relative_path, _X('\\'), _X('/'))) // Deps file does not follow spec. It uses '\\', should use '/'
+        // Deps file uses '/' as separator (or '\\' for non-compliant files). Normalize to platform separator.
+        , relative_path(get_replaced_char(relative_path, _X('/') == DIR_SEPARATOR ? _X('\\') : _X('/'), DIR_SEPARATOR))
         , assembly_version(assembly_version)
         , file_version(file_version)
-        , local_path(local_path.empty() ? pal::string_t() : get_replaced_char(local_path, _X('\\'), _X('/'))) { }
+        , local_path(local_path.empty() ? pal::string_t() : get_replaced_char(local_path, _X('/') == DIR_SEPARATOR ? _X('\\') : _X('/'), DIR_SEPARATOR)) { }
 
     pal::string_t name;
     pal::string_t relative_path;
