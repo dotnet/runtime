@@ -37,7 +37,6 @@
 #endif // !TARGET_UNIX
 
 #include "nativelibrary.h"
-#include "ebr.h"
 
 #ifndef DACCESS_COMPILE
 
