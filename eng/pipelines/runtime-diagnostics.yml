@@ -161,9 +161,9 @@ extends:
               parameters:
                 rootFolder: $(Build.SourcesDirectory)/artifacts/dumps/cdac
                 includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
+                archiveType: tar
+                archiveExtension: .tar.gz
+                tarCompression: gz
                 artifactName: CdacDumps_$(osGroup)_$(archType)
                 displayName: cDAC Dump Artifacts
 
@@ -190,7 +190,7 @@ extends:
             - template: /eng/pipelines/common/download-artifact-step.yml
               parameters:
                 artifactName: CdacDumps_windows_x64
-                artifactFileName: CdacDumps_windows_x64.zip
+                artifactFileName: CdacDumps_windows_x64.tar.gz
                 unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/windows_x64
                 displayName: 'Windows x64 Dumps'
             - template: /eng/pipelines/common/download-artifact-step.yml
