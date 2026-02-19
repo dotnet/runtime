@@ -25,6 +25,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 4, Level = LogLevel.Information, Message = "UseScopedRefParameter {s}")]
         internal static partial void UseScopedRefParameter(ILogger logger, scoped ref S s);
+
+        [LoggerMessage(EventId = 5, Level = LogLevel.Information, Message = "UseParamsCollectionParameter {p1} {args}")]
+        internal static partial void UseParamsCollectionParameter(ILogger logger, string p1, params System.Collections.Generic.IEnumerable<string> args);
 #endif
     }
 }

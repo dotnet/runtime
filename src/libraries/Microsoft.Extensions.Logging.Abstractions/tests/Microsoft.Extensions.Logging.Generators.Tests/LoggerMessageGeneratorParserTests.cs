@@ -874,6 +874,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
 #if ROSLYN4_8_OR_GREATER
         [Fact]
+        public async Task ParamsCollectionParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Collections.Generic;
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params IEnumerable<string> args);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task RefReadOnlyParameterOK()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
