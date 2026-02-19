@@ -15,5 +15,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "UseRefParameter {s}")]
         internal static partial void UseRefParameter(ILogger logger, ref S s);
+
+        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = "UseParamsParameter {p1} {args}")]
+        internal static partial void UseParamsParameter(ILogger logger, string p1, params object?[] args);
     }
 }
