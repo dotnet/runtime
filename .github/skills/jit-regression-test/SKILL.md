@@ -86,12 +86,12 @@ public class Runtime_99391
 }
 ```
 
-## Step 4: Create a .csproj File or add to Regression_ro_2.csproj
+## Step 4: Create a .csproj File or add to the existing Regression_*.csproj
 
 A custom `.csproj` file is **only required** when:
 - Environment variables are needed to reproduce the bug (such as `DOTNET_JitStressModeNames`)
 - Special compilation settings are required
-Otherwise, register the test file in the existing `src/tests/JIT/Regression/Regression_ro_2.csproj` file and skip creating a new .csproj.
+Otherwise, register the test file in the existing `src/tests/JIT/Regression/Regression_*.csproj` (`Regression_ro_2.csproj` is a good default) file and skip creating a new .csproj.
 
 If a custom .csproj file is needed, it should be located next to the test source file with the following name: `Runtime_<issue_number>.csproj`. Example:
 
