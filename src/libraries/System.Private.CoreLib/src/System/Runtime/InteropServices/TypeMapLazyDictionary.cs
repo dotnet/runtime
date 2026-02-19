@@ -22,9 +22,15 @@ namespace System.Runtime.InteropServices
         private ref struct CallbackContext
         {
             private RuntimeAssembly? _currAssembly;
+            private readonly RuntimeType _groupType;
             private LazyExternalTypeDictionary? _externalTypeMap;
             private LazyProxyTypeDictionary? _proxyTypeMap;
             private ExceptionDispatchInfo? _creationException;
+
+            public CallbackContext(RuntimeType groupType)
+            {
+                _groupType = groupType;
+            }
 
             public RuntimeAssembly CurrentAssembly
             {
@@ -248,7 +254,7 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_TypeMapMissingEntryAssembly);
             }
 
-            CallbackContext context = new();
+            CallbackContext context = new(groupType);
             ProcessAttributes(
                 new QCallAssembly(ref startingAssembly),
                 new QCallTypeHandle(ref groupType),
