@@ -273,8 +273,8 @@ namespace Internal.IL
                     return methodIL;
 
                 return NeedsAsyncThunk(amv) ?
-                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, amv.GetTargetOfAsyncVariant())
-                    : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create((EcmaMethod)method.GetTargetOfAsyncVariant()));
+                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, amv.Target)
+                    : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create(amv.Target));
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
