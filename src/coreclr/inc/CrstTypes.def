@@ -186,15 +186,6 @@ Crst DynamicMT
     AcquiredBefore CodeVersioning
 End
 
-// EBR (Epoch-Based Reclamation) internal locks. These are leaf locks that
-// protect the EBR thread list and pending deletion queues. They must never
-// be held across HashMap operations or GC transitions.
-Crst EbrPending
-End
-
-Crst EbrThreadList
-End
-
 Crst EventStore
 End
 

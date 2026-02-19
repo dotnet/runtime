@@ -10,7 +10,7 @@
 //
 // Usage:
 //   // Startup:
-//   g_HashMapEbr.Init(CrstEbrThreadList, CrstEbrPending);
+//   g_HashMapEbr.Init();
 //
 //   // Reader/Writer thread:
 //   {
@@ -56,9 +56,7 @@ public:
     EbrCollector& operator=(EbrCollector&&) = delete;
 
     // Initialize the collector.
-    //   crstThreadList: Crst type for the thread list lock
-    //   crstPending:    Crst type for the pending deletion queue lock
-    void Init(CrstType crstThreadList, CrstType crstPending);
+    void Init();
 
     // Enter a critical region. While in a critical region, objects queued for
     // deletion will not be freed. Re-entrant: nested calls are counted.

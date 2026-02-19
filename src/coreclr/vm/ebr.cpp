@@ -76,7 +76,7 @@ EbrCollector g_HashMapEbr;
 // ============================================
 
 void
-EbrCollector::Init(CrstType crstThreadList, CrstType crstPending)
+EbrCollector::Init()
 {
     CONTRACTL
     {
@@ -93,8 +93,12 @@ EbrCollector::Init(CrstType crstThreadList, CrstType crstPending)
     for (uint32_t i = 0; i < EBR_EPOCHS; i++)
         m_pPendingHeads[i] = nullptr;
 
-    m_threadListLock.Init(crstThreadList);
-    m_pendingLock.Init(crstPending);
+    m_threadListLock.Init(CrstLeafLock);
+
+    // The pending lock is a leaf that can be taken in any mode.
+    // It is not expected to interact with the GC in any way.
+    // The QueueForDeletion() operation can occur at inconvenient times.
+    m_pendingLock.Init(CrstLeafLock, CrstFlags::CRST_UNSAFE_ANYMODE);
 
     m_initialized = true;
 }
