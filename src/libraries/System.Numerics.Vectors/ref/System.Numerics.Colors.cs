@@ -4,12 +4,13 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+#if !BUILDING_CORELIB_REFERENCE
 namespace System.Numerics.Colors
 {
 #pragma warning disable CS3001 // Argument type is not CLS-compliant
 #pragma warning disable CS3002 // Return type is not CLS-compliant
 
-    public static class Argb
+    public static partial class Argb
     {
         public static System.Numerics.Colors.Argb<byte> CreateBigEndian(uint color) { throw null; }
         public static System.Numerics.Colors.Argb<byte> CreateLittleEndian(uint color) { throw null; }
@@ -17,7 +18,7 @@ namespace System.Numerics.Colors
         public static uint ToUInt32LittleEndian(this System.Numerics.Colors.Argb<byte> color) { throw null; }
     }
 
-    public readonly struct Argb<T> : System.IEquatable<System.Numerics.Colors.Argb<T>>//, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct Argb<T> : System.IEquatable<System.Numerics.Colors.Argb<T>>
         where T : struct
     {
         private readonly T _dummyT;
@@ -29,11 +30,10 @@ namespace System.Numerics.Colors
         public Argb(System.ReadOnlySpan<T> values) { throw null; }
         public void CopyTo(System.Span<T> destination) { throw null; }
         public bool Equals(System.Numerics.Colors.Argb<T> other) { throw null; }
-        //public string ToString(string format, IFormatProvider formatProvider) { throw null; }
         public System.Numerics.Colors.Rgba<T> ToRgba() { throw null; }
     }
 
-    public static class Rgba
+    public static partial class Rgba
     {
         public static System.Numerics.Colors.Rgba<byte> CreateBigEndian(uint color) { throw null; }
         public static System.Numerics.Colors.Rgba<byte> CreateLittleEndian(uint color) { throw null; }
@@ -41,7 +41,7 @@ namespace System.Numerics.Colors
         public static uint ToUInt32LittleEndian(this System.Numerics.Colors.Rgba<byte> color) { throw null; }
     }
 
-    public readonly struct Rgba<T> : System.IEquatable<System.Numerics.Colors.Rgba<T>>//, IFormattable, ISpanFormattable
+    public readonly partial struct Rgba<T> : System.IEquatable<System.Numerics.Colors.Rgba<T>>
         where T : struct
     {
         private readonly T _dummyT;
@@ -53,10 +53,10 @@ namespace System.Numerics.Colors
         public Rgba(System.ReadOnlySpan<T> values) { throw null; }
         public void CopyTo(System.Span<T> destination) { throw null; }
         public bool Equals(System.Numerics.Colors.Rgba<T> other) { throw null; }
-        //public string ToString(string format, IFormatProvider formatProvider) { throw null; }
         public System.Numerics.Colors.Argb<T> ToArgb() { throw null; }
     }
 
 #pragma warning restore CS3001 // Argument type is not CLS-compliant
 #pragma warning restore CS3002 // Return type is not CLS-compliant
 }
+#endif

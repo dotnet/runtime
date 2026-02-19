@@ -105,7 +105,6 @@
       System.Net.WebProxy;
       System.Net.WebSockets;
       System.Net.WebSockets.Client;
-      System.Numerics.Colors;
       System.Numerics.Vectors;
       System.ObjectModel;
       System.Private.CoreLib;
