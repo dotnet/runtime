@@ -9,6 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
+using System.Reflection;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -26,6 +27,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
     private readonly Dictionary<TypeKey, TypeHandle> _typeHandles = new();
+    private readonly Dictionary<TypeKeyByName, TypeHandle> _typeHandlesByName = new();
 
     internal struct MethodTable
     {
@@ -95,6 +97,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
             return hash;
         }
+    }
+
+    private readonly struct TypeKeyByName : IEquatable<TypeKeyByName>
+    {
+        public TypeKeyByName(string name, string namespaceName, TargetPointer module)
+        {
+            Name = name;
+            Namespace = namespaceName;
+            Module = module;
+        }
+        public string Name { get; }
+        public string Namespace { get; }
+        public TargetPointer Module { get; }
+        public bool Equals(TypeKeyByName other) => Name == other.Name && Namespace == other.Namespace && Module == other.Module;
+        public override bool Equals(object? obj) => obj is TypeKeyByName other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Name, Namespace, Module);
     }
 
     // Low order bits of TypeHandle address.
@@ -799,6 +817,121 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
         TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
         return GetTypeHandle(typeHandlePtr);
+    }
+
+    private static bool ModuleMatch(AssemblyReference assemblyRef, AssemblyDefinition assemblyDef)
+    {
+        AssemblyName assemblyRefName = assemblyRef.GetAssemblyName();
+        AssemblyName assemblyDefName = assemblyDef.GetAssemblyName();
+        if ((assemblyRefName.Name != assemblyDefName.Name) ||
+                (assemblyRefName.Version != assemblyDefName.Version) ||
+                (assemblyRefName.CultureName != assemblyDefName.CultureName))
+        {
+            return false;
+        }
+
+        ReadOnlySpan<byte> refToken = assemblyRefName.GetPublicKeyToken();
+        ReadOnlySpan<byte> defToken = assemblyDefName.GetPublicKeyToken();
+        return refToken.SequenceEqual(defToken);
+    }
+
+    private MetadataReader? LookForHandle(AssemblyReference exportedAssemblyRef)
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+        foreach (ModuleHandle mdhandle in _target.Contracts.Loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded))
+        {
+            MetadataReader? md2 = _target.Contracts.EcmaMetadata.GetMetadata(mdhandle);
+            if (md2 == null)
+                continue;
+            AssemblyDefinition assemblyDefinition = md2.GetAssemblyDefinition();
+            if (ModuleMatch(exportedAssemblyRef, assemblyDefinition))
+            {
+                return md2;
+            }
+        }
+        return null;
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer modulePtr = loader.GetModule(moduleHandle);
+        if (_typeHandlesByName.TryGetValue(new TypeKeyByName(name, nameSpace, modulePtr), out TypeHandle existing))
+            return existing;
+        string[] parts = name.Split('+');
+        string outerName = parts[0];
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        TypeDefinitionHandle currentHandle = default;
+        // create a hash set of MDs and if we come across the same one more than once in a loop then we return null typehandle
+        HashSet<MetadataReader> seenMDs = new();
+        // 1. find the outer type
+        while (md != null && seenMDs.Add(md))
+        {
+            foreach (TypeDefinitionHandle typeDefHandle in md.TypeDefinitions)
+            {
+                TypeDefinition typedef = md.GetTypeDefinition(typeDefHandle);
+                if (md.GetString(typedef.Name) == outerName && md.GetString(typedef.Namespace) == nameSpace)
+                {
+                    // found our outermost type, remember it
+                    currentHandle = typeDefHandle;
+                    break;
+                }
+            }
+
+            if (currentHandle == default)
+            {
+                // look for forwarded types
+                foreach (ExportedTypeHandle exportedTypeHandle in md.ExportedTypes)
+                {
+                    ExportedType exportedType = md.GetExportedType(exportedTypeHandle);
+                    if (exportedType.Implementation.Kind != HandleKind.AssemblyReference || !exportedType.IsForwarder)
+                        continue;
+                    if (md.GetString(exportedType.Name) == outerName && md.GetString(exportedType.Namespace) == nameSpace)
+                    {
+                        // get the assembly ref for target
+                        AssemblyReferenceHandle arefHandle = (AssemblyReferenceHandle)exportedType.Implementation;
+                        AssemblyReference exportedAssemblyRef = md.GetAssemblyReference(arefHandle);
+                        md = LookForHandle(exportedAssemblyRef);
+                        break;
+                    }
+                }
+            }
+            else break; // if we found our typedef without forwarding break out of the while loop
+        }
+
+        if (currentHandle == default)
+            return new TypeHandle(TargetPointer.Null);
+
+        // 2. Walk down the nested types
+        for (int i = 1; i < parts.Length; i++)
+        {
+            string nestedName = parts[i];
+            bool found = false;
+            foreach (TypeDefinitionHandle nestedHandle in md!.GetTypeDefinition(currentHandle).GetNestedTypes())
+            {
+                TypeDefinition nestedDef = md.GetTypeDefinition(nestedHandle);
+                if (md.GetString(nestedDef.Name) == nestedName)
+                {
+                    currentHandle = nestedHandle;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                return new TypeHandle(TargetPointer.Null);
+        }
+
+        // 3. We have the handle, look up the type handle
+        int token = MetadataTokens.GetToken((EntityHandle)currentHandle);
+        TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
+        TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        if (typeHandlePtr == TargetPointer.Null)
+            return new TypeHandle(TargetPointer.Null);
+        TypeHandle foundTypeHandle = rts.GetTypeHandle(typeHandlePtr);
+        _ = _typeHandlesByName.TryAdd(new TypeKeyByName(name, nameSpace, modulePtr), foundTypeHandle);
+        return foundTypeHandle;
     }
 
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)

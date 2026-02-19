@@ -63,17 +63,12 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
-// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
-// 1. Everything shared by all codegen backends (incl. WASM) stays here.
-// 2. Everything else goes into codegenlinear.cpp.
-// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
-//
-#ifndef TARGET_WASM
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // Add: Add internal allocated registers for the specified node.
 //
@@ -174,6 +169,149 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     regMaskTP regs;
     return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
+#else  // !HAS_FIXED_REGISTER_SET
+//------------------------------------------------------------------------
+// InternalRegs: construct an empty 'InternalRegs' instance.
+//
+InternalRegs::InternalRegs()
+{
+    for (size_t i = 0; i < ArrLen(m_regs); i++)
+    {
+        m_regs[i] = REG_NA;
+    }
+}
+
+//------------------------------------------------------------------------
+// IsEmpty: are there any registers in this set?
+//
+// Return Value:
+//   Whether there are any registers in this set.
+//
+bool InternalRegs::IsEmpty() const
+{
+    return m_regs[0] == REG_NA;
+}
+
+//------------------------------------------------------------------------
+// Count: how many registers are in this set?
+//
+// Return Value:
+//   The count of registers in this set.
+//
+unsigned InternalRegs::Count() const
+{
+    unsigned count = 0;
+    while (count < ArrLen(m_regs))
+    {
+        if (m_regs[count] == REG_NA)
+        {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
+//------------------------------------------------------------------------
+// Add: add a register to this set.
+//
+// The set must not be full yet.
+//
+// Parameters:
+//   reg - The register to add
+//
+void InternalRegs::Add(regNumber reg)
+{
+    assert(reg != REG_NA);
+    unsigned count = Count();
+    assert(count < ArrLen(m_regs));
+    m_regs[count] = reg;
+}
+
+//------------------------------------------------------------------------
+// GetAt: Get a register at an index.
+//
+// Parameters:
+//   index - The index
+//
+// Return Value:
+//   The register at 'index', which must be valid.
+//
+regNumber InternalRegs::GetAt(unsigned index) const
+{
+    assert(index < Count());
+    return m_regs[index];
+}
+
+//------------------------------------------------------------------------
+// SetAt: Set a register at an index.
+//
+// Parameters:
+//   index - The index
+//   reg   - The register, must be valid
+//
+void InternalRegs::SetAt(unsigned index, regNumber reg)
+{
+    assert(index < Count());
+    assert(reg != REG_NA);
+    m_regs[index] = reg;
+}
+
+//------------------------------------------------------------------------
+// Extract: Remove the last register from this set and return it.
+//
+// Return Value:
+//   The extracted register.
+//
+regNumber InternalRegs::Extract()
+{
+    assert(!IsEmpty());
+    unsigned  index = Count() - 1;
+    regNumber reg   = m_regs[index];
+    m_regs[index]   = REG_NA;
+    return reg;
+}
+
+//------------------------------------------------------------------------
+// Add: Add a register to the set of ones internally allocated for this node.
+//
+// Parameters:
+//   tree - IR node to add the internal allocated register to
+//   reg  - The register to add
+//
+void NodeInternalRegisters::Add(GenTree* tree, regNumber reg)
+{
+    InternalRegs* regs = m_table.LookupPointerOrAdd(tree, InternalRegs{});
+    regs->Add(reg);
+}
+
+//------------------------------------------------------------------------
+// GetAll: Get the internally allocated registers for the specified node.
+//
+// Parameters:
+//   tree - IR node to get the registers for
+//
+// Returns:
+//   Pointer to the registers, nullptr if there are none.
+//
+InternalRegs* NodeInternalRegisters::GetAll(GenTree* tree)
+{
+    InternalRegs* regs = m_table.LookupPointer(tree);
+    assert((regs == nullptr) || !regs->IsEmpty());
+    return regs;
+}
+
+//------------------------------------------------------------------------
+// Iterate: Get the iterator for the internal register table.
+//
+// Returns:
+//   A 'for'-loop compatible iterator of the table entries.
+//
+NodeInternalRegistersTable::KeyValueIteration NodeInternalRegisters::Iterate()
+{
+    return NodeInternalRegistersTable::KeyValueIteration(&m_table);
+}
+#endif // !HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
@@ -190,15 +328,12 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmMskCalleeTrash = m_compiler->rbmMskCalleeTrash;
 }
 #endif // TARGET_XARCH
-#endif // !TARGET_WASM
 
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
     : gcInfo(theCompiler)
     , regSet(theCompiler, gcInfo)
-#if HAS_FIXED_REGISTER_SET
     , internalRegisters(theCompiler)
-#endif // HAS_FIXED_REGISTER_SET
     , m_compiler(theCompiler)
     , treeLifeUpdater(nullptr)
 #ifdef TARGET_WASM
@@ -268,6 +403,11 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // TARGET_ARM64
 }
 
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) stays here.
+// 2. Everything else goes into codegenlinear.cpp.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
 #ifndef TARGET_WASM
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
@@ -591,7 +731,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
 void CodeGenInterface::genUpdateLife(GenTree* tree)
 {
-    treeLifeUpdater->UpdateLife(tree);
+    treeLifeUpdater->UpdateLife<false>(tree);
 }
 
 void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
@@ -1876,18 +2016,12 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
+        printf(Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
-#if defined(TARGET_64BIT)
-        printf("generic X64");
-#else
-        printf("generic X86");
-#endif
-
         // Check ISA directly here instead of using
         // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
         // us miss in SPMI
-
         if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
             printf(" + VEX");
@@ -1902,21 +2036,11 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" + APX");
         }
-#elif defined(TARGET_ARM)
-        printf("generic ARM");
 #elif defined(TARGET_ARM64)
-        printf("generic ARM64");
-
         if (m_compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
         {
             printf(" + SVE");
         }
-#elif defined(TARGET_LOONGARCH64)
-        printf("generic LOONGARCH64");
-#elif defined(TARGET_RISCV64)
-        printf("generic RISCV64");
-#else
-        printf("unknown architecture");
 #endif
 
         if (TargetOS::IsWindows)
@@ -6831,7 +6955,7 @@ void CodeGen::genReportAsyncDebugInfo()
         uint32_t diagNativeOffset = 0;
         if (genAsyncResumeInfoTable != nullptr)
         {
-            emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+            emitLocation& emitLoc = genAsyncResumeInfoTable->Locations()[i];
             if (emitLoc.Valid())
             {
                 diagNativeOffset = emitLoc.CodeOffset(GetEmitter());

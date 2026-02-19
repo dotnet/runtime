@@ -32,6 +32,8 @@ public static class Constants
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
+        public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
+        public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);

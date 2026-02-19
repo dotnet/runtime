@@ -426,7 +426,6 @@ $(SuperPMICollectionBatchScript)
 
 REM Allow test environment variables or precommands to override the ExePath
 set ExePath=$(InputAssemblyName)
-set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
 
 REM Environment Variables
 $(BatchEnvironmentVariables)

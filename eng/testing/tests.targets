@@ -2,7 +2,7 @@
   <!-- Enable runtime async for all .NET 11+ test projects. -->
   <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))
     and '$(TestNativeAot)' != 'true'
-    and '$(TestReadyToRun)' != 'true'
+    and ('$(TestReadyToRun)' != 'true' or '$(UseRuntimeAsync)' == 'true')
     and '$(UseNativeAOTRuntime)' != 'true'
     and '$(TargetOS)' != 'browser'
     and '$(TargetOS)' != 'wasi'

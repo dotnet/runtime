@@ -214,7 +214,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Where(data =>
             {
                 var (test, options) = data;
-                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter(), null);
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter());
                 return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
             .Select((data, ct) => data.Left)
@@ -309,10 +309,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-            builder.AppendLine();
-
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
             using (builder.NewBracesScope())
             {
@@ -326,7 +322,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             builder.AppendLine();
 
-            builder.AppendLine("filter = new (args, testExclusionTable);");
+            builder.AppendLine("filter = new(args);");
             builder.AppendLine("summary = new();");
             builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
             builder.AppendLine("outputRecorder = new(System.Console.Out);");
@@ -465,13 +461,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-
             builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests,"
                                + $@" ""{assemblyName}"","
-                               + $@" args.Length != 0 ? args[0] : null,"
-                               + $@" testExclusionTable);");
+                               + $@" args.Length != 0 ? args[0] : null);");
         }
 
         builder.AppendLine("catch (System.Exception ex)");

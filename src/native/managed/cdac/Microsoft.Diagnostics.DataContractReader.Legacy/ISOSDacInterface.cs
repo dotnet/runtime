@@ -110,6 +110,11 @@ public struct DacpThreadData
 
 public struct DacpModuleData
 {
+    public enum TransientFlags : uint
+    {
+        IsEditAndContinue = 0x00000208, // Flags for .NET Framework (0x00000200) and .NET Core (0x00000008)
+    };
+
     public ClrDataAddress Address;
     public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
     public ClrDataAddress ilBase;

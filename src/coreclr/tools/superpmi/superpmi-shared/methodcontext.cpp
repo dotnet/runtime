@@ -6447,6 +6447,26 @@ void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     }
 }
 
+void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType value)
+{
+    if (GetWasmLowering == nullptr)
+        GetWasmLowering = new LightWeightMap<DWORDLONG, DWORD>();
+    DWORDLONG key = CastHandle(structHnd);
+    GetWasmLowering->Add(key, (DWORD) value);
+    DEBUG_REC(dmpGetWasmLowering(key, value));
+}
+void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
+{
+    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d ", key, value);
+}
+CorInfoWasmType MethodContext::repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+    DWORD value = LookupByKeyOrMiss(GetWasmLowering, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetWasmLowering(key, value));
+    return (CorInfoWasmType) value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, CorInfoReloc result)
 {
     if (GetRelocTypeHint == nullptr)
@@ -7358,6 +7378,12 @@ void MethodContext::dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, 
 
 CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
 {
+    if (GetWasmTypeSymbol == nullptr)
+    {
+        // Fake up a result so we can cross-replay onto wasm
+        return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)0xbadcab;
+    }
+
     AssertMapExistsNoMessage(GetWasmTypeSymbol);
 
     Agnostic_GetWasmTypeSymbol key;

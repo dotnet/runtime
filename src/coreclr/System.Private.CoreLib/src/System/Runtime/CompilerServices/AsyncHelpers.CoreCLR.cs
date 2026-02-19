@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -198,6 +197,10 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static Continuation? AsyncCallContinuation() => throw new UnreachableException();
 
+        // Indicate that an upcoming await should be done as a "tail await" that does not introduce a new suspension point.
+        [Intrinsic]
+        private static void TailAwait() => throw new UnreachableException();
+
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
@@ -284,7 +287,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="o"> Task or a ValueTaskNotifier whose completion we are awaiting.</param>
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        [RequiresPreviewFeatures]
         private static void TransparentAwait(object o)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;

@@ -80,7 +80,7 @@ Some repositories (e.g., dotnet/sdk) run tests directly on the build agent. The 
 - `Known Build Error` - Used by Build Analysis across all dotnet repositories
 - Search syntax: `repo:<owner>/<repo> is:issue is:open label:"Known Build Error" <test-name>`
 
-Example searches:
+Example searches (use `search_issues` when GitHub MCP is available, `gh` CLI otherwise):
 ```bash
 # Search in runtime
 gh issue list --repo dotnet/runtime --label "Known Build Error" --search "FileSystemWatcher"
