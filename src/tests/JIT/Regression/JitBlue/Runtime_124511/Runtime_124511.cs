@@ -13,7 +13,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-public unsafe class Runtime_105944
+public unsafe class Runtime_124511
 {
     [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
