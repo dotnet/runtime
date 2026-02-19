@@ -527,7 +527,7 @@ InteropLib::OBJECTHANDLE ManagedObjectWrapper::GetTarget() const
 using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
 namespace InteropLib { namespace ABI {
     struct ComInterfaceDispatch;
-    QueryInterfaceMethod g_knownQueryInterfaceImplementations[2] = {
+    QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations] = {
             &ManagedObjectWrapper_QueryInterface,
             &TrackerTarget_QueryInterface
         };
