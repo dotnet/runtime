@@ -42,7 +42,7 @@ function print_usage {
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
-    echo '  --node                           : Runs the tests with the NodeJS (wasm only)'
+    echo '  --node                           : Runs the tests with NodeJS (wasm only)'
     echo '  --limitedDumpGeneration          : '
 }
 
