@@ -1875,10 +1875,10 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
+          shouldContinueOnError: true
           jobParameters:
             name: cDAC
             useCdac: true
-            shouldContinueOnError: true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
@@ -1915,10 +1915,10 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
+          shouldContinueOnError: true
           jobParameters:
             name: DAC
             useCdac: false
-            shouldContinueOnError: true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
