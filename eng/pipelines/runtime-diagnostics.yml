@@ -12,7 +12,6 @@ parameters:
     - windows_x64
     - linux_x64
     - osx_x64
-    - osx_arm64
 
 resources:
   repositories:
