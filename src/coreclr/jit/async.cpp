@@ -501,7 +501,6 @@ public:
         : m_compiler(compiler)
         , m_mutatedVars(nullptr)
         , m_mutatedVarsIn(nullptr)
-        , m_mutatedAtEntry(VarSetOps::MakeEmpty(compiler))
     {
     }
 
