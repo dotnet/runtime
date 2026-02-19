@@ -365,7 +365,6 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 }
             }
         }
-
 #endif
 
         return hr;
