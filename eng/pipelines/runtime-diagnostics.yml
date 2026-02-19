@@ -162,6 +162,8 @@ extends:
             - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
                 /p:CIDumpVersionsOnly=true
+                /p:TargetArchitecture=$(archType)
+                -bl:$(Build.SourcesDirectory)/artifacts/log/DumpGeneration.binlog
               displayName: 'Build Dump Tests and Generate Dumps'
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
