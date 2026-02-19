@@ -14007,10 +14007,14 @@ void emitter::emitDispInsHelp(
             break;
 
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
+        {
+            regNumber reg3 = id->idIsLclVar() ? codeGen->rsGetRsvdReg() : id->idReg3();
+
             if ((ins == INS_add) || (ins == INS_sub))
             {
                 emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
                 emitDispReg(encodingZRtoSP(id->idReg2()), size, true);
+                emitDispReg(reg3, size, false);
             }
             else if ((ins == INS_smulh) || (ins == INS_umulh))
             {
@@ -14018,29 +14022,23 @@ void emitter::emitDispInsHelp(
                 // smulh Xd, Xn, Xm
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
+                emitDispReg(reg3, size, false);
             }
             else if ((ins == INS_smull) || (ins == INS_umull) || (ins == INS_smnegl) || (ins == INS_umnegl))
             {
                 // smull Xd, Wn, Wm
                 emitDispReg(id->idReg1(), EA_8BYTE, true);
                 emitDispReg(id->idReg2(), EA_4BYTE, true);
+                emitDispReg(reg3, EA_4BYTE, false);
             }
             else
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
+                emitDispReg(reg3, size, false);
             }
-
-            if (id->idIsLclVar())
-            {
-                emitDispReg(codeGen->rsGetRsvdReg(), size, false);
-            }
-            else
-            {
-                emitDispReg(id->idReg3(), size, false);
-            }
-
             break;
+        }
 
         case IF_DR_3B: // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
             emitDispReg(id->idReg1(), size, true);
