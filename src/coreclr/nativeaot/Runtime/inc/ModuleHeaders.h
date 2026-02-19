@@ -58,8 +58,3 @@ enum class ReadyToRunSectionType
     ReadonlyBlobRegionStart     = 300,
     ReadonlyBlobRegionEnd       = 399,
 };
-
-enum class ModuleInfoFlags
-{
-    HasEndPointer               = 0x1,
-};
