@@ -1978,7 +1978,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
     uint32_t firstZero = count;
 
-    uint64_t allTBaseBits = ((uint64_t)1 << sizeof(TBase)) - (uint64_t)1;
+    constexpr uint64_t laneMask = (sizeof(TBase) == 8) ? ~0ull : ((1ull << sizeof(TBase)) - 1ull);
 
     // A mask is a vector of unsigned integers, where 1 indicates the lane is set, 0 is not set,
     // and all other values are undefined.
@@ -1989,7 +1989,9 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     // Find an unbroken sequence of 1s.
     for (uint32_t i = 0; i < count; i++)
     {
-        TBase elem = (TBase)((mask >> (i * sizeof(TBase))) & allTBaseBits);
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase elem = (TBase)(lane & laneMask);
+
         if (elem == 0)
         {
             // Found the first zero
@@ -2007,7 +2009,9 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     // Find an unbroken sequence of 0s.
     for (uint32_t i = firstZero; i < count; i++)
     {
-        TBase elem = (TBase)((mask >> (i * sizeof(TBase))) & allTBaseBits);
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase elem = (TBase)(lane & laneMask);
+
         if (elem != 0)
         {
             // Either a 1 or other bits are set. Invalid sequence
