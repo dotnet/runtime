@@ -11613,12 +11613,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary() || tree->OperIsMultiOp())
+        if (tree->OperIsBinary() || tree->OperIsMultiOp() || tree->IsPartOfAddressMode())
         {
             genTreeOps oper = tree->OperGet();
 
-            // Check for GTF_ADDRMODE_NO_CSE flag on add/mul/shl Binary Operators
-            if ((oper == GT_ADD) || (oper == GT_MUL) || (oper == GT_LSH))
+            // Check for GTF_ADDRMODE_NO_CSE flag on add/mul/shl Binary Operators and cast operators
+            if ((oper == GT_ADD) || (oper == GT_MUL) || (oper == GT_LSH) || (oper == GT_CAST))
             {
                 if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
                 {
