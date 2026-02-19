@@ -4361,7 +4361,7 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    for (int i = 0; i < g_numKnownQueryInterfaceImplementations; i++)
+    for (size_t i = 0; i < g_numKnownQueryInterfaceImplementations; i++)
     {
         if (PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[i])
         {
