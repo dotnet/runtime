@@ -1454,6 +1454,14 @@ void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType interceptor_ICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getWasmLowering");
+    CorInfoWasmType result = original_ICorJitInfo->getWasmLowering(structHnd);
+    mc->recGetWasmLowering(structHnd, result);
+    return result;
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {
@@ -2030,6 +2038,14 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
     DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
     mc->recGetExpectedTargetArchitecture(result);
     return result;
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
+{
+    mc->cr->AddCall("getWasmTypeSymbol");
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = original_ICorJitInfo->getWasmTypeSymbol(types, typesSize);
+    mc->recGetWasmTypeSymbol(types, typesSize, temp);
+    return temp;
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)

@@ -219,6 +219,7 @@ instructionset     ,ARM64 ,Sha256                ,           ,20 ,Sha256        
 instructionset     ,ARM64 ,                      ,Atomics    ,21 ,Atomics               ,lse
 instructionset     ,ARM64 ,                      ,           ,   ,Vector64              ,
 instructionset     ,ARM64 ,                      ,           ,   ,Vector128             ,
+instructionset     ,ARM64 ,                      ,           ,   ,VectorT               ,
 instructionset     ,ARM64 ,                      ,           ,   ,Dczva                 ,
 instructionset     ,ARM64 ,                      ,Rcpc       ,26 ,Rcpc                  ,rcpc
 instructionset     ,ARM64 ,                      ,VectorT128 ,39 ,VectorT128            ,vectort128
@@ -239,6 +240,7 @@ instructionset64bit,ARM64 ,Sve2
 
 vectorinstructionset,ARM64,Vector64
 vectorinstructionset,ARM64,Vector128
+vectorinstructionset,ARM64,VectorT
 
 implication        ,ARM64 ,AdvSimd    ,ArmBase
 implication        ,ARM64 ,Aes        ,ArmBase
@@ -249,6 +251,7 @@ implication        ,ARM64 ,Sha1       ,ArmBase
 implication        ,ARM64 ,Sha256     ,ArmBase
 implication        ,ARM64 ,Vector64   ,AdvSimd
 implication        ,ARM64 ,Vector128  ,AdvSimd
+implication        ,ARM64 ,VectorT    ,Sve
 implication        ,ARM64 ,VectorT128 ,AdvSimd
 implication        ,ARM64 ,Sve        ,AdvSimd
 implication        ,ARM64 ,Sve2       ,Sve
