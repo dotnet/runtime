@@ -84,7 +84,9 @@ The section contains two tables: a TypeDef table and an instantiation table. For
 
 TypeDef rows are sorted by `TypeDefRid`. Instantiation rows are sorted first by owner `TypeDefRid`, then by lexicographic signature bytes.
 
-Runtime binary-searches TypeDef rows by `TypeDefRid`, then uses `Instantiation.Index`/`Instantiation.Count` to linearly compare signatures in that range.
+Runtime locates TypeDef rows by `TypeDefRid`, then uses `Instantiation.Index`/`Instantiation.Count` to linearly compare signatures in that range.
+
+If a module has any preinitialized types, all TypeDef rows in the module are present in the map, even those that are not preinitialized. This allows the runtime to locate the map entry directly without searching by the rid.
 
 ## Preinitialized static payload format
 

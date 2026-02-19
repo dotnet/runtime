@@ -2057,7 +2057,7 @@ bool ReadyToRun_TypePreinitializationMap::TryGetTypeDefEntry(
     return false;
 #else
     uint32_t rid = RidFromToken(input);
-    if (rid == 0)
+    if ((rid == 0) || (rid > TypeCount))
     {
         *ppEntry = nullptr;
         *foundResult = false;
@@ -2068,26 +2068,16 @@ bool ReadyToRun_TypePreinitializationMap::TryGetTypeDefEntry(
     const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntries =
         reinterpret_cast<const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY*>(pStart);
 
-    uint32_t low = 0;
-    uint32_t high = TypeCount;
-    while (low < high)
-    {
-        uint32_t mid = low + ((high - low) / 2);
-        uint32_t currentRid = pEntries[mid].TypeDefRid;
-        if (currentRid < rid)
-            low = mid + 1;
-        else
-            high = mid;
-    }
-
-    if ((low >= TypeCount) || (pEntries[low].TypeDefRid != rid))
+    // Table is emitted in TypeDef RID order and contains one row per TypeDef.
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntry = &pEntries[rid - 1];
+    if (pEntry->TypeDefRid != rid)
     {
         *ppEntry = nullptr;
         *foundResult = false;
         return false;
     }
 
-    *ppEntry = &pEntries[low];
+    *ppEntry = pEntry;
     *foundResult = true;
     return true;
 #endif
