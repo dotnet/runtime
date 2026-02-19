@@ -4175,7 +4175,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
             else if ((rcw & _rcwMask) == 0)
                 *identity = 0;
-            else if (identity != null)
+            else
             {
                 TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity(rcw.ToTargetPointer(_target) & ~_rcwMask);
                 *identity = identityPtr.ToClrDataAddress(_target);
