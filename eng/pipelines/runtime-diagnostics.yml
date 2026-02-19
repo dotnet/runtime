@@ -184,7 +184,6 @@ extends:
               # Send to Helix — testhost as correlation payload, tests+debuggees as work item
               - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
                 parameters:
-                  osGroup: $(osGroup)
                   displayName: 'Send cDAC Dump Tests to Helix'
                   sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /restore /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
                   environment:
