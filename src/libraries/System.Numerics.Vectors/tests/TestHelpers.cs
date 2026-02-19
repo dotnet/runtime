@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Drawing;
-using Microsoft.DotNet.XUnitExtensions;
+using System.Linq;
+using System.Numerics;
 using Xunit;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Colors.Tests
 {

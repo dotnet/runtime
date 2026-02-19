@@ -49,7 +49,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Colors\src\System.Numerics.Colors.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\src\System.ObjectModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />

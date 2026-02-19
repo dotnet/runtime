@@ -3,8 +3,18 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\Numerics\Colors\Argb.cs" />
+    <Compile Include="System\Numerics\Colors\Argb.T.cs" />
+    <Compile Include="System\Numerics\Colors\Rgba.cs" />
+    <Compile Include="System\Numerics\Colors\Rgba.T.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
