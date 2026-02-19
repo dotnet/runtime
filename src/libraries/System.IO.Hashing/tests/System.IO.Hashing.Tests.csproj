@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Adler32Tests.cs" />
     <Compile Include="Crc32Tests.cs" />
     <Compile Include="Crc64Tests.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />

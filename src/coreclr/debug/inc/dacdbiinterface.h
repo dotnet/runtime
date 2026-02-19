@@ -1571,25 +1571,25 @@ public:
     typedef enum
     {
         kNone,
-        kILStub,
+        kDiagnosticHidden,
         kLCGMethod,
     } DynamicMethodType;
 
     //
-    // Check whether the specified method is an IL stub or an LCG method.  This answer determines if we
+    // Check whether the specified method is a DiagnosticHidden or an LCG method.  This answer determines if we
     // need to expose the method in a V2-style stackwalk.
     //
     // Arguments:
     //    vmMethodDesc - the method to be checked
     //
     // Return Value:
-    //    Return kNone if the method is neither an IL stub or an LCG method.
-    //    Return kILStub if the method is an IL stub.
+    //    Return kNone if the method is neither a DiagnosticHidden or an LCG method.
+    //    Return kDiagnosticHidden if the method is a DiagnosticHidden method.
     //    Return kLCGMethod if the method is an LCG method.
     //
 
     virtual
-    DynamicMethodType IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc) = 0;
+    DynamicMethodType IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc) = 0;
 
     //
     // Return a TargetBuffer for the raw vararg signature.

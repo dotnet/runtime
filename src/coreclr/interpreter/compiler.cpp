@@ -5,6 +5,7 @@
 #include "interpreter.h"
 #include "stackmap.h"
 
+#include <algorithm>
 #include <inttypes.h>
 
 #include <new> // for std::bad_alloc
@@ -2023,18 +2024,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
     if (interpType == InterpTypeVT)
     {
         size = m_compHnd->getClassSize(clsHnd);
-        align = m_compHnd->getClassAlignmentRequirement(clsHnd);
 
-        // All vars are stored at 8 byte aligned offsets
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-
+        // All vars are stored at least at 8 byte aligned offsets
         // We do not align beyond the stack alignment
         // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
-        if (align > INTERP_STACK_ALIGNMENT)
-            align = INTERP_STACK_ALIGNMENT;
+        align = std::clamp(m_compHnd->getClassAlignmentRequirement(clsHnd), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
     }
     else
     {
@@ -3668,6 +3664,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             // These intrinsics are handled in the il peeps path, and do not need to produce warnings here.
             return false;
 
+        case NI_System_StubHelpers_NextCallReturnAddress:
+            // This intrinsic can only reach here if it is not followed by a POP, and in that case it is not supported by the interpreter.
+            // So we must skip compiling it. It should only appear in the case of tail-call stubs, and those are currently only supported by the JIT, so
+            // we presumably have a JIT available to implement this intrinsic.
+            SKIPCODE("NextCallReturnAddress intrinsic not supported in interpreter when not followed by POP");
+            return false;
+
         default:
         {
             FAIL_TO_EXPAND_INTRINSIC:
@@ -5179,11 +5182,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
         }
         case CORINFO_VIRTUALCALL_VTABLE:
+        {
             // Traditional virtual call. In theory we could optimize this to using the vtable
             AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
             m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+            // Reserved slots for caching DispatchToken and its hash
+            m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+            int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+            assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             break;
-
+        }
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
             if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(m_compHnd->getMethodClass(callInfo.hMethod)) & CORINFO_FLG_SHAREDINST))
             {
@@ -5214,6 +5224,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 AddIns(tailcall ? INTOP_CALLVIRT_TAIL : INTOP_CALLVIRT);
                 m_pLastNewIns->data[0] = GetDataItemIndex(callInfo.hMethod);
+                m_pLastNewIns->data[1] = GetNewDataItemIndex(nullptr);
+                int32_t secondCache = GetNewDataItemIndex(nullptr);
+#ifdef DEBUG
+                assert(secondCache == (m_pLastNewIns->data[1] + 1));
+#endif
             }
             break;
 
@@ -6724,6 +6739,14 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
+bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
+{
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
+    return m_resolvedAsyncCallToken.hMethod != NULL;
+}
+
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     CORINFO_RESOLVED_TOKEN awaitResolvedToken;
@@ -6734,8 +6757,7 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
+    if (!ResolveAsyncCallToken(ip))
     {
         return false;
     }
@@ -6803,12 +6825,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6878,12 +6895,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6916,12 +6928,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
-    if (m_resolvedAsyncCallToken.hMethod == NULL)
-    {
-        return false;
-    }
-    return true;
+    return ResolveAsyncCallToken(ip);
 }
 
 int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
