@@ -1212,26 +1212,24 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             AllocMemTracker amTracker;
             MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
 
-            // Build the resumption stub signature: object(object, ref byte)
+            // Resumption stub signature: object(object, ref byte)
             // This matches BuildResumptionStubSignature in jitinterface.cpp
-            SigBuilder sigBuilder;
-            sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-            sigBuilder.AppendData(2);                           // 2 arguments
-            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // return type: object (continuation)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);  // arg0: object (continuation)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);   // arg1: ref byte (result location)
-            sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
-
-            DWORD cbStubSig;
-            PVOID pStubSig = sigBuilder.GetSignature(&cbStubSig);
+            static const BYTE s_resumptionStubSig[] = {
+                IMAGE_CEE_CS_CALLCONV_DEFAULT,  // calling convention
+                2,                               // 2 arguments
+                ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
+                ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
+                ELEMENT_TYPE_BYREF,              // arg1: ref byte (result location)
+                ELEMENT_TYPE_U1
+            };
 
             MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
                 pMD->GetLoaderAllocator(),
                 pStubMT,
                 stubEntryPoint,
                 DynamicMethodDesc::StubAsyncResume,
-                (PCCOR_SIGNATURE)pStubSig,
-                cbStubSig,
+                (PCCOR_SIGNATURE)s_resumptionStubSig,
+                sizeof(s_resumptionStubSig),
                 FALSE,
                 &amTracker);
 
