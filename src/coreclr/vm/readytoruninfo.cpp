@@ -1117,10 +1117,8 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
         }
     }
 
-
     return true;
 }
-
 
 bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData)
 {
@@ -1190,74 +1188,6 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     }
 
     return false;
-}
-
-// Looks up the R2R entry point for the resumption stub corresponding to the given async variant method.
-// Returns NULL if not found. If found, also returns the runtime function index via pRuntimeFunctionIndex.
-PCODE ReadyToRunInfo::LookupResumptionStubEntryPoint(MethodDesc* pAsyncVariantMD, PrepareCodeConfig* pConfig, BOOL fFixups, uint* pRuntimeFunctionIndex)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(pAsyncVariantMD->IsAsyncVariantMethod());
-
-    if (m_instMethodEntryPoints.IsNull())
-        return (PCODE)NULL;
-
-    // The resumption stub is stored with the same hash as the async variant method
-    NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pAsyncVariantMD));
-    NativeParser entryParser;
-    uint offset = (uint)-1;
-
-    while (lookup.GetNext(entryParser))
-    {
-        PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
-        SigPointer sig(pBlob);
-        if (SigMatchesMethodDesc(pAsyncVariantMD, sig, m_pModule, true))
-        {
-            offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
-            break;
-        }
-    }
-
-    if (offset == (uint)-1)
-        return (PCODE)NULL;
-
-    uint id;
-    offset = m_nativeReader.DecodeUnsigned(offset, &id);
-
-    if (id & 1)
-    {
-        if (id & 2)
-        {
-            uint val;
-            m_nativeReader.DecodeUnsigned(offset, &val);
-            offset -= val;
-        }
-
-        if (fFixups)
-        {
-            BOOL mayUsePrecompiledPInvokeMethods = TRUE;
-            mayUsePrecompiledPInvokeMethods = !pConfig->IsForMulticoreJit();
-
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledPInvokeMethods))
-            {
-                pConfig->SetReadyToRunRejectedPrecompiledCode();
-                return (PCODE)NULL;
-            }
-        }
-
-        id >>= 2;
-    }
-    else
-    {
-        id >>= 1;
-    }
-
-    _ASSERTE(id < m_nRuntimeFunctions);
-    if (pRuntimeFunctionIndex != nullptr)
-        *pRuntimeFunctionIndex = id;
-
-    return dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
 }
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
@@ -1360,9 +1290,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         if (m_instMethodEntryPoints.IsNull())
             goto done;
 
-        offset = -1;
         NativeHashtable::Enumerator lookup = m_instMethodEntryPoints.Lookup(GetVersionResilientMethodHashCode(pMD));
         NativeParser entryParser;
+        offset = (uint)-1;
         while (lookup.GetNext(entryParser))
         {
             PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
@@ -1372,8 +1302,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
                 // Get the updated SigPointer location, so we can calculate the size of the blob,
                 // in order to skip the blob and find the entry point data.
                 offset = entryParser.GetOffset() + (uint)(sig.GetPtr() - pBlob);
+                break;
             }
         }
+
         if (offset == (uint)-1)
             goto done;
     }

@@ -145,8 +145,6 @@ class ReadyToRunInfo
 
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
-    PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub);
-
 public:
     ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
@@ -338,12 +336,10 @@ private:
     BOOL GetEnclosingToken(IMDInternalImport * pImport, ModuleBase *pModule1, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2);
 
+    PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub);
+
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);
-
-    // Looks up the R2R entry point for the resumption stub corresponding to the given async variant method.
-    // Returns NULL if not found.
-    PCODE LookupResumptionStubEntryPoint(MethodDesc* pAsyncVariantMD, PrepareCodeConfig* pConfig, BOOL fFixups, uint* pRuntimeFunctionIndex);
 
     PTR_ReadyToRunCoreInfo GetComponentInfo() { return dac_cast<PTR_ReadyToRunCoreInfo>(&m_component); }
 
