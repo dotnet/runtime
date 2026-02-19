@@ -432,8 +432,8 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 //     1. Per-block: compute which tracked locals are mutated (assigned a
 //        non-default value or have their address taken) in each block.
 //     2. Inter-block: forward dataflow to propagate default value information
-//        across blocks. At merge points the sets are intersected (a local has
-//        default value only if it has default value on all incoming paths).
+//        across blocks. At merge points the sets are union (a local is mutated
+//        if it is mutated on any incoming path).
 //
 class DefaultValueAnalysis
 {
@@ -471,7 +471,8 @@ class DefaultValueAnalysis
         {
             // The out set of a predecessor is its in set plus the locals
             // mutated in that block: mutatedOut = mutatedIn | mutated.
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedVars[predBlock->bbNum]);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVars[predBlock->bbNum]);
         }
 
         void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
@@ -481,7 +482,8 @@ class DefaultValueAnalysis
             // entry or mutated anywhere within the try region.
             for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedVars[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
         }
 
