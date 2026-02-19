@@ -447,14 +447,12 @@ class DefaultValueAnalysis
     {
         DefaultValueAnalysis& m_analysis;
         Compiler*             m_compiler;
-        bool                  m_isFirstPred;
         VARSET_TP             m_preMergeIn;
 
     public:
         DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
             : m_analysis(analysis)
             , m_compiler(compiler)
-            , m_isFirstPred(true)
             , m_preMergeIn(VarSetOps::MakeEmpty(compiler))
         {
         }
@@ -467,19 +465,13 @@ class DefaultValueAnalysis
             // Optimistically assume no locals have been mutated; Merge will
             // grow via union.
             VarSetOps::ClearD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum]);
-            m_isFirstPred = true;
         }
 
         void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
         {
             // The out set of a predecessor is its in set plus the locals
             // mutated in that block: mutatedOut = mutatedIn | mutated.
-            VARSET_TP predOut(VarSetOps::MakeCopy(m_compiler, m_analysis.m_mutatedVarsIn[predBlock->bbNum]));
-            VarSetOps::UnionD(m_compiler, predOut, m_analysis.m_mutatedVars[predBlock->bbNum]);
-
-            // Union: a local is mutated if it is mutated on any incoming path.
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], predOut);
-            m_isFirstPred = false;
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedVars[predBlock->bbNum]);
         }
 
         void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
@@ -487,24 +479,19 @@ class DefaultValueAnalysis
             // A handler can be reached from any point in the try region.
             // A local is mutated at handler entry if it was mutated at try
             // entry or mutated anywhere within the try region.
-            VARSET_TP tryMutated(VarSetOps::MakeCopy(m_compiler, m_analysis.m_mutatedVarsIn[firstTryBlock->bbNum]));
-
             for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
-                VarSetOps::UnionD(m_compiler, tryMutated, m_analysis.m_mutatedVars[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
-
-            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], tryMutated);
-            m_isFirstPred = false;
         }
 
         bool EndMerge(BasicBlock* block)
         {
-            if (m_isFirstPred)
+            if (block == m_compiler->fgFirstBB)
             {
-                // No predecessors (entry block or unreachable). Parameters
-                // and OSR locals are considered mutated at method entry.
-                VarSetOps::Assign(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedAtEntry);
+                // Parameters and OSR locals are considered mutated at method
+                // entry.
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedAtEntry);
             }
 
             return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
@@ -527,8 +514,10 @@ private:
     void ComputePerBlockMutatedVars();
     void ComputeInterBlockDefaultValues();
 
-    INDEBUG(void DumpMutatedVars());
-    INDEBUG(void DumpMutatedVarsIn());
+#ifdef DEBUG
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
 };
 
 //------------------------------------------------------------------------
@@ -688,35 +677,6 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
     DBEXEC(m_compiler->verbose, DumpMutatedVars());
 }
 
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// DefaultValueAnalysis::DumpMutatedVars:
-//   Debug helper to print the per-block mutated variable sets.
-//
-void DefaultValueAnalysis::DumpMutatedVars()
-{
-    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
-    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block = dfsTree->GetPostOrder(i);
-        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
-        {
-            printf("  " FMT_BB " mutated: ", block->bbNum);
-            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
-            unsigned        varIndex = 0;
-            const char*     sep      = "";
-            while (iter.NextElem(&varIndex))
-            {
-                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
-                printf("%sV%02u", sep, lclNum);
-                sep = ", ";
-            }
-            printf("\n");
-        }
-    }
-}
-#endif
-
 //------------------------------------------------------------------------
 // DefaultValueAnalysis::ComputeInterBlockDefaultValues:
 //   Phase 2: Forward dataflow to compute for each block the set of tracked
@@ -758,6 +718,33 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
+// DefaultValueAnalysis::DumpMutatedVars:
+//   Debug helper to print the per-block mutated variable sets.
+//
+void DefaultValueAnalysis::DumpMutatedVars()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
+        {
+            printf("  " FMT_BB " mutated: ", block->bbNum);
+            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
+            unsigned        varIndex = 0;
+            const char*     sep      = "";
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
+                printf("%sV%02u", sep, lclNum);
+                sep = " ";
+            }
+            printf("\n");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // DefaultValueAnalysis::DumpMutatedVarsIn:
 //   Debug helper to print the per-block mutated-on-entry variable sets.
 //
@@ -782,7 +769,7 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
             {
                 unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
                 printf("%sV%02u", sep, lclNum);
-                sep = ", ";
+                sep = " ";
             }
         }
         printf("\n");
