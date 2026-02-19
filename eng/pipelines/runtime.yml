@@ -48,9 +48,17 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+parameters:
+  - name: runOnlyJobs
+    displayName: 'Run only specific jobs (comma-separated nameSuffix or osGroup_archType_nameSuffix)'
+    type: string
+    default: 'all'
+
 variables:
   - template: /eng/pipelines/common/variables.yml
   - template: /eng/pipelines/helix-platforms.yml
+  - name: runOnlyJobs
+    value: ${{ parameters.runOnlyJobs }}
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -231,6 +239,7 @@ extends:
           jobParameters:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs -c $(_BuildConfig)
+            enableNativeBuildCaching: true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
