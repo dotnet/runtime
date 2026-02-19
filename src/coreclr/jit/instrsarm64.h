@@ -2052,7 +2052,7 @@ INST1(bcax,      "bcax",           0,      IF_DV_4B,  0xCE200000)
                                    //  bcax Vd.16B,Vn.16B,Vm.16B, Va.16B    DV_4B  11001110001mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
 
 INST1(sm3ss1,    "sm3ss1",         0,      IF_DV_4B,  0xCE400000)
-                                   //  sm3ss1 Vd.16B,Vn.16B,Vm.16B, Va.16B  DV_4B  11001110010mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
+                                   //  sm3ss1 Vd.4S,Vn.4S,Vm.4S, Va.4S      DV_4B  11001110010mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
 
 INST1(sha512h,   "sha512h",        0,      IF_DV_3H,  0xCE608000)
                                    //  sha512h Qd,Qn,Vm.2D                  DV_3H  11001110011mmmmm 100000nnnnnddddd      Vd Vn Vm    (vector)
