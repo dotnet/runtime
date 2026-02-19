@@ -1984,7 +1984,7 @@ public:
 
     inline GenTree* gtCommaStoreVal();
 
-    GenTree* gtFirstNodeInExecutionOrder();
+    GenTree* gtFirstNodeInOperandOrder();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();

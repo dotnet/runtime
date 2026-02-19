@@ -358,7 +358,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // At this point, the IR is already stackified, so we just need to find the first node in the dataflow.
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
     GenTree* value          = lclNode->Data();
-    GenTree* insertionPoint = value->gtFirstNodeInExecutionOrder();
+    GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
 
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.

@@ -34187,14 +34187,14 @@ ValueSize ValueSize::FromJitType(var_types type)
 }
 
 //------------------------------------------------------------------------
-// gtFirstNodeInExecutionOrder: return the first node of this tree
-//    in execution order
+// gtFirstNodeInOperandOrder : return the first node of this tree
+//    in operand order
 //
 // Returns:
 //   If tree is a leaf, return the tree.
-//   If the tree has operands, recurse on the first executed operand.
+//   If the tree has operands, recurse on the first operand.
 //
-GenTree* GenTree::gtFirstNodeInExecutionOrder()
+GenTree* GenTree::gtFirstNodeInOperandOrder()
 {
     GenTree*             op = this;
     GenTree::VisitResult visitResult;
