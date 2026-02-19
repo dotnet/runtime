@@ -336,4 +336,7 @@
   <data name="InvalidPerfData" xml:space="preserve">
     <value>Invalid performance counter data with type '{0}'.</value>
   </data>
+  <data name="FileNotFoundResolvePath" xml:space="preserve">
+    <value>Could not resolve the file.</value>
+  </data>
 </root>

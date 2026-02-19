@@ -116,6 +116,7 @@ HRESULT EEConfig::Init()
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -443,7 +444,16 @@ HRESULT EEConfig::sync()
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
-            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+        {
+            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
+            }
+            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_NONE;
+            }
+        }
     }
 
     pReadyToRunExcludeList = NULL;
