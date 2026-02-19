@@ -423,22 +423,6 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 }
 
 //------------------------------------------------------------------------
-// IsDefaultValue:
-//   Check if a node represents a default (zero) value.
-//
-// Parameters:
-//   node - The node to check.
-//
-// Returns:
-//   True if the node is a constant zero value (integral, floating-point, or
-//   vector).
-//
-static bool IsDefaultValue(GenTree* node)
-{
-    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
-}
-
-//------------------------------------------------------------------------
 // DefaultValueAnalysis:
 //   Computes which tracked locals have their default (zero) value at each
 //   basic block entry. A tracked local that still has its default value at a
@@ -591,6 +575,22 @@ const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
 {
     assert(m_mutatedVarsIn != nullptr);
     return m_mutatedVarsIn[block->bbNum];
+}
+
+//------------------------------------------------------------------------
+// IsDefaultValue:
+//   Check if a node represents a default (zero) value.
+//
+// Parameters:
+//   node - The node to check.
+//
+// Returns:
+//   True if the node is a constant zero value (integral, floating-point, or
+//   vector).
+//
+static bool IsDefaultValue(GenTree* node)
+{
+    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
 }
 
 //------------------------------------------------------------------------
