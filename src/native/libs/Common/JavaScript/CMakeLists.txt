@@ -130,10 +130,7 @@ if(CMAKE_BUILD_RUNTIME_FLAVOR STREQUAL "CoreCLR")
         "${STATIC_LIB_DESTINATION}/libBrowserHost.js.map"
     )
 else()
-    LIST(APPEND ROLLUP_OUTPUTS
-        "${STATIC_LIB_DESTINATION}/libMonoHost.js"
-        "${STATIC_LIB_DESTINATION}/libMonoHost.js.map"
-    )
+    #error TODO Mono
 endif()
 
 
