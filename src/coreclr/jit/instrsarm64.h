@@ -2061,7 +2061,7 @@ INST1(sha512h2,  "sha512h2",       0,      IF_DV_3H,  0xCE608400)
                                    //  sha512h2 Qd,Qn,Vm.2D                 DV_3H  11001110011mmmmm 100001nnnnnddddd      Vd Vn Vm    (vector)
 
 INST1(sha512su1, "sha512su1",      0,      IF_DV_3H,  0xCE608800)
-                                   //  sha512su1 Vd,Vn,Vm.2D                DV_3H  11001110011mmmmm 100010nnnnnddddd      Vd Vn Vm    (vector)
+                                   //  sha512su1 Vd.2D,Vn.2D,Vm.2D          DV_3H  11001110011mmmmm 100010nnnnnddddd      Vd Vn Vm    (vector)
 
 INST1(rax1,      "rax1",           0,      IF_DV_3H,  0xCE608C00)
                                    //  rax1 Vd.2D,Vn.2D,Vm.2D               DV_3H  11001110011mmmmm 100011nnnnnddddd      Vd Vn Vm    (vector)
