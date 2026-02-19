@@ -10,7 +10,7 @@ function libCoreRunFactory() {
         "$NODEFS",
         "$NODERAWFS",
         "corerun_shutdown",
-        "__funcs_on_exit",
+        "BrowserHost_ShutdownDotnet",
     ];
     const mergeCoreRun = {
         $CORERUN: {
@@ -26,25 +26,11 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-
-                Module.preInit = [() => {
-                    const orig_funcs_on_exit = ___funcs_on_exit;
-                    // it would be better to use addOnExit(), but it's called too late.
-                    ___funcs_on_exit = () => {
-                        // this will prevent more timers (like finalizer) to get scheduled during thread destructor
-                        if (dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                            dotnetBrowserUtilsExports.abortBackgroundTimers();
-                        }
-                        EXITSTATUS = _corerun_shutdown(EXITSTATUS || 0);
-                        orig_funcs_on_exit();
-                    };
-
-                }, ...(Module.preInit || [])];
-
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
         $CORERUN__deps: commonDeps,
+        BrowserHost_ShutdownDotnet: (exitCode) => _corerun_shutdown(exitCode),
     };
     const patchNODERAWFS = {
         cwd: () => {

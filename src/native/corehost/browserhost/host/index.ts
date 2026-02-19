@@ -63,24 +63,6 @@ function setupEmscripten() {
     for (const key in loaderConfig.environmentVariables) {
         _ems_.ENV[key] = loaderConfig.environmentVariables[key];
     }
-
-    _ems_.Module.preInit = [() => {
-        _ems_.FS.createPath("/", loaderConfig.virtualWorkingDirectory!, true, true);
-        _ems_.FS.chdir(loaderConfig.virtualWorkingDirectory!);
-
-        const orig_funcs_on_exit = _ems_.___funcs_on_exit;
-        // it would be better to use addOnExit(), but it's called too late.
-        _ems_.___funcs_on_exit = () => {
-            // this will prevent more timers (like finalizer) to get scheduled during thread destructor
-            if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
-                _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
-            }
-            _ems_.EXITSTATUS = _ems_._BrowserHost_ShutdownCoreCLR(_ems_.EXITSTATUS || 0);
-            orig_funcs_on_exit();
-        };
-
-    }, ...(_ems_.Module.preInit || [])];
-
 }
 
 export { BrowserHost_ExternalAssemblyProbe } from "./assets";

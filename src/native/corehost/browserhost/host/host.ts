@@ -51,7 +51,7 @@ export function initializeCoreCLR(): number {
         buffers.push(valuePtr as any);
     }
 
-    const res = _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    const res = _ems_._BrowserHost_InitializeDotnet(propertyCount, appctx_keys, appctx_values);
     for (const buf of buffers) {
         _ems_._free(buf as any);
     }

@@ -29,8 +29,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
     _BrowserHost_CreateHostContract: () => VoidPtr;
-    _BrowserHost_InitializeCoreCLR: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
+    _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
+    _BrowserHost_ShutdownDotnet: (exitCode: number) => number;
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
     _SystemInteropJS_GetManagedStackTrace: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallDelegate: (args: JSMarshalerArguments) => void;
@@ -38,7 +39,6 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_BindAssemblyExports: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
-    _BrowserHost_ShutdownCoreCLR: (exitCode: number) => number;
 
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;

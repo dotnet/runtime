@@ -18,17 +18,14 @@ namespace ILCompiler.DependencyAnalysis
     /// Resources are simply copied from the inputs and concatenated into this blob.
     /// All format information is provided by <see cref="ResourceIndexNode"/>
     /// </summary>
-    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ResourceDataNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
 
         /// <summary>
         /// Resource index information generated while extracting resources into the data blob
         /// </summary>
         private List<ResourceIndexData> _indexData;
         private int _totalLength;
-
-        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -135,7 +132,6 @@ namespace ILCompiler.DependencyAnalysis
                 currentPos += resourceData.Length;
             }
 
-            _size = resourceBlob.Length;
             return resourceBlob;
         }
 
