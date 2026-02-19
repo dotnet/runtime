@@ -438,9 +438,8 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 class DefaultValueAnalysis
 {
     Compiler*  m_compiler;
-    VARSET_TP* m_mutatedVars;    // Per-block set of locals mutated to non-default.
-    VARSET_TP* m_mutatedVarsIn;  // Per-block set of locals mutated to non-default on entry.
-    VARSET_TP  m_mutatedAtEntry; // Locals that are mutated at method entry (params, OSR locals).
+    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
 
     // DataFlow::ForwardAnalysis callback used in Phase 2.
     class DataFlowCallback
@@ -453,7 +452,7 @@ class DefaultValueAnalysis
         DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
             : m_analysis(analysis)
             , m_compiler(compiler)
-            , m_preMergeIn(VarSetOps::MakeEmpty(compiler))
+            , m_preMergeIn(VarSetOps::UninitVal())
         {
         }
 
@@ -472,6 +471,8 @@ class DefaultValueAnalysis
             // The out set of a predecessor is its in set plus the locals
             // mutated in that block: mutatedOut = mutatedIn | mutated.
             VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
                               m_analysis.m_mutatedVars[predBlock->bbNum]);
         }
 
@@ -483,19 +484,14 @@ class DefaultValueAnalysis
             for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
             {
                 VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
                                   m_analysis.m_mutatedVars[tryBlock->bbNum]);
             }
         }
 
         bool EndMerge(BasicBlock* block)
         {
-            if (block == m_compiler->fgFirstBB)
-            {
-                // Parameters and OSR locals are considered mutated at method
-                // entry.
-                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum], m_analysis.m_mutatedAtEntry);
-            }
-
             return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
         }
     };
@@ -708,7 +704,7 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 
         if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
         {
-            VarSetOps::AddElemD(m_compiler, m_mutatedAtEntry, varDsc->lvVarIndex);
+            VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
         }
     }
 
