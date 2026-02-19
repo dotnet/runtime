@@ -86,7 +86,7 @@ public class Runtime_99391
 }
 ```
 
-## Step 4: Create a .csproj File
+## Step 4: Create a .csproj File or add to Regression_ro_2.csproj
 
 A custom `.csproj` file is **only required** when:
 - Environment variables are needed to reproduce the bug (such as `DOTNET_JitStressModeNames`)
