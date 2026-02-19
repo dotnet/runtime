@@ -72,7 +72,7 @@ function initSymbolMap() {
     const text = symbolTable;
     symbolTable = undefined;
     try {
-        text.split(/[\r\n]/).forEach((line: string) => {
+        text.split(/\r?\n|\r/).forEach((line: string) => {
             const parts: string[] = line.split(/:/);
             if (parts.length < 2)
                 return;
