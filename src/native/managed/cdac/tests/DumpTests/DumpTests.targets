@@ -61,6 +61,22 @@
              Properties="DebuggeeName=%(Debuggee.Identity)" />
   </Target>
 
+  <!-- Build all debuggees without running them (for Helix payload preparation). -->
+  <Target Name="BuildDebuggeesOnly" BeforeTargets="PrepareHelixPayload" Condition="'$(PrepareHelixPayload)' == 'true' AND '$(SkipDumpGeneration)' == 'true'">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_BuildSingleDebuggee"
+             Properties="DebuggeeName=%(Debuggee.Identity)" />
+  </Target>
+
+  <Target Name="_BuildSingleDebuggee">
+    <PropertyGroup>
+      <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
+          WorkingDirectory="$(_DebuggeeDir)" />
+  </Target>
+
   <Target Name="_GenerateDumpsForDebuggee">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"

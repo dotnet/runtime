@@ -33,5 +33,60 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
+
+  <!--
+    PrepareHelixPayload: Stages test output + debuggee binaries into a directory
+    suitable for sending to Helix as a work item payload.
+
+    The layout is:
+      $(HelixPayloadDir)/
+        tests/          — test DLLs + xunit.console.dll + deps
+        debuggees/
+          BasicThreads/ — built debuggee output
+          TypeHierarchy/
+          ...
+
+    Usage:
+      dotnet build /p:SkipDumpGeneration=true /p:PrepareHelixPayload=true
+                   /p:HelixPayloadDir=$(StagingDir)
+  -->
+  <Target Name="PrepareHelixPayload" AfterTargets="Build" Condition="'$(PrepareHelixPayload)' == 'true'">
+    <PropertyGroup>
+      <_HelixTestsDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'tests'))</_HelixTestsDir>
+      <_HelixDebuggeesDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'debuggees'))</_HelixDebuggeesDir>
+    </PropertyGroup>
+
+    <!-- Copy test output (DLLs, runtimeconfig, deps) -->
+    <ItemGroup>
+      <_TestOutput Include="$(OutputPath)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_TestOutput)" DestinationFolder="$(_HelixTestsDir)%(RecursiveDir)" />
+
+    <!-- Copy xunit console runner files to tests directory -->
+    <ItemGroup>
+      <_XunitConsoleFiles Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
+
+    <!-- Copy each debuggee's build output -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_CopyDebuggeeToHelix"
+             Properties="DebuggeeName=%(Debuggee.Identity);_HelixDebuggeesDir=$(_HelixDebuggeesDir)" />
+
+    <Message Text="Helix payload prepared at $(HelixPayloadDir)" Importance="high" />
+  </Target>
+
+  <Target Name="_CopyDebuggeeToHelix">
+    <PropertyGroup>
+      <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
+      <_HelixDebuggeeDir>$([MSBuild]::NormalizeDirectory('$(_HelixDebuggeesDir)', '$(DebuggeeName)'))</_HelixDebuggeeDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_DebuggeeOutput Include="$(_DebuggeeBinDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DebuggeeOutput)" DestinationFolder="$(_HelixDebuggeeDir)%(RecursiveDir)" />
+  </Target>
 </Project>

@@ -1,0 +1,139 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+
+  <!--
+    cdac-dump-helix.proj — Sends cDAC dump generation + testing to Helix.
+
+    This project defines Helix work items that:
+      1. Run pre-built debuggee apps on real hardware to produce crash dumps
+      2. Run the pre-built cDAC dump tests against those dumps using xunit.console.dll
+
+    The testhost (locally-built runtime) is sent as a HelixCorrelationPayload.
+    It provides the `dotnet` host used for both running debuggees and executing tests.
+
+    Properties (set by pipeline or command line):
+      HelixTargetQueues  — Helix queue(s) to run on (e.g., Windows.10.Amd64.Open)
+      TestHostPayload    — Path to testhost shared framework directory (contains dotnet host)
+      DumpTestsPayload   — Path to Helix payload directory (contains tests/ and debuggees/ subdirs)
+      TargetOS           — Target OS (windows, linux, osx)
+      TargetArchitecture — Target architecture (x64, arm64)
+  -->
+
+  <PropertyGroup>
+    <Language>msbuild</Language>
+    <EnableAzurePipelinesReporter>true</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <Creator>$(_Creator)</Creator>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+    <FailOnTestFailure>true</FailOnTestFailure>
+    <HelixType>test/cdac/dumptests/</HelixType>
+    <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixSource Condition="'$(HelixSource)' == ''">pr/dotnet/runtime/cdac-dump-tests</HelixSource>
+    <WorkItemTimeout>01:00:00</WorkItemTimeout>
+  </PropertyGroup>
+
+  <!-- Map TargetOS + TargetArchitecture to Helix queues -->
+  <PropertyGroup Condition="'$(HelixTargetQueues)' == ''">
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'windows' AND '$(TargetArchitecture)' == 'x64'">Windows.11.Amd64.Client.Open</HelixTargetQueues>
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'linux' AND '$(TargetArchitecture)' == 'x64'">Ubuntu.2204.Amd64.Open</HelixTargetQueues>
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'osx' AND '$(TargetArchitecture)' == 'x64'">OSX.15.Amd64.Open</HelixTargetQueues>
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'osx' AND '$(TargetArchitecture)' == 'arm64'">OSX.15.Arm64.Open</HelixTargetQueues>
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'linux' AND '$(TargetArchitecture)' == 'arm64'">Ubuntu.2204.Arm64.Open</HelixTargetQueues>
+    <HelixTargetQueues Condition="'$(TargetOS)' == 'windows' AND '$(TargetArchitecture)' == 'arm64'">Windows.11.Arm64.Open</HelixTargetQueues>
+  </PropertyGroup>
+
+  <!-- Send the testhost as a correlation payload (shared across work items, extracted once per machine) -->
+  <ItemGroup>
+    <HelixCorrelationPayload Include="testhost">
+      <PayloadDirectory>$(TestHostPayload)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <!--
+    Debuggee list: must match DumpTests.targets <Debuggee> items.
+    Each debuggee is a framework-dependent console app that crashes to produce a dump.
+  -->
+  <ItemGroup>
+    <_Debuggee Include="BasicThreads" />
+    <_Debuggee Include="TypeHierarchy" />
+    <_Debuggee Include="ExceptionState" />
+    <_Debuggee Include="MultiModule" />
+    <_Debuggee Include="GCRoots" />
+    <_Debuggee Include="ServerGC" />
+    <_Debuggee Include="StackWalk" />
+  </ItemGroup>
+
+  <!--
+    Build the Helix work item command.
+
+    The command is a shell script that:
+      1. For each debuggee, runs it with DOTNET_DbgEnableMiniDump=1 to generate a heap dump
+      2. Runs the dump tests using xunit.console.dll with the testhost dotnet
+      3. Reports results via xUnit XML output
+
+    The testhost's dotnet is used for BOTH running debuggees and executing the test runner,
+    since both target the same framework version (NetCoreAppCurrent = net11.0).
+  -->
+
+  <!-- Windows command: uses %VAR% syntax, call semantics, set for env vars -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <_DotNet>%HELIX_CORRELATION_PAYLOAD%\dotnet.exe</_DotNet>
+    <_TestsDir>%HELIX_WORKITEM_PAYLOAD%\tests</_TestsDir>
+    <_DebuggeesDir>%HELIX_WORKITEM_PAYLOAD%\debuggees</_DebuggeesDir>
+    <_DumpRoot>%HELIX_WORKITEM_PAYLOAD%\dumps</_DumpRoot>
+    <_DumpGenCommands>@(_Debuggee->'mkdir %HELIX_WORKITEM_PAYLOAD%\dumps\local\%(Identity) &amp; set "DOTNET_DbgMiniDumpName=%HELIX_WORKITEM_PAYLOAD%\dumps\local\%(Identity)\%(Identity).dmp" &amp; %HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec %HELIX_WORKITEM_PAYLOAD%\debuggees\%(Identity)\%(Identity).dll', ' &amp; ')</_DumpGenCommands>
+    <_TestCommand>%HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec --runtimeconfig %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json %HELIX_WORKITEM_PAYLOAD%\tests\xunit.console.dll %HELIX_WORKITEM_PAYLOAD%\tests\Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
+  </PropertyGroup>
+
+  <!-- Unix command: uses $VAR syntax, export for env vars -->
+  <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
+    <_DotNet>$HELIX_CORRELATION_PAYLOAD/dotnet</_DotNet>
+    <_TestsDir>$HELIX_WORKITEM_PAYLOAD/tests</_TestsDir>
+    <_DebuggeesDir>$HELIX_WORKITEM_PAYLOAD/debuggees</_DebuggeesDir>
+    <_DumpRoot>$HELIX_WORKITEM_PAYLOAD/dumps</_DumpRoot>
+    <_DumpGenCommands>@(_Debuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/%(Identity) &amp;&amp; DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(Identity)/%(Identity).dmp $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll || true', ' &amp;&amp; ')</_DumpGenCommands>
+    <_TestCommand>$HELIX_CORRELATION_PAYLOAD/dotnet exec --runtimeconfig $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.runtimeconfig.json --depsfile $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.deps.json $HELIX_WORKITEM_PAYLOAD/tests/xunit.console.dll $HELIX_WORKITEM_PAYLOAD/tests/Microsoft.Diagnostics.DataContractReader.DumpTests.dll -xml testResults.xml -nologo</_TestCommand>
+  </PropertyGroup>
+
+  <!-- Pre-commands: enable mini dump generation and set dump root for tests -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <HelixPreCommand Include="set DOTNET_DbgEnableMiniDump=1" />
+    <HelixPreCommand Include="set DOTNET_DbgMiniDumpType=2" />
+    <HelixPreCommand Include="set CDAC_DUMP_ROOT=%HELIX_WORKITEM_PAYLOAD%\dumps" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <HelixPreCommand Include="export DOTNET_DbgEnableMiniDump=1" />
+    <HelixPreCommand Include="export DOTNET_DbgMiniDumpType=2" />
+    <HelixPreCommand Include="export CDAC_DUMP_ROOT=$HELIX_WORKITEM_PAYLOAD/dumps" />
+    <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/dotnet" />
+  </ItemGroup>
+
+  <!-- Compress and upload dumps as Helix artifacts for debugging -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <HelixPostCommand Include="if exist %HELIX_WORKITEM_PAYLOAD%\dumps powershell -NoProfile -Command &quot;Compress-Archive -Path '%HELIX_WORKITEM_PAYLOAD%\dumps\*' -DestinationPath '%HELIX_WORKITEM_UPLOAD_ROOT%\dumps.zip'&quot;" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <HelixPostCommand Include="if [ -d $HELIX_WORKITEM_PAYLOAD/dumps ]; then tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD dumps; fi" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
+  </PropertyGroup>
+
+  <!-- Work item: generate dumps then run tests -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <_FullCommand>$(_DumpGenCommands) &amp; $(_TestCommand)</_FullCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
+    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_TestCommand)</_FullCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="CdacDumpTests">
+      <PayloadDirectory>$(DumpTestsPayload)</PayloadDirectory>
+      <Command>$(_FullCommand)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+    </HelixWorkItem>
+  </ItemGroup>
+
+</Project>
