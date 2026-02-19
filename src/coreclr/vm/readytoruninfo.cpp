@@ -1023,24 +1023,19 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
-    if (matchResumptionStub)
-    {
-        _ASSERTE(pMD->IsAsyncVariantMethod());
-        if ((methodFlags & ENCODE_METHOD_SIG_ResumptionStub) == 0)
-            return false;
-    }
-    else
-    {
-        bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
-        if (sigIsAsync != pMD->IsAsyncVariantMethod())
-            return false;
-    }
+    bool sigIsResumptionStub = (methodFlags & ENCODE_METHOD_SIG_ResumptionStub) != 0;
+    if (sigIsResumptionStub != matchResumptionStub)
+        return false;
+
+    bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
+    if (sigIsAsync != pMD->IsAsyncVariantMethod())
+        return false;
 
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
              ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
 
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    if (methodFlags & ENCODE_METHOD_SIG_UpdateContext)
     {
         uint32_t updatedModuleIndex;
         IfFailThrow(sig.GetData(&updatedModuleIndex));
