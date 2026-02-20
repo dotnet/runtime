@@ -170,6 +170,9 @@ public:
     PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
+    PCODE GetEntryPointByRuntimeFunctionIndex(DWORD index) const;
+    void RegisterResumptionStub(PCODE stubEntryPoint);
+
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
     PTR_MethodDesc GetMethodDescForEntryPoint(PCODE entryPoint);
@@ -335,8 +338,6 @@ private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);
     BOOL GetEnclosingToken(IMDInternalImport * pImport, ModuleBase *pModule1, mdToken mdType, mdToken * pEnclosingToken);
     BOOL CompareTypeNameOfTokens(mdToken mdToken1, IMDInternalImport * pImport1, ModuleBase *pModule1, mdToken mdToken2, IMDInternalImport * pImport2, ModuleBase *pModule2);
-
-    PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub);
 
     PTR_MethodDesc GetMethodDescForEntryPointInNativeImage(PCODE entryPoint);
     void SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, PTR_MethodDesc methodDesc);

@@ -14302,6 +14302,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_ResumptionStubEntryPoint:
+        {
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+
+            DWORD runtimeFunctionIndex = CorSigUncompressData(pBlob);
+            PCODE stubEntryPoint = pR2RInfo->GetEntryPointByRuntimeFunctionIndex(runtimeFunctionIndex);
+
+            pR2RInfo->RegisterResumptionStub(stubEntryPoint);
+
+            result = (size_t)stubEntryPoint;
+        }
+        break;
+
     case READYTORUN_FIXUP_Check_FieldOffset:
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);

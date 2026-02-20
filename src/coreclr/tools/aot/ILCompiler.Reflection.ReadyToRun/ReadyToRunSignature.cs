@@ -1370,6 +1370,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     });
                     break;
 
+                case ReadyToRunFixupKind.ResumptionStubEntryPoint:
+                    uint runtimeFunctionIndex = ReadUInt();
+                    builder.Append($" (RESUMPTION_STUB RuntimeFunction[{runtimeFunctionIndex}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();

@@ -1002,11 +1002,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 }
 
-// When matchResumptionStub is true, this matches only signatures with the
-// ENCODE_METHOD_SIG_ResumptionStub flag set, matching against the underlying
-// async variant method rather than a resumption stub MethodDesc. When false,
-// it performs normal method signature matching including async/resumption flag checks.
-static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule, bool matchResumptionStub = false)
+static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1017,9 +1013,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
-    bool sigIsResumptionStub = (methodFlags & ENCODE_METHOD_SIG_ResumptionStub) != 0;
-    if (sigIsResumptionStub != matchResumptionStub)
-        return false;
+
 
     bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
     if (sigIsAsync != pMD->IsAsyncVariantMethod())
@@ -1179,6 +1173,47 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+PCODE ReadyToRunInfo::GetEntryPointByRuntimeFunctionIndex(DWORD index) const
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(index < m_nRuntimeFunctions);
+    return dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[index].BeginAddress;
+}
+
+void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
+
+    // Resumption stub signature: object(object, ref byte)
+    // This matches BuildResumptionStubSignature in jitinterface.cpp
+    static const BYTE s_resumptionStubSig[] = {
+        IMAGE_CEE_CS_CALLCONV_DEFAULT,  // calling convention
+        2,                               // 2 arguments
+        ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
+        ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
+        ELEMENT_TYPE_BYREF,              // arg1: ref byte (result location)
+        ELEMENT_TYPE_U1
+    };
+
+    MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
+        m_pModule->GetLoaderAllocator(),
+        pStubMT,
+        stubEntryPoint,
+        DynamicMethodDesc::StubAsyncResume,
+        (PCCOR_SIGNATURE)s_resumptionStubSig,
+        sizeof(s_resumptionStubSig),
+        FALSE,
+        &amTracker);
+
+    amTracker.SuppressRelease();
+
+    // Register the stub's entry point so GC can find it during stack walks
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
+}
+
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
@@ -1189,70 +1224,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     const char* szFullName = "";
     bool printedStart = false;
 #endif
-
-    PCODE pEntryPoint = (PCODE)NULL;
-    pEntryPoint = GetEntryPoint(pMD, pConfig, fFixups, false);
-    // ResumptionStub for async variants.
-
-    // For async variant methods, we also need to look up the corresponding resumption stub
-    // and create a DynamicMethodDesc wrapper for it so that GC stack walks work correctly.
-    if (pMD->IsAsyncVariantMethod())
-    {
-        PCODE stubEntryPoint = GetEntryPoint(pMD, pConfig, fFixups, true);
-        if (stubEntryPoint != (PCODE)NULL)
-        {
-            // Create a DynamicMethodDesc wrapper for the R2R resumption stub
-            AllocMemTracker amTracker;
-            MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
-
-            // Resumption stub signature: object(object, ref byte)
-            // This matches BuildResumptionStubSignature in jitinterface.cpp
-            static const BYTE s_resumptionStubSig[] = {
-                IMAGE_CEE_CS_CALLCONV_DEFAULT,  // calling convention
-                2,                               // 2 arguments
-                ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
-                ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
-                ELEMENT_TYPE_BYREF,              // arg1: ref byte (result location)
-                ELEMENT_TYPE_U1
-            };
-
-            MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
-                pMD->GetLoaderAllocator(),
-                pStubMT,
-                stubEntryPoint,
-                DynamicMethodDesc::StubAsyncResume,
-                (PCCOR_SIGNATURE)s_resumptionStubSig,
-                sizeof(s_resumptionStubSig),
-                FALSE,
-                &amTracker);
-
-            amTracker.SuppressRelease();
-
-            // Register the stub's entry point so GC can find it during stack walks
-            m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
-        }
-        else
-        {
-            // If we cannot find the resumption stub, don't return an entry point for the async variant method
-            // TODO: This can cause valid async variant methods without an await to fail to resolve an entry point.
-            //  We should consider other ways to ensure a resumption stub is found when expected, and allow async
-            //  variants without awaits to be used without a resumption stub.
-            pEntryPoint = (PCODE)NULL;
-        }
-    }
-
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
-    {
-        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
-    }
-    return pEntryPoint;
-}
-
-PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups, bool matchResumptionStub)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(matchResumptionStub ? pMD->IsAsyncVariantMethod() : true);
 
     PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
@@ -1269,7 +1240,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
-    // Async variants and resumption stubs are stored in the instance methods table
+    // Async variants are stored in the instance methods table
     if (pMD->HasClassOrMethodInstantiation()
         || pMD->IsAsyncVariantMethod())
     {
@@ -1283,7 +1254,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         {
             PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)entryParser.GetBlob();
             SigPointer sig(pBlob);
-            if (SigMatchesMethodDesc(pMD, sig, m_pModule, matchResumptionStub))
+            if (SigMatchesMethodDesc(pMD, sig, m_pModule))
             {
                 // Get the updated SigPointer location, so we can calculate the size of the blob,
                 // in order to skip the blob and find the entry point data.
@@ -1367,6 +1338,11 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (g_pDebugInterface != NULL)
     {
         g_pDebugInterface->JITComplete(pConfig->GetCodeVersion(), pEntryPoint);
+    }
+
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
+    {
+        ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
     }
 
 done:

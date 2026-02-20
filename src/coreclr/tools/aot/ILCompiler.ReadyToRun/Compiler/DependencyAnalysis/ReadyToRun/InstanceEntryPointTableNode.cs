@@ -37,6 +37,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     foreach (MethodWithGCInfo method in _factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
                     {
+                        if (method.Method is AsyncResumptionStub)
+                            continue;
+
                         BuildSignatureForMethod(method, _factory);
                     }
                 }
@@ -102,7 +105,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
-                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant() || method.Method is AsyncResumptionStub);
+                // Resumption stubs are now discovered via READYTORUN_FIXUP_ResumptionStubEntryPoint fixups
+                // on their parent async variant methods, so they no longer need entries in this hash table.
+                if (method.Method is AsyncResumptionStub)
+                    continue;
+
+                Debug.Assert(method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation || method.Method.IsAsyncVariant());
 
                 int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 

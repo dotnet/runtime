@@ -3871,7 +3871,9 @@ namespace Internal.JitInterface
             var resumptionStub = new AsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
 
             // CompiledMethodNode instead of MethodEntrypoint for the pointer to the code instead of a fixup
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.CompiledMethodNode(resumptionStub));
+            var compiledStubNode = _compilation.NodeFactory.CompiledMethodNode(resumptionStub);
+            entryPoint = (void*)ObjectToHandle(compiledStubNode);
+            AddResumptionStubFixup(compiledStubNode);
             return ObjectToHandle(resumptionStub);
 #else
             _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());

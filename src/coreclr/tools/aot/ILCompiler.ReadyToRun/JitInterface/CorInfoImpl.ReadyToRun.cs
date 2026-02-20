@@ -491,6 +491,11 @@ namespace Internal.JitInterface
             _precodeFixups.Add(node);
         }
 
+        private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
+        {
+            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
+        }
+
         private static mdToken FindGenericMethodArgTypeSpec(EcmaModule module)
         {
             // Find the TypeSpec for "!!0"
