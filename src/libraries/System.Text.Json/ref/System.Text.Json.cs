@@ -424,6 +424,7 @@ namespace System.Text.Json
         public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy? DictionaryKeyPolicy { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonDictionaryKeyFilter? DictionaryKeyFilter { get { throw null; } set { } }
         public System.Text.Encodings.Web.JavaScriptEncoder? Encoder { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("JsonSerializerOptions.IgnoreNullValues is obsolete. To ignore null values when serializing, set DefaultIgnoreCondition to JsonIgnoreCondition.WhenWritingNull.", DiagnosticId="SYSLIB0020", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -1049,6 +1050,12 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonExtensionDataAttribute() { }
+    }
+    public abstract partial class JsonDictionaryKeyFilter
+    {
+        protected JsonDictionaryKeyFilter() { }
+        public static System.Text.Json.Serialization.JsonDictionaryKeyFilter IgnoreMetadataNames { get { throw null; } }
+        public abstract bool IgnoreKey(System.ReadOnlySpan<byte> utf8JsonPropertyName);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
