@@ -206,7 +206,7 @@ jobs:
       - task: Cache@2
         displayName: Restore CMake tryrun cache
         inputs:
-          key: 'cmake-tryrun | v1 | "${{ parameters.osGroup }}" | "${{ parameters.archType }}" | "$(CompilerVersion)" | eng/native/configurecompiler.cmake | src/coreclr/pal/src/configure.cmake | src/native/libs/configure.cmake | src/native/minipal/configure.cmake | src/native/eventpipe/configure.cmake'
+          key: 'cmake-tryrun | v2 | "${{ parameters.osGroup }}${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.crossBuild }}" | "$(CompilerVersion)" | eng/native/configurecompiler.cmake | src/coreclr/pal/src/configure.cmake | src/native/libs/configure.cmake | src/native/minipal/configure.cmake | src/native/eventpipe/configure.cmake'
           path: $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache
           cacheHitVar: CMAKE_TRYRUN_CACHE_RESTORED
 
