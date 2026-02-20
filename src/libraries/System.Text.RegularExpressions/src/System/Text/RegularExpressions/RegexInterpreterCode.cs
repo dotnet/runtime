@@ -34,10 +34,18 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < strings.Length; i++)
             {
                 string set = strings[i];
-                if (set.Length >= RegexCharClass.SetStartIndex)
+
+                // The Strings table contains both character class strings and Multi literal strings.
+                // Character class strings have a flags byte of 0 (not negated) or 1 (negated) at index 0,
+                // followed by set length and category length. Validate the encoding before calling GetSetChars,
+                // which assumes a well-formed char-class string and could otherwise throw on arbitrary input.
+                if (set.Length >= RegexCharClass.SetStartIndex &&
+                    set[RegexCharClass.FlagsIndex] is '\0' or '\u0001' &&
+                    RegexCharClass.SetStartIndex + set[RegexCharClass.SetLengthIndex] + set[RegexCharClass.CategoryLengthIndex] <= set.Length)
                 {
-                    // GetSetChars enumerates the characters described by the set (ignoring negation).
-                    // If the set uses Unicode categories or has too many chars, it returns 0.
+                    // GetSetChars returns the characters that back the set. For a negated set, these are
+                    // the characters excluded from the class; the separate IsNegated flag indicates how
+                    // to interpret them. If the set uses Unicode categories or has too many chars, it returns 0.
                     int count = RegexCharClass.GetSetChars(set, chars);
                     if (count > 0)
                     {
