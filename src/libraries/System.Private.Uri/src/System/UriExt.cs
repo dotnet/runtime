@@ -634,6 +634,12 @@ namespace System
                 return false;
             }
 
+            if (destination.Length < indexOfFirstToUnescape)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
             // We may throw for very large inputs (when growing the ValueStringBuilder).
             scoped ValueStringBuilder vsb;
 
@@ -647,14 +653,9 @@ namespace System
                 vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                 vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
             }
-            else if (destination.Length >= indexOfFirstToUnescape)
-            {
-                vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
-            }
             else
             {
-                charsWritten = 0;
-                return false;
+                vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
             }
 
             UriHelper.UnescapeString(
