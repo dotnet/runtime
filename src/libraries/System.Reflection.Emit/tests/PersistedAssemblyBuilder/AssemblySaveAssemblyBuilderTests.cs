@@ -272,6 +272,61 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void PersistedAssemblyBuilder_CollectibleAssemblyLoadContextIsolation()
+        {
+            byte[] assemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("IsolatedLoadContextAssembly"), ["IsolatedType"]);
+            TestAssemblyLoadContext context1 = new();
+            TestAssemblyLoadContext context2 = new();
+
+            using MemoryStream stream1 = new MemoryStream(assemblyImage);
+            using MemoryStream stream2 = new MemoryStream(assemblyImage);
+            Assembly assembly1 = context1.LoadFromStream(stream1);
+            Assembly assembly2 = context2.LoadFromStream(stream2);
+            Type type1 = assembly1.GetType("IsolatedType");
+            Type type2 = assembly2.GetType("IsolatedType");
+
+            Assert.NotNull(type1);
+            Assert.NotNull(type2);
+            Assert.Equal(type1.FullName, type2.FullName);
+            Assert.NotSame(type1.Assembly, type2.Assembly);
+
+            context1.Unload();
+            context2.Unload();
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_MetadataInvariantsEquivalentShapeSameOrder()
+        {
+            byte[] firstAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssembly1"), ["TypeA", "TypeB"]);
+            byte[] secondAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssembly2"), ["TypeA", "TypeB"]);
+
+            MetadataInvariantData first = ReadMetadataInvariantData(firstAssemblyImage);
+            MetadataInvariantData second = ReadMetadataInvariantData(secondAssemblyImage);
+
+            Assert.Equal(first.TypeDefinitionRowCount, second.TypeDefinitionRowCount);
+            Assert.Equal(first.MethodDefinitionRowCount, second.MethodDefinitionRowCount);
+            Assert.Equal(first.FieldDefinitionRowCount, second.FieldDefinitionRowCount);
+            Assert.Equal(first.TypeDefinitionNamesInMetadataOrder, second.TypeDefinitionNamesInMetadataOrder);
+            Assert.Equal(first.MethodDefinitionNamesInMetadataOrder, second.MethodDefinitionNamesInMetadataOrder);
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_MetadataInvariantsEquivalentShapeDifferentOrder()
+        {
+            byte[] firstAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssemblyA"), ["TypeA", "TypeB"]);
+            byte[] secondAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssemblyB"), ["TypeB", "TypeA"]);
+
+            MetadataInvariantData first = ReadMetadataInvariantData(firstAssemblyImage);
+            MetadataInvariantData second = ReadMetadataInvariantData(secondAssemblyImage);
+
+            Assert.Equal(first.TypeDefinitionRowCount, second.TypeDefinitionRowCount);
+            Assert.Equal(first.MethodDefinitionRowCount, second.MethodDefinitionRowCount);
+            Assert.Equal(first.FieldDefinitionRowCount, second.FieldDefinitionRowCount);
+            Assert.Equal(first.TypeDefinitionNamesInMetadataOrder.OrderBy(static name => name), second.TypeDefinitionNamesInMetadataOrder.OrderBy(static name => name));
+            Assert.Equal(first.MethodDefinitionNamesInMetadataOrder.OrderBy(static name => name), second.MethodDefinitionNamesInMetadataOrder.OrderBy(static name => name));
+        }
+
+        [Fact]
         public void AssemblyWithDifferentTypes()
         {
             using (TempFile file = TempFile.Create())
@@ -560,6 +615,45 @@ namespace System.Reflection.Emit.Tests
             typeBuilder.CreateType();
             return ab;
         }
+
+        private static byte[] BuildAssemblyImageForMetadataInvariants(AssemblyName assemblyName, string[] typeNames)
+        {
+            PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MyModule");
+
+            foreach (string typeName in typeNames)
+            {
+                TypeBuilder typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder methodBuilder = typeBuilder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                ILGenerator ilGenerator = methodBuilder.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                ilGenerator.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+            }
+
+            using MemoryStream stream = new MemoryStream();
+            assemblyBuilder.Save(stream);
+            return stream.ToArray();
+        }
+
+        private static MetadataInvariantData ReadMetadataInvariantData(byte[] assemblyImage)
+        {
+            using PEReader peReader = new PEReader(new MemoryStream(assemblyImage));
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            return new MetadataInvariantData(
+                metadataReader.GetTableRowCount(TableIndex.TypeDef),
+                metadataReader.GetTableRowCount(TableIndex.MethodDef),
+                metadataReader.GetTableRowCount(TableIndex.Field),
+                metadataReader.TypeDefinitions.Select(handle => metadataReader.GetString(metadataReader.GetTypeDefinition(handle).Name)).ToArray(),
+                metadataReader.MethodDefinitions.Select(handle => metadataReader.GetString(metadataReader.GetMethodDefinition(handle).Name)).ToArray());
+        }
+
+        private readonly record struct MetadataInvariantData(
+            int TypeDefinitionRowCount,
+            int MethodDefinitionRowCount,
+            int FieldDefinitionRowCount,
+            string[] TypeDefinitionNamesInMetadataOrder,
+            string[] MethodDefinitionNamesInMetadataOrder);
 
         private sealed class NonSeekableWriteStream : Stream
         {
