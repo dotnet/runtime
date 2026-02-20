@@ -112,6 +112,40 @@ namespace System.IO.Hashing
             return BinaryPrimitives.ReverseEndianness(value);
         }
 
+        private abstract partial class ReflectedCrc32 : Crc32ParameterSet
+        {
+#if NET
+            // Declare the capability field here so it can be declared readonly.
+            private readonly bool _canVectorize;
+#endif
+
+            partial void InitializeVectorized(ref bool canVectorize);
+            partial void UpdateVectorized(ref uint crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
+
+            protected ReflectedCrc32(uint polynomial, uint initialValue, uint finalXorValue)
+                : base(polynomial, initialValue, finalXorValue, reflectValues: true)
+            {
+#if NET
+                InitializeVectorized(ref _canVectorize);
+#endif
+            }
+
+            protected abstract uint UpdateScalar(uint value, ReadOnlySpan<byte> source);
+
+            internal sealed override uint Update(uint value, ReadOnlySpan<byte> source)
+            {
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
+                {
+                    value = UpdateScalar(value, source.Slice(consumed));
+                }
+
+                return value;
+            }
+        }
+
         private abstract partial class ForwardCrc32 : Crc32ParameterSet
         {
 #if NET
