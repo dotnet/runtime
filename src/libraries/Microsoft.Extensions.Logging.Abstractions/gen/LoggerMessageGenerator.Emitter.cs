@@ -59,13 +59,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static bool UseLoggerMessageDefine(LoggerMethod lm)
             {
-                if (lm.TypeParameters.Count > 0)
-                {
-                    // Generic methods require per-call type argument instantiation; LoggerMessage.Define requires a static callback.
-                    return false;
-                }
-
                 bool result =
+                    (lm.TypeParameters.Count == 0) &&                                   // generic methods can't use LoggerMessage.Define's static callback
                     (lm.TemplateParameters.Count <= MaxLoggerMessageDefineArguments) && // more args than LoggerMessage.Define can handle
                     (lm.Level != null) &&                                               // dynamic log level, which LoggerMessage.Define can't handle
                     (lm.TemplateList.Count == lm.TemplateParameters.Count);             // mismatch in template to args, which LoggerMessage.Define can't handle
