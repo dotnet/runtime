@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -669,7 +670,7 @@ namespace System
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
-                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
             }
 
             for (int i = 0; i < callingConventions.Length; i++)
@@ -695,6 +696,20 @@ namespace System
                     builtInCallConv = true;
             }
 
+            List<Type> modoptCallConvs = [];
+            if (returnType is SignatureModifiedType modifiedType
+                && modifiedType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
+            {
+                for (int i = 0; i < retTypeModOpts.Length; i++)
+                {
+                    Type modopt = retTypeModOpts[i];
+
+                    if (modopt != null && modopt.FullName != null
+                        && modopt.FullName.StartsWith("System.Runtime.CompilerServices.CallConv", StringComparison.Ordinal))
+                        modoptCallConvs.Add(modopt);
+                }
+            }
+
             if (isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
             {
                 // Newer or multiple calling conventions specified -> encoded as modopts
@@ -708,7 +723,7 @@ namespace System
                 returnType,
                 parameterTypes,
                 isUnmanaged,
-                callingConventions);
+                [.. modoptCallConvs, .. callingConventions]);
         }
 
         /// <summary>
