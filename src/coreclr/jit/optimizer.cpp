@@ -5727,6 +5727,51 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 
     bool madeChanges = false;
 
+    // Recount actual SSA uses. Earlier phases (e.g., Redundant branch opts) may
+    // have removed trees that referenced SSA defs without updating the use counts.
+    // A fresh count lets us identify stores whose values are truly never read.
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        if (!lvaInSsa(lclNum))
+        {
+            continue;
+        }
+
+        LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+        unsigned   defCount = varDsc->lvPerSsaData.GetCount();
+        for (unsigned i = 0; i < defCount; i++)
+        {
+            varDsc->lvPerSsaData.GetSsaDefByIndex(i)->ResetUses();
+        }
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        for (Statement* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->GetNextStmt())
+        {
+            for (GenTree* node = stmt->GetTreeList(); node != nullptr; node = node->gtNext)
+            {
+                if (node->OperIsLocalRead())
+                {
+                    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+                    unsigned            lclNum = lcl->GetLclNum();
+                    if (lvaInSsa(lclNum) && lcl->HasSsaName())
+                    {
+                        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+                        if (node->OperIs(GT_PHI_ARG))
+                        {
+                            varDsc->GetPerSsaData(lcl->GetSsaNum())->AddPhiUse(block);
+                        }
+                        else
+                        {
+                            varDsc->GetPerSsaData(lcl->GetSsaNum())->AddUse(block);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
         if (!lvaInSsa(lclNum))
@@ -5749,7 +5794,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
             continue;
         }
 
-        for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
+        for (unsigned defIndex = 0; defIndex < defCount; defIndex++)
         {
             LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
             GenTreeLclVarCommon* store  = defDsc->GetDefNode();
@@ -5763,6 +5808,60 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 if (store->GetLclNum() != lclNum)
                 {
                     JITDUMP(" -- no; composite definition\n");
+                    continue;
+                }
+
+                // If this SSA def has no remaining uses, the store is dead
+                // regardless of the stored value. Earlier phases (e.g.,
+                // Redundant branch opts) may have removed all references.
+                if (defDsc->GetNumUses() == 0)
+                {
+                    JITDUMP("Removed dead store (no remaining uses):\n");
+                    DISPTREE(store);
+
+                    GenTree* data = store->AsLclVarCommon()->Data();
+
+                    bool removed = false;
+                    if ((data->gtFlags & GTF_SIDE_EFFECT) == 0)
+                    {
+                        // Data has no side effects; try to remove the entire statement.
+                        BasicBlock* block = defDsc->GetBlock();
+                        for (Statement* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->GetNextStmt())
+                        {
+                            if (stmt->GetRootNode() == store)
+                            {
+                                fgRemoveStmt(block, stmt);
+                                removed = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!removed)
+                    {
+                        // Data has side effects or store is not the statement root;
+                        // keep them via a COMMA.
+                        // TODO-ASG: delete this hack.
+                        GenTree* nop  = gtNewNothingNode();
+                        data->gtNext  = nop;
+                        nop->gtPrev   = data;
+                        nop->gtNext   = store;
+                        store->gtPrev = nop;
+
+                        store->ChangeOper(GT_COMMA);
+                        store->AsOp()->gtOp2 = nop;
+                        store->gtType        = TYP_VOID;
+                        store->SetAllEffectsFlags(data);
+                        gtUpdateTreeAncestorsSideEffects(store);
+                    }
+
+                    madeChanges = true;
+                    continue;
+                }
+
+                // Value-redundancy check requires a previous def to compare against.
+                if (defIndex == 0)
+                {
                     continue;
                 }
 
