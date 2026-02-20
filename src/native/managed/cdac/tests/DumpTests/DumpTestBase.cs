@@ -54,7 +54,7 @@ public abstract class DumpTestBase : IAsyncLifetime
 
     /// <summary>
     /// The target operating system of the dump, resolved from the RuntimeInfo contract.
-    /// May be <c>null</c> if the contract is unavailable.
+    /// Returns <see cref="string.Empty"/> if the operating system cannot be determined.
     /// </summary>
     protected string TargetOS => _targetOS ?? string.Empty;
 
@@ -78,7 +78,7 @@ public abstract class DumpTestBase : IAsyncLifetime
         bool created = ContractDescriptorTarget.TryCreate(
             contractDescriptor,
             _host.ReadFromTarget,
-            writeToTarget: null!,
+            writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
             additionalFactories: [],
             out _target);

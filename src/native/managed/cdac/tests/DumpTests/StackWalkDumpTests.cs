@@ -16,6 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public abstract class StackWalkDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
+    protected override string DumpType => "full";
 
     [ConditionalFact]
     public void StackWalk_ContractIsAvailable()
@@ -54,8 +55,8 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         // The debuggee has Main → MethodA → MethodB → MethodC → FailFast,
         // but the stack walk may include runtime helper frames and native transitions.
         // We just assert there are multiple frames visible.
-        Assert.True(frameList.Count >= 1,
-            $"Expected at least 1 stack frame from the crashing thread, got {frameList.Count}");
+        Assert.True(frameList.Count >= 5,
+            $"Expected multiple stack frames from the crashing thread, got {frameList.Count}");
     }
 
     [ConditionalFact]
@@ -103,14 +104,31 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     }
 
     /// <summary>
-    /// Finds the first thread in the thread list — in a FailFast dump, this is typically
-    /// the main thread that initiated the crash.
+    /// Finds the thread that called FailFast by walking each thread's stack and looking
+    /// for a frame whose method name contains "FailFast".
     /// </summary>
-    private static ThreadData FindCrashingThread(IThread threadContract, ThreadStoreData storeData)
+    private ThreadData FindCrashingThread(IThread threadContract, ThreadStoreData storeData)
     {
-        TargetPointer currentThread = storeData.FirstThread;
-        Assert.NotEqual(TargetPointer.Null, currentThread);
-        return threadContract.GetThreadData(currentThread);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+
+        TargetPointer currentThreadPtr = storeData.FirstThread;
+        while (currentThreadPtr != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(currentThreadPtr);
+
+            foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
+            {
+                TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+                string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
+                if (name is not null && name.Contains("FailFast"))
+                    return threadData;
+            }
+
+            currentThreadPtr = threadData.NextThread;
+        }
+
+        Assert.Fail("Could not find a thread with FailFast on the stack");
+        return default;
     }
 }
 
