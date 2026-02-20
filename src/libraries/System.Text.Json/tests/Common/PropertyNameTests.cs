@@ -691,4 +691,32 @@ namespace System.Text.Json.Serialization.Tests
         [JsonPropertyName("custom_name")]
         public string MyValue { get; set; }
     }
+
+    /// <summary>
+    /// A custom naming policy that converts property names to all uppercase.
+    /// </summary>
+    public class UpperCaseNamingPolicy : JsonNamingPolicy
+    {
+        public override string ConvertName(string name) => name.ToUpperInvariant();
+    }
+
+    /// <summary>
+    /// A derived JsonNamingPolicyAttribute that uses a custom naming policy (not a known policy).
+    /// </summary>
+    public class JsonUpperCaseNamingPolicyAttribute : JsonNamingPolicyAttribute
+    {
+        public JsonUpperCaseNamingPolicyAttribute() : base(new UpperCaseNamingPolicy()) { }
+    }
+
+    [JsonUpperCaseNamingPolicy]
+    public class ClassWithCustomDerivedNamingPolicyAttribute
+    {
+        public string MyValue { get; set; }
+    }
+
+    public class ClassWithCustomDerivedMemberNamingPolicyAttribute
+    {
+        [JsonUpperCaseNamingPolicy]
+        public string MyValue { get; set; }
+    }
 }
