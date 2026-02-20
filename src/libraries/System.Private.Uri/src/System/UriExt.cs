@@ -561,9 +561,14 @@ namespace System
                 vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                 vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
             }
-            else
+            else if (destination.Length >= indexOfFirstToUnescape)
             {
                 vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
+            }
+            else
+            {
+                charsWritten = 0;
+                return false;
             }
 
             UriHelper.Unescape(charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb);
