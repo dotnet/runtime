@@ -221,3 +221,7 @@ extends:
                   buildConfiguration: $(_BuildConfig)
                 continueOnError: true
                 condition: always()
+            # Fail the job if any test or publish step above reported issues.
+            - script: echo "One or more dump test steps failed." && exit 1
+              displayName: 'Fail if tests failed'
+              condition: eq(variables['Agent.JobStatus'], 'SucceededWithIssues')
