@@ -1051,7 +1051,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             // Make sure compilation was successful.
             Assert.Empty(diagnostics);
             Assert.Equal(1, generatedSources.Length);
-            Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
+            Assert.Equal(25, generatedSources[0].SourceText.Lines.Count);
         }
         [Theory]
         [InlineData("{request}", "request")]

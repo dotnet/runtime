@@ -269,14 +269,17 @@ void Compiler::lvaInitTypeRef()
         // GS checks require the stack to be re-ordered, which can't be done with EnC
         !opts.compDbgEnC && compStressCompile(STRESS_UNSAFE_BUFFER_CHECKS, 25))
     {
-        setNeedsGSSecurityCookie();
-        compGSReorderStackLayout = true;
+        bool nowHasCookie = setNeedsGSSecurityCookie();
 
-        for (unsigned i = 0; i < lvaCount; i++)
+        if (nowHasCookie)
         {
-            if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+            JITDUMP("Marking some struct locals as unsafe to stress GS checks\n");
+            for (unsigned i = 0; i < lvaCount; i++)
             {
-                lvaTable[i].lvIsUnsafeBuffer = true;
+                if ((lvaTable[i].lvType == TYP_STRUCT) && compStressCompile(STRESS_GENERIC_VARN, 60))
+                {
+                    lvaTable[i].lvIsUnsafeBuffer = true;
+                }
             }
         }
     }
@@ -322,6 +325,10 @@ void Compiler::lvaInitTypeRef()
     // emitter when the varNum is greater that 32767 (see emitLclVarAddr::initLclVarAddr)
     lvaAllocOutgoingArgSpaceVar();
 
+#ifdef TARGET_WASM
+    lvaAllocWasmStackPtr();
+#endif
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -351,7 +358,7 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     if (!opts.IsReversePInvoke())
     {
         // Wasm stack pointer is first arg
-        lvaInitWasmStackPtr(&varNum);
+        lvaInitWasmStackPtrArg(&varNum);
     }
 #endif
 
@@ -502,14 +509,31 @@ void Compiler::lvaInitRetBuffArg(unsigned* curVarNum, bool useFixedRetBufReg)
 // Notes:
 //   The managed calling convention for Wasm passes the stack pointer as the first arg.
 //
-void Compiler::lvaInitWasmStackPtr(unsigned* curVarNum)
+void Compiler::lvaInitWasmStackPtrArg(unsigned* curVarNum)
 {
-    LclVarDsc* varDsc = lvaGetDesc(*curVarNum);
-    varDsc->lvType    = TYP_I_IMPL;
-    varDsc->lvIsParam = 1;
-    varDsc->lvOnFrame = true;
-    lvaWasmSpArg      = *curVarNum;
+    LclVarDsc* varDsc              = lvaGetDesc(*curVarNum);
+    varDsc->lvType                 = TYP_I_IMPL;
+    varDsc->lvIsParam              = 1;
+    varDsc->lvOnFrame              = true;
+    varDsc->lvImplicitlyReferenced = 1;
+    lvaWasmSpArg                   = *curVarNum;
     (*curVarNum)++;
+}
+
+//-----------------------------------------------------------------------------
+// lvaInitWasmStackPtr: set up the wasm stack pointer variable
+//
+// Allocates the stack pointer for methods where it is not an argument (RPI).
+//
+void Compiler::lvaAllocWasmStackPtr()
+{
+    if (lvaWasmSpArg == BAD_VAR_NUM)
+    {
+        lvaWasmSpArg                   = lvaGrabTemp(false DEBUGARG("SP"));
+        LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
+        varDsc->lvType                 = TYP_I_IMPL;
+        varDsc->lvImplicitlyReferenced = 1;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -930,6 +954,20 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 
         dsc->lvIsRegArg      = numRegisters > 0;
         dsc->lvIsMultiRegArg = numRegisters > 1;
+
+#ifdef DEBUG
+        // Extra query to facilitate wasm replay of native collections.
+        // TODO-WASM: delete once we can get a wasm collection.
+        //
+        if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun() && (structLayout != nullptr))
+        {
+            CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+            if (clsHnd != NO_CLASS_HANDLE)
+            {
+                info.compCompHnd->getWasmLowering(clsHnd);
+            }
+        }
+#endif // DEBUG
     }
 
     lvaParameterStackSize = classifier.StackSize();
@@ -2525,15 +2563,13 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
-        // GS checks require the stack to be re-ordered, which can't be done with EnC.
         if (unsafeValueClsCheck)
         {
             unsigned classAttribs = info.compCompHnd->getClassAttribs(layout->GetClassHandle());
 
-            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) && !opts.compDbgEnC)
+            if ((classAttribs & CORINFO_FLG_UNSAFE_VALUECLASS) != 0)
             {
                 setNeedsGSSecurityCookie();
-                compGSReorderStackLayout = true;
                 varDsc->lvIsUnsafeBuffer = true;
             }
         }
@@ -2888,6 +2924,22 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     assert(varNum < lvaCount);
     return lvaGetDesc(varNum)->lvExactSize();
 }
+
+//------------------------------------------------------------------------
+// lvaLclValueSize: Return the ValueSize for the given local variable.
+//
+// The ValueSize is a representation of the size of the variable that allows
+// for symbolic representations of sizes that may be unknown to the compiler
+// at the time of compilation, such as the length of a hardware vector on ARM64.
+//
+// Arguments:
+//    varNum -- number of the variable.
+//
+ValueSize Compiler::lvaLclValueSize(unsigned varNum)
+{
+    assert(varNum < lvaCount);
+    return lvaGetDesc(varNum)->lvValueSize();
+}
 //------------------------------------------------------------------------
 // lvExactSize: Get the exact size of the type of this local.
 //
@@ -2897,7 +2949,20 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 //
 unsigned LclVarDsc::lvExactSize() const
 {
-    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
+    assert(!varTypeHasUnknownSize(lvType));
+    return lvValueSize().GetExact();
+}
+
+//------------------------------------------------------------------------
+// lvValueSize: Get the value size of the type of this local.
+//
+// Return Value:
+//    The value size container for this local. This either contains an exact
+//    size or a compile-time unknown size.
+//
+ValueSize LclVarDsc::lvValueSize() const
+{
+    return (lvType == TYP_STRUCT) ? ValueSize(GetLayout()->GetSize()) : ValueSize::FromJitType(lvType);
 }
 
 //------------------------------------------------------------------------
@@ -2951,7 +3016,7 @@ var_types LclVarDsc::GetRegisterType() const
 {
     if (!TypeIs(TYP_STRUCT))
     {
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
         if (TypeIs(TYP_LONG))
         {
             return TYP_UNDEF;
@@ -3415,8 +3480,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
 void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
-    unsigned   lclNum = 0;
-    LclVarDsc* varDsc = nullptr;
 
     // Fast path for minopts and debug codegen.
     //
@@ -3430,8 +3493,9 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 #if defined(DEBUG)
             // All local vars should be marked as implicitly referenced
             // and not tracked.
-            for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+            for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
             {
+                LclVarDsc* varDsc                = lvaGetDesc(lclNum);
                 const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
 
                 if (isSpecialVarargsParam)
@@ -3451,8 +3515,9 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         }
 
         // First compute.
-        for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+        for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
         {
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
             // Using lvImplicitlyReferenced here ensures that we can't
             // accidentally make locals be unreferenced later by decrementing
             // the ref count to zero.
@@ -3488,11 +3553,28 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         return;
     }
 
-    // Slower path we take when optimizing, to get accurate counts.
-    //
+    lvaComputePreciseRefCounts(isRecompute, setSlotNumbers);
+}
+
+//------------------------------------------------------------------------
+// lvaComputePreciseRefCounts: compute precise ref counts for locals by IR traversal
+//
+// Arguments:
+//    isRecompute -- true if we just want ref counts and no other side effects;
+//                   false means to also look for true boolean locals, lay
+//                   groundwork for assertion prop, check type consistency, etc.
+//                   See lvaMarkLclRefs for details on what else goes on.
+//    setSlotNumbers -- true if local slot numbers should be assigned.
+//
+// Notes:
+//   See notes on lvaComputeRefCounts.
+//
+void Compiler::lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers)
+{
     // First, reset all explicit ref counts and weights.
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         varDsc->setLvRefCnt(0);
         varDsc->setLvRefCntWtd(BB_ZERO_WEIGHT);
 
@@ -3519,7 +3601,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
     lvaGenericsContextInUse               = false;
 
-    JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
+    JITDUMP("\n*** lvaComputePreciseRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
     for (BasicBlock* const block : Blocks())
@@ -3577,11 +3659,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         assert(!"unexpected new use of generics context");
     }
 
-    JITDUMP("\n*** lvaComputeRefCounts -- implicit counts ***\n");
+    JITDUMP("\n*** lvaComputePreciseRefCounts -- implicit counts ***\n");
 
     // Third, bump ref counts for some implicit prolog references
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
         // Todo: review justification for these count bumps.
         if (varDsc->lvIsRegArg)
         {

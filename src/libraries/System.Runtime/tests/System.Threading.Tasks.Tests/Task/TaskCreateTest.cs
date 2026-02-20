@@ -3,7 +3,7 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-// Test class using UnitTestDriver that ensures all the public ctor of Task, Future and
+// Test class using UnitTestDriver that ensures all the public ctor of Task, Task<TResult> and
 // promise are properly working
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -23,7 +23,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest0()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -38,7 +38,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest1()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = false,
@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest2()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -68,7 +68,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest3()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -83,7 +83,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest4()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = true,
@@ -97,7 +97,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest5()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest6()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -125,7 +125,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest7()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -140,7 +140,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest8()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -155,7 +155,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest9()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = false,
@@ -170,7 +170,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest10()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -185,7 +185,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest11()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -200,7 +200,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest12()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = true,
@@ -215,7 +215,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest13()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -230,7 +230,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest14()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -245,7 +245,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest15()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = false,
@@ -260,7 +260,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest16()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -275,7 +275,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest17()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -290,7 +290,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest18()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = false,
                 HasActionState = true,
@@ -305,7 +305,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest19()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -320,7 +320,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest20()
         {
-            TestParameters parameters = new TestParameters(TaskType.FutureT)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResultT)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -334,7 +334,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest21()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -348,7 +348,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest22()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -362,7 +362,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest23()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -377,7 +377,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest24()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -392,7 +392,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest25()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = false,
                 HasActionState = false,
@@ -407,7 +407,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest26()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = false,
@@ -422,7 +422,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest27()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -437,7 +437,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest28()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = false,
                 HasActionState = true,
@@ -452,7 +452,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskCreateTest29()
         {
-            TestParameters parameters = new TestParameters(TaskType.Future)
+            TestParameters parameters = new TestParameters(TaskType.TaskWithResult)
             {
                 HasCancellationToken = true,
                 HasActionState = true,
@@ -856,8 +856,8 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Class that verifies that all the public constructors of Task, future, promise and futureT are working correctly
-        /// The test creates the test object (Task, Future, promise) using various ctor and ensures that they were
+        /// Class that verifies that all the public constructors of Task, Task{TResult}, promise, and Task{TResult} are working correctly.
+        /// The test creates the test object (Task, Task{TResult}, promise) using various ctor and ensures that they were
         /// created and can be started. All the negative cases (exceptional cases are also covered in this test set).
         /// </summary>
         internal sealed class TaskCreateTest
@@ -918,12 +918,12 @@ namespace System.Threading.Tasks.Tests
             #region Test Methods (These are the ones that are actually invoked)
 
             /// <summary>
-            /// Test that creates a Task, Future and Promise using various Ctor and ensures that the task was created successfully
+            /// Test that creates a Task, Task<TResult>, and Promise using various Ctor and ensures that the task was created successfully
             /// </summary>
             /// <returns>indicates whether test passed or failed (invoking ctor was success or not)</returns>
             internal void CreateTask()
             {
-                //Using the parameters specified in the XML input file create a Task, Future or promise
+                //Using the parameters specified in the XML input file create a Task, Task<TResult>, or Promise
                 _task = CreateTaskHelper();
 
                 // Checks whether the task was created, initialized with specified action
@@ -981,11 +981,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(Work, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWork, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWork, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWork, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWork, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -998,11 +998,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(Work, TaskCreationOptions.None);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWork, TaskCreationOptions.None);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWork, TaskCreationOptions.None);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWork, TaskCreationOptions.None);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWork, TaskCreationOptions.None);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1015,11 +1015,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(Work, cts.Token);
                                 break;
-                            case TaskType.FutureT:
-                                _task = (Task<double>)Task<double>.Factory.StartNew(FutureWork, cts.Token);
+                            case TaskType.TaskWithResultT:
+                                _task = (Task<double>)Task<double>.Factory.StartNew(TaskWithResultWork, cts.Token);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWork, cts.Token);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWork, cts.Token);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1032,11 +1032,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(Work);
                                 break;
-                            case TaskType.FutureT:
-                                _task = (Task<double>)Task<double>.Factory.StartNew(FutureWork);
+                            case TaskType.TaskWithResultT:
+                                _task = (Task<double>)Task<double>.Factory.StartNew(TaskWithResultWork);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWork);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWork);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1052,11 +1052,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(WorkWithState, ZETA_SEED, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWorkWithState, ZETA_SEED, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWorkWithState, ZETA_SEED, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWorkWithState, ZETA_SEED, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWorkWithState, ZETA_SEED, cts.Token, TaskCreationOptions.None, TaskScheduler.Default);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1069,11 +1069,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(WorkWithState, ZETA_SEED, TaskCreationOptions.None);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWorkWithState, ZETA_SEED, TaskCreationOptions.None);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWorkWithState, ZETA_SEED, TaskCreationOptions.None);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWorkWithState, ZETA_SEED, TaskCreationOptions.None);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWorkWithState, ZETA_SEED, TaskCreationOptions.None);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1086,11 +1086,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(Work, cts.Token);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWorkWithState, ZETA_SEED, cts.Token);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWorkWithState, ZETA_SEED, cts.Token);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWorkWithState, ZETA_SEED, cts.Token);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWorkWithState, ZETA_SEED, cts.Token);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1103,11 +1103,11 @@ namespace System.Threading.Tasks.Tests
                             case TaskType.Task:
                                 _task = Task.Factory.StartNew(WorkWithState, ZETA_SEED);
                                 break;
-                            case TaskType.FutureT:
-                                _task = Task<double>.Factory.StartNew(FutureWorkWithState, ZETA_SEED);
+                            case TaskType.TaskWithResultT:
+                                _task = Task<double>.Factory.StartNew(TaskWithResultWorkWithState, ZETA_SEED);
                                 break;
-                            case TaskType.Future:
-                                _task = Task.Factory.StartNew<double>(FutureWorkWithState, ZETA_SEED);
+                            case TaskType.TaskWithResult:
+                                _task = Task.Factory.StartNew<double>(TaskWithResultWorkWithState, ZETA_SEED);
                                 break;
                             default:
                                 throw new NotSupportedException("DOes not support this type: " + _taskType);
@@ -1134,13 +1134,13 @@ namespace System.Threading.Tasks.Tests
                             //
                             // For Constructor
                             //
-                            if (_taskType != TaskType.Future)
+                            if (_taskType != TaskType.TaskWithResult)
                             {
                                 try
                                 {
                                     if (_taskType == TaskType.Task)
                                         _task = new Task(null);
-                                    else if (_taskType == TaskType.FutureT)
+                                    else if (_taskType == TaskType.TaskWithResultT)
                                         _task = new Task<double>(null);
 
                                     Assert.Fail(string.Format("Able to pass null Action/Func to Constructor of {0}, when expecting exception", _taskType));
@@ -1160,9 +1160,9 @@ namespace System.Threading.Tasks.Tests
 
                                 if (_taskType == TaskType.Task)
                                     _task = Task.Factory.StartNew(o);
-                                else if (_taskType == TaskType.FutureT)
+                                else if (_taskType == TaskType.TaskWithResultT)
                                     _task = Task<double>.Factory.StartNew(o2);
-                                else if (_taskType == TaskType.Future)
+                                else if (_taskType == TaskType.TaskWithResult)
                                     _task = Task.Factory.StartNew<double>(o2);
 
                                 Assert.Fail(string.Format("Able to pass null Action/Func to StartNew() of {0}, when expecting exception", _taskType));
@@ -1183,14 +1183,14 @@ namespace System.Threading.Tasks.Tests
                             //
                             // For Constructor
                             //
-                            if (_taskType != TaskType.Future)
+                            if (_taskType != TaskType.TaskWithResult)
                             {
                                 try
                                 {
                                     if (_taskType == TaskType.Task)
                                         _task = new Task(Work, (TaskCreationOptions)invalidOption);
-                                    else if (_taskType == TaskType.FutureT)
-                                        _task = new Task<double>(FutureWork, (TaskCreationOptions)invalidOption);
+                                    else if (_taskType == TaskType.TaskWithResultT)
+                                        _task = new Task<double>(TaskWithResultWork, (TaskCreationOptions)invalidOption);
 
                                     Assert.Fail(string.Format("Able to pass invalid TaskCreationOptions to Constructor of {0}, when expecting exception", _taskType));
                                 }
@@ -1206,10 +1206,10 @@ namespace System.Threading.Tasks.Tests
                             {
                                 if (_taskType == TaskType.Task)
                                     _task = Task.Factory.StartNew(Work, (TaskCreationOptions)invalidOption);
-                                else if (_taskType == TaskType.FutureT)
-                                    _task = Task<double>.Factory.StartNew(FutureWork, (TaskCreationOptions)invalidOption);
-                                else if (_taskType == TaskType.Future)
-                                    _task = Task.Factory.StartNew<double>(FutureWork, (TaskCreationOptions)invalidOption);
+                                else if (_taskType == TaskType.TaskWithResultT)
+                                    _task = Task<double>.Factory.StartNew(TaskWithResultWork, (TaskCreationOptions)invalidOption);
+                                else if (_taskType == TaskType.TaskWithResult)
+                                    _task = Task.Factory.StartNew<double>(TaskWithResultWork, (TaskCreationOptions)invalidOption);
 
                                 Assert.Fail(string.Format("Able to pass invalid TaskCreationOptions to StartNew() of {0}, when expecting exception", _taskType));
                             }
@@ -1284,7 +1284,7 @@ namespace System.Threading.Tasks.Tests
                     //
                     // For Start()
                     //
-                    if (_taskType != TaskType.Future)
+                    if (_taskType != TaskType.TaskWithResult)
                     {
                         try
                         {
@@ -1318,10 +1318,10 @@ namespace System.Threading.Tasks.Tests
 
                         if (_taskType == TaskType.Task)
                             _task = Task.Factory.StartNew(Work, token, TaskCreationOptions.None, tm);
-                        else if (_taskType == TaskType.FutureT)
-                            _task = Task<double>.Factory.StartNew(FutureWork, token, TaskCreationOptions.None, tm);
-                        else if (_taskType == TaskType.Future)
-                            _task = Task.Factory.StartNew<double>(FutureWork, token, TaskCreationOptions.None, tm);
+                        else if (_taskType == TaskType.TaskWithResultT)
+                            _task = Task<double>.Factory.StartNew(TaskWithResultWork, token, TaskCreationOptions.None, tm);
+                        else if (_taskType == TaskType.TaskWithResult)
+                            _task = Task.Factory.StartNew<double>(TaskWithResultWork, token, TaskCreationOptions.None, tm);
 
                         Assert.Fail(string.Format("Able to pass {0} TaskManager to StartNew() on {1}, when expecting exception", tmInvalidMessage, _taskType));
                     }
@@ -1343,7 +1343,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             /// <summary>
-            /// Helper function that creates Task/Future based on test parameters
+            /// Helper function that creates Task/Task<TResult> based on test parameters
             /// </summary>
             /// <returns></returns>
             private Task CreateTaskHelper()
@@ -1377,8 +1377,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(Work, token, TaskCreationOptions.None);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWork, token, TaskCreationOptions.None);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWork, token, TaskCreationOptions.None);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1391,8 +1391,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(Work, TaskCreationOptions.None);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWork, TaskCreationOptions.None);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWork, TaskCreationOptions.None);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1407,8 +1407,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(Work, token);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWork, token);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWork, token);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1421,8 +1421,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(Work);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWork);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWork);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1440,8 +1440,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(WorkWithState, ZETA_SEED, token, TaskCreationOptions.None);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWorkWithState, ZETA_SEED, token, TaskCreationOptions.None);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWorkWithState, ZETA_SEED, token, TaskCreationOptions.None);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1454,8 +1454,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(WorkWithState, ZETA_SEED, TaskCreationOptions.None);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWorkWithState, ZETA_SEED, TaskCreationOptions.None);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWorkWithState, ZETA_SEED, TaskCreationOptions.None);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1470,8 +1470,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(WorkWithState, ZETA_SEED, token);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWorkWithState, ZETA_SEED, token);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWorkWithState, ZETA_SEED, token);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1484,8 +1484,8 @@ namespace System.Threading.Tasks.Tests
                                 case TaskType.Task:
                                     newTask = new Task(WorkWithState, ZETA_SEED);
                                     break;
-                                case TaskType.FutureT:
-                                    newTask = new Task<double>(FutureWorkWithState, ZETA_SEED);
+                                case TaskType.TaskWithResultT:
+                                    newTask = new Task<double>(TaskWithResultWorkWithState, ZETA_SEED);
                                     break;
                                 default:
                                     throw new ArgumentException("Cannot create an instance of static type: " + _taskType);
@@ -1519,12 +1519,12 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            private double FutureWork()
+            private double TaskWithResultWork()
             {
-                return FutureWorkWithState(ZETA_SEED);
+                return TaskWithResultWorkWithState(ZETA_SEED);
             }
 
-            private double FutureWorkWithState(object o)
+            private double TaskWithResultWorkWithState(object o)
             {
                 // Waiting until the task is assigned on StartNew scenario
                 while (_task == null)
@@ -1576,8 +1576,8 @@ namespace System.Threading.Tasks.Tests
                     case TaskType.Task:
                         actualResult = _result;
                         break;
-                    case TaskType.FutureT:
-                    case TaskType.Future:
+                    case TaskType.TaskWithResultT:
+                    case TaskType.TaskWithResult:
                         actualResult = ((Task<double>)_task).Result;
                         break;
                     default:
@@ -1605,8 +1605,8 @@ namespace System.Threading.Tasks.Tests
         internal enum TaskType
         {
             Task,
-            Future,
-            FutureT,
+            TaskWithResult,
+            TaskWithResultT,
             Promise
         }
 

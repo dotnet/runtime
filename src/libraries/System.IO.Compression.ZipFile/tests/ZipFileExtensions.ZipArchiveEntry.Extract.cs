@@ -47,5 +47,65 @@ namespace System.IO.Compression.Tests
 
             await DisposeZipArchive(async, archive);
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToFile_OverwritePreservesOriginalFileOnExtractionFailure(bool async)
+        {
+            // Create a destination file with known content
+            string destinationFile = GetTestFilePath();
+            byte[] originalContent = "Original file content that should be preserved"u8.ToArray();
+            File.WriteAllBytes(destinationFile, originalContent);
+
+            // Verify the original file exists and has the correct content
+            Assert.True(File.Exists(destinationFile));
+            Assert.Equal(originalContent.Length, new FileInfo(destinationFile).Length);
+
+            // Create an archive in memory with entry data that will be corrupted
+            using MemoryStream archiveStream = new MemoryStream();
+            using (ZipArchive createArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = createArchive.CreateEntry("test.txt");
+                using (Stream entryStream = entry.Open())
+                {
+                    // Write some data
+                    byte[] data = new byte[1024];
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        data[i] = (byte)(i % 256);
+                    }
+                    entryStream.Write(data, 0, data.Length);
+                }
+            }
+
+            // Corrupt the compressed data in the archive to trigger an exception during extraction
+            // We'll modify bytes in the middle of the compressed data section
+            byte[] archiveBytes = archiveStream.ToArray();
+            // Find and corrupt the compressed data (after the local file header)
+            // Local file headers are typically around byte 30-60, so corrupt bytes after that
+            for (int i = 80; i < Math.Min(120, archiveBytes.Length); i++)
+            {
+                archiveBytes[i] = 0xFF;
+            }
+
+            // Create a new stream with the corrupted archive
+            using MemoryStream corruptedStream = new MemoryStream(archiveBytes);
+            using (ZipArchive readArchive = new ZipArchive(corruptedStream, ZipArchiveMode.Read, leaveOpen: true))
+            {
+                ZipArchiveEntry entry = readArchive.Entries[0];
+
+                // Attempt to extract with overwrite=true, this should fail due to corrupted data
+                // The corruption will cause InvalidDataException during decompression
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                {
+                    await CallExtractToFile(async, entry, destinationFile, overwrite: true);
+                });
+            }
+
+            // Verify the original file is preserved (not corrupted to 0 bytes)
+            Assert.True(File.Exists(destinationFile));
+            byte[] actualContent = File.ReadAllBytes(destinationFile);
+            Assert.Equal(originalContent, actualContent);
+        }
     }
 }

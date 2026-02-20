@@ -167,6 +167,41 @@ namespace System.Threading.Channels.Tests
             ((IAsyncResult)r).AsyncWaitHandle.WaitOne(); // avoid inlining the continuation
             r.GetAwaiter().GetResult();
         }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task Completion_CompletesAfterConcurrentTryReadAndTryComplete()
+        {
+            for (int iter = 0; iter < 100_000; iter++)
+            {
+                Channel<int> channel = CreateChannel();
+
+                channel.Writer.TryWrite(1);
+                channel.Writer.TryWrite(2);
+
+                channel.Reader.TryRead(out _);
+
+                using var barrier = new Barrier(2);
+                Task t1 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    channel.Reader.TryRead(out _);
+                });
+
+                Task t2 = Task.Run(() =>
+                {
+                    barrier.SignalAndWait();
+                    channel.Writer.TryComplete();
+                });
+
+                await Task.WhenAll(t1, t2);
+
+                channel.Reader.TryRead(out _);
+
+                Task completionTask = channel.Reader.Completion;
+                await completionTask.WaitAsync(TimeSpan.FromSeconds(10));
+            }
+        }
     }
 
     public abstract class SingleReaderUnboundedChannelTests : UnboundedChannelTests

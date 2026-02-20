@@ -5723,7 +5723,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
             // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
             // needed, like we do for the regular methods.
             InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
@@ -5731,7 +5731,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             {
                 CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
             }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && FEATURE_DYNAMIC_CODE_COMPILED
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
@@ -6168,7 +6168,7 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Pop(CURRENT_THREAD);
 }
 
-EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
 {
     CONTRACTL
     {
@@ -6185,7 +6185,24 @@ EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* 
     TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
     _ASSERTE(!type.IsTypeDesc());
 
-    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
+    // Iterate the type looking for a method with the given name that has the
+    // UnmanagedCallersOnly attribute.
+    MethodTable* pMT = type.GetMethodTable();
+    MethodTable::MethodIterator it(pMT);
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        if (strcmp(pMD->GetNameOnNonArrayClass(), methodName) == 0
+            && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            *ppMD = pMD;
+            return;
+        }
+    }
+
+    // Fallback if no UCO match found.
+    *ppMD = MemberLoader::FindMethodByName(pMT, methodName);
 }
 
 namespace

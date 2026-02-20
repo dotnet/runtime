@@ -764,7 +764,8 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null));
+                    id = ReadyToRunHelper.AllocContinuation;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));
@@ -1362,23 +1363,16 @@ namespace Internal.JitInterface
             else
             {
                 // We can devirtualize the callvirt if the method is not virtual to begin with
-                bool canDevirt = !targetMethod.IsVirtual;
+                bool canDevirt = targetMethod.IsCallEffectivelyDirect();
 
-                // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
-                if (!canDevirt && !targetMethod.OwningType.IsInterface)
+                // We might be able to devirt based on whole program view
+                if (!canDevirt
+                    // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
+                    // during scanning (i.e. compiling a shared method body and we need to call another shared body
+                    // with a method generic dictionary argument).
+                    && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
                 {
-                    // Check if we can devirt per metadata
-                    canDevirt = targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
-
-                    // We might be able to devirt based on whole program view
-                    if (!canDevirt
-                        // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
-                        // during scanning (i.e. compiling a shared method body and we need to call another shared body
-                        // with a method generic dictionary argument).
-                        && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
-                    {
-                        canDevirt = _compilation.IsEffectivelySealed(targetMethod);
-                    }
+                    canDevirt = _compilation.IsEffectivelySealed(targetMethod);
                 }
 
                 if (canDevirt)
@@ -2497,6 +2491,11 @@ namespace Internal.JitInterface
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
             pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("__tls_get_addr"u8)));
+        }
+
+        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
+        {
+            throw new NotImplementedException();
         }
 
 #pragma warning disable CA1822 // Mark members as static
