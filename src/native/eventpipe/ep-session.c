@@ -14,6 +14,8 @@
 #include "ep-stream.h"
 #include "ep-event-payload.h"
 #include "ep-rt.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #if HAVE_UNISTD_H
 #include <unistd.h> // close
@@ -26,6 +28,18 @@
 #if HAVE_ERRNO_H
 #include <errno.h> // errno
 #endif // HAVE_ERRNO_H
+
+// Temporary diagnostic logging for userevents investigation (https://github.com/dotnet/runtime/issues/123442).
+// Enabled when DOTNET_DiagnosticServerDiag=1 is set.
+static int ep_sess_diag_enabled = -1; // -1 = uninitialized
+static inline int ep_sess_diag_is_enabled (void) {
+	if (ep_sess_diag_enabled == -1) {
+		const char *val = getenv ("DOTNET_DiagnosticServerDiag");
+		ep_sess_diag_enabled = (val != NULL && val[0] == '1') ? 1 : 0;
+	}
+	return ep_sess_diag_enabled;
+}
+#define EP_SESS_DIAG_LOG(...) do { if (ep_sess_diag_is_enabled ()) { fprintf (stderr, "[EP_SESS_DIAG] " __VA_ARGS__); fflush (stderr); } } while (0)
 
 /*
  * Forward declares of all static functions.
@@ -730,11 +744,15 @@ session_tracepoint_write_event (
 	EventPipeSessionProviderList *session_provider_list = session->providers;
 	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
 	const EventPipeSessionProviderTracepoint *tracepoint = ep_session_provider_get_tracepoint_for_event (session_provider, ep_event);
-	if (tracepoint == NULL)
+	if (tracepoint == NULL) {
+		EP_SESS_DIAG_LOG ("tracepoint_write_event: tracepoint not found for provider='%s', event_id=%u.\n", ep_provider_get_provider_name (provider), (unsigned)ep_event_get_event_id (ep_event));
 		return false;
+	}
 
-	if (ep_session_provider_tracepoint_get_enabled (tracepoint) == 0)
+	if (ep_session_provider_tracepoint_get_enabled (tracepoint) == 0) {
+		EP_SESS_DIAG_LOG ("tracepoint_write_event: tracepoint disabled for provider='%s', event_id=%u.\n", ep_provider_get_provider_name (provider), (unsigned)ep_event_get_event_id (ep_event));
 		return false;
+	}
 
 	// Setup iovec array
 	const int max_non_parameter_iov = 9;
@@ -873,6 +891,12 @@ session_tracepoint_write_event (
 	while (((bytes_written = writev(session->user_events_data_fd, (const struct iovec *)io, io_index)) < 0) && errno == EINTR);
 	if (should_write_metadata && (bytes_written == io_bytes_to_write))
 		ep_event_update_metadata_written_mask (ep_event, session_mask, true);
+
+	if (bytes_written == -1) {
+		EP_SESS_DIAG_LOG ("tracepoint_write_event: writev failed for provider='%s', event_id=%u, fd=%d, errno=%d (%s).\n", ep_provider_get_provider_name (provider), (unsigned)ep_event_get_event_id (ep_event), session->user_events_data_fd, errno, strerror (errno));
+	} else {
+		EP_SESS_DIAG_LOG ("tracepoint_write_event: writev success for provider='%s', event_id=%u, bytes_written=%zd.\n", ep_provider_get_provider_name (provider), (unsigned)ep_event_get_event_id (ep_event), bytes_written);
+	}
 
 	if (io != static_io)
 		free (io);

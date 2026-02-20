@@ -12,6 +12,20 @@
 #include "ds-dump-protocol.h"
 #include "ds-profiler-protocol.h"
 #include "ds-rt.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+// Temporary diagnostic logging for userevents investigation (https://github.com/dotnet/runtime/issues/123442).
+// Enabled when DOTNET_DiagnosticServerDiag=1 is set.
+static int ds_diag_enabled = -1; // -1 = uninitialized
+static inline int ds_diag_is_enabled (void) {
+	if (ds_diag_enabled == -1) {
+		const char *val = getenv ("DOTNET_DiagnosticServerDiag");
+		ds_diag_enabled = (val != NULL && val[0] == '1') ? 1 : 0;
+	}
+	return ds_diag_enabled;
+}
+#define DS_DIAG_LOG(...) do { if (ds_diag_is_enabled ()) { fprintf (stderr, "[DS_DIAG] " __VA_ARGS__); fflush (stderr); } } while (0)
 
 /*
  * Globals and volatile access functions.
@@ -119,6 +133,8 @@ static size_t server_loop_tick (void* data) {
 	if (!stream)
 		return 0; // continue
 
+	DS_DIAG_LOG ("server_loop_tick: obtained IPC stream.\n");
+
 	ds_rt_auto_trace_signal ();
 
 	DiagnosticsIpcMessage message;
@@ -126,6 +142,7 @@ static size_t server_loop_tick (void* data) {
 		return 0; // continue
 
 	if (!ds_ipc_message_initialize_stream (&message, stream)) {
+		DS_DIAG_LOG ("server_loop_tick: failed to initialize stream (bad encoding).\n");
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ds_ipc_stream_free (stream);
 		ds_ipc_message_fini (&message);
@@ -136,6 +153,7 @@ static size_t server_loop_tick (void* data) {
 		(const ep_char8_t *)ds_ipc_header_get_magic_ref (ds_ipc_message_get_header_ref (&message)),
 		(const ep_char8_t *)DOTNET_IPC_V1_MAGIC) != 0) {
 
+		DS_DIAG_LOG ("server_loop_tick: unknown magic header.\n");
 		ds_ipc_message_send_error (stream, DS_IPC_E_UNKNOWN_MAGIC);
 		ds_ipc_stream_free (stream);
 		ds_ipc_message_fini (&message);
@@ -143,12 +161,14 @@ static size_t server_loop_tick (void* data) {
 	}
 
 	DS_LOG_INFO_2 ("DiagnosticServer - received IPC message with command set (%d) and command id (%d)", ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
+	DS_DIAG_LOG ("server_loop_tick: received IPC command set=%d, command id=%d.\n", (int)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)), (int)ds_ipc_header_get_commandid (ds_ipc_message_get_header_ref (&message)));
 
 	switch ((DiagnosticsServerCommandSet)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message))) {
 	case DS_SERVER_COMMANDSET_DUMP:
 		ds_dump_protocol_helper_handle_ipc_message (&message, stream);
 		break;
 	case DS_SERVER_COMMANDSET_EVENTPIPE:
+		DS_DIAG_LOG ("server_loop_tick: dispatching EVENTPIPE command.\n");
 		ds_eventpipe_protocol_helper_handle_ipc_message (&message, stream);
 		break;
 	case DS_SERVER_COMMANDSET_PROFILER:
@@ -158,6 +178,7 @@ static size_t server_loop_tick (void* data) {
 		ds_process_protocol_helper_handle_ipc_message (&message, stream);
 		break;
 	default:
+		DS_DIAG_LOG ("server_loop_tick: unknown command set %d.\n", (int)ds_ipc_header_get_commandset (ds_ipc_message_get_header_ref (&message)));
 		server_protocol_helper_unknown_command (&message, stream);
 		break;
 	}
