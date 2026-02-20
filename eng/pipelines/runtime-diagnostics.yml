@@ -11,7 +11,7 @@ parameters:
   default:
     - windows_x64
     - linux_x64
-    - osx_x64
+    # - osx_x64 # Temporarily due to CI capacity constraints. Will re-enable once osx queues are more available.
 
 resources:
   repositories:
