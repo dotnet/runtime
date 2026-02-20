@@ -662,7 +662,7 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+    [JsonNamingPolicyAttribute(JsonKnownNamingPolicy.CamelCase)]
     public class ClassWithCamelCaseNamingPolicyAttribute
     {
         public string MyValue { get; set; }
@@ -672,22 +672,22 @@ namespace System.Text.Json.Serialization.Tests
     {
         public string MyFirstProperty { get; set; }
 
-        [JsonNamingPolicy(JsonKnownNamingPolicy.KebabCaseLower)]
+        [JsonNamingPolicyAttribute(JsonKnownNamingPolicy.KebabCaseLower)]
         public string MySecondProperty { get; set; }
     }
 
-    [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+    [JsonNamingPolicyAttribute(JsonKnownNamingPolicy.CamelCase)]
     public class ClassWithMixedNamingPolicies
     {
         public string MyFirstProperty { get; set; }
 
-        [JsonNamingPolicy(JsonKnownNamingPolicy.KebabCaseLower)]
+        [JsonNamingPolicyAttribute(JsonKnownNamingPolicy.KebabCaseLower)]
         public string MySecondProperty { get; set; }
     }
 
     public class ClassWithNamingPolicyAndPropertyName
     {
-        [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+        [JsonNamingPolicyAttribute(JsonKnownNamingPolicy.CamelCase)]
         [JsonPropertyName("custom_name")]
         public string MyValue { get; set; }
     }

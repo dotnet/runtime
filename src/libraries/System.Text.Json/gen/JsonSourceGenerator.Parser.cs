@@ -788,6 +788,12 @@ namespace System.Text.Json.SourceGeneration
                         {
                             namingPolicy = (JsonKnownNamingPolicy)knownPolicyValue;
                         }
+                        else
+                        {
+                            // The attribute uses a custom naming policy that can't be resolved at compile time.
+                            // Use Unspecified to prevent the global naming policy from incorrectly applying.
+                            namingPolicy = JsonKnownNamingPolicy.Unspecified;
+                        }
 
                         continue;
                     }
@@ -1391,6 +1397,12 @@ namespace System.Text.Json.SourceGeneration
                             attributeData.ConstructorArguments[0].Value is int knownPolicyValue)
                         {
                             memberNamingPolicy = (JsonKnownNamingPolicy)knownPolicyValue;
+                        }
+                        else
+                        {
+                            // The attribute uses a custom naming policy that can't be resolved at compile time.
+                            // Use Unspecified to prevent the global naming policy from incorrectly applying.
+                            memberNamingPolicy = JsonKnownNamingPolicy.Unspecified;
                         }
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
