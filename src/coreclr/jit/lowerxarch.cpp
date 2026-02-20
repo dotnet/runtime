@@ -10282,7 +10282,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             {
                                 assert((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
                                        (intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512) ||
-                                (intrinsicId >= FIRST_NI_AVX512BMM && intrinsicId <= LAST_NI_AVX512BMM));
+                                       (intrinsicId >= FIRST_NI_AVX512BMM && intrinsicId <= LAST_NI_AVX512BMM));
                                 TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
