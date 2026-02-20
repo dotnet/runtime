@@ -863,6 +863,31 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public async Task MethodGenericWithAllowsRefStructConstraint()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{value}"")]
+                    static partial void M1<T>(ILogger logger, T value) where T : allows ref struct;
+                }
+            ");
+
+            // AllowsRefLikeType is only available in Roslyn 4.9+ (C# 13). On older Roslyn
+            // versions the constraint is silently ignored and no diagnostic is produced.
+            bool roslynSupportsAllowsRefLike =
+                typeof(Microsoft.CodeAnalysis.ITypeParameterSymbol).GetProperty("AllowsRefLikeType") is not null;
+            if (!roslynSupportsAllowsRefLike)
+            {
+                Assert.Empty(diagnostics);
+                return;
+            }
+
+            Assert.Single(diagnostics);
+            Assert.Equal("SYSLIB1011", diagnostics[0].Id);
+        }
+
         [Theory]
         [InlineData("ref")]
         [InlineData("in")]

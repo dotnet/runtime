@@ -179,7 +179,7 @@ namespace {lc.Namespace}
                 GenVariableAssignments(lm, nestedIndentation);
 
                 string formatMethodBegin =
-                    !lm.Message.Contains("{") ? "" :
+                    lm.Message.IndexOf('{') < 0 ? "" :
                     _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
                     "global::System.FormattableString.Invariant(";
                 string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
