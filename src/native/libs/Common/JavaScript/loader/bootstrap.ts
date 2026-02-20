@@ -19,34 +19,11 @@ export async function validateWasmFeatures(): Promise<void> {
         const nodeMajorVersion = parseInt(globalThisAny.process.versions.node.split(".")[0], 10);
         dotnetAssert.check(nodeMajorVersion >= 18, `Node.js version ${globalThisAny.process.versions.node} is not supported. Please use Node.js 18 or later. See also https://aka.ms/dotnet-wasm-features`);
     } else if (ENVIRONMENT_IS_SHELL) {
-        const rawVersion = globalThisAny.version;
-        let versionString: string | undefined;
-        if (typeof rawVersion === "function") {
-            try {
-                const result = rawVersion();
-                if (typeof result === "string") {
-                    versionString = result;
-                }
-            } catch {
-                // Ignore errors when probing version()
-            }
-        } else if (typeof rawVersion === "string") {
-            versionString = rawVersion;
+        if (typeof globalThisAny.version === "function" && globalThisAny.d8) {
+            const v8v = globalThisAny.version();
+            const v8MajorVersion = parseInt(v8v.split(".")[0], 10);
+            dotnetAssert.check(v8MajorVersion >= 14, "This V8 shell is too old. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
         }
-
-        let v8MajorVersion = 0;
-        if (versionString) {
-            const match = versionString.match(/^(\d+)/);
-            if (match) {
-                v8MajorVersion = parseInt(match[1], 10);
-            }
-        }
-
-        const detectedVersionDescription = versionString ?? (rawVersion !== undefined ? String(rawVersion) : "unknown");
-        dotnetAssert.check(
-            v8MajorVersion >= 14,
-            `This V8 shell is too old (detected version: ${detectedVersionDescription}). Please use a modern version. See also https://aka.ms/dotnet-wasm-features`
-        );
     }
 }
 
