@@ -28,6 +28,7 @@ namespace Internal.JitInterface
         ARM64_Atomics = InstructionSet_ARM64.Atomics,
         ARM64_Vector64 = InstructionSet_ARM64.Vector64,
         ARM64_Vector128 = InstructionSet_ARM64.Vector128,
+        ARM64_VectorT = InstructionSet_ARM64.VectorT,
         ARM64_Dczva = InstructionSet_ARM64.Dczva,
         ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         ARM64_VectorT128 = InstructionSet_ARM64.VectorT128,
@@ -164,32 +165,33 @@ namespace Internal.JitInterface
         Atomics = 9,
         Vector64 = 10,
         Vector128 = 11,
-        Dczva = 12,
-        Rcpc = 13,
-        VectorT128 = 14,
-        Rcpc2 = 15,
-        Sve = 16,
-        Sve2 = 17,
-        Sha3 = 18,
-        Sm4 = 19,
-        SveAes = 20,
-        SveSha3 = 21,
-        SveSm4 = 22,
-        ArmBase_Arm64 = 23,
-        AdvSimd_Arm64 = 24,
-        Aes_Arm64 = 25,
-        Crc32_Arm64 = 26,
-        Dp_Arm64 = 27,
-        Rdm_Arm64 = 28,
-        Sha1_Arm64 = 29,
-        Sha256_Arm64 = 30,
-        Sve_Arm64 = 31,
-        Sve2_Arm64 = 32,
-        Sha3_Arm64 = 33,
-        Sm4_Arm64 = 34,
-        SveAes_Arm64 = 35,
-        SveSha3_Arm64 = 36,
-        SveSm4_Arm64 = 37,
+        VectorT = 12,
+        Dczva = 13,
+        Rcpc = 14,
+        VectorT128 = 15,
+        Rcpc2 = 16,
+        Sve = 17,
+        Sve2 = 18,
+        Sha3 = 19,
+        Sm4 = 20,
+        SveAes = 21,
+        SveSha3 = 22,
+        SveSm4 = 23,
+        ArmBase_Arm64 = 24,
+        AdvSimd_Arm64 = 25,
+        Aes_Arm64 = 26,
+        Crc32_Arm64 = 27,
+        Dp_Arm64 = 28,
+        Rdm_Arm64 = 29,
+        Sha1_Arm64 = 30,
+        Sha256_Arm64 = 31,
+        Sve_Arm64 = 32,
+        Sve2_Arm64 = 33,
+        Sha3_Arm64 = 34,
+        Sm4_Arm64 = 35,
+        SveAes_Arm64 = 36,
+        SveSha3_Arm64 = 37,
+        SveSm4_Arm64 = 38,
     }
 
     public enum InstructionSet_RiscV64
@@ -429,6 +431,7 @@ namespace Internal.JitInterface
                 {
                 case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
                 case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
+                case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
                 }
                 break;
             case TargetArchitecture.X64:
@@ -540,6 +543,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
@@ -836,6 +841,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector128);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
@@ -1093,6 +1100,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
+                    yield return new InstructionSetInfo("VectorT", "", InstructionSet.ARM64_VectorT, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
                     yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
                     yield return new InstructionSetInfo("vectort128", "", InstructionSet.ARM64_VectorT128, true);
