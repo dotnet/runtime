@@ -3,7 +3,7 @@
     DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
     and makes dump paths available to the test project.
 
-    Dump output: $(DumpOutputDir)/{DumpType}/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
+    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DumpType}/{DebuggeeName}/{DebuggeeName}.dmp
 
     Each Debuggee × RuntimeVersion × DumpType combination produces one dump.
     Dump generation does NOT happen during Build — invoke GenerateAllDumps explicitly.
@@ -132,12 +132,15 @@
   <Target Name="_GenerateSingleDump">
     <PropertyGroup>
       <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
-      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(_DumpTypeDirName)', '$(DumpRuntimeVersion)', '$(DebuggeeName)'))</_DumpDir>
+      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(_DumpTypeDirName)', '$(DebuggeeName)'))</_DumpDir>
       <_DumpFile>$([MSBuild]::NormalizePath('$(_DumpDir)', '$(DebuggeeName).dmp'))</_DumpFile>
     </PropertyGroup>
 
     <!-- Skip if dump already exists -->
     <Message Text="[$(_DumpTypeName)] Dump already exists: $(_DumpFile). Skipping." Condition="Exists('$(_DumpFile)')" Importance="high" />
+
+    <!-- Skip heap dumps for net10.0 — cDAC is not supported in heap dumps for that version. -->
+    <Message Text="[$(_DumpTypeName)] Skipping heap dump for $(DumpRuntimeVersion) (not supported)." Condition="'$(_DumpTypeName)' == 'Heap' AND '$(DumpRuntimeVersion)' == 'net10.0'" Importance="high" />
 
     <!-- Determine build/run strategy based on runtime version -->
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -148,7 +151,7 @@
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
              Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
-             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' != 'local'" />
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'net10.0' AND '$(_DumpTypeName)' != 'Heap'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
   </Target>
@@ -183,7 +186,7 @@
       <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained -o &quot;$(_PublishDir)&quot; --nologo"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained --nologo -o &quot;$(_PublishDir).&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />

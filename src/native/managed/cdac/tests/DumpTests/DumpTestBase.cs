@@ -67,6 +67,10 @@ public abstract class DumpTestBase : IAsyncLifetime
         if (IsVersionSkipped(RuntimeVersion))
             throw new SkipTestException($"RuntimeVersion '{RuntimeVersion}' is in SkipDumpVersions list.");
 
+        if (string.Equals(DumpType, "heap", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(RuntimeVersion, "net10.0", StringComparison.OrdinalIgnoreCase))
+            throw new SkipTestException("cDAC is not supported in heap dumps for net10.0.");
+
         string dumpPath = GetDumpPath();
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -134,7 +138,7 @@ public abstract class DumpTestBase : IAsyncLifetime
             dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
         }
 
-        return Path.Combine(dumpRoot, DumpType, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
+        return Path.Combine(dumpRoot, RuntimeVersion, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
     }
 
     /// <summary>

@@ -13,7 +13,7 @@
     Dump types are controlled per-debuggee via the DumpTypes property in each
     debuggee's csproj (default: Heap, set in Debuggees/Directory.Build.props).
 
-    Dumps are written to: artifacts\dumps\cdac\{dumptype}\{version}\{debuggee}\
+    Dumps are written to: artifacts\dumps\cdac\{version}\{dumptype}\{debuggee}\
     The script must be run from the DumpTests directory.
 
 .PARAMETER Action
@@ -41,7 +41,7 @@
     Path to a tar.gz archive of dumps downloaded from CI.
     When specified, the archive is extracted and tests are run against
     the extracted dumps. Skips dump generation entirely.
-    The archive should contain: {dumptype}/{version}/{debuggee}/{debuggee}.dmp
+    The archive should contain: {version}/{dumptype}/{debuggee}/{debuggee}.dmp
 
 .EXAMPLE
     .\RunDumpTests.ps1
