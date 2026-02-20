@@ -326,6 +326,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
+          # TEMPORARY: narrowed to linux_arm64 only for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442), was also osx_arm64
           - linux_arm64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
@@ -367,6 +368,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
+          # TEMPORARY: narrowed to linux_x64 only for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442), was also windows_x64
           - linux_x64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
@@ -1603,6 +1605,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
+          # TEMPORARY: narrowed to linux_x64 and linux_arm64 only for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442), was also osx_arm64, osx_x64, windows_x64
           - linux_x64
           - linux_arm64
           helixQueueGroup: pr
