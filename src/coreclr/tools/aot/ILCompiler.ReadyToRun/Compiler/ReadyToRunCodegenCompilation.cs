@@ -227,6 +227,9 @@ namespace ILCompiler
                     }
                     catch (RequiresRuntimeJitException)
                     {
+                        // The P/Invoke has features the R2R emitter can't handle
+                        // (e.g., non-blittable parameters). Leave methodIL null so
+                        // the method falls back to JIT at runtime.
                     }
                 }
 

@@ -719,11 +719,13 @@ namespace ILCompiler
             if (!Marshaller.IsMarshallingRequired(method))
                 return true;
 
-            // Even when marshalling is required, we can still generate stubs for ObjC
-            // objc_msgSend P/Invokes that only need a pending exception check — the R2R
-            // PInvokeILEmitter handles this by emitting a call to
-            // ObjectiveCMarshal.ThrowPendingExceptionObject() after the native call.
-            if (Marshaller.IsObjCMessageSendPInvoke(method))
+            // ObjC objc_msgSend P/Invokes need an IL stub (so IsMarshallingRequired
+            // returns true) but only for a pending exception check, not actual type
+            // marshalling. The R2R PInvokeILEmitter can handle this by emitting a call
+            // to ObjectiveCMarshal.ThrowPendingExceptionObject() after the native call.
+            // If the P/Invoke also has non-blittable parameters, EmitIL will throw
+            // RequiresRuntimeJitException and the method falls back to JIT.
+            if (MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata()))
                 return true;
 
             return false;
