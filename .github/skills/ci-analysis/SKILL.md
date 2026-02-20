@@ -9,7 +9,7 @@ Analyze CI build status and test failures in Azure DevOps and Helix for dotnet r
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
-**Workflow**: Gather PR context (Step 0) → run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
+**Workflow**: Gather PR context (Step 0) → run the script → read the human-readable output + `[CI_ANALYSIS_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice. For supplementary investigation beyond the script, MCP tools (AzDO, Helix, GitHub) provide structured access when available; the script and `gh` CLI work independently when they're not.
 
 ## When to Use This Skill
 
@@ -75,7 +75,7 @@ The script operates in three distinct modes depending on what information you ha
 ## What the Script Does
 
 ### PR Analysis Mode (`-PRNumber`)
-1. Discovers AzDO builds associated with the PR (via `gh pr checks` — finds failing builds and one non-failing build as fallback; for full build history, use `azure-devops-pipelines_get_builds`)
+1. Discovers AzDO builds associated with the PR (from GitHub check status; for full build history, query AzDO builds on `refs/pull/{PR}/merge` branch)
 2. Fetches Build Analysis for known issues
 3. Gets failed jobs from Azure DevOps timeline
 4. **Separates canceled jobs from failed jobs** (canceled may be dependency-canceled or timeout-canceled)
@@ -102,7 +102,7 @@ The script operates in three distinct modes depending on what information you ha
 
 **Build Analysis check status**: The "Build Analysis" GitHub check is **green** only when *every* failure is matched to a known issue. If it's **red**, at least one failure is unaccounted for — do NOT claim "all failures are known issues" just because some known issues were found. You must verify each failing job is covered by a specific known issue before calling it safe to retry.
 
-**Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: use `hlx_status` on each Helix job in the timed-out build. If all work items passed, the build effectively passed.
+**Canceled/timed-out jobs**: Jobs canceled due to earlier stage failures or AzDO timeouts. Dependency-canceled jobs don't need investigation. **Timeout-canceled jobs may have all-passing Helix results** — the "failure" is just the AzDO job wrapper timing out, not actual test failures. To verify: use `hlx_status` on each Helix job in the timed-out build (include passed work items). If all work items passed, the build effectively passed.
 
 > ❌ **Don't dismiss timed-out builds.** A build marked "failed" due to a 3-hour AzDO timeout can have 100% passing Helix work items. Check before concluding it failed.
 
@@ -128,12 +128,11 @@ Error categories: `test-failure`, `build-error`, `test-timeout`, `crash` (exit c
 
 When an AzDO job is canceled (timeout) or Helix work items show `Crash` (exit code -4), the tests may have actually passed. Follow this procedure:
 
-1. **Find the Helix job IDs** — Read the AzDO "Send to Helix" step log (use `azure-devops-pipelines_get_build_log_by_id`) and search for lines containing `Sent Helix Job`. Extract the job GUIDs.
+1. **Find the Helix job IDs** — Read the AzDO "Send to Helix" step log and search for lines containing `Sent Helix Job`. Extract the job GUIDs.
 
-2. **Check Helix job status** — Use `hlx_batch_status` (accepts comma-separated job IDs) or `hlx_status` per job. Look at `failedCount` vs `passedCount`.
+2. **Check Helix job status** — Get pass/fail summary for each job. Look at `failedCount` vs `passedCount`.
 
-3. **For work items marked Crash/Failed** — Use `hlx_files` to check if `testResults.xml` was uploaded. If it exists:
-   - Download it with `hlx_download_url`
+3. **For work items marked Crash/Failed** — Check if tests actually passed despite the crash. Try structured test results first (TRX parsing), then search for pass/fail counts in result files without downloading, then download as last resort:
    - Parse the XML: `total`, `passed`, `failed` attributes on the `<assembly>` element
    - If `failed=0` and `passed > 0`, the tests passed — the "crash" is the wrapper timing out after test completion
 
@@ -255,6 +254,6 @@ Before stating a failure's cause, verify your claim:
 1. Check if same test fails on the target branch before assuming transient
 2. Look for `[ActiveIssue]` attributes for known skipped tests
 3. Use `-SearchMihuBot` for semantic search of related issues
-4. Use the binlog MCP tools (`mcp-binlog-tool-*`) to search binlogs for Helix job IDs, build errors, and properties
+4. Use binlog analysis tools to search binlogs for Helix job IDs, build errors, and properties
 5. `gh pr checks --json` valid fields: `bucket`, `completedAt`, `description`, `event`, `link`, `name`, `startedAt`, `state`, `workflow` — no `conclusion` field, `state` has `SUCCESS`/`FAILURE` directly
 6. "Canceled" ≠ "Failed" — canceled jobs may have recoverable Helix results. Check artifacts before concluding results are lost.

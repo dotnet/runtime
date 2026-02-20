@@ -520,18 +520,6 @@ struct PInvokeTransitionFrame
 #pragma warning(pop)
 
 #ifdef TARGET_AMD64
-// RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
-#define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(TARGET_X86)
-// RBX, RSI, RDI, RSP, RAX, RCX
-#define PInvokeTransitionFrame_SaveRegs_count 6
-#elif defined(TARGET_ARM)
-// R4-R10, R0, SP
-#define PInvokeTransitionFrame_SaveRegs_count 9
-#endif
-#define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
-
-#ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48
 #elif defined(TARGET_ARM64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x48

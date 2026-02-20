@@ -54,7 +54,7 @@ namespace System.Threading.Tasks
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
-    [DebuggerTypeProxy(typeof(SystemThreadingTasks_FutureDebugView<>))]
+    [DebuggerTypeProxy(typeof(SystemThreadingTasks_TaskOfTResultDebugView<>))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
@@ -1172,16 +1172,16 @@ namespace System.Threading.Tasks
                 out TaskCreationOptions creationOptions,
                 out InternalTaskOptions internalOptions);
 
-            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
+            Task<TNewResult> continuationTask = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
                 this, continuationFunction, null,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationFuture, scheduler, cancellationToken, continuationOptions);
+            ContinueWithCore(continuationTask, scheduler, cancellationToken, continuationOptions);
 
-            return continuationFuture;
+            return continuationTask;
         }
         #endregion
 
@@ -1393,16 +1393,16 @@ namespace System.Threading.Tasks
                 out TaskCreationOptions creationOptions,
                 out InternalTaskOptions internalOptions);
 
-            Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
+            Task<TNewResult> continuationTask = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
                 this, continuationFunction, state,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationFuture, scheduler, cancellationToken, continuationOptions);
+            ContinueWithCore(continuationTask, scheduler, cancellationToken, continuationOptions);
 
-            return continuationFuture;
+            return continuationTask;
         }
 
         #endregion
@@ -1411,17 +1411,17 @@ namespace System.Threading.Tasks
     }
 
     // Proxy class for better debugging experience
-    internal sealed class SystemThreadingTasks_FutureDebugView<TResult>
+    internal sealed class SystemThreadingTasks_TaskOfTResultDebugView<TResult>
     {
         private readonly Task<TResult> m_task;
 
-        public SystemThreadingTasks_FutureDebugView(Task<TResult> task)
+        public SystemThreadingTasks_TaskOfTResultDebugView(Task<TResult> task)
         {
             Debug.Assert(task != null);
             m_task = task;
         }
 
-        public TResult? Result => m_task.Status == TaskStatus.RanToCompletion ? m_task.Result : default;
+        public TResult Result => m_task.IsCompleted ? m_task.Result : default!;
         public object? AsyncState => m_task.AsyncState;
         public TaskCreationOptions CreationOptions => m_task.CreationOptions;
         public Exception? Exception => m_task.Exception;
