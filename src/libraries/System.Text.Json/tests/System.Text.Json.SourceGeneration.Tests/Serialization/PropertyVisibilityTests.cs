@@ -47,17 +47,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override async Task Honor_JsonSerializablePropertyAttribute_OnProperties()
         {
-            string json = @"{
-                ""MyInt"":1,
-                ""MyString"":""Hello"",
-                ""MyFloat"":2,
-                ""MyUri"":""https://microsoft.com""
-            }";
-
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json));
-
-            var obj = new MyClass_WithNonPublicAccessors_WithPropertyAttributes();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
+            // With unsafe accessors, inaccessible [JsonInclude] properties are now supported in source gen.
+            await base.Honor_JsonSerializablePropertyAttribute_OnProperties();
         }
 
         [Theory]
@@ -66,8 +57,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
         public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
-            bool isDeserializationSupported = type == typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute);
-
+            // With unsafe accessors, all init-only [JsonInclude] properties are now supported in source gen.
             PropertyInfo property = type.GetProperty("MyInt");
 
             // Init-only properties can be serialized.
@@ -75,74 +65,61 @@ namespace System.Text.Json.SourceGeneration.Tests
             property.SetValue(obj, 1);
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
 
-            // Deserializing JsonInclude is only supported for internal properties
-            if (isDeserializationSupported)
-            {
-                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
-                Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
-            }
-            else
-            {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
-            }
+            // Deserialization is now supported for all access levels.
+            obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
         }
 
         [Fact]
         public override async Task HonorCustomConverter_UsingPrivateSetter()
         {
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter());
-
-            string json = @"{""MyEnum"":""AnotherValue"",""MyInt"":2}";
-
-            // Deserialization baseline, without enum converter, we get JsonException. NB order of members in deserialized type is significant for this assertion to succeed.
-            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
-
-            // JsonInclude not supported in source gen.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options));
-
-            // JsonInclude on private getters not supported.
-            var obj = new StructWithPropertiesWithConverter();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj, options));
+            // With unsafe accessors, inaccessible [JsonInclude] properties are now supported in source gen.
+            await base.HonorCustomConverter_UsingPrivateSetter();
         }
 
         [Fact]
         public override async Task Public_And_NonPublicPropertyAccessors_PropertyAttributes()
         {
-            string json = @"{""W"":1,""X"":2,""Y"":3,""Z"":4}";
-
-            var obj = await Serializer.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
-            Assert.Equal(1, obj.W);
-            Assert.Equal(2, obj.X);
-            Assert.Equal(3, obj.Y);
-            Assert.Equal(4, obj.GetZ);
-
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
+            // With unsafe accessors, inaccessible [JsonInclude] properties are now supported in source gen.
+            await base.Public_And_NonPublicPropertyAccessors_PropertyAttributes();
         }
 
         [Fact]
         public override async Task HonorJsonPropertyName_PrivateGetter()
         {
-            string json = @"{""prop1"":1}";
-
-            var obj = await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
-            Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
-
-            // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
+            // With unsafe accessors, inaccessible [JsonInclude] properties are now supported in source gen.
+            await base.HonorJsonPropertyName_PrivateGetter();
         }
 
         [Fact]
         public override async Task HonorJsonPropertyName_PrivateSetter()
         {
-            string json = @"{""prop2"":2}";
+            // With unsafe accessors, inaccessible [JsonInclude] properties are now supported in source gen.
+            await base.HonorJsonPropertyName_PrivateSetter();
+        }
 
-            // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json));
+        [Theory]
+        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
+        public override async Task NonPublicProperty_JsonInclude_WorksAsExpected(Type type, bool _ = true)
+        {
+            // With unsafe accessors, all [JsonInclude] members are now supported in source gen.
+            string json = """{"MyString":"value"}""";
+            MemberInfo memberInfo = type.GetMember("MyString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)[0];
 
-            var obj = new StructWithPropertiesWithJsonPropertyName_PrivateSetter();
-            obj.SetProxy(2);
-            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
+            object result = await Serializer.DeserializeWrapper("""{"MyString":"value"}""", type);
+            Assert.IsType(type, result);
+            Assert.Equal(memberInfo is PropertyInfo p ? p.GetValue(result) : ((FieldInfo)memberInfo).GetValue(result), "value");
+
+            string actualJson = await Serializer.SerializeWrapper(result, type);
+            Assert.Equal(json, actualJson);
         }
 
         [Fact]
@@ -339,6 +316,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassWithPrivateJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithProtectedJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithMixedAccessibilityJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateInitOnlyProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
+        [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
         [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
@@ -617,6 +600,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassWithPrivateJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithProtectedJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithMixedAccessibilityJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateInitOnlyProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
+        [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
         [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
