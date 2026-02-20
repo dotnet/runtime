@@ -145,6 +145,7 @@ UnwindInfoTable::UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG
     iRangeStart = rangeStart;
     iRangeEnd = rangeEnd;
     hHandle = NULL;
+    m_nPendingFlushes = 0;
     pTable = new T_RUNTIME_FUNCTION[cTableMaxCount];
 }
 
@@ -224,104 +225,134 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (!s_publishingActive)
         return;
 
-    CrstHolder ch(s_pUnwindInfoTableLock);
+    // For the fast path, we defer the RtlGrowFunctionTable call to outside the lock to
+    // reduce contention. These capture the state needed for the deferred call.
+    PVOID pendingFlushHandle = NULL;
+    ULONG pendingFlushCount = 0;
+    UnwindInfoTable* pendingFlushTable = NULL;
 
-    UnwindInfoTable* unwindInfo = *unwindInfoPtr;
-    // was the original list null, If so lazy initialize.
-    if (unwindInfo == NULL)
     {
-        // We can choose the average method size estimate dynamically based on past experience
-        // 128 is the estimated size of an average method, so we can accurately predict
-        // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
+        CrstHolderWithState ch(s_pUnwindInfoTableLock);
 
-        ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
-
-        // To ensure the test the growing logic in debug code make the size much smaller.
-        INDEBUG(size = size / 4 + 1);
-        unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
-        unwindInfo->Register();
-        *unwindInfoPtr = unwindInfo;
-    }
-    _ASSERTE(unwindInfo != NULL);        // If new had failed, we would have thrown OOM
-    _ASSERTE(unwindInfo->cTableCurCount <= unwindInfo->cTableMaxCount);
-    _ASSERTE(unwindInfo->iRangeStart == rangeStart);
-    _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
-
-    // Means we had a failure publishing to the OS, in this case we give up
-    if (unwindInfo->hHandle == NULL)
-        return;
-
-    // Check for the fast path: we are adding the end of an UnwindInfoTable with space
-    if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount)
-    {
-        if (unwindInfo->cTableCurCount == 0 ||
-            unwindInfo->pTable[unwindInfo->cTableCurCount-1].BeginAddress < data->BeginAddress)
+        UnwindInfoTable* unwindInfo = *unwindInfoPtr;
+        // was the original list null, If so lazy initialize.
+        if (unwindInfo == NULL)
         {
-            // Yeah, we can simply add to the end of table and we are done!
-            unwindInfo->pTable[unwindInfo->cTableCurCount] = *data;
-            unwindInfo->cTableCurCount++;
+            // We can choose the average method size estimate dynamically based on past experience
+            // 128 is the estimated size of an average method, so we can accurately predict
+            // how many RUNTIME_FUNCTION entries are in each chunk we allocate.
 
-            // Add to the function table
-            pRtlGrowFunctionTable(unwindInfo->hHandle, unwindInfo->cTableCurCount);
+            ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
 
-            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%p TO END, now 0x%x entries\n",
+            // To ensure the test the growing logic in debug code make the size much smaller.
+            INDEBUG(size = size / 4 + 1);
+            unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
+            unwindInfo->Register();
+            *unwindInfoPtr = unwindInfo;
+        }
+        _ASSERTE(unwindInfo != NULL);        // If new had failed, we would have thrown OOM
+        _ASSERTE(unwindInfo->cTableCurCount <= unwindInfo->cTableMaxCount);
+        _ASSERTE(unwindInfo->iRangeStart == rangeStart);
+        _ASSERTE(unwindInfo->iRangeEnd == rangeEnd);
+
+        // Means we had a failure publishing to the OS, in this case we give up
+        if (unwindInfo->hHandle == NULL)
+            return;
+
+        // Check for the fast path: we are adding the end of an UnwindInfoTable with space
+        if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount)
+        {
+            if (unwindInfo->cTableCurCount == 0 ||
+                unwindInfo->pTable[unwindInfo->cTableCurCount-1].BeginAddress < data->BeginAddress)
+            {
+                // Yeah, we can simply add to the end of table and we are done!
+                unwindInfo->pTable[unwindInfo->cTableCurCount] = *data;
+                unwindInfo->cTableCurCount++;
+
+                // Schedule the RtlGrowFunctionTable call outside the lock to reduce contention.
+                // Increment m_nPendingFlushes while holding the lock to prevent the table and
+                // its handle from being freed before we make the deferred call.
+                pendingFlushHandle = unwindInfo->hHandle;
+                pendingFlushCount = unwindInfo->cTableCurCount;
+                pendingFlushTable = unwindInfo;
+                InterlockedIncrement(&unwindInfo->m_nPendingFlushes);
+
+                STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%p TO END, now 0x%x entries\n",
+                    unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
+                    data->BeginAddress, unwindInfo->cTableCurCount);
+
+                ch.Release();
+                // Fall through to the deferred OS call below.
+            }
+        }
+
+        if (pendingFlushTable == NULL)
+        {
+            // OK we need to rellocate the table and reregister.  First figure out our 'desiredSpace'
+            // We could imagine being much more efficient for 'bulk' updates, but we don't try
+            // because we assume that this is rare and we want to keep the code simple
+
+            ULONG usedSpace = unwindInfo->cTableCurCount - unwindInfo->cDeletedEntries;
+            ULONG desiredSpace = usedSpace * 5 / 4 + 1;        // Increase by 20%
+            // Be more aggressive if we used all of our space;
+            if (usedSpace == unwindInfo->cTableMaxCount)
+                desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
+
+            STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x\n",
                 unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-                data->BeginAddress, unwindInfo->cTableCurCount);
+                unwindInfo->cTableCurCount, unwindInfo->cTableMaxCount, desiredSpace, data->BeginAddress);
+
+            UnwindInfoTable* newTab = new UnwindInfoTable(unwindInfo->iRangeStart, unwindInfo->iRangeEnd, desiredSpace);
+
+            // Copy in the entries, removing deleted entries and adding the new entry wherever it belongs
+            int toIdx = 0;
+            bool inserted = false;    // Have we inserted 'data' into the table
+            for(ULONG fromIdx = 0; fromIdx < unwindInfo->cTableCurCount; fromIdx++)
+            {
+                if (!inserted && data->BeginAddress < unwindInfo->pTable[fromIdx].BeginAddress)
+                {
+                    STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x\n", toIdx);
+                    newTab->pTable[toIdx++] = *data;
+                    inserted = true;
+                }
+                if (unwindInfo->pTable[fromIdx].UnwindData != 0)	// A 'non-deleted' entry
+                    newTab->pTable[toIdx++] = unwindInfo->pTable[fromIdx];
+            }
+            if (!inserted)
+            {
+                STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x\n", toIdx);
+                newTab->pTable[toIdx++] = *data;
+            }
+            newTab->cTableCurCount = toIdx;
+            STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x\n",
+                newTab->cTableCurCount, newTab->cTableMaxCount);
+            _ASSERTE(newTab->cTableCurCount <= newTab->cTableMaxCount);
+
+            // Wait for any deferred RtlGrowFunctionTable calls on the old table to complete.
+            // Those callers have already released the lock, so they can proceed independently.
+            while (VolatileLoad(&unwindInfo->m_nPendingFlushes) > 0)
+                YieldProcessorNormalized();
+
+            // Unregister the old table
+            *unwindInfoPtr = 0;
+            unwindInfo->UnRegister();
+
+            // Note that there is a short time when we are not publishing...
+
+            // Register the new table
+            newTab->Register();
+            *unwindInfoPtr = newTab;
+
+            delete unwindInfo;
             return;
         }
     }
 
-    // OK we need to rellocate the table and reregister.  First figure out our 'desiredSpace'
-    // We could imagine being much more efficient for 'bulk' updates, but we don't try
-    // because we assume that this is rare and we want to keep the code simple
-
-    ULONG usedSpace = unwindInfo->cTableCurCount - unwindInfo->cDeletedEntries;
-    ULONG desiredSpace = usedSpace * 5 / 4 + 1;        // Increase by 20%
-    // Be more aggressive if we used all of our space;
-    if (usedSpace == unwindInfo->cTableMaxCount)
-        desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
-
-    STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x\n",
-        unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd,
-        unwindInfo->cTableCurCount, unwindInfo->cTableMaxCount, desiredSpace, data->BeginAddress);
-
-    UnwindInfoTable* newTab = new UnwindInfoTable(unwindInfo->iRangeStart, unwindInfo->iRangeEnd, desiredSpace);
-
-    // Copy in the entries, removing deleted entries and adding the new entry wherever it belongs
-    int toIdx = 0;
-    bool inserted = false;    // Have we inserted 'data' into the table
-    for(ULONG fromIdx = 0; fromIdx < unwindInfo->cTableCurCount; fromIdx++)
-    {
-        if (!inserted && data->BeginAddress < unwindInfo->pTable[fromIdx].BeginAddress)
-        {
-            STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x\n", toIdx);
-            newTab->pTable[toIdx++] = *data;
-            inserted = true;
-        }
-        if (unwindInfo->pTable[fromIdx].UnwindData != 0)	// A 'non-deleted' entry
-            newTab->pTable[toIdx++] = unwindInfo->pTable[fromIdx];
-    }
-    if (!inserted)
-    {
-        STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x\n", toIdx);
-        newTab->pTable[toIdx++] = *data;
-    }
-    newTab->cTableCurCount = toIdx;
-    STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x\n",
-        newTab->cTableCurCount, newTab->cTableMaxCount);
-    _ASSERTE(newTab->cTableCurCount <= newTab->cTableMaxCount);
-
-    // Unregister the old table
-    *unwindInfoPtr = 0;
-    unwindInfo->UnRegister();
-
-    // Note that there is a short time when we are not publishing...
-
-    // Register the new table
-    newTab->Register();
-    *unwindInfoPtr = newTab;
-
-    delete unwindInfo;
+    // Fast path: make the deferred OS call outside the lock to reduce contention.
+    // The m_nPendingFlushes increment above ensures the table and handle remain valid.
+    _ASSERTE(pendingFlushTable != NULL);
+    pRtlGrowFunctionTable(pendingFlushHandle, pendingFlushCount);
+    InterlockedDecrement(&pendingFlushTable->m_nPendingFlushes);
 }
 
 /*****************************************************************************/
