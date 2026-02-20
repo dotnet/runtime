@@ -587,6 +587,7 @@ namespace System.Text.Json.SourceGeneration
                     out JsonNumberHandling? numberHandling,
                     out JsonUnmappedMemberHandling? unmappedMemberHandling,
                     out JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
+                    out JsonIgnoreCondition? typeIgnoreCondition,
                     out bool foundJsonConverterAttribute,
                     out TypeRef? customConverterType,
                     out bool isPolymorphic);
@@ -691,7 +692,7 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeIgnoreCondition, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
                     propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
@@ -748,6 +749,7 @@ namespace System.Text.Json.SourceGeneration
                 out JsonNumberHandling? numberHandling,
                 out JsonUnmappedMemberHandling? unmappedMemberHandling,
                 out JsonObjectCreationHandling? objectCreationHandling,
+                out JsonIgnoreCondition? typeIgnoreCondition,
                 out bool foundJsonConverterAttribute,
                 out TypeRef? customConverterType,
                 out bool isPolymorphic)
@@ -755,6 +757,7 @@ namespace System.Text.Json.SourceGeneration
                 numberHandling = null;
                 unmappedMemberHandling = null;
                 objectCreationHandling = null;
+                typeIgnoreCondition = null;
                 customConverterType = null;
                 foundJsonConverterAttribute = false;
                 isPolymorphic = false;
@@ -782,6 +785,22 @@ namespace System.Text.Json.SourceGeneration
                     {
                         customConverterType = GetConverterTypeFromJsonConverterAttribute(contextType, typeToGenerate.Type, attributeData);
                         foundJsonConverterAttribute = true;
+                    }
+
+                    if (attributeType?.ContainingAssembly.Name == SystemTextJsonNamespace &&
+                        attributeType.ToDisplayString() == JsonIgnoreAttributeFullName)
+                    {
+                        ImmutableArray<KeyValuePair<string, TypedConstant>> namedArgs = attributeData.NamedArguments;
+
+                        if (namedArgs.Length == 0)
+                        {
+                            typeIgnoreCondition = JsonIgnoreCondition.Always;
+                        }
+                        else if (namedArgs.Length == 1 &&
+                            namedArgs[0].Value.Type?.ToDisplayString() == JsonIgnoreConditionFullName)
+                        {
+                            typeIgnoreCondition = (JsonIgnoreCondition)namedArgs[0].Value.Value!;
+                        }
                     }
 
                     if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
@@ -978,6 +997,7 @@ namespace System.Text.Json.SourceGeneration
             private List<PropertyGenerationSpec> ParsePropertyGenerationSpecs(
                 INamedTypeSymbol contextType,
                 in TypeToGenerate typeToGenerate,
+                JsonIgnoreCondition? typeIgnoreCondition,
                 SourceGenerationOptionsSpec? options,
                 out bool hasExtensionDataProperty,
                 out List<int>? fastPathPropertyIndices)
@@ -1060,6 +1080,7 @@ namespace System.Text.Json.SourceGeneration
                         typeLocation,
                         memberType,
                         memberInfo,
+                        typeIgnoreCondition,
                         ref hasExtensionDataProperty,
                         generationMode,
                         options);
@@ -1208,6 +1229,7 @@ namespace System.Text.Json.SourceGeneration
                 Location? typeLocation,
                 ITypeSymbol memberType,
                 ISymbol memberInfo,
+                JsonIgnoreCondition? typeIgnoreCondition,
                 ref bool typeHasExtensionDataProperty,
                 JsonSourceGenerationMode? generationMode,
                 SourceGenerationOptionsSpec? options)
@@ -1226,6 +1248,9 @@ namespace System.Text.Json.SourceGeneration
                     out int order,
                     out bool isExtensionData,
                     out bool hasJsonRequiredAttribute);
+
+                // Fall back to the type-level [JsonIgnore] if no member-level attribute is specified.
+                ignoreCondition ??= typeIgnoreCondition;
 
                 ProcessMember(
                     contextType,

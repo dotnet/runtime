@@ -230,6 +230,9 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
+            // Fall back to the type-level [JsonIgnore] if no member-level attribute is specified.
+            ignoreCondition ??= memberInfo.DeclaringType?.GetUniqueCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
+
             if (JsonTypeInfo.IsInvalidForSerialization(typeToConvert))
             {
                 if (ignoreCondition == JsonIgnoreCondition.Always)
