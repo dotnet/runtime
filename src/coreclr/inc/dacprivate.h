@@ -857,7 +857,17 @@ struct MSLAYOUT DacpGCInterestingInfoData
         ISOSDacInterface3 *psos3 = NULL;
         if (SUCCEEDED(hr = sos->QueryInterface(__uuidof(ISOSDacInterface3), (void**) &psos3)))
         {
-            hr = psos3->GetGCGlobalMechanisms(globalMechanisms);
+            // GetGCGlobalMechanisms writes MAX_GLOBAL_GC_MECHANISMS_COUNT entries (currently 6)
+            // into the provided buffer with no count parameter. Over-allocate so that a newer
+            // runtime writing more entries won't overflow our buffer. We only read back
+            // DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT elements into globalMechanisms.
+            size_t buffer[256] = {};
+            hr = psos3->GetGCGlobalMechanisms(buffer);
+            if (SUCCEEDED(hr))
+            {
+                for (int i = 0; i < DAC_MAX_GLOBAL_GC_MECHANISMS_COUNT; i++)
+                    globalMechanisms[i] = buffer[i];
+            }
             psos3->Release();
         }
         return hr;

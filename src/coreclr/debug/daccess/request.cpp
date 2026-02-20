@@ -120,7 +120,7 @@ BOOL DacValidateEEClass(PTR_EEClass pEEClass)
             // PREfix.
             retval = FALSE;
         }
-        else if (pEEClass != pMethodTable->GetClass())
+        else if (pEEClass != pMethodTable->GetClassWithPossibleAV())
         {
             retval = FALSE;
         }
@@ -698,7 +698,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         return E_UNEXPECTED;
 
     const WCHAR callerPrefix[] = W("caller.");
-    // Include null terminator in prefixLen/regLen because wcscpy_s will fail otherwise
+    // Include null terminator in prefixLen/regLen for the 'needed' count
     unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix);
     unsigned int regLen = (unsigned int)u16_strlen(regs[regNum]) + 1;
     unsigned int needed = (callerFrame ? prefixLen - 1 : 0) + regLen;
@@ -2066,11 +2066,12 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
     }
     else
     {
-        data->wNumInstanceFields = pMT->GetNumInstanceFields();
-        data->wNumStaticFields = pMT->GetNumStaticFields();
-        data->wNumThreadStaticFields = pMT->GetNumThreadStaticFields();
+        PTR_EEClass pClass = pMT->GetClassWithPossibleAV();
+        data->wNumInstanceFields = pClass->GetNumInstanceFields();
+        data->wNumStaticFields = pClass->GetNumStaticFields();
+        data->wNumThreadStaticFields = pClass->GetNumThreadStaticFields();
 
-        data->FirstField = PTR_TO_TADDR(pMT->GetClass()->GetFieldDescList());
+        data->FirstField = PTR_TO_TADDR(pClass->GetFieldDescList());
 
         data->wContextStaticsSize = 0;
         data->wContextStaticOffset = 0;
@@ -5074,7 +5075,7 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
                 dac_gc_heap heap = LoadGcHeapData(heapAddress);
                 dac_gc_heap* pHeap = &heap;
                 DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
-                DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+                DPTR(uint8_t*) pFillPointerArray = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
                 for (unsigned int i = 0; i < numFillPointers; ++i)
                 {
                     pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
@@ -5098,6 +5099,8 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
 {
     if (methodTable == 0 || assemblyLoadContext == NULL)
         return E_INVALIDARG;
+
+    *assemblyLoadContext = 0;
 
     SOSDacEnter();
     PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
@@ -5720,7 +5723,8 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
     }
     else
     {
-        if (mTable->GetClass()->GetNumThreadStaticFields() == 0)
+        PTR_EEClass pClass = mTable->GetClassWithPossibleAV();
+        if (pClass->GetNumThreadStaticFields() == 0)
         {
             if (GCStaticsAddress != NULL)
             {
