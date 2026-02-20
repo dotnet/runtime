@@ -784,9 +784,9 @@ namespace System.Text.Json.SourceGeneration
                         return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
                     }
 
-                    // Reflection fallback.
-                    string helperName = GetReflectionPropertyInfoHelperName(typeFriendlyName, property.MemberName, propertyIndex);
-                    return $"static obj => ({propertyTypeFQN}){helperName}().GetValue(obj)!";
+                    // Reflection fallback: use a cached delegate for faster access.
+                    string helperName = GetReflectionGetterHelperName(typeFriendlyName, property.MemberName, propertyIndex);
+                    return $"static obj => ({propertyTypeFQN}){helperName}()(obj)!";
                 }
 
                 return "null";
@@ -855,9 +855,9 @@ namespace System.Text.Json.SourceGeneration
                     return $"""static (obj, value) => {accessorName}(({declaringTypeFQN})obj, ({propertyTypeFQN})value!)""";
                 }
 
-                // Reflection fallback.
-                string helperName = GetReflectionPropertyInfoHelperName(typeFriendlyName, property.MemberName, propertyIndex);
-                return $"""static (obj, value) => {helperName}().SetValue(obj, value)""";
+                // Reflection fallback: use a cached delegate for faster access.
+                string helperName = GetReflectionSetterHelperName(typeFriendlyName, property.MemberName, propertyIndex);
+                return $"""static (obj, value) => {helperName}()(obj, value)""";
             }
 
             private static void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
@@ -906,11 +906,24 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else
                     {
-                        // Generate a nullable PropertyInfo cache field and a helper method for lazy initialization.
-                        string cacheName = GetReflectionMemberInfoCacheName(typeFriendlyName, property.MemberName, i);
-                        string helperName = GetReflectionPropertyInfoHelperName(typeFriendlyName, property.MemberName, i);
-                        writer.WriteLine($"private static global::System.Reflection.PropertyInfo? {cacheName};");
-                        writer.WriteLine($"private static global::System.Reflection.PropertyInfo {helperName}() => {cacheName} ??= typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!;");
+                        // Generate cached delegate fields for the reflection fallback.
+                        string declaringTypePropExpr = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+
+                        if (needsGetterAccessor)
+                        {
+                            string getterCacheName = GetReflectionGetterCacheName(typeFriendlyName, property.MemberName, i);
+                            string getterHelperName = GetReflectionGetterHelperName(typeFriendlyName, property.MemberName, i);
+                            writer.WriteLine($"private static global::System.Func<object?, object?>? {getterCacheName};");
+                            writer.WriteLine($"private static global::System.Func<object?, object?> {getterHelperName}() => {getterCacheName} ??= {declaringTypePropExpr}.GetValue;");
+                        }
+
+                        if (needsSetterAccessor)
+                        {
+                            string setterCacheName = GetReflectionSetterCacheName(typeFriendlyName, property.MemberName, i);
+                            string setterHelperName = GetReflectionSetterHelperName(typeFriendlyName, property.MemberName, i);
+                            writer.WriteLine($"private static global::System.Action<object?, object?>? {setterCacheName};");
+                            writer.WriteLine($"private static global::System.Action<object?, object?> {setterHelperName}() => {setterCacheName} ??= {declaringTypePropExpr}.SetValue;");
+                        }
                     }
                 }
             }
@@ -918,11 +931,17 @@ namespace System.Text.Json.SourceGeneration
             private static string GetUnsafeAccessorName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
                 => $"__{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
-            private static string GetReflectionMemberInfoCacheName(string typeFriendlyName, string memberName, int propertyIndex)
-                => $"s_propInfo_{typeFriendlyName}_{memberName}_{propertyIndex}";
+            private static string GetReflectionGetterCacheName(string typeFriendlyName, string memberName, int propertyIndex)
+                => $"s_getter_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
-            private static string GetReflectionPropertyInfoHelperName(string typeFriendlyName, string memberName, int propertyIndex)
-                => $"__GetPropertyInfo_{typeFriendlyName}_{memberName}_{propertyIndex}";
+            private static string GetReflectionGetterHelperName(string typeFriendlyName, string memberName, int propertyIndex)
+                => $"__GetGetter_{typeFriendlyName}_{memberName}_{propertyIndex}";
+
+            private static string GetReflectionSetterCacheName(string typeFriendlyName, string memberName, int propertyIndex)
+                => $"s_setter_{typeFriendlyName}_{memberName}_{propertyIndex}";
+
+            private static string GetReflectionSetterHelperName(string typeFriendlyName, string memberName, int propertyIndex)
+                => $"__GetSetter_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
             private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
