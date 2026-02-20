@@ -251,7 +251,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert, declaringType: memberInfo.DeclaringType);
-            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, nullabilityCtx, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
+            JsonNamingPolicy? typeNamingPolicy = typeInfo.Type.GetUniqueCustomAttribute<JsonNamingPolicyAttribute>(inherit: false)?.NamingPolicy;
+            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, nullabilityCtx, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute, typeNamingPolicy);
             return jsonPropertyInfo;
         }
 
@@ -326,7 +327,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonIgnoreCondition? ignoreCondition,
             NullabilityInfoContext nullabilityCtx,
             bool shouldCheckForRequiredKeyword,
-            bool hasJsonIncludeAttribute)
+            bool hasJsonIncludeAttribute,
+            JsonNamingPolicy? typeNamingPolicy)
         {
             Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
 
@@ -348,7 +350,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             jsonPropertyInfo.CustomConverter = customConverter;
             DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
-            DeterminePropertyName(jsonPropertyInfo, memberInfo);
+            DeterminePropertyName(jsonPropertyInfo, memberInfo, typeNamingPolicy);
             DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
             DeterminePropertyNullability(jsonPropertyInfo, memberInfo, nullabilityCtx);
 
@@ -373,7 +375,7 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
         }
 
-        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, JsonNamingPolicy? typeNamingPolicy)
         {
             JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             string? name;
@@ -381,13 +383,13 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 name = nameAttribute.Name;
             }
-            else if (propertyInfo.Options.PropertyNamingPolicy != null)
-            {
-                name = propertyInfo.Options.PropertyNamingPolicy.ConvertName(memberInfo.Name);
-            }
             else
             {
-                name = memberInfo.Name;
+                JsonNamingPolicy? effectivePolicy = memberInfo.GetCustomAttribute<JsonNamingPolicyAttribute>(inherit: false)?.NamingPolicy
+                    ?? typeNamingPolicy
+                    ?? propertyInfo.Options.PropertyNamingPolicy;
+
+                name = effectivePolicy?.ConvertName(memberInfo.Name) ?? memberInfo.Name;
             }
 
             if (name == null)
