@@ -3141,7 +3141,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (Thread.IsSingleThreaded)
+            if (!Thread.IsMultithreadingSupported)
             {
                 return false;
             }
