@@ -411,7 +411,6 @@ ARGS_NON_NULL_ALL static void FreeSSLStream(JNIEnv* env, SSLStream* sslStream)
     ReleaseGRef(env, sslStream->netOutBuffer);
     ReleaseGRef(env, sslStream->netInBuffer);
     ReleaseGRef(env, sslStream->appInBuffer);
-
     free(sslStream);
 }
 
