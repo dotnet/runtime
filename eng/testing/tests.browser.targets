@@ -123,7 +123,7 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
-    <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
+    <!-- help unit test with PlatformDetection.IsMultithreadingSupported via IsBrowserThreadingSupported env variable -->
     <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMaxParallelThreads Condition="'$(WasmEnableThreads)' == 'true' and '$(WasmXHarnessMaxParallelThreads)' == ''">8</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>

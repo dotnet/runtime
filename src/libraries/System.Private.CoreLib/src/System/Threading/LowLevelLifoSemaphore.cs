@@ -105,7 +105,7 @@ namespace System.Threading
                 }
             }
 
-            Thread.ThrowIfSingleThreaded();
+            Thread.ThrowIfMultithreadingIsNotSupported();
 
             return WaitSlow(timeoutMs, activeThreadCount);
         }

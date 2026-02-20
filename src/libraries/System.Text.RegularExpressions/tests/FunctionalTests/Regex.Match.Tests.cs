@@ -2956,7 +2956,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop("Takes several seconds")]
         [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
         public async Task UseRegexConcurrently_ThreadSafe_Success(RegexEngine engine, TimeSpan timeout)
