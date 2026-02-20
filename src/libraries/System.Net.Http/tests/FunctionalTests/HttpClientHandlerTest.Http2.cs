@@ -702,17 +702,15 @@ namespace System.Net.Http.Functional.Tests
                 // This simulates a server-side disconnect during HTTP/2 setup.
                 await connection.ShutdownSendAsync();
 
-                // The client should throw HttpRequestException.
+                // The client should throw HttpRequestException(InvalidResponse) wrapping
+                // HttpIOException(InvalidResponse) -> HttpIOException(ResponseEnded),
+                // indicating the server disconnected before sending SETTINGS.
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
-
-                // The inner exception chain should NOT have ObjectDisposedException as the root cause.
-                // Instead, it should contain a meaningful exception about the connection failure.
-                Exception inner = ex.InnerException;
-                while (inner?.InnerException != null)
-                {
-                    inner = inner.InnerException;
-                }
-                Assert.IsNotType<ObjectDisposedException>(inner);
+                Assert.Equal(HttpRequestError.InvalidResponse, ex.HttpRequestError);
+                HttpIOException httpIoEx = Assert.IsAssignableFrom<HttpIOException>(ex.InnerException);
+                Assert.Equal(HttpRequestError.InvalidResponse, httpIoEx.HttpRequestError);
+                HttpIOException innerHttpIoEx = Assert.IsAssignableFrom<HttpIOException>(httpIoEx.InnerException);
+                Assert.Equal(HttpRequestError.ResponseEnded, innerHttpIoEx.HttpRequestError);
             }
         }
 
