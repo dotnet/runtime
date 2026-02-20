@@ -598,11 +598,511 @@ namespace R2RDump
                     }
                     break;
                 }
+                case ReadyToRunSectionType.TypePreinitializationMap:
+                {
+                    int mapStart = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int mapOffset = mapStart;
+                    int mapEnd = mapStart + section.Size;
+
+                    MetadataReader metadataReader = GetMetadataReaderForSection(section);
+                    List<(string Name, int Start, int End)> r2rSectionRanges = BuildR2RSectionRanges();
+
+                    List<(string Name, int Start, int End)> BuildR2RSectionRanges()
+                    {
+                        List<(string Name, int Start, int End)> ranges = new();
+
+                        foreach (ReadyToRunSection headerSection in _r2r.ReadyToRunHeader.Sections.Values)
+                        {
+                            int start = headerSection.RelativeVirtualAddress;
+                            int end = start + headerSection.Size;
+                            ranges.Add(($"R2R.{headerSection.Type}", start, end));
+                        }
+
+                        if (_r2r.ReadyToRunAssemblyHeaders != null)
+                        {
+                            for (int assemblyIndex = 0; assemblyIndex < _r2r.ReadyToRunAssemblyHeaders.Count; assemblyIndex++)
+                            {
+                                foreach (ReadyToRunSection assemblySection in _r2r.ReadyToRunAssemblyHeaders[assemblyIndex].Sections.Values)
+                                {
+                                    int start = assemblySection.RelativeVirtualAddress;
+                                    int end = start + assemblySection.Size;
+                                    ranges.Add(($"Component[{assemblyIndex}].{assemblySection.Type}", start, end));
+                                }
+                            }
+                        }
+
+                        return ranges;
+                    }
+
+                    string ResolveRvaSymbol(uint rva)
+                    {
+                        if (rva == 0 || rva > int.MaxValue)
+                        {
+                            return String.Empty;
+                        }
+
+                        int rva32 = (int)rva;
+                        List<string> symbols = new();
+
+                        if (_r2r.ImportSignatures.TryGetValue(rva32, out ReadyToRunSignature signature))
+                        {
+                            symbols.Add(signature.ToString(_model.SignatureFormattingOptions));
+                        }
+
+                        foreach ((string Name, int Start, int End) range in r2rSectionRanges)
+                        {
+                            if (rva32 >= range.Start && rva32 < range.End)
+                            {
+                                symbols.Add($"{range.Name}+0x{(rva32 - range.Start):X}");
+                                break;
+                            }
+                        }
+
+                        try
+                        {
+                            int fileOffset = _r2r.GetOffset(rva32);
+                            symbols.Add($"image+0x{fileOffset:X8}");
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                        }
+
+                        return String.Join("; ", symbols);
+                    }
+
+                    string FormatResolvedRva(uint rva)
+                    {
+                        string symbol = ResolveRvaSymbol(rva);
+                        return symbol.Length == 0 ? $"0x{rva:X8}" : $"0x{rva:X8} ({symbol})";
+                    }
+
+                    bool TryReadUInt32(ref int offset, out uint value)
+                    {
+                        value = 0;
+                        if (offset > mapEnd || mapEnd - offset < sizeof(uint))
+                        {
+                            return false;
+                        }
+
+                        value = _r2r.ImageReader.ReadUInt32(ref offset);
+                        return true;
+                    }
+
+                    bool TryGetTypeDefinitionInfo(uint rid, out string typeName, out bool isGenericDefinition)
+                    {
+                        typeName = null;
+                        isGenericDefinition = false;
+
+                        if (metadataReader == null || rid == 0)
+                        {
+                            return false;
+                        }
+
+                        if (rid > metadataReader.TypeDefinitions.Count)
+                        {
+                            return false;
+                        }
+
+                        TypeDefinitionHandle handle = MetadataTokens.TypeDefinitionHandle((int)rid);
+                        TypeDefinition definition = metadataReader.GetTypeDefinition(handle);
+                        typeName = MetadataNameFormatter.FormatHandle(metadataReader, handle);
+                        isGenericDefinition = definition.GetGenericParameters().Count > 0;
+                        return true;
+                    }
+
+                    string BuildDataPreview(uint rva, uint size, int maxBytes = 32)
+                    {
+                        if (rva == 0 || size == 0)
+                        {
+                            return "<none>";
+                        }
+
+                        if (rva > int.MaxValue)
+                        {
+                            return "<rva out of range>";
+                        }
+
+                        int dataOffset;
+                        try
+                        {
+                            dataOffset = _r2r.GetOffset((int)rva);
+                        }
+                        catch (IndexOutOfRangeException)
+                        {
+                            return "<out of image bounds>";
+                        }
+
+                        if (dataOffset < 0 || dataOffset >= _r2r.Image.Length)
+                        {
+                            return "<out of image bounds>";
+                        }
+
+                        int byteCount = (int)uint.Min(size, (uint)maxBytes);
+                        int available = Math.Min(byteCount, _r2r.Image.Length - dataOffset);
+                        if (available <= 0)
+                        {
+                            return "<out of image bounds>";
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append($"Size={size}, Preview[{available}]=");
+                        for (int i = 0; i < available; i++)
+                        {
+                            if (i != 0)
+                            {
+                                sb.Append(' ');
+                            }
+                            sb.Append(_r2r.Image[dataOffset + i].ToString("X2"));
+                        }
+
+                        if (size > (uint)available)
+                        {
+                            sb.Append(" ...");
+                        }
+
+                        return sb.ToString();
+                    }
+
+                    uint AlignUp(uint value, uint alignment)
+                    {
+                        if (alignment == 0)
+                        {
+                            return value;
+                        }
+
+                        uint mask = alignment - 1;
+                        return (value + mask) & ~mask;
+                    }
+
+                    void DumpNonGCData(uint rva, uint size)
+                    {
+                        if (rva == 0 || size == 0)
+                        {
+                            return;
+                        }
+
+                        if (_model.Raw)
+                        {
+                            if (rva > int.MaxValue)
+                            {
+                                Program.WriteWarning($"Preinitialized data RVA 0x{rva:X8} is out of range");
+                                return;
+                            }
+
+                            try
+                            {
+                                DumpBytes((int)rva, size);
+                            }
+                            catch (IndexOutOfRangeException)
+                            {
+                                Program.WriteWarning($"Preinitialized data range [0x{rva:X8}, size {size}] is out of image bounds");
+                            }
+                        }
+
+                        _writer.WriteLine($"    NonGCData: {BuildDataPreview(rva, size)}");
+                    }
+
+                    if (!TryReadUInt32(ref mapOffset, out uint typeCount))
+                    {
+                        Program.WriteWarning("TypePreinitializationMap malformed: missing TypeCount");
+                        _writer.WriteLine("TypePreinitializationMap malformed: missing TypeCount");
+                        break;
+                    }
+
+                    List<(uint TypeDefRid, uint Payload0, uint Payload1, ReadyToRunTypePreinitializationFlags Flags)> typeDefEntries = new();
+                    for (uint index = 0; index < typeCount; index++)
+                    {
+                        if (!TryReadUInt32(ref mapOffset, out uint typeDefRid) ||
+                            !TryReadUInt32(ref mapOffset, out uint payload0) ||
+                            !TryReadUInt32(ref mapOffset, out uint payload1) ||
+                            !TryReadUInt32(ref mapOffset, out uint flagsRaw))
+                        {
+                            Program.WriteWarning("TypePreinitializationMap malformed: truncated typedef entries");
+                            break;
+                        }
+
+                        typeDefEntries.Add((typeDefRid, payload0, payload1, (ReadyToRunTypePreinitializationFlags)flagsRaw));
+                    }
+
+                    if (typeDefEntries.Count != typeCount)
+                    {
+                        Program.WriteWarning($"TypePreinitializationMap malformed: expected {typeCount} typedef entries, parsed {typeDefEntries.Count}");
+                    }
+
+                    if (!TryReadUInt32(ref mapOffset, out uint instantiationEntryCount))
+                    {
+                        Program.WriteWarning("TypePreinitializationMap malformed: missing InstantiationEntryCount");
+                        _writer.WriteLine($"TypeCount: {typeCount}");
+                        _writer.WriteLine("TypeDef entries:");
+                        for (int i = 0; i < typeDefEntries.Count; i++)
+                        {
+                            var entry = typeDefEntries[i];
+                            _writer.WriteLine($"  [{i}] 0x{(0x02000000u | entry.TypeDefRid):X8}: Payload0=0x{entry.Payload0:X8}, Payload1=0x{entry.Payload1:X8}, Flags={entry.Flags} (0x{(uint)entry.Flags:X8})");
+                        }
+                        break;
+                    }
+
+                    List<(uint SignatureOffset, uint SignatureLength, uint NonGCDataRva, uint NonGCDataSize, ReadyToRunTypePreinitializationFlags Flags)> instantiationEntries = new();
+                    for (uint index = 0; index < instantiationEntryCount; index++)
+                    {
+                        if (!TryReadUInt32(ref mapOffset, out uint signatureOffset) ||
+                            !TryReadUInt32(ref mapOffset, out uint signatureLength) ||
+                            !TryReadUInt32(ref mapOffset, out uint nonGCDataRva) ||
+                            !TryReadUInt32(ref mapOffset, out uint nonGCDataSize) ||
+                            !TryReadUInt32(ref mapOffset, out uint flagsRaw))
+                        {
+                            Program.WriteWarning("TypePreinitializationMap malformed: truncated instantiation entries");
+                            break;
+                        }
+
+                        instantiationEntries.Add((signatureOffset, signatureLength, nonGCDataRva, nonGCDataSize, (ReadyToRunTypePreinitializationFlags)flagsRaw));
+                    }
+
+                    if (instantiationEntries.Count != instantiationEntryCount)
+                    {
+                        Program.WriteWarning($"TypePreinitializationMap malformed: expected {instantiationEntryCount} instantiation entries, parsed {instantiationEntries.Count}");
+                    }
+
+                    List<(bool HasTypeMetadata, string TypeName, bool IsGenericDefinition)> typeDefDetails = new(typeDefEntries.Count);
+                    SortedSet<uint> payloadStartRvas = new();
+                    for (int i = 0; i < typeDefEntries.Count; i++)
+                    {
+                        var entry = typeDefEntries[i];
+                        bool hasTypeMetadata = TryGetTypeDefinitionInfo(entry.TypeDefRid, out string typeName, out bool isGenericDefinition);
+                        typeDefDetails.Add((hasTypeMetadata, typeName, isGenericDefinition));
+
+                        if (hasTypeMetadata && !isGenericDefinition && entry.Payload0 != 0)
+                        {
+                            payloadStartRvas.Add(entry.Payload0);
+                        }
+                    }
+                    for (int i = 0; i < instantiationEntries.Count; i++)
+                    {
+                        uint rva = instantiationEntries[i].NonGCDataRva;
+                        if (rva != 0)
+                        {
+                            payloadStartRvas.Add(rva);
+                        }
+                    }
+                    List<uint> sortedPayloadStarts = payloadStartRvas.ToList();
+
+                    bool TryComputeGCDataRange(uint nonGCRva, uint nonGCSize, out uint gcRva, out uint gcSize, out string reason)
+                    {
+                        gcRva = 0;
+                        gcSize = 0;
+                        reason = String.Empty;
+
+                        if (nonGCRva == 0)
+                        {
+                            return true;
+                        }
+
+                        uint pointerSize = checked((uint)_r2r.TargetPointerSize);
+                        uint alignedNonGCSize = AlignUp(nonGCSize, pointerSize);
+                        if (alignedNonGCSize < nonGCSize)
+                        {
+                            reason = "aligned non-GC size overflow";
+                            return false;
+                        }
+
+                        if (nonGCRva > uint.MaxValue - alignedNonGCSize)
+                        {
+                            reason = "start RVA overflow";
+                            return false;
+                        }
+
+                        uint computedGCStart = nonGCRva + alignedNonGCSize;
+                        uint nextPayloadStart = 0;
+                        for (int i = 0; i < sortedPayloadStarts.Count; i++)
+                        {
+                            uint payloadStart = sortedPayloadStarts[i];
+                            if (payloadStart > nonGCRva)
+                            {
+                                nextPayloadStart = payloadStart;
+                                break;
+                            }
+                        }
+
+                        uint size = nextPayloadStart == 0 ? (uint)_r2r.TargetPointerSize : nextPayloadStart - computedGCStart;
+                        if ((size % pointerSize) != 0)
+                        {
+                            reason = $"size {size} is not pointer-size aligned";
+                            return false;
+                        }
+
+                        gcRva = computedGCStart;
+                        gcSize = size;
+                        return true;
+                    }
+
+                    void DumpGCData(uint nonGCRva, uint nonGCSize)
+                    {
+                        if (!TryComputeGCDataRange(nonGCRva, nonGCSize, out uint gcRva, out uint gcSize, out string reason))
+                        {
+                            _writer.WriteLine($"    GCData: <{reason}>");
+                            return;
+                        }
+
+                        if (gcSize == 0)
+                        {
+                            return;
+                        }
+
+                        _writer.WriteLine($"    GCDataRva={FormatResolvedRva(gcRva)}, GCDataSize={gcSize}");
+
+                        if (_model.Raw)
+                        {
+                            if (gcRva > int.MaxValue)
+                            {
+                                Program.WriteWarning($"GC data RVA 0x{gcRva:X8} is out of range");
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    DumpBytes((int)gcRva, gcSize);
+                                }
+                                catch (IndexOutOfRangeException)
+                                {
+                                    Program.WriteWarning($"GC data range [0x{gcRva:X8}, size {gcSize}] is out of image bounds");
+                                }
+                            }
+                        }
+
+                        _writer.WriteLine($"    GCData: {BuildDataPreview(gcRva, gcSize)}");
+                        for (int i = 0; i < gcSize / _r2r.TargetPointerSize; i++)
+                        {
+                            int offset = checked((int)(gcRva + i * _r2r.TargetPointerSize));
+                            if (_r2r.TargetPointerSize == 4)
+                            {
+                                int value = _r2r.ImageReader.ReadInt32(ref offset);
+                                _writer.WriteLine($"      [{i}] 0x{value:X8}");
+                            }
+                            else
+                            {
+                                long value = _r2r.ImageReader.ReadInt64(ref offset);
+                                _writer.WriteLine($"      [{i}] 0x{value:X16}");
+                            }
+                        }
+                    }
+
+                    int signatureBlobOffset = mapOffset;
+                    int signatureBlobSize = mapEnd - signatureBlobOffset;
+
+                    _writer.WriteLine($"TypeCount: {typeCount}");
+                    _writer.WriteLine("TypeDef entries:");
+                    for (int i = 0; i < typeDefEntries.Count; i++)
+                    {
+                        var entry = typeDefEntries[i];
+                        var details = typeDefDetails[i];
+                        bool hasTypeMetadata = details.HasTypeMetadata;
+                        bool isGenericDefinition = details.IsGenericDefinition;
+                        string typeNameSuffix = hasTypeMetadata ? $" ({details.TypeName})" : String.Empty;
+                        string payload;
+
+                        if (hasTypeMetadata && isGenericDefinition)
+                        {
+                            uint offset = entry.Payload0;
+                            uint instantiationCountForType = entry.Payload1;
+                            bool validRange = offset <= instantiationEntryCount && instantiationCountForType <= (instantiationEntryCount - offset);
+                            payload = $"InstantiationOffset={offset}, InstantiationCount={instantiationCountForType}";
+                            if (!validRange)
+                            {
+                                payload += " [invalid range]";
+                            }
+                        }
+                        else if (hasTypeMetadata)
+                        {
+                            payload = $"NonGCDataRva={FormatResolvedRva(entry.Payload0)}, NonGCDataSize={entry.Payload1}";
+                        }
+                        else
+                        {
+                            payload = $"Payload0=0x{entry.Payload0:X8}, Payload1=0x{entry.Payload1:X8}";
+                        }
+
+                        _writer.WriteLine($"  [{i}] 0x{(0x02000000u | entry.TypeDefRid):X8}{typeNameSuffix}: {entry.Flags} (0x{(uint)entry.Flags:X8})");
+                        _writer.WriteLine($"    {payload}");
+
+                        if (hasTypeMetadata && !isGenericDefinition)
+                        {
+                            DumpNonGCData(entry.Payload0, entry.Payload1);
+                            DumpGCData(entry.Payload0, entry.Payload1);
+                        }
+                    }
+
+                    _writer.WriteLine($"InstantiationEntryCount: {instantiationEntryCount}");
+                    _writer.WriteLine("Instantiation entries:");
+                    for (int i = 0; i < instantiationEntries.Count; i++)
+                    {
+                        var entry = instantiationEntries[i];
+                        string signature;
+                        if (entry.SignatureLength == 0)
+                        {
+                            signature = "<empty>";
+                        }
+                        else
+                        {
+                            long absoluteSignatureOffset = (long)signatureBlobOffset + entry.SignatureOffset;
+                            long absoluteSignatureEnd = absoluteSignatureOffset + entry.SignatureLength;
+                            if (absoluteSignatureOffset < signatureBlobOffset || absoluteSignatureEnd > mapEnd || absoluteSignatureOffset > int.MaxValue)
+                            {
+                                signature = "<out of bounds>";
+                            }
+                            else
+                            {
+                                int signatureOffset = (int)absoluteSignatureOffset;
+                                SignatureDecoder decoder = new SignatureDecoder(_model, _model.SignatureFormattingOptions, metadataReader, _r2r, signatureOffset);
+                                signature = decoder.ReadTypeSignatureNoEmit();
+                                int consumedLength = decoder.Offset - signatureOffset;
+                                if (consumedLength != entry.SignatureLength)
+                                {
+                                    signature += $" [decoded {consumedLength} bytes, expected {entry.SignatureLength}]";
+                                }
+                            }
+                        }
+
+                        _writer.WriteLine(
+                            $"  [{i}] 0x{entry.SignatureOffset:X8} ({signature}): {entry.Flags} (0x{(uint)entry.Flags:X8})");
+                        _writer.WriteLine($"    NonGCDataRva={FormatResolvedRva(entry.NonGCDataRva)}, NonGCDataSize={entry.NonGCDataSize}");
+
+                        DumpNonGCData(entry.NonGCDataRva, entry.NonGCDataSize);
+                        DumpGCData(entry.NonGCDataRva, entry.NonGCDataSize);
+                    }
+
+                    int signatureBlobRva = section.RelativeVirtualAddress + (signatureBlobOffset - mapStart);
+                    _writer.WriteLine($"SignatureBlobRva: 0x{signatureBlobRva:X8}");
+                    _writer.WriteLine($"SignatureBlobSize: {signatureBlobSize} bytes");
+
+                    mapOffset += signatureBlobSize;
+
+                    if (mapOffset != mapEnd)
+                    {
+                        Program.WriteWarning($"TypePreinitializationMap contains trailing bytes: {mapEnd - mapOffset}");
+                    }
+                    break;
+                }
 
                 default:
                     _writer.WriteLine("Unsupported section type {0}", section.Type);
                     break;
             }
+        }
+
+        private MetadataReader GetMetadataReaderForSection(ReadyToRunSection section)
+        {
+            if (!_r2r.Composite)
+            {
+                return _r2r.GetGlobalMetadata()?.MetadataReader;
+            }
+
+            int assemblyIndex = _r2r.GetAssemblyIndex(section);
+            if (assemblyIndex < 0 || assemblyIndex >= _r2r.ReadyToRunAssemblies.Count)
+            {
+                return _r2r.GetGlobalMetadata()?.MetadataReader;
+            }
+
+            ReadyToRunMethod firstMethod = _r2r.ReadyToRunAssemblies[assemblyIndex].Methods.FirstOrDefault();
+            return firstMethod?.ComponentReader?.MetadataReader;
         }
 
         public override void DumpQueryCount(string q, string title, int count)

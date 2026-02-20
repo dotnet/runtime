@@ -42,6 +42,10 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
+        public Option<bool> PreinitStatics { get; } =
+            new("--preinitstatics") { Description = SR.PreinitStaticsOption };
+        public Option<bool> NoPreinitStatics { get; } =
+            new("--nopreinitstatics") { Description = SR.NoPreinitStaticsOption };
         public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
         public Option<TypeValidationRule> TypeValidation { get; } =
@@ -169,6 +173,8 @@ namespace ILCompiler
             Options.Add(OptimizeDisabled);
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
+            Options.Add(PreinitStatics);
+            Options.Add(NoPreinitStatics);
             Options.Add(EnableCachedInterfaceDispatchSupport);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);

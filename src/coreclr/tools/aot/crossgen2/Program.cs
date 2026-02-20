@@ -22,6 +22,8 @@ using ILCompiler.Reflection.ReadyToRun;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.IBC;
 
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
+
 namespace ILCompiler
 {
     internal sealed class Program
@@ -345,6 +347,7 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
                 ICompilation compilation;
+                PreinitializationManager preinitManager = null;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -615,6 +618,15 @@ namespace ILCompiler
 
                     ILProvider ilProvider = new ReadyToRunILProvider(compilationGroup);
 
+                    bool preinitStatics = Get(_command.PreinitStatics) || optimizationMode != OptimizationMode.None;
+                    preinitStatics &= !Get(_command.NoPreinitStatics);
+
+                    TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
+                        new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
+
+                    FlowAnnotations flowAnnotations = preinitStatics ? new FlowAnnotations() : null;
+                    preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy(), flowAnnotations);
+
                     DependencyTrackingLevel trackingLevel = dgmlLogFileName == null ?
                         DependencyTrackingLevel.None : (Get(_command.GenerateFullDgmlLog) ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
@@ -652,6 +664,8 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
+                    builder.UsePreinitializationManager(preinitManager);
+
                     if (Get(_command.EnableGenericCycleDetection))
                     {
                         builder.UseGenericCycleDetection(
@@ -673,6 +687,8 @@ namespace ILCompiler
 
                 if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
                     throw new Exception("Determinism Check Failed");
+
+                preinitManager?.LogStatistics(logger);
             }
         }
 

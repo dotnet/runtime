@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -52,6 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
+// R2R Version 18.2 adds preinitialized statics map support
 
 struct READYTORUN_CORE_HEADER
 {
@@ -117,6 +118,7 @@ enum class ReadyToRunSectionType : uint32_t
     MethodIsGenericMap          = 121, // Added in V9.0
     EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
+    TypePreinitializationMap    = 124, // Added in V18.2
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -166,6 +168,43 @@ enum class ReadyToRunGenericInfoGenericCount : uint32_t
 enum class ReadyToRunEnclosingTypeMap
 {
     MaxTypeCount = 0xFFFE
+};
+
+enum class ReadyToRunTypePreinitializationFlags : uint32_t
+{
+    None = 0x0,
+    TypeIsPreinitialized = 0x1,
+};
+
+struct READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY
+{
+    DWORD TypeDefRid;
+    union
+    {
+        struct
+        {
+            DWORD Index;
+            DWORD Count;
+        } Instantiation;
+
+        struct
+        {
+            DWORD Rva;
+            DWORD Size;
+        } NonGCData;
+    };
+
+    ReadyToRunTypePreinitializationFlags Flags;
+};
+
+struct READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY
+{
+    DWORD TypeSignatureOffset;
+    DWORD TypeSignatureLength;
+    DWORD NonGCDataRva;
+    DWORD NonGCDataSize;
+
+    ReadyToRunTypePreinitializationFlags Flags;
 };
 
 //

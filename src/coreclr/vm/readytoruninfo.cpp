@@ -1004,6 +1004,12 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         pModule->m_pMethodIsGenericMap = (ReadyToRun_MethodIsGenericMap*)m_pComposite->GetImage()->GetDirectoryData(methodIsGenericMap);
     }
+
+    IMAGE_DATA_DIRECTORY *typePreinitializationMap = m_component.FindSection(ReadyToRunSectionType::TypePreinitializationMap);
+    if (typePreinitializationMap != NULL)
+    {
+        pModule->m_pTypePreinitializationMap = (ReadyToRun_TypePreinitializationMap*)m_pComposite->GetImage()->GetDirectoryData(typePreinitializationMap);
+    }
 }
 
 static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * pModule)
@@ -1870,6 +1876,7 @@ ModuleBase* CreateNativeManifestModule(LoaderAllocator* pLoaderAllocator, IMDInt
 const ReadyToRun_EnclosingTypeMap ReadyToRun_EnclosingTypeMap::EmptyInstance;
 const ReadyToRun_TypeGenericInfoMap ReadyToRun_TypeGenericInfoMap::EmptyInstance;
 const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance;
+const ReadyToRun_TypePreinitializationMap ReadyToRun_TypePreinitializationMap::EmptyInstance;
 
 mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
 {
@@ -2037,6 +2044,167 @@ bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResu
 #endif // !DACCESS_COMPILE
     *foundResult = false;
     return false;
+}
+
+bool ReadyToRun_TypePreinitializationMap::TryGetTypeDefEntry(
+    mdTypeDef input,
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY **ppEntry,
+    bool *foundResult) const
+{
+#ifdef DACCESS_COMPILE
+    *ppEntry = nullptr;
+    *foundResult = false;
+    return false;
+#else
+    uint32_t rid = RidFromToken(input);
+    if ((rid == 0) || (rid > TypeCount))
+    {
+        *ppEntry = nullptr;
+        *foundResult = false;
+        return false;
+    }
+
+    const uint8_t *pStart = reinterpret_cast<const uint8_t*>(&TypeCount) + sizeof(uint32_t);
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntries =
+        reinterpret_cast<const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY*>(pStart);
+
+    // Table is emitted in TypeDef RID order and contains one row per TypeDef.
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntry = &pEntries[rid - 1];
+    if (pEntry->TypeDefRid != rid)
+    {
+        *ppEntry = nullptr;
+        *foundResult = false;
+        return false;
+    }
+
+    *ppEntry = pEntry;
+    *foundResult = true;
+    return true;
+#endif
+}
+
+bool ReadyToRun_TypePreinitializationMap::TryGetInstantiationEntry(
+    Module *pModule,
+    MethodTable *pMT,
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY **ppEntry,
+    bool *foundResult) const
+{
+#ifdef DACCESS_COMPILE
+    *ppEntry = nullptr;
+    *foundResult = false;
+    return false;
+#else
+    _ASSERTE(CheckPointer(pModule));
+    _ASSERTE(CheckPointer(pMT));
+
+    *ppEntry = nullptr;
+    *foundResult = false;
+
+    if (this == &ReadyToRun_TypePreinitializationMap::EmptyInstance)
+        return false;
+
+    uint32_t rid = RidFromToken(pMT->GetCl());
+    if (rid == 0)
+        return false;
+
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pTypeDefEntry = nullptr;
+    bool typeDefFound = false;
+    if (!TryGetTypeDefEntry(pMT->GetCl(), &pTypeDefEntry, &typeDefFound) || !typeDefFound)
+        return false;
+
+    if (pTypeDefEntry->TypeDefRid != rid)
+        return false;
+
+    uint32_t instantiationStartIndex = pTypeDefEntry->Instantiation.Index;
+    uint32_t instantiationCountForType = pTypeDefEntry->Instantiation.Count;
+    if (instantiationCountForType == 0)
+        return false;
+
+    const uint8_t *pStart = reinterpret_cast<const uint8_t*>(&TypeCount) + sizeof(uint32_t);
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pTypeDefEntries =
+        reinterpret_cast<const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY*>(pStart);
+    const uint8_t *pAfterTypeDefEntries = reinterpret_cast<const uint8_t*>(pTypeDefEntries + TypeCount);
+
+    uint32_t instantiationEntryCount = *reinterpret_cast<const uint32_t*>(pAfterTypeDefEntries);
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY *pInstantiationEntries =
+        reinterpret_cast<const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY*>(pAfterTypeDefEntries + sizeof(uint32_t));
+
+    const uint8_t *pSignatureBlob = reinterpret_cast<const uint8_t*>(pInstantiationEntries + instantiationEntryCount);
+
+    if (instantiationStartIndex > instantiationEntryCount)
+        return false;
+
+    if (instantiationCountForType > (instantiationEntryCount - instantiationStartIndex))
+        return false;
+
+    ZapSig::Context zapSigContext(pModule, pModule);
+    for (uint32_t index = 0; index < instantiationCountForType; index++)
+    {
+        const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY *pCurrentEntry = &pInstantiationEntries[instantiationStartIndex + index];
+
+        if (pCurrentEntry->TypeSignatureLength == 0)
+            continue;
+
+        PCCOR_SIGNATURE pSignature = reinterpret_cast<PCCOR_SIGNATURE>(pSignatureBlob + pCurrentEntry->TypeSignatureOffset);
+        SigPointer sp(pSignature, pCurrentEntry->TypeSignatureLength);
+        if (FAILED(sp.SkipExactlyOne()) || (sp.GetPtr() != (pSignature + pCurrentEntry->TypeSignatureLength)))
+            continue;
+
+        if (!ZapSig::CompareSignatureToTypeHandle(pSignature, pModule, TypeHandle(pMT), &zapSigContext))
+            continue;
+
+        *ppEntry = pCurrentEntry;
+        *foundResult = true;
+        return true;
+    }
+
+    return false;
+#endif
+}
+
+bool ReadyToRun_TypePreinitializationMap::IsTypePreinitialized(Module *pModule, MethodTable *pMT, bool *foundResult) const
+{
+    if (pMT->HasInstantiation())
+    {
+        const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY *pEntry;
+        if (!TryGetInstantiationEntry(pModule, pMT, &pEntry, foundResult))
+            return false;
+
+        return (static_cast<uint32_t>(pEntry->Flags) & static_cast<uint32_t>(ReadyToRunTypePreinitializationFlags::TypeIsPreinitialized)) != 0;
+    }
+
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntry;
+    if (!TryGetTypeDefEntry(pMT->GetCl(), &pEntry, foundResult))
+        return false;
+
+    return (static_cast<uint32_t>(pEntry->Flags) & static_cast<uint32_t>(ReadyToRunTypePreinitializationFlags::TypeIsPreinitialized)) != 0;
+}
+
+bool ReadyToRun_TypePreinitializationMap::TryGetNonGCData(
+    Module *pModule,
+    MethodTable *pMT,
+    uint32_t *pDataRva,
+    uint32_t *pDataSize,
+    bool *foundResult) const
+{
+    if (pMT->HasInstantiation())
+    {
+        const READYTORUN_TYPE_PREINITIALIZATION_MAP_INSTANTIATION_ENTRY *pEntry;
+        if (!TryGetInstantiationEntry(pModule, pMT, &pEntry, foundResult))
+            return false;
+
+        *pDataRva = pEntry->NonGCDataRva;
+        *pDataSize = pEntry->NonGCDataSize;
+        return true;
+    }
+
+    const READYTORUN_TYPE_PREINITIALIZATION_MAP_ENTRY *pEntry;
+    if (!TryGetTypeDefEntry(pMT->GetCl(), &pEntry, foundResult))
+        return false;
+
+    *pDataRva = pEntry->NonGCData.Rva;
+    *pDataSize = pEntry->NonGCData.Size;
+    return true;
 }
 
 

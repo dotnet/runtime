@@ -54,6 +54,7 @@ namespace ILCompiler
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider;
+        private PreinitializationManager _preinitializationManager;
 
         public ReadyToRunCodegenCompilationBuilder(
             CompilerTypeSystemContext context,
@@ -100,6 +101,12 @@ namespace ILCompiler
         public override CompilationBuilder UseILProvider(ILProvider ilProvider)
         {
             _ilProvider = ilProvider;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UsePreinitializationManager(PreinitializationManager preinitializationManager)
+        {
+            _preinitializationManager = preinitializationManager;
             return this;
         }
 
@@ -266,6 +273,15 @@ namespace ILCompiler
             }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
+            PreinitializationManager preinitializationManager = _preinitializationManager ??
+                new PreinitializationManager(
+                    _context,
+                    _compilationGroup,
+                    _ilProvider,
+                    new TypePreinit.DisabledPreinitializationPolicy(),
+                    new StaticReadOnlyFieldPolicy(),
+                    flowAnnotations: null);
+
             NodeFactory factory = new NodeFactory(
                 _context,
                 (ReadyToRunCompilationModuleGroupBase)_compilationGroup,
@@ -279,6 +295,7 @@ namespace ILCompiler
                 _format,
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
+                preinitializationManager,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
                 genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
                 );
