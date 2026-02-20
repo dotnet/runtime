@@ -3265,7 +3265,7 @@ namespace Internal.JitInterface
 
                 if ((typicalMethod.IsAsyncVariant() || typicalMethod.IsAsync || typicalMethod.IsCompilerGeneratedILBodyForAsync()) && !_compilation.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
                 {
-                    // TODO: fix this restriction in runtime async
+                    // TODO: fix this restriction in runtime async. https://github.com/dotnet/runtime/issues/124665
                     // Disable async methods in cross module inlines for now, we need to trigger the CheckILBodyFixupSignature in the right situations, and that hasn't been implemented
                     // yet. Currently, we'll correctly trigger the _ilBodiesNeeded logic below, but we also need to avoid triggering the ILBodyFixupSignature for the async thunks, but we ALSO need to make
                     // sure we generate the CheckILBodyFixupSignature for the actual runtime-async body in which case I think the typicalMethod will be an AsyncVariantMethod, which doesn't appear

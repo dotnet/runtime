@@ -109,7 +109,8 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsCompilerGeneratedILBodyForAsync() || callee.IsAsyncCall())
+            // TODO: Enable async inlining. https://github.com/dotnet/runtime/issues/124665
+            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
             {
                 return false;
             }
