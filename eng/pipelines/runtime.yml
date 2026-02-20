@@ -327,7 +327,6 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_arm64
-          - osx_arm64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
@@ -1730,22 +1729,7 @@ extends:
             # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
             condition: false
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          platforms:
-          - osx_arm64
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          helixQueueGroup: libraries
-          jobParameters:
-            testScope: innerloop
-            liveRuntimeBuildConfig: checked
-            unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-            unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
-            # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-            condition: false
+      # TEMPORARY: osx_arm64 Libraries_CheckedCoreCLR test job removed for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
 
       #
       # Build and test Mono Interpreter with the libraries testss
