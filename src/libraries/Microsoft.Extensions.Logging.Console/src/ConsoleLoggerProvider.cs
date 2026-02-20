@@ -68,13 +68,20 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
-            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            // Per https://force-color.org/, FORCE_COLOR forces ANSI color output when set to a non-empty value.
+            // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is treated as a legacy alias for the same behavior.
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FORCE_COLOR")) ||
+                !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION")))
             {
-                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
-                // found in System.ConsoleUtils.EmitAnsiColorCodes.
                 return true;
             }
+
+            // Per https://no-color.org/, NO_COLOR disables ANSI color output when set.
+            if (Environment.GetEnvironmentVariable("NO_COLOR") is not null)
+            {
+                return false;
+            }
+
             if (
 #if NETFRAMEWORK
                 Environment.OSVersion.Platform != PlatformID.Win32NT
