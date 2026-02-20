@@ -2859,6 +2859,15 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
         JITDUMP(FMT_BB " is successor of finallyret " FMT_BB " but prev block is not a callfinally to " FMT_BB
                        " (search range was [" FMT_BB "..." FMT_BB "]\n",
                 block->bbNum, blockPred->bbNum, finBeg->bbNum, firstBlock->bbNum, lastBlock->bbNum);
+
+        // If try regions are no longer contiguous we lose this invariant.
+
+        if (m_compiler->fgTrysNotContiguous())
+        {
+            JITDUMP("Tolerating, since try regions are not contiguous\n");
+            return true;
+        }
+
         assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
     }
 
@@ -4288,14 +4297,14 @@ public:
                     LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
                     unsigned const   fieldSsaNum = def.Def->GetSsaNum(m_compiler, index);
 
-                    ssize_t  fieldStoreOffset;
-                    unsigned fieldStoreSize;
-                    if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                        &fieldStoreSize))
+                    ssize_t   fieldStoreOffset;
+                    ValueSize fieldStoreSize;
+                    if (m_compiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                          &fieldStoreSize))
                     {
                         ProcessDef(def.Def, fieldLclNum, fieldSsaNum);
 
-                        if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset,
+                        if (!ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(), fieldStoreOffset,
                                                               fieldStoreSize))
                         {
                             assert(isUse);
