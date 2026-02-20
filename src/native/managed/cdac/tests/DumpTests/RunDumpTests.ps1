@@ -4,18 +4,16 @@
 
 .DESCRIPTION
     This script orchestrates the cDAC dump test workflow on Windows:
-      1. Build debuggee apps for the selected runtime version(s)
-      2. Run them to produce crash dumps
-      3. Build and run the dump analysis tests
+      1. Invoke MSBuild GenerateAllDumps target to build debuggees and produce crash dumps
+      2. Build and run the dump analysis tests
 
     Alternatively, use -DumpArchive to import a tar.gz archive of dumps
     downloaded from CI and run the tests against those dumps.
 
-    NOTE: This script is Windows-only. For cross-platform CI builds,
-    the MSBuild-based DumpTests.targets handles platform detection
-    automatically via $(HostOS), $(ExeSuffix), and $(PortableTargetRid).
+    Dump types are controlled per-debuggee via the DumpTypes property in each
+    debuggee's csproj (default: Heap, set in Debuggees/Directory.Build.props).
 
-    Dumps are written to: artifacts\dumps\cdac\{version}\{debuggee}\
+    Dumps are written to: artifacts\dumps\cdac\{dumptype}\{version}\{debuggee}\
     The script must be run from the DumpTests directory.
 
 .PARAMETER Action
@@ -43,7 +41,7 @@
     Path to a tar.gz archive of dumps downloaded from CI.
     When specified, the archive is extracted and tests are run against
     the extracted dumps. Skips dump generation entirely.
-    The archive should contain: {version}/{debuggee}/{debuggee}.dmp
+    The archive should contain: {dumptype}/{version}/{debuggee}/{debuggee}.dmp
 
 .EXAMPLE
     .\RunDumpTests.ps1
@@ -100,8 +98,6 @@ function Find-RepoRoot([string]$startDir) {
 $repoRoot = Find-RepoRoot $PSScriptRoot
 $dotnet = Join-Path $repoRoot ".dotnet\dotnet.exe"
 $dumpTestsProj = Join-Path $PSScriptRoot "Microsoft.Diagnostics.DataContractReader.DumpTests.csproj"
-$dumpOutputDir = Join-Path $repoRoot "artifacts\dumps\cdac"
-$debuggeesDir = Join-Path $PSScriptRoot "Debuggees"
 
 if (-not (Test-Path $dotnet)) {
     Write-Error "Repo dotnet not found at $dotnet. Run build.cmd first."
@@ -109,7 +105,6 @@ if (-not (Test-Path $dotnet)) {
 }
 
 # --- Debuggees and versions ---
-$allDebugees = @("BasicThreads", "TypeHierarchy", "ExceptionState", "MultiModule", "GCRoots", "ServerGC", "StackWalk")
 $allVersions = @("local", "net10.0")
 
 # --- DumpArchive mode: extract and test CI dumps ---
@@ -208,7 +203,7 @@ if ($Versions -eq "all") {
     $selectedVersions = $allVersions
 }
 else {
-    $selectedVersions = $Versions -split "," | ForEach-Object { $_.Trim() }
+    $selectedVersions = @($Versions -split "," | ForEach-Object { $_.Trim() })
     foreach ($v in $selectedVersions) {
         if ($v -notin $allVersions) {
             Write-Error "Unknown version '$v'. Supported: $($allVersions -join ', '), all"
@@ -221,129 +216,42 @@ Write-Host ""
 Write-Host "=== cDAC Dump Tests ===" -ForegroundColor Cyan
 Write-Host "  Action:    $Action"
 Write-Host "  Versions:  $($selectedVersions -join ', ')"
-Write-Host "  Debuggees: $($allDebugees -join ', ')"
 Write-Host "  Force:     $Force"
 if ($Filter) { Write-Host "  Filter:    $Filter" }
 Write-Host ""
 
 # --- Force: delete existing dumps ---
 if ($Force -and $Action -in @("dumps", "all")) {
-    foreach ($version in $selectedVersions) {
-        $versionDumpDir = Join-Path $dumpOutputDir $version
-        if (Test-Path $versionDumpDir) {
-            Write-Host "Deleting existing dumps: $versionDumpDir" -ForegroundColor Yellow
-            Remove-Item $versionDumpDir -Recurse -Force
-        }
+    $dumpOutputDir = Join-Path $repoRoot "artifacts\dumps\cdac"
+    if (Test-Path $dumpOutputDir) {
+        Write-Host "Deleting existing dumps: $dumpOutputDir" -ForegroundColor Yellow
+        Remove-Item $dumpOutputDir -Recurse -Force
     }
 }
 
-# --- Windows: allow unsigned DAC for heap dumps ---
-# Heap dumps (type 2) require the DAC which is unsigned in local builds.
-# Set the DisableAuxProviderSignatureCheck registry value so that
-# MiniDumpWriteDump accepts the unsigned DAC (Windows 11+ only).
-# This mirrors the approach used by dotnet/diagnostics DumpGenerationFixture.
-if ($Action -in @("dumps", "all")) {
-    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings"
-    try {
-        if (-not (Test-Path $regPath)) {
-            New-Item -Path $regPath -Force | Out-Null
-        }
-        Set-ItemProperty -Path $regPath -Name "DisableAuxProviderSignatureCheck" -Value 1 -Type DWord
-        Write-Host "  Set DisableAuxProviderSignatureCheck=1 for unsigned DAC support" -ForegroundColor Green
-    }
-    catch [System.UnauthorizedAccessException] {
-        Write-Host "  Warning: Could not set DisableAuxProviderSignatureCheck (run as admin for heap dump support)" -ForegroundColor Yellow
-    }
-}
-
-# --- Helper: resolve TFM for local builds ---
-$localTfm = $null
-function Get-LocalTfm {
-    if ($null -eq $script:localTfm) {
-        $script:localTfm = & $dotnet msbuild $dumpTestsProj /nologo /v:m "/getProperty:NetCoreAppCurrent" 2>$null
-        if ([string]::IsNullOrWhiteSpace($script:localTfm)) { $script:localTfm = "net11.0" }
-    }
-    return $script:localTfm
-}
-
-# --- Helper: set dump env vars ---
-function Set-DumpEnvVars($dumpFilePath) {
-    $env:DOTNET_DbgEnableMiniDump = "1"
-    $env:DOTNET_DbgMiniDumpType = "2"
-    $env:DOTNET_DbgMiniDumpName = $dumpFilePath
-}
-
-function Clear-DumpEnvVars {
-    Remove-Item Env:\DOTNET_DbgEnableMiniDump -ErrorAction SilentlyContinue
-    Remove-Item Env:\DOTNET_DbgMiniDumpType -ErrorAction SilentlyContinue
-    Remove-Item Env:\DOTNET_DbgMiniDumpName -ErrorAction SilentlyContinue
-}
-
-# --- Generate dumps ---
+# --- Generate dumps via MSBuild target ---
+# Dump generation (including registry setup for heap dumps on Windows) is handled
+# entirely by DumpTests.targets. Each debuggee's DumpTypes property controls what
+# types are generated (see Debuggees/Directory.Build.props for the default).
 if ($Action -in @("dumps", "all")) {
     Write-Host "--- Generating dumps ---" -ForegroundColor Cyan
 
-    foreach ($version in $selectedVersions) {
-        foreach ($debuggee in $allDebugees) {
-            $dumpFile = Join-Path $dumpOutputDir "$version\$debuggee\$debuggee.dmp"
+    $msbuildArgs = @(
+        "msbuild", $dumpTestsProj,
+        "/t:GenerateAllDumps",
+        "/p:TestHostConfiguration=$TestHostConfiguration",
+        "/v:minimal"
+    )
 
-            if (Test-Path $dumpFile) {
-                $size = [math]::Round((Get-Item $dumpFile).Length / 1MB, 1)
-                Write-Host "  [$version/$debuggee] Already exists (${size} MB). Use -Force to regenerate." -ForegroundColor DarkGray
-                continue
-            }
+    if ($selectedVersions.Count -eq 1 -and $selectedVersions[0] -eq "local") {
+        $msbuildArgs += "/p:CIDumpVersionsOnly=true"
+    }
 
-            Write-Host "  [$version/$debuggee] Generating dump..." -ForegroundColor Green
-            $debuggeeCsproj = Join-Path $debuggeesDir "$debuggee\$debuggee.csproj"
-            $dumpDir = Join-Path $dumpOutputDir "$version\$debuggee"
-            New-Item -ItemType Directory -Path $dumpDir -Force | Out-Null
-
-            if ($version -eq "local") {
-                $tfm = Get-LocalTfm
-                $binDir = Join-Path $repoRoot "artifacts\bin\DumpTests\$debuggee\Release\$tfm"
-                $testHostDir = Join-Path $repoRoot "artifacts\bin\testhost\$tfm-windows-$TestHostConfiguration-x64"
-
-                if (-not (Test-Path "$testHostDir\dotnet.exe")) {
-                    Write-Error "  [$version/$debuggee] Testhost not found at $testHostDir. Run 'build.cmd clr+libs -rc release' first."
-                    exit 1
-                }
-
-                & $dotnet build $debuggeeCsproj -c Release -f $tfm --nologo -v q 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) { Write-Error "  [$version/$debuggee] Build failed."; exit 1 }
-
-                Set-DumpEnvVars (Join-Path $dumpDir "$debuggee.dmp")
-                # The debuggee crashes on purpose (FailFast), so suppress stderr errors.
-                $saved = $ErrorActionPreference
-                $ErrorActionPreference = "Continue"
-                & "$testHostDir\dotnet.exe" exec "$binDir\$debuggee.dll" 2>&1 | ForEach-Object { Write-Host "    $_" }
-                $ErrorActionPreference = $saved
-                Clear-DumpEnvVars
-            }
-            else {
-                $publishDir = Join-Path $repoRoot "artifacts\bin\DumpTests\$debuggee\Release\$version-publish"
-
-                & $dotnet publish $debuggeeCsproj -c Release -f $version -r win-x64 --self-contained -o $publishDir --nologo -v q 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) { Write-Error "  [$version/$debuggee] Publish failed."; exit 1 }
-
-                Set-DumpEnvVars (Join-Path $dumpDir "$debuggee.dmp")
-                # The debuggee crashes on purpose (FailFast), so suppress stderr errors.
-                $saved = $ErrorActionPreference
-                $ErrorActionPreference = "Continue"
-                & "$publishDir\$debuggee.exe" 2>&1 | ForEach-Object { Write-Host "    $_" }
-                $ErrorActionPreference = $saved
-                Clear-DumpEnvVars
-            }
-
-            $dumpFile = Join-Path $dumpDir "$debuggee.dmp"
-            if (Test-Path $dumpFile) {
-                $size = [math]::Round((Get-Item $dumpFile).Length / 1MB, 1)
-                Write-Host "  [$version/$debuggee] Dump created (${size} MB)" -ForegroundColor Green
-            }
-            else {
-                Write-Error "  [$version/$debuggee] Dump was not created!"
-                exit 1
-            }
-        }
+    & $dotnet @msbuildArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "DUMP GENERATION FAILED" -ForegroundColor Red
+        exit 1
     }
 }
 

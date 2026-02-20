@@ -64,10 +64,28 @@
   <Target Name="_EnableUnsignedDacWindows"
           BeforeTargets="GenerateAllDumps"
           Condition="'$(HostOS)' == 'windows'">
+    <!-- Check if the registry value already exists and is non-zero. -->
+    <Exec Command="reg query &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_RegQueryLines" />
+      <Output TaskParameter="ExitCode" PropertyName="_RegQueryExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <_RegQueryOutput>@(_RegQueryLines)</_RegQueryOutput>
+      <!-- Need to set when the key is missing or its value is 0x0 (disabled). -->
+      <_NeedRegSet>true</_NeedRegSet>
+      <_NeedRegSet Condition="'$(_RegQueryExitCode)' == '0' AND !$(_RegQueryOutput.Contains('0x0'))">false</_NeedRegSet>
+    </PropertyGroup>
     <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+          Condition="'$(_NeedRegSet)' == 'true'"
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
     <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+             Condition="'$(_NeedRegSet)' == 'true'"
              Importance="normal" />
   </Target>
 
@@ -144,7 +162,7 @@
       <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
@@ -165,7 +183,7 @@
       <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained -o &quot;$(_PublishDir)&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained -o &quot;$(_PublishDir)&quot; --nologo"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
