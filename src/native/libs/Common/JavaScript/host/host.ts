@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtrPtr, VoidPtr } from "./types";
-import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
-import { browserVirtualAppBase, sizeOfPtr } from "./per-module";
+import type { CharPtrPtr, VoidPtr } from "../types";
+import { _ems_ } from "../ems-ambient";
+import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const HOST_PROPERTY_RUNTIME_CONTRACT = "HOST_RUNTIME_CONTRACT";
 const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";

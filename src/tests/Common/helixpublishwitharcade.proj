@@ -72,8 +72,13 @@
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+    <TargetsBrowserOnMono>false</TargetsBrowserOnMono>
+    <TargetsBrowserOnMono Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'mono'">true</TargetsBrowserOnMono>
+    <TargetsBrowserOnCoreCLR>false</TargetsBrowserOnCoreCLR>
+    <TargetsBrowserOnCoreCLR Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</TargetsBrowserOnCoreCLR>
+    <TargetsMobile Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">false</TargetsMobile>
     <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
-    <MobileAppBundleDirName Condition="'$(TargetsBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
+    <MobileAppBundleDirName Condition="'$(TargetsBrowserOnMono)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
@@ -111,7 +116,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
+      <_PropertiesToPass Condition="('$(TargetOS)' == 'browser' and  '$(RuntimeFlavor)' == 'Mono') Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -260,7 +265,7 @@
 
   <Target Name="DiscoverMergedTestWrappers">
     <!-- Mobile tests use a run script that's generated into the bundle as the execution script -->
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true' and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">
       <_AppBundleRunScriptName>RunTests</_AppBundleRunScriptName>
       <_AppBundleRunScriptName Condition="'$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true'">build-apple-app</_AppBundleRunScriptName>
     </PropertyGroup>
@@ -431,7 +436,7 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
-      Condition="'$(TargetsBrowser)' == 'true'"
+      Condition="'$(TargetsBrowserOnMono)' == 'true'"
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
     <ItemGroup>
@@ -528,7 +533,7 @@
 
   <Target Name="ZipMergedPayloadDirectory"
           AfterTargets="PreparePayloadDirectories"
-          Condition="'$(TargetsBrowser)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
+          Condition="'$(TargetsBrowserOnMono)' == 'true' or ('$(TargetsAppleMobile)' == 'true' and '$(NeedsToBuildAppsOnHelix)' == 'true')">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads>
@@ -587,6 +592,7 @@
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="set RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="set RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
+    <HelixPreCommand Include="set RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="set HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\runincontext.cmd" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\tieringtest.cmd" Condition=" '$(TieringTest)' == 'true' " />
@@ -641,6 +647,7 @@
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="export RunInterpreter=1" Condition=" '$(RunInterpreter)' == 'true' " />
     <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
+    <HelixPreCommand Include="export RunWithNodeJS=1" Condition=" '$(TargetsBrowserOnCoreCLR)' == 'true' " />
     <HelixPreCommand Include="export HotColdSplitting=1" Condition=" '$(HotColdSplitting)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/tieringtest.sh" Condition=" '$(TieringTest)' == 'true' " />
@@ -702,7 +709,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowserOnMono)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>

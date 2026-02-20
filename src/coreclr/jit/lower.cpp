@@ -6588,18 +6588,9 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
 {
-#ifdef TARGET_X86
-    if (call->gtCallCookie != nullptr)
-    {
-        NYI_X86("Morphing indirect non-virtual call with non-standard args");
-    }
-#endif
-
     // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
     // Hence we should never see this type of call in lower.
-
     noway_assert(call->gtCallCookie == nullptr);
-
     return nullptr;
 }
 
