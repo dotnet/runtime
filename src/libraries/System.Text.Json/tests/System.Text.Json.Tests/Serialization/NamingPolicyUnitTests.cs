@@ -357,6 +357,77 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedResult, value);
         }
 
+        [Theory]
+        [InlineData("XmlHttpRequest", "XMLHttpRequest")]
+        [InlineData("Sha512HashAlgorithm", "SHA512HashAlgorithm")]
+        [InlineData("I18n", "i18n")]
+        [InlineData("I18nPolicy", "I18nPolicy")]
+        [InlineData("7samurai", "7samurai")]
+        [InlineData("CamelCase", "camelCase")]
+        [InlineData("CamelCase", "CamelCase")]
+        [InlineData("Snake_Case", "snake_case")]
+        [InlineData("Snake_Case", "SNAKE_CASE")]
+        [InlineData("Kebab-Case", "kebab-case")]
+        [InlineData("Kebab-Case", "KEBAB-CASE")]
+        [InlineData("DoubleSpace", "double  space")]
+        [InlineData("Double__Underscore", "double__underscore")]
+        [InlineData("Double--Dash", "double--dash")]
+        [InlineData("Abc", "abc")]
+        [InlineData("AbC", "abC")]
+        [InlineData("ABc", "aBc")]
+        [InlineData("ABc", "aBC")]
+        [InlineData("ABc", "ABc")]
+        [InlineData("Abc", "ABC")]
+        [InlineData("Abc123def456", "abc123def456")]
+        [InlineData("Abc123Def456", "abc123Def456")]
+        [InlineData("Abc123Def456", "abc123DEF456")]
+        [InlineData("Abc123Def456", "ABC123DEF456")]
+        [InlineData("Abc123def456", "ABC123def456")]
+        [InlineData("Abc123def456", "Abc123def456")]
+        [InlineData("Abc", "  abc")]
+        [InlineData("Abc", "abc  ")]
+        [InlineData("Abc", "  abc  ")]
+        [InlineData("Abc", "  Abc  ")]
+        [InlineData("7ab7", "  7ab7  ")]
+        [InlineData("AbcDef", "  abc def  ")]
+        [InlineData("AbcDef", "  abc  def  ")]
+        [InlineData("AbcDef", "  abc   def  ")]
+        [InlineData("Abc7ef", "  abc 7ef  ")]
+        [InlineData("Ab7Def", "  ab7 def  ")]
+        [InlineData("_Abc", "_abc")]
+        [InlineData("", "")]
+        [InlineData("😀葛🀄", "😀葛🀄")] // Surrogate pairs
+        [InlineData("ΆλφαΒήταΓάμμα", "ΆλφαΒήταΓάμμα")] // Non-ascii letters
+        [InlineData("𐐀𐐨𐐨𐐀𐐨𐐨", "𐐀𐐨𐐨𐐀𐐨𐐨")] // Surrogate pair letters don't normalize
+        [InlineData("𐐀AbcDef𐐨Abc😀Def𐐀", "𐐀AbcDef𐐨Abc😀Def𐐀")]
+        [InlineData("\ude00\ud83d", "\ude00\ud83d")] // Unpaired surrogates
+        [InlineData("A%", "a%")]
+        [InlineData("_?#-", "_?#-")]
+        [InlineData("?!?", "? ! ?")]
+        [InlineData("$Type", "$type")]
+        [InlineData("Abc%Def", "abc%def")]
+        [InlineData("__Abc__Def__", "__abc__def__")]
+        [InlineData("_AbcAbc_Abc", "_abcAbc_abc")]
+        [InlineData("Abc???Def", "ABC???def")]
+        [InlineData("AbCd-_-DeF", "ABCd  - _ -   DE f")]
+        [InlineData(
+            "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+        [InlineData(
+            "AHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "aHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+        [InlineData(
+            "ATowelItSaysIsAboutTheMostMassivelyUsefulThingAnInterstellarHitchhikerCanHave_PartlyItHasGreatPracticalValue_YouCanWrapItAroundYouForWarmthAsYouBoundAcrossTheColdMoonsOfJaglanBeta_YouCanLieOnItOnTheBrilliantMarbleSandedBeachesOfSantraginusVInhalingTheHeadySeaVapors_YouCanSleepUnderItBeneathTheStarsWhichShineSoRedlyOnTheDesertWorldOfKakrafoon_UseItToSailAMiniraftDownTheSlowHeavyRiverMoth_WetItForUseInHandToHandCombat_WrapItRoundYourHeadToWardOffNoxiousFumesOrAvoidTheGazeOfTheRavenousBugblatterBeastOfTraalAMindBogglinglyStupidAnimal_ItAssumesThatIfYouCantSeeItItCantSeeYouDaftAsABrushButVeryVeryRavenous_YouCanWaveYourTowelInEmergenciesAsADistressSignalAndOfCourseDryYourselfOfWithItIfItStillSeemsToBeCleanEnough",
+            "ATowelItSaysIsAboutTheMostMassivelyUsefulThingAnInterstellarHitchhikerCanHave_PartlyItHasGreatPracticalValue_YouCanWrapItAroundYouForWarmthAsYouBoundAcrossTheColdMoonsOfJaglanBeta_YouCanLieOnItOnTheBrilliantMarbleSandedBeachesOfSantraginusVInhalingTheHeadySeaVapors_YouCanSleepUnderItBeneathTheStarsWhichShineSoRedlyOnTheDesertWorldOfKakrafoon_UseItToSailAMiniraftDownTheSlowHeavyRiverMoth_WetItForUseInHandToHandCombat_WrapItRoundYourHeadToWardOffNoxiousFumesOrAvoidTheGazeOfTheRavenousBugblatterBeastOfTraalAMindBogglinglyStupidAnimal_ItAssumesThatIfYouCantSeeItItCantSeeYouDaftAsABrushButVeryVeryRavenous_YouCanWaveYourTowelInEmergenciesAsADistressSignalAndOfCourseDryYourselfOfWithItIfItStillSeemsToBeCleanEnough")]
+        public static void ToPascalCase(string expectedResult, string name)
+        {
+            JsonNamingPolicy policy = JsonNamingPolicy.PascalCase;
+
+            string value = policy.ConvertName(name);
+
+            Assert.Equal(expectedResult, value);
+        }
+
         public static IEnumerable<object[]> GetValidMemberNames()
             => typeof(PropertyNameTestsDynamic).Assembly.GetTypes()
                 .SelectMany(t => t.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))

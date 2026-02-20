@@ -38,6 +38,7 @@
     <Compile Include="$(CommonPath)\SourceGenerators\TypeRef.cs" Link="Common\SourceGenerators\TypeRef.cs" />
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonPascalCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonPascalCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="..\Common\JsonCommentHandling.cs" Link="Common\System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />

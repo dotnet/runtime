@@ -181,6 +181,7 @@ namespace System.Text.Json
         public static System.Text.Json.JsonNamingPolicy CamelCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy KebabCaseUpper { get { throw null; } }
+        public static System.Text.Json.JsonNamingPolicy PascalCase { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseLower { get { throw null; } }
         public static System.Text.Json.JsonNamingPolicy SnakeCaseUpper { get { throw null; } }
         public abstract string ConvertName(string name);
@@ -1078,6 +1079,7 @@ namespace System.Text.Json.Serialization
         SnakeCaseUpper = 3,
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
+        PascalCase = 6,
     }
     public enum JsonKnownReferenceHandler
     {

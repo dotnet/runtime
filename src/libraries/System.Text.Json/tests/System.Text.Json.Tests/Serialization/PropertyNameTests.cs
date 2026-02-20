@@ -63,6 +63,7 @@ namespace System.Text.Json.Serialization.Tests
             yield return new object[] { JsonNamingPolicy.SnakeCaseUpper };
             yield return new object[] { JsonNamingPolicy.KebabCaseLower };
             yield return new object[] { JsonNamingPolicy.KebabCaseUpper };
+            yield return new object[] { JsonNamingPolicy.PascalCase };
         }
     }
 }
