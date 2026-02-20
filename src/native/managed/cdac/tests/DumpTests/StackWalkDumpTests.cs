@@ -29,11 +29,9 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     public void StackWalk_CanWalkCrashingThread()
     {
         SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
-        IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
-        ThreadStoreData storeData = threadContract.GetThreadStoreData();
-        ThreadData crashingThread = FindCrashingThread(threadContract, storeData);
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
         List<IStackDataFrameHandle> frameList = frames.ToList();
@@ -45,11 +43,9 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     public void StackWalk_HasMultipleFrames()
     {
         SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
-        IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
-        ThreadStoreData storeData = threadContract.GetThreadStoreData();
-        ThreadData crashingThread = FindCrashingThread(threadContract, storeData);
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
         List<IStackDataFrameHandle> frameList = frames.ToList();
@@ -65,12 +61,10 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     public void StackWalk_ManagedFramesHaveValidMethodDescs()
     {
         SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
-        IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
-        ThreadStoreData storeData = threadContract.GetThreadStoreData();
-        ThreadData crashingThread = FindCrashingThread(threadContract, storeData);
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
 
@@ -92,11 +86,9 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     public void StackWalk_FramesHaveRawContext()
     {
         SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
-        IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
-        ThreadStoreData storeData = threadContract.GetThreadStoreData();
-        ThreadData crashingThread = FindCrashingThread(threadContract, storeData);
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
         IStackDataFrameHandle? firstFrame = frames.FirstOrDefault();
@@ -105,34 +97,6 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         byte[] context = stackWalk.GetRawContext(firstFrame);
         Assert.NotNull(context);
         Assert.True(context.Length > 0, "Expected non-empty raw context for stack frame");
-    }
-
-    /// <summary>
-    /// Finds the thread that called FailFast by walking each thread's stack and looking
-    /// for a frame whose method name contains "FailFast".
-    /// </summary>
-    private ThreadData FindCrashingThread(IThread threadContract, ThreadStoreData storeData)
-    {
-        IStackWalk stackWalk = Target.Contracts.StackWalk;
-
-        TargetPointer currentThreadPtr = storeData.FirstThread;
-        while (currentThreadPtr != TargetPointer.Null)
-        {
-            ThreadData threadData = threadContract.GetThreadData(currentThreadPtr);
-
-            foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
-            {
-                TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
-                string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
-                if (name is not null && name.Contains("FailFast"))
-                    return threadData;
-            }
-
-            currentThreadPtr = threadData.NextThread;
-        }
-
-        Assert.Fail("Could not find a thread with FailFast on the stack");
-        return default;
     }
 }
 

@@ -4,6 +4,7 @@
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -53,5 +54,35 @@ internal static class DumpTestHelpers
         MethodDescHandle mdHandle = target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDescPtr);
 
         return GetMethodName(target, mdHandle);
+    }
+
+    /// <summary>
+    /// Finds the thread that called FailFast by walking each thread's stack and looking
+    /// for a frame whose method name contains "FailFast". Asserts if no such thread is found.
+    /// </summary>
+    public static ThreadData FindFailFastThread(ContractDescriptorTarget target)
+    {
+        IThread threadContract = target.Contracts.Thread;
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer currentThreadPtr = storeData.FirstThread;
+        while (currentThreadPtr != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(currentThreadPtr);
+
+            foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
+            {
+                TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+                string? name = GetMethodName(target, methodDescPtr);
+                if (name is not null && name.Contains("FailFast"))
+                    return threadData;
+            }
+
+            currentThreadPtr = threadData.NextThread;
+        }
+
+        Assert.Fail("Could not find a thread with FailFast on the stack");
+        return default;
     }
 }

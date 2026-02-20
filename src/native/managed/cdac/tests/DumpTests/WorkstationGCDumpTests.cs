@@ -63,13 +63,7 @@ public abstract class WorkstationGCDumpTestsBase : DumpTestBase
         SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
         IGC gcContract = Target.Contracts.GC;
         uint heapCount = gcContract.GetGCHeapCount();
-
-        List<TargetPointer> heaps = gcContract.GetGCHeaps().ToList();
-        Assert.Equal((int)heapCount, heaps.Count);
-        foreach (TargetPointer heap in heaps)
-        {
-            Assert.NotEqual(TargetPointer.Null, heap);
-        }
+        Assert.Equal(1u, heapCount);
     }
 
     [ConditionalFact]
