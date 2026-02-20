@@ -306,6 +306,7 @@ namespace System.Net
             if (authOptions.ApplicationProtocols != null && authOptions.ApplicationProtocols.Count != 0
                 && Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
             {
+                ValidateAlpnProtocolListSize(authOptions.ApplicationProtocols);
                 // Set application protocols if the platform supports it. Otherwise, we will silently ignore the option.
                 Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
             }
@@ -318,6 +319,19 @@ namespace System.Net
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
+            }
+        }
+
+        private static void ValidateAlpnProtocolListSize(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolListSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                protocolListSize += protocol.Protocol.Length + 1;
+                if (protocolListSize > ushort.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
             }
         }
     }

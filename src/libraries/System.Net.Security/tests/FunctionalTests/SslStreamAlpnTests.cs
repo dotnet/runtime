@@ -246,15 +246,8 @@ namespace System.Net.Security.Tests
         {
             // Each protocol is 255 bytes, serialized with a 1-byte length prefix = 256 bytes each.
             // Per RFC 7301, TLS wire format limits ProtocolNameList to 2^16-1 (65,535) bytes.
-            // Windows (SChannel): enforced via managed check in Interop.Sec_Application_Protocols.GetProtocolLength()
-            // Unix (OpenSSL): enforced by OpenSSL during ClientHello construction
+            // All platforms enforce this via managed validation before calling native APIs.
             // 256 * 256 = 65,536 > 65,535
-            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux() && !OperatingSystem.IsFreeBSD())
-            {
-                // ALPN size limit behavior not verified on other platforms
-                return;
-            }
-
             const int protocolCount = 256;
             List<SslApplicationProtocol> oversizedProtocols = new List<SslApplicationProtocol>();
             for (int i = 0; i < protocolCount; i++)
@@ -288,20 +281,9 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(serverStream, false))
             {
                 Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
-
-                if (OperatingSystem.IsWindows())
-                {
-                    // On Windows, managed validation in GetProtocolLength() throws before the handshake starts.
-                    await Assert.ThrowsAsync<ArgumentException>(() => client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
-                }
-                else
-                {
-                    // On Unix, OpenSSL fails during ClientHello construction when encoding
-                    // the oversized ALPN extension into the TLS wire format.
-                    await Assert.ThrowsAsync<AuthenticationException>(() => client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
-                }
-
+                await Assert.ThrowsAsync<ArgumentException>(() => client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
                 server.Dispose();
+
                 await Assert.ThrowsAnyAsync<Exception>(() => serverTask.WaitAsync(TestConfiguration.PassingTestTimeout));
             }
         }
