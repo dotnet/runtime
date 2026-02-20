@@ -43,8 +43,8 @@
 
   <!-- Send the testhost as a correlation payload (shared across work items, extracted once per machine) -->
   <ItemGroup>
-    <HelixCorrelationPayload Include="testhost">
-      <PayloadDirectory>$(TestHostPayload)</PayloadDirectory>
+    <HelixCorrelationPayload Include="$(TestHostPayload)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
     </HelixCorrelationPayload>
   </ItemGroup>
 
