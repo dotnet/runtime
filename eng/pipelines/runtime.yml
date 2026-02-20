@@ -326,8 +326,8 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
-          # TEMPORARY: narrowed to linux_arm64 only for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442), was also osx_arm64
           - linux_arm64
+          - osx_arm64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:ArchiveTests=true
