@@ -185,34 +185,3 @@ public class Validate
         // }
     }
 }
-
-// Simple ref struct types used for testing
-public ref struct ByRefLikeType
-{
-}
-
-public ref struct ByRefLikeType2
-{
-}
-
-public ref struct ByRefLikeType<T>
-{
-}
-
-public ref struct ByRefLikeTypeWithInterface : InvalidCSharp.SimpleInterface
-{
-    public int Method() => 1;
-}
-
-public ref struct RS_DI1 : InvalidCSharp.DefaultInterface
-{
-}
-
-public ref struct RS_DI2 : InvalidCSharp.DefaultInterface
-{
-    public int Method() => 1;
-}
-
-public struct RegularValueType
-{
-}
