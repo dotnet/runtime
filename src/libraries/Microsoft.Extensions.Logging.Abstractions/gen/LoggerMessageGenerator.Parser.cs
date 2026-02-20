@@ -767,6 +767,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                     constraints.Add(constraintType.ToDisplayString(
                         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
                             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)));
                 }
 
