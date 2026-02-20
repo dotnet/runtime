@@ -1131,6 +1131,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    assert(TypeGet(value) != TYP_SIMD);
+    assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
@@ -3363,6 +3368,12 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
+#ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    {
+        return false;
+    }
+#endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
@@ -4485,14 +4496,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallCookie));
-                }
-                if (call->gtCallAddr != nullptr)
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallAddr));
-                }
+                RETURN_IF_ABORT(visitor(call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
@@ -4547,13 +4551,13 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        unsigned size = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
         return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetValueSize()));
     }
     if (OperIs(GT_CALL))
     {
@@ -4565,7 +4569,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 
             bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 

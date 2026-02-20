@@ -29,8 +29,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
     _BrowserHost_CreateHostContract: () => VoidPtr;
-    _BrowserHost_InitializeCoreCLR: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
+    _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
+    _BrowserHost_ShutdownDotnet: (exitCode: number) => number;
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
     _SystemInteropJS_GetManagedStackTrace: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallDelegate: (args: JSMarshalerArguments) => void;
@@ -42,11 +43,22 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
         createDataFile: (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean) => string;
+        chdir: (path: string) => void;
     }
+    ENV: any;
 
-    DOTNET: any;
-    DOTNET_INTEROP: any;
-    BROWSER_HOST: any;
+    DOTNET: {
+        lastScheduledTimerId?: number;
+        lastScheduledThreadPoolId?: number;
+        lastScheduledFinalizationId?: number;
+        cryptoWarnOnce?: boolean;
+        isAborting?: boolean;
+        gitHash?: string;
+    }
+    DOTNET_INTEROP: {
+        gitHash?: string;
+    };
+    BROWSER_HOST: {};
 
     Module: EmscriptenModuleInternal;
     ENVIRONMENT_IS_NODE: boolean;
@@ -68,8 +80,10 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     HEAPF64: Float64Array;
 
     ExitStatus: (exitCode: number) => number;
-    _emscripten_force_exit: (exitCode: number) => void;
     _exit: (exitCode: number, implicit?: boolean) => void;
+    abort: (reason: any) => void;
+    ___trap: () => void;
+    ___funcs_on_exit: () => void;
     safeSetTimeout: (func: Function, timeout: number) => number;
     exitJS: (status: number, implicit?: boolean | number) => void;
     runtimeKeepalivePop: () => void;

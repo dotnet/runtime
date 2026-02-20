@@ -129,6 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}
@@ -515,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
         pAssem->ClearLoading();
-        pAssem->m_level = FILE_ACTIVE;
+        pAssem->SetLoadLevel(FILE_ACTIVE);
     }
 
     {
@@ -1189,6 +1190,10 @@ struct Param
     LPWSTR *wzArgs;
 } param;
 
+#if defined(TARGET_BROWSER)
+extern "C" void SystemJS_ResolveMainPromise(int exitCode);
+#endif // TARGET_BROWSER
+
 static void RunMainInternal(Param* pParam)
 {
     MethodDescCallSite  threadStart(pParam->pFD);
@@ -1222,6 +1227,9 @@ static void RunMainInternal(Param* pParam)
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
         threadStart.Call(&stackVar);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
 // WASM-TODO: remove this
 // https://github.com/dotnet/runtime/issues/121064
@@ -1256,6 +1264,9 @@ static void RunMainInternal(Param* pParam)
         // Call the main method
         *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
 
     GCPROTECT_END();
@@ -2302,7 +2313,7 @@ void Assembly::FinishLoad()
     CONTRACTL_END;
 
     // Must set this a bit prematurely for the DAC stuff to work
-    m_level = FILE_LOADED;
+    SetLoadLevel(FILE_LOADED);
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);

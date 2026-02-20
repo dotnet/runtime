@@ -136,6 +136,7 @@ export function dotnetUpdateInternalsSubscriber() {
             addOnExitListener: table[14],
             abortStartup: table[15],
             quitNow: table[16],
+            normalizeException: table[17],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -150,6 +151,7 @@ export function dotnetUpdateInternalsSubscriber() {
             loadIcuData: table[2],
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
+            instantiateWasm: table[5],
         };
         Object.assign(native, nativeLocal);
     }
@@ -178,6 +180,7 @@ export function dotnetUpdateInternalsSubscriber() {
     function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
         const interopLocal: DiagnosticsExports = {
             symbolicateStackTrace: table[0],
+            installNativeSymbols: table[1],
         };
         Object.assign(interop, interopLocal);
     }

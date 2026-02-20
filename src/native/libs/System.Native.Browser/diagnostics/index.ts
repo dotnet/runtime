@@ -8,7 +8,7 @@ import GitHash from "consts:gitHash";
 
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { registerExit } from "./exit";
-import { symbolicateStackTrace } from "./symbolicate";
+import { installNativeSymbols, symbolicateStackTrace } from "./symbolicate";
 import { installLoggingProxy } from "./console-proxy";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -23,6 +23,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
     internals[InternalExchangeIndex.DiagnosticsExportsTable] = diagnosticsExportsToTable({
         symbolicateStackTrace,
+        installNativeSymbols,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
@@ -34,6 +35,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         // keep in sync with diagnosticsExportsFromTable()
         return [
             map.symbolicateStackTrace,
+            map.installNativeSymbols,
         ];
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using TestLibrary;
 using Xunit;
 
 public interface IGetContents<T> {
@@ -24,6 +25,7 @@ public partial class Program {
     public delegate (string, int, T) MyDelegate<T>(IGetContents<T> arg);
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124221", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     public static int TestEntryPoint()
     {
         int retVal = 100;

@@ -106,6 +106,7 @@ parser.add_argument("--large_version_bubble", dest="large_version_bubble", actio
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
+parser.add_argument("--node", dest="node", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -859,6 +860,11 @@ def run_tests(args,
         print("Setting RunInterpreter=1")
         os.environ["RunInterpreter"] = "1"
 
+    if args.node:
+        print("Running tests with the NodeJS")
+        print("Setting RunWithNodeJS=1")
+        os.environ["RunWithNodeJS"] = "1"
+
     if gc_stress:
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
@@ -1017,6 +1023,11 @@ def setup_args(args):
                               "interpreter",
                               lambda arg: True,
                               "Error setting interpreter")
+
+    coreclr_setup_args.verify(args,
+                              "node",
+                              lambda arg: True,
+                              "Error setting node")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
