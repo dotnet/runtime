@@ -1839,7 +1839,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         // TODO-WASM: pass proper portable entry point as the last argument for managed calls
         GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
-        PushFront(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
+        PushBack(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
     }
 
 #endif // defined(TARGET_WASM)
