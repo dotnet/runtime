@@ -1198,7 +1198,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     // and create a DynamicMethodDesc wrapper for it so that GC stack walks work correctly.
     if (pMD->IsAsyncVariantMethod())
     {
-        uint stubRuntimeFunctionIndex = 0;
         PCODE stubEntryPoint = GetEntryPoint(pMD, pConfig, fFixups, true);
         if (stubEntryPoint != (PCODE)NULL)
         {
