@@ -790,6 +790,7 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_THROW:
+        {
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -800,11 +801,13 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             // 2. If this is this is the last block of the hot section.
             // 3. If the subsequent block is a special throw block.
             // 4. On AMD64, if the next block is in a different EH region.
+            bool addedBreakpoint = false;
             if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                 (!isFramePointerUsed() && m_compiler->fgIsThrowHlpBlk(block->Next())) ||
                 m_compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(m_compiler))
             {
                 instGen(INS_BREAKPOINT); // This should never get executed
+                addedBreakpoint = true;
             }
             // Do likewise for blocks that end in DOES_NOT_RETURN calls
             // that were not caught by the above rules. This ensures that
@@ -818,11 +821,22 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
                     if (call->AsCall()->IsNoReturn())
                     {
                         instGen(INS_BREAKPOINT); // This should never get executed
+                        addedBreakpoint = true;
                     }
                 }
             }
 
+#if defined(TARGET_WASM)
+            // For wasm the last instruction in a function or funclet must be end.
+            //
+            if (addedBreakpoint && (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next())))
+            {
+                GetEmitter()->emitIns(INS_end);
+            }
+#endif // defined(TARGET_WASM)
+
             break;
+        }
 
         case BBJ_CALLFINALLY:
             result = genCallFinally(block);

@@ -1836,8 +1836,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
         PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+
+        // TODO-WASM: pass proper portable entry point as the last argument for managed calls
+        GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
+        PushFront(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
     }
-    // TODO-WASM: pass the portable entry point as the last argument for managed calls
+
 #endif // defined(TARGET_WASM)
 
     ClassifierInfo info;
