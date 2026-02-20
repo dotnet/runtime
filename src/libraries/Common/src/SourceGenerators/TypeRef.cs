@@ -18,6 +18,7 @@ namespace SourceGenerators
             Name = type.Name;
             FullyQualifiedName = type.GetFullyQualifiedName();
             IsValueType = type.IsValueType;
+            IsGenericType = type is INamedTypeSymbol { IsGenericType: true };
             TypeKind = type.TypeKind;
             SpecialType = type.OriginalDefinition.SpecialType;
         }
@@ -30,6 +31,7 @@ namespace SourceGenerators
         public string FullyQualifiedName { get; }
 
         public bool IsValueType { get; }
+        public bool IsGenericType { get; }
         public TypeKind TypeKind { get; }
         public SpecialType SpecialType { get; }
 

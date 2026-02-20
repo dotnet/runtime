@@ -1244,7 +1244,8 @@ namespace System.Text.Json.SourceGeneration
 
                 if (hasJsonIncludeButIsInaccessible)
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.InaccessibleJsonIncludePropertiesNotSupported, memberInfo.GetLocation(), declaringType.Name, memberInfo.Name);
+                    // Inaccessible [JsonInclude] properties are now supported via
+                    // UnsafeAccessor (when available) or reflection fallback.
                 }
 
                 if (isExtensionData)
@@ -1596,11 +1597,11 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                HashSet<string>? memberInitializerNames = null;
+                HashSet<string>? requiredMemberNames = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
                 int paramCount = constructorParameters?.Length ?? 0;
 
-                // Determine potential required properties that need to be part of the constructor delegate signature.
+                // Determine required properties that need to be part of the constructor delegate signature.
                 // Init-only non-required properties are no longer included here -- they will be set
                 // via UnsafeAccessor or reflection post-construction to preserve their default values.
                 foreach (PropertyGenerationSpec property in properties)
@@ -1617,9 +1618,9 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.IsRequired && !constructorSetsRequiredMembers)
                     {
-                        if (!(memberInitializerNames ??= new()).Add(property.MemberName))
+                        if (!(requiredMemberNames ??= new()).Add(property.MemberName))
                         {
-                            // We've already added another member initializer with the same name to our spec list.
+                            // We've already added another required member with the same name to our spec list.
                             // Duplicates can occur here because the provided list of properties includes shadowed members.
                             // This is because we generate metadata for *all* members, including shadowed or ignored ones,
                             // since we need to re-run the deduplication algorithm taking run-time configuration into account.

@@ -601,8 +601,8 @@ namespace System.Text.Json.SourceGeneration
                     GenerateCtorParamMetadataInitFunc(writer, ctorParamMetadataInitMethodName, typeMetadata);
                 }
 
-                // Generate UnsafeAccessor methods or reflection cache fields for init-only property setters.
-                GenerateInitOnlyPropertyAccessors(writer, typeMetadata);
+                // Generate UnsafeAccessor methods or reflection cache fields for property accessors.
+                GeneratePropertyAccessors(writer, typeMetadata);
 
                 writer.Indentation--;
                 writer.WriteLine('}');
@@ -638,15 +638,7 @@ namespace System.Text.Json.SourceGeneration
 
                     string propertyTypeFQN = isIgnoredPropertyOfUnusedType ? "object" : property.PropertyType.FullyQualifiedName;
 
-                    string getterValue = property switch
-                    {
-                        { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static obj => (({declaringTypeFQN})obj).{propertyName}",
-                        { CanUseGetter: false, HasJsonInclude: true }
-                            => $"""static _ => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, propertyName)}")""",
-                        _ => "null"
-                    };
-
+                    string getterValue = GetPropertyGetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, i);
                     string setterValue = GetPropertySetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, propertyTypeFQN, i);
 
                     string ignoreConditionNamedArg = property.DefaultIgnoreCondition.HasValue
@@ -731,12 +723,88 @@ namespace System.Text.Json.SourceGeneration
             /// Determines whether an init-only property is set in the constructor delegate's object initializer
             /// (and therefore doesn't need a real setter delegate).
             /// </summary>
-            private static bool IsInitOnlyPropertyInObjectInitializer(PropertyGenerationSpec property, TypeGenerationSpec typeGenerationSpec)
+            private static bool IsRequiredInitOnlyPropertyInObjectInitializer(PropertyGenerationSpec property, TypeGenerationSpec typeGenerationSpec)
             {
-                Debug.Assert(property.IsInitOnlySetter);
                 // Init-only properties are in the object initializer only if they are required
                 // and the constructor doesn't already set required members.
-                return property.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters;
+                return property.IsInitOnlySetter && property.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters;
+            }
+
+            /// <summary>
+            /// Determines whether unsafe accessors can be used for a specific property.
+            /// Unsafe accessors are not supported for generic types.
+            /// </summary>
+            private bool CanUseUnsafeAccessors(PropertyGenerationSpec property)
+                => _isUnsafeAccessorsSupported && !property.DeclaringType.IsGenericType;
+
+            /// <summary>
+            /// Returns true if the property requires an unsafe accessor or reflection fallback
+            /// for its getter (i.e. it's inaccessible but has [JsonInclude]).
+            /// </summary>
+            private static bool NeedsAccessorForGetter(PropertyGenerationSpec property)
+                => !property.CanUseGetter && property.HasJsonInclude && property.DefaultIgnoreCondition is not JsonIgnoreCondition.Always;
+
+            /// <summary>
+            /// Returns true if the property requires an unsafe accessor or reflection fallback
+            /// for its setter (i.e. init-only not in the object initializer, or inaccessible with [JsonInclude]).
+            /// </summary>
+            private static bool NeedsAccessorForSetter(PropertyGenerationSpec property, TypeGenerationSpec typeGenerationSpec)
+            {
+                if (property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
+                {
+                    return false;
+                }
+
+                // Init-only properties not in the object initializer need an accessor.
+                if (property is { CanUseSetter: true, IsInitOnlySetter: true } &&
+                    !IsRequiredInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
+                {
+                    return true;
+                }
+
+                // Inaccessible [JsonInclude] properties need an accessor.
+                if (!property.CanUseSetter && property.HasJsonInclude)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            private string GetPropertyGetterValue(
+                PropertyGenerationSpec property,
+                TypeGenerationSpec typeGenerationSpec,
+                string propertyName,
+                string declaringTypeFQN,
+                int propertyIndex)
+            {
+                if (property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
+                {
+                    return "null";
+                }
+
+                if (property.CanUseGetter)
+                {
+                    return $"static obj => (({declaringTypeFQN})obj).{propertyName}";
+                }
+
+                if (NeedsAccessorForGetter(property))
+                {
+                    string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
+                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
+
+                    if (CanUseUnsafeAccessors(property))
+                    {
+                        string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
+                        return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
+                    }
+
+                    // Reflection fallback.
+                    string cacheName = GetReflectionMemberInfoCacheName(typeFriendlyName, property.MemberName, propertyIndex);
+                    return $"static obj => ({propertyTypeFQN}){cacheName}.Value!.GetValue(obj)!";
+                }
+
+                return "null";
             }
 
             private string GetPropertySetterValue(
@@ -754,16 +822,16 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
-                    if (IsInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
+                    if (IsRequiredInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
                     {
-                        // Init-only property set via the constructor delegate's object initializer;
+                        // Required init-only property set via the constructor delegate's object initializer;
                         // a direct setter is not needed.
                         return $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{ExceptionMessages.InitOnlyPropertySetterNotSupported}")""";
                     }
 
                     // Init-only property not in the object initializer: generate a real setter
                     // using UnsafeAccessor (when available) or reflection (as fallback).
-                    return GetInitOnlyPropertySetterExpression(property, typeGenerationSpec, propertyTypeFQN, propertyIndex);
+                    return GetUnsafeSetterExpression(property, typeGenerationSpec, propertyTypeFQN, propertyIndex);
                 }
 
                 if (property.CanUseSetter)
@@ -773,26 +841,27 @@ namespace System.Text.Json.SourceGeneration
                         : $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""";
                 }
 
-                if (property is { CanUseSetter: false, HasJsonInclude: true })
+                if (NeedsAccessorForSetter(property, typeGenerationSpec))
                 {
-                    return $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.TypeRef.Name, property.MemberName)}")""";
+                    return GetUnsafeSetterExpression(property, typeGenerationSpec, propertyTypeFQN, propertyIndex);
                 }
 
                 return "null";
             }
 
-            private string GetInitOnlyPropertySetterExpression(
+            private string GetUnsafeSetterExpression(
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyTypeFQN,
                 int propertyIndex)
             {
                 string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
-                string accessorName = GetInitOnlySetterAccessorName(typeFriendlyName, property.MemberName, propertyIndex);
                 string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
 
-                if (_isUnsafeAccessorsSupported)
+                if (CanUseUnsafeAccessors(property))
                 {
+                    string accessorName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
+
                     if (typeGenerationSpec.TypeRef.IsValueType)
                     {
                         return $"""static (obj, value) => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj), ({propertyTypeFQN})value!)""";
@@ -801,11 +870,12 @@ namespace System.Text.Json.SourceGeneration
                     return $"""static (obj, value) => {accessorName}(({declaringTypeFQN})obj, ({propertyTypeFQN})value!)""";
                 }
 
-                // Reflection fallback for targets without UnsafeAccessor support.
-                return $"""static (obj, value) => {GetInitOnlySetterReflectionCacheName(typeFriendlyName, property.MemberName, propertyIndex)}.SetValue(obj, value)""";
+                // Reflection fallback.
+                string cacheName = GetReflectionMemberInfoCacheName(typeFriendlyName, property.MemberName, propertyIndex);
+                return $"""static (obj, value) => {cacheName}.Value!.SetValue(obj, value)""";
             }
 
-            private void GenerateInitOnlyPropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
+            private void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 bool needsAccessors = false;
@@ -813,13 +883,10 @@ namespace System.Text.Json.SourceGeneration
                 for (int i = 0; i < properties.Count; i++)
                 {
                     PropertyGenerationSpec property = properties[i];
-                    if (!property.IsInitOnlySetter || !property.CanUseSetter ||
-                        property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
-                    {
-                        continue;
-                    }
+                    bool needsGetterAccessor = NeedsAccessorForGetter(property);
+                    bool needsSetterAccessor = NeedsAccessorForSetter(property, typeGenerationSpec);
 
-                    if (IsInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
+                    if (!needsGetterAccessor && !needsSetterAccessor)
                     {
                         continue;
                     }
@@ -833,28 +900,38 @@ namespace System.Text.Json.SourceGeneration
                     string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
                     string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
                     string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
-                    string accessorName = GetInitOnlySetterAccessorName(typeFriendlyName, property.MemberName, i);
 
-                    if (_isUnsafeAccessorsSupported)
+                    if (CanUseUnsafeAccessors(property))
                     {
                         string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
 
-                        writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]""");
-                        writer.WriteLine($"private static extern void {accessorName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
+                        if (needsGetterAccessor)
+                        {
+                            string getterName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, i);
+                            writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{property.MemberName}")]""");
+                            writer.WriteLine($"private static extern {propertyTypeFQN} {getterName}({refPrefix}{declaringTypeFQN} obj);");
+                        }
+
+                        if (needsSetterAccessor)
+                        {
+                            string setterName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, i);
+                            writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]""");
+                            writer.WriteLine($"private static extern void {setterName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
+                        }
                     }
                     else
                     {
-                        // Generate a cached PropertyInfo field for the reflection fallback.
-                        string cacheName = GetInitOnlySetterReflectionCacheName(typeFriendlyName, property.MemberName, i);
-                        writer.WriteLine($"private static readonly global::System.Reflection.PropertyInfo {cacheName} = typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!;");
+                        // Generate a lazily-initialized cached PropertyInfo field for the reflection fallback.
+                        string cacheName = GetReflectionMemberInfoCacheName(typeFriendlyName, property.MemberName, i);
+                        writer.WriteLine($"private static readonly global::System.Lazy<global::System.Reflection.PropertyInfo> {cacheName} = new global::System.Lazy<global::System.Reflection.PropertyInfo>(() => typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!);");
                     }
                 }
             }
 
-            private static string GetInitOnlySetterAccessorName(string typeFriendlyName, string memberName, int propertyIndex)
-                => $"__set_{typeFriendlyName}_{memberName}_{propertyIndex}";
+            private static string GetUnsafeAccessorName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
+                => $"__{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
-            private static string GetInitOnlySetterReflectionCacheName(string typeFriendlyName, string memberName, int propertyIndex)
+            private static string GetReflectionMemberInfoCacheName(string typeFriendlyName, string memberName, int propertyIndex)
                 => $"s_propInfo_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
             private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
