@@ -385,7 +385,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*               embMaskOp   = nullptr;
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(compiler->compIsaSupportedDebugOnly(isa));
+    assert(m_compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
     assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
@@ -415,7 +415,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 regNumber maskReg   = op3->GetRegNum();
 
                 // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
-                assert(!op2->isRMWHWIntrinsic(compiler));
+                assert(!op2->isRMWHWIntrinsic(m_compiler));
 
                 bool mergeWithZero = op1->isContained();
 
@@ -472,21 +472,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 case 2:
                 {
                     numArgs = 1;
-                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1));
+                    node->ResetHWIntrinsicId(intrinsicId, m_compiler, node->Op(1));
                     break;
                 }
 
                 case 3:
                 {
                     numArgs = 2;
-                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
+                    node->ResetHWIntrinsicId(intrinsicId, m_compiler, node->Op(1), node->Op(2));
                     break;
                 }
 
                 case 4:
                 {
                     numArgs = 3;
-                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2), node->Op(3));
+                    node->ResetHWIntrinsicId(intrinsicId, m_compiler, node->Op(1), node->Op(2), node->Op(3));
                     break;
                 }
 
@@ -507,7 +507,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 var_types baseType = node->GetSimdBaseType();
 
-                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
                 assert(ins != INS_invalid);
 
                 emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
@@ -619,13 +619,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         assert(numArgs >= 0);
 
-        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
         assert(ins != INS_invalid);
 
         emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
         assert(simdSize != 0);
 
-        int ival = HWIntrinsicInfo::lookupIval(compiler, intrinsicId, baseType);
+        int ival = HWIntrinsicInfo::lookupIval(m_compiler, intrinsicId, baseType);
 
         switch (numArgs)
         {
@@ -692,7 +692,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 op1Reg = op1->GetRegNum();
                 op2Reg = op2->GetRegNum();
 
-                if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
+                if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(m_compiler))
                 {
                     // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
                     //
@@ -730,7 +730,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // temporary GT_IND to generate code with.
                     GenTreeIndir load = indirForm(node->TypeGet(), addr);
 
-                    assert(!node->isRMWHWIntrinsic(compiler));
+                    assert(!node->isRMWHWIntrinsic(m_compiler));
                     inst_RV_RV_TT(ins, simdSize, targetReg, otherReg, &load, false, instOptions);
                 }
                 else if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
@@ -1108,7 +1108,7 @@ void CodeGen::genHWIntrinsic_R_RM(
     if (rmOpDesc.IsContained())
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, rmOp);
+        assertIsContainableHWIntrinsicOp(m_compiler->m_pLowering, node, rmOp);
     }
 
     switch (rmOpDesc.GetKind())
@@ -1152,7 +1152,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                         case NI_AVX2_BroadcastScalarToVector128:
                         case NI_AVX2_BroadcastScalarToVector256:
                         {
-                            if (compiler->canUseEvexEncoding())
+                            if (m_compiler->canUseEvexEncoding())
                             {
                                 needsInstructionFixup = true;
                             }
@@ -1271,7 +1271,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(
     if (op1->isContained() || op1->isUsedFromSpillTemp())
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op1);
+        assertIsContainableHWIntrinsicOp(m_compiler->m_pLowering, node, op1);
     }
     inst_RV_TT_IV(ins, simdSize, targetReg, op1, ival, instOptions);
 }
@@ -1299,10 +1299,10 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
+        assertIsContainableHWIntrinsicOp(m_compiler->m_pLowering, node, op2);
     }
 
-    bool isRMW = node->isRMWHWIntrinsic(compiler);
+    bool isRMW = node->isRMWHWIntrinsic(m_compiler);
     inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW, instOptions);
 }
 
@@ -1347,12 +1347,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
+        assertIsContainableHWIntrinsicOp(m_compiler->m_pLowering, node, op2);
     }
 
     assert(op1Reg != REG_NA);
 
-    bool isRMW = node->isRMWHWIntrinsic(compiler);
+    bool isRMW = node->isRMWHWIntrinsic(m_compiler);
     inst_RV_RV_TT_IV(ins, simdSize, targetReg, op1Reg, op2, ival, isRMW, instOptions);
 }
 
@@ -1400,7 +1400,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
     if (op2Desc.IsContained())
     {
         assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
+        assertIsContainableHWIntrinsicOp(m_compiler->m_pLowering, node, op2);
     }
 
     switch (op2Desc.GetKind())
@@ -1533,7 +1533,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
         // allocated to it resulting in better
         // non-RMW based codegen.
 
-        assert(!node->isRMWHWIntrinsic(compiler));
+        assert(!node->isRMWHWIntrinsic(m_compiler));
         op1Reg = targetReg;
 
         if (op2->isContained())
@@ -1696,10 +1696,10 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     emit->emitDataGenEnd();
 
     // Compute and jump to the appropriate offset in the switch table
-    emit->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), offsReg, compiler->eeFindJitDataOffs(jmpTableBase), 0);
+    emit->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), offsReg, m_compiler->eeFindJitDataOffs(jmpTableBase), 0);
 
     emit->emitIns_R_ARX(INS_mov, EA_4BYTE, offsReg, offsReg, nonConstImmReg, 4, 0);
-    emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, baseReg);
+    emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, m_compiler->fgFirstBB, baseReg);
     emit->emitIns_R_R(INS_add, EA_PTRSIZE, offsReg, baseReg);
     emit->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), offsReg);
 
@@ -1741,7 +1741,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
     var_types   baseType   = node->GetSimdBaseType();
     emitAttr    attr       = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     var_types   targetType = node->TypeGet();
-    instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+    instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
     regNumber   targetReg  = node->GetRegNum();
 
     insOpts instOptions = INS_OPTS_NONE;
@@ -1863,7 +1863,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     emitter*    emit     = GetEmitter();
     var_types   simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
     emitAttr    attr     = emitActualTypeSize(simdType);
-    instruction ins      = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+    instruction ins      = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
     switch (intrinsicId)
     {
@@ -1905,7 +1905,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                         {
                             genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
                             inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 0x01,
-                                             !compiler->canUseVexEncoding(), instOptions);
+                                             !m_compiler->canUseVexEncoding(), instOptions);
                             break;
                         }
 
@@ -1987,11 +1987,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             // The range check will already have been performed, so at this point we know we have an index
             // within the bounds of the vector.
 
-            unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
+            unsigned simdInitTempVarNum = m_compiler->lvaSIMDInitTempVarNum;
             noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
             bool isEBPbased;
-            int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+            int  offs = m_compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
             if (!isEBPbased)
@@ -2009,7 +2009,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             regNumber valueReg = op3->GetRegNum(); // New element value to be stored
 
             // Store the vector to the temp location.
-            GetEmitter()->emitIns_S_R(ins_Store(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
+            GetEmitter()->emitIns_S_R(ins_Store(simdType, m_compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
                                       emitTypeSize(simdType), op1Reg, simdInitTempVarNum, 0);
 
             // Set the desired element.
@@ -2022,7 +2022,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                                         offs);                            // Offset
 
             // Write back the modified vector to the original location.
-            GetEmitter()->emitIns_R_S(ins_Load(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
+            GetEmitter()->emitIns_R_S(ins_Load(simdType, m_compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
                                       emitTypeSize(simdType), targetReg, simdInitTempVarNum, 0);
             break;
         }
@@ -2056,7 +2056,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     // {offset of local} + {offset of vector field (lclFld only)} + {offset of element within vector}.
                     bool     isEBPbased;
                     unsigned varNum = op1->AsLclVarCommon()->GetLclNum();
-                    offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
+                    offset += m_compiler->lvaFrameAddress(varNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
                     if (!isEBPbased)
@@ -2152,11 +2152,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // The range check will already have been performed, so at this point we know we have an index
                 // within the bounds of the vector.
 
-                unsigned simdInitTempVarNum = compiler->lvaSIMDInitTempVarNum;
+                unsigned simdInitTempVarNum = m_compiler->lvaSIMDInitTempVarNum;
                 noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
 
                 bool isEBPbased;
-                int  offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
+                int  offs = m_compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
 
 #if !FEATURE_FIXED_OUT_ARGS
                 if (!isEBPbased)
@@ -2171,7 +2171,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 regNumber indexReg = op2->GetRegNum();
 
                 // Store the vector to the temp location.
-                GetEmitter()->emitIns_S_R(ins_Store(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
+                GetEmitter()->emitIns_S_R(ins_Store(simdType, m_compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),
                                           emitTypeSize(simdType), op1Reg, simdInitTempVarNum, 0);
 
                 // Now, load the desired element.
@@ -2334,9 +2334,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             //      return div_i32;
             regNumber op2Reg  = op2->GetRegNum();
             regNumber tmpReg1 = REG_NA;
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
-                tmpReg1 = internalRegisters.Extract(node, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                tmpReg1 = internalRegisters.Extract(node, m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                                               ? RBM_ALLFLOAT
                                                               : SRBM_XMM0);
             }
@@ -2347,11 +2347,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             noway_assert(typeSize == EA_16BYTE || typeSize == EA_32BYTE);
             emitAttr divTypeSize = typeSize;
 
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 divTypeSize = typeSize == EA_16BYTE ? EA_32BYTE : EA_64BYTE;
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX) && typeSize == EA_16BYTE)
+            else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX) && typeSize == EA_16BYTE)
             {
                 divTypeSize = EA_32BYTE;
             }
@@ -2383,7 +2383,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg2, op1Reg, instOptions);
                 emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg3, op2Reg, instOptions);
             }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 emit->emitIns_R_R(INS_vcvtudq2pd, divTypeSize, tmpReg2, op1Reg, instOptions);
                 emit->emitIns_R_R(INS_vcvtudq2pd, divTypeSize, tmpReg3, op2Reg, instOptions);
@@ -2401,7 +2401,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 // Convert uint -> double
                 //   tmpReg2 = double(op1Reg)
                 //   tmpReg3 = double(op2Reg)
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     emit->emitIns_R_R(INS_cvtdq2pd, divTypeSize, tmpReg1, op1Reg, instOptions);
                     emit->emitIns_Mov(INS_movups, divTypeSize, tmpReg2, tmpReg1, false, instOptions);
@@ -2431,7 +2431,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 }
             }
 
-            if (varTypeIsSigned(baseType) || compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (varTypeIsSigned(baseType) || m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, targetReg, tmpReg2, tmpReg3, instOptions);
                 emit->emitIns_R_R(varTypeIsSigned(baseType) ? INS_cvttpd2dq : INS_vcvttpd2udq, divTypeSize, targetReg,
@@ -2442,7 +2442,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(varTypeIsUnsigned(baseType));
                 emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, tmpReg1, tmpReg2, tmpReg3, instOptions);
 
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, tmpReg3, tmpReg1, instOptions);
                     emit->emitIns_Mov(INS_movups, typeSize, tmpReg1, op1Reg, instOptions);
@@ -2495,7 +2495,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_X64_BitScanReverse:
         {
             GenTree*    op1 = node->Op(1);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1, instOptions);
             break;
@@ -2521,7 +2521,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             GenTree* op2 = node->Op(2);
             GenTree* op3 = node->Op(3);
 
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
 
             regNumber op1Reg = op1->GetRegNum();
             regNumber op2Reg = op2->GetRegNum();
@@ -2551,7 +2551,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_LONG || baseType == TYP_ULONG);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
@@ -2566,7 +2566,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             // These do not support containment.
             assert(!node->Op(1)->isContained());
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->GetSimdBaseType(), compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->GetSimdBaseType(), m_compiler);
             emit->emitIns_AR(ins, emitTypeSize(baseType), node->Op(1)->GetRegNum(), 0);
             break;
         }
@@ -2599,7 +2599,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 attr = emitTypeSize(targetType);
             }
 
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_RM(node, ins, attr, targetReg, node->Op(1), instOptions);
             break;
         }
@@ -2622,7 +2622,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_X64_StoreNonTemporal:
         {
             assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG);
-            instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             GenTreeStoreInd store = storeIndirForm(node->TypeGet(), node->Op(1), node->Op(2));
             emit->emitInsStoreInd(ins, emitTypeSize(baseType), &store);
             break;
@@ -2633,7 +2633,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_ConvertToVector128Int64:
         {
             GenTree*    op1 = node->Op(1);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
             if (!varTypeIsSIMD(op1->TypeGet()))
             {
@@ -2711,7 +2711,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_Extract:
         case NI_X86Base_X64_Extract:
         {
-            instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             GenTree*    op1  = node->Op(1);
             GenTree*    op2  = node->Op(2);
             emitAttr    attr = emitActualTypeSize(targetType);
@@ -2791,7 +2791,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     }
 
-    instruction ins       = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+    instruction ins       = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
     size_t      numArgs   = node->GetOperandCount();
     GenTree*    op1       = node->Op(1);
     regNumber   op1Reg    = REG_NA;
@@ -2825,7 +2825,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
             op1Reg = op1->GetRegNum();
             assert((baseType == TYP_INT) || (baseType == TYP_UINT));
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             emit->emitIns_Mov(ins, emitActualTypeSize(baseType), targetReg, op1Reg, /* canSkip */ false);
             break;
         }
@@ -2834,7 +2834,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX2_ConvertToVector256Int32:
         case NI_AVX2_ConvertToVector256Int64:
         {
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
             if (!varTypeIsSIMD(op1->gtType))
             {
@@ -3013,7 +3013,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             emit->emitIns_Mov(INS_mov, attr, REG_EDX, op1Reg, /* canSkip */ true);
 
             // generate code for MULX
-            assert(!node->isRMWHWIntrinsic(compiler));
+            assert(!node->isRMWHWIntrinsic(m_compiler));
             inst_RV_RV_TT(ins, attr, targetReg, lowReg, op2, false, INS_OPTS_NONE);
 
             // If requires the lower half result, store in the memory pointed to by op3
@@ -3512,7 +3512,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT);
             emitAttr attr = emitTypeSize(targetType);
 
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             break;
         }
@@ -3523,7 +3523,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         {
             if (varTypeIsFloating(baseType))
             {
-                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
                 break;
             }
@@ -3552,7 +3552,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512_ConvertToVector256UInt16WithSaturation:
         case NI_AVX512_ConvertToVector256UInt32WithSaturation:
         {
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
             // These instructions are RM_R and so we need to ensure the targetReg
             // is passed in as the RM register and op1 is passed as the R register
@@ -3566,7 +3566,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
@@ -3762,7 +3762,7 @@ void CodeGen::genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     var_types   baseType = node->GetSimdBaseType();
     emitAttr    attr     = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction _213form = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler); // 213 form
+    instruction _213form = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler); // 213 form
     instruction _132form = (instruction)(_213form - 1);
     instruction _231form = (instruction)(_213form + 1);
     GenTree*    op1      = node->Op(1);
@@ -3898,7 +3898,7 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions)
     assert(!op1->isContained());
     assert(!op2->isContained());
 
-    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler); // vpermt2
+    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler); // vpermt2
 
     if (targetReg == op2NodeReg)
     {

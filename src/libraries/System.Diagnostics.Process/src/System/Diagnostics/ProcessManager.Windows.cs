@@ -236,7 +236,7 @@ namespace System.Diagnostics
             }
         }
 
-        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfExited)
+        public static SafeProcessHandle OpenProcess(int processId, int access, bool throwOnError)
         {
             SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(access, false, processId);
             int result = Marshal.GetLastWin32Error();
@@ -247,24 +247,21 @@ namespace System.Diagnostics
 
             processHandle.Dispose();
 
+            if (!throwOnError)
+            {
+                return SafeProcessHandle.InvalidHandle;
+            }
+
             if (processId == 0)
             {
                 throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
             }
 
-            // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.
-            // Assume the process is still running if the error was ERROR_ACCESS_DENIED for better performance
-            if (result != Interop.Errors.ERROR_ACCESS_DENIED && !IsProcessRunning(processId))
+            if (!IsProcessRunning(processId))
             {
-                if (throwIfExited)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
-                }
-                else
-                {
-                    return SafeProcessHandle.InvalidHandle;
-                }
+                throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, processId.ToString()));
             }
+
             throw new Win32Exception(result);
         }
 

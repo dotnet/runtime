@@ -9,6 +9,9 @@
     <CLRTestExecutionArguments>2048</CLRTestExecutionArguments>
 
     <CLRTestPriority>1</CLRTestPriority>
+
+    <!-- https://github.com/dotnet/runtime/issues/5933 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="finalizertest.cs" />

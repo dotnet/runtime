@@ -20,8 +20,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void BitIncrement<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryBitwiseInvokeHalfAsInt16<T, HalfBitIncrementOperator>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, BitIncrementOperator<T>>(x, destination);
+        }
 
         /// <summary>T.BitIncrement(x)</summary>
         private readonly struct BitIncrementOperator<T> : IUnaryOperator<T, T>
@@ -182,6 +189,103 @@ namespace System.Numerics.Tensors
 
                 // Fallback for unsupported types - should not be reached since Vectorizable returns false
                 throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>Half.BitIncrement(x) operator for direct ushort manipulation.</summary>
+        private readonly struct HalfBitIncrementOperator : IUnaryOperator<short, short>
+        {
+            // Half constants
+            private const ushort PositiveInfinityBits = 0x7C00;
+            private const ushort NegativeZeroBits = 0x8000;
+            private const ushort EpsilonBits = 0x0001;
+
+            public static bool Vectorizable => true;
+
+            public static short Invoke(short x) => BitConverter.HalfToInt16Bits(Half.BitIncrement(BitConverter.Int16BitsToHalf(x)));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<short> Invoke(Vector128<short> x)
+            {
+                Vector128<ushort> bits = x.AsUInt16();
+
+                // General case: negative -> decrement, positive -> increment
+                Vector128<ushort> isNegative = Vector128.IsNegative(x).AsUInt16();
+                Vector128<ushort> result = Vector128.ConditionalSelect(
+                    isNegative,
+                    bits - Vector128<ushort>.One,
+                    bits + Vector128<ushort>.One);
+
+                // Handle special cases with a single conditional select
+                Vector128<ushort> isNegativeZero = Vector128.Equals(bits, Vector128.Create(NegativeZeroBits));
+                Vector128<ushort> specialValue = Vector128.Create(EpsilonBits) & isNegativeZero;
+
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
+                Vector128<ushort> absValue = bits & Vector128.Create((ushort)0x7FFF);
+                Vector128<ushort> isNaN = Vector128.GreaterThan(absValue, Vector128.Create(PositiveInfinityBits));
+                Vector128<ushort> isPosInf = Vector128.Equals(bits, Vector128.Create(PositiveInfinityBits));
+                Vector128<ushort> isNaNOrPosInf = isNaN | isPosInf;
+                specialValue |= bits & isNaNOrPosInf;
+
+                Vector128<ushort> specialMask = isNegativeZero | isNaNOrPosInf;
+                return Vector128.ConditionalSelect(specialMask, specialValue, result).AsInt16();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<short> Invoke(Vector256<short> x)
+            {
+                Vector256<ushort> bits = x.AsUInt16();
+
+                // General case: negative -> decrement, positive -> increment
+                Vector256<ushort> isNegative = Vector256.IsNegative(x).AsUInt16();
+                Vector256<ushort> result = Vector256.ConditionalSelect(
+                    isNegative,
+                    bits - Vector256<ushort>.One,
+                    bits + Vector256<ushort>.One);
+
+                // Handle special cases with a single conditional select
+                Vector256<ushort> isNegativeZero = Vector256.Equals(bits, Vector256.Create(NegativeZeroBits));
+                Vector256<ushort> specialValue = Vector256.Create(EpsilonBits) & isNegativeZero;
+
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
+                Vector256<ushort> absValue = bits & Vector256.Create((ushort)0x7FFF);
+                Vector256<ushort> isNaN = Vector256.GreaterThan(absValue, Vector256.Create(PositiveInfinityBits));
+                Vector256<ushort> isPosInf = Vector256.Equals(bits, Vector256.Create(PositiveInfinityBits));
+                Vector256<ushort> isNaNOrPosInf = isNaN | isPosInf;
+                specialValue |= bits & isNaNOrPosInf;
+
+                Vector256<ushort> specialMask = isNegativeZero | isNaNOrPosInf;
+                return Vector256.ConditionalSelect(specialMask, specialValue, result).AsInt16();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<short> Invoke(Vector512<short> x)
+            {
+                Vector512<ushort> bits = x.AsUInt16();
+
+                // General case: negative -> decrement, positive -> increment
+                Vector512<ushort> isNegative = Vector512.IsNegative(x).AsUInt16();
+                Vector512<ushort> result = Vector512.ConditionalSelect(
+                    isNegative,
+                    bits - Vector512<ushort>.One,
+                    bits + Vector512<ushort>.One);
+
+                // Handle special cases with a single conditional select
+                Vector512<ushort> isNegativeZero = Vector512.Equals(bits, Vector512.Create(NegativeZeroBits));
+                Vector512<ushort> specialValue = Vector512.Create(EpsilonBits) & isNegativeZero;
+
+                // NaN: (bits & 0x7FFF) > 0x7C00 (both positive and negative NaN)
+                // +Infinity: bits == 0x7C00
+                Vector512<ushort> absValue = bits & Vector512.Create((ushort)0x7FFF);
+                Vector512<ushort> isNaN = Vector512.GreaterThan(absValue, Vector512.Create(PositiveInfinityBits));
+                Vector512<ushort> isPosInf = Vector512.Equals(bits, Vector512.Create(PositiveInfinityBits));
+                Vector512<ushort> isNaNOrPosInf = isNaN | isPosInf;
+                specialValue |= bits & isNaNOrPosInf;
+
+                Vector512<ushort> specialMask = isNegativeZero | isNaNOrPosInf;
+                return Vector512.ConditionalSelect(specialMask, specialValue, result).AsInt16();
             }
         }
     }

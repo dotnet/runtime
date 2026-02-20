@@ -561,7 +561,11 @@ public class GenerateWasmBootJson : Task
         if (parsedTargetFrameworkVersion == null)
         {
             string tfv = TargetFrameworkVersion;
+#if NET
             if (tfv.StartsWith('v'))
+#else
+            if (tfv.StartsWith("v", StringComparison.Ordinal))
+#endif
                 tfv = tfv.Substring(1);
 
             parsedTargetFrameworkVersion = Version.Parse(tfv);
