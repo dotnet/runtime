@@ -687,6 +687,35 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ServerDisconnectDuringSetup_PropagatesMeaningfulException()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                // Accept connection and read client preface, but do NOT send SETTINGS.
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync();
+
+                // Immediately shut down the connection without sending SETTINGS.
+                // This simulates a server-side disconnect during HTTP/2 setup.
+                await connection.ShutdownSendAsync();
+
+                // The client should throw HttpRequestException.
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+
+                // The inner exception chain should NOT have ObjectDisposedException as the root cause.
+                // Instead, it should contain a meaningful exception about the connection failure.
+                Exception inner = ex.InnerException;
+                while (inner?.InnerException != null)
+                {
+                    inner = inner.InnerException;
+                }
+                Assert.IsNotType<ObjectDisposedException>(inner);
+            }
+        }
+
         // This test is based on RFC 7540 section 6.1:
         // "If a DATA frame is received whose stream identifier field is 0x0, the recipient MUST
         // respond with a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
