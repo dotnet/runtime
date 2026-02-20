@@ -305,6 +305,19 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForLclHeap: Collect virtual register references for a LCLHEAP.
+//
+// Consumes temporary registers for the div-by-zero and overflow checks.
+//
+// Arguments:
+//    lclHeapNode - The LCLHEAP node
+//
+void WasmRegAlloc::CollectReferencesForLclHeap(GenTree* lclHeapNode)
+{
+    ConsumeTemporaryRegForOperand(lclHeapNode->gtGetOp1() DEBUGARG("lcl heap"));
+}
+
+//------------------------------------------------------------------------
 // RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the

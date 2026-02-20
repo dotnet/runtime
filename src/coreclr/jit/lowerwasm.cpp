@@ -463,3 +463,19 @@ void Lowering::AfterLowerBlock()
     Stackifier stackifier(this);
     stackifier.StackifyCurrentBlock();
 }
+
+//------------------------------------------------------------------------
+// AfterLowerLclHeap: target-specific post-processing of the lowered block.
+//
+// Arguments:
+//    treeNode - the GT_LCLHEAP node that was just lowered.
+//
+void Lowering::AfterLowerLclHeap(GenTree* treeNode)
+{
+    GenTree* const size = tree->AsOp()->gtOp1;
+    if (!size->isContainedIntOrIImmed())
+    {
+        size->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+}
+

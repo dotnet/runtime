@@ -11713,6 +11713,14 @@ void Lowering::LowerLclHeap(GenTree* node)
     ContainCheckLclHeap(node->AsOp());
 }
 
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// AfterLowerLclHeap: target-specific post-processing of the LCLHEAP node.
+//
+void Lowering::AfterLowerLclHeap(GenTree* node)
+{}
+#endif // !TARGET_WASM
+
 //------------------------------------------------------------------------
 // LowerBlockStoreCommon: a common logic to lower STORE_BLK/DYN_BLK.
 //
