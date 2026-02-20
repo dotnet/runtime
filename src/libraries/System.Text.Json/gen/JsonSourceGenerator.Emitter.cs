@@ -96,11 +96,6 @@ namespace System.Text.Json.SourceGeneration
             private bool _emitGetConverterForNullablePropertyMethod;
 
             /// <summary>
-            /// Whether the target framework supports UnsafeAccessorAttribute for bypassing init-only property setters.
-            /// </summary>
-            private bool _isUnsafeAccessorsSupported;
-
-            /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
             /// </summary>
             private partial void AddSource(string hintName, SourceText sourceText);
@@ -110,8 +105,6 @@ namespace System.Text.Json.SourceGeneration
                 Debug.Assert(_typeIndex.Count == 0);
                 Debug.Assert(_propertyNames.Count == 0);
                 Debug.Assert(!_emitGetConverterForNullablePropertyMethod);
-
-                _isUnsafeAccessorsSupported = contextGenerationSpec.IsUnsafeAccessorsSupported;
 
                 foreach (TypeGenerationSpec spec in contextGenerationSpec.GeneratedTypes)
                 {
@@ -139,7 +132,6 @@ namespace System.Text.Json.SourceGeneration
                 AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
 
                 _emitGetConverterForNullablePropertyMethod = false;
-                _isUnsafeAccessorsSupported = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -731,13 +723,6 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Determines whether unsafe accessors can be used for a specific property.
-            /// Unsafe accessors are not supported for generic types.
-            /// </summary>
-            private bool CanUseUnsafeAccessors(PropertyGenerationSpec property)
-                => _isUnsafeAccessorsSupported && !property.DeclaringType.IsGenericType;
-
-            /// <summary>
             /// Returns true if the property requires an unsafe accessor or reflection fallback
             /// for its getter (i.e. it's inaccessible but has [JsonInclude]).
             /// </summary>
@@ -771,7 +756,7 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            private string GetPropertyGetterValue(
+            private static string GetPropertyGetterValue(
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -793,7 +778,7 @@ namespace System.Text.Json.SourceGeneration
                     string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
                     string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
 
-                    if (CanUseUnsafeAccessors(property))
+                    if (property.CanUseUnsafeAccessors)
                     {
                         string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
                         return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
@@ -807,7 +792,7 @@ namespace System.Text.Json.SourceGeneration
                 return "null";
             }
 
-            private string GetPropertySetterValue(
+            private static string GetPropertySetterValue(
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -849,7 +834,7 @@ namespace System.Text.Json.SourceGeneration
                 return "null";
             }
 
-            private string GetUnsafeSetterExpression(
+            private static string GetUnsafeSetterExpression(
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyTypeFQN,
@@ -858,7 +843,7 @@ namespace System.Text.Json.SourceGeneration
                 string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
                 string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
 
-                if (CanUseUnsafeAccessors(property))
+                if (property.CanUseUnsafeAccessors)
                 {
                     string accessorName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
 
@@ -875,7 +860,7 @@ namespace System.Text.Json.SourceGeneration
                 return $"""static (obj, value) => {cacheName}.Value!.SetValue(obj, value)""";
             }
 
-            private void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
+            private static void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 bool needsAccessors = false;
@@ -901,7 +886,7 @@ namespace System.Text.Json.SourceGeneration
                     string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
                     string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
 
-                    if (CanUseUnsafeAccessors(property))
+                    if (property.CanUseUnsafeAccessors)
                     {
                         string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
 
