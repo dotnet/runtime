@@ -293,13 +293,6 @@ public:
         return m_numUses;
     }
 
-    void ResetUses()
-    {
-        m_numUses    = 0;
-        m_hasPhiUse  = false;
-        m_hasGlobalUse = false;
-    }
-
     void AddUse(BasicBlock* block)
     {
         if (block != m_block)
