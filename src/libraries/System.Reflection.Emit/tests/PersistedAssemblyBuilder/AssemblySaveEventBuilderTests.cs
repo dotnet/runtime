@@ -159,5 +159,52 @@ namespace System.Reflection.Emit.Tests
                     Assert.Equal(delegateType.FullName, eventFromDisk.EventHandlerType.FullName);                }
             }
         }
+
+        [Fact]
+        public void StandaloneDelegateRoundTripsAndInvokes()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("StandaloneDelegateAssembly"));
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+
+            TypeBuilder delegateType = module.DefineType("MathDelegate", TypeAttributes.Public | TypeAttributes.Sealed, typeof(MulticastDelegate));
+            MethodBuilder invokeMethod = delegateType.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                typeof(int), [typeof(int), typeof(int)]);
+            invokeMethod.SetImplementationFlags(MethodImplAttributes.Runtime);
+            ConstructorBuilder ctor = delegateType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, [typeof(object), typeof(IntPtr)]);
+            ctor.SetImplementationFlags(MethodImplAttributes.Runtime);
+
+            TypeBuilder helperType = module.DefineType("Helper", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodBuilder addMethod = helperType.DefineMethod("Add", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
+            ILGenerator addIl = addMethod.GetILGenerator();
+            addIl.Emit(OpCodes.Ldarg_0);
+            addIl.Emit(OpCodes.Ldarg_1);
+            addIl.Emit(OpCodes.Add);
+            addIl.Emit(OpCodes.Ret);
+
+            MethodBuilder runMethod = helperType.DefineMethod("Run", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [delegateType, typeof(int), typeof(int)]);
+            ILGenerator runIl = runMethod.GetILGenerator();
+            runIl.Emit(OpCodes.Ldarg_0);
+            runIl.Emit(OpCodes.Ldarg_1);
+            runIl.Emit(OpCodes.Ldarg_2);
+            runIl.Emit(OpCodes.Callvirt, invokeMethod);
+            runIl.Emit(OpCodes.Ret);
+
+            delegateType.CreateType();
+            helperType.CreateType();
+
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+            stream.Position = 0;
+
+            TestAssemblyLoadContext alc = new TestAssemblyLoadContext();
+            Assembly assembly = alc.LoadFromStream(stream);
+            Type delegateTypeFromDisk = assembly.GetType("MathDelegate");
+            Type helperTypeFromDisk = assembly.GetType("Helper");
+            MethodInfo addMethodFromDisk = helperTypeFromDisk.GetMethod("Add");
+            MethodInfo runMethodFromDisk = helperTypeFromDisk.GetMethod("Run");
+            Delegate addDelegate = Delegate.CreateDelegate(delegateTypeFromDisk, addMethodFromDisk);
+
+            Assert.Equal(12, runMethodFromDisk.Invoke(null, [addDelegate, 7, 5]));
+        }
     }
 }

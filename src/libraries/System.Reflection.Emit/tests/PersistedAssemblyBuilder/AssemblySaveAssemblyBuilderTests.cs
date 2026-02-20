@@ -48,6 +48,34 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void PersistedAssemblyBuilder_SaveStreamStateValidations()
+        {
+            PersistedAssemblyBuilder disposedStreamAssembly = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            disposedStreamAssembly.DefineDynamicModule("MyModule");
+
+            using (MemoryStream stream = new MemoryStream())
+            {
+                stream.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => disposedStreamAssembly.Save(stream));
+            }
+
+            PersistedAssemblyBuilder nonWritableStreamAssembly = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            nonWritableStreamAssembly.DefineDynamicModule("MyModule");
+
+            using MemoryStream nonWritableStream = new MemoryStream(Array.Empty<byte>(), writable: false);
+            Assert.Throws<NotSupportedException>(() => nonWritableStreamAssembly.Save(nonWritableStream));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_DefineDynamicModuleTwice_ThrowsInvalidOperationException()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            ab.DefineDynamicModule("MyModule");
+
+            Assert.Throws<InvalidOperationException>(() => ab.DefineDynamicModule("MyOtherModule"));
+        }
+
+        [Fact]
         public void PersistedAssemblyBuilder_GenerateMetadataValidation()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
@@ -58,6 +86,21 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(ilStream);
             Assert.NotNull(mappedFieldData);
             Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_GenerateMetadataWithPortablePdbValidation()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
+            TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            tb.CreateType();
+
+            MetadataBuilder metadata = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder mappedFieldData, out MetadataBuilder pdbBuilder);
+            Assert.NotNull(metadata);
+            Assert.NotNull(ilStream);
+            Assert.NotNull(mappedFieldData);
+            Assert.NotNull(pdbBuilder);
+            Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _, out var _));
         }
 
         [Fact]

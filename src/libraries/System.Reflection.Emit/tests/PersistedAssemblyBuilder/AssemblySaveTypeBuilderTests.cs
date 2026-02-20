@@ -214,6 +214,42 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        [Theory]
+        [InlineData(GenericParameterAttributes.Covariant)]
+        [InlineData(GenericParameterAttributes.Contravariant)]
+        public void SaveGenericTypeParameterVariance(GenericParameterAttributes variance)
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                ModuleBuilder module = CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder);
+                TypeBuilder interfaceType = module.DefineType("IVariant`1", TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.Public);
+                GenericTypeParameterBuilder genericParameter = interfaceType.DefineGenericParameters("T")[0];
+                genericParameter.SetGenericParameterAttributes(variance);
+
+                MethodBuilder method = interfaceType.DefineMethod("M", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
+                if (variance == GenericParameterAttributes.Covariant)
+                {
+                    method.SetReturnType(genericParameter);
+                }
+                else
+                {
+                    method.SetParameters(genericParameter);
+                }
+
+                interfaceType.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("IVariant`1");
+                    Type genericParameterFromDisk = typeFromDisk.GetGenericArguments()[0];
+                    GenericParameterAttributes persistedVariance = genericParameterFromDisk.GenericParameterAttributes & GenericParameterAttributes.VarianceMask;
+                    Assert.Equal(variance, persistedVariance);
+                }
+            }
+        }
+
         private class GenericClassWithGenericField<T>
         {
 #pragma warning disable CS0649
