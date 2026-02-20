@@ -261,11 +261,11 @@ namespace ILCompiler
                 if ((flags & Sm4) != 0)
                     builder.AddSupportedInstructionSet("sm4");
                 if ((flags & SveAes) != 0)
-                    builder.AddSupportedInstructionSet("sveaes");
+                    builder.AddSupportedInstructionSet("sve_aes");
                 if ((flags & SveSha3) != 0)
-                    builder.AddSupportedInstructionSet("svesha3");
+                    builder.AddSupportedInstructionSet("sve_sha3");
                 if ((flags & SveSm4) != 0)
-                    builder.AddSupportedInstructionSet("svesm4");
+                    builder.AddSupportedInstructionSet("sve_sm4");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
