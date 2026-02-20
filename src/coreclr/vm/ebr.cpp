@@ -98,7 +98,7 @@ EbrCollector::Init()
     // The pending lock is a leaf that can be taken in any mode.
     // It is not expected to interact with the GC in any way.
     // The QueueForDeletion() operation can occur at inconvenient times.
-    m_pendingLock.Init(CrstLeafLock, CrstFlags::CRST_UNSAFE_ANYMODE);
+    m_pendingLock.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
     m_initialized = true;
 }
@@ -254,6 +254,9 @@ EbrCollector::ThreadDetach()
         else
             pp = &(*pp)->m_pNext;
     }
+
+    // Reset the thread's EBR data.
+    *pData = {};
 }
 
 // ============================================
@@ -365,6 +368,7 @@ EbrCollector::CleanUpPending()
         size_t freed = DeletePendingEntries(pDetached);
         if (freed > 0)
         {
+            CrstHolder lock(&m_pendingLock);
             _ASSERTE((size_t)m_pendingSizeInBytes >= freed);
             m_pendingSizeInBytes = (size_t)m_pendingSizeInBytes - freed;
         }
