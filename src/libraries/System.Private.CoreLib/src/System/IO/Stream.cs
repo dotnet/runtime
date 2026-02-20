@@ -218,14 +218,16 @@ namespace System.IO
             Task? semaphoreTask = null;
 
             // The synchronous path is emulating legacy behavior.
-            // Drop the emulation for IsSingleThreaded to avoid throwing.
-            if (Thread.IsSingleThreaded || serializeAsynchronously)
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
             else
             {
+#pragma warning disable CA1416 // guarded by IsMultithreadingSupported
                 semaphore.Wait();
+#pragma warning restore CA1416 // guarded by IsMultithreadingSupported
             }
 
             // Create the task to asynchronously do a Read.  This task serves both
@@ -493,14 +495,16 @@ namespace System.IO
             Task? semaphoreTask = null;
 
             // The synchronous path is emulating legacy behavior.
-            // Drop the emulation for IsSingleThreaded to avoid throwing.
-            if (Thread.IsSingleThreaded || serializeAsynchronously)
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }
             else
             {
-                semaphore.Wait(); // synchronously wait here
+#pragma warning disable CA1416 // guarded by IsMultithreadingSupported
+                semaphore.Wait();
+#pragma warning restore CA1416 // guarded by IsMultithreadingSupported
             }
 
             // Create the task to asynchronously do a Write.  This task serves both

@@ -8,7 +8,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 {
     public class DebugAttributeTests
     {
-        public static bool IsThreadingAndDebuggerAttributesSupported => PlatformDetection.IsThreadingSupported && PlatformDetection.IsDebuggerTypeProxyAttributeSupported;
+        public static bool IsThreadingAndDebuggerAttributesSupported => PlatformDetection.IsMultithreadingSupported && PlatformDetection.IsDebuggerTypeProxyAttributeSupported;
 
         [ConditionalFact(nameof(IsThreadingAndDebuggerAttributesSupported))]
         public void TestDebuggerDisplaysAndTypeProxies()

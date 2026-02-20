@@ -383,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void VeryLargeAmountOfEnumsToSerialize()
         {

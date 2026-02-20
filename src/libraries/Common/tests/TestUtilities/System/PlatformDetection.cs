@@ -139,9 +139,12 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
-        public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
+#if NET && TARGETS_NET11_OR_GREATER
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+#else
+        public static bool IsMultithreadingSupported => (IsNotBrowser && IsNotWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+#endif
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;

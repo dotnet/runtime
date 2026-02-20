@@ -26,7 +26,7 @@ namespace System.Threading.Threads.Tests
         private const int UnexpectedTimeoutMilliseconds = ThreadTestHelpers.UnexpectedTimeoutMilliseconds;
         private const int ExpectedTimeoutMilliseconds = ThreadTestHelpers.ExpectedTimeoutMilliseconds;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ConstructorTest()
         {
             const int SmallStackSizeBytes = 128 << 10; // 128 KB
@@ -339,7 +339,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(expectedFailure, setApartmentState(t, ApartmentState.MTA));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentCultureTest_DifferentThread()
         {
             CultureInfo culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
@@ -380,7 +380,7 @@ namespace System.Threading.Threads.Tests
             exceptionFromThread?.Throw();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentCultureTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -422,13 +422,13 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() => Assert.Null(Thread.CurrentPrincipal));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentPrincipalTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -445,7 +445,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentPrincipalContextFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -478,7 +478,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentPrincipalContextFlowTest_NotFlow()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(async () =>
@@ -528,7 +528,7 @@ namespace System.Threading.Threads.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void CurrentThreadTest()
         {
             Thread otherThread = null;
@@ -544,14 +544,14 @@ namespace System.Threading.Threads.Tests
             Assert.NotEqual(mainThread, otherThread);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ExecutionContextTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(
                 () => Assert.Equal(ExecutionContext.Capture(), Thread.CurrentThread.ExecutionContext));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsAliveTest()
         {
             var isAliveWhenRunning = false;
@@ -566,7 +566,7 @@ namespace System.Threading.Threads.Tests
             Assert.False(t.IsAlive);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsBackgroundTest()
         {
             var t = new Thread(() => { });
@@ -587,7 +587,7 @@ namespace System.Threading.Threads.Tests
             t.Start();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void IsThreadPoolThreadTest()
         {
             var isThreadPoolThread = false;
@@ -611,7 +611,7 @@ namespace System.Threading.Threads.Tests
             Assert.True(isThreadPoolThread);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ManagedThreadIdTest()
         {
             var e = new ManualResetEvent(false);
@@ -624,7 +624,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void NameTest()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -682,7 +682,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/72246", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void PriorityTest()
         {
             var e = new ManualResetEvent(false);
@@ -700,7 +700,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ThreadStateTest()
         {
             var e0 = new ManualResetEvent(false);
@@ -737,7 +737,7 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(ThreadState.Stopped, t.ThreadState);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void AbortSuspendTest()
         {
             var e = new ManualResetEvent(false);
@@ -856,7 +856,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void LocalDataSlotTest()
         {
             var slot = Thread.AllocateDataSlot();
@@ -926,7 +926,7 @@ namespace System.Threading.Threads.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void InterruptTest()
         {
@@ -976,7 +976,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49521", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
@@ -1002,7 +1002,7 @@ namespace System.Threading.Threads.Tests
             waitForThread();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void JoinTest()
         {
             var threadReady = new ManualResetEvent(false);
@@ -1051,7 +1051,7 @@ namespace System.Threading.Threads.Tests
             Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void StartTest(bool useUnsafeStart)
