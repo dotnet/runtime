@@ -5,14 +5,6 @@ parameters:
   displayName: Diagnostics Branch
   type: string
   default: main
-- name: cdacDumpPlatforms
-  displayName: cDAC Dump Platforms
-  type: object
-  default:
-    - windows_x64
-    - windows_arm64
-    - linux_x64
-    - linux_arm64
 
 resources:
   repositories:
@@ -142,50 +134,3 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
-
-    #
-    # cDAC Dump Tests — Build runtime, send dump generation + testing to Helix
-    #
-    # For each target platform:
-    #   1. Build clr+libs+tools.cdac on ADO (cross-compile where needed)
-    #   2. Build DumpTests project + debuggees (skip dump generation)
-    #   3. Prepare Helix payload (tests + debuggees) and send to Helix
-    #   4. Helix work item: run debuggees → crash dumps → xunit tests → report results
-    #
-    - stage: DumpTest
-      dependsOn: []
-      jobs:
-      - ${{ each platform in parameters.cdacDumpPlatforms }}:
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            platforms:
-            - ${{ platform }}
-            jobParameters:
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpGeneration=true
-              nameSuffix: CdacDumpTest
-              timeoutInMinutes: 180
-              postBuildSteps:
-              # Prepare Helix payload: builds debuggees, copies test output + xunit.console.dll
-              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
-                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
-                  /p:SkipDumpGeneration=true
-                  /p:PrepareHelixPayload=true
-                  /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
-                  -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
-                displayName: 'Prepare Helix Payload'
-              # Find the testhost directory (e.g., artifacts/bin/testhost/net11.0-windows-Release-x64/)
-              - powershell: |
-                  $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*" | Select-Object -First 1 -ExpandProperty FullName
-                  Write-Host "TestHost directory: $testhostDir"
-                  Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
-                displayName: 'Find TestHost Directory'
-              # Send to Helix — testhost as correlation payload, tests+debuggees as work item
-              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-                parameters:
-                  displayName: 'Send cDAC Dump Tests to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /restore /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-                  environment:
-                    _Creator: dotnet-bot
-                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)

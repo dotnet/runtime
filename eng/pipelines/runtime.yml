@@ -1855,3 +1855,95 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      #
+      # cDAC Dump Tests (x64) — Reuse CoreCLR_Libraries build, send dump generation + testing to Helix
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - windows_x64
+          - linux_x64
+          shouldContinueOnError: true
+          jobParameters:
+            nameSuffix: CdacDumpTest
+            buildArgs: -s tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc Release -lc $(_BuildConfig) /p:SkipDumpGeneration=true
+            timeoutInMinutes: 120
+            dependsOnGlobalBuilds:
+              - nameSuffix: CoreCLR_Libraries
+                buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)$(archiveExtension)
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  displayName: 'CoreCLR Libraries Build Artifacts'
+            postBuildSteps:
+              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                  /p:SkipDumpGeneration=true
+                  /p:PrepareHelixPayload=true
+                  /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
+                  -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
+                displayName: 'Prepare Helix Payload'
+              - powershell: |
+                  $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*" | Select-Object -First 1 -ExpandProperty FullName
+                  Write-Host "TestHost directory: $testhostDir"
+                  Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
+                displayName: 'Find TestHost Directory'
+              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+                parameters:
+                  displayName: 'Send cDAC Dump Tests to Helix'
+                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /restore /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+                  environment:
+                    _Creator: dotnet-bot
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # cDAC Dump Tests (arm64) — Full build (no CoreCLR_Libraries artifact available for arm64)
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - windows_arm64
+          - linux_arm64
+          shouldContinueOnError: true
+          jobParameters:
+            nameSuffix: CdacDumpTest
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpGeneration=true
+            timeoutInMinutes: 180
+            postBuildSteps:
+              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                  /p:SkipDumpGeneration=true
+                  /p:PrepareHelixPayload=true
+                  /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
+                  -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
+                displayName: 'Prepare Helix Payload'
+              - powershell: |
+                  $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*" | Select-Object -First 1 -ExpandProperty FullName
+                  Write-Host "TestHost directory: $testhostDir"
+                  Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
+                displayName: 'Find TestHost Directory'
+              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+                parameters:
+                  displayName: 'Send cDAC Dump Tests to Helix'
+                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /restore /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+                  environment:
+                    _Creator: dotnet-bot
+                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
+                eq(variables['isRollingBuild'], true))

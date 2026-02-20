@@ -124,7 +124,7 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
@@ -145,7 +145,7 @@
     <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
