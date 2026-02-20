@@ -151,7 +151,6 @@ namespace Tracing.UserEvents.Tests.Activity
             return UserEventsTestRunner.Run(
                 args,
                 "activity",
-                typeof(Activity).Assembly.Location,
                 ActivityTracee,
                 s_traceValidator);
         }

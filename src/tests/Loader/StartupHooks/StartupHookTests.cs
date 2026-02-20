@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 
 using Xunit;
+using TestLibrary;
 
 [ConditionalClass(typeof(StartupHookTests), nameof(StartupHookTests.IsSupported))]
 public unsafe class StartupHookTests
@@ -26,6 +27,7 @@ public unsafe class StartupHookTests
 
     public static bool IsSupported = !IsUnsupportedPlatform && ((delegate*<bool>)s_startupHookProvider.GetProperty(nameof(IsSupported), BindingFlags.NonPublic | BindingFlags.Static).GetMethod.MethodHandle.GetFunctionPointer())();
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void ValidHookName()
     {
@@ -42,6 +44,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void ValidHookPath()
     {
@@ -58,6 +61,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void MultipleValidHooksAndSeparators()
     {
@@ -78,6 +82,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook2.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void MultipleValidDiagnosticHooksAndSeparators()
     {
@@ -99,6 +104,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook2.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void MultipleValidDiagnosticAndStandardHooks()
     {
@@ -118,6 +124,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, hook2.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -137,6 +144,7 @@ public unsafe class StartupHookTests
         Assert.Equal(1, Hook.Basic.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void InvalidAssembly()
     {
@@ -173,6 +181,7 @@ public unsafe class StartupHookTests
         yield return new object[] {"Assembly=Name", false};                                // Invalid name
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Theory]
     [MemberData(nameof(InvalidSimpleAssemblyNameData))]
     public static void InvalidSimpleAssemblyName(string name, bool failsSimpleNameCheck)
@@ -199,6 +208,7 @@ public unsafe class StartupHookTests
         Assert.Equal(0, Hook.Basic.CallCount);
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void MissingStartupHookType()
     {
@@ -218,6 +228,7 @@ public unsafe class StartupHookTests
         }
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void MissingInitializeMethod()
     {
@@ -236,6 +247,7 @@ public unsafe class StartupHookTests
         yield return new[] { Hook.NotParameterless };
     }
 
+    [ActiveIssue("Loads an assembly from file", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Theory]
     [MemberData(nameof(IncorrectInitializeSignatureData))]
     public static void IncorrectInitializeSignature(Hook hook)

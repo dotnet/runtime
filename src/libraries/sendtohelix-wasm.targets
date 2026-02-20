@@ -13,11 +13,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">NoWebcil-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">NoFingerprint-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">JavascriptBundler-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">WBT-Workloads-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">WBT-NoWorkload-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmEnableWebcil)' == 'false'">WBT-NoWebcil-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmFingerprintAssets)' == 'false'">WBT-NoFingerprint-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">WBT-JavascriptBundler-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'Mono'">$(WorkItemPrefix)MONO-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(WorkItemPrefix)CLR-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>

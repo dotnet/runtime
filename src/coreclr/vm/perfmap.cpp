@@ -28,6 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -121,6 +122,17 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
+        // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
+        // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
+        // may not exist yet. We use s_dependenciesReady (a Volatile<bool>) to guard against
+        // this, rather than null-checking individual pointers which would have race conditions
+        // due to non-Volatile statics like m_pEEJitManager.
+        // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
+        if (!s_dependenciesReady)
+        {
+            return;
+        }
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -206,6 +218,15 @@ void PerfMap::Disable()
         // PAL_PerfJitDump_Finish is lock protected and can safely be called multiple times
         PAL_PerfJitDump_Finish();
     }
+}
+
+// Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+// This method must be called before any code is JITed or restored from R2R image.
+void PerfMap::SignalDependenciesReady()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_dependenciesReady = true;
 }
 
 // Construct a new map for the process.

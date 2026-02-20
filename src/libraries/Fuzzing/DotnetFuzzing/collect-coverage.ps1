@@ -24,13 +24,13 @@ if (-not (Test-Path $dotnetPath)) {
 Write-Host "Using dotnet: $dotnetPath" -ForegroundColor Cyan
 
 # Check and install required dotnet tools
-Write-Host "Checking for required global tools..." -ForegroundColor Cyan
-$installedTools = & $dotnetPath tool list -g
+Write-Host "Checking for required tools..." -ForegroundColor Cyan
+$installedTools = & $dotnetPath tool list
 
 $coverletInstalled = $installedTools | Select-String "coverlet.console"
 if (-not $coverletInstalled) {
     Write-Host "  Installing coverlet.console..." -ForegroundColor Yellow
-    & $dotnetPath tool install --global coverlet.console
+    & $dotnetPath tool install coverlet.console
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to install coverlet.console"
         exit 1
@@ -42,7 +42,7 @@ if (-not $coverletInstalled) {
 $reportGeneratorInstalled = $installedTools | Select-String "dotnet-reportgenerator-globaltool"
 if (-not $reportGeneratorInstalled) {
     Write-Host "  Installing dotnet-reportgenerator-globaltool..." -ForegroundColor Yellow
-    & $dotnetPath tool install -g dotnet-reportgenerator-globaltool
+    & $dotnetPath tool install dotnet-reportgenerator-globaltool
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to install reportgenerator."
         exit 1
@@ -221,7 +221,7 @@ Write-Host ""
 Write-Host "Collecting coverage..." -ForegroundColor Cyan
 Write-Host "Running: coverlet $($coverletArgs -join ' ')" -ForegroundColor Gray
 Write-Host ""
-& coverlet @coverletArgs
+& $dotnetPath coverlet @coverletArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Coverage collection failed with exit code $LASTEXITCODE"
@@ -243,7 +243,7 @@ Write-Host "Generating HTML report..." -ForegroundColor Cyan
 
 if ($coverageFile) {
     $htmlOutputDir = Join-Path $OutputDir "html"
-    & reportgenerator "-reports:$($coverageFile.FullName)" "-targetdir:$htmlOutputDir" "-reporttypes:Html"
+    & $dotnetPath reportgenerator "-reports:$($coverageFile.FullName)" "-targetdir:$htmlOutputDir" "-reporttypes:Html"
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""

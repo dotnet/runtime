@@ -2043,6 +2043,12 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
             *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
     }
 
+    // Encode async continuation arg (it's a GC reference)
+    if (argit.HasAsyncContinuation())
+    {
+        FakePromote((Object **)(pFrame + argit.GetAsyncContinuationArgOffset()), &sc, 0);
+    }
+
     // If the function has a this pointer, add it to the mask
     if (argit.HasThis())
     {

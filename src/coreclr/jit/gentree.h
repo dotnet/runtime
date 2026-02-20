@@ -62,6 +62,7 @@ enum SpecialCodeKind
     SCK_ARG_EXCPN,                  // target on ArgumentException (currently used only for SIMD intrinsics)
     SCK_ARG_RNG_EXCPN,              // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
     SCK_FAIL_FAST,                  // target for fail fast exception
+    SCK_NULL_CHECK,                 // target for NullReferenceException (Wasm)
     SCK_COUNT
 };
 
@@ -493,8 +494,8 @@ enum GenTreeFlags : unsigned
 
     GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
-    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
-                                              //                         addressing mode
+    GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH/GT_CAST -- Do not CSE this node only, forms complex
+                                              //                                 addressing mode
 
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
@@ -642,14 +643,124 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+//------------------------------------------------------------------------
+// ValueSize:  A representation of the size of a variable, that allows for
+//     symbolic representations of sizes that may be unknown to the compiler
+//     at the time of compilation, such as the length of a hardware vector
+//     on ARM64.
+class ValueSize
+{
+private:
+    enum class Kind : unsigned
+    {
+        Exact,   // Value has size known at compile time
+        Vector,  // Value represents the platform vector length (Vector<T>/TYP_SIMD)
+        Mask,    // Value represents the platform mask length (TYP_MASK)
+        Unknown, // Value represents some compile-time unknown size that is not
+                 // equivalent to any other value.
+    };
+
+    Kind m_kind;
+    // The size field is used when the kind is Exact, otherwise the size field is zero.
+    unsigned m_size;
+
+    explicit ValueSize(Kind kind, unsigned size)
+        : m_kind(kind)
+        , m_size(size)
+    {
+    }
+
+    bool Is(Kind kind) const
+    {
+        return (m_kind == kind);
+    }
+
+public:
+    ValueSize()
+        : m_kind(Kind::Exact)
+        , m_size(0)
+    {
+    }
+
+    explicit ValueSize(unsigned size)
+        : m_kind(Kind::Exact)
+        , m_size(size)
+    {
+    }
+
+    static ValueSize Vector()
+    {
+        return ValueSize(Kind::Vector, 0);
+    }
+    static ValueSize Mask()
+    {
+        return ValueSize(Kind::Mask, 0);
+    }
+    static ValueSize Unknown()
+    {
+        return ValueSize(Kind::Unknown, 0);
+    }
+    static ValueSize FromJitType(var_types type);
+
+    bool IsVector() const
+    {
+        return Is(Kind::Vector);
+    }
+    bool IsMask() const
+    {
+        return Is(Kind::Mask);
+    }
+    bool IsUnknown() const
+    {
+        return Is(Kind::Unknown);
+    }
+
+    bool IsExact() const
+    {
+        return Is(Kind::Exact);
+    }
+
+    bool IsNull() const
+    {
+        return IsExact() && (m_size == 0);
+    }
+
+    unsigned GetExact() const
+    {
+        assert(IsExact());
+        return m_size;
+    }
+
+    bool operator==(const ValueSize& other) const
+    {
+        if (IsUnknown() || other.IsUnknown())
+        {
+            return false;
+        }
+        else if (IsExact() && other.IsExact())
+        {
+            return (m_size == other.m_size);
+        }
+        else
+        {
+            return (m_kind == other.m_kind);
+        }
+    }
+
+    bool operator!=(const ValueSize& other) const
+    {
+        return !operator==(other);
+    }
+};
+
 struct LocalDef
 {
     GenTreeLclVarCommon* Def;
     bool                 IsEntire;
     ssize_t              Offset;
-    unsigned             Size;
+    ValueSize            Size;
 
-    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, unsigned size)
+    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
         : Def(def)
         , IsEntire(isEntire)
         , Offset(offset)
@@ -2160,13 +2271,16 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
+#if defined(TARGET_64BIT)
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
+#else
+        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
+#endif
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -2199,7 +2313,7 @@ public:
 
     bool IsPartOfAddressMode()
     {
-        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
+        return OperIs(GT_ADD, GT_MUL, GT_LSH, GT_CAST) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
     }
 
     void SetAllEffectsFlags(GenTree* source)
@@ -2919,9 +3033,8 @@ class GenTreeUseEdgeIterator final
         CALL_ARGS         = 0,
         CALL_LATE_ARGS    = 1,
         CALL_CONTROL_EXPR = 2,
-        CALL_COOKIE       = 3,
-        CALL_ADDRESS      = 4,
-        CALL_TERMINAL     = 5,
+        CALL_ADDRESS      = 3,
+        CALL_TERMINAL     = 4,
     };
 
     typedef void (GenTreeUseEdgeIterator::*AdvanceFn)();
@@ -3957,7 +4070,8 @@ public:
         m_layout = layout;
     }
 
-    unsigned GetSize() const;
+    unsigned  GetSize() const;
+    ValueSize GetValueSize() const;
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
@@ -4359,6 +4473,10 @@ struct AsyncCallInfo
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
     ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+
+    // Tail awaits do not generate suspension points and the JIT instead
+    // directly returns the callee's continuation to the caller.
+    bool IsTailAwait = false;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4633,6 +4751,8 @@ enum class WellKnownArg : unsigned
     RuntimeMethodHandle,
     AsyncExecutionContext,
     AsyncSynchronizationContext,
+    WasmShadowStackPointer,
+    WasmPortableEntryPoint
 };
 
 #ifdef DEBUG
@@ -5269,11 +5389,16 @@ struct GenTreeCall final : public GenTree
     }
     bool IsGenericVirtual(Compiler* compiler) const
     {
-        return (gtCallType == CT_INDIRECT && (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)));
+        return (gtCallType == CT_INDIRECT &&
+                (gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                 gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+#ifdef FEATURE_READYTORUN
+                 || gtCallAddr->IsHelperCall(compiler, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+#endif
+                     ));
     }
 
-    bool IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD_HANDLE* pMethHandle = nullptr) const;
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
 
     bool IsInlineCandidate() const
     {
@@ -5692,8 +5817,8 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // only used for CALLI unmanaged calls (CT_INDIRECT)
-        GenTree* gtCallCookie;
+        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
+        CORINFO_CONST_LOOKUP* gtCallCookie;
 
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
@@ -7873,7 +7998,8 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
-    unsigned Size() const;
+    unsigned  Size() const;
+    ValueSize ValueSize() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)

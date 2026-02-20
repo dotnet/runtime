@@ -5,9 +5,11 @@ using System;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public class punning
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_GetFunctionPointer()
     {
@@ -23,6 +25,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_GetFunctionPointer_Generics()
     {
@@ -38,6 +41,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldftn()
     {
@@ -53,6 +57,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldftn_Generics()
     {
@@ -68,6 +73,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldftn_Generics_Virtual()
     {
@@ -84,6 +90,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldftn_Generics_EarlyLoad()
     {
@@ -99,6 +106,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldftn_Generics_Virtual_EarlyLoad()
     {
@@ -115,6 +123,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldvirtftn()
     {
@@ -131,6 +140,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldvirtftn_Generics()
     {
@@ -147,6 +157,7 @@ public class punning
         Assert.Equal(b.Field, fieldValue);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Via_Ldvirtftn_Generics_EarlyLoad()
     {

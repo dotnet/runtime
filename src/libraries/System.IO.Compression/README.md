@@ -18,3 +18,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aopen+is%3A
 ## See also
  - [`System.IO.Compression.Brotli`](../System.IO.Compression.Brotli#readme)
  - [`System.IO.Compression.ZipFile`](../System.IO.Compression.ZipFile#readme)
+ - [`System.IO.Compression.Zstandard`](../System.IO.Compression.Zstandard#readme)

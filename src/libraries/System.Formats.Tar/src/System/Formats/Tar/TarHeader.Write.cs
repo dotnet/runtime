@@ -439,11 +439,9 @@ namespace System.Formats.Tar
 
         private static MemoryStream GetLongMetadataStream(string text)
         {
-            MemoryStream data = new MemoryStream();
-            data.Write(Encoding.UTF8.GetBytes(text));
-            data.WriteByte(0); // Add a null terminator at the end of the string, _size will be calculated later
-            data.Position = 0;
-            return data;
+            byte[] arr = new byte[Encoding.UTF8.GetByteCount(text) + 1]; // +1 for null terminator
+            Encoding.UTF8.GetBytes(text, arr);
+            return new MemoryStream(arr);
         }
 
         private TarHeader GetGnuLongLinkMetadataHeader()

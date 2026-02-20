@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <!-- TODO-SVE: Enable this test when DOTNET_JitUseScalableVectorT is default -->
+    <MergedWrapperProjectReference Remove="ValueNumbering/VectorTLoadStore.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

@@ -226,6 +226,7 @@
     <Compile Include="File\GetSetTimes_String.cs" />
     <Compile Include="File\Open.cs" />
     <Compile Include="File\OpenHandle.cs" />
+    <Compile Include="File\OpenNullHandle.cs" />
     <Compile Include="FileInfo\Create.cs" />
     <Compile Include="FileInfo\CreateText.cs" />
     <Compile Include="FileInfo\Delete.cs" />

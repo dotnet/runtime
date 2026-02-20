@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections;
 using Xunit;
+using TestLibrary;
 
 #if false
 Here is the bug text from the bugs that motivated this regression case.  I've annotated
@@ -934,7 +935,7 @@ public class Mutate
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     [SkipOnCoreClr("This test takes too long and internally times out under GCStress/heap verify. It is not fundamentally incompatible if stress testing is fast enough.", RuntimeTestModes.AnyGCStress | RuntimeTestModes.HeapVerify)]
     public static int TestEntryPoint()
     {

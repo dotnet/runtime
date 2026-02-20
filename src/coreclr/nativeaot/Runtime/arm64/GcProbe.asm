@@ -14,8 +14,7 @@
             field OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs
             field 10 * 8 ; x19..x28
 m_CallersSP field 8      ; SP at routine entry
-            field 2  * 8 ; x0..x1
-            field 8      ; alignment padding
+            field 3  * 8 ; x0..x2
             field 4  * 16; q0..q3
 PROBE_FRAME_SIZE    field 0
 
@@ -47,10 +46,9 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Slot at [sp, #0x70] is reserved for caller sp
 
-        ;; Save the integer return registers
+        ;; Save the integer return registers, x2 might contain an objectref (async continuation)
         PROLOG_NOP stp         x0, x1,   [sp, #0x78]
-
-        ;; Slot at [sp, #0x88] is alignment padding
+        PROLOG_NOP str         x2,       [sp, #0x88]
 
         ;; Save the FP/HFA/HVA return registers
         PROLOG_NOP stp         q0, q1,   [sp, #0x90]
@@ -80,6 +78,7 @@ PROBE_FRAME_SIZE    field 0
 
         ;; Restore the integer return registers
         PROLOG_NOP ldp          x0, x1,   [sp, #0x78]
+        PROLOG_NOP ldr          x2,       [sp, #0x88]
 
         ; Restore the FP/HFA/HVA return registers
         EPILOG_NOP ldp          q0, q1,   [sp, #0x90]
@@ -103,26 +102,26 @@ PROBE_FRAME_SIZE    field 0
 ;;  All registers correct for return to the original return address.
 ;;
 ;; Register state on exit:
-;;  x2: thread pointer
+;;  x4: thread pointer
 ;;  x3: trashed
 ;;
     MACRO
         FixupHijackedCallstack
 
-        ;; x2 <- GetThread(), TRASHES x3
-        INLINE_GETTHREAD x2, x3
+        ;; x4 <- GetThread(), TRASHES x3
+        INLINE_GETTHREAD x4, x3
 
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         lr, [x4, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ;;
         ;; Clear hijack state
         ;;
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
-        stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        stp         xzr, xzr, [x4, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
     MEND
 
     MACRO
@@ -154,7 +153,7 @@ PROBE_FRAME_SIZE    field 0
         ret
 
 WaitForGC
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
         movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
         b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
@@ -162,9 +161,9 @@ WaitForGC
     EXTERN RhpThrowHwEx
 
     NESTED_ENTRY RhpWaitForGC
-        PUSH_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x4, x3, x12
 
-        ldr         x0, [x2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+        ldr         x0, [x4, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
         bl          RhpWaitForGC2
 
         POP_PROBE_FRAME
@@ -194,7 +193,7 @@ WaitForGC
 ;;
     LEAF_ENTRY RhpGcStressHijack
         FixupHijackedCallstack
-        orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_SAVE_X2)
         b           RhpGcStressProbe
     LEAF_END RhpGcStressHijack
 ;;
@@ -205,15 +204,16 @@ WaitForGC
 ;; Register state on entry:
 ;;  x0: hijacked function return value
 ;;  x1: hijacked function return value
-;;  x2: thread pointer
+;;  x2: hijacked function async continuation value
+;;  x4: thread pointer
 ;;  w12: register bitmask
 ;;
 ;; Register state on exit:
-;;  Scratch registers, except for x0, have been trashed
+;;  Scratch registers, except for x0, x1, x2, have been trashed
 ;;  All other registers restored as they were when the hijack was first reached.
 ;;
     NESTED_ENTRY RhpGcStressProbe
-        PUSH_PROBE_FRAME x2, x3, x12
+        PUSH_PROBE_FRAME x4, x3, x12
 
         bl          RhpStressGc
 

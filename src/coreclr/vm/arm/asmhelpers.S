@@ -942,3 +942,430 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
         EMIT_BREAKPOINT
 NESTED_END IL_Rethrow, _TEXT
 
+#ifdef FEATURE_INTERPRETER
+LEAF_ENTRY Load_R0
+    ldr r0, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0
+
+LEAF_ENTRY Load_R0_R1
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1
+    ldr r1, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1
+
+LEAF_ENTRY Load_R0_R1_R2
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1_R2
+    ldr r1, [r7], #8
+ALTERNATE_ENTRY Load_R2
+    ldr r2, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2
+
+LEAF_ENTRY Load_R0_R1_R2_R3
+    ldr r0, [r7], #8
+ALTERNATE_ENTRY Load_R1_R2_R3
+    ldr r1, [r7], #8
+ALTERNATE_ENTRY Load_R2_R3
+    ldr r2, [r7], #8
+ALTERNATE_ENTRY Load_R3
+    ldr r3, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_R3
+
+LEAF_ENTRY Load_R0_R1_4B
+    ldr r0, [r7], #4
+    ldr r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_4B
+
+LEAF_ENTRY Load_R0_R1_R2_R3_4B
+    ldr r0, [r7], #4
+    ldr r1, [r7], #4
+ALTERNATE_ENTRY Load_R2_R3_4B
+    ldr r2, [r7], #4
+    ldr r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_R0_R1_R2_R3_4B
+
+LEAF_ENTRY Store_R0
+    str r0, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0
+
+LEAF_ENTRY Store_R0_R1
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1
+    str r1, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1
+
+LEAF_ENTRY Store_R0_R1_R2
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1_R2
+    str r1, [r7], #8
+ALTERNATE_ENTRY Store_R2
+    str r2, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2
+
+LEAF_ENTRY Store_R0_R1_R2_R3
+    str r0, [r7], #8
+ALTERNATE_ENTRY Store_R1_R2_R3
+    str r1, [r7], #8
+ALTERNATE_ENTRY Store_R2_R3
+    str r2, [r7], #8
+ALTERNATE_ENTRY Store_R3
+    str r3, [r7], #8
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_R3
+
+LEAF_ENTRY Store_R0_R1_4B
+    str r0, [r7], #4
+    str r1, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_4B
+
+LEAF_ENTRY Store_R0_R1_R2_R3_4B
+    str r0, [r7], #4
+    str r1, [r7], #4
+ALTERNATE_ENTRY Store_R2_R3_4B
+    str r2, [r7], #4
+    str r3, [r7], #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_R0_R1_R2_R3_4B
+
+LEAF_ENTRY InjectInterpStackAlign
+    add r7, r7, #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END InjectInterpStackAlign
+
+LEAF_ENTRY Load_Stack
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+LOCAL_LABEL(CopyLoop):
+    ldr r5, [r7], #8
+    str r5, [r8], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(CopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_Stack
+
+LEAF_ENTRY Load_Stack_4B
+    ldr r8, [r6], #4 // SP offset
+    ldr r9, [r6], #4 // number of stack slots
+    add r8, sp, r8
+LOCAL_LABEL(CopyLoop_4B):
+    ldr r5, [r7], #4
+    str r5, [r8], #4
+    subs r9, r9, #4
+    bne LOCAL_LABEL(CopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Load_Stack_4B
+
+LEAF_ENTRY Store_Stack
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop):
+    ldr r5, [r9], #4
+    str r5, [r7], #8
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack
+
+LEAF_ENTRY Store_Stack_4B
+    ldr r9, [r6], #4 // SP offset
+    ldr r8, [r6], #4 // number of stack slots
+    add r9, sp, r9
+    add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+LOCAL_LABEL(StoreCopyLoop_4B):
+    ldr r5, [r9], #4
+    str r5, [r7], #4
+    subs r8, r8, #4
+    bne LOCAL_LABEL(StoreCopyLoop_4B)
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END Store_Stack_4B
+
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetVoid, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI4, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    str r0, [r10]
+    str r1, [r10, 4]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI8, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END CallJittedMethodRetDouble, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffR0, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    mov r0, r2
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetBuffR0, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    mov r1, r2
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetBuffR1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxtb r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    sxth r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetI2, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxtb r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU1, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
+    mov r4, sp
+    sub sp, sp, r3
+    mov r6, r0
+    mov r7, r1
+    ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
+    blx r5
+    mov sp, r4
+    uxth r0, r0
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
+NESTED_END CallJittedMethodRetU2, _TEXT
+
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    // IR bytecode address
+    mov r4, METHODDESC_REGISTER // InterpMethod
+
+    PROLOG_PUSH "{r0-r3}"
+
+    INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
+    mov r6, r0
+
+    ldr r6, [r6, #OFFSETOF__ThreadLocalInfo__m_pThread]
+
+    ldr r5, [r6, #OFFSETOF__Thread__m_pInterpThreadContext]
+    cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
+
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub);
+    mov r5, r0
+
+LOCAL_LABEL(HaveInterpThreadContext):
+
+    ldr r7, [r4] // InterpMethod*
+    ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
+    cmp r7, #0
+    beq LOCAL_LABEL(NoManagedThreadOrCallStub)
+    add r6, r7, #OFFSETOF__CallStubHeader__Routines
+    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
+    ldr r5, [r6], 4 // InterpThreadContext
+
+    EPILOG_POP "{r0-r3}"
+    CHECK_STACK_ALIGNMENT
+    blx r5
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+
+NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetVoid, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r0, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetI4, _TEXT
+
+NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    mov r2, 0
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r2, [r0]
+    ldr r1, [r0, 4]
+    mov r0, r2
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetI8, _TEXT
+
+NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
+    EMIT_BREAKPOINT // TODO
+NESTED_END InterpreterStubRetDouble, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffR0, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r0, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetBuffR0, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
+    PROLOG_PUSH {lr}
+    alloc_stack 12
+    add r0, sp, #__PWTB_TransitionBlock + 16
+    mov r1, r4
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
+    bl C_FUNC(ExecuteInterpretedMethod)
+    ldr r1, [r0]
+    free_stack 12
+    EPILOG_POP {pc}
+NESTED_END InterpreterStubRetBuffR1, _TEXT
+
+#endif // FEATURE_INTERPRETER

@@ -66,7 +66,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t1.Start(bts);
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail("    > FAILED.  No exception thrown.");
             }
             catch (TaskSchedulerException)
             {
@@ -86,7 +86,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t1.Wait();
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown from Wait()."));
+                Assert.Fail("    > FAILED.  No exception thrown from Wait().");
             }
             catch (AggregateException ae)
             {
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t2.RunSynchronously(bts);
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail("    > FAILED.  No exception thrown.");
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)
@@ -120,7 +120,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t2.Wait();
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown from Wait()."));
+                Assert.Fail("    > FAILED.  No exception thrown from Wait().");
             }
             catch (AggregateException ae)
             {
@@ -137,7 +137,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 Task t3 = Task.Factory.StartNew(delegate { }, CancellationToken.None, TaskCreationOptions.None, bts);
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail("    > FAILED.  No exception thrown.");
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)
@@ -158,7 +158,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tc1.Wait();
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown (sync)."));
+                Assert.Fail("    > FAILED.  No exception thrown (sync).");
             }
             catch (AggregateException ae)
             {
@@ -178,7 +178,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tc2.Wait();
-                Assert.Fail(string.Format("    > FAILED.  No exception thrown (async)."));
+                Assert.Fail("    > FAILED.  No exception thrown (async).");
             }
             catch (AggregateException ae)
             {
@@ -200,7 +200,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t4.Wait();
-                Assert.Fail(string.Format("    > FAILED.  Expected inlining exception"));
+                Assert.Fail("    > FAILED.  Expected inlining exception");
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)

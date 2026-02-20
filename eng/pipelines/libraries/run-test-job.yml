@@ -26,9 +26,10 @@ parameters:
   helixArtifactsName: ''
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
+  templatePath: 'templates'
 
 jobs:
-  - template: /eng/common/templates/job/job.yml
+  - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
     parameters:
       enablePublishBuildArtifacts: true
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
@@ -88,27 +89,7 @@ jobs:
         fetchDepth: $(checkoutFetchDepth)
         fetchTags: false
 
-      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - ${{ if ne(parameters.osGroup, 'windows') }}:
-          - task: Bash@3
-            displayName: Setup Private Feeds Credentials
-            inputs:
-              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
-              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
-            env:
-              Token: $(dn-bot-dnceng-artifact-feeds-rw)
-        - ${{ if eq(parameters.osGroup, 'windows') }}:
-          - task: PowerShell@2
-            displayName: Setup Private Feeds Credentials
-            inputs:
-              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
-              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
-            env:
-              Token: $(dn-bot-dnceng-artifact-feeds-rw)
-        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
-        # This ensures that creds are set appropriately for all feeds in the config, and that the
-        # credential provider is installed.
-        - task: NuGetAuthenticate@1
+      - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
       - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
         - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}

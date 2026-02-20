@@ -569,7 +569,7 @@ namespace System.Net.Http
         }
 
         // Not stored as a constant on the DecompressionHandler to allow it to get trimmed.
-        private const DecompressionMethods SupportedDecompressionMethods = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli;
+        private const DecompressionMethods SupportedDecompressionMethods = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli | DecompressionMethods.Zstandard;
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)

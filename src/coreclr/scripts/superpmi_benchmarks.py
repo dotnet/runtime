@@ -179,7 +179,23 @@ def build_and_run(coreclr_args, output_mch_name):
         corerun_exe = "corerun"
         script_name = "run_benchmarks.sh"
 
-    make_executable(dotnet_exe)
+    # Set up NuGet cache locations to be within the performance_directory which is on a separate disk
+    # so that we don't fill up the OS disk (space is limited on helix machines)
+    os.environ["NUGET_PLUGINS_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_PLUGINS_CACHE_PATH")
+    os.environ["NUGET_PACKAGES"] = os.path.join(performance_directory, "NUGET_PACKAGES")
+    os.environ["NUGET_HTTP_CACHE_PATH"] = os.path.join(performance_directory, "NUGET_HTTP_CACHE_PATH")
+    os.environ["NUGET_SCRATCH"] = os.path.join(performance_directory, "NUGET_SCRATCH")
+
+    # Install the dotnet sdk using the script within the performance repo
+    dotnet_script = os.path.join(performance_directory, "scripts", "dotnet.py")
+    run_command([python_path,
+                dotnet_script,
+                "install",
+                "--architecture",
+                    arch,
+                "--channels",
+                "main",
+                "--verbose"])
 
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])

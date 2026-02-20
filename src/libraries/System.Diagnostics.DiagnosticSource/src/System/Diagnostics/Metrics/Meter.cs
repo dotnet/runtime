@@ -22,10 +22,7 @@ namespace System.Diagnostics.Metrics
         internal bool Disposed { get; private set; }
 
         [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
-        internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        private static bool InitializeIsSupported() =>
-            AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
+        internal static bool IsSupported { get; } = AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
 
         /// <summary>
         /// Initialize a new instance of the Meter using the <see cref="MeterOptions" />.

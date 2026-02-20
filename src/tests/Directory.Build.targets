@@ -310,7 +310,7 @@
     </PropertyGroup>
 
     <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
-    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'">
       <SequenceOfIntegers Include="0"/>
       <SequenceOfIntegers Include="1"/>
       <SequenceOfIntegers Include="2"/>
@@ -421,6 +421,10 @@
 
     <ItemGroup>
       <Content Include="$(AssemblyName).reflect.xml" Condition="Exists('$(AssemblyName).reflect.xml')" CopyToOutputDirectory="PreserveNewest" />
+      <!-- When BuildAllTestsAsStandalone is true, drop a marker file for the local test runner to discover the test entry points. -->
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).StandaloneTestRunner" Condition="'$(BuildAllTestsAsStandalone)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'">
+        <Type>StandaloneTestRunner</Type>
+      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true' and '$(CLRTestKind)' != 'SharedLibrary'">
         <Type>MergedTestAssembly</Type>
       </MarkerFile>
