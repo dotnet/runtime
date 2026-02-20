@@ -76,6 +76,7 @@ namespace System.Text.Json
         // and consider updating the EqualtyComparer used for comparing CachingContexts.
         private IJsonTypeInfoResolver? _typeInfoResolver;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
+        private JsonDictionaryKeyFilter? _dictionaryKeyFilter;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
@@ -129,6 +130,7 @@ namespace System.Text.Json
             //    _typeInfoResolver as its source of truth.
 
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
+            _dictionaryKeyFilter = options._dictionaryKeyFilter;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
@@ -378,6 +380,33 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _dictionaryKeyPolicy = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a filter that determines which JSON property names should be ignored when deserializing dictionary types.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// When set, the filter is invoked for each JSON property name encountered during deserialization of
+        /// <see cref="System.Collections.Generic.Dictionary{TKey, TValue}"/> and other dictionary types.
+        /// If the filter returns <see langword="true"/> for a given property name, that property and its value are skipped.
+        /// </para>
+        /// <para>
+        /// This can be used to ignore JSON Schema metadata properties, for example by setting this property to
+        /// <see cref="JsonDictionaryKeyFilter.IgnoreMetadataNames"/>.
+        /// </para>
+        /// </remarks>
+        public JsonDictionaryKeyFilter? DictionaryKeyFilter
+        {
+            get => _dictionaryKeyFilter;
+            set
+            {
+                VerifyMutable();
+                _dictionaryKeyFilter = value;
             }
         }
 

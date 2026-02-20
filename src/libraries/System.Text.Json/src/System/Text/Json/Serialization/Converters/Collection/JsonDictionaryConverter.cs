@@ -112,6 +112,13 @@ namespace System.Text.Json.Serialization
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
+                        {
+                            reader.SkipWithVerify();
+                            continue;
+                        }
+
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
                         TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
@@ -137,6 +144,14 @@ namespace System.Text.Json.Serialization
 
                         // Read method would have thrown if otherwise.
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
+                        {
+                            reader.SkipWithVerify();
+                            continue;
+                        }
+
                         state.Current.JsonPropertyInfo = keyTypeInfo.PropertyInfoForTypeInfo;
                         TKey key = ReadDictionaryKey(_keyConverter, ref reader, ref state, options);
 
@@ -246,6 +261,14 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
 
                         state.Current.PropertyState = StackFramePropertyState.Name;
+
+                        if (options.DictionaryKeyFilter is { } dictionaryKeyFilter &&
+                            dictionaryKeyFilter.IgnoreKey(reader.GetUnescapedSpan()))
+                        {
+                            reader.SkipWithVerify();
+                            state.Current.EndElement();
+                            continue;
+                        }
 
                         if (state.Current.CanContainMetadata)
                         {
