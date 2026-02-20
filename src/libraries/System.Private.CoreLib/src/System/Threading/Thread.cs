@@ -429,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -441,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -742,19 +742,19 @@ namespace System.Threading
 #if FEATURE_SINGLE_THREADED
         internal static bool IsSingleThreaded => true;
         [DoesNotReturn]
-        internal static void ThrowIfSingleThreaded()
+        internal static void ThrowIfMultithreadingIsNotSupported()
         {
             throw new PlatformNotSupportedException();
         }
 #else
         internal static bool IsSingleThreaded => false;
 #if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfSingleThreaded()
+        internal static void ThrowIfMultithreadingIsNotSupported()
         {
             AssureBlockingPossible();
         }
 #else
-        internal static void ThrowIfSingleThreaded() { }
+        internal static void ThrowIfMultithreadingIsNotSupported() { }
 #endif
 #endif
 
