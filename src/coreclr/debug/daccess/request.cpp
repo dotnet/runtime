@@ -707,28 +707,30 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
 
     if (buffer)
     {
+        if (count == 0)
+            return S_FALSE;
+
         WCHAR* curr = buffer;
-        WCHAR* end = buffer + count;
-        unsigned int destSize = count;
-        if (curr < end && callerFrame)
+        unsigned int remaining = count;
+        if (callerFrame && remaining > 1)
         {
-            unsigned int toCopy = prefixLen < destSize ? prefixLen : destSize;
-            wcscpy_s(curr, toCopy, callerPrefix);
-            // Point to null terminator
-            toCopy--;
+            unsigned int srcLen = prefixLen - 1; // exclude null
+            unsigned int toCopy = srcLen < (remaining - 1) ? srcLen : (remaining - 1);
+            memcpy(curr, callerPrefix, toCopy * sizeof(WCHAR));
             curr += toCopy;
-            destSize -= toCopy;
+            remaining -= toCopy;
         }
 
-        if (curr < end)
+        if (remaining > 1)
         {
-            unsigned int toCopy = regLen < destSize ? regLen : destSize;
-            wcscpy_s(curr, toCopy, regs[regNum]);
-            // Point to null terminator
-            toCopy--;
+            unsigned int srcLen = regLen - 1; // exclude null
+            unsigned int toCopy = srcLen < (remaining - 1) ? srcLen : (remaining - 1);
+            memcpy(curr, regs[regNum], toCopy * sizeof(WCHAR));
             curr += toCopy;
-            destSize -= toCopy;
         }
+
+        // Always null-terminate
+        *curr = W('\0');
 
         if (count < needed)
             return S_FALSE;
@@ -1707,7 +1709,7 @@ ClrDataAccess::GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token,
 HRESULT
 ClrDataAccess::TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token)
 {
-    if (moduleAddr == 0)
+    if (moduleAddr == 0 || pCallback == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -2625,6 +2627,9 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    if (addr == 0)
+        return E_INVALIDARG;
+
     SOSDacEnter();
 
     if (addr == HOST_CDADDR(SystemDomain::System()))
@@ -3620,7 +3625,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
 HRESULT
 ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType heaptype, VISITHEAP pFunc)
 {
-    if (pAppDomain == 0)
+    if (pAppDomain == 0 || pFunc == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -4684,17 +4689,24 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
 #ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
-    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.IsNull())
+    if (!DacValidateMD(pMD))
     {
         hr = E_INVALIDARG;
     }
-    else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
+    else
     {
-        *pRejitId = (int)ilVersion.GetVersionId();
-        hr = S_OK;
+        CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+        if (ilVersion.IsNull())
+        {
+            hr = E_INVALIDARG;
+        }
+        else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
+        {
+            *pRejitId = (int)ilVersion.GetVersionId();
+            hr = S_OK;
+        }
     }
 #endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
@@ -4712,6 +4724,12 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     SOSDacEnter();
 
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
+    if (!DacValidateMD(pMD))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -4750,6 +4768,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     pReJitData->il = HOST_CDADDR(pMD->GetILHeader());
     pReJitData->ilCodeVersionNodePtr = 0;
 #endif // FEATURE_CODE_VERSIONING
+    }
 
     SOSDacLeave();
 
@@ -4771,22 +4790,29 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     pILData->il = (CLRDATA_ADDRESS)NULL;
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
-#ifdef FEATURE_CODE_VERSIONING
-    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
+    if (!DacValidateMD(pMD))
     {
-        pILData->type = DacpProfilerILData::ReJITModified;
-        pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
+        hr = E_INVALIDARG;
     }
+    else
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+        if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
+        {
+            pILData->type = DacpProfilerILData::ReJITModified;
+            pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
+        }
 #endif // FEATURE_CODE_VERSIONING
 
-    TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
-    if (pDynamicIL != (TADDR)NULL)
-    {
-        pILData->type = DacpProfilerILData::ILModified;
-        pILData->il = (CLRDATA_ADDRESS)pDynamicIL;
+        TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
+        if (pDynamicIL != (TADDR)NULL)
+        {
+            pILData->type = DacpProfilerILData::ILModified;
+            pILData->il = (CLRDATA_ADDRESS)pDynamicIL;
+        }
     }
 
     SOSDacLeave();
@@ -4807,6 +4833,12 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
 #ifdef FEATURE_CODE_VERSIONING
     PTR_Module pModule = PTR_Module(TO_TADDR(mod));
+    if (dac_cast<TADDR>(pModule) == (TADDR)-1)
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
     CodeVersionManager* pCodeVersionManager = pModule->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
@@ -4840,6 +4872,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
             }
         }
     }
+    }
 #endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
@@ -4870,7 +4903,6 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
     {
@@ -4916,7 +4948,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
     {
@@ -4957,7 +4988,6 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
@@ -5007,7 +5037,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
@@ -5024,13 +5053,32 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
         TADDR heapAddress = TO_TADDR(heapAddr);
         if (heapAddress != 0)
         {
-            dac_gc_heap heap = LoadGcHeapData(heapAddress);
-            dac_gc_heap* pHeap = &heap;
-            DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
-            DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-            for (unsigned int i = 0; i < numFillPointers; ++i)
+            // Validate that heapAddr is a known server GC heap address
+            bool validHeap = false;
+            int heapCount = GCHeapCount();
+            for (int i = 0; i < heapCount; i++)
             {
-                pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+                if (heapAddress == HeapTableIndex(g_gcDacGlobals->g_heaps, i))
+                {
+                    validHeap = true;
+                    break;
+                }
+            }
+
+            if (!validHeap)
+            {
+                hr = E_INVALIDARG;
+            }
+            else
+            {
+                dac_gc_heap heap = LoadGcHeapData(heapAddress);
+                dac_gc_heap* pHeap = &heap;
+                DPTR(dac_finalize_queue) fq = pHeap->finalize_queue;
+                DPTR(uint8_t*) pFillPointerArray= dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
+                for (unsigned int i = 0; i < numFillPointers; ++i)
+                {
+                    pFinalizationFillPointers[i] = (CLRDATA_ADDRESS) pFillPointerArray[i];
+                }
             }
         }
         else
@@ -5053,20 +5101,28 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
 
     SOSDacEnter();
     PTR_MethodTable pMT = PTR_MethodTable(CLRDATA_ADDRESS_TO_TADDR(methodTable));
-    PTR_Module pModule = pMT->GetModule();
-
-    PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
-    PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
-
-    INT_PTR AssemblyLoadContextHandle = pBinder->GetAssemblyLoadContext();
-
-    TADDR AssemblyLoadContextAddr = 0;
-    if (AssemblyLoadContextHandle != 0)
+    BOOL bIsFree;
+    if (!DacValidateMethodTable(pMT, bIsFree))
     {
-        DacReadAll(AssemblyLoadContextHandle,&AssemblyLoadContextAddr,sizeof(TADDR),true);
+        hr = E_INVALIDARG;
     }
+    else
+    {
+        PTR_Module pModule = pMT->GetModule();
 
-    *assemblyLoadContext = TO_CDADDR(AssemblyLoadContextAddr);
+        PTR_PEAssembly pPEAssembly = pModule->GetPEAssembly();
+        PTR_AssemblyBinder pBinder = pPEAssembly->GetAssemblyBinder();
+
+        INT_PTR AssemblyLoadContextHandle = pBinder->GetAssemblyLoadContext();
+
+        TADDR AssemblyLoadContextAddr = 0;
+        if (AssemblyLoadContextHandle != 0)
+        {
+            DacReadAll(AssemblyLoadContextHandle,&AssemblyLoadContextAddr,sizeof(TADDR),true);
+        }
+
+        *assemblyLoadContext = TO_CDADDR(AssemblyLoadContextAddr);
+    }
 
     SOSDacLeave();
     return hr;
@@ -5157,7 +5213,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     SOSDacEnter();
 
     // Default to having found no information.
-    HRESULT hr = S_FALSE;
+    hr = S_FALSE;
 
     if (pNeeded != NULL)
     {
