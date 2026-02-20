@@ -108,6 +108,15 @@ shift
 goto loop
 :end_loop
 
+:: Use pipeline-cached tryrun results to speed up CMake configure (opt-in via CLR_CMAKE_USE_PLATFORM_CACHE=1)
+if /i "%CLR_CMAKE_USE_PLATFORM_CACHE%" == "1" (
+    set "__pipeline_cache=%__repoRoot%\artifacts\cmake-tryrun-cache\tryrun.windows-%__Arch%.cmake"
+    if exist "!__pipeline_cache!" (
+        echo Using pipeline-cached tryrun cache: !__pipeline_cache!
+        set __ExtraCmakeParams=-C "!__pipeline_cache!" %__ExtraCmakeParams%
+    )
+)
+
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
 set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt

@@ -161,7 +161,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
-      - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
+      - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
         - name: CLR_CMAKE_USE_PLATFORM_CACHE
           value: '1'
 
@@ -196,12 +196,25 @@ jobs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
     # CMake tryrun cache — restore cached feature detection results to speed up configure
-    - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
-      - script: |
-          compiler_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
-          echo "##vso[task.setvariable variable=CompilerVersion]${compiler_version}"
-          echo "Detected compiler version: ${compiler_version}"
-        displayName: Detect compiler version for cache key
+    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - script: |
+            compiler_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
+            echo "##vso[task.setvariable variable=CompilerVersion]${compiler_version}"
+            echo "Detected compiler version: ${compiler_version}"
+          displayName: Detect compiler version for cache key
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - powershell: |
+            $clOutput = & cl.exe 2>&1 | Select-Object -First 1
+            if ($clOutput -match 'Version\s+(\d+)\.') {
+              $version = $Matches[1]
+            } else {
+              $version = 'unknown'
+            }
+            Write-Host "##vso[task.setvariable variable=CompilerVersion]$version"
+            Write-Host "Detected compiler version: $version"
+          displayName: Detect compiler version for cache key
 
       - task: Cache@2
         displayName: Restore CMake tryrun cache
@@ -242,19 +255,34 @@ jobs:
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
     # CMake tryrun cache — extract results after build on cache miss
-    - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
-      - script: |
-          if [[ "$(CMAKE_TRYRUN_CACHE_RESTORED)" == "true" ]]; then
-            echo "Cache was restored, skipping extraction."
-            exit 0
-          fi
-          echo "Cache miss — extracting tryrun results for future runs..."
-          $(Build.SourcesDirectory)/eng/native/extract-tryrun-cache.sh \
-            $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache/tryrun.${{ parameters.osGroup }}-${{ parameters.archType }}.cmake \
-            $(Build.SourcesDirectory)/artifacts/obj
-        displayName: Extract CMake tryrun cache
-        continueOnError: true
-        condition: succeeded()
+    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - script: |
+            if [[ "$(CMAKE_TRYRUN_CACHE_RESTORED)" == "true" ]]; then
+              echo "Cache was restored, skipping extraction."
+              exit 0
+            fi
+            echo "Cache miss — extracting tryrun results for future runs..."
+            $(Build.SourcesDirectory)/eng/native/extract-tryrun-cache.sh \
+              $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache/tryrun.${{ parameters.osGroup }}-${{ parameters.archType }}.cmake \
+              $(Build.SourcesDirectory)/artifacts/obj
+          displayName: Extract CMake tryrun cache
+          continueOnError: true
+          condition: succeeded()
+
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - powershell: |
+            if ('$(CMAKE_TRYRUN_CACHE_RESTORED)' -eq 'true') {
+              Write-Host 'Cache was restored, skipping extraction.'
+              exit 0
+            }
+            Write-Host 'Cache miss — extracting tryrun results for future runs...'
+            & $(Build.SourcesDirectory)/eng/native/extract-tryrun-cache.ps1 `
+              -OutputFile $(Build.SourcesDirectory)/artifacts/cmake-tryrun-cache/tryrun.${{ parameters.osGroup }}-${{ parameters.archType }}.cmake `
+              -CacheDirs $(Build.SourcesDirectory)/artifacts/obj
+          displayName: Extract CMake tryrun cache
+          continueOnError: true
+          condition: succeeded()
 
     - task: CopyFiles@2
       displayName: Gather CMakeConfigureLog for publish to artifacts
