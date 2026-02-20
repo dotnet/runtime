@@ -2021,6 +2021,135 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_WhenWritingNull()
+        {
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 42,
+                MyOtherString = "hello"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyInt"":42", json);
+            Assert.Contains(@"""MyOtherString"":""hello""", json);
+            Assert.DoesNotContain(@"""MyString"":", json);
+
+            obj.MyString = "value";
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_WhenWritingDefault()
+        {
+            var obj = new ClassWithTypeLevelIgnore_WhenWritingDefault
+            {
+                MyString = null,
+                MyInt = 0,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.DoesNotContain(@"""MyInt"":", json);
+
+            obj.MyString = "value";
+            obj.MyInt = 1;
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+            Assert.Contains(@"""MyInt"":1", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_Always()
+        {
+            var obj = new ClassWithTypeLevelIgnore_Always
+            {
+                MyString = "value",
+                MyInt = 42
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Equal("{}", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_PropertyOverridesType()
+        {
+            var obj = new ClassWithTypeLevelIgnore_PropertyOverride
+            {
+                MyString = null,
+                MyInt = 42,
+                AlwaysPresent = "test"
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            // MyString should be ignored (inherited WhenWritingNull, value is null)
+            Assert.DoesNotContain(@"""MyString"":", json);
+            // MyInt should be serialized (inherited WhenWritingNull doesn't apply to value types)
+            Assert.Contains(@"""MyInt"":42", json);
+            // AlwaysPresent has property-level [JsonIgnore(Condition = Never)] which overrides type-level
+            Assert.Contains(@"""AlwaysPresent"":""test""", json);
+
+            // When AlwaysPresent is null, it should still be present due to Never override
+            obj.AlwaysPresent = null;
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""AlwaysPresent"":null", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_Struct()
+        {
+            var obj = new StructWithTypeLevelIgnore_WhenWritingNull
+            {
+                MyString = null,
+                MyInt = 42,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.DoesNotContain(@"""MyString"":", json);
+            Assert.Contains(@"""MyInt"":42", json);
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class ClassWithTypeLevelIgnore_WhenWritingNull
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+            public string? MyOtherString { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public class ClassWithTypeLevelIgnore_WhenWritingDefault
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+        public class ClassWithTypeLevelIgnore_Always
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class ClassWithTypeLevelIgnore_PropertyOverride
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+            public string? AlwaysPresent { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public struct StructWithTypeLevelIgnore_WhenWritingNull
+        {
+            public string? MyString { get; set; }
+            public int MyInt { get; set; }
+        }
+
+        [Fact]
         public async Task JsonIgnoreCondition_LastOneWins()
         {
             string json = @"{""MyString"":""Random"",""MYSTRING"":null}";
