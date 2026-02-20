@@ -124,10 +124,9 @@
       <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
       <RunTimeArtifactsIncludeFolders Include="xunit/" TargetDir="xunit/" />
 
-      <!-- Managed ilasm for testing -->
-      <RunTimeArtifactsIncludeFolders Include="managed-ilasm/" TargetDir="managed-ilasm/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
+      <!-- Managed ilasm/ildasm for testing -->
+      <RunTimeArtifactsIncludeFolders Include="managed-ilasm/" TargetDir="managed-ilasm/" />
+      <RunTimeArtifactsIncludeFolders Include="managed-ildasm/" TargetDir="managed-ildasm/" />
     </ItemGroup>
 
     <ItemGroup>

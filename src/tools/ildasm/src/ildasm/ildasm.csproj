@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(PortableTargetRid)</RuntimeIdentifier>
+    <PublishDir>$(CoreclrRuntimeBinDir)managed-ildasm</PublishDir>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <AotOrSingleFile>true</AotOrSingleFile>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+    <!-- Workaround for dsymutil module cache errors on Apple platforms until https://github.com/dotnet/runtime/pull/123386 -->
+    <!-- See https://github.com/dotnet/runtime/issues/123687 -->
+    <StripSymbols Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'maccatalyst'">false</StripSymbols>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Import Project="$(CoreClrProjectRoot)tools\aot\AotCompilerCommon.props" />
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+    <ProjectReference Include="..\ILDisassembler\ILDisassembler.csproj" />
+  </ItemGroup>
+
+</Project>
