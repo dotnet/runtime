@@ -203,7 +203,6 @@ namespace ILCompiler
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
             var cont = _continuationTypeHashtable.GetOrCreateValue(pointerMap);
-            _validTypes.TryAdd(cont);
             return cont;
         }
 
