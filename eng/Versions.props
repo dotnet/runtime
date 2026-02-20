@@ -146,7 +146,7 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftOneCollectRecordTraceVersion>0.1.32221</MicrosoftOneCollectRecordTraceVersion>
+    <MicrosoftOneCollectRecordTraceVersion>0.1.33304</MicrosoftOneCollectRecordTraceVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
     <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
