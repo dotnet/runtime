@@ -272,19 +272,20 @@ fi
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
-# Build wasm app containing the test dll
-__Command=""
-if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-  __Command+=" $__TestDotNetCmd"
-else
-  __Command+=" dotnet"
+if [ -z "${RunWithNodeJS:-}" ] ; then
+    # Build wasm app containing the test dll
+    __Command=""
+    if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+      __Command+=" $__TestDotNetCmd"
+    else
+      __Command+=" dotnet"
+    fi
+
+    # workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
+    export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
+    $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 fi
-
-# workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
-export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
-
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
-
    ]]>
       </CLRTestBashPreCommands>
 
@@ -330,8 +331,63 @@ fi
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
-cd WasmApp
-./run-v8.sh
+run_with_timeout() {
+  local timeout_sec=%24(( $1 / 1000 ))
+  shift
+  local cmd=("$@")
+
+  # Start the command in the background
+  "${cmd[@]}" &
+  local pid=$!
+
+  # Start a watchdog that will kill the process if it exceeds timeout
+  (
+    sleep "$timeout_sec"
+    if [ $? -eq 0 ]; then
+      echo "Process $pid exceeded timeout of $timeout_sec seconds. Killing..."
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -9 "$pid" 2>/dev/null
+      fi
+    fi
+  ) &
+  local watchdog=$!
+
+  # Wait for the command to finish
+  wait "$pid"
+  local exit_code=$?
+
+  # Kill watchdog and its children (sleep process) if still running
+  echo Kill watchdog with PID $watchdog
+  pkill -P "$watchdog" 2>/dev/null
+  kill "$watchdog" 2>/dev/null
+  wait "$watchdog" 2>/dev/null
+
+  # If the process was killed by SIGKILL (128+9 = 137), map to 99
+  if [ $exit_code -eq 137 ]; then
+    return 99
+  else
+    return $exit_code
+  fi
+}
+
+if [ -z ${RunWithNodeJS+x} ] ; then
+    cd WasmApp
+    ./run-v8.sh
+else
+    if [ -z ${__TestTimeout+x} ]; then
+      __TestTimeout=300000
+    fi
+
+    echo Running with node
+    echo CORE_ROOT: ${CORE_ROOT}
+    echo ExePath: ${PWD}/${ExePath}
+    echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
+    echo node version: `node -v`
+    echo Timeout in ms: $__TestTimeout
+    cmd=( node "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    echo Running: "${cmd[@]}"
+    run_with_timeout $__TestTimeout "${cmd[@]}"
+fi
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
