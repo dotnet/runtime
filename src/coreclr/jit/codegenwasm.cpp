@@ -2083,7 +2083,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             // Round up request size to a multiple of STACK_ALIGN
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
-            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, STACK_ALIGN);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, STACK_ALIGN - 1);
             GetEmitter()->emitIns(INS_I_add);
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
             GetEmitter()->emitIns(INS_I_and);
@@ -2110,8 +2110,8 @@ void CodeGen::genLclHeap(GenTree* tree)
                 GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
             }
 
-            // Re-establish unwind invaraiant: store FP at SP[0]
-            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            // Re-establish unwind invariant: store FP at SP[0]
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
             GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
 
