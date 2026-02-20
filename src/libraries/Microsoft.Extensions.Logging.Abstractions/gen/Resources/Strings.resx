@@ -152,7 +152,7 @@
   <data name="LoggingMethodMustBePartialMessage" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
-  <data name="LoggingMethodIsGenericMessage" xml:space="preserve">
+  <data name="LoggingMethodHasAllowsRefStructConstraintMessage" xml:space="preserve">
     <value>Logging methods cannot have type parameters with 'allows ref struct' constraints</value>
   </data>
   <data name="ShouldntMentionInTemplateMessage" xml:space="preserve">

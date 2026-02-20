@@ -261,7 +261,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         if (s_allowsRefLikeTypeProperty?.GetValue(tp) is true)
                                         {
-                                            Diag(DiagnosticDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasAllowsRefStructConstraint, method.Identifier.GetLocation());
                                             keepMethod = false;
                                             break;
                                         }
@@ -756,6 +756,11 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 foreach (ITypeSymbol constraintType in typeParameter.ConstraintTypes)
                 {
+                    if (constraintType is IErrorTypeSymbol)
+                    {
+                        continue;
+                    }
+
                     constraints.Add(constraintType.ToDisplayString(
                         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                             SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |

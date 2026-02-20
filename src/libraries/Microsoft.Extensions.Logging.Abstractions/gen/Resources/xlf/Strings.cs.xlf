@@ -4,202 +4,202 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="needs-translation">Na argument {0} se ve zprávě o protokolování neodkazuje.</target>
+        <target state="translated">Na argument {0} se ve zprávě o protokolování neodkazuje.</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
         <source>Argument is not referenced from the logging message</source>
-        <target state="needs-translation">Na argument se zpráva o protokolování neodkazuje</target>
+        <target state="translated">Na argument se zpráva o protokolování neodkazuje</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratingForMax6ArgumentsMessage">
         <source>Generating more than 6 arguments is not supported</source>
-        <target state="needs-translation">Generování více než 6 argumentů se nepodporuje.</target>
+        <target state="translated">Generování více než 6 argumentů se nepodporuje.</target>
         <note />
       </trans-unit>
       <trans-unit id="InconsistentTemplateCasingMessage">
         <source>Can't have the same template with different casing</source>
-        <target state="needs-translation">Nemůže mít stejnou šablonu s různým zápisem velkých a malých písmen.</target>
+        <target state="translated">Nemůže mít stejnou šablonu s různým zápisem velkých a malých písmen.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodNameMessage">
         <source>Logging method names cannot start with _</source>
-        <target state="needs-translation">Názvy metod protokolování nemůžou začínat podtržítkem (_).</target>
+        <target state="translated">Názvy metod protokolování nemůžou začínat podtržítkem (_).</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterNameMessage">
         <source>Logging method parameter names cannot start with _</source>
-        <target state="needs-translation">Názvy parametrů metody protokolování nemůžou začínat podtržítkem (_).</target>
+        <target state="translated">Názvy parametrů metody protokolování nemůžou začínat podtržítkem (_).</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="needs-translation">Argument {0} používá nepodporovaný modifikátor výstupních parametrů.</target>
+        <target state="translated">Argument {0} používá nepodporovaný modifikátor výstupních parametrů.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="needs-translation">Argument používá nepodporovaný modifikátor výstupních parametrů</target>
+        <target state="translated">Argument používá nepodporovaný modifikátor výstupních parametrů</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
-        <target state="needs-translation">Metody protokolování nemůžou obsahovat tělo.</target>
+        <target state="translated">Metody protokolování nemůžou obsahovat tělo.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
         <target state="needs-translation">Metody protokolování nemůžou být obecné.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be partial</source>
-        <target state="needs-translation">Metody protokolování musí být částečné.</target>
+        <target state="translated">Metody protokolování musí být částečné.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return void</source>
-        <target state="needs-translation">Metody protokolování musí vracet void.</target>
+        <target state="translated">Metody protokolování musí vracet void.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be static</source>
-        <target state="needs-translation">Metody protokolování musí být statické.</target>
+        <target state="translated">Metody protokolování musí být statické.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="needs-translation">Zdrojový generátor protokolování není k dispozici v jazyce C# {0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
+        <target state="translated">Zdrojový generátor protokolování není k dispozici v jazyce C# {0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="needs-translation">Zdrojový generátor nepodporuje jazykovou verzi jazyka C#.</target>
+        <target state="translated">Zdrojový generátor nepodporuje jazykovou verzi jazyka C#.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="needs-translation">Metoda protokolování {0} obsahuje řetězce s poškozeným formátem.</target>
+        <target state="translated">Metoda protokolování {0} obsahuje řetězce s poškozeným formátem.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="needs-translation">Metoda protokolování obsahuje řetězce s poškozeným formátem</target>
+        <target state="translated">Metoda protokolování obsahuje řetězce s poškozeným formátem</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
         <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
-        <target state="needs-translation">Hodnota LogLevel musí být zadaná v atributu LoggerMessage, nebo jako parametr metody protokolování.</target>
+        <target state="translated">Hodnota LogLevel musí být zadaná v atributu LoggerMessage, nebo jako parametr metody protokolování.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentMessage">
         <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="needs-translation">Jeden z argumentů metody statického protokolování {0} musí implementovat rozhraní Microsoft.Extensions.Logging.ILogger.</target>
+        <target state="translated">Jeden z argumentů metody statického protokolování {0} musí implementovat rozhraní Microsoft.Extensions.Logging.ILogger.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerArgumentTitle">
         <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
-        <target state="needs-translation">Jeden z argumentů metody statického protokolování musí implementovat rozhraní Microsoft.Extensions.Logging.ILogger.</target>
+        <target state="translated">Jeden z argumentů metody statického protokolování musí implementovat rozhraní Microsoft.Extensions.Logging.ILogger.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldMessage">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="needs-translation">Ve třídě {0} se nepovedlo najít pole typu Microsoft.Extensions.Logging.ILogger.</target>
+        <target state="translated">Ve třídě {0} se nepovedlo najít pole typu Microsoft.Extensions.Logging.ILogger.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingLoggerFieldTitle">
         <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="needs-translation">Nepovedlo se najít pole typu Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Nepovedlo se najít pole typu Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MissingRequiredTypeMessage">
         <source>Could not find definition for type {0}</source>
-        <target state="needs-translation">Nepovedlo se najít definici pro typ {0}.</target>
+        <target state="translated">Nepovedlo se najít definici pro typ {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingRequiredTypeTitle">
         <source>Could not find a required type definition</source>
-        <target state="needs-translation">Nepovedlo se najít požadovanou definici typu</target>
+        <target state="translated">Nepovedlo se najít požadovanou definici typu</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsMessage">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
-        <target state="needs-translation">Ve třídě {0} se našlo několik polí typu Microsoft.Extensions.Logging.ILogger.</target>
+        <target state="translated">Ve třídě {0} se našlo několik polí typu Microsoft.Extensions.Logging.ILogger.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="MultipleLoggerFieldsTitle">
         <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
-        <target state="needs-translation">Našlo se několik polí typu Microsoft.Extensions.Logging.ILogger</target>
+        <target state="translated">Našlo se několik polí typu Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
         <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="needs-translation">Třída {0} má parametr primárního konstruktoru typu Microsoft.Extensions.Logging.ILogger, který je skrytý polem ve třídě nebo základní třídě, což brání jeho použití.</target>
+        <target state="translated">Třída {0} má parametr primárního konstruktoru typu Microsoft.Extensions.Logging.ILogger, který je skrytý polem ve třídě nebo základní třídě, což brání jeho použití.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
         <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="needs-translation">Parametr primárního konstruktoru typu Microsoft.Extensions.Logging.ILogger je skrytý polem.</target>
+        <target state="translated">Parametr primárního konstruktoru typu Microsoft.Extensions.Logging.ILogger je skrytý polem.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="needs-translation">Odeberte redundantní kvalifikátor (Informace:, Upozornění:, Chyba: atd.) ze zprávy o protokolování, protože je na zadané úrovni protokolu implicitní.</target>
+        <target state="translated">Odeberte redundantní kvalifikátor (Informace:, Upozornění:, Chyba: atd.) ze zprávy o protokolování, protože je na zadané úrovni protokolu implicitní.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
         <source>Redundant qualifier in logging message</source>
-        <target state="needs-translation">Redundantní kvalifikátor ve zprávě o protokolování</target>
+        <target state="translated">Redundantní kvalifikátor ve zprávě o protokolování</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionExceptionInMessageTitle">
         <source>Don't include exception parameters as templates in the logging message</source>
-        <target state="needs-translation">Nezahrnovat parametry výjimek jako šablony do zprávy o protokolování</target>
+        <target state="translated">Nezahrnovat parametry výjimek jako šablony do zprávy o protokolování</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionInTemplateMessage">
         <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
-        <target state="needs-translation">Nezahrnovat do zprávy o protokolování šablonu pro {0}, protože se zpracovává implicitně.</target>
+        <target state="translated">Nezahrnovat do zprávy o protokolování šablonu pro {0}, protože se zpracovává implicitně.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
         <source>Don't include log level parameters as templates in the logging message</source>
-        <target state="needs-translation">Nezahrnovat parametry úrovně protokolu jako šablony do zprávy o protokolování</target>
+        <target state="translated">Nezahrnovat parametry úrovně protokolu jako šablony do zprávy o protokolování</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntMentionLoggerInMessageTitle">
         <source>Don't include logger parameters as templates in the logging message</source>
-        <target state="needs-translation">Nezahrnovat parametry protokolovacího nástroje jako šablony do zprávy o protokolování</target>
+        <target state="translated">Nezahrnovat parametry protokolovacího nástroje jako šablony do zprávy o protokolování</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsMessage">
         <source>Multiple logging methods are using event id {0} in class {1}</source>
-        <target state="needs-translation">Více než jedna metoda protokolování používá ve třídě {1} ID události {0}.</target>
+        <target state="translated">Více než jedna metoda protokolování používá ve třídě {1} ID události {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
-        <target state="needs-translation">Více než jedna metoda protokolování nemůže v rámci třídy používat stejné ID události.</target>
+        <target state="translated">Více než jedna metoda protokolování nemůže v rámci třídy používat stejné ID události.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="needs-translation">Více než jedna metoda protokolování používá název události {0} ve třídě {1}</target>
+        <target state="translated">Více než jedna metoda protokolování používá název události {0} ve třídě {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="needs-translation">Více než jedna metoda protokolování by nemělo používat stejný název události v rámci třídy</target>
+        <target state="translated">Více než jedna metoda protokolování by nemělo používat stejný název události v rámci třídy</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
-        <target state="needs-translation">Šablona {0} se neposkytuje jako argument pro metodu protokolování.</target>
+        <target state="translated">Šablona {0} se neposkytuje jako argument pro metodu protokolování.</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
-        <target state="needs-translation">Šablona protokolování nemá žádný odpovídající argument metody</target>
+        <target state="translated">Šablona protokolování nemá žádný odpovídající argument metody</target>
         <note />
       </trans-unit>
     </body>
