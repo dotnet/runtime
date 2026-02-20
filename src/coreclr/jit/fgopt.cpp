@@ -9,7 +9,7 @@
 
 #include "lower.h" // for LowerRange()
 
-// Flowgraph Optimizatio
+// Flowgraph Optimization
 
 //------------------------------------------------------------------------
 // fgComputeReturnBlocks: Compute the set of BBJ_RETURN blocks.
