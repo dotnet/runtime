@@ -578,5 +578,117 @@ namespace System.Text.Json.Serialization.Tests
             Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<SimpleTestClass>(json, options));
             Assert.Contains("Duplicate", ex.Message);
         }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_TypeLevel_Serialize()
+        {
+            string json = await Serializer.SerializeWrapper(new ClassWithCamelCaseNamingPolicyAttribute { MyValue = "test" });
+            Assert.Contains(@"""myValue"":""test""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_TypeLevel_Deserialize()
+        {
+            var obj = await Serializer.DeserializeWrapper<ClassWithCamelCaseNamingPolicyAttribute>(@"{""myValue"":""test""}");
+            Assert.Equal("test", obj.MyValue);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_TypeLevel_OverridesGlobalPolicy()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithCamelCaseNamingPolicyAttribute { MyValue = "test" }, options);
+            Assert.Contains(@"""myValue"":""test""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_MemberLevel_Serialize()
+        {
+            string json = await Serializer.SerializeWrapper(new ClassWithMemberNamingPolicyAttribute { MyFirstProperty = "first", MySecondProperty = "second" });
+            Assert.Contains(@"""MyFirstProperty"":""first""", json);
+            Assert.Contains(@"""my-second-property"":""second""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_MemberLevel_Deserialize()
+        {
+            var obj = await Serializer.DeserializeWrapper<ClassWithMemberNamingPolicyAttribute>(@"{""MyFirstProperty"":""first"",""my-second-property"":""second""}");
+            Assert.Equal("first", obj.MyFirstProperty);
+            Assert.Equal("second", obj.MySecondProperty);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_MemberLevel_OverridesTypeLevelAndGlobal()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+            string json = await Serializer.SerializeWrapper(new ClassWithMixedNamingPolicies { MyFirstProperty = "first", MySecondProperty = "second" }, options);
+            Assert.Contains(@"""myFirstProperty"":""first""", json);
+            Assert.Contains(@"""my-second-property"":""second""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_MemberLevel_OverridesTypeLevel()
+        {
+            string json = await Serializer.SerializeWrapper(new ClassWithMixedNamingPolicies { MyFirstProperty = "first", MySecondProperty = "second" });
+            Assert.Contains(@"""myFirstProperty"":""first""", json);
+            Assert.Contains(@"""my-second-property"":""second""", json);
+        }
+
+        [Fact]
+        public async Task JsonNamingPolicyAttribute_JsonPropertyNameTakesPrecedence()
+        {
+            string json = await Serializer.SerializeWrapper(new ClassWithNamingPolicyAndPropertyName { MyValue = "test" });
+            Assert.Contains(@"""custom_name"":""test""", json);
+        }
+
+        [Theory]
+        [InlineData(JsonKnownNamingPolicy.CamelCase, @"""myTestProperty""")]
+        [InlineData(JsonKnownNamingPolicy.SnakeCaseLower, @"""my_test_property""")]
+        [InlineData(JsonKnownNamingPolicy.SnakeCaseUpper, @"""MY_TEST_PROPERTY""")]
+        [InlineData(JsonKnownNamingPolicy.KebabCaseLower, @"""my-test-property""")]
+        [InlineData(JsonKnownNamingPolicy.KebabCaseUpper, @"""MY-TEST-PROPERTY""")]
+        public void JsonNamingPolicyAttribute_AllKnownPolicies(JsonKnownNamingPolicy policy, string expectedPropertyName)
+        {
+            var attribute = new JsonNamingPolicyAttribute(policy);
+            string converted = attribute.NamingPolicy.ConvertName("MyTestProperty");
+            Assert.Equal(expectedPropertyName.Trim('"'), converted);
+        }
+
+        [Fact]
+        public void JsonNamingPolicyAttribute_InvalidPolicy_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNamingPolicyAttribute((JsonKnownNamingPolicy)999));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new JsonNamingPolicyAttribute(JsonKnownNamingPolicy.Unspecified));
+        }
+    }
+
+    [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+    public class ClassWithCamelCaseNamingPolicyAttribute
+    {
+        public string MyValue { get; set; }
+    }
+
+    public class ClassWithMemberNamingPolicyAttribute
+    {
+        public string MyFirstProperty { get; set; }
+
+        [JsonNamingPolicy(JsonKnownNamingPolicy.KebabCaseLower)]
+        public string MySecondProperty { get; set; }
+    }
+
+    [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+    public class ClassWithMixedNamingPolicies
+    {
+        public string MyFirstProperty { get; set; }
+
+        [JsonNamingPolicy(JsonKnownNamingPolicy.KebabCaseLower)]
+        public string MySecondProperty { get; set; }
+    }
+
+    public class ClassWithNamingPolicyAndPropertyName
+    {
+        [JsonNamingPolicy(JsonKnownNamingPolicy.CamelCase)]
+        [JsonPropertyName("custom_name")]
+        public string MyValue { get; set; }
     }
 }

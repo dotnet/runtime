@@ -389,7 +389,9 @@ namespace System.Text.Json.Serialization.Metadata
                     ?? typeNamingPolicy
                     ?? propertyInfo.Options.PropertyNamingPolicy;
 
-                name = effectivePolicy?.ConvertName(memberInfo.Name) ?? memberInfo.Name;
+                name = effectivePolicy is not null
+                    ? effectivePolicy.ConvertName(memberInfo.Name)
+                    : memberInfo.Name;
             }
 
             if (name == null)
