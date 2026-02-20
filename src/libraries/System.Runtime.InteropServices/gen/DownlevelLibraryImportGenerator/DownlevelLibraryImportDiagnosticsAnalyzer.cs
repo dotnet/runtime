@@ -54,26 +54,37 @@ namespace Microsoft.Interop.Analyzers
                     context.Compilation,
                     context.Compilation.GetEnvironmentFlags());
 
-                // Track if we found any LibraryImport methods to report RequiresAllowUnsafeBlocks once
-                int foundLibraryImportMethod = 0;
-                bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
-
-                context.RegisterSymbolAction(symbolContext =>
+                // Only register the compilation end action if unsafe is not enabled,
+                // as RequiresAllowUnsafeBlocks is only emitted when unsafe is disabled.
+                if (context.Compilation.Options is not CSharpCompilationOptions { AllowUnsafe: true })
                 {
-                    if (AnalyzeMethod(symbolContext, env, libraryImportAttrType))
-                    {
-                        Interlocked.Exchange(ref foundLibraryImportMethod, 1);
-                    }
-                }, SymbolKind.Method);
+                    // Track if we found any LibraryImport methods to report RequiresAllowUnsafeBlocks once
+                    int foundLibraryImportMethod = 0;
 
-                // Report RequiresAllowUnsafeBlocks once per compilation if there are LibraryImport methods and unsafe is not enabled
-                context.RegisterCompilationEndAction(endContext =>
-                {
-                    if (Volatile.Read(ref foundLibraryImportMethod) != 0 && !unsafeEnabled)
+                    context.RegisterSymbolAction(symbolContext =>
                     {
-                        endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null).ToDiagnostic());
-                    }
-                });
+                        if (AnalyzeMethod(symbolContext, env, libraryImportAttrType))
+                        {
+                            Interlocked.Exchange(ref foundLibraryImportMethod, 1);
+                        }
+                    }, SymbolKind.Method);
+
+                    // Report RequiresAllowUnsafeBlocks once per compilation if there are LibraryImport methods
+                    context.RegisterCompilationEndAction(endContext =>
+                    {
+                        if (Volatile.Read(ref foundLibraryImportMethod) != 0)
+                        {
+                            endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, null).ToDiagnostic());
+                        }
+                    });
+                }
+                else
+                {
+                    context.RegisterSymbolAction(symbolContext =>
+                    {
+                        AnalyzeMethod(symbolContext, env, libraryImportAttrType);
+                    }, SymbolKind.Method);
+                }
             });
         }
 
