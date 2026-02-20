@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
-import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "../types";
+import { _ems_ } from "../ems-ambient";
 
-import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "./per-module";
+import { browserVirtualAppBase, ENVIRONMENT_IS_WEB } from "../per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
