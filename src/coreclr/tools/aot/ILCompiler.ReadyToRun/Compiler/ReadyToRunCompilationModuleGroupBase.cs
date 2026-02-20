@@ -521,7 +521,7 @@ namespace ILCompiler
         private bool CrossModuleInlineableUncached(MethodDesc method)
         {
             // Async thunks and variants cannot currently be inlined cross module
-            if (method.IsAsyncVariant() || method.IsAsync || method.IsCompilerGeneratedILBodyForAsync())
+            if (method.IsAsyncVariant() || method.IsAsync || method.IsAsyncThunk())
                 return false;
 
             // Defined in corelib
