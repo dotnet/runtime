@@ -957,12 +957,31 @@ namespace System.Text.RegularExpressions
                             char ch = (char)Operand(0);
                             int i;
 
-                            for (i = len; i > 0; i--)
+                            if (!_rightToLeft)
                             {
-                                if (Forwardcharnext(inputSpan) != ch)
+                                // We're left-to-right, so we can employ the vectorized IndexOfAnyExcept
+                                // to search for any character that isn't the target.
+                                i = inputSpan.Slice(runtextpos, len).IndexOfAnyExcept(ch);
+                                if (i == -1)
                                 {
-                                    Backwardnext();
-                                    break;
+                                    runtextpos += len;
+                                    i = 0;
+                                }
+                                else
+                                {
+                                    runtextpos += i;
+                                    i = len - i;
+                                }
+                            }
+                            else
+                            {
+                                for (i = len; i > 0; i--)
+                                {
+                                    if (Forwardcharnext(inputSpan) != ch)
+                                    {
+                                        Backwardnext();
+                                        break;
+                                    }
                                 }
                             }
 
