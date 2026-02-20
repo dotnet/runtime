@@ -465,17 +465,19 @@ void Lowering::AfterLowerBlock()
 }
 
 //------------------------------------------------------------------------
-// AfterLowerLclHeap: target-specific post-processing of the lowered block.
+// AfterLowerLclHeap: target-specific post-processing of the lowered LCLHEAP.
 //
 // Arguments:
 //    treeNode - the GT_LCLHEAP node that was just lowered.
 //
 void Lowering::AfterLowerLclHeap(GenTree* treeNode)
 {
-    GenTree* const size = tree->AsOp()->gtOp1;
+    GenTree* size = treeNode->AsOp()->gtOp1;
+
     if (!size->isContainedIntOrIImmed())
     {
+        size = m_compiler->gtNewCastNode(TYP_I_IMPL, size, false, TYP_I_IMPL);
+        BlockRange().InsertBefore(treeNode, size);
         size->gtLIRFlags |= LIR::Flags::MultiplyUsed;
     }
 }
-

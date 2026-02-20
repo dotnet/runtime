@@ -11718,7 +11718,8 @@ void Lowering::LowerLclHeap(GenTree* node)
 // AfterLowerLclHeap: target-specific post-processing of the LCLHEAP node.
 //
 void Lowering::AfterLowerLclHeap(GenTree* node)
-{}
+{
+}
 #endif // !TARGET_WASM
 
 //------------------------------------------------------------------------

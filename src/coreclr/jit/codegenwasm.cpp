@@ -13,6 +13,8 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
 static const instruction INS_I_le_u  = INS_i64_le_u;
@@ -21,6 +23,8 @@ static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
 static const instruction INS_I_le_u  = INS_i32_le_u;
@@ -355,11 +359,11 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                instGen(INS_loop);
+                GetEmitter()->emitIns_B(INS_loop);
             }
             else
             {
-                instGen(INS_block);
+                GetEmitter()->emitIns_B(INS_block);
             }
 
             wasmCursor++;
@@ -1353,7 +1357,7 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns(INS_if);
+        GetEmitter()->emitIns_B(INS_if);
         // Throw helper arity is (i (sp)) -> (void).
         // Push SP here as the arg for the call.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
@@ -1991,7 +1995,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     bool const     needsZeroing = m_compiler->info.compInitMem;
     GenTree* const size         = tree->AsOp()->gtOp1;
 
-    assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
+    assert(genActualType(size->gtType) == TYP_I_IMPL);
 
     // We reserve this amount of space below any allocation for
     // establishing unwind invariants.
@@ -2054,52 +2058,70 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
+        assert(size->TypeIs(TYP_I_IMPL));
+        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
+
         genConsumeReg(size);
         regNumber sizeReg = GetMultiUseOperandReg(size);
 
-        // Check for zero-size...
-        GetEmtter()->emitIns(INS_i32_eqz);
-        GetEmtter()->emitIns(INS_if_push_i32);
-        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        // Check for zero-size.
+        GetEmitter()->emitIns(INS_I_eqz);
+        GetEmitter()->emitIns_B(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+
+        {
+            // If size is zero, leave a zero on the stack
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+
+        // Else ... nonzero size case.
         GetEmitter()->emitIns(INS_else);
 
-        // Nonzero size case.
+        {
+            // Prepare to subtract from SP
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
 
+            // Round up request size to a multiple of STACK_ALIGN
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, sizeReg);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, STACK_ALIGN);
+            GetEmitter()->emitIns(INS_I_add);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
+            GetEmitter()->emitIns(INS_I_and);
 
+            // Save the aligned size for the zeroing call below if needed.
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, sizeReg);
+            }
 
+            // Subtract rounded-up size from SP value, and save back to SP
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
 
+            if (needsZeroing)
+            {
+                // Adjust the base address to zero to account for the reserved space
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+                GetEmitter()->emitIns(INS_I_add);
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, sizeReg);
+                // TODO-WASM-CQ: possibly do small fills directly
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+            }
 
-        // size is on the stack... we will need to spill it since
-        // we need to use it multiple times.
-        //
-        // local.tee $internalReg
-        //
-        // if
-        //    constant 0
-        // else
-        //    local.get $sp
-        //    local.get $internalReg
-        //    add STACK_ALIGN
-        //    and STACK_ALIGN-1
-        //    local.tee $internalReg
-        //    sub
-        //    local.set $Sp
-        //
-        // IF (need zeroing)
-        //       push 0
-        //       local.get $internalReg
-        //       local.get sp
-        //       add reservedSize
-        //       memory.fill
-        //
-        //   local.get $fp
-        //   store at sp[0]
-        //   local.get $sp
-        //
-        //   local.get $sp
-        //   add reservedSpace
-        //
-        // end
+            // Re-establish unwind invaraiant: store FP at SP[0]
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Return value
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+
+        // end if
+        GetEmitter()->emitIns(INS_end);
     }
 
     genProduceReg(tree);
