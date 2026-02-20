@@ -364,7 +364,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("I18nPolicy", "I18nPolicy")]
         [InlineData("7samurai", "7samurai")]
         [InlineData("CamelCase", "camelCase")]
-        [InlineData("CamelCase", "CamelCase")]
+        [InlineData("PascalCase", "PascalCase")]
         [InlineData("Snake_Case", "snake_case")]
         [InlineData("Snake_Case", "SNAKE_CASE")]
         [InlineData("Kebab-Case", "kebab-case")]
