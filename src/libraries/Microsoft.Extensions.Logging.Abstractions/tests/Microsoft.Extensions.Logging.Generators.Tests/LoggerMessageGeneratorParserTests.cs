@@ -825,8 +825,24 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task MethodGenericWithConstraints()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Trace, Message = ""Code: {code}"")]
+                    static partial void M1<TCode>(ILogger logger, TCode code) where TCode : struct, System.Enum;
+
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Value: {value}"")]
+                    static partial void M2<T1, T2>(ILogger logger, T1 value, T2 extra) where T1 : class where T2 : new();
+                }
+            ");
+
+            Assert.Empty(diagnostics);
         }
 
         [Theory]
