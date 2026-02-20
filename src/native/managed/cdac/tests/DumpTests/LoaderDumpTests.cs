@@ -15,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public abstract class LoaderDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
+    protected override string DumpType => "full";
 
     [ConditionalFact]
     public void Loader_CanGetRootAssembly()

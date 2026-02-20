@@ -158,12 +158,13 @@ extends:
             nameSuffix: CdacDumpGeneration
             timeoutInMinutes: 120
             postBuildSteps:
-            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                /t:GenerateAllDumps
                 /p:CIDumpVersionsOnly=true
                 /p:TargetArchitecture=$(archType)
                 -bl:$(Build.SourcesDirectory)/artifacts/log/DumpGeneration.binlog
-              displayName: 'Build Dump Tests and Generate Dumps'
+              displayName: 'Generate cDAC Dumps'
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
                 rootFolder: $(Build.SourcesDirectory)/artifacts/dumps/cdac
@@ -187,7 +188,7 @@ extends:
           buildConfig: release
           platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
-            buildArgs: -s tools.cdacdumptests /p:SkipDumpGeneration=true /p:SkipDumpVersions=net10.0
+            buildArgs: -s tools.cdacdumptests /p:SkipDumpVersions=net10.0
             nameSuffix: CdacDumpTests
             timeoutInMinutes: 60
             postBuildSteps:

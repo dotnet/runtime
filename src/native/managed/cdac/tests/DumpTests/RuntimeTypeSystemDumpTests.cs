@@ -17,6 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "TypeHierarchy";
+    protected override string DumpType => "full";
 
     [ConditionalFact]
     public void RuntimeTypeSystem_CanGetMethodTableFromModule()

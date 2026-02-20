@@ -14,6 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public abstract class EcmaMetadataDumpTestsBase : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
+    protected override string DumpType => "full";
 
     [ConditionalFact]
     public void EcmaMetadata_ContractIsAvailable()

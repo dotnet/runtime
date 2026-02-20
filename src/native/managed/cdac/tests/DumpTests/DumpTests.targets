@@ -3,16 +3,22 @@
     DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
     and makes dump paths available to the test project.
 
-    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
+    Dump output: $(DumpOutputDir)/{DumpType}/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
 
-    Each Debuggee × RuntimeVersion combination produces one dump.
+    Each Debuggee × RuntimeVersion × DumpType combination produces one dump.
+    Dump generation does NOT happen during Build — invoke GenerateAllDumps explicitly.
+
+    Debuggees are auto-discovered from the Debuggees/ subdirectory. Each debuggee csproj
+    can set a DumpTypes property to control which dump types are generated:
+      "Heap"       — heap dump only (type 2, default)
+      "Full"       — full dump only (type 4)
+      "Heap;Full"  — both heap and full dumps
 
     Properties:
       DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
       TestHostDir            — Path to the local-build testhost runtime (auto-detected)
       DebuggeeConfiguration  — Build configuration for debuggees (default: Release)
       CIDumpVersionsOnly     — When 'true', only generate dumps for "local" version (CI mode)
-      SkipDumpGeneration     — When 'true', skip dump generation entirely (CI test-only phase)
 
     RuntimeVersion values:
       "local"  — framework-dependent build, run with the repo's testhost
@@ -36,15 +42,9 @@
     <TestHostDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(HostOS)-$(_TestHostConfig)-$(_HostArch)'))</TestHostDir>
   </PropertyGroup>
 
-  <!-- Debuggees to build and crash -->
+  <!-- Auto-discover debuggee csproj files from the Debuggees/ subdirectory. -->
   <ItemGroup>
-    <Debuggee Include="BasicThreads" />
-    <Debuggee Include="TypeHierarchy" />
-    <Debuggee Include="ExceptionState" />
-    <Debuggee Include="MultiModule" />
-    <Debuggee Include="GCRoots" />
-    <Debuggee Include="ServerGC" />
-    <Debuggee Include="StackWalk" />
+    <DebuggeeCsproj Include="$(DebuggeesDir)*\*.csproj" />
   </ItemGroup>
 
   <!-- Runtime versions to create dumps for.
@@ -63,42 +63,73 @@
   -->
   <Target Name="_EnableUnsignedDacWindows"
           BeforeTargets="GenerateAllDumps"
-          Condition="'$(SkipDumpGeneration)' != 'true' AND '$(HostOS)' == 'windows'">
+          Condition="'$(HostOS)' == 'windows'">
     <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
-          IgnoreExitCode="true" />
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Message Text="Note: If heap dump generation fails on Windows, ensure the DisableAuxProviderSignatureCheck registry key is set. Run as admin or set manually: reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+             Importance="normal" />
   </Target>
 
-  <Target Name="GenerateAllDumps" BeforeTargets="Build" Condition="'$(SkipDumpGeneration)' != 'true'">
+  <!-- Top-level target — must be invoked explicitly (not triggered by Build).
+       Reads DumpTypes from each debuggee csproj and dispatches generation. -->
+  <Target Name="GenerateAllDumps">
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeWithDumpTypes" />
+    </MSBuild>
+
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
-             Properties="DebuggeeName=%(Debuggee.Identity)" />
+             Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes)" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
+    <!-- Expand DumpTypes (e.g. "Heap;Full") into individual _DumpTypeItem entries -->
+    <ItemGroup>
+      <_DumpTypeItem Remove="@(_DumpTypeItem)" />
+      <_DumpTypeItem Include="$(_DebuggeeDumpTypes)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateDumpsForDumpType"
+             Properties="DebuggeeName=$(DebuggeeName);_DumpTypeName=%(_DumpTypeItem.Identity)" />
+  </Target>
+
+  <Target Name="_GenerateDumpsForDumpType">
+    <!-- Map dump type name to DOTNET_DbgMiniDumpType value and directory name -->
+    <PropertyGroup>
+      <_MiniDumpType Condition="'$(_DumpTypeName)' == 'Heap'">2</_MiniDumpType>
+      <_MiniDumpType Condition="'$(_DumpTypeName)' == 'Full'">4</_MiniDumpType>
+      <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Heap'">heap</_DumpTypeDirName>
+      <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Full'">full</_DumpTypeDirName>
+    </PropertyGroup>
+
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateSingleDump"
-             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DumpTypeDirName=$(_DumpTypeDirName);_DumpTypeName=$(_DumpTypeName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
   </Target>
 
   <Target Name="_GenerateSingleDump">
     <PropertyGroup>
       <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
-      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(DebuggeeName)'))</_DumpDir>
+      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(_DumpTypeDirName)', '$(DumpRuntimeVersion)', '$(DebuggeeName)'))</_DumpDir>
       <_DumpFile>$([MSBuild]::NormalizePath('$(_DumpDir)', '$(DebuggeeName).dmp'))</_DumpFile>
     </PropertyGroup>
 
     <!-- Skip if dump already exists -->
-    <Message Text="Dump already exists: $(_DumpFile). Skipping." Condition="Exists('$(_DumpFile)')" Importance="high" />
+    <Message Text="[$(_DumpTypeName)] Dump already exists: $(_DumpFile). Skipping." Condition="Exists('$(_DumpFile)')" Importance="high" />
 
     <!-- Determine build/run strategy based on runtime version -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateLocalDump"
-             Properties="DebuggeeName=$(DebuggeeName);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Properties="DebuggeeName=$(DebuggeeName);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GeneratePublishedDump"
-             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_MiniDumpType=$(_MiniDumpType);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
              Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' != 'local'" />
 
     <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
@@ -121,7 +152,7 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
@@ -142,7 +173,7 @@
     <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=$(_MiniDumpType);DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>

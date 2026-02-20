@@ -41,6 +41,13 @@ public abstract class DumpTestBase : IAsyncLifetime
     protected abstract string RuntimeVersion { get; }
 
     /// <summary>
+    /// The dump type to load (e.g., "heap", "full"). Determines the subdirectory
+    /// under the dump root where the dump file is located. Override in test classes
+    /// to select a different dump type.
+    /// </summary>
+    protected virtual string DumpType => "heap";
+
+    /// <summary>
     /// The cDAC Target created from the dump.
     /// </summary>
     protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
@@ -127,7 +134,7 @@ public abstract class DumpTestBase : IAsyncLifetime
             dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
         }
 
-        return Path.Combine(dumpRoot, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
+        return Path.Combine(dumpRoot, DumpType, RuntimeVersion, DebuggeeName, $"{DebuggeeName}.dmp");
     }
 
     /// <summary>
