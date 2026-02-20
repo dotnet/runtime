@@ -311,7 +311,7 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 //------------------------------------------------------------------------
 // CollectReferencesForLclHeap: Collect virtual register references for a LCLHEAP.
 //
-// Consumes temporary registers for the div-by-zero and overflow checks.
+// Consumes a temporary register for the size operand of the LCLHEAP operation.
 //
 // Arguments:
 //    lclHeapNode - The LCLHEAP node
