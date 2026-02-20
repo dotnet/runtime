@@ -88,18 +88,13 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe void WriteToConnection(IntPtr connection, byte* data, int dataLength)
         {
-            WeakGCHandle<SafeDeleteSslContext> h = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(connection);
-            if (!h.TryGetTarget(out SafeDeleteSslContext? context))
-            {
-                Debug.Write("WriteToConnection: failed to get target context");
-                return;
-            }
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
 
             lock (context._lock)
             {
                 if (context._disposed)
                 {
-                    Debug.Write("WriteToConnection: context is disposed");
                     return;
                 }
 
@@ -114,19 +109,13 @@ namespace System.Net
         [UnmanagedCallersOnly]
         private static unsafe PAL_SSLStreamStatus ReadFromConnection(IntPtr connection, byte* data, int* dataLength)
         {
-            WeakGCHandle<SafeDeleteSslContext> h = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(connection);
-            if (!h.TryGetTarget(out SafeDeleteSslContext? context))
-            {
-                Debug.Write("ReadFromConnection: failed to get target context");
-                *dataLength = 0;
-                return PAL_SSLStreamStatus.Error;
-            }
+            SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
+            Debug.Assert(context != null);
 
             lock (context._lock)
             {
                 if (context._disposed)
                 {
-                    Debug.Write("ReadFromConnection: context is disposed");
                     *dataLength = 0;
                     return PAL_SSLStreamStatus.Error;
                 }
@@ -148,16 +137,6 @@ namespace System.Net
 
                 *dataLength = toRead;
                 return PAL_SSLStreamStatus.OK;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static void CleanupManagedContext(IntPtr managedContextHandle)
-        {
-            if (managedContextHandle != IntPtr.Zero)
-            {
-                WeakGCHandle<SafeDeleteSslContext> handle = WeakGCHandle<SafeDeleteSslContext>.FromIntPtr(managedContextHandle);
-                handle.Dispose();
             }
         }
 
@@ -285,11 +264,11 @@ namespace System.Net
                 throw new NotImplementedException(nameof(SafeDeleteSslContext));
             }
 
-            // Make sure the class instance is associated to the session and is provided in the Read/Write callback connection parameter
-            // Additionally, all calls should be synchronous so there's no risk of the managed object being collected while native code is executing.
+            // Make sure the class instance is associated to the session and is provided
+            // in the Read/Write callback connection parameter
             IntPtr managedContextHandle = GCHandle.ToIntPtr(GCHandle.Alloc(this, GCHandleType.Weak));
             string? peerHost = !isServer && !string.IsNullOrEmpty(authOptions.TargetHost) ? authOptions.TargetHost : null;
-            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, &CleanupManagedContext, InitialBufferSize, peerHost);
+            Interop.AndroidCrypto.SSLStreamInitialize(handle, isServer, managedContextHandle, &ReadFromConnection, &WriteToConnection, InitialBufferSize, peerHost);
 
             if (authOptions.EnabledSslProtocols != SslProtocols.None)
             {
