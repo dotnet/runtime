@@ -114,7 +114,10 @@ namespace System.IO.Hashing
 
         private abstract partial class ForwardCrc64 : Crc64ParameterSet
         {
+#if NET
+            // Declare the capability field here so it can be declared readonly.
             private readonly bool _canVectorize;
+#endif
 
             partial void InitializeVectorized(ref bool canVectorize);
             partial void UpdateVectorized(ref ulong crc, ReadOnlySpan<byte> source, ref int bytesConsumed);
@@ -122,27 +125,24 @@ namespace System.IO.Hashing
             protected ForwardCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
                 : base(polynomial, initialValue, finalXorValue, reflectValues: false)
             {
+#if NET
                 InitializeVectorized(ref _canVectorize);
+#endif
             }
 
             protected abstract ulong UpdateScalar(ulong value, ReadOnlySpan<byte> source);
 
             internal sealed override ulong Update(ulong value, ReadOnlySpan<byte> source)
             {
-                if (_canVectorize)
+                int consumed = 0;
+                UpdateVectorized(ref value, source, ref consumed);
+
+                if (consumed < source.Length)
                 {
-                    int consumed = 0;
-                    UpdateVectorized(ref value, source, ref consumed);
-
-                    if (consumed == source.Length)
-                    {
-                        return value;
-                    }
-
-                    source = source.Slice(consumed);
+                    value = UpdateScalar(value, source.Slice(consumed));
                 }
 
-                return UpdateScalar(value, source);
+                return value;
             }
         }
     }

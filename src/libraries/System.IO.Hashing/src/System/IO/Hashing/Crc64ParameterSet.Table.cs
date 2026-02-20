@@ -62,25 +62,17 @@ namespace System.IO.Hashing
             return table;
         }
 
-        private sealed partial class ReflectedTableBasedCrc64 : Crc64ParameterSet
+        private sealed class ReflectedTableBasedCrc64 : Crc64ParameterSet
         {
             private readonly ulong[] _lookupTable;
-
-            partial void InitializeVectorized();
 
             internal ReflectedTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
                 : base(polynomial, initialValue, finalXorValue, reflectValues: true)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
-                InitializeVectorized();
             }
 
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
-            {
-                return UpdateScalar(value, data);
-            }
-
-            private ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
@@ -97,25 +89,17 @@ namespace System.IO.Hashing
             }
         }
 
-        private sealed partial class ForwardTableBasedCrc64 : Crc64ParameterSet
+        private sealed class ForwardTableBasedCrc64 : ForwardCrc64
         {
             private readonly ulong[] _lookupTable;
 
-            partial void InitializeVectorized();
-
             internal ForwardTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue)
-                : base(polynomial, initialValue, finalXorValue, reflectValues: false)
+                : base(polynomial, initialValue, finalXorValue)
             {
                 _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
-                InitializeVectorized();
             }
 
-            internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
-            {
-                return UpdateScalar(value, data);
-            }
-
-            private ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
+            protected override ulong UpdateScalar(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
