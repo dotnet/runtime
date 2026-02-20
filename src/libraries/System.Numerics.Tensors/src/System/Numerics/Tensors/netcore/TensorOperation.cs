@@ -128,14 +128,14 @@ namespace System.Numerics.Tensors
             where TOperation : IUnaryOperation_Tensor<TArg, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
-            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, destination.Strides, out nint _, out RentedBuffer<nint> destinationRentedBuffer);
+            scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, destination.Strides, out nint negInnermostStride, out RentedBuffer<nint> destinationRentedBuffer);
 
-            destinationIndexes[0] = destination.Lengths[0];
-            for (int i = 1; i < destinationIndexes.Length; i++)
+            for (int i = 0; i < destinationIndexes.Length - 1; i++)
             {
                 destinationIndexes[i] = destination.Lengths[i] - 1;
             }
-            nint destinationLinearOffset = destination._shape.LinearLength;
+            destinationIndexes[^1] = destination.Lengths[^1];
+            nint destinationLinearOffset = destination._shape.LinearLength - 1 - negInnermostStride;
 
             for (nint i = 0; i < destination.FlattenedLength; i++)
             {

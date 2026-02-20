@@ -26,9 +26,8 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            Thread.ThrowIfSingleThreaded();
+
             IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
             // A ManualResetEventSlim variant that lets us reuse the same
             // awaiter callback allocation across the entire enumeration.
@@ -82,9 +81,8 @@ namespace System.Threading.Tasks
             [UnsupportedOSPlatform("browser")]
             public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
             {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+                Thread.ThrowIfSingleThreaded();
+
                 awaiter.UnsafeOnCompleted(_onCompleted);
                 Wait();
                 Reset();

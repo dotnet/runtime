@@ -147,7 +147,8 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionStackTraceMapping)
         {
             ComputeMetadata(new Policy(_blockingPolicy, this), factory,
                 out metadataBlob,
@@ -156,7 +157,8 @@ namespace ILCompiler
                 out methodMetadataMappings,
                 out fieldMappings,
                 out fieldMetadataMappings,
-                out stackTraceMapping);
+                out stackTraceMapping,
+                out reflectionStackTraceMapping);
         }
 
         protected sealed override MetadataCategory GetMetadataCategory(MethodDesc method)

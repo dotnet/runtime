@@ -490,7 +490,7 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 #endif
 }
 
-extern "C" TADDR GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 // Emits:
 //  mov r10, pv1

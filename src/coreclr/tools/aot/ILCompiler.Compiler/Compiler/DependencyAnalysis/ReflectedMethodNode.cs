@@ -37,12 +37,6 @@ namespace ILCompiler.DependencyAnalysis
             DependencyList dependencies = new DependencyList();
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _method);
 
-            // No runtime artifacts needed if this is a generic definition
-            if (_method.IsGenericMethodDefinition || _method.OwningType.IsGenericDefinition)
-            {
-                return dependencies;
-            }
-
             // Ensure we consistently apply reflectability to all methods sharing the same definition.
             // Different instantiations of the method have a conditional dependency on the definition node that
             // brings a ReflectableMethod of the instantiated method if it's necessary for it to be reflectable.
@@ -50,28 +44,6 @@ namespace ILCompiler.DependencyAnalysis
             if (typicalMethod != _method)
             {
                 dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
-            }
-
-            // Make sure we generate the method body and other artifacts.
-            if (MetadataManager.IsMethodSupportedInReflectionInvoke(_method))
-            {
-                if (_method.IsVirtual)
-                {
-                    // Virtual method use is tracked on the slot defining method only.
-                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
-                    if (_method.HasInstantiation)
-                    {
-                        // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
-                        if (slotDefiningMethod.IsMethodDefinition)
-                            slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, _method.Instantiation);
-                        dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
-                    }
-                    else
-                    {
-                        if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, slotDefiningMethod) && !factory.VTable(slotDefiningMethod.OwningType).HasKnownVirtualMethodUse)
-                            dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Virtually callable reflectable method");
-                    }
-                }
             }
 
             return dependencies;

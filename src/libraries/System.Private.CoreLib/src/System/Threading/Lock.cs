@@ -519,6 +519,8 @@ namespace System.Threading
                 goto Locked;
             }
 
+            Thread.ThrowIfSingleThreaded();
+
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.
             try

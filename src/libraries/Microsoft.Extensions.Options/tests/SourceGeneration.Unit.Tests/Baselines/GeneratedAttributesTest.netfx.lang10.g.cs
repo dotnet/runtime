@@ -16,7 +16,7 @@
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValidationTest.OptionsUsingGeneratedAttributes options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
-            #if NET10_0_OR_GREATER
+            #if NET
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "OptionsUsingGeneratedAttributes", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);

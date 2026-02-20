@@ -8,9 +8,11 @@ import dts from "rollup-plugin-dts";
 import {
     externalDependencies, envConstants, banner, banner_dts,
     isDebug, staticLibDestination,
-    keep_classnames, keep_fnames, reserved
+    keep_classnames, keep_fnames, reserved,
+    inlinefastCheck,
+    runtimeFlavor,
 } from "./rollup.config.defines.js";
-import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, sourcemapPathTransform } from "./rollup.config.plugins.js";
+import { terserPlugin, writeOnChangePlugin, consts, onwarn, alwaysLF, iife2fe, emsAmbient, regexReplace, sourcemapPathTransform } from "./rollup.config.plugins.js";
 import { promises as fs } from "fs";
 
 const dotnetDTS = {
@@ -24,7 +26,7 @@ const dotnetDTS = {
         },
         ...(isDebug ? [{
             format: "es",
-            file: "./corehost/browserhost/loader/dotnet.d.ts",
+            file: "./libs/Common/JavaScript/loader/dotnet.d.ts",
             banner: banner_dts,
             plugins: [alwaysLF(), writeOnChangePlugin()],
         }] : [])
@@ -35,7 +37,7 @@ const dotnetDTS = {
 };
 
 const dotnetJS = configure({
-    input: "./corehost/browserhost/loader/dotnet.ts",
+    input: "./libs/Common/JavaScript/loader/dotnet.ts",
     output: [{
         file: staticLibDestination + "/dotnet.js",
         intro: "/*! bundlerFriendlyImports */",
@@ -74,8 +76,8 @@ const libBrowserUtils = configure({
     output: [{
         name: "libBrowserUtils",
         format: "iife",
-        file: staticLibDestination + "/libSystem.Browser.Utils.js",
-        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
+        file: staticLibDestination + "/libSystem.Native.Browser.Utils.js",
+        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Native.Browser.Utils.footer.js"),
     }],
     terser: {
         compress: {
@@ -85,6 +87,21 @@ const libBrowserUtils = configure({
             toplevel: true,
             keep_fnames,
             reserved,
+        }
+    }
+});
+
+const dotnetDiagnosticsJS = configure({
+    input: "./libs/System.Native.Browser/diagnostics/index.ts",
+    output: [{
+        file: staticLibDestination + "/dotnet.diagnostics.js",
+    }],
+    terser: {
+        compress: {
+            module: true,
+        }, mangle: {
+            module: true,
+            keep_classnames,
         }
     }
 });
@@ -125,7 +142,7 @@ const libInteropJavaScriptNative = configure({
 });
 
 const libBrowserHost = configure({
-    input: "./corehost/browserhost/host/index.ts",
+    input: "./libs/Common/JavaScript/host/index.ts",
     output: [{
         name: "libBrowserHost",
         format: "iife",
@@ -149,12 +166,13 @@ export default defineConfig([
     dotnetDTS,
     libNativeBrowser,
     libBrowserUtils,
+    dotnetDiagnosticsJS,
     dotnetRuntimeJS,
     libInteropJavaScriptNative,
     libBrowserHost,
 ]);
 
-function configure({ input, output, terser }) {
+function configure({ input, output, terser, external }) {
     return {
         treeshake: !isDebug,
         input,
@@ -163,16 +181,17 @@ function configure({ input, output, terser }) {
                 banner,
                 format: "es",
                 plugins: isDebug
-                    ? [iife2fe(), writeOnChangePlugin()]
-                    : [terserPlugin(terser), iife2fe(), writeOnChangePlugin()],
+                    ? [emsAmbient(), iife2fe(), writeOnChangePlugin()]
+                    : [emsAmbient(), terserPlugin(terser), iife2fe(), writeOnChangePlugin()],
                 sourcemap: true, //isDebug ? true : "hidden",
                 sourcemapPathTransform,
                 ...o
             };
         }),
-        external: externalDependencies,
+        external: external ? [...external, ...externalDependencies] : externalDependencies,
         plugins: [
             nodeResolve(),
+            regexReplace([...inlinefastCheck]),
             consts(envConstants),
             typescript({
                 tsconfig: "./tsconfig.json",

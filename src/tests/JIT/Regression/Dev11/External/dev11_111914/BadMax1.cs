@@ -110,6 +110,7 @@ namespace BadMax1
         }
 
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

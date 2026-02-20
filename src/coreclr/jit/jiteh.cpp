@@ -243,17 +243,6 @@ void EHblkDsc::DispEntry(unsigned XTnum)
 {
     printf(" %2u     %2u  ::", ebdID, XTnum);
 
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (ebdHandlerNestingLevel == 0)
-    {
-        printf("      ");
-    }
-    else
-    {
-        printf("  %2u  ", ebdHandlerNestingLevel);
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
     if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
     {
         printf("      ");
@@ -615,6 +604,32 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
     return 0;
 }
 
+/******************************************************************************************
+ * Given a one-biased region index (which may be 0, indicating method region) and a block,
+ * return one-biased index for the inner-most enclosing try region that contains the block and the region.
+ * Return 0 if it does not find any try region (which means the inner-most region
+ * is the method itself).
+ */
+
+unsigned short Compiler::bbFindInnermostCommonTryRegion(unsigned index, BasicBlock* bbTwo)
+{
+    assert(index <= compHndBBtabCount);
+
+    if (index == 0)
+        return 0;
+
+    for (unsigned XTnum = index - 1; XTnum < compHndBBtabCount; XTnum++)
+    {
+        if (bbInTryRegions(XTnum, bbTwo))
+        {
+            noway_assert(XTnum < MAX_XCPTN_INDEX);
+            return (unsigned short)(XTnum + 1); // Return the tryIndex
+        }
+    }
+
+    return 0;
+}
+
 // bbIsTryBeg() returns true if this block is the start of any try region.
 //              This is computed by examining the current values in the
 //              EH table rather than just looking at the block's bbFlags.
@@ -645,30 +660,14 @@ bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 //
 bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
 {
-    if (UsesFunclets())
-    {
-        assert(fgFuncletsCreated);
-        return bbIsHandlerBeg(block);
-    }
-
-    return false;
+    assert(fgFuncletsCreated);
+    return bbIsHandlerBeg(block);
 }
 
 bool Compiler::ehHasCallableHandlers()
 {
-    if (UsesFunclets())
-    {
-        // Any EH in the function?
-        return compHndBBtabCount > 0;
-    }
-    else
-    {
-#if defined(FEATURE_EH_WINDOWS_X86)
-        return ehNeedsShadowSPslots();
-#else
-        return false;
-#endif // FEATURE_EH_WINDOWS_X86
-    }
+    // Any EH in the function?
+    return compHndBBtabCount > 0;
 }
 
 /******************************************************************************************
@@ -995,15 +994,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-    if (UsesCallFinallyThunks())
-    {
-        return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
-    }
-    else
-    {
-        *inTryRegion = true;
-        return finallyIndex;
-    }
+    return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 }
 
 void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** startBlock, BasicBlock** lastBlock)
@@ -1013,37 +1004,28 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** st
     assert(startBlock != nullptr);
     assert(lastBlock != nullptr);
 
-    if (UsesCallFinallyThunks())
+    bool     inTryRegion;
+    unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
+
+    if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
     {
-        bool     inTryRegion;
-        unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
-
-        if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            *startBlock = fgFirstBB;
-            *lastBlock  = fgLastBBInMainFunction();
-        }
-        else
-        {
-            EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
-
-            if (inTryRegion)
-            {
-                *startBlock = ehDsc->ebdTryBeg;
-                *lastBlock  = ehDsc->ebdTryLast;
-            }
-            else
-            {
-                *startBlock = ehDsc->ebdHndBeg;
-                *lastBlock  = ehDsc->ebdHndLast;
-            }
-        }
+        *startBlock = fgFirstBB;
+        *lastBlock  = fgLastBBInMainFunction();
     }
     else
     {
-        EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
-        *startBlock     = ehDsc->ebdTryBeg;
-        *lastBlock      = ehDsc->ebdTryLast;
+        EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
+
+        if (inTryRegion)
+        {
+            *startBlock = ehDsc->ebdTryBeg;
+            *lastBlock  = ehDsc->ebdTryLast;
+        }
+        else
+        {
+            *startBlock = ehDsc->ebdHndBeg;
+            *lastBlock  = ehDsc->ebdHndLast;
+        }
     }
 }
 
@@ -1100,14 +1082,7 @@ bool Compiler::ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsign
 
 bool Compiler::ehAnyFunclets()
 {
-    if (UsesFunclets())
-    {
-        return compHndBBtabCount > 0; // if there is any EH, there will be funclets
-    }
-    else
-    {
-        return false;
-    }
+    return compHndBBtabCount > 0; // if there is any EH, there will be funclets
 }
 
 /*****************************************************************************
@@ -1119,24 +1094,17 @@ bool Compiler::ehAnyFunclets()
 
 unsigned Compiler::ehFuncletCount()
 {
-    if (UsesFunclets())
-    {
-        unsigned funcletCnt = 0;
+    unsigned funcletCnt = 0;
 
-        for (EHblkDsc* const HBtab : EHClauses(this))
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        if (HBtab->HasFilter())
         {
-            if (HBtab->HasFilter())
-            {
-                ++funcletCnt;
-            }
             ++funcletCnt;
         }
-        return funcletCnt;
+        ++funcletCnt;
     }
-    else
-    {
-        return 0;
-    }
+    return funcletCnt;
 }
 
 /*****************************************************************************
@@ -1378,7 +1346,7 @@ void Compiler::fgFindTryRegionEnds()
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
         // Ignore try regions inside funclet regions.
-        if (!UsesFunclets() || !HBtab->ebdTryLast->hasHndIndex())
+        if (!HBtab->ebdTryLast->hasHndIndex())
         {
             HBtab->ebdTryLast = nullptr;
             unsetTryEnds++;
@@ -1499,26 +1467,19 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
  */
 void Compiler::fgAllocEHTable()
 {
-    if (UsesFunclets())
-    {
-        // We need to allocate space for EH clauses that will be used by funclets
-        // as well as one for each EH clause from the IL. Nested EH clauses pulled
-        // out as funclets create one EH clause for each enclosing region. Thus,
-        // the maximum number of clauses we will need might be very large. We allocate
-        // twice the number of EH clauses in the IL, which should be good in practice.
-        // In extreme cases, we might need to abandon this and reallocate. See
-        // fgTryAddEHTableEntries() for more details.
+    // We need to allocate space for EH clauses that will be used by funclets
+    // as well as one for each EH clause from the IL. Nested EH clauses pulled
+    // out as funclets create one EH clause for each enclosing region. Thus,
+    // the maximum number of clauses we will need might be very large. We allocate
+    // twice the number of EH clauses in the IL, which should be good in practice.
+    // In extreme cases, we might need to abandon this and reallocate. See
+    // fgTryAddEHTableEntries() for more details.
 
 #ifdef DEBUG
-        compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
-#else                                                  // DEBUG
-        compHndBBtabAllocCount = info.compXcptnsCount * 2;
-#endif                                                 // DEBUG
-    }
-    else
-    {
-        compHndBBtabAllocCount = info.compXcptnsCount;
-    }
+    compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
+#else                                              // DEBUG
+    compHndBBtabAllocCount = info.compXcptnsCount * 2;
+#endif                                             // DEBUG
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
@@ -3499,28 +3460,38 @@ void Compiler::fgVerifyHandlerTab()
 
                 if (fgFuncletsCreated)
                 {
-                    // If both the 'try' region and the outer 'try' region are in the main function area, then we can
-                    // do the normal nesting check. Otherwise, it's harder to find a useful assert to make about their
-                    // relationship.
-                    if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
+                    if (fgTrysNotContiguous())
                     {
-                        if (multipleBegBlockNormalizationDone)
+                        // We can't check much in this case.
+                    }
+                    else
+                    {
+                        // If both the 'try' region and the outer 'try' region are in the main function area, then we
+                        // can do the normal nesting check. Otherwise, it's harder to find a useful assert to make about
+                        // their relationship.
+                        if ((bbNumTryLast < bbNumFirstFunclet) && (bbNumOuterTryLast < bbNumFirstFunclet))
                         {
-                            assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same
-                                                                    // block (by EH normalization).
-                        }
-                        else
-                        {
-                            assert(bbNumOuterTryBeg <= bbNumTryBeg);
-                        }
-                        if (multipleLastBlockNormalizationDone)
-                        {
-                            assert(bbNumTryLast < bbNumOuterTryLast); // Two 'try' regions can't end at the same block
-                                                                      //(by EH normalization).
-                        }
-                        else
-                        {
-                            assert(bbNumTryLast <= bbNumOuterTryLast);
+                            if (multipleBegBlockNormalizationDone)
+                            {
+                                // Two 'try' regions can't start at the same
+                                // block (by EH normalization).
+                                assert(bbNumOuterTryBeg < bbNumTryBeg);
+                            }
+                            else
+                            {
+                                assert(bbNumOuterTryBeg <= bbNumTryBeg);
+                            }
+
+                            if (multipleLastBlockNormalizationDone)
+                            {
+                                // Two 'try' regions can't end at the same block
+                                // (by EH normalization).
+                                assert(bbNumTryLast < bbNumOuterTryLast);
+                            }
+                            else
+                            {
+                                assert(bbNumTryLast <= bbNumOuterTryLast);
+                            }
                         }
                     }
 
@@ -3530,17 +3501,23 @@ void Compiler::fgVerifyHandlerTab()
                 }
                 else
                 {
+                    // If we haven't created funclets trys should still be contiguous.
+                    assert(!fgTrysNotContiguous());
+
+                    // Two 'try' regions can't start at the same block
+                    // (by EH normalization).
                     if (multipleBegBlockNormalizationDone)
                     {
-                        assert(bbNumOuterTryBeg < bbNumTryBeg); // Two 'try' regions can't start at the same block
-                                                                // (by EH normalization).
+                        assert(bbNumOuterTryBeg < bbNumTryBeg);
                     }
                     else
                     {
                         assert(bbNumOuterTryBeg <= bbNumTryBeg);
                     }
-                    assert(bbNumOuterTryBeg < bbNumHndBeg); // An inner handler can never start at the same
-                                                            // block as an outer 'try' (by IL rules).
+
+                    // An inner handler can never start at the same
+                    // block as an outer 'try' (by IL rules).
+                    assert(bbNumOuterTryBeg < bbNumHndBeg);
                     if (multipleLastBlockNormalizationDone)
                     {
                         // An inner EH region can't share a 'last' block with the outer 'try' (by EH normalization).
@@ -3734,7 +3711,7 @@ void Compiler::fgVerifyHandlerTab()
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
     for (BasicBlock* const block : Blocks())
     {
-        assert(block->bbTryIndex == blockTryIndex[block->bbNum]);
+        assert(fgTrysNotContiguous() || block->bbTryIndex == blockTryIndex[block->bbNum]);
         assert(block->bbHndIndex == blockHndIndex[block->bbNum]);
 
         // Also, since we're walking the blocks, check that all blocks we didn't mark as EH handler 'begin' blocks
@@ -3804,12 +3781,6 @@ void Compiler::fgDispHandlerTab()
     }
 
     printf("\n  id,  index  ");
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        printf("nest, ");
-    }
-#endif // FEATURE_EH_WINDOWS_X86
     printf("eTry, eHnd\n");
 
     unsigned  XTnum;
@@ -4307,14 +4278,13 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 {
     // Some simple preconditions (as stated above)
-    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
     assert(fgGetPredForBlock(block, predBlock) != nullptr);
     assert(block->hasHndIndex());
 
     EHblkDsc* xtab = ehGetDsc(block->getHndIndex());
 
-    if (UsesCallFinallyThunks() && xtab->HasFinallyHandler())
+    if (xtab->HasFinallyHandler())
     {
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
@@ -4410,7 +4380,6 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 
 bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 {
-    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 

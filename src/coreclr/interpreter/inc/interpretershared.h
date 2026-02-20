@@ -14,16 +14,20 @@
 #define INTERP_API __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
 
-#define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
-#define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
+#define INTERP_STACK_SLOT_SIZE 8u    // Alignment of each var offset on the interpreter stack
+#define INTERP_STACK_ALIGNMENT 16u   // Alignment of interpreter stack at the start of a frame
 
 struct InterpHelperData {
     uint32_t addressDataItemIndex : 29;
     uint32_t accessType : 3;
 };
 
-#ifndef INTERPRETER_COMPILER_INTERNAL
+#ifdef INTERPRETER_COMPILER_INTERNAL
+#define COMPILER_SHARED_TYPE(compilerType, vmType, fieldName) compilerType fieldName
+#else
+#define COMPILER_SHARED_TYPE(compilerType, vmType, fieldName) vmType fieldName
 class MethodDesc;
+class MethodTable;
 #endif
 
 struct CallStubHeader;
@@ -33,11 +37,7 @@ struct InterpMethod
 #if DEBUG
     InterpMethod *self;
 #endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE methodHnd;
-#else
-    DPTR(MethodDesc) methodDesc;
-#endif
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), methodHnd);
     int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
@@ -45,11 +45,12 @@ struct InterpMethod
     CallStubHeader *pCallStub;
     bool initLocals;
     bool unmanagedCallersOnly;
+    bool publishSecretStubParam;
 
 #ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
-        void** pDataItems, bool initLocals, bool unmanagedCallersOnly
+        void** pDataItems, bool initLocals, bool unmanagedCallersOnly, bool publishSecretStubParam
     )
     {
 #if DEBUG
@@ -61,6 +62,7 @@ struct InterpMethod
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
         this->unmanagedCallersOnly = unmanagedCallersOnly;
+        this->publishSecretStubParam = publishSecretStubParam;
         pCallStub = NULL;
     }
 #endif
@@ -186,6 +188,33 @@ enum class CalliFlags : int32_t
     None = 0,
     SuppressGCTransition = 1 << 1, // The call is marked by the SuppressGCTransition attribute
     PInvoke = 1 << 2, // The call is a PInvoke call
+};
+
+struct InterpIntervalMapEntry
+{
+    uint32_t startOffset;
+    uint32_t countBytes; // If count is 0 then this is the end marker.
+};
+
+struct InterpAsyncSuspendData
+{
+    CORINFO_AsyncResumeInfo resumeInfo;
+
+    COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), continuationTypeHnd);
+
+    InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
+    InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
+    CorInfoContinuationFlags flags;
+    int32_t offsetIntoContinuationTypeForExecutionContext;
+    int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
+    InterpByteCodeStart* methodStartIP;
+    COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), asyncMethodReturnType);
+    int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
+    int32_t continuationArgOffset;
+
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreExecutionContextMethod);
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
 };
 
 #endif

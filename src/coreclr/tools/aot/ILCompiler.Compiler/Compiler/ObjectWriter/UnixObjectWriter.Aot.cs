@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Buffers.Binary;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
@@ -41,7 +42,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected virtual bool UseFrameNames => false;
 
-        private protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
+        private protected virtual bool EmitCompactUnwinding(Utf8String startSymbolName, ulong length, Utf8String lsdaSymbolName, byte[] blob) => false;
 
         private protected override void CreateEhSections()
         {
@@ -96,13 +97,13 @@ namespace ILCompiler.ObjectWriter
 
                 if (associatedDataNode is not null)
                 {
-                    string symbolName = GetMangledName(associatedDataNode);
+                    Utf8String symbolName = GetMangledName(associatedDataNode);
                     lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                 }
 
                 if (ehInfo is not null)
                 {
-                    string symbolName = GetMangledName(ehInfo);
+                    Utf8String symbolName = GetMangledName(ehInfo);
                     lsdaSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_RELPTR32, symbolName, 0);
                 }
 
@@ -144,18 +145,18 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            private Dictionary<INodeWithCodeInfo, string[]> _lsdas = new Dictionary<INodeWithCodeInfo, string[]>(LsdaComparer.Instance);
+            private Dictionary<INodeWithCodeInfo, Utf8String[]> _lsdas = new Dictionary<INodeWithCodeInfo, Utf8String[]>(LsdaComparer.Instance);
 
             public static bool IsCacheable(INodeWithCodeInfo nodeWithCodeInfo)
                 => nodeWithCodeInfo.EHInfo == null && !MethodAssociatedDataNode.MethodHasAssociatedData((IMethodNode)nodeWithCodeInfo);
 
-            public string[] FindCachedLsda(INodeWithCodeInfo nodeWithCodeInfo)
+            public Utf8String[] FindCachedLsda(INodeWithCodeInfo nodeWithCodeInfo)
             {
                 Debug.Assert(IsCacheable(nodeWithCodeInfo));
                 return _lsdas.GetValueOrDefault(nodeWithCodeInfo);
             }
 
-            public void AddLsdaToCache(INodeWithCodeInfo nodeWithCodeInfo, string[] symbols)
+            public void AddLsdaToCache(INodeWithCodeInfo nodeWithCodeInfo, Utf8String[] symbols)
             {
                 Debug.Assert(IsCacheable(nodeWithCodeInfo));
                 _lsdas.Add(nodeWithCodeInfo, symbols);
@@ -167,7 +168,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
-            string currentSymbolName)
+            Utf8String currentSymbolName)
         {
             if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
                 nodeWithCodeInfo is ISymbolDefinitionNode)
@@ -175,11 +176,11 @@ namespace ILCompiler.ObjectWriter
                 bool useFrameNames = UseFrameNames;
                 SectionWriter lsdaSectionWriter;
 
-                string[] newLsdaSymbols = null;
-                string[] emittedLsdaSymbols = null;
+                Utf8String[] newLsdaSymbols = null;
+                Utf8String[] emittedLsdaSymbols = null;
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
-                    lsdaSectionWriter = GetOrCreateSection(LsdaSection, currentSymbolName, $"_lsda0{currentSymbolName}");
+                    lsdaSectionWriter = GetOrCreateSection(LsdaSection, currentSymbolName, Utf8String.Concat("_lsda0"u8, currentSymbolName.AsSpan()));
                 }
                 else
                 {
@@ -188,11 +189,12 @@ namespace ILCompiler.ObjectWriter
                     {
                         emittedLsdaSymbols = _lsdaCache.FindCachedLsda(nodeWithCodeInfo);
                         if (emittedLsdaSymbols == null)
-                            newLsdaSymbols = new string[frameInfos.Length];
+                            newLsdaSymbols = new Utf8String[frameInfos.Length];
                     }
                 }
 
                 long mainLsdaOffset = 0;
+                Span<byte> i_str = stackalloc byte[16];
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
@@ -201,27 +203,27 @@ namespace ILCompiler.ObjectWriter
                     int end = frameInfo.EndOffset;
                     byte[] blob = frameInfo.BlobData;
 
-                    string lsdaSymbolName;
+                    Utf8String lsdaSymbolName;
                     if (emittedLsdaSymbols != null)
                     {
                         lsdaSymbolName = emittedLsdaSymbols[i];
                     }
                     else
                     {
-                        lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
+                        lsdaSymbolName = _utf8StringBuilder.Clear().Append("_lsda"u8).Append(FormatUtf8Int(i_str, i)).Append(currentSymbolName).ToUtf8String();
                         if (newLsdaSymbols != null)
                             newLsdaSymbols[i] = lsdaSymbolName;
                         lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
                         EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
                     }
 
-                    string framSymbolName = $"_fram{i}{currentSymbolName}";
+                    Utf8String framSymbolName = _utf8StringBuilder.Clear().Append("_fram"u8).Append(FormatUtf8Int(i_str, i)).Append(currentSymbolName).ToUtf8String();
                     if (useFrameNames && start != 0)
                     {
                         sectionWriter.EmitSymbolDefinition(framSymbolName, start);
                     }
 
-                    string startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
+                    Utf8String startSymbolName = useFrameNames && start != 0 ? framSymbolName : currentSymbolName;
                     ulong length = (ulong)(end - start);
                     if (!EmitCompactUnwinding(startSymbolName, length, lsdaSymbolName, blob))
                     {
@@ -232,7 +234,7 @@ namespace ILCompiler.ObjectWriter
                             pcStartSymbolOffset: useFrameNames ? 0 : start,
                             pcLength: (ulong)(end - start),
                             lsdaSymbolName,
-                            personalitySymbolName: null);
+                            personalitySymbolName: default);
                         _dwarfEhFrame.AddFde(fde);
                     }
                 }
@@ -244,7 +246,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
-            string methodName,
+            Utf8String methodName,
             SymbolDefinition methodSymbol,
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints)
@@ -278,7 +280,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
+        private protected override void EmitDebugSections(IDictionary<Utf8String, SymbolDefinition> definedSymbols)
         {
             foreach (UnixSectionDefinition section in _sections)
             {
@@ -311,7 +313,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         return (section.SymbolName, symbolDef.Value);
                     }
-                    return (null, 0);
+                    return (default, 0);
                 });
         }
 

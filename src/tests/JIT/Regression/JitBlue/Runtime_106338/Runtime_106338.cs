@@ -7,6 +7,9 @@
 // Reduced from 226.8 KiB to 0.4 KiB in 00:02:12
 // Debug: Outputs 1600094603
 // Release: Outputs 1600094604
+
+namespace Runtime_106338;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

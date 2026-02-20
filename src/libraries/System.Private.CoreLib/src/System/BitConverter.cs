@@ -309,6 +309,34 @@ namespace System
         }
 
         /// <summary>
+        /// Returns the specified <see cref="BFloat16"/> value as an array of bytes.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>An array of bytes with length 2.</returns>
+        public static unsafe byte[] GetBytes(BFloat16 value)
+        {
+            byte[] bytes = new byte[sizeof(BFloat16)];
+            bool success = TryWriteBytes(bytes, value);
+            Debug.Assert(success);
+            return bytes;
+        }
+
+        /// <summary>
+        /// Converts a <see cref="BFloat16"/> value into a span of bytes.
+        /// </summary>
+        /// <param name="destination">When this method returns, the bytes representing the converted <see cref="BFloat16"/> value.</param>
+        /// <param name="value">The <see cref="BFloat16"/> value to convert.</param>
+        /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
+        public static unsafe bool TryWriteBytes(Span<byte> destination, BFloat16 value)
+        {
+            if (destination.Length < sizeof(BFloat16))
+                return false;
+
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+            return true;
+        }
+
+        /// <summary>
         /// Returns the specified half-precision floating point value as an array of bytes.
         /// </summary>
         /// <param name="value">The number to convert.</param>
@@ -694,6 +722,31 @@ namespace System
         }
 
         /// <summary>
+        /// Returns a <see cref="BFloat16"/> number converted from two bytes at a specified position in a byte array.
+        /// </summary>
+        /// <param name="value">An array of bytes.</param>
+        /// <param name="startIndex">The starting position within <paramref name="value"/>.</param>
+        /// <returns>A <see cref="BFloat16"/> number signed integer formed by two bytes beginning at <paramref name="startIndex"/>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="startIndex"/> equals the length of <paramref name="value"/> minus 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
+        public static BFloat16 ToBFloat16(byte[] value, int startIndex) => Int16BitsToBFloat16(ToInt16(value, startIndex));
+
+        /// <summary>
+        /// Converts a read-only byte span into a <see cref="BFloat16"/> value.
+        /// </summary>
+        /// <param name="value">A read-only span containing the bytes to convert.</param>
+        /// <returns>A <see cref="BFloat16"/> value representing the converted bytes.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 2.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe BFloat16 ToBFloat16(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < sizeof(BFloat16))
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            return Unsafe.ReadUnaligned<BFloat16>(ref MemoryMarshal.GetReference(value));
+        }
+
+        /// <summary>
         /// Returns a half-precision floating point number converted from two bytes at a specified position in a byte array.
         /// </summary>
         /// <param name="value">An array of bytes.</param>
@@ -948,9 +1001,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half Int16BitsToHalf(short value) => new Half((ushort)(value));
 
-        internal static short BFloat16BitsToInt16(BFloat16 value) => (short)value._value;
+        /// <summary>
+        /// Converts the specified <see cref="BFloat16"/> number to a 16-bit signed integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit signed integer whose bits are identical to <paramref name="value"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static short BFloat16ToInt16Bits(BFloat16 value) => (short)value._value;
 
-        internal static BFloat16 Int16BitsToBFloat16(short value) => new BFloat16((ushort)(value));
+        /// <summary>
+        /// Converts the specified 16-bit signed integer to a <see cref="BFloat16"/> number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A <see cref="BFloat16"/> number whose bits are identical to <paramref name="value"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 Int16BitsToBFloat16(short value) => new BFloat16((ushort)(value));
 
         /// <summary>
         /// Converts the specified double-precision floating point number to a 64-bit unsigned integer.
@@ -1006,8 +1071,22 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half UInt16BitsToHalf(ushort value) => new Half(value);
 
-        internal static ushort BFloat16BitsToUInt16(BFloat16 value) => value._value;
+        /// <summary>
+        /// Converts the specified <see cref="BFloat16"/> number to a 16-bit unsigned integer.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A 16-bit unsigned integer whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ushort BFloat16ToUInt16Bits(BFloat16 value) => value._value;
 
-        internal static BFloat16 UInt16BitsToBFloat16(ushort value) => new BFloat16(value);
+        /// <summary>
+        /// Converts the specified 16-bit unsigned integer to a <see cref="BFloat16"/> number.
+        /// </summary>
+        /// <param name="value">The number to convert.</param>
+        /// <returns>A <see cref="BFloat16"/> number whose bits are identical to <paramref name="value"/>.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BFloat16 UInt16BitsToBFloat16(ushort value) => new BFloat16(value);
     }
 }

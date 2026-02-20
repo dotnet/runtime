@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>False</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="JitBlue\GitHub_13486\GitHub_13486.cs" />
+    <Compile Include="JitBlue\GitHub_16443\GitHub_16443.cs" />
+    <Compile Include="JitBlue\GitHub_6238\GitHub_6238.cs" />
+    <Compile Include="JitBlue\Runtime_105621\Runtime_105621.cs" />
+    <Compile Include="JitBlue\Runtime_105821\Runtime_105821.cs" />
+    <Compile Include="JitBlue\Runtime_106020\Runtime_106020.cs" />
+    <Compile Include="JitBlue\Runtime_112871\Runtime_112871.cs" />
+    <Compile Include="JitBlue\Runtime_113829\Runtime_113829.cs" />
+    <Compile Include="JitBlue\Runtime_62692\Runtime_62692.cs" />
+    <Compile Include="JitBlue\Runtime_67331\Runtime_67331.cs" />
+    <Compile Include="JitBlue\Runtime_81356\Runtime_81356.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

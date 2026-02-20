@@ -5,17 +5,19 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class DeadThreads
 {
     /// <summary>
     /// A sanity test that exercises code paths relevant to the heuristic that triggers GCs based on dead thread count and time
     /// elapsed since a previous GC. See https://github.com/dotnet/coreclr/pull/10413.
-    /// 
+    ///
     /// This test suite runs with the following environment variables relevant to this test (see .csproj):
     ///     set DOTNET_Thread_DeadThreadCountThresholdForGCTrigger=8
     ///     set DOTNET_Thread_DeadThreadGCTriggerPeriodMilliseconds=3e8 // 1000
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     [Fact]
     public static void GCTriggerSanityTest()
     {

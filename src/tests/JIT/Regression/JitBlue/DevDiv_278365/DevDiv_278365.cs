@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+
+namespace DevDiv_278365;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -13,6 +16,7 @@ using Xunit;
 public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static int Bar()
     {

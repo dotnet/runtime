@@ -97,6 +97,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
+            Thread.ThrowIfSingleThreaded();
             return GetCondition(obj).Wait(millisecondsTimeout, obj);
         }
 

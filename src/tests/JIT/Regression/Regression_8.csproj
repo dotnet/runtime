@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CLR-x86-JIT\V1-M11-Beta1\b43313\b43313.cs" />
+    <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b51875\b51875.cs" />
+    <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b55197\b55197.cs" />
+    <Compile Include="CLR-x86-JIT\V2.0-RTM\b491215\b491215.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b152292\b152292.cs" />
+    <Compile Include="JitBlue\Runtime_100466\Runtime_100466.cs" />
+    <Compile Include="JitBlue\Runtime_100809\Runtime_100809.cs" />
+    <Compile Include="JitBlue\Runtime_103477\Runtime_103477.cs" />
+    <Compile Include="JitBlue\Runtime_52320\Runtime_52320.cs" />
+    <Compile Include="JitBlue\Runtime_71592\test71592.cs" />
+    <Compile Include="JitBlue\Runtime_82291\Runtime_82291.cs" />
+    <Compile Include="JitBlue\Runtime_89565\Runtime_89565.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

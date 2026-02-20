@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using Internal.Text;
 
 namespace Internal.TypeSystem.TypesDebugInfo
 {
@@ -24,14 +25,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
 
         uint GetPrimitiveTypeIndex(TypeDesc type);
 
-        string GetMangledName(TypeDesc type);
+        Utf8String GetMangledName(TypeDesc type);
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct EnumRecordTypeDescriptor
     {
         public ulong Value;
-        public string Name;
+        public Utf8String Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -39,14 +40,14 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public uint ElementType;
         public ulong ElementCount;
-        public string Name;
+        public Utf8String Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct ClassTypeDescriptor
     {
         public int IsStruct;
-        public string Name;
+        public Utf8String Name;
         public uint BaseClassId;
         public ulong InstanceSize;
     }
@@ -56,13 +57,13 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public uint FieldTypeIndex;
         public ulong Offset;
-        public string Name;
+        public Utf8String Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct StaticDataFieldDescriptor
     {
-        public string StaticDataName;
+        public Utf8String StaticDataName;
         public ulong StaticOffset;
         public int IsStaticDataInObject;
     }
@@ -108,6 +109,6 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public uint MemberFunction;
         public uint ParentClass;
-        public string Name;
+        public Utf8String Name;
     }
 }

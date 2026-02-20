@@ -1261,5 +1261,30 @@ namespace System.Linq.Tests
                 }
             }
         }
+
+        [Fact]
+        public void Select_SourceIsIList_EnumeratorDisposedOnComplete()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            foreach (int item in source.Select(i => i * 2))
+            {
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
+        }
+
+        [Fact]
+        public void Select_SourceIsIList_EnumeratorDisposedOnExplicitDispose()
+        {
+            var source = new DisposeTrackingList<int>([1, 2, 3, 4, 5]);
+
+            using (var enumerator = source.Select(i => i * 2).GetEnumerator())
+            {
+                enumerator.MoveNext();
+            }
+
+            Assert.Equal(1, source.DisposeCalls);
+        }
     }
 }

@@ -1067,6 +1067,17 @@ void WrapICorJitInfo::reportRichMappings(
     API_LEAVE(reportRichMappings);
 }
 
+void WrapICorJitInfo::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    API_ENTER(reportAsyncDebugInfo);
+    wrapHnd->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+    API_LEAVE(reportAsyncDebugInfo);
+}
+
 void WrapICorJitInfo::reportMetadata(
           const char* key,
           const void* value,
@@ -1251,6 +1262,15 @@ void WrapICorJitInfo::getFpStructLowering(
     API_LEAVE(getFpStructLowering);
 }
 
+CorInfoWasmType WrapICorJitInfo::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getWasmLowering);
+    CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
+    API_LEAVE(getWasmLowering);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {
@@ -1297,15 +1317,6 @@ void WrapICorJitInfo::getFunctionFixedEntryPoint(
     API_ENTER(getFunctionFixedEntryPoint);
     wrapHnd->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
     API_LEAVE(getFunctionFixedEntryPoint);
-}
-
-CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    API_ENTER(getLazyStringLiteralHelper);
-    CorInfoHelpFunc temp = wrapHnd->getLazyStringLiteralHelper(handle);
-    API_LEAVE(getLazyStringLiteralHelper);
-    return temp;
 }
 
 CORINFO_MODULE_HANDLE WrapICorJitInfo::embedModuleHandle(
@@ -1547,10 +1558,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub(
+          void** entryPoint)
 {
     API_ENTER(getAsyncResumptionStub);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub();
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub(entryPoint);
     API_LEAVE(getAsyncResumptionStub);
     return temp;
 }
@@ -1711,7 +1723,7 @@ void WrapICorJitInfo::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     API_ENTER(recordRelocation);
@@ -1719,11 +1731,11 @@ void WrapICorJitInfo::recordRelocation(
     API_LEAVE(recordRelocation);
 }
 
-uint16_t WrapICorJitInfo::getRelocTypeHint(
+CorInfoReloc WrapICorJitInfo::getRelocTypeHint(
           void* target)
 {
     API_ENTER(getRelocTypeHint);
-    uint16_t temp = wrapHnd->getRelocTypeHint(target);
+    CorInfoReloc temp = wrapHnd->getRelocTypeHint(target);
     API_LEAVE(getRelocTypeHint);
     return temp;
 }
@@ -1743,6 +1755,16 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
+    return temp;
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE WrapICorJitInfo::getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize)
+{
+    API_ENTER(getWasmTypeSymbol);
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = wrapHnd->getWasmTypeSymbol(types, typesSize);
+    API_LEAVE(getWasmTypeSymbol);
     return temp;
 }
 

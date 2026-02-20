@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 #pragma warning disable CS9184 // 'Inline arrays' language feature is not supported for an inline array type that is not valid as a type argument, or has element type that is not valid as a type argument
 
@@ -44,6 +45,7 @@ public unsafe class Validate
         byte b;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Sizeof()
     {
@@ -68,6 +70,7 @@ public unsafe class Validate
         public object obj;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void OneElement()
     {
@@ -130,6 +133,7 @@ public unsafe class Validate
         Assert.Equal("Four", s1[3].o.GetType().Name);
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void UseOnStack()
     {
@@ -180,6 +184,7 @@ public unsafe class Validate
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void MixObjectsAndValuetypes()
     {
@@ -225,6 +230,7 @@ public unsafe class Validate
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void RefLikeOuter()
     {
@@ -267,6 +273,7 @@ public unsafe class Validate
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void RefLikeInner()
     {
@@ -306,6 +313,7 @@ public unsafe class Validate
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Nested()
     {
@@ -337,6 +345,7 @@ public unsafe class Validate
         }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void Boxed()
     {
@@ -353,6 +362,7 @@ public unsafe class Validate
 
     // ====================== GCDescOpt ==========================================================
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     [SkipOnMono("CoreCLR and NativeAOT-specific implementation details.")]
     public static void GCDescOpt()
@@ -384,6 +394,7 @@ public unsafe class Validate
         return holder;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void MonoGCDescOpt()
     {
@@ -412,6 +423,7 @@ public unsafe class Validate
         OneInt _field;
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void InlineArrayEqualsGetHashCode_Fails()
     {

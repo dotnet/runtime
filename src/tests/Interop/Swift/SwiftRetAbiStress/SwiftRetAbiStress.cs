@@ -6,7 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
+[ActiveIssue("https://github.com/dotnet/runtime/issues/121983", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsX64Process))]
 public class SwiftRetAbiStress
 {
     private const string SwiftLib = "libSwiftRetAbiStress.dylib";
@@ -3917,3 +3920,4 @@ public class SwiftRetAbiStress
     }
 
 }
+

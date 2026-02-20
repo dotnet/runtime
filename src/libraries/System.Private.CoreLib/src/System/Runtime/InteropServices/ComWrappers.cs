@@ -444,12 +444,18 @@ namespace System.Runtime.InteropServices
 
             private void SetFlag(CreateComInterfaceFlagsEx flag)
             {
-                Interlocked.Or(ref Flags, flag);
+                // Interlocked.Or<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
+                int setMask = (int)flag;
+                Interlocked.Or(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), setMask);
             }
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
-                Interlocked.And(ref Flags, ~flag);
+                // Interlocked.And<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
+                int resetMask = ~(int)flag;
+                Interlocked.And(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), resetMask);
             }
 
             private static uint GetTrackerCount(ulong c)

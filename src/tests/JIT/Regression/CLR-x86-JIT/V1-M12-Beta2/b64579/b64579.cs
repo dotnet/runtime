@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b64579;
+
 using System;
 using Xunit;
 public class Padre
@@ -25,6 +28,7 @@ public class Hijo : Padre
 }
 public class Test_b64579
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

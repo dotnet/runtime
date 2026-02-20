@@ -189,6 +189,7 @@ public class EnumIConvertibleToUint16
     #endregion
     #endregion
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

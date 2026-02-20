@@ -250,16 +250,6 @@ public:
     // ICorDebugAppDomain on the RS.
     virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
 
-    // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
-    virtual void SendMDANotification(
-        Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
-        CorDebugMDAFlags flags,
-        BOOL bAttach
-    ) = 0;
-
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
 
     virtual void SendLogSwitchSetting (int iLevel,

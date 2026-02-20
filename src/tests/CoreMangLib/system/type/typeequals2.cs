@@ -101,6 +101,7 @@ public class TypeEquals2
     #endregion
     #endregion
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

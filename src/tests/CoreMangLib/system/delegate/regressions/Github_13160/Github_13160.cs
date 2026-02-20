@@ -3,7 +3,7 @@
 using System;
 using Xunit;
 
-public class Program
+public class Github_13160
 {
     public virtual void VirtualMethod()
     {
@@ -13,10 +13,11 @@ public class Program
     {
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
-        Program p = new Program();
+        Github_13160 p = new Github_13160();
 
         Action d1 = p.VirtualMethod;
         Action d2 = p.VirtualMethod;

@@ -105,14 +105,14 @@ BitSetSupport::BitSetOpCounter* AllVarBitSetTraits::GetOpCounter(Compiler* comp)
 // static
 void* BitVecTraits::Alloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->getAllocator(CMK_bitset).allocate<char>(byteSize);
+    return b->m_compiler->getAllocator(CMK_bitset).allocate<char>(byteSize);
 }
 
 #ifdef DEBUG
 // static
 void* BitVecTraits::DebugAlloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->getAllocator(CMK_DebugOnly).allocate<char>(byteSize);
+    return b->m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(byteSize);
 }
 #endif // DEBUG
 

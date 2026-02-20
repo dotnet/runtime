@@ -5,6 +5,9 @@ using Xunit;
 //
 // Note: In below test case, we do not iterate over BBJ_ALWAYS blocks while computing the
 //       reachability leading to assert
+
+namespace Runtime_59298;
+
 public class Runtime_59298
 {
     public struct S2

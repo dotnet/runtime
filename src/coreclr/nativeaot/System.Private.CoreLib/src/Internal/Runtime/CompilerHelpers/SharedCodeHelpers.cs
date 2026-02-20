@@ -1,7 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime;
+
+using Internal.Runtime.Augments;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -21,6 +24,13 @@ namespace Internal.Runtime.CompilerHelpers
         public static unsafe MethodTable* GetCurrentSharedThunkContext()
         {
             return (MethodTable*)RuntimeImports.GetCurrentInteropThunkContext();
+        }
+
+        public static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
+        {
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
@@ -18,6 +19,7 @@ using Internal.Text;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -71,6 +73,8 @@ namespace ILCompiler.DependencyAnalysis
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
         public TargetDetails Target { get; }
+
+        public ReadyToRunContainerFormat Format { get; }
 
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
@@ -199,10 +203,10 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
+            ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff,
-            int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -214,6 +218,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
+            Format = format;
 
             Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
@@ -327,7 +332,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
             {
-                    return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
+                return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
             });
 
             _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
@@ -354,6 +359,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new CopiedManagedResourcesNode(module);
             });
+
+            _wasmTypeNodes = new(key =>
+            {
+                return new WasmTypeNode(key.Types);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -376,7 +386,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
-        public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
+        public SymbolNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
@@ -474,7 +484,7 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc method = methodNode.Method;
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
-                if (!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method))
+                if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
                 {
                     EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
@@ -699,7 +709,7 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
             graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
@@ -778,7 +788,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
@@ -1059,14 +1069,36 @@ namespace ILCompiler.DependencyAnalysis
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
-        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
             if (node == Header)
             {
-                return "RTR_HEADER";
+                return new Utf8String("RTR_HEADER"u8);
             }
-            return null;
+            return default;
+        }
+
+        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
+        {
+            public readonly CorInfoWasmType[] Types;
+
+            public WasmTypeNodeKey(CorInfoWasmType[] types)
+            {
+                Types = types;
+            }
+
+            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
+            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
+            public override int GetHashCode()
+                => Types.Length; // TODO-WASM: Hash all the types
+        }
+
+        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
         }
     }
 }

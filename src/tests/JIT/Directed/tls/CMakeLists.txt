@@ -6,3 +6,7 @@ include_directories(${INC_PLATFORM_DIR})
 add_library(usetls SHARED testtls.cpp)
 
 install (TARGETS usetls DESTINATION bin)
+
+if(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    add_definitions(-mtls-dialect=desc)
+endif()

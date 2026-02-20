@@ -168,11 +168,15 @@ public:
 //
 class SideEffectSet final
 {
-    unsigned m_sideEffectFlags; // A mask of GTF_* flags that represents exceptional and barrier side effects.
-    AliasSet m_aliasSet;        // An AliasSet that represents read and write side effects.
+    unsigned          m_sideEffectFlags; // A mask of GTF_* flags that represents exceptional and barrier side effects.
+    ExceptionSetFlags m_preciseExceptions; // Set representing exceptions that may be thrown
+    AliasSet          m_aliasSet;          // An AliasSet that represents read and write side effects.
 
     template <typename TOtherAliasInfo>
-    bool InterferesWith(unsigned otherSideEffectFlags, const TOtherAliasInfo& otherAliasInfo, bool strict) const;
+    bool InterferesWith(unsigned               otherSideEffectFlags,
+                        ExceptionSetFlags      otherPreciseExceptions,
+                        const TOtherAliasInfo& otherAliasInfo,
+                        bool                   strict) const;
 
 public:
     SideEffectSet();

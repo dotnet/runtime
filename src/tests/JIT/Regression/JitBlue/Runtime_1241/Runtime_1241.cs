@@ -24,6 +24,7 @@ namespace Runtime_1241
 
     public class Program
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

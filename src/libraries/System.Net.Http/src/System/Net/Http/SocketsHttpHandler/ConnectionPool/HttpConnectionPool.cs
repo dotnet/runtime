@@ -534,15 +534,6 @@ namespace System.Net.Http
                     // Eat exception and try again on a lower protocol version.
                     request.Version = HttpVersion.Version11;
                 }
-                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnStreamLimitReached)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
-                    }
-
-                    // Eat exception and try again.
-                }
                 finally
                 {
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
@@ -780,7 +771,7 @@ namespace System.Net.Http
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);
 
-            if (tunnelResponse.StatusCode != HttpStatusCode.OK)
+            if (!tunnelResponse.IsSuccessStatusCode)
             {
                 tunnelResponse.Dispose();
                 throw new HttpRequestException(HttpRequestError.ProxyTunnelError, SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), statusCode: tunnelResponse.StatusCode);

@@ -57,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // On Linux/macOS the install location is registered in a file which is normally
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
-                string directory = Path.Combine(TestContext.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                string directory = Path.Combine(HostTestContext.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
                 if (Directory.Exists(directory))
                     Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);

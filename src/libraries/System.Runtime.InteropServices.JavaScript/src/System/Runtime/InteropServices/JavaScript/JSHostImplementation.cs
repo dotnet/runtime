@@ -273,45 +273,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static Task BindAssemblyExports(string? assemblyName)
-        {
-            Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
-            return Task.CompletedTask;
-        }
-
-        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
-        {
-            var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
-
-            IntPtr monoMethod;
-            Interop.Runtime.GetAssemblyExport(
-                // FIXME: Pass UTF-16 through directly so C can work with it, doing the conversion
-                //  in C# pulls in a bunch of dependencies we don't need this early in startup.
-                // I tested removing the UTF8 conversion from this specific call, but other parts
-                //  of startup I can't identify still pull in UTF16->UTF8 conversion, so it's not
-                //  worth it to do that yet.
-                Marshal.StringToCoTaskMemUTF8(assemblyName),
-                Marshal.StringToCoTaskMemUTF8(nameSpace),
-                Marshal.StringToCoTaskMemUTF8(shortClassName),
-                Marshal.StringToCoTaskMemUTF8(methodName),
-                signatureHash,
-                &monoMethod);
-
-            if (monoMethod == IntPtr.Zero)
-            {
-                Environment.FailFast($"Can't find {nameSpace}{shortClassName}{methodName} in {assemblyName}.dll");
-            }
-
-            var signature = GetMethodSignature(signatures, null, null);
-
-            // this will hit JS side possibly on another thread, depending on JSProxyContext.CurrentThreadContext
-            JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
-
-            FreeMethodSignatureBuffer(signature);
-
-            return signature;
-        }
-
 #if FEATURE_WASM_MANAGED_THREADS
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
@@ -334,29 +295,34 @@ namespace System.Runtime.InteropServices.JavaScript
         // The BCL implementations of IndexOf/LastIndexOf/Trim are vectorized & fast,
         //  but they pull in a bunch of code that is otherwise not necessarily
         //  useful during early app startup, so we use simple scalar implementations
-        private static int SmallIndexOf (string s, char ch, int direction = 1) {
+        private static int SmallIndexOf(string s, char ch, int direction = 1)
+        {
             if (s.Length < 1)
                 return -1;
             int start_index = (direction > 0) ? 0 : s.Length - 1,
                 end_index = (direction > 0) ? s.Length - 1 : 0;
-            for (int i = start_index; i != end_index; i += direction) {
+            for (int i = start_index; i != end_index; i += direction)
+            {
                 if (s[i] == ch)
                     return i;
             }
             return -1;
         }
 
-        private static string SmallTrim (string s) {
+        private static string SmallTrim(string s)
+        {
             if (s.Length < 1)
                 return s;
             int head = 0, tail = s.Length - 1;
-            while (head < s.Length) {
+            while (head < s.Length)
+            {
                 if (s[head] == ' ')
                     head++;
                 else
                     break;
             }
-            while (tail >= 0) {
+            while (tail >= 0)
+            {
                 if (s[tail] == ' ')
                     tail--;
                 else
@@ -368,7 +334,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return s;
         }
 
-        public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
+        private static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
             var assembly = fqn.Substring(SmallIndexOf(fqn, '[') + 1, SmallIndexOf(fqn, ']') - 1);
             fqn = SmallTrim(fqn);

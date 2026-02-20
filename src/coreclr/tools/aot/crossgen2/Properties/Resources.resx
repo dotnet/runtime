@@ -424,12 +424,15 @@
     <value>Number of nested occurrences of a potentially cyclic generic type to cut off</value>
   </data>
   <data name="EnableCachedInterfaceDispatchSupport" xml:space="preserve">
-    <value>Enable support for cached interface dispatch</value>
+    <value>Enable support for cached interface dispatch. Default is true on platforms which do not support runtime code generation</value>
   </data>
   <data name="OutputFormat" xml:space="preserve">
     <value>Target output format for the ReadyToRun image</value>
   </data>
   <data name="InvalidOutputFormat" xml:space="preserve">
     <value>Format must be PE</value>
+  </data>
+  <data name="ErrorContainerFormatRequiresComposite" xml:space="preserve">
+    <value>Error: Producing ReadyToRun output in the {0} format is only supported for Composite ReadyToRun images.</value>
   </data>
 </root>

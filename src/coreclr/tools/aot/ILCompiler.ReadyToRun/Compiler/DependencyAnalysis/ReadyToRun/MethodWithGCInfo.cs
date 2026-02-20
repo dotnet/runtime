@@ -34,6 +34,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
+            Debug.Assert(!methodDesc.IsUnboxingThunk());
             GCInfoNode = new MethodGCInfoNode(this);
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
@@ -302,7 +303,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.TextSection;
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                ReadyToRunContainerFormat.Wasm => ObjectNodeSection.WasmCodeSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
@@ -323,7 +329,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 // On x86, fake a single frame info representing the entire method
-                _frameInfos = new FrameInfo[] 
+                _frameInfos = new FrameInfo[]
                 {
                     new FrameInfo((FrameInfoFlags)0, startOffset: 0, endOffset: 0, blobData: Array.Empty<byte>())
                 };
@@ -396,6 +402,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
+
+        public bool AsyncVariant => _method.IsAsyncVariant();
+
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
 
         public override string ToString() => _method.ToString();

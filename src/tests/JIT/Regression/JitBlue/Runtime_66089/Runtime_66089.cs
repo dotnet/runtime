@@ -5,6 +5,9 @@
 // where FP/LR are stored at the top of the frame due to the need for a GS
 // cookie.
 
+
+namespace Runtime_66089;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

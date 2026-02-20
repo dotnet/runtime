@@ -31,6 +31,7 @@ struct EventStructTypeData;
 void InitializeEventTracing();
 
 class PrepareCodeConfig;
+class CodeHeapIterator;
 
 // !!!!!!! NOTE !!!!!!!!
 // The flags must match those in the ETW manifest exactly
@@ -902,6 +903,16 @@ namespace ETW
         static VOID SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
         static VOID SendEventsForJitMethodsHelper(
             LoaderAllocator *pLoaderAllocatorFilter,
+            DWORD dwEventOptions,
+            BOOL fLoadOrDCStart,
+            BOOL fUnloadOrDCEnd,
+            BOOL fSendMethodEvent,
+            BOOL fSendILToNativeMapEvent,
+            BOOL fSendRichDebugInfoEvent,
+            BOOL fGetCodeIds);
+
+        static VOID SendEventsForJitMethodsHelper2(
+            CodeHeapIterator codeHeapIterator,
             DWORD dwEventOptions,
             BOOL fLoadOrDCStart,
             BOOL fUnloadOrDCEnd,

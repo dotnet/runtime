@@ -256,6 +256,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<NativeSequencePoint> GetNativeSequencePoints()
         {
+            // This can be null if we're not generating debug info
+            if (_debugLocInfos == null)
+                yield break;
+
             var sequencePoints = new (string Document, int LineNumber)[_debugLocInfos.Length * 4 /* chosen empirically */];
             try
             {
@@ -269,6 +273,15 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     sequencePoints[offset] = (sequencePoint.Document, sequencePoint.LineNumber);
                 }
+
+                // Propagate last known document/line number forward to enable correct mapping when IL offsets decrease at higher native offsets
+                for (int i = 1; i < sequencePoints.Length; i++)
+                {
+                    if (sequencePoints[i].Document == null && sequencePoints[i - 1].Document != null)
+                    {
+                        sequencePoints[i] = (sequencePoints[i - 1].Document, sequencePoints[i - 1].LineNumber);
+                    }
+                }
             }
             catch (BadImageFormatException)
             {
@@ -279,22 +292,26 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int previousNativeOffset = -1;
+            string previousDocument = null;
+            int previousLineNumber = -1;
+            // OffsetMapping is sorted in order of increasing native offset (but not necessarily by IL offset)
             foreach (var nativeMapping in _debugLocInfos)
             {
                 if (nativeMapping.NativeOffset == previousNativeOffset)
                     continue;
 
-                if (nativeMapping.ILOffset < sequencePoints.Length)
+                var sequencePoint = sequencePoints[Math.Min(nativeMapping.ILOffset, sequencePoints.Length - 1)];
+                // Emit sequence point if its line number or document differ from the previous one.
+                // See WalkILOffsetsCallback in src/coreclr/vm/debugdebugger.cpp for more details.
+                if (sequencePoint.Document != null && (sequencePoint.Document != previousDocument || sequencePoint.LineNumber != previousLineNumber))
                 {
-                    var sequencePoint = sequencePoints[nativeMapping.ILOffset];
-                    if (sequencePoint.Document != null)
-                    {
-                        yield return new NativeSequencePoint(
-                            nativeMapping.NativeOffset,
-                            sequencePoint.Document,
-                            sequencePoint.LineNumber);
-                        previousNativeOffset = nativeMapping.NativeOffset;
-                    }
+                    yield return new NativeSequencePoint(
+                        nativeMapping.NativeOffset,
+                        sequencePoint.Document,
+                        sequencePoint.LineNumber);
+                    previousNativeOffset = nativeMapping.NativeOffset;
+                    previousDocument = sequencePoint.Document;
+                    previousLineNumber = sequencePoint.LineNumber;
                 }
             }
         }

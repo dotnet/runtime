@@ -43,7 +43,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_background_exec", null, []],
     [true, "mono_wasm_ds_exec", null, []],
     [true, "mono_wasm_execute_timer", null, []],
-    [true, "mono_wasm_load_icu_data", "number", ["number"]],
+    [true, "wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
     [false, "mono_wasm_load_runtime", null, ["number", "number", "number", "number"]],
@@ -170,7 +170,7 @@ export interface t_Cwraps {
     mono_background_exec(): void;
     mono_wasm_ds_exec(): void;
     mono_wasm_execute_timer(): void;
-    mono_wasm_load_icu_data(offset: VoidPtr): number;
+    wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(debugLevel: number, propertyCount:number, propertyKeys:CharPtrPtr, propertyValues:CharPtrPtr): void;

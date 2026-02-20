@@ -11,6 +11,7 @@ set(CORDBEE_SOURCES_DAC_AND_WKS
   debugger.cpp
   debuggermessagebox.cpp
   debuggermodule.cpp
+  executioncontrol.cpp
   functioninfo.cpp
 )
 
@@ -20,6 +21,7 @@ set(CORDBEE_HEADERS_DAC_AND_WKS
   datatest.h
   debugger.h
   debugger.inl
+  executioncontrol.h
 )
 
 set(CORDBEE_SOURCES_WKS

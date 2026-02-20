@@ -74,6 +74,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty))]
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryAlreadyInstantiated))]
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated))]
+        [JsonSerializable(typeof(ClassWithJsonObjectExtensionDataAndProperty))]
         internal sealed partial class ExtensionDataTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -144,6 +145,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryExtensionPropertyAsJsonElementWithProperty))]
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryAlreadyInstantiated))]
         [JsonSerializable(typeof(ClassWithIReadOnlyDictionaryJsonElementAlreadyInstantiated))]
+        [JsonSerializable(typeof(ClassWithJsonObjectExtensionDataAndProperty))]
         internal sealed partial class ExtensionDataTestsContext_Default : JsonSerializerContext
         {
         }

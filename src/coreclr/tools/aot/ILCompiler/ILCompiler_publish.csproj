@@ -10,6 +10,9 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <AotOrSingleFile>true</AotOrSingleFile>
     <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+    <!-- Workaround for dsymutil module cache errors on Apple platforms until https://github.com/dotnet/runtime/pull/123386 -->
+    <!-- See https://github.com/dotnet/runtime/issues/123687 -->
+    <StripSymbols Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'maccatalyst'">false</StripSymbols>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />

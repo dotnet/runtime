@@ -4,11 +4,13 @@
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 namespace GetInterfaceMapWithStaticVirtualsAndConstraints
 {
     public static class Program
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()
         {

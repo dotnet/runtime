@@ -12,8 +12,13 @@
     <BundleTestAndroidAppDependsOn>AndroidBuild</BundleTestAndroidAppDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(IsFunctionalTest)' != 'true'">
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(IsFunctionalTest)' != 'true' and '$(TestBuildMode)' != 'nativeaot'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <TestNativeAOT Condition="'$(TestNativeAOT)' == ''">true</TestNativeAOT>
+    <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
@@ -22,6 +27,7 @@
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <_UseNativeLibPrefix>true</_UseNativeLibPrefix>
+    <_SuppressNativeLibEventSourceWarning>true</_SuppressNativeLibEventSourceWarning>
   </PropertyGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->

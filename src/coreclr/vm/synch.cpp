@@ -19,11 +19,8 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
         // disallow creation of Crst before EE starts
         // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-        PRECONDITION((!IsOSEvent()));
     }
     CONTRACTL_END;
-
-    SetAutoEvent();
 
     {
         HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
@@ -45,7 +42,6 @@ BOOL CLREventBase::CreateAutoEventNoThrow (BOOL bInitialState  // If TRUE, initi
         // disallow creation of Crst before EE starts
         // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-        PRECONDITION((!IsOSEvent()));
     }
     CONTRACTL_END;
 
@@ -71,7 +67,6 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
         // disallow creation of Crst before EE starts
         // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-        PRECONDITION((!IsOSEvent()));
     }
     CONTRACTL_END;
 
@@ -94,110 +89,12 @@ BOOL CLREventBase::CreateManualEventNoThrow (BOOL bInitialState  // If TRUE, ini
         // disallow creation of Crst before EE starts
         // Can not assert here. ASP.NET uses our Threadpool before EE is started.
         PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-        PRECONDITION((!IsOSEvent()));
     }
     CONTRACTL_END;
 
     EX_TRY
     {
         CreateManualEvent(bInitialState);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
-
-    return IsValid();
-}
-
-void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial state is signalled
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-    }
-    CONTRACTL_END;
-
-    // Can not assert here. ASP.NET uses our Threadpool before EE is started.
-    //_ASSERTE (g_fEEStarted);
-
-    SetOSEvent();
-    SetAutoEvent();
-
-    HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
-    if (h == NULL) {
-        ThrowOutOfMemory();
-    }
-    m_handle = h;
-}
-
-BOOL CLREventBase::CreateOSAutoEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
-                                )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        CreateOSAutoEvent(bInitialState);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
-
-    return IsValid();
-}
-
-void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial state is signalled
-                                )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-    }
-    CONTRACTL_END;
-
-    // Can not assert here. ASP.NET uses our Threadpool before EE is started.
-    //_ASSERTE (g_fEEStarted);
-
-    SetOSEvent();
-
-    HANDLE h = CreateEvent(NULL,TRUE,bInitialState,NULL);
-    if (h == NULL) {
-        ThrowOutOfMemory();
-    }
-    m_handle = h;
-}
-
-BOOL CLREventBase::CreateOSManualEventNoThrow (BOOL bInitialState  // If TRUE, initial state is signalled
-                                )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        // disallow creation of Crst before EE starts
-        PRECONDITION((m_handle == INVALID_HANDLE_VALUE));
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        CreateOSManualEvent(bInitialState);
     }
     EX_CATCH
     {
@@ -225,7 +122,6 @@ void CLREventBase::CloseEvent()
 
         m_handle = INVALID_HANDLE_VALUE;
     }
-    m_dwFlags = 0;
 }
 
 
@@ -347,19 +243,12 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
 
     Thread * pThread = GetThreadNULLOk();
 
-#ifdef _DEBUG
-    // If a CLREvent is OS event only, we can not wait for the event on a managed thread
-    if (IsOSEvent())
-        _ASSERTE (pThread == NULL);
-#endif
     _ASSERTE((pThread != NULL) || !g_fEEStarted || dbgOnly_IsSpecialEEThread());
 
     {
         if (pThread && alertable) {
-            DWORD dwRet = WAIT_FAILED;
-            dwRet = pThread->DoAppropriateWait(1, &m_handle, FALSE, dwMilliseconds,
-                                              mode);
-            return dwRet;
+            GCX_PREEMP();
+            return pThread->DoReentrantWaitWithRetry(m_handle, dwMilliseconds, mode);
         }
         else {
             return CLREventWaitHelper(m_handle,dwMilliseconds,alertable);

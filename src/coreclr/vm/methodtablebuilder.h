@@ -653,13 +653,20 @@ private:
     };  // class bmtTypeHandle
 
     // --------------------------------------------------------------------------------------------
-    // MethodSignature encapsulates the name and metadata signature of a method, as well as
-    // the scope (Module*) and substitution for the signature. It is intended to facilitate
-    // passing around this tuple of information as well as providing efficient comparison
-    // operations when looking for types.
+    // MethodSignature encapsulates the name and metadata signature of a method, as well as the
+    // scope (Module*) substitution and optional async promise type (Task vs. ValueTask).
+    // It is intended to facilitate passing around this tuple of information as well as providing
+    // efficient comparison operations.
     //
     // Meant to be passed around by reference or by value. Please make sure this is declared
     // on the stack or properly deleted after use.
+
+    enum AsyncVariantKind
+    {
+        None      = 0,  // this is not a signature of an async variant method
+        Task      = 1,  // this is a signature of an async variant for a Task[<T>] returning method
+        ValueTask = 2   // this is a signature of an async variant for a ValueTask[<T>] returning method
+    };
 
     class MethodSignature
     {
@@ -673,6 +680,7 @@ private:
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(None),
               m_szName(NULL),
               m_pSig(NULL),
               m_cSig(0),
@@ -693,10 +701,12 @@ private:
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
+            bool                 isValueTaskVariant,
             Signature            sig,
             const Substitution * pSubst)
             : m_pModule(pModule),
               m_tok(tok),
+              m_asyncVariantKind(isValueTaskVariant ? AsyncVariantKind::ValueTask : AsyncVariantKind::Task),
               m_szName(NULL),
               m_pSig(sig.GetRawSig()),
               m_cSig(sig.GetRawSigLen()),
@@ -723,6 +733,7 @@ private:
             const Substitution * pSubst = NULL)
             : m_pModule(pModule),
               m_tok(mdTokenNil),
+              m_asyncVariantKind(None),
               m_szName(szName),
               m_pSig(pSig),
               m_cSig(cSig),
@@ -743,6 +754,7 @@ private:
             const MethodSignature & s)
             : m_pModule(s.m_pModule),
               m_tok(s.m_tok),
+              m_asyncVariantKind(s.m_asyncVariantKind),
               m_szName(s.m_szName),
               m_pSig(s.m_pSig),
               m_cSig(s.m_cSig),
@@ -809,6 +821,13 @@ private:
             const MethodSignature & sig2);
 
         //-----------------------------------------------------------------------------------------
+        // Returns true if the signatures have the same async variant kinds.
+        static bool
+        SameAsyncVariantKind(
+            const MethodSignature& sig1,
+            const MethodSignature& sig2);
+
+        //-----------------------------------------------------------------------------------------
         // Returns true if the metadata signatures (PCCOR_SIGNATURE) are equivalent. (Type equivalence permitted)
         static bool
         SignaturesEquivalent(
@@ -860,6 +879,7 @@ private:
         //-----------------------------------------------------------------------------------------
         Module *                m_pModule;
         mdToken                 m_tok;
+        AsyncVariantKind        m_asyncVariantKind;
         mutable LPCUTF8         m_szName;   // mutable because it is lazily evaluated.
         mutable PCCOR_SIGNATURE m_pSig;     // mutable because it is lazily evaluated.
         mutable size_t          m_cSig;     // mutable because it is lazily evaluated.
@@ -972,7 +992,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodKind thunkKind,
+            AsyncMethodFlags asyncMethodFlags,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1078,19 +1098,18 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
-                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+            return hasAsyncFlags(GetAsyncMethodFlags(), AsyncMethodFlags::IsAsyncVariant);
         }
 
-        void SetAsyncMethodKind(AsyncMethodKind kind)
+        void SetAsyncMethodFlags(AsyncMethodFlags flags)
         {
-            m_asyncMethodKind = kind;
+            m_asyncMethodFlags = flags;
         }
 
-        AsyncMethodKind GetAsyncMethodKind() const
+        AsyncMethodFlags GetAsyncMethodFlags() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_asyncMethodKind;
+            return m_asyncMethodFlags;
         }
 
         bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
@@ -1104,7 +1123,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncMethodKind   m_asyncMethodKind;
+        AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
         bmtMDMethod*      m_asyncOtherVariant = NULL;
@@ -2702,7 +2721,7 @@ private:
         IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
-        AsyncMethodKind     asyncKind
+        AsyncMethodFlags    asyncFlags
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
@@ -2999,6 +3018,9 @@ private:
     VOID    HandleGCForExplicitLayout();
 
     VOID HandleCStructLayout(
+        MethodTable **);
+
+    VOID HandleCUnionLayout(
         MethodTable **);
 
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);

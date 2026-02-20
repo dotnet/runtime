@@ -51,6 +51,7 @@ namespace GcHole1
         }
 
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,6 +12,7 @@ using System.Runtime.InteropServices.CustomMarshalers;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 
 namespace System.StubHelpers
 {
@@ -229,6 +231,39 @@ namespace System.StubHelpers
 
     internal static class BSTRMarshaler
     {
+        private sealed class TrailByte(byte trailByte)
+        {
+            public readonly byte Value = trailByte;
+        }
+
+        // In some early version of VB when there were no arrays developers used to use BSTR as arrays
+        // The way this was done was by adding a trail byte at the end of the BSTR
+        // To support this scenario, we need to use a ConditionalWeakTable for this special case and
+        // save the trail character in here.
+        // This stores the trail character when a BSTR is used as an array.
+        private static ConditionalWeakTable<string, TrailByte>? s_trailByteTable;
+
+        private static bool TryGetTrailByte(string strManaged, out byte trailByte)
+        {
+            if (s_trailByteTable?.TryGetValue(strManaged, out TrailByte? trailByteObj) == true)
+            {
+                trailByte = trailByteObj.Value;
+                return true;
+            }
+
+            trailByte = 0;
+            return false;
+        }
+
+        private static void SetTrailByte(string strManaged, byte trailByte)
+        {
+            if (s_trailByteTable == null)
+            {
+                Interlocked.CompareExchange(ref s_trailByteTable, new ConditionalWeakTable<string, TrailByte>(), null);
+            }
+            s_trailByteTable!.Add(strManaged, new TrailByte(trailByte));
+        }
+
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
@@ -237,7 +272,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool hasTrailByte = StubHelpers.TryGetStringTrailByte(strManaged, out byte trailByte);
+                bool hasTrailByte = TryGetTrailByte(strManaged, out byte trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -320,8 +355,7 @@ namespace System.StubHelpers
 
                 if ((length & 1) == 1)
                 {
-                    // odd-sized strings need to have the trailing byte saved in their sync block
-                    StubHelpers.SetStringTrailByte(ret, ((byte*)bstr)[length - 1]);
+                    SetTrailByte(ret, ((byte*)bstr)[length - 1]);
                 }
 
                 return ret;
@@ -798,6 +832,19 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
+        [UnmanagedCallersOnly]
+        internal static void ConvertContentsToNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ConvertContentsToNative(*pMarshaler, in *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
@@ -808,6 +855,19 @@ namespace System.StubHelpers
             }
 
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void ConvertContentsToManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ConvertContentsToManaged(*pMarshaler, ref *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
@@ -822,8 +882,20 @@ namespace System.StubHelpers
             pManagedHome = marshaler.MarshalNativeToManaged(*pNativeHome);
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
-        internal static void ClearNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        [UnmanagedCallersOnly]
+        internal static void ClearNative(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ClearNative(*pMarshaler, ref *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        internal static void ClearNative(ICustomMarshaler marshaler, ref object _, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to CleanUpNativeData.
             if (*pNativeHome == IntPtr.Zero)
@@ -841,7 +913,20 @@ namespace System.StubHelpers
             }
         }
 
-        internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
+        [UnmanagedCallersOnly]
+        internal static void ClearManaged(ICustomMarshaler* pMarshaler, object* pManagedHome, IntPtr* pNativeHome, Exception* pException)
+        {
+            try
+            {
+                ClearManaged(*pMarshaler, in *pManagedHome, pNativeHome);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* _)
         {
             // COMPAT: We never pass null to CleanUpManagedData.
             if (pManagedHome is null)
@@ -851,7 +936,40 @@ namespace System.StubHelpers
 
             marshaler.CleanUpManagedData(pManagedHome);
         }
-#pragma warning restore IDE0060
+
+        [UnmanagedCallersOnly]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
+        internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeType marshalerType = RuntimeTypeHandle.GetRuntimeType((MethodTable*)pMT);
+
+                MethodInfo? method = marshalerType.GetMethod(
+                    "GetInstance",
+                    Reflection.BindingFlags.Static | Reflection.BindingFlags.Public | Reflection.BindingFlags.NonPublic,
+                    [typeof(string)]);
+
+                if (method is null || typeof(ICustomMarshaler) != method.ReturnType)
+                {
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NoGetInstanceMethod, marshalerType.FullName));
+                }
+
+                var getInstance = method.CreateDelegate<Func<string, ICustomMarshaler>>();
+                string cookie = Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(pCookie, cCookieBytes));
+                object? result = getInstance(cookie);
+                if (result is null)
+                {
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NullReturnForGetInstance, marshalerType.FullName));
+                }
+
+                *pResult = result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }  // class MngdRefCustomMarshaler
 
     internal struct AsAnyMarshaler
@@ -1266,24 +1384,6 @@ namespace System.StubHelpers
         }
     }
 
-    // Keeps an object instance alive across the full Managed->Native call.
-    // This ensures that users don't have to call GC.KeepAlive after passing a struct or class
-    // that has a delegate field to native code.
-    internal sealed class KeepAliveCleanupWorkListElement : CleanupWorkListElement
-    {
-        public KeepAliveCleanupWorkListElement(object obj)
-        {
-            m_obj = obj;
-        }
-
-        private readonly object m_obj;
-
-        protected override void DestroyCore()
-        {
-            GC.KeepAlive(m_obj);
-        }
-    }
-
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
     // if and only if it is needed.
@@ -1334,12 +1434,6 @@ namespace System.StubHelpers
             return element.AddRef();
         }
 
-        internal static void KeepAliveViaCleanupList(ref CleanupWorkListElement? pCleanupWorkList, object obj)
-        {
-            KeepAliveCleanupWorkListElement element = new KeepAliveCleanupWorkListElement(obj);
-            CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
-        }
-
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
             if (pCleanupWorkList != null)
@@ -1357,14 +1451,18 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
         {
-            RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
-            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
+            Debug.Assert(pCPCMD != IntPtr.Zero);
+            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
+            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
             Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -1489,19 +1587,6 @@ namespace System.StubHelpers
             }
         }
 
-        // Try to retrieve the extra byte - returns false if not present.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool TryGetStringTrailByte(string str, out byte data);
-
-        // Set extra byte for odd-sized strings that came from interop as BSTR.
-        internal static void SetStringTrailByte(string str, byte data)
-        {
-            SetStringTrailByte(new StringHandleOnStack(ref str!), data);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_SetStringTrailByte")]
-        private static partial void SetStringTrailByte(StringHandleOnStack str, byte data);
-
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -1540,21 +1625,6 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative)
-        {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
-
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
-            Debug.Assert(success);
-
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
-            }
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
@@ -1590,12 +1660,57 @@ namespace System.StubHelpers
 
         [Intrinsic]
         internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
-
-        [Intrinsic]
-        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP
+    internal static class CultureInfoMarshaler
+    {
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCurrentCulture(bool bUICulture, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = bUICulture
+                    ? Globalization.CultureInfo.CurrentUICulture
+                    : Globalization.CultureInfo.CurrentCulture;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void SetCurrentCulture(bool bUICulture, Globalization.CultureInfo* pValue, Exception* pException)
+        {
+            try
+            {
+                if (bUICulture)
+                    Globalization.CultureInfo.CurrentUICulture = *pValue;
+                else
+                    Globalization.CultureInfo.CurrentCulture = *pValue;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateCultureInfo(int culture, object* pResult, Exception* pException)
+        {
+            try
+            {
+                // Consider calling CultureInfo.GetCultureInfo that returns a cached instance to avoid this expensive creation.
+                *pResult = new Globalization.CultureInfo(culture);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+    }
+
     internal static class ColorMarshaler
     {
         private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
@@ -1624,6 +1739,32 @@ namespace System.StubHelpers
         internal static int ConvertToNative(object? managedColor)
         {
             return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToManaged(int oleColor, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToManaged(oleColor);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ConvertToNative(object* pSrcObj, int* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = ConvertToNative(*pSrcObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 #endif

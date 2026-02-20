@@ -74,9 +74,8 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD t
         return HeaderLockResult::Success;
     }
 
-    // Use the slow path instead of spinning. The compare-exchange above would not fail often, and it's not worth forcing the
-    // spin loop that typically follows the call to this function to check the recursive case, so just bail to the slow path.
-    return HeaderLockResult::UseSlowPath;
+    // We failed to acquire because someone touched other bits in the header.
+    return HeaderLockResult::Failure;
 }
 
 // Helper encapsulating the core logic for releasing monitor. Returns what kind of

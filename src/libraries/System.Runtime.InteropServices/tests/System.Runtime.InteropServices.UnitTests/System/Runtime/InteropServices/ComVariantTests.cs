@@ -60,7 +60,6 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(42, variant.GetRawDataRef<double>());
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete
         [Fact]
         public void Currency()
         {
@@ -69,7 +68,6 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(42.0m, variant.As<CurrencyWrapper>().WrappedObject);
             Assert.Equal(decimal.ToOACurrency(42.0m), variant.GetRawDataRef<long>());
         }
-#pragma warning restore CS0618 // Type or member is obsolete
 
         [Fact]
         public void Date()

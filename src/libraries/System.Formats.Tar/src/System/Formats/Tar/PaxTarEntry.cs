@@ -79,7 +79,7 @@ namespace System.Formats.Tar
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para>
         /// </exception>
-        /// <remarks>When converting a <see cref="GnuTarEntry"/> to <see cref="PaxTarEntry"/> using this constructor, the <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> values will get transfered to the <see cref="ExtendedAttributes" /> dictionary only if their values are not <see langword="default"/> (which is <see cref="DateTimeOffset.MinValue"/>).</remarks>
+        /// <remarks>When converting a <see cref="GnuTarEntry"/> to <see cref="PaxTarEntry"/> using this constructor, the <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> values will get transferred to the <see cref="ExtendedAttributes" /> dictionary only if their values are not <see langword="default"/> (which is <see cref="DateTimeOffset.MinValue"/>).</remarks>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {

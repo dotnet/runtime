@@ -27,6 +27,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
         COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // duplicated clause. This clause was duplicated to a funclet which was pulled out of line
         COR_ILEXCEPTION_CLAUSE_SAMETRY = 0x0010,        // This clause covers same try block as the previous one
+        COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION = 0x0020, // R2R only: This clause catches System.Exception
 
         COR_ILEXCEPTION_CLAUSE_KIND_MASK = COR_ILEXCEPTION_CLAUSE_FILTER | COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT,
     }
@@ -95,7 +96,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK) == CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE)
             {
-                if (reader.Composite)
+                if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_R2R_SYSTEM_EXCEPTION) != 0)
+                {
+                    ClassName = "System.Exception";
+                }
+                else if (reader.Composite)
                 {
                     // TODO: EH clauses in composite mode
                     ClassName = "TODO-composite module in EH clause";

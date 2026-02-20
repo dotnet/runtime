@@ -1187,6 +1187,7 @@ namespace System
         }
 
         /// <inheritdoc/>
+        [Intrinsic]
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is null)

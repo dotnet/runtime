@@ -65,7 +65,7 @@ internal sealed class BrowserHost
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
-                                               forwardConsoleToWS: _args.ForwardConsoleOutput ?? false,
+                                               forwardConsole: _args.ForwardConsoleOutput ?? false,
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 

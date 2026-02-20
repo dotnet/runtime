@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
-#include "pal/sharedmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
@@ -119,10 +118,6 @@ static int Initialize(int argc, const char *const argv[], DWORD flags);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
-
-#ifdef _DEBUG
-extern void PROCDumpThreadList(void);
-#endif
 
 /*++
 Function:
@@ -354,20 +349,6 @@ Initialize(
             goto CLEANUP0a;
         }
 
-        // The gSharedFilesPath is allocated dynamically so its destructor does not get
-        // called unexpectedly during cleanup
-        gSharedFilesPath = new(std::nothrow) PathCharString();
-        if (gSharedFilesPath == nullptr)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            goto CLEANUP0a;
-        }
-
-        if (INIT_SharedFilesPath() == FALSE)
-        {
-            goto CLEANUP0a;
-        }
-
         fFirstTimeInit = true;
 
         InitializeDefaultStackSize();
@@ -407,19 +388,6 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        SharedMemoryManager::StaticInitialize();
-
-        //
-        // Initialize global process data
-        //
-
-        palError = InitializeProcessData();
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to initialize process data\n");
-            goto CLEANUP1;
-        }
-
 #if HAVE_MACH_EXCEPTIONS
         // Mach exception port needs to be set up before the thread
         // data or threads are set up.
@@ -441,8 +409,6 @@ Initialize(
             ERROR("Unable to create initial thread data\n");
             goto CLEANUP1a;
         }
-
-        PROCAddThread(pThread, pThread);
 
         //
         // It's now safe to access our thread data
@@ -719,7 +685,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
-#ifndef TARGET_WASM // we don't use shared libraries on wasm
+#ifndef TARGET_WASM // we don't use shared libraries on wasm and don't support dbg mini dump
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -727,13 +693,12 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
-#endif // !TARGET_WASM
-
     if (!PROCAbortInitialize())
     {
         printf("PROCAbortInitialize FAILED %d (%s)\n", errno, strerror(errno));
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
+#endif // !TARGET_WASM
 
     return ERROR_SUCCESS;
 }
@@ -834,12 +799,6 @@ PALCommonCleanup()
         // Let the synchronization manager know we're about to shutdown
         //
         CPalSynchMgrController::PrepareForShutdown();
-
-        SharedMemoryManager::StaticClose();
-
-#ifdef _DEBUG
-        PROCDumpThreadList();
-#endif
     }
 }
 
@@ -1088,64 +1047,4 @@ static LPWSTR INIT_GetCurrentEXEPath()
     }
 
     return return_value;
-}
-
-/*++
-Function:
-  INIT_SharedFilesPath
-
-Abstract:
-    Initializes the shared application
---*/
-static BOOL INIT_SharedFilesPath(void)
-{
-#ifdef __APPLE__
-    // Store application group Id. It will be null if not set
-    gApplicationGroupId = getenv("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
-
-    if (nullptr != gApplicationGroupId)
-    {
-        // Verify the length of the application group ID
-        gApplicationGroupIdLength = strlen(gApplicationGroupId);
-        if (gApplicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
-        {
-            SetLastError(ERROR_BAD_LENGTH);
-            return FALSE;
-        }
-
-        // In sandbox, all IPC files (locks, pipes) should be written to the application group
-        // container. There will be no write permissions to TEMP_DIRECTORY_PATH
-        if (!GetApplicationContainerFolder(*gSharedFilesPath, gApplicationGroupId, gApplicationGroupIdLength))
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return FALSE;
-        }
-
-        // Verify the size of the path won't exceed maximum allowed size
-        if (gSharedFilesPath->GetCount() + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ > MAX_LONGPATH)
-        {
-            SetLastError(ERROR_FILENAME_EXCED_RANGE);
-            return FALSE;
-        }
-
-        // Check if the path already exists and it's a directory
-        struct stat statInfo;
-        int statResult = stat(*gSharedFilesPath, &statInfo);
-
-        // If the path exists, check that it's a directory
-        if (statResult != 0 || !(statInfo.st_mode & S_IFDIR))
-        {
-            SetLastError(ERROR_PATH_NOT_FOUND);
-            return FALSE;
-        }
-
-        return TRUE;
-    }
-#endif // __APPLE__
-
-    // If we are here, then we are not in sandbox mode, resort to TEMP_DIRECTORY_PATH as shared files path
-    return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
-
-    // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

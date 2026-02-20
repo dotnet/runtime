@@ -19,10 +19,10 @@
  *  - each JS module to use exported symbols in ergonomic way
  */
 
-import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer } from "../types";
+import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer, DiagnosticsExports, DiagnosticsExportsTable } from "../types";
 import { InternalExchangeIndex } from "../types";
 
-let dotnetInternals: InternalExchange;
+export let dotnetInternals: InternalExchange;
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
 export const dotnetLogger: LoggerType = {} as LoggerType;
@@ -33,6 +33,7 @@ export const dotnetBrowserHostExports: BrowserHostExports = {} as any;
 export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
 export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
 export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
+export const dotnetDiagnosticsExports: DiagnosticsExports = {} as any;
 
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
@@ -92,27 +93,50 @@ export function dotnetUpdateInternalsSubscriber() {
     if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
         nativeBrowserExportsFromTable(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
     }
+    if (Object.keys(dotnetDiagnosticsExports).length === 0 && dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable]) {
+        diagnosticsExportsFromTable(dotnetInternals[InternalExchangeIndex.DiagnosticsExportsTable], dotnetDiagnosticsExports);
+    }
 
     // keep in sync with runtimeExportsToTable()
-    function runtimeExportsFromTable(table:RuntimeExportsTable, runtime:RuntimeExports):void {
-        Object.assign(runtime, {
-        });
+    function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
+        const runtimerLocal: RuntimeExports = {
+            bindJSImportST: table[0],
+            invokeJSImportST: table[1],
+            releaseCSOwnedObject: table[2],
+            resolveOrRejectPromise: table[3],
+            cancelPromise: table[4],
+            invokeJSFunction: table[5],
+            forceDisposeProxies: table[6],
+            abortInteropTimers: table[7],
+        };
+        Object.assign(runtime, runtimerLocal);
     }
 
     // keep in sync with loaderExportsToTable()
-    function loaderExportsFromTable(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):void {
-        const loggerLocal :LoggerType = {
-            info: table[0],
-            warn: table[1],
-            error: table[2],
+    function loaderExportsFromTable(table: LoaderExportsTable, logger: LoggerType, assert: AssertType, dotnetLoaderExports: LoaderExports): void {
+        const loggerLocal: LoggerType = {
+            debug: table[0],
+            info: table[1],
+            warn: table[2],
+            error: table[3],
         };
-        const assertLocal :AssertType = {
-            check: table[3],
+        const assertLocal: AssertType = {
+            check: table[4],
+            fastCheck: table[5],
         };
-        const loaderExportsLocal :LoaderExports = {
-            resolveRunMainPromise: table[4],
-            rejectRunMainPromise: table[5],
-            getRunMainPromise: table[6],
+        const loaderExportsLocal: LoaderExports = {
+            resolveRunMainPromise: table[6],
+            rejectRunMainPromise: table[7],
+            getRunMainPromise: table[8],
+            createPromiseCompletionSource: table[9],
+            isControllablePromise: table[10],
+            getPromiseCompletionSource: table[11],
+            isExited: table[12],
+            isRuntimeRunning: table[13],
+            addOnExitListener: table[14],
+            abortStartup: table[15],
+            quitNow: table[16],
+            normalizeException: table[17],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -120,33 +144,61 @@ export function dotnetUpdateInternalsSubscriber() {
     }
 
     // keep in sync with browserHostExportsToTable()
-    function browserHostExportsFromTable(table:BrowserHostExportsTable, native:BrowserHostExports):void {
-        const nativeLocal :BrowserHostExports = {
+    function browserHostExportsFromTable(table: BrowserHostExportsTable, native: BrowserHostExports): void {
+        const nativeLocal: BrowserHostExports = {
             registerDllBytes: table[0],
+            installVfsFile: table[1],
+            loadIcuData: table[2],
+            initializeCoreCLR: table[3],
+            registerPdbBytes: table[4],
+            instantiateWasm: table[5],
         };
         Object.assign(native, nativeLocal);
     }
 
     // keep in sync with interopJavaScriptExportsToTable()
-    function interopJavaScriptExportsFromTable(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
-        const interopLocal :InteropJavaScriptExports = {
+    function interopJavaScriptExportsFromTable(table: InteropJavaScriptExportsTable, interop: InteropJavaScriptExports): void {
+        const interopLocal: InteropJavaScriptExports = {
+            SystemInteropJS_GetManagedStackTrace: table[0],
+            SystemInteropJS_CallDelegate: table[1],
+            SystemInteropJS_CompleteTask: table[2],
+            SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: table[3],
+            SystemInteropJS_BindAssemblyExports: table[4],
+            SystemInteropJS_CallJSExport: table[5],
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeBrowserExportsToTable()
-    function nativeBrowserExportsFromTable(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
-        const interopLocal :NativeBrowserExports = {
+    function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
+        const interopLocal: NativeBrowserExports = {
+        };
+        Object.assign(interop, interopLocal);
+    }
+
+    // keep in sync with nativeBrowserExportsToTable()
+    function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
+        const interopLocal: DiagnosticsExports = {
+            symbolicateStackTrace: table[0],
+            installNativeSymbols: table[1],
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeHelperExportsToTable()
-    function nativeHelperExportsFromTable(table:BrowserUtilsExportsTable, interop:BrowserUtilsExports):void {
-        const interopLocal :BrowserUtilsExports = {
+    function nativeHelperExportsFromTable(table: BrowserUtilsExportsTable, interop: BrowserUtilsExports): void {
+        const interopLocal: BrowserUtilsExports = {
             utf16ToString: table[0],
             stringToUTF16: table[1],
             stringToUTF16Ptr: table[2],
+            stringToUTF8Ptr: table[3],
+            stringToUTF8: table[4],
+            zeroRegion: table[5],
+            isSharedArrayBuffer: table[6],
+            abortBackgroundTimers: table[7],
+            abortPosix: table[8],
+            getExitStatus: table[9],
+            runBackgroundTimers: table[10],
         };
         Object.assign(interop, interopLocal);
     }

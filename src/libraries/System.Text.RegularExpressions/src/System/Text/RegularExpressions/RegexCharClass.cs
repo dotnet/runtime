@@ -233,23 +233,6 @@ namespace System.Text.RegularExpressions
 
         public void AddChar(char c) => AddRange(c, c);
 
-        public void AddNotChar(char c)
-        {
-            if (c == 0)
-            {
-                AddRange((char)1, LastChar);
-            }
-            else if (c == LastChar)
-            {
-                AddRange((char)0, (char)(LastChar - 1));
-            }
-            else
-            {
-                AddRange((char)0, (char)(c - 1));
-                AddRange((char)(c + 1), LastChar);
-            }
-        }
-
         /// <summary>
         /// Adds a regex char class
         /// </summary>

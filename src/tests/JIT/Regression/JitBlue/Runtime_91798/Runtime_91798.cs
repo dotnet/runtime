@@ -4,6 +4,9 @@
 // There was an issue with Sse41.BlendVariable where we might reuse XMM0
 // for targetReg.
 
+
+namespace Runtime_91798;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -20,14 +23,11 @@ public class TestClass_91798
         return Sse41.BlendVariable(v128_uint_75, Vector128<uint>.One, v128_uint_75);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Sse41), nameof(Sse41.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sse41.IsSupported)
-        {
-            TestClass_91798 obj = new TestClass_91798();
-            obj.Method0();
-        }
+        TestClass_91798 obj = new TestClass_91798();
+        obj.Method0();
     }
 }
 /*

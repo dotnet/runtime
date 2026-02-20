@@ -65,6 +65,10 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #endif
 #endif // __APPLE__
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/heap.h>
+#endif // __EMSCRIPTEN__
+
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
 #endif // HAVE_MACH_EXCEPTIONS
@@ -751,6 +755,19 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
+#if defined(TARGET_BROWSER)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
+    {
+        return TRUE;
+    }
+    return FALSE;
+#elif defined(TARGET_WASI)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
+    {
+        return TRUE;
+    }
+    return FALSE;
+#else // TARGET_BROWSER || TARGET_WASI
     int fds[2];
     int flags;
 
@@ -807,6 +824,7 @@ PAL_ProbeMemory(
     close(fds[1]);
 
     return result;
+#endif // TARGET_BROWSER || TARGET_WASI
 }
 
 } // extern "C"

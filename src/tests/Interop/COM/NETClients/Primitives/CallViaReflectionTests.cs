@@ -13,7 +13,7 @@ namespace NetClient
 
         public CallViaReflectionTests()
         {
-            this.server = (Server.Contract.Servers.NumericTesting)new Server.Contract.Servers.NumericTestingClass();
+            this.server = new Server.Contract.Servers.NumericTesting();
         }
 
         public void Run()

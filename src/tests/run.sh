@@ -42,6 +42,7 @@ function print_usage {
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
+    echo '  --node                           : Runs the tests with NodeJS (wasm only)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -134,10 +135,6 @@ do
         --jitforcerelocs)
             export DOTNET_ForceRelocs=1
             ;;
-        --link=*)
-            export ILLINK=${i#*=}
-            export DoLink=true
-            ;;
         --ilasmroundtrip)
             ((ilasmroundtrip = 1))
             ;;
@@ -195,6 +192,9 @@ do
         --interpreter)
             export RunInterpreter=1
             ;;
+        --node)
+            export RunWithNodeJS=1
+            ;;
         *)
             echo "Unknown switch: $i"
             print_usage
@@ -202,6 +202,11 @@ do
             ;;
     esac
 done
+
+# Set default for RunWithNodeJS when using wasm architecture
+if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNodeJS" ]; then
+    export RunWithNodeJS=1
+fi
 
 ################################################################################
 # Call run.py to run tests.
@@ -304,6 +309,11 @@ fi
 if [[ -n "$RunInterpreter" ]]; then
     echo "Running tests with the interpreter"
     runtestPyArguments+=("--interpreter")
+fi
+
+if [[ -n "$RunWithNodeJS" ]]; then
+    echo "Running tests with NodeJS"
+    runtestPyArguments+=("--node")
 fi
 
 # Default to python3 if it is installed

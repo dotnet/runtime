@@ -456,7 +456,7 @@ namespace System.IO.Packaging
 
         private static ArgumentException? GetExceptionIfFragmentPresent(string partName)
         {
-            if (partName.Contains("#")) // string.Contains(char) is .NetCore2.1+ specific
+            if (partName.Contains('#'))
                 return new ArgumentException(SR.PartUriCannotHaveAFragment);
             else
                 return null;

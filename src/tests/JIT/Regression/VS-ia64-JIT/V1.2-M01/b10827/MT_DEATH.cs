@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b10827;
+
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 public class testout1
 {
 
@@ -20826,6 +20830,7 @@ public class testout1
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
     public static int TestEntryPoint()
     {
         int Sum = 0;

@@ -44,6 +44,17 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_PassDirectoryAsArchiveFile_ThrowsUnauthorizedAccessException(bool async)
+        {
+            string directoryPath = GetTestFilePath();
+            Directory.CreateDirectory(directoryPath);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                CallZipFileExtractToDirectory(async, directoryPath, GetTestFilePath()));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToDirectoryUnicode(bool async)
         {
             string zipFileName = zfile("unicode.zip");

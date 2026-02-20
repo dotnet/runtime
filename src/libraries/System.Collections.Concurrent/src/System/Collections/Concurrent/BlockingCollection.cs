@@ -1311,6 +1311,7 @@ namespace System.Collections.Concurrent
         private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, out T? item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             ValidateCollectionsArray(collections, false);
+            externalCancellationToken.ThrowIfCancellationRequested();
 
             //try the fast path first
             for (int i = 0; i < collections.Length; i++)

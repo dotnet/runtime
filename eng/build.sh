@@ -46,6 +46,10 @@ usage()
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
+  echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  echo "  --dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
+  echo "                                  Also enables the interpreter when dynamic code compilation is disabled."
+  echo "                                  [Default: true for most platforms, false for ios/tvos/browser/wasi]"
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -68,8 +72,8 @@ usage()
 
   echo "Libraries settings:"
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net10.0 or net481."
-  echo "                             [Default: net10.0]"
+  echo "  --framework (-f)           Build framework: net11.0 or net481."
+  echo "                             [Default: net11.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -83,7 +87,7 @@ usage()
   echo "  --gccx.y                   Optional argument to build using gcc version x.y."
   echo "  --portablebuild            Optional argument: set to false to force a non-portable build."
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
-  echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
+  echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
@@ -160,10 +164,14 @@ crossBuild=0
 portableBuild=1
 bootstrap=0
 bootstrapConfig='Debug'
+dynamiccodecompiled=""
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
 hostArch=$arch
+
+# Default to using Ninja for faster builds (can be overridden with --ninja false)
+useNinja=true
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -381,6 +389,25 @@ while [[ $# -gt 0 ]]; do
       shift 1
       ;;
 
+     -clrinterpreter)
+      arguments+=("/p:FeatureInterpreter=true")
+      shift 1
+      ;;
+
+     -dynamiccodecompiled)
+      if [ -z ${2+x} ]; then
+        echo "No value for dynamiccodecompiled is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      dynamiccodecompiled="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      if [[ "$dynamiccodecompiled" != "true" && "$dynamiccodecompiled" != "false" ]]; then
+        echo "Unsupported value '$2' for dynamiccodecompiled."
+        echo "The allowed values are true and false."
+        exit 1
+      fi
+      shift 2
+      ;;
+
      -librariesconfiguration|-lc)
       if [ -z ${2+x} ]; then
         echo "No libraries configuration supplied. See help (--help) for supported libraries configurations." 1>&2
@@ -490,20 +517,17 @@ while [[ $# -gt 0 ]]; do
 
 
       -ninja)
-      if [ -z ${2+x} ]; then
-        arguments+=("/p:Ninja=true")
+      if [ -z ${2+x} ] || [[ "$2" == -* ]]; then
+        useNinja=true
         shift 1
       else
         ninja="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ "$ninja" = true ]; then
-          arguments+=("/p:Ninja=true")
-          shift 2
-        elif [ "$ninja" = false ]; then
+        shift 2
+        if [ "$ninja" = false ]; then
           arguments+=("/p:Ninja=false")
-          shift 2
+          useNinja=false
         else
-          arguments+=("/p:Ninja=true")
-          shift 1
+          useNinja=true
         fi
       fi
       ;;
@@ -567,6 +591,22 @@ if [[ "$os" == "wasi" ]]; then
     arch=wasm
 fi
 
+# Default dynamiccodecompiled based on target OS if not explicitly set
+if [[ -z "$dynamiccodecompiled" ]]; then
+    case "$os" in
+        maccatalyst|ios|iossimulator|tvos|tvossimulator|browser|wasi)
+            dynamiccodecompiled="false"
+            ;;
+        *)
+            dynamiccodecompiled="true"
+            ;;
+    esac
+fi
+arguments+=("/p:FeatureDynamicCodeCompiled=$dynamiccodecompiled")
+if [[ "$dynamiccodecompiled" == "false" ]]; then
+    arguments+=("/p:FeatureInterpreter=true")
+fi
+
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments+=("-warnAsError" "false")
 fi
@@ -575,6 +615,11 @@ fi
 arguments+=("-tl:false")
 # disable line wrapping so that C&P from the console works well
 arguments+=("-clp:ForceNoAlign")
+
+# Apply ninja setting
+if [[ "$useNinja" == true ]]; then
+  arguments+=("/p:Ninja=true")
+fi
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
@@ -602,7 +647,9 @@ if [[ "$bootstrap" == "1" ]]; then
       bootstrapArguments+=("$argument")
     fi
   done
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
+
+  # Set a different path for prebuilt usage tracking for the bootstrap build.
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap /p:TrackPrebuiltUsageReportFile=$scriptroot/../artifacts/log/bootstrap-prebuilt-usage.xml -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

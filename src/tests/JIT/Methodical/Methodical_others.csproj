@@ -14,14 +14,17 @@
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
     <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <MergedWrapperProjectReference Remove="flowgraph/dev10_bug679008/helper.ilproj" />
     <CMakeProjectReference Include="gc_poll/CMakeLists.txt" />
+    <CMakeProjectReference Include="structs/systemvbringup/CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Arrays\misc\IndexingSideEffects.cs" />
     <Compile Include="Boxing\boxunbox\BoxPatternMatchAndSideEffects.cs" />
     <Compile Include="Boxing\misc\unusedindir.cs" />
     <Compile Include="Coverage\b433189.cs" />
+    <Compile Include="delegate\DelegateToDelegate.cs" />
     <Compile Include="delegate\GSDelegate.cs" />
     <Compile Include="delegate\VirtualDelegate.cs" />
     <Compile Include="divrem\div\negSignedMod.cs" />

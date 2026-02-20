@@ -14,7 +14,7 @@ internal sealed record RunArgumentsJson(
     string[] applicationArguments,
     string[]? runtimeArguments = null,
     IDictionary<string, string>? environmentVariables = null,
-    bool forwardConsoleToWS = false,
+    bool forwardConsole = false,
     bool debugging = false
 )
 {

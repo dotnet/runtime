@@ -246,13 +246,13 @@ namespace System.Text.Json.Serialization.Tests
         private async Task TestIdTask()
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(@"{""$id"":1}", s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         private async Task TestRefTask()
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(@"{""$ref"":1}", s_deserializerOptionsPreserve));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$['$ref']", ex.Path);
         }
         #endregion
 
@@ -814,7 +814,7 @@ namespace System.Text.Json.Serialization.Tests
                 ""$id"":";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         [Fact]
@@ -825,7 +825,7 @@ namespace System.Text.Json.Serialization.Tests
                 ""$id"": ""1";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         [Fact]
@@ -856,7 +856,7 @@ namespace System.Text.Json.Serialization.Tests
                     1";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values[0]", ex.Path);
+            Assert.Equal("$['$values'][0]", ex.Path);
         }
 
         [Fact]
@@ -867,7 +867,7 @@ namespace System.Text.Json.Serialization.Tests
                 ""$id"": ""1";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         [Fact]
@@ -879,7 +879,7 @@ namespace System.Text.Json.Serialization.Tests
                 ""$values"":";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
 
         [Fact]
@@ -906,28 +906,28 @@ namespace System.Text.Json.Serialization.Tests
             ]";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<EmployeeStruct>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$[1].$ref", ex.Path);
+            Assert.Equal("$[1]['$ref']", ex.Path);
             Assert.Contains($"'{typeof(EmployeeStruct)}'", ex.Message);
         }
 
         [Theory]
-        [InlineData(@"{""$iz"": ""1""}", "$.$iz")]
-        [InlineData(@"{""$rez"": ""1""}", "$.$rez")]
-        [InlineData(@"{""$valuez"": []}", "$.$valuez")]
-        [InlineData(@"{""$type"": ""derivedType""}", "$.$type")]
-        [InlineData(@"{""$PropertyWithDollarSign"": ""1""}", "$.$PropertyWithDollarSign")]
-        [InlineData(@"{""$id"" : ""1"", ""$iz"": ""1""}", "$.$iz")]
-        [InlineData(@"{""$id"" : ""1"", ""$rez"": ""1""}", "$.$rez")]
-        [InlineData(@"{""$id"" : ""1"", ""$id"" : 1 }", "$.$id")]
-        [InlineData(@"{""$id"" : ""1"", ""$ref"" : 1 }", "$.$ref")]
-        [InlineData(@"{""$id"" : ""1"", ""$valuez"": ""[]""}", "$.$valuez")]
-        [InlineData(@"{""$id"" : ""1"", ""$type"": ""derivedType""}", "$.$type")]
-        [InlineData(@"{""$id"" : ""1"", ""$PropertyWithDollarSign"": ""1""}", "$.$PropertyWithDollarSign")]
-        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$iz"": ""1""}", "$.$iz")]
-        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$rez"": ""1""}", "$.$rez")]
-        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$valuez"": ""[]""}", "$.$valuez")]
-        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$type"": ""derivedType""}", "$.$type")]
-        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$PropertyWithDollarSign"": ""1""}", "$.$PropertyWithDollarSign")]
+        [InlineData(@"{""$iz"": ""1""}", "$['$iz']")]
+        [InlineData(@"{""$rez"": ""1""}", "$['$rez']")]
+        [InlineData(@"{""$valuez"": []}", "$['$valuez']")]
+        [InlineData(@"{""$type"": ""derivedType""}", "$['$type']")]
+        [InlineData(@"{""$PropertyWithDollarSign"": ""1""}", "$['$PropertyWithDollarSign']")]
+        [InlineData(@"{""$id"" : ""1"", ""$iz"": ""1""}", "$['$iz']")]
+        [InlineData(@"{""$id"" : ""1"", ""$rez"": ""1""}", "$['$rez']")]
+        [InlineData(@"{""$id"" : ""1"", ""$id"" : 1 }", "$['$id']")]
+        [InlineData(@"{""$id"" : ""1"", ""$ref"" : 1 }", "$['$ref']")]
+        [InlineData(@"{""$id"" : ""1"", ""$valuez"": ""[]""}", "$['$valuez']")]
+        [InlineData(@"{""$id"" : ""1"", ""$type"": ""derivedType""}", "$['$type']")]
+        [InlineData(@"{""$id"" : ""1"", ""$PropertyWithDollarSign"": ""1""}", "$['$PropertyWithDollarSign']")]
+        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$iz"": ""1""}", "$['$iz']")]
+        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$rez"": ""1""}", "$['$rez']")]
+        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$valuez"": ""[]""}", "$['$valuez']")]
+        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$type"": ""derivedType""}", "$['$type']")]
+        [InlineData(@"{""$id"" : ""1"", ""NonMetadataProperty"" : 42, ""$PropertyWithDollarSign"": ""1""}", "$['$PropertyWithDollarSign']")]
         public async Task InvalidMetadataPropertyNameIsRejected(string json, string expectedPath)
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
@@ -955,11 +955,11 @@ namespace System.Text.Json.Serialization.Tests
             JsonException ex;
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ImmutableList<EmployeeWithImmutable>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
             Assert.Contains($"'{typeof(ImmutableList<EmployeeWithImmutable>)}'", ex.Message);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeWithImmutable[]>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
             Assert.Contains($"'{typeof(EmployeeWithImmutable[])}'", ex.Message);
         }
 
@@ -973,7 +973,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ImmutableDictionary<string, EmployeeWithImmutable>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
             Assert.Contains($"'{typeof(ImmutableDictionary<string, EmployeeWithImmutable>)}'", ex.Message);
         }
 
@@ -992,7 +992,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonException ex;
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Subordinates.$id", ex.Path);
+            Assert.Equal("$.Subordinates['$id']", ex.Path);
             Assert.Contains($"'{typeof(ImmutableList<EmployeeWithImmutable>)}'", ex.Message);
 
             json =
@@ -1005,7 +1005,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.SubordinatesArray.$id", ex.Path);
+            Assert.Equal("$.SubordinatesArray['$id']", ex.Path);
             Assert.Contains($"'{typeof(EmployeeWithImmutable[])}'", ex.Message);
         }
 
@@ -1022,7 +1022,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeWithImmutable>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Contacts.$id", ex.Path);
+            Assert.Equal("$.Contacts['$id']", ex.Path);
             Assert.Contains($"'{typeof(ImmutableDictionary<string, EmployeeWithImmutable>)}'", ex.Message);
         }
 
@@ -1076,15 +1076,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
 
@@ -1102,15 +1102,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$['$ref']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$['$ref']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$ref", ex.Path);
+            Assert.Equal("$['$ref']", ex.Path);
         }
 
         [Theory]
@@ -1127,7 +1127,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
             Assert.True(incorrectToken == JsonTokenType.None || ex.Message.Contains($"'{incorrectToken}'"));
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
         #endregion
 
@@ -1149,7 +1149,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Order>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
 
             json = @"[
                 {
@@ -1163,7 +1163,7 @@ namespace System.Text.Json.Serialization.Tests
             ]";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Order>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$[1].$ref", ex.Path);
+            Assert.Equal("$[1]['$ref']", ex.Path);
         }
 
         #region Reference objects ($ref)
@@ -1181,7 +1181,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Manager.$ref", ex.Path);
+            Assert.Equal("$.Manager['$ref']", ex.Path);
 
             //Regular dictionary key before $ref
             json = @"{
@@ -1192,7 +1192,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, Dictionary<string, string>>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Angela.$ref", ex.Path);
+            Assert.Equal("$.Angela['$ref']", ex.Path);
 
             //Regular property after $ref
             json = @"{
@@ -1218,7 +1218,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Manager.$ref", ex.Path);
+            Assert.Equal("$.Manager['$ref']", ex.Path);
 
             //Metadata property after $ref
             json = @"{
@@ -1231,7 +1231,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.Manager.$id", ex.Path);
+            Assert.Equal("$.Manager['$id']", ex.Path);
         }
 
         [Fact]
@@ -1287,7 +1287,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         [Fact]
@@ -1302,7 +1302,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
 
             json = @"{
                 ""Name"": ""Angela"",
@@ -1310,7 +1310,7 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$id", ex.Path);
+            Assert.Equal("$['$id']", ex.Path);
         }
 
         [Fact]
@@ -1355,7 +1355,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<ClassWithTwoListProperties>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.List2.$values", ex.Path);
+            Assert.Equal("$.List2['$values']", ex.Path);
             Assert.Contains("'1'", ex.Message);
         }
 
@@ -1404,7 +1404,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
 
         [Fact]
@@ -1417,7 +1417,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<int>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
 
         [Fact]
@@ -1430,7 +1430,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Employee>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
 
         [Fact]
@@ -1443,7 +1443,7 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<List<Employee>>(json, s_deserializerOptionsPreserve));
 
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
         }
 
         [Fact]
@@ -1492,10 +1492,10 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$values", ex.Path);
+            Assert.Equal("$['$values']", ex.Path);
 
             // $.* Not valid (i.e: $test)
             json = @"{
@@ -1504,10 +1504,10 @@ namespace System.Text.Json.Serialization.Tests
             }";
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$test", ex.Path);
+            Assert.Equal("$['$test']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$test", ex.Path);
+            Assert.Equal("$['$test']", ex.Path);
 
             json = @"{
                 ""$id"": ""1"",
@@ -1516,10 +1516,10 @@ namespace System.Text.Json.Serialization.Tests
 
             // Escaped JSON properties still not valid
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<EmployeeExtensionData>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$test", ex.Path);
+            Assert.Equal("$['$test']", ex.Path);
 
             ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Dictionary<string, string>>(json, s_deserializerOptionsPreserve));
-            Assert.Equal("$.$test", ex.Path);
+            Assert.Equal("$['$test']", ex.Path);
         }
         #endregion
 

@@ -14,23 +14,27 @@ unsafe class Program
         s_success = true;
 
 #if !DEBUG
-        Console.WriteLine("****************************************************");
-        Console.WriteLine("* Size test                                        *");
-        long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
-        Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
-        Console.WriteLine("****************************************************");
-
-        long lowerBound, upperBound;
-        lowerBound = 1090 * 1024; // ~1.09 MB
-        upperBound = 1500 * 1024; // ~1.5 MB
-
-        if (fileSize < lowerBound || fileSize > upperBound)
+        if (!OperatingSystem.IsAndroid())
         {
-            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
-            return 1;
-        }
+            // Environment.ProcessPath is app_process64 on Android
+            Console.WriteLine("****************************************************");
+            Console.WriteLine("* Size test                                        *");
+            long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
+            Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
+            Console.WriteLine("****************************************************");
 
-        Console.WriteLine();
+            long lowerBound, upperBound;
+            lowerBound = 1090 * 1024; // ~1.09 MB
+            upperBound = 1500 * 1024; // ~1.5 MB
+
+            if (fileSize < lowerBound || fileSize > upperBound)
+            {
+                Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
+                return 1;
+            }
+
+            Console.WriteLine();
+        }
 #endif
 
         // We expect the AOT compiler generated HW intrinsics with the following characteristics:
@@ -617,7 +621,9 @@ unsafe class Program
             // push rbp; sub rsp, 10h; lea rbp, [rsp+10h]; mov dword ptr [rbp-4], 1
             || memcmp((byte*)code, new byte[] { 0x55, 0x48, 0x83, 0xEC, 0x10, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xFC, 0x01, 0x00, 0x00, 0x00 })
             // push rbp; push rdi; push rax; lea rbp, [rsp+10h]; mov dword ptr [rbp-C], 1
-            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 });
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 })
+            // push rbp; push rdi; sub rsp,28h; lea rbp, [rsp+30h]; mov dword ptr [rbp-C], 1
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x48, 0x83, 0xEC, 0x28, 0x48, 0x8D, 0x6C, 0x24, 0x30, 0xC7, 0x45, 0xF4, 0x01, 0x00, 0x00, 0x00 });
     }
 
     static bool IsConstantFalse(delegate*<bool> code)
@@ -628,7 +634,9 @@ unsafe class Program
             // push rbp; sub rsp, 10h; lea rbp, [rsp+10h]; xor eax, eax
             || memcmp((byte*)code, new byte[] { 0x55, 0x48, 0x83, 0xEC, 0x10, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 })
             // push rbp; push rdi; push rax; lea rbp, [rsp+10h]; xor eax, eax
-            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 });
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x50, 0x48, 0x8D, 0x6C, 0x24, 0x10, 0x33, 0xC0 })
+            // push rbp; push rdi; sub rsp,28h; lea rbp, [rsp+30h]; xor eax, eax
+            || memcmp((byte*)code, new byte[] { 0x55, 0x57, 0x48, 0x83, 0xEC, 0x28, 0x48, 0x8D, 0x6C, 0x24, 0x30, 0x33, 0xC0 });
     }
 
     static void AssertIsConstantTrue(delegate*<bool> code)

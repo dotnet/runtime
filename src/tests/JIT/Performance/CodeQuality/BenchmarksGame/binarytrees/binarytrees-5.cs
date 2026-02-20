@@ -7,9 +7,10 @@
 // Best-scoring C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/ 
+using TestLibrary;
+   http://benchmarksgame.alioth.debian.org/
 
-   contributed by Marek Safar  
+   contributed by Marek Safar
    *reset*
    concurrency added by Peperud
    minor improvements by Alex Yakunin
@@ -19,6 +20,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace BenchmarksGame
 {
@@ -26,6 +28,8 @@ namespace BenchmarksGame
     {
         public const int MinDepth = 4;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
         [Fact]
         public static int TestEntryPoint()
         {

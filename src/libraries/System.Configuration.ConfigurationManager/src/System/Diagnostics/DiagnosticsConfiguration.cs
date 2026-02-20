@@ -157,7 +157,7 @@ namespace System.Diagnostics
         {
             ConfigurationManager.RefreshSection("system.diagnostics");
 
-            // There might still be some persistant state left behind for
+            // There might still be some persistent state left behind for
             // ConfigPropertyCollection (for ex, swtichelements), probably for perf.
             // We need to explicitly cleanup any unrecognized attributes that we
             // have added during last deserialization, so that they are re-added

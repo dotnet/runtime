@@ -180,5 +180,54 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithEnumProperty))]
         public partial class ContextWithStringEnumConverterEnabled : JsonSerializerContext
         { }
+
+        [Fact]
+        public static void AttributeWithGeneralSerializerDefaults_SetsPropertiesCorrectly()
+        {
+            var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.General);
+            
+            // General uses default property values
+            Assert.False(attr.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonKnownNamingPolicy.Unspecified, attr.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.Strict, attr.NumberHandling);
+            Assert.Equal(JsonUnmappedMemberHandling.Skip, attr.UnmappedMemberHandling);
+            Assert.False(attr.AllowDuplicateProperties);
+            Assert.False(attr.RespectNullableAnnotations);
+            Assert.False(attr.RespectRequiredConstructorParameters);
+        }
+
+        [Fact]
+        public static void AttributeWithWebSerializerDefaults_SetsPropertiesCorrectly()
+        {
+            var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.Web);
+            
+            // Web sets PropertyNameCaseInsensitive=true, PropertyNamingPolicy=CamelCase, and NumberHandling=AllowReadingFromString
+            Assert.True(attr.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonKnownNamingPolicy.CamelCase, attr.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, attr.NumberHandling);
+            
+            // Other properties should be default
+            Assert.Equal(JsonUnmappedMemberHandling.Skip, attr.UnmappedMemberHandling);
+            Assert.False(attr.AllowDuplicateProperties);
+            Assert.False(attr.RespectNullableAnnotations);
+            Assert.False(attr.RespectRequiredConstructorParameters);
+        }
+
+        [Fact]
+        public static void AttributeWithStrictSerializerDefaults_SetsPropertiesCorrectly()
+        {
+            var attr = new JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults.Strict);
+            
+            // Strict sets UnmappedMemberHandling=Disallow, AllowDuplicateProperties=false, RespectNullableAnnotations=true, and RespectRequiredConstructorParameters=true
+            Assert.Equal(JsonUnmappedMemberHandling.Disallow, attr.UnmappedMemberHandling);
+            Assert.False(attr.AllowDuplicateProperties);
+            Assert.True(attr.RespectNullableAnnotations);
+            Assert.True(attr.RespectRequiredConstructorParameters);
+            
+            // Other properties should be default
+            Assert.False(attr.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonKnownNamingPolicy.Unspecified, attr.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.Strict, attr.NumberHandling);
+        }
     }
 }

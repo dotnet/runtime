@@ -243,9 +243,9 @@ namespace System.Threading.Tasks.Tests
                     _task.RunSynchronously(ts);
 
                 if (ExpectRunSyncFailure)
-                    Assert.Fail(string.Format("Fail to throw expected InvalidOperationException"));
+                    Assert.Fail("Fail to throw expected InvalidOperationException");
                 if (_taskSchedulerType == TaskSchedulerType.Null)
-                    Assert.Fail(string.Format("Fail to throw expected ArgumentNullException"));
+                    Assert.Fail("Fail to throw expected ArgumentNullException");
             }
             catch (InvalidOperationException ex)
             {
@@ -283,15 +283,15 @@ namespace System.Threading.Tasks.Tests
             if (_workloadType == WorkloadType.ThrowException)
             {
                 if (_task.Status != TaskStatus.Faulted)
-                    Assert.Fail(string.Format("Wrong final task status on a faulty workload"));
+                    Assert.Fail("Wrong final task status on a faulty workload");
 
                 CheckExpectedAggregateException(_task.Exception);
-                //Assert.Fail(string.Format("Fail to record the test exception in Task.Exception"));
+                //Assert.Fail("Fail to record the test exception in Task.Exception");
             }
             else
             {
                 if (_task.Status != TaskStatus.RanToCompletion)
-                    Assert.Fail(string.Format("Wrong final task status on a regular workload"));
+                    Assert.Fail("Wrong final task status on a regular workload");
             }
 
             //
@@ -302,7 +302,7 @@ namespace System.Threading.Tasks.Tests
                 _taskSchedulerType == TaskSchedulerType.CustomWithoutInlineExecution)
             {
                 if (((TaskRunSyncTaskScheduler)ts).RunSyncCalledCount <= 0)
-                    Assert.Fail(string.Format("Task wasn't RunSynchronously with TaskScheduler specified"));
+                    Assert.Fail("Task wasn't RunSynchronously with TaskScheduler specified");
             }
 
             // Stage 5 -  follow with the post-action
@@ -314,7 +314,7 @@ namespace System.Threading.Tasks.Tests
                         if (_postRunSyncAction == PostRunSyncAction.Wait)
                             _task.Wait(0);
                         if (_workloadType == WorkloadType.ThrowException)
-                            Assert.Fail(string.Format("expected failure is not propagated out of Wait"));
+                            Assert.Fail("expected failure is not propagated out of Wait");
                     }
                     catch (AggregateException ae)
                     {

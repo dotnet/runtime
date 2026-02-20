@@ -52,21 +52,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _manifestMutableModule = mutableModule;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
+        public ModuleToken GetModuleTokenForType(TypeDesc type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.VersionsWithType(type))
-            {
-                return new ModuleToken(type.Module, (mdToken)MetadataTokens.GetToken(type.Handle));
-            }
-
             ModuleToken token;
-            if (_typeToRefTokens.TryGetValue(type, out token))
+            if (type is EcmaType ecmaType)
             {
-                return token;
+                if (_compilationModuleGroup.VersionsWithType(ecmaType))
+                {
+                    return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
+                }
+
+                if (_typeToRefTokens.TryGetValue(ecmaType, out token))
+                {
+                    return token;
+                }
             }
 
             // If the token was not lazily mapped, search the input compilation set for a type reference token
-            if (_compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
+            if (!_compilationModuleGroup.VersionsWithType(type) && _compilationModuleGroup.TryGetModuleTokenForExternalType(type, out token))
             {
                 return token;
             }
@@ -126,6 +129,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public ModuleToken GetModuleTokenForField(FieldDesc field, bool allowDynamicallyCreatedReference, bool throwIfNotFound)
+        {
+            if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
+            {
+                if (_compilationModuleGroup.VersionsWithType(ecmaField.OwningType))
+                {
+                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                }
+
+                // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
+                if (allowDynamicallyCreatedReference)
+                {
+                    var handle = _manifestMutableModule.TryGetExistingEntityHandle(ecmaField);
+                    if (handle.HasValue)
+                    {
+                        return new ModuleToken(_manifestMutableModule, handle.Value);
+                    }
+                }
+            }
+
+            // Reverse lookup failed
+            if (throwIfNotFound)
+            {
+                throw new NotImplementedException(field.ToString());
+            }
+            else
+            {
+                return default(ModuleToken);
+            }
+        }
+
+
         public void AddModuleTokenForMethod(MethodDesc method, ModuleToken token)
         {
             if (token.TokenType == CorTokenType.mdtMethodSpec)
@@ -178,7 +213,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             MetadataReader metadataReader = token.MetadataReader;
             TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
-            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new (rentedProvider, metadataReader, this);
+            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new(rentedProvider, metadataReader, this);
             BlobReader signature = metadataReader.GetBlobReader(signatureHandle);
 
             SignatureHeader header = signature.ReadSignatureHeader();

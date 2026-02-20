@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_62692_ro;
+
 using System.Runtime.CompilerServices;
 using System;
 using System.Runtime.Intrinsics.X86;
@@ -27,26 +30,24 @@ public unsafe class Runtime_62692
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint Problem6(uint crc, float data) => Sse42.Crc32(crc, (uint)data);
 
-    [Fact]
+    [ConditionalFact(typeof(Sse42), nameof(Sse42.IsSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100368", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
-        if (Sse42.IsSupported)
-        {
-            long a = long.MaxValue;
-            AssertEqual(Problem1((byte*)&a, 111), 3150215170);
-            a = 333;
-            AssertEqual(Problem1((byte*)&a, 44), 2714165716);
-            AssertEqual(Problem2(uint.MaxValue, 42), 3080238136);
-            AssertEqual(Problem2(1111, 0xFFFF_FFFF_0000_0001), 3414328792);
-            AssertEqual(Problem3(1, 0xFFFF_0001), 0);
-            AssertEqual(Problem4(1111, 0xFFFF_FFFF_0000_0001), 3414328792);
-            AssertEqual(Problem5(1111, double.MaxValue), 1921271346);
-            AssertEqual(Problem6(1111, float.MaxValue), 1921271346);
-            AssertEqual(Problem5(1111, double.MinValue), 3307008522);
-            AssertEqual(Problem6(1111, float.MinValue), 3307008522);
-            AssertEqual(Problem5(1111, -0.0), 3307008522);
-            AssertEqual(Problem6(1111, -0.0f), 3307008522);
-        }
+        long a = long.MaxValue;
+        AssertEqual(Problem1((byte*)&a, 111), 3150215170);
+        a = 333;
+        AssertEqual(Problem1((byte*)&a, 44), 2714165716);
+        AssertEqual(Problem2(uint.MaxValue, 42), 3080238136);
+        AssertEqual(Problem2(1111, 0xFFFF_FFFF_0000_0001), 3414328792);
+        AssertEqual(Problem3(1, 0xFFFF_0001), 0);
+        AssertEqual(Problem4(1111, 0xFFFF_FFFF_0000_0001), 3414328792);
+        AssertEqual(Problem5(1111, double.MaxValue), 1921271346);
+        AssertEqual(Problem6(1111, float.MaxValue), 1921271346);
+        AssertEqual(Problem5(1111, double.MinValue), 3307008522);
+        AssertEqual(Problem6(1111, float.MinValue), 3307008522);
+        AssertEqual(Problem5(1111, -0.0), 3307008522);
+        AssertEqual(Problem6(1111, -0.0f), 3307008522);
 
         Console.WriteLine(retCode);
         return retCode;
@@ -57,10 +58,10 @@ public unsafe class Runtime_62692
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void AssertEqual(uint a, uint b, [CallerLineNumber] int line = 0)
     {
-        if (a != b)
-        {
-            Console.WriteLine($"{a} != {b}, Line:{line}");
-            retCode++;
-        }
+    if (a != b)
+    {
+        Console.WriteLine($"{a} != {b}, Line:{line}");
+        retCode++;
+    }
     }
 }

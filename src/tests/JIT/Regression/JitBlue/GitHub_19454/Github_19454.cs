@@ -4,6 +4,9 @@
 // GitHub19454: a zero length span was tripping up the jit when trying
 // to analyze a bounds check.
 
+
+namespace Github_19454;
+
 using System;
 using Xunit;
 

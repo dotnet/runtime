@@ -683,7 +683,7 @@ namespace Microsoft.Extensions.Options.Generators
                 // We disable the warning on `new ValidationContext(object)` usage as we use it in a safe way that not require executing the reflection code.
                 // This is done by initializing the DisplayName in the context which is the part trigger reflection if it is not initialized. For
                 // projects targeting .NET 10 and above, we can avoid the suppression since we use the new trim-safe constructor.
-                OutLn("#if !NET10_0_OR_GREATER");
+                OutLn("#if !NET");
                 OutLn($"[System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
                 OutLn($"     Justification = \"The created ValidationContext object is used in a way that never call reflection\")]");
                 OutLn("#endif");
@@ -692,7 +692,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"public {(makeStatic ? "static " : string.Empty)}global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, {modelToValidate.Name} options)");
             OutOpenBrace();
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
-            OutLn("#if NET10_0_OR_GREATER");
+            OutLn("#if NET");
             OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
             OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");

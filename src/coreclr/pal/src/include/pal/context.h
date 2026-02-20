@@ -1394,9 +1394,8 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
-    return 0;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterIP;
 #else
     return pContext->Pc;
 #endif
@@ -1412,8 +1411,8 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
+#elif defined(HOST_WASM)
+    pContext->InterpreterIP = pc;
 #else
     pContext->Pc = pc;
 #endif
@@ -1431,9 +1430,8 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_WASM) // wasm has no PC
-    _ASSERT(false);
-    return 0;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterFP;
 #else
     return pContext->Fp;
 #endif

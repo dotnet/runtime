@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode
+    public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         enum Kind
         {
@@ -27,8 +27,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly Kind _thunkKind;
 
         private readonly ImportSectionNode _containingImportSection;
-
-        private readonly int _symbolOffset = 0;
 
         /// <summary>
         /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
@@ -62,21 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _thunkKind = Kind.Eager;
             }
-
-            if (_thunkKind != Kind.Eager
-                && factory.Target.Architecture is Internal.TypeSystem.TargetArchitecture.ARM64
-                    or Internal.TypeSystem.TargetArchitecture.LoongArch64
-                    or Internal.TypeSystem.TargetArchitecture.RiscV64)
-            {
-                // We stuff the reloc to the module import pointer before the start of the thunk
-                // to ensure alignment.
-                // The thunk itself starts immediately after the reloc.
-                // We don't need this for an Eager thunk.
-                _symbolOffset = 8;
-            }
         }
-
-        int ISymbolNode.Offset => base.Offset + _symbolOffset;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -118,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void OnMarked(NodeFactory factory)
         {
-            factory.DelayLoadMethodCallThunks.OnImportThunkMarked(this);
+            factory.DelayLoadMethodCallThunks.OnNodeInRangeMarked(this);
         }
     }
 }

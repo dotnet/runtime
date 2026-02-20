@@ -1918,9 +1918,10 @@ public class MyType
         private static string StringReverse(string a) => string.Join("", a.Reverse());
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
         public void EmitCalliNonBlittable()
         {
-                string input = "Test string!", result = "!gnirts tseT";
+            string input = "Test string!", result = "!gnirts tseT";
             using (TempFile file = TempFile.Create())
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("EmitCalliNonBlittable"));
@@ -2637,9 +2638,9 @@ public class MyType
                 TypeBuilder nestedItem = type.DefineNestedType("ItemInfo", TypeAttributes.NestedPublic);
                 GenericTypeParameterBuilder itemParam = nestedItem.DefineGenericParameters(genParams)[0];
                 TypeBuilder nestedSector = type.DefineNestedType("Sector", TypeAttributes.NestedPublic);
-                GenericTypeParameterBuilder nestedParam = nestedSector.DefineGenericParameters(genParams)[0];
+                GenericTypeParameterBuilder sectorParam = nestedSector.DefineGenericParameters(genParams)[0];
 
-                Type nestedOfT = nestedItem.MakeGenericType(nestedParam);
+                Type nestedOfT = nestedItem.MakeGenericType(sectorParam);
                 Type parent = typeof(HashSet<>).MakeGenericType(nestedOfT);
                 nestedSector.SetParent(parent);
 

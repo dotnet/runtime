@@ -68,6 +68,27 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifySourceGeneratorAsync(source, "C", "D", "E");
         }
 
+        [Fact]
+        public async Task GenericComClass()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                partial interface INativeAPI
+                {
+                }
+
+                [GeneratedComClass]
+                partial class GenericClass<T> : INativeAPI where T : class, new()
+                {
+                }
+                """;
+
+            await VerifySourceGeneratorAsync(source, "GenericClass`1");
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)

@@ -29,6 +29,9 @@
 //
 // Yes, this code is evil; it is for a very specific optimized scenario.
 
+
+namespace GitHub_19149;
+
 using System;
 using System.Collections.Generic;
 using System.Text;
