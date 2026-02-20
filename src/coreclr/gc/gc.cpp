@@ -44461,7 +44461,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
 #endif //MULTIPLE_HEAPS
 
         size_t total_new_allocation = new_allocation * num_heaps;
-        size_t total_min_allocation = MIN_YOUNGEST_GEN_DESIRED * num_heaps;
+        size_t total_min_allocation = (size_t)MIN_YOUNGEST_GEN_DESIRED * num_heaps;
 
         if ((settings.entry_memory_load >= MAX_ALLOWED_MEM_LOAD) ||
             (total_new_allocation > max (youngest_gen_desired_th, total_min_allocation)))

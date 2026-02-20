@@ -1302,7 +1302,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RequestDuration_ConcurrentRequestsSeeDifferentContexts()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

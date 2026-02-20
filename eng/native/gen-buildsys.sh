@@ -39,7 +39,7 @@ code_coverage=OFF
 build_tests=OFF
 scan_build=OFF
 generator="Unix Makefiles"
-__UnprocessedCMakeArgs=""
+__UnprocessedCMakeArgs=()
 
 for i in "${@:6}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
@@ -56,7 +56,7 @@ for i in "${@:6}"; do
       scan_build=ON
       ;;
       *)
-      __UnprocessedCMakeArgs="${__UnprocessedCMakeArgs}${__UnprocessedCMakeArgs:+ }$i"
+      __UnprocessedCMakeArgs+=("$i")
     esac
 done
 
@@ -132,7 +132,7 @@ $cmake_command \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
   "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
-  $__UnprocessedCMakeArgs \
+  "${__UnprocessedCMakeArgs[@]}" \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
   -B "$2"
