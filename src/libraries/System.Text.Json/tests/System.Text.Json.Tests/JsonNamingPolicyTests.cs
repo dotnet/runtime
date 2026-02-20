@@ -73,9 +73,10 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [InlineData("MyProperty", "MyProperty")]
-        [InlineData("PropertyName", "PropertyName")]
-        [InlineData("Abc", "ABC")]
-        [InlineData("HtmlParser", "HTMLParser")]
+        [InlineData("myProperty", "MyProperty")]
+        [InlineData("ABC", "Abc")]
+        [InlineData("HTMLParser", "HtmlParser")]
+        [InlineData("camelCase", "CamelCase")]
         [InlineData("A", "A")]
         [InlineData("", "")]
         public static void PascalCase_ConvertName(string input, string expected)
