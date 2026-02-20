@@ -16,8 +16,14 @@ System.IO.Hashing.XxHash32</PackageDescription>
     <Compile Include="System\IO\Hashing\Adler32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32ParameterSet.WellKnown.cs" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc64ParameterSet.WellKnown.cs" />
     <Compile Include="System\IO\Hashing\NonCryptographicHashAlgorithm.cs" />
     <Compile Include="System\IO\Hashing\XxHash128.cs" />
     <Compile Include="System\IO\Hashing\XxHash3.cs" />
