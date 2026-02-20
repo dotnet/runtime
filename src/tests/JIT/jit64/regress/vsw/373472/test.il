@@ -50,6 +50,11 @@
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsAppleMobile')
     }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/120708')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasm')
+    }
     .entrypoint
     // Code size       40 (0x28)
     .maxstack  2
