@@ -10,6 +10,8 @@ If you make code changes, do not complete without checking the relevant code bui
 
 Before completing, use the `code-review` skill to review your code changes. Any issues flagged as errors or warnings should be addressed before completing.
 
+Before making changes to a directory, search for `README.md` files in that directory and its parent directories up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
+
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
