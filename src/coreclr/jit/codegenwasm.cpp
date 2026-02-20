@@ -2120,7 +2120,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         GetEmitter()->emitIns(INS_end);
     }
 
-    genProduceReg(tree);
+    WasmProduceReg(tree);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
