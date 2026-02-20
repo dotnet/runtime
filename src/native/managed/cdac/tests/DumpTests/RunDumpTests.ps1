@@ -48,6 +48,9 @@
     (Windows 11+ / Server 2022+) to allow heap dumps with an unsigned DAC.
     Requires running as Administrator. Used by CI and for first-time local setup.
 
+.PARAMETER VerboseOutput
+    When set, increases MSBuild and dotnet verbosity to normal (default: minimal/quiet).
+
 .EXAMPLE
     .\RunDumpTests.ps1
 
@@ -85,11 +88,17 @@ param(
 
     [string]$DumpArchive = "",
 
-    [switch]$SetSignatureCheck
+    [switch]$SetSignatureCheck,
+
+    [switch]$VerboseOutput
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# --- Verbosity levels ---
+$msbuildVerbosity = if ($VerboseOutput) { "normal" } else { "minimal" }
+$dotnetVerbosity  = if ($VerboseOutput) { "n" } else { "q" }
 
 # --- Resolve paths ---
 function Find-RepoRoot([string]$startDir) {
@@ -169,7 +178,7 @@ if ($DumpArchive) {
 
     Write-Host ""
     Write-Host "--- Building test project ---" -ForegroundColor Cyan
-    $buildArgs = @($dumpTestsProj, "--nologo", "-v", "q")
+    $buildArgs = @($dumpTestsProj, "--nologo", "-v", $dotnetVerbosity)
     if ($skipVersionsStr) {
         $buildArgs += "/p:SkipDumpVersions=$skipVersionsStr"
     }
@@ -250,12 +259,9 @@ if ($Action -in @("dumps", "all")) {
         "msbuild", $dumpTestsProj,
         "/t:GenerateAllDumps",
         "/p:TestHostConfiguration=$TestHostConfiguration",
-        "/v:minimal"
+        "/p:DumpVersions=`"$($selectedVersions -join ';')`"",
+        "/v:$msbuildVerbosity"
     )
-
-    if ($selectedVersions.Count -eq 1 -and $selectedVersions[0] -eq "local") {
-        $msbuildArgs += "/p:CIDumpVersionsOnly=true"
-    }
 
     if ($SetSignatureCheck) {
         $msbuildArgs += "/p:SetDisableAuxProviderSignatureCheck=true"
@@ -273,7 +279,7 @@ if ($Action -in @("dumps", "all")) {
 if ($Action -in @("test", "all")) {
     Write-Host ""
     Write-Host "--- Building test project ---" -ForegroundColor Cyan
-    & $dotnet build $dumpTestsProj --nologo -v q 2>&1 | ForEach-Object { Write-Host "  $_" }
+    & $dotnet build $dumpTestsProj --nologo -v $dotnetVerbosity 2>&1 | ForEach-Object { Write-Host "  $_" }
     if ($LASTEXITCODE -ne 0) { Write-Error "Test project build failed."; exit 1 }
 
     Write-Host ""

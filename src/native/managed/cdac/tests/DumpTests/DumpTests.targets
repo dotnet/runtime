@@ -18,7 +18,9 @@
       DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
       TestHostDir            — Path to the local-build testhost runtime (auto-detected)
       DebuggeeConfiguration  — Build configuration for debuggees (default: Release)
-      CIDumpVersionsOnly     — When 'true', only generate dumps for "local" version (CI mode)
+      DumpVersions           — Semicolon-separated runtime versions to generate dumps for
+                               (default: "local;net10.0"). Example: /p:DumpVersions=local
+      CIDumpVersionsOnly     — When 'true', shorthand for DumpVersions=local (CI mode)
 
     RuntimeVersion values:
       "local"  — framework-dependent build, run with the repo's testhost
@@ -49,10 +51,15 @@
 
   <!-- Runtime versions to create dumps for.
        "local" uses the repo's testhost; others publish self-contained.
-       Set CIDumpVersionsOnly=true to only generate "local" dumps (for CI). -->
+       Set DumpVersions to a semicolon-separated list (e.g. "local;net10.0") to
+       control which versions are generated. CIDumpVersionsOnly=true is a shorthand
+       for DumpVersions=local. When neither is set, all known versions are generated. -->
+  <PropertyGroup>
+    <DumpVersions Condition="'$(DumpVersions)' == '' AND '$(CIDumpVersionsOnly)' == 'true'">local</DumpVersions>
+    <DumpVersions Condition="'$(DumpVersions)' == ''">local;net10.0</DumpVersions>
+  </PropertyGroup>
   <ItemGroup>
-    <DumpRuntimeVersion Include="local" />
-    <DumpRuntimeVersion Include="net10.0" Condition="'$(CIDumpVersionsOnly)' != 'true'" />
+    <DumpRuntimeVersion Include="$(DumpVersions)" />
   </ItemGroup>
 
   <!--
