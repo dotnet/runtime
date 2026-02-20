@@ -737,8 +737,8 @@ namespace System.Threading
             return ProcessorIdCache.GetCurrentProcessorId();
         }
 
-        [SupportedOSPlatformGuard("browser")]
-        [SupportedOSPlatformGuard("wasi")]
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
 #if FEATURE_SINGLE_THREADED
         internal static bool IsMultithreadingSupported => false;
         [DoesNotReturn]
