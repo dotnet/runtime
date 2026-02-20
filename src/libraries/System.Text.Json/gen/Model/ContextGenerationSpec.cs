@@ -36,5 +36,10 @@ namespace System.Text.Json.SourceGeneration
         public required ImmutableEquatableArray<string> ContextClassDeclarations { get; init; }
 
         public required SourceGenerationOptionsSpec? GeneratedOptionsSpec { get; init; }
+
+        /// <summary>
+        /// Whether the target framework supports UnsafeAccessorAttribute for bypassing init-only property setters.
+        /// </summary>
+        public required bool IsUnsafeAccessorsSupported { get; init; }
     }
 }

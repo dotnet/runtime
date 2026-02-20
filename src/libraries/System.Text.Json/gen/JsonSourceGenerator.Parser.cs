@@ -166,6 +166,7 @@ namespace System.Text.Json.SourceGeneration
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
                     GeneratedOptionsSpec = options,
+                    IsUnsafeAccessorsSupported = _knownSymbols.UnsafeAccessorAttributeType is not null,
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
@@ -1599,7 +1600,9 @@ namespace System.Text.Json.SourceGeneration
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
                 int paramCount = constructorParameters?.Length ?? 0;
 
-                // Determine potential init-only or required properties that need to be part of the constructor delegate signature.
+                // Determine potential required properties that need to be part of the constructor delegate signature.
+                // Init-only non-required properties are no longer included here -- they will be set
+                // via UnsafeAccessor or reflection post-construction to preserve their default values.
                 foreach (PropertyGenerationSpec property in properties)
                 {
                     if (!property.CanUseSetter)
@@ -1612,7 +1615,7 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
-                    if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
+                    if (property.IsRequired && !constructorSetsRequiredMembers)
                     {
                         if (!(memberInitializerNames ??= new()).Add(property.MemberName))
                         {
