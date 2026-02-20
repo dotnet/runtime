@@ -226,6 +226,11 @@ namespace ILCompiler
             public const int Rcpc2 = (1 << 8);
             public const int Sve = (1 << 9);
             public const int Sve2 = (1 << 10);
+            public const int Sha3 = (1 << 11);
+            public const int Sm4 = (1 << 12);
+            public const int SveAes = (1 << 13);
+            public const int SveSha3 = (1 << 14);
+            public const int SveSm4 = (1 << 15);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -251,6 +256,16 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve");
                 if ((flags & Sve2) != 0)
                     builder.AddSupportedInstructionSet("sve2");
+                if ((flags & Sha3) != 0)
+                    builder.AddSupportedInstructionSet("sha3");
+                if ((flags & Sm4) != 0)
+                    builder.AddSupportedInstructionSet("sm4");
+                if ((flags & SveAes) != 0)
+                    builder.AddSupportedInstructionSet("sveaes");
+                if ((flags & SveSha3) != 0)
+                    builder.AddSupportedInstructionSet("svesha3");
+                if ((flags & SveSm4) != 0)
+                    builder.AddSupportedInstructionSet("svesm4");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -284,6 +299,16 @@ namespace ILCompiler
                     InstructionSet.ARM64_Sve_Arm64 => Sve,
                     InstructionSet.ARM64_Sve2 => Sve2,
                     InstructionSet.ARM64_Sve2_Arm64 => Sve2,
+                    InstructionSet.ARM64_Sha3 => Sha3,
+                    InstructionSet.ARM64_Sha3_Arm64 => Sha3,
+                    InstructionSet.ARM64_Sm4 => Sm4,
+                    InstructionSet.ARM64_Sm4_Arm64 => Sm4,
+                    InstructionSet.ARM64_SveAes => SveAes,
+                    InstructionSet.ARM64_SveAes_Arm64 => SveAes,
+                    InstructionSet.ARM64_SveSha3 => SveSha3,
+                    InstructionSet.ARM64_SveSha3_Arm64 => SveSha3,
+                    InstructionSet.ARM64_SveSm4 => SveSm4,
+                    InstructionSet.ARM64_SveSm4_Arm64 => SveSm4,
 
                     // Vector<T> Sizes
                     InstructionSet.ARM64_VectorT128 => 0,
