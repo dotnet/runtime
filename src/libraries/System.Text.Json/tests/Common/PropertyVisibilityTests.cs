@@ -2150,6 +2150,50 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_InheritedProperties()
+        {
+            var obj = new DerivedClassWithTypeLevelIgnore
+            {
+                BaseString = null,
+                DerivedString = null,
+                BaseInt = 42,
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            // Both BaseString and DerivedString are null so should be ignored (WhenWritingNull)
+            Assert.DoesNotContain(@"""BaseString"":", json);
+            Assert.DoesNotContain(@"""DerivedString"":", json);
+            // BaseInt is a value type, WhenWritingNull doesn't apply
+            Assert.Contains(@"""BaseInt"":42", json);
+
+            obj.BaseString = "base";
+            obj.DerivedString = "derived";
+            json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""BaseString"":""base""", json);
+            Assert.Contains(@"""DerivedString"":""derived""", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_TypeLevel_Always_Deserialization()
+        {
+            var obj = await Serializer.DeserializeWrapper<ClassWithTypeLevelIgnore_Always>(@"{""MyString"":""value"",""MyInt"":42}");
+            Assert.Null(obj.MyString);
+            Assert.Equal(0, obj.MyInt);
+        }
+
+        public class BaseClassWithProperties
+        {
+            public string? BaseString { get; set; }
+            public int BaseInt { get; set; }
+        }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public class DerivedClassWithTypeLevelIgnore : BaseClassWithProperties
+        {
+            public string? DerivedString { get; set; }
+        }
+
+        [Fact]
         public async Task JsonIgnoreCondition_LastOneWins()
         {
             string json = @"{""MyString"":""Random"",""MYSTRING"":null}";

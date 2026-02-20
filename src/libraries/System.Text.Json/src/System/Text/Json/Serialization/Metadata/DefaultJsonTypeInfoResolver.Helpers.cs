@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Metadata
             // Fall back to the type-level [JsonIgnore] if no member-level attribute is specified.
             if (ignoreCondition is null)
             {
-                JsonIgnoreCondition? typeIgnoreCondition = memberInfo.DeclaringType?.GetUniqueCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
+                JsonIgnoreCondition? typeIgnoreCondition = typeInfo.Type.GetUniqueCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
                 // WhenWritingNull is invalid for non-nullable value types; skip it in that case
                 // to match the behavior of JsonSerializerOptions.DefaultIgnoreCondition.
