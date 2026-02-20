@@ -263,8 +263,8 @@ namespace Microsoft.Interop.JavaScript
         /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
         internal static DiagnosticInfo? GetDiagnosticIfInvalidExportMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
         {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
+            // Verify the method has no generic types, has a defined implementation,
+            // is marked static, and is not partial.
             if (methodSyntax.TypeParameterList is not null
                 || (methodSyntax.Body is null && methodSyntax.ExpressionBody is null)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
