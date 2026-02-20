@@ -17,7 +17,7 @@ namespace System.IO.Hashing
     ///     the Little Endian representation of <c>0x2144DF1C</c>.
     ///   </para>
     /// </remarks>
-    public sealed partial class Crc32 : NonCryptographicHashAlgorithm
+    public sealed class Crc32 : NonCryptographicHashAlgorithm
     {
         private const int Size = sizeof(uint);
 
@@ -292,7 +292,7 @@ namespace System.IO.Hashing
             // Rather than go through Crc32ParameterSet.Crc32 to end up in the optimized Update method here,
             // just call the Update method directly.
             // ITU-T V.42 / IEEE 802.3 uses a final XOR of 0xFFFFFFFF, so accelerate that as ~.
-            return ~Update(Crc32ParameterSet.Crc32.InitialValue, source);
+            return ~Crc32ParameterSet.Crc32.Update(Crc32ParameterSet.Crc32.InitialValue, source);
         }
 
         /// <summary>Computes the CRC-32 hash of the provided data, using specified parameters.</summary>
@@ -309,45 +309,6 @@ namespace System.IO.Hashing
 
             uint crc = parameterSet.Update(parameterSet.InitialValue, source);
             return parameterSet.Finalize(crc);
-        }
-
-        internal static uint Update(uint crc, ReadOnlySpan<byte> source)
-        {
-#if NET
-            if (CanBeVectorized(source))
-            {
-                return UpdateVectorized(crc, source);
-            }
-#endif
-
-            return UpdateScalar(crc, source);
-        }
-
-        private static uint UpdateScalar(uint crc, ReadOnlySpan<byte> source)
-        {
-#if NET
-            // Use ARM intrinsics for CRC if available. This is used for the trailing bytes on the vectorized path
-            // and is the primary method if the vectorized path is unavailable.
-            if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
-            {
-                return UpdateScalarArm64(crc, source);
-            }
-
-            if (System.Runtime.Intrinsics.Arm.Crc32.IsSupported)
-            {
-                return UpdateScalarArm32(crc, source);
-            }
-#endif
-
-            ReadOnlySpan<uint> crcLookup = CrcLookup;
-            for (int i = 0; i < source.Length; i++)
-            {
-                byte idx = (byte)crc;
-                idx ^= source[i];
-                crc = crcLookup[idx] ^ (crc >> 8);
-            }
-
-            return crc;
         }
     }
 }

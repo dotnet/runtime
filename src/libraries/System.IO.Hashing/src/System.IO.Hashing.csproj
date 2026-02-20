@@ -15,7 +15,6 @@ System.IO.Hashing.XxHash32</PackageDescription>
   <ItemGroup>
     <Compile Include="System\IO\Hashing\Adler32.cs" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
-    <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc32ParameterSet.cs" />
     <Compile Include="System\IO\Hashing\Crc32ParameterSet.Table.cs" />
     <Compile Include="System\IO\Hashing\Crc32ParameterSet.WellKnown.cs" />
@@ -35,8 +34,6 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\IO\Hashing\Crc32.Arm.cs" />
-    <Compile Include="System\IO\Hashing\Crc32.Vectorized.cs" />
     <Compile Include="System\IO\Hashing\Crc32ParameterSet.Vectorized.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Vectorized.cs" />
     <Compile Include="System\IO\Hashing\Crc64ParameterSet.Vectorized.cs" />
