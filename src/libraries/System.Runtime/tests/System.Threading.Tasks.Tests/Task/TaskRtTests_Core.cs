@@ -534,8 +534,8 @@ namespace System.Threading.Tasks.Tests
 
                     Assert.True(ex == null, "TestTaskTConstruction_bare: Did not expect an exception");
                     Assert.True(sideEffect, "TestTaskTConstruction_bare: The func delegate apparently did not run");
-                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected future's result to be 42");
-                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected future to be in RanToCompletion status");
+                    Assert.True(f1.Result == 42, "TestTaskTConstruction_bare: Expected Task<int> result to be 42");
+                    Assert.True(f1.Status == TaskStatus.RanToCompletion, "TestTaskTConstruction_bare: Expected Task<int> to be in RanToCompletion status");
                     Assert.True(useObj || (asyncState == null), "TestTaskTConstruction_bare: Expected non-null AsyncState only if object overload was used");
                     Assert.True((!useObj) || (asyncState == refObj), "TestTaskTConstruction_bare: Wrong AsyncState value returned");
                 }
@@ -607,8 +607,8 @@ namespace System.Threading.Tasks.Tests
                         object asyncState = ((IAsyncResult)f1).AsyncState;
 
                         Assert.True((ex != null) || (result == 42), "TestTaskTConstruction_ct:  Expected either a valid result or an exception");
-                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected future cancellation only with pre-canceled token");
-                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected future to complete only with un-canceled token");
+                        Assert.True(preCanceledToken == (f1.Status == TaskStatus.Canceled), "TestTaskTConstruction_ct:  Expected Task<int> cancellation only with pre-canceled token");
+                        Assert.True(preCanceledToken != (f1.Status == TaskStatus.RanToCompletion), "TestTaskTConstruction_ct:  Expected Task<int> to complete only with un-canceled token");
                         Assert.True(preCanceledToken != (result == 42), "TestTaskTConstruction_ct:  Expected valid result only with non-canceled token");
                         Assert.True(preCanceledToken == (ex != null), "TestTaskTConstruction_ct:  Expected exception only with pre-canceled token");
                         Assert.True(
@@ -749,12 +749,12 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        // Basic future functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
+        // Basic Task<TResult> functionality. This is also covered in scenario unit tests, here we focus on wait functionality, and promises
         [Fact]
-        public static void RunBasicFutureTest()
+        public static void RunBasicTaskWithResultTest()
         {
             //
-            // future basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             //
@@ -765,53 +765,53 @@ namespace System.Threading.Tasks.Tests
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor");
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent");
             }
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState);
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent");
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor");
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState, testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent");
             }
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent");
             }
             tcs.SetResult(10);
         }
 
         [Fact]
-        public static void RunBasicFutureTest_Negative()
+        public static void RunBasicTaskWithResultTest_Negative()
         {
             //
-            // future basic functionality tests
+            // Task<TResult> basic functionality tests
             //
 
             // Test exceptional conditions
@@ -830,7 +830,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void RunBasicFutureTest_PromiseTestsAndCancellation()
+        public static void RunBasicTaskWithResultTest_PromiseTestsAndCancellation()
         {
             //
             // promise tests
@@ -872,24 +872,24 @@ namespace System.Threading.Tasks.Tests
 
             if (promise2.Task.Result != 5678)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: Promise value unblocked, but wrong value was read");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: Promise value unblocked, but wrong value was read");
             }
 
             if (cancellationExceptionReceived == false || someotherExceptionReceived == true)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor");
             }
 
             if (unexpectedStateObserved)
             {
-                Assert.Fail("RunBasicFutureTest - Promise Test:  > error: unexpected state observed in Promise test");
+                Assert.Fail("RunBasicTaskWithResultTest - Promise Test:  > error: unexpected state observed in Promise test");
             }
 
             // Creating a TCS with a promise-style constructor that only allows TaskCreationOptions.AttachedToParent
             try
             {
                 TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.PreferFairness);
-                Assert.Fail("RunBasicFutureTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception");
+                Assert.Fail("RunBasicTaskWithResultTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -1618,7 +1618,7 @@ namespace System.Threading.Tasks.Tests
 
 
         // Various tests to exercise the refactored Task class.
-        // Create()==>Factory.StartNew(), Task and Future ctors have been added,
+        // Create()==>Factory.StartNew(), Task and Task<TResult> ctors have been added,
         // and Task.Start() has been added.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunRefactoringTests()

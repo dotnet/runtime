@@ -85,7 +85,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#if !defined(FEATURE_JIT)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
         // interpret everything when we do not have a JIT
         doInterpret = true;
 #else

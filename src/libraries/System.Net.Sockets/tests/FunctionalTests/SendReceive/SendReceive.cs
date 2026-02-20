@@ -185,7 +185,7 @@ namespace System.Net.Sockets.Tests
             Task<Socket> acceptTask = AcceptAsync(listener);
             await client.ConnectAsync(listener.LocalEndPoint).WaitAsync(TestSettings.PassingTestTimeout);
             using Socket server = await acceptTask.WaitAsync(TestSettings.PassingTestTimeout);
-            
+
             var sentChecksum = new Fletcher32();
             var rand = new Random();
             int bytesToSend = 0;
@@ -1030,6 +1030,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124079", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient, bool owning)
         {

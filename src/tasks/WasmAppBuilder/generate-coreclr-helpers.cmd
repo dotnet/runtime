@@ -32,13 +32,13 @@ echo !usage!
 exit /b 1
 
 :set_configuration
-set "configuration=%~2"
+set configuration=%~2
 shift
 shift
 goto :parse_args
 
 :set_scan_path
-set "scan_path_override=%~2"
+set scan_path_override=%~2
 shift
 shift
 goto :parse_args
@@ -56,18 +56,18 @@ if /i not "%configuration%"=="Debug" if /i not "%configuration%"=="Release" if /
 )
 
 :: Get the repo root (script is in src/tasks/WasmAppBuilder)
-set "script_dir=%~dp0"
+set script_dir=%~dp0
 pushd "%script_dir%..\..\..\"
-set "repo_root=%CD%"
+set repo_root=%CD%
 popd
 
 echo Configuration: %configuration%
 echo Repo root: %repo_root%
 
 if not "%scan_path_override%"=="" (
-    set "scan_path=%scan_path_override%"
+    set scan_path=%scan_path_override%
 ) else (
-    set "scan_path=%repo_root%\artifacts\bin\testhost\net11.0-browser-%configuration%-wasm\shared\Microsoft.NETCore.App\11.0.0\"
+    set scan_path=%repo_root%\artifacts\bin\testhost\net11.0-browser-%configuration%-wasm\shared\Microsoft.NETCore.App\11.0.0\
 )
 
 if not exist "%scan_path%" (
@@ -81,8 +81,8 @@ echo Scan path: %scan_path%
 
 :: Run the generator - invoke directly without building a command string
 echo Running generator...
-echo .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\" "/p:AssembliesScanPath=%scan_path%" src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
-.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\" "/p:AssembliesScanPath=%scan_path%" src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+echo .\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
+.\dotnet.cmd build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:GeneratorOutputPath=%repo_root%\src\coreclr\vm\wasm\ /p:AssembliesScanPath=%scan_path% src\tasks\WasmAppBuilder\WasmAppBuilder.csproj
 
 if errorlevel 1 (
     echo Generator failed!
