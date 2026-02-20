@@ -583,13 +583,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task JsonNamingPolicyAttribute_TypeLevel_Serialize()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCamelCaseNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""myValue"":""test""", json);
+            Assert.Equal("""{"myValue":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_TypeLevel_Deserialize()
         {
-            var obj = await Serializer.DeserializeWrapper<ClassWithCamelCaseNamingPolicyAttribute>(@"{""myValue"":""test""}");
+            var obj = await Serializer.DeserializeWrapper<ClassWithCamelCaseNamingPolicyAttribute>("""{"myValue":"test"}""");
             Assert.Equal("test", obj.MyValue);
         }
 
@@ -598,21 +598,20 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
             string json = await Serializer.SerializeWrapper(new ClassWithCamelCaseNamingPolicyAttribute { MyValue = "test" }, options);
-            Assert.Contains(@"""myValue"":""test""", json);
+            Assert.Equal("""{"myValue":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_MemberLevel_Serialize()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithMemberNamingPolicyAttribute { MyFirstProperty = "first", MySecondProperty = "second" });
-            Assert.Contains(@"""MyFirstProperty"":""first""", json);
-            Assert.Contains(@"""my-second-property"":""second""", json);
+            Assert.Equal("""{"MyFirstProperty":"first","my-second-property":"second"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_MemberLevel_Deserialize()
         {
-            var obj = await Serializer.DeserializeWrapper<ClassWithMemberNamingPolicyAttribute>(@"{""MyFirstProperty"":""first"",""my-second-property"":""second""}");
+            var obj = await Serializer.DeserializeWrapper<ClassWithMemberNamingPolicyAttribute>("""{"MyFirstProperty":"first","my-second-property":"second"}""");
             Assert.Equal("first", obj.MyFirstProperty);
             Assert.Equal("second", obj.MySecondProperty);
         }
@@ -622,23 +621,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
             string json = await Serializer.SerializeWrapper(new ClassWithMixedNamingPolicies { MyFirstProperty = "first", MySecondProperty = "second" }, options);
-            Assert.Contains(@"""myFirstProperty"":""first""", json);
-            Assert.Contains(@"""my-second-property"":""second""", json);
+            Assert.Equal("""{"myFirstProperty":"first","my-second-property":"second"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_MemberLevel_OverridesTypeLevel()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithMixedNamingPolicies { MyFirstProperty = "first", MySecondProperty = "second" });
-            Assert.Contains(@"""myFirstProperty"":""first""", json);
-            Assert.Contains(@"""my-second-property"":""second""", json);
+            Assert.Equal("""{"myFirstProperty":"first","my-second-property":"second"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_JsonPropertyNameTakesPrecedence()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithNamingPolicyAndPropertyName { MyValue = "test" });
-            Assert.Contains(@"""custom_name"":""test""", json);
+            Assert.Equal("""{"custom_name":"test"}""", json);
         }
 
         [Theory]

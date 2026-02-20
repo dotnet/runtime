@@ -22,14 +22,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Source gen can't resolve custom derived naming policies at compile time,
             // so the property name falls back to the original CLR name.
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MyValue"":""test""", json);
+            Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_FallsBackToClrName()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MyValue"":""test""", json);
+            Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -69,14 +69,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         public async Task JsonNamingPolicyAttribute_CustomDerived_TypeLevel_FallsBackToClrName()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MyValue"":""test""", json);
+            Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_FallsBackToClrName()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MyValue"":""test""", json);
+            Assert.Equal("""{"MyValue":"test"}""", json);
         }
 
         [JsonSerializable(typeof(Dictionary<string, OverridePropertyNameDesignTime_TestClass>))]

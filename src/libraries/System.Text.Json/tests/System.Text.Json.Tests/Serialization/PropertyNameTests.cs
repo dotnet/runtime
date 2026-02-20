@@ -69,13 +69,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task JsonNamingPolicyAttribute_CustomDerived_TypeLevel_AppliesCustomPolicy()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MYVALUE"":""test""", json);
+            Assert.Equal("""{"MYVALUE":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_CustomDerived_TypeLevel_Deserialize()
         {
-            var obj = await Serializer.DeserializeWrapper<ClassWithCustomDerivedNamingPolicyAttribute>(@"{""MYVALUE"":""test""}");
+            var obj = await Serializer.DeserializeWrapper<ClassWithCustomDerivedNamingPolicyAttribute>("""{"MYVALUE":"test"}""");
             Assert.Equal("test", obj.MyValue);
         }
 
@@ -83,13 +83,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_AppliesCustomPolicy()
         {
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedMemberNamingPolicyAttribute { MyValue = "test" });
-            Assert.Contains(@"""MYVALUE"":""test""", json);
+            Assert.Equal("""{"MYVALUE":"test"}""", json);
         }
 
         [Fact]
         public async Task JsonNamingPolicyAttribute_CustomDerived_MemberLevel_Deserialize()
         {
-            var obj = await Serializer.DeserializeWrapper<ClassWithCustomDerivedMemberNamingPolicyAttribute>(@"{""MYVALUE"":""test""}");
+            var obj = await Serializer.DeserializeWrapper<ClassWithCustomDerivedMemberNamingPolicyAttribute>("""{"MYVALUE":"test"}""");
             Assert.Equal("test", obj.MyValue);
         }
 
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" }, options);
-            Assert.Contains(@"""MYVALUE"":""test""", json);
+            Assert.Equal("""{"MYVALUE":"test"}""", json);
         }
     }
 }
