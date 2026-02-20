@@ -22,6 +22,11 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
+            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via reflection
+            // so the same source file compiles against all supported Roslyn versions.
+            private static readonly System.Reflection.PropertyInfo? s_allowsRefLikeTypeProperty =
+                typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType");
+
             private readonly CancellationToken _cancellationToken;
             private readonly INamedTypeSymbol _loggerMessageAttribute;
             private readonly INamedTypeSymbol _loggerSymbol;
@@ -249,6 +254,18 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    // Forbid 'allows ref struct': the code generator stores template parameters as
+                                    // fields in a generated struct, so ref-struct type arguments cannot be supported.
+                                    foreach (ITypeParameterSymbol tp in logMethodSymbol.TypeParameters)
+                                    {
+                                        if (s_allowsRefLikeTypeProperty?.GetValue(tp) is true)
+                                        {
+                                            Diag(DiagnosticDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
+                                            keepMethod = false;
+                                            break;
+                                        }
+                                    }
 
                                     bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
                                     if (!success)
@@ -741,6 +758,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     constraints.Add(constraintType.ToDisplayString(
                         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
                             SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)));
                 }
 

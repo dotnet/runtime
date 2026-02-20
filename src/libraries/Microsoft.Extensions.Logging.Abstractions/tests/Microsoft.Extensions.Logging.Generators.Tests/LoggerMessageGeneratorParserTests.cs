@@ -845,6 +845,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public async Task MethodGenericWithNullableConstraint()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                #nullable enable
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Value: {value}"")]
+                    static partial void M1<T>(ILogger logger, T value) where T : System.IComparable<T>?;
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
         [Theory]
         [InlineData("ref")]
         [InlineData("in")]

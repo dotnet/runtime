@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -147,13 +146,15 @@ namespace {lc.Namespace}
 
             private void GenStruct(LoggerMethod lm, string nestedIndentation)
             {
-                string typeParamList = GetTypeParameterList(lm);
-                string typeConstraints = GetTypeConstraints(lm, nestedIndentation + "    ");
-                _builder.AppendLine($@"
+                _builder.Append($@"
         {nestedIndentation}/// {GeneratedTypeSummary}
         {nestedIndentation}[{s_generatedCodeAttribute}]
         {nestedIndentation}[{EditorBrowsableAttribute}]
-        {nestedIndentation}private readonly struct __{lm.UniqueName}Struct{typeParamList} : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>{typeConstraints}
+        {nestedIndentation}private readonly struct __{lm.UniqueName}Struct");
+                GenTypeParameterList(lm);
+                _builder.Append($" : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>");
+                GenTypeConstraints(lm, nestedIndentation + "    ");
+                _builder.AppendLine($@"
         {nestedIndentation}{{");
                 GenFields(lm, nestedIndentation);
 
@@ -178,7 +179,7 @@ namespace {lc.Namespace}
                 GenVariableAssignments(lm, nestedIndentation);
 
                 string formatMethodBegin =
-                    !lm.Message.Contains('{') ? "" :
+                    !lm.Message.Contains("{") ? "" :
                     _hasStringCreate ? "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, " :
                     "global::System.FormattableString.Invariant(";
                 string formatMethodEnd = formatMethodBegin.Length > 0 ? ")" : "";
@@ -188,7 +189,9 @@ namespace {lc.Namespace}
             {nestedIndentation}}}
 ");
                 _builder.Append($@"
-            {nestedIndentation}public static readonly global::System.Func<__{lm.UniqueName}Struct{typeParamList}, global::System.Exception?, string> Format = (state, ex) => state.ToString();
+            {nestedIndentation}public static readonly global::System.Func<__{lm.UniqueName}Struct");
+                GenTypeParameterList(lm);
+                _builder.Append($@", global::System.Exception?, string> Format = (state, ex) => state.ToString();
 
             {nestedIndentation}public int Count => {lm.TemplateParameters.Count + 1};
 
@@ -372,9 +375,9 @@ namespace {lc.Namespace}
 
             private void GenHolder(LoggerMethod lm)
             {
-                string typeName = $"__{lm.UniqueName}Struct{GetTypeParameterList(lm)}";
-
-                _builder.Append($"new {typeName}(");
+                _builder.Append($"new __{lm.UniqueName}Struct");
+                GenTypeParameterList(lm);
+                _builder.Append('(');
                 foreach (LoggerParameter p in lm.TemplateParameters)
                 {
                     if (p != lm.TemplateParameters[0])
@@ -388,33 +391,41 @@ namespace {lc.Namespace}
                 _builder.Append(')');
             }
 
-            private static string GetTypeParameterList(LoggerMethod lm)
+            private void GenTypeParameterList(LoggerMethod lm)
             {
                 if (lm.TypeParameters.Count == 0)
                 {
-                    return string.Empty;
+                    return;
                 }
 
-                return "<" + string.Join(", ", lm.TypeParameters.Select(tp => tp.Name)) + ">";
+                _builder.Append('<');
+                bool firstItem = true;
+                foreach (LoggerMethodTypeParameter tp in lm.TypeParameters)
+                {
+                    if (firstItem)
+                    {
+                        firstItem = false;
+                    }
+                    else
+                    {
+                        _builder.Append(", ");
+                    }
+
+                    _builder.Append(tp.Name);
+                }
+
+                _builder.Append('>');
             }
 
-            private static string GetTypeConstraints(LoggerMethod lm, string nestedIndentation)
+            private void GenTypeConstraints(LoggerMethod lm, string nestedIndentation)
             {
-                if (lm.TypeParameters.Count == 0)
-                {
-                    return string.Empty;
-                }
-
-                var sb = new StringBuilder();
                 foreach (LoggerMethodTypeParameter tp in lm.TypeParameters)
                 {
                     if (tp.Constraints is not null)
                     {
-                        sb.Append($"\n            {nestedIndentation}where {tp.Name} : {tp.Constraints}");
+                        _builder.Append($"\n            {nestedIndentation}where {tp.Name} : {tp.Constraints}");
                     }
                 }
-
-                return sb.ToString();
             }
 
             private void GenLogMethod(LoggerMethod lm, string nestedIndentation)
@@ -444,20 +455,16 @@ namespace {lc.Namespace}
 
                 GenMethodDocumentation(lm, nestedIndentation);
 
-                string typeParamList = GetTypeParameterList(lm);
-                string typeConstraints = GetTypeConstraints(lm, nestedIndentation);
-
                 _builder.Append($@"
         {nestedIndentation}[{s_generatedCodeAttribute}]
-        {nestedIndentation}{lm.Modifiers} void {lm.Name}{typeParamList}({extension}");
+        {nestedIndentation}{lm.Modifiers} void {lm.Name}");
+                GenTypeParameterList(lm);
+                _builder.Append($"({extension}");
 
                 GenParameters(lm);
 
                 _builder.Append(')');
-                if (typeConstraints.Length > 0)
-                {
-                    _builder.Append(typeConstraints);
-                }
+                GenTypeConstraints(lm, nestedIndentation);
                 _builder.Append($@"
         {nestedIndentation}{{");
 
@@ -488,7 +495,9 @@ namespace {lc.Namespace}
                 GenHolder(lm);
                 _builder.Append($@",
                 {nestedIndentation}{enabledCheckIndentation}{exceptionArg},
-                {nestedIndentation}{enabledCheckIndentation}__{lm.UniqueName}Struct{typeParamList}.Format);");
+                {nestedIndentation}{enabledCheckIndentation}__{lm.UniqueName}Struct");
+                GenTypeParameterList(lm);
+                _builder.Append(".Format);");
                 }
 
                 if (!lm.SkipEnabledCheck)
