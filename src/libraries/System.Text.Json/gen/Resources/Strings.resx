@@ -213,4 +213,10 @@
   <data name="TypeContainsRefLikeMemberFormat" xml:space="preserve">
     <value>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</value>
   </data>
+  <data name="JsonIgnoreConditionAlwaysInvalidOnTypeTitle" xml:space="preserve">
+    <value>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</value>
+  </data>
+  <data name="JsonIgnoreConditionAlwaysInvalidOnTypeFormat" xml:space="preserve">
+    <value>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</value>
+  </data>
 </root>

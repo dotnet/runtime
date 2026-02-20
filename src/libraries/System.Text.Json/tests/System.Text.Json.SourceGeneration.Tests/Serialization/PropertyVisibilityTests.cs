@@ -182,6 +182,22 @@ namespace System.Text.Json.SourceGeneration.Tests
             await base.ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata();
         }
 
+        [Fact]
+        public override async Task JsonIgnoreCondition_TypeLevel_Always_ThrowsInvalidOperation()
+        {
+            // In the source generator path, 'JsonIgnoreCondition.Always' on a type emits a diagnostic warning
+            // and the attribute is ignored, so all properties are serialized normally.
+            var obj = new ClassWithTypeLevelIgnore_Always
+            {
+                MyString = "value",
+                MyInt = 42
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+            Assert.Contains(@"""MyInt"":42", json);
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]

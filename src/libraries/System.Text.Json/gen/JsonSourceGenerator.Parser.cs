@@ -787,8 +787,7 @@ namespace System.Text.Json.SourceGeneration
                         foundJsonConverterAttribute = true;
                     }
 
-                    if (attributeType?.ContainingAssembly.Name == SystemTextJsonNamespace &&
-                        attributeType.ToDisplayString() == JsonIgnoreAttributeFullName)
+                    if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonIgnoreAttributeType))
                     {
                         ImmutableArray<KeyValuePair<string, TypedConstant>> namedArgs = attributeData.NamedArguments;
 
@@ -800,6 +799,12 @@ namespace System.Text.Json.SourceGeneration
                             namedArgs[0].Value.Type?.ToDisplayString() == JsonIgnoreConditionFullName)
                         {
                             typeIgnoreCondition = (JsonIgnoreCondition)namedArgs[0].Value.Value!;
+                        }
+
+                        if (typeIgnoreCondition == JsonIgnoreCondition.Always)
+                        {
+                            ReportDiagnostic(DiagnosticDescriptors.JsonIgnoreConditionAlwaysInvalidOnType, typeToGenerate.Location, typeToGenerate.Type.ToDisplayString());
+                            typeIgnoreCondition = null; // Reset so it doesn't affect properties
                         }
                     }
 

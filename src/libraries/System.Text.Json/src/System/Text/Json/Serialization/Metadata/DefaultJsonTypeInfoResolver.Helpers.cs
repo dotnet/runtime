@@ -235,6 +235,11 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 JsonIgnoreCondition? typeIgnoreCondition = typeInfo.Type.GetUniqueCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
+                if (typeIgnoreCondition == JsonIgnoreCondition.Always)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(SR.DefaultIgnoreConditionInvalid);
+                }
+
                 // WhenWritingNull is invalid for non-nullable value types; skip it in that case
                 // to match the behavior of JsonSerializerOptions.DefaultIgnoreCondition.
                 if (typeIgnoreCondition != JsonIgnoreCondition.WhenWritingNull || typeToConvert.IsNullableType())

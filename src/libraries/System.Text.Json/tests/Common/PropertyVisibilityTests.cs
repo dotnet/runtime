@@ -2061,7 +2061,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task JsonIgnoreCondition_TypeLevel_Always()
+        public virtual async Task JsonIgnoreCondition_TypeLevel_Always_ThrowsInvalidOperation()
         {
             var obj = new ClassWithTypeLevelIgnore_Always
             {
@@ -2069,8 +2069,8 @@ namespace System.Text.Json.Serialization.Tests
                 MyInt = 42
             };
 
-            string json = await Serializer.SerializeWrapper(obj);
-            Assert.Equal("{}", json);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithTypeLevelIgnore_Always>(@"{""MyString"":""value"",""MyInt"":42}"));
         }
 
         [Fact]
@@ -2171,14 +2171,6 @@ namespace System.Text.Json.Serialization.Tests
             json = await Serializer.SerializeWrapper(obj);
             Assert.Contains(@"""BaseString"":""base""", json);
             Assert.Contains(@"""DerivedString"":""derived""", json);
-        }
-
-        [Fact]
-        public async Task JsonIgnoreCondition_TypeLevel_Always_Deserialization()
-        {
-            var obj = await Serializer.DeserializeWrapper<ClassWithTypeLevelIgnore_Always>(@"{""MyString"":""value"",""MyInt"":42}");
-            Assert.Null(obj.MyString);
-            Assert.Equal(0, obj.MyInt);
         }
 
         public class BaseClassWithProperties
