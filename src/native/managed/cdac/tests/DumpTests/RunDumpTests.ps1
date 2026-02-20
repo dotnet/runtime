@@ -237,6 +237,25 @@ if ($Force -and $Action -in @("dumps", "all")) {
     }
 }
 
+# --- Windows: allow unsigned DAC for heap dumps ---
+# Heap dumps (type 2) require the DAC which is unsigned in local builds.
+# Set the DisableAuxProviderSignatureCheck registry value so that
+# MiniDumpWriteDump accepts the unsigned DAC (Windows 11+ only).
+# This mirrors the approach used by dotnet/diagnostics DumpGenerationFixture.
+if ($Action -in @("dumps", "all")) {
+    $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings"
+    try {
+        if (-not (Test-Path $regPath)) {
+            New-Item -Path $regPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $regPath -Name "DisableAuxProviderSignatureCheck" -Value 1 -Type DWord
+        Write-Host "  Set DisableAuxProviderSignatureCheck=1 for unsigned DAC support" -ForegroundColor Green
+    }
+    catch [System.UnauthorizedAccessException] {
+        Write-Host "  Warning: Could not set DisableAuxProviderSignatureCheck (run as admin for heap dump support)" -ForegroundColor Yellow
+    }
+}
+
 # --- Helper: resolve TFM for local builds ---
 $localTfm = $null
 function Get-LocalTfm {
@@ -250,7 +269,7 @@ function Get-LocalTfm {
 # --- Helper: set dump env vars ---
 function Set-DumpEnvVars($dumpFilePath) {
     $env:DOTNET_DbgEnableMiniDump = "1"
-    $env:DOTNET_DbgMiniDumpType = "4"
+    $env:DOTNET_DbgMiniDumpType = "2"
     $env:DOTNET_DbgMiniDumpName = $dumpFilePath
 }
 

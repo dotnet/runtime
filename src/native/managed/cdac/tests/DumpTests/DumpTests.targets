@@ -55,6 +55,19 @@
     <DumpRuntimeVersion Include="net10.0" Condition="'$(CIDumpVersionsOnly)' != 'true'" />
   </ItemGroup>
 
+  <!--
+    On Windows, heap dumps (type 2) require the DAC (mscordaccore.dll) which is unsigned
+    in local/CI builds. Set the DisableAuxProviderSignatureCheck registry value so that
+    MiniDumpWriteDump accepts the unsigned DAC. This mirrors the approach used by
+    dotnet/diagnostics DumpGenerationFixture. Windows 11+ only.
+  -->
+  <Target Name="_EnableUnsignedDacWindows"
+          BeforeTargets="GenerateAllDumps"
+          Condition="'$(SkipDumpGeneration)' != 'true' AND '$(HostOS)' == 'windows'">
+    <Exec Command="reg add &quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings&quot; /v DisableAuxProviderSignatureCheck /t REG_DWORD /d 1 /f"
+          IgnoreExitCode="true" />
+  </Target>
+
   <Target Name="GenerateAllDumps" BeforeTargets="Build" Condition="'$(SkipDumpGeneration)' != 'true'">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
@@ -108,7 +121,7 @@
     <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
@@ -129,7 +142,7 @@
     <Exec Command="&quot;$(_PublishedExe)&quot;"
           WorkingDirectory="$(_DumpDir)"
           IgnoreExitCode="true"
-          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=4;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
 
     <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
   </Target>
