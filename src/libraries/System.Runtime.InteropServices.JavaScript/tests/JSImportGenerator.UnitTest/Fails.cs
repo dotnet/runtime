@@ -94,7 +94,9 @@ namespace JSImportGenerator.Unit.Tests
 
         private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)
         {
-            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new Microsoft.Interop.JavaScript.JSImportExportDiagnosticsAnalyzer());
+            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
+                new Microsoft.Interop.JavaScript.JSImportDiagnosticsAnalyzer(),
+                new Microsoft.Interop.JavaScript.JSExportDiagnosticsAnalyzer());
             return comp.WithAnalyzers(analyzers).GetAnalyzerDiagnosticsAsync();
         }
     }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -12,30 +11,38 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Microsoft.Interop.JavaScript
 {
     /// <summary>
-    /// Analyzer that reports diagnostics for JSImport and JSExport methods.
-    /// This analyzer runs the same diagnostic logic as JSImportGenerator and JSExportGenerator
-    /// but reports diagnostics separately from the source generators.
+    /// Abstract base analyzer for JSImport and JSExport diagnostics.
+    /// Derived classes specialize for each attribute type.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class JSImportExportDiagnosticsAnalyzer : DiagnosticAnalyzer
+    public abstract class JSInteropDiagnosticsAnalyzer : DiagnosticAnalyzer
     {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-            ImmutableArray.Create(
-                GeneratorDiagnostics.InvalidImportAttributedMethodSignature,
-                GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers,
-                GeneratorDiagnostics.InvalidExportAttributedMethodSignature,
-                GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers,
-                GeneratorDiagnostics.ParameterTypeNotSupported,
-                GeneratorDiagnostics.ReturnTypeNotSupported,
-                GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
-                GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
-                GeneratorDiagnostics.ParameterConfigurationNotSupported,
-                GeneratorDiagnostics.ReturnConfigurationNotSupported,
-                GeneratorDiagnostics.ConfigurationNotSupported,
-                GeneratorDiagnostics.ConfigurationValueNotSupported,
-                GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
-                GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks,
-                GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks);
+        /// <summary>The metadata name of the attribute this analyzer handles.</summary>
+        protected abstract string AttributeMetadataName { get; }
+
+        /// <summary>Descriptor for an invalid method signature for this attribute type.</summary>
+        protected abstract DiagnosticDescriptor InvalidSignatureDescriptor { get; }
+
+        /// <summary>Descriptor when the containing type is missing partial modifiers.</summary>
+        protected abstract DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor { get; }
+
+        /// <summary>Descriptor reported when AllowUnsafeBlocks is not enabled.</summary>
+        protected abstract DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor { get; }
+
+        /// <summary>
+        /// When <see langword="true"/> (JSExport), the method must have a body and must not be partial.
+        /// When <see langword="false"/> (JSImport), the method must not have a body and must be partial.
+        /// </summary>
+        protected abstract bool RequiresImplementation { get; }
+
+        /// <summary>
+        /// Calculate marshalling-related diagnostics for a validated method.
+        /// </summary>
+        protected abstract ImmutableArray<DiagnosticInfo> CalculateDiagnostics(
+            MethodDeclarationSyntax methodSyntax,
+            IMethodSymbol method,
+            AttributeData attr,
+            StubEnvironment environment,
+            System.Threading.CancellationToken ct);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -43,73 +50,44 @@ namespace Microsoft.Interop.JavaScript
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(context =>
             {
-                INamedTypeSymbol? jsImportAttrType = context.Compilation.GetTypeByMetadataName(Constants.JSImportAttribute);
-                INamedTypeSymbol? jsExportAttrType = context.Compilation.GetTypeByMetadataName(Constants.JSExportAttribute);
-
-                if (jsImportAttrType is null && jsExportAttrType is null)
+                INamedTypeSymbol? attrType = context.Compilation.GetTypeByMetadataName(AttributeMetadataName);
+                if (attrType is null)
                     return;
 
                 StubEnvironment env = new StubEnvironment(
                     context.Compilation,
                     context.Compilation.GetEnvironmentFlags());
 
-                int foundImportMethod = 0;
-                int foundExportMethod = 0;
+                int foundMethod = 0;
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
 
                 context.RegisterSymbolAction(symbolContext =>
                 {
                     IMethodSymbol method = (IMethodSymbol)symbolContext.Symbol;
-
-                    if (jsImportAttrType is not null)
+                    foreach (AttributeData attr in method.GetAttributes())
                     {
-                        foreach (AttributeData attr in method.GetAttributes())
+                        if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attrType))
                         {
-                            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, jsImportAttrType))
+                            if (AnalyzeMethod(symbolContext, method, attr, env))
                             {
-                                if (AnalyzeImportMethod(symbolContext, method, attr, env))
-                                {
-                                    Interlocked.Exchange(ref foundImportMethod, 1);
-                                }
-                                break;
+                                Interlocked.Exchange(ref foundMethod, 1);
                             }
-                        }
-                    }
-
-                    if (jsExportAttrType is not null)
-                    {
-                        foreach (AttributeData attr in method.GetAttributes())
-                        {
-                            if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, jsExportAttrType))
-                            {
-                                if (AnalyzeExportMethod(symbolContext, method, env))
-                                {
-                                    Interlocked.Exchange(ref foundExportMethod, 1);
-                                }
-                                break;
-                            }
+                            break;
                         }
                     }
                 }, SymbolKind.Method);
 
                 context.RegisterCompilationEndAction(endContext =>
                 {
-                    if (!unsafeEnabled)
+                    if (!unsafeEnabled && Volatile.Read(ref foundMethod) != 0)
                     {
-                        if (Volatile.Read(ref foundImportMethod) != 0)
-                        {
-                            endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks, null).ToDiagnostic());
-                        }
-                        if (Volatile.Read(ref foundExportMethod) != 0)
-                        {
-                            endContext.ReportDiagnostic(DiagnosticInfo.Create(GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks, null).ToDiagnostic());
-                        }
+                        endContext.ReportDiagnostic(DiagnosticInfo.Create(RequiresAllowUnsafeBlocksDescriptor, null).ToDiagnostic());
                     }
                 });
             });
         }
 
-        private static bool AnalyzeImportMethod(SymbolAnalysisContext context, IMethodSymbol method, AttributeData jsImportAttr, StubEnvironment env)
+        private bool AnalyzeMethod(SymbolAnalysisContext context, IMethodSymbol method, AttributeData attr, StubEnvironment env)
         {
             foreach (SyntaxReference syntaxRef in method.DeclaringSyntaxReferences)
             {
@@ -117,16 +95,16 @@ namespace Microsoft.Interop.JavaScript
                 {
                     DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(
                         methodSyntax, method,
-                        GeneratorDiagnostics.InvalidImportAttributedMethodSignature,
-                        GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers,
-                        requiresImplementation: false);
+                        InvalidSignatureDescriptor,
+                        ContainingTypeMissingModifiersDescriptor,
+                        RequiresImplementation);
                     if (invalidMethodDiagnostic is not null)
                     {
                         context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
                         return true;
                     }
 
-                    foreach (DiagnosticInfo diagnostic in CalculateImportDiagnostics(methodSyntax, method, jsImportAttr, env, context.CancellationToken))
+                    foreach (DiagnosticInfo diagnostic in CalculateDiagnostics(methodSyntax, method, attr, env, context.CancellationToken))
                     {
                         context.ReportDiagnostic(diagnostic.ToDiagnostic());
                     }
@@ -134,101 +112,6 @@ namespace Microsoft.Interop.JavaScript
                 }
             }
             return true;
-        }
-
-        private static bool AnalyzeExportMethod(SymbolAnalysisContext context, IMethodSymbol method, StubEnvironment env)
-        {
-            foreach (SyntaxReference syntaxRef in method.DeclaringSyntaxReferences)
-            {
-                if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
-                {
-                    DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(
-                        methodSyntax, method,
-                        GeneratorDiagnostics.InvalidExportAttributedMethodSignature,
-                        GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers,
-                        requiresImplementation: true);
-                    if (invalidMethodDiagnostic is not null)
-                    {
-                        context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
-                        return true;
-                    }
-
-                    foreach (DiagnosticInfo diagnostic in CalculateExportDiagnostics(methodSyntax, method, env, context.CancellationToken))
-                    {
-                        context.ReportDiagnostic(diagnostic.ToDiagnostic());
-                    }
-                    break;
-                }
-            }
-            return true;
-        }
-
-        private static ImmutableArray<DiagnosticInfo> CalculateImportDiagnostics(
-            MethodDeclarationSyntax originalSyntax,
-            IMethodSymbol symbol,
-            AttributeData jsImportAttr,
-            StubEnvironment environment,
-            CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
-
-            JSImportData? jsImportData = ProcessJSImportAttribute(jsImportAttr);
-            if (jsImportData is null)
-            {
-                generatorDiagnostics.ReportConfigurationNotSupported(jsImportAttr, "Invalid syntax");
-                return generatorDiagnostics.Diagnostics.ToImmutableArray();
-            }
-
-            var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
-
-            _ = new ManagedToNativeStubGenerator(
-                signatureContext.SignatureContext.ElementTypeInformation,
-                setLastError: false,
-                generatorDiagnostics,
-                new CompositeMarshallingGeneratorResolver(
-                    new NoSpanAndTaskMixingResolver(),
-                    new JSGeneratorResolver()),
-                new CodeEmitOptions(SkipInit: true));
-
-            return generatorDiagnostics.Diagnostics.ToImmutableArray();
-        }
-
-        private static ImmutableArray<DiagnosticInfo> CalculateExportDiagnostics(
-            MethodDeclarationSyntax originalSyntax,
-            IMethodSymbol symbol,
-            StubEnvironment environment,
-            CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
-            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
-
-            var signatureContext = JSSignatureContext.Create(symbol, environment, generatorDiagnostics, ct);
-
-            _ = new UnmanagedToManagedStubGenerator(
-                signatureContext.SignatureContext.ElementTypeInformation,
-                generatorDiagnostics,
-                new CompositeMarshallingGeneratorResolver(
-                    new NoSpanAndTaskMixingResolver(),
-                    new JSGeneratorResolver()));
-
-            return generatorDiagnostics.Diagnostics.ToImmutableArray();
-        }
-
-        private static JSImportData? ProcessJSImportAttribute(AttributeData attrData)
-        {
-            if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
-                return null;
-
-            if (attrData.ConstructorArguments.Length == 1)
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), null);
-            if (attrData.ConstructorArguments.Length == 2)
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), attrData.ConstructorArguments[1].Value!.ToString());
-            return null;
         }
 
         /// <summary>

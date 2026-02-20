@@ -42,7 +42,7 @@ namespace Microsoft.Interop.JavaScript
                    static (node, ct) => node is MethodDeclarationSyntax,
                    static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol })
                 .Where(static data =>
-                    JSImportExportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(
+                    JSInteropDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(
                         data.Syntax, data.Symbol,
                         GeneratorDiagnostics.InvalidExportAttributedMethodSignature,
                         GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers,
