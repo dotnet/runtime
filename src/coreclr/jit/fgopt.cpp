@@ -1794,168 +1794,106 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         return true;
     }
     else if (block->GetSwitchTargets()->GetSuccCount() == 2 && block->GetSwitchTargets()->HasDefaultCase() &&
-        (block->IsLIR() || fgNodeThreading == NodeThreading::AllTrees))
+             !block->IsLIR() && fgNodeThreading == NodeThreading::AllTrees)
     {
-        // If all non-default cases jump to one target and the default jumps to a different target,
+        // If all non-default cases jump to the same target and the default jumps to a different target,
         // replace the switch with an unsigned comparison against the max case index:
-        //   GT_SWITCH(switchVal) -> GT_JTRUE(GT_LE/GT_GT(switchVal, caseCount - 2))
-        // The comparison direction is chosen to favor fall-through to the next block.
-        // When both targets are simple return blocks, fgFoldCondToReturnBlock can further
-        // convert this into branchless codegen like "cmp; setbe" instead of a jump table.
+        //   GT_SWITCH(switchVal) -> GT_JTRUE(GT_LT(switchVal, caseCount))
 
-        BBswtDesc*  switchDesc  = block->GetSwitchTargets();
-        unsigned    caseCount   = switchDesc->GetCaseCount();
+        BBswtDesc* switchDesc = block->GetSwitchTargets();
 
-        // For small switches (3 or fewer cases), the backend's switch lowering already
-        // generates efficient comparison chains. Converting early can enable if-conversion
-        // (cmov) that produces worse code for these cases.
-        if (caseCount <= 3)
+        // Only optimize if both successors are simple return blocks, so fgFoldCondToReturnBlock can
+        // further convert this into branchless codegen, e.g., "cmp; setb", instead of a jump table.
+        BasicBlock* succ0 = switchDesc->GetSucc(0)->getDestinationBlock();
+        BasicBlock* succ1 = switchDesc->GetSucc(1)->getDestinationBlock();
+
+        if (!succ0->KindIs(BBJ_RETURN) || !succ1->KindIs(BBJ_RETURN))
+        {
+            JITDUMP("Skipping conversion: one or both targets are not return blocks\n");
+            return modified;
+        }
+
+        if (!succ0->hasSingleStmt() || !succ1->hasSingleStmt())
+        {
+            JITDUMP("Skipping conversion: return blocks are not simple enough\n");
+            return modified;
+        }
+
+        FlowEdge*   defaultEdge   = switchDesc->GetDefaultCase();
+        BasicBlock* defaultDest   = defaultEdge->getDestinationBlock();
+        FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
+        BasicBlock* caseDest      = firstCaseEdge->getDestinationBlock();
+
+        // Optimize only when all non-default cases share the same target, distinct from the default target.
+        // Only the default case targets defaultDest.
+        if (defaultEdge->getDupCount() != 1)
         {
             return modified;
         }
 
-        FlowEdge*   defaultEdge = switchDesc->GetDefaultCase();
-        BasicBlock* defaultDest = defaultEdge->getDestinationBlock();
+        JITDUMP("\nConverting a switch (" FMT_BB ") where all non-default cases target the same block to a "
+                "conditional branch. Before:\n",
+                block->bbNum);
+        DISPNODE(switchTree);
 
-        // Check that all non-default cases share the same target, distinct from the default target.
-        FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
-        BasicBlock* caseDest      = firstCaseEdge->getDestinationBlock();
+        // Use GT_LT (e.g., switchVal < caseCount), so true (in range) goes to the shared case target and false (out of
+        // range) goes to the default case.
+        switchTree->ChangeOper(GT_JTRUE);
+        GenTree* switchVal = switchTree->AsOp()->gtOp1;
+        noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
+        const unsigned caseCount = firstCaseEdge->getDupCount();
+        GenTree*       iconNode  = gtNewIconNode(caseCount, genActualType(switchVal->TypeGet()));
+        GenTree*       condNode  = gtNewOperNode(GT_LT, TYP_INT, switchVal, iconNode);
+        condNode->SetUnsigned();
+        switchTree->AsOp()->gtOp1 = condNode;
+        switchTree->AsOp()->gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
 
-        if (caseDest != defaultDest)
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
+
+        // Fix up dup counts: multiple switch cases originally pointed to the same
+        // successor, but the conditional branch has exactly one edge per target.
+        const unsigned caseDupCount = firstCaseEdge->getDupCount();
+        if (caseDupCount > 1)
         {
-            bool allCasesSameTarget = true;
-            for (unsigned i = 1; i < caseCount - 1; i++)
+            firstCaseEdge->decrementDupCount(caseDupCount - 1);
+            caseDest->bbRefs -= (caseDupCount - 1);
+        }
+
+        block->SetCond(firstCaseEdge, defaultEdge);
+
+        // The switch-to-cond conversion preserved edge likelihoods but
+        // successor block weights may be stale (they were set during import
+        // based on the original switch topology). Recompute them so that
+        // downstream passes like block compaction see correct weights.
+        if (block->hasProfileWeight())
+        {
+            if (caseDest->hasProfileWeight())
             {
-                if (switchDesc->GetCase(i)->getDestinationBlock() != caseDest)
-                {
-                    allCasesSameTarget = false;
-                    break;
-                }
+                weight_t oldWeight = caseDest->bbWeight;
+                caseDest->setBBProfileWeight(caseDest->computeIncomingWeight());
+                JITDUMP("Updated " FMT_BB " (caseDest) profile weight from " FMT_WT " to " FMT_WT "\n", caseDest->bbNum,
+                        oldWeight, caseDest->bbWeight);
             }
-
-            if (allCasesSameTarget)
+            if (defaultDest->hasProfileWeight())
             {
-                GenTree* switchVal = switchTree->AsOp()->gtOp1;
-                noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
-
-                // If we are in LIR, remove the jump table from the block.
-                if (block->IsLIR())
-                {
-                    GenTree* jumpTable = switchTree->AsOp()->gtOp2;
-                    assert(jumpTable->OperIs(GT_JMPTABLE));
-                    blockRange->Remove(jumpTable);
-                }
-
-                // The highest case index is caseCount - 2 (caseCount includes the default case).
-                // Using an unsigned GT comparison handles negative values correctly because they
-                // wrap to large unsigned values, making them greater than maxCaseIndex as expected.
-                const unsigned maxCaseIndex = caseCount - 2;
-
-                JITDUMP("\nConverting a switch (" FMT_BB
-                        ") where all non-default cases target the same block to a "
-                        "conditional branch. Before:\n",
-                        block->bbNum);
-                DISPNODE(switchTree);
-
-                switchTree->ChangeOper(GT_JTRUE);
-                GenTree* maxCaseNode = gtNewIconNode(maxCaseIndex, genActualType(switchVal->TypeGet()));
-
-                // Choose the comparison direction so the fall-through (false edge)
-                // targets the lexically next block when possible.
-                GenTree*  condNode;
-                FlowEdge* trueEdge;
-                FlowEdge* falseEdge;
-
-                if (block->NextIs(defaultDest))
-                {
-                    // defaultDest is next: use GT_LE so false (out of range) falls through
-                    // to defaultDest
-                     condNode = gtNewOperNode(GT_LE, TYP_INT, switchVal, maxCaseNode);
-                     trueEdge = firstCaseEdge;
-                     falseEdge =
-                         (switchDesc->GetSucc(0) == firstCaseEdge) ? switchDesc->GetSucc(1) : switchDesc->GetSucc(0);
-                 }
-                else
-                {
-                    // caseDest is next, or neither is next: use GT_GT so false (in range)
-                    // falls through to caseDest, which is typically the hotter path
-                     condNode = gtNewOperNode(GT_GT, TYP_INT, switchVal, maxCaseNode);
-                     trueEdge =
-                         (switchDesc->GetSucc(0) == firstCaseEdge) ? switchDesc->GetSucc(1) : switchDesc->GetSucc(0);
-                     falseEdge = firstCaseEdge;
-                 }
-
-                assert(trueEdge != nullptr);
-                assert(falseEdge != nullptr);
-
-                condNode->SetUnsigned();
-                switchTree->AsOp()->gtOp1 = condNode;
-                switchTree->AsOp()->gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
-
-                if (block->IsLIR())
-                {
-                    blockRange->InsertAfter(switchVal, maxCaseNode, condNode);
-                    LIR::ReadOnlyRange range(maxCaseNode, switchTree);
-                    m_pLowering->LowerRange(block, range);
-                }
-                else if (fgNodeThreading == NodeThreading::AllTrees)
-                {
-                    gtSetStmtInfo(switchStmt);
-                    fgSetStmtSeq(switchStmt);
-                }
-
-                // Fix up dup counts: multiple switch cases originally pointed to the same
-                // successor, but the conditional branch has exactly one edge per target.
-                const unsigned trueDupCount = trueEdge->getDupCount();
-                const unsigned falseDupCount = falseEdge->getDupCount();
-
-                if (trueDupCount > 1)
-                {
-                    trueEdge->decrementDupCount(trueDupCount - 1);
-                    trueEdge->getDestinationBlock()->bbRefs -= (trueDupCount - 1);
-                }
-                if (falseDupCount > 1)
-                {
-                    falseEdge->decrementDupCount(falseDupCount - 1);
-                    falseEdge->getDestinationBlock()->bbRefs -= (falseDupCount - 1);
-                }
-
-                block->SetCond(trueEdge, falseEdge);
-
-                // The switch-to-cond conversion preserved edge likelihoods but
-                // successor block weights may be stale (they were set during import
-                // based on the original switch topology). Recompute them so that
-                // downstream passes like block compaction see correct weights.
-                if (block->hasProfileWeight())
-                {
-                    if (caseDest->hasProfileWeight())
-                    {
-                        weight_t oldWeight = caseDest->bbWeight;
-                        caseDest->setBBProfileWeight(caseDest->computeIncomingWeight());
-                        JITDUMP("Updated " FMT_BB " (caseDest) profile weight from " FMT_WT " to " FMT_WT "\n",
-                                caseDest->bbNum, oldWeight, caseDest->bbWeight);
-                    }
-                    if (defaultDest->hasProfileWeight())
-                    {
-                        weight_t oldWeight = defaultDest->bbWeight;
-                        defaultDest->setBBProfileWeight(defaultDest->computeIncomingWeight());
-                        JITDUMP("Updated " FMT_BB " (defaultDest) profile weight from " FMT_WT " to " FMT_WT "\n",
-                                defaultDest->bbNum, oldWeight, defaultDest->bbWeight);
-                    }
-                }
-
-                JITDUMP("After:\n");
-                DISPNODE(switchTree);
-
-                if (fgFoldCondToReturnBlock(block))
-                {
-                    JITDUMP("Folded conditional return into branchless return. After:\n");
-                    DISPNODE(switchTree);
-                }
-
-                return true;
+                weight_t oldWeight = defaultDest->bbWeight;
+                defaultDest->setBBProfileWeight(defaultDest->computeIncomingWeight());
+                JITDUMP("Updated " FMT_BB " (defaultDest) profile weight from " FMT_WT " to " FMT_WT "\n",
+                        defaultDest->bbNum, oldWeight, defaultDest->bbWeight);
             }
         }
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
+
+        if (fgFoldCondToReturnBlock(block))
+        {
+            JITDUMP("Folded conditional return into branchless return. After:\n");
+            DISPNODE(switchTree);
+        }
+
+        return true;
     }
 
     return modified;
