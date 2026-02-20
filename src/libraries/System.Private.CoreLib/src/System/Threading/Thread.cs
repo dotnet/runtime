@@ -740,14 +740,14 @@ namespace System.Threading
         [SupportedOSPlatformGuard("browser")]
         [SupportedOSPlatformGuard("wasi")]
 #if FEATURE_SINGLE_THREADED
-        internal static bool IsSingleThreaded => true;
+        internal static bool IsMultithreadingSupported => false;
         [DoesNotReturn]
         internal static void ThrowIfMultithreadingIsNotSupported()
         {
             throw new PlatformNotSupportedException();
         }
 #else
-        internal static bool IsSingleThreaded => false;
+        internal static bool IsMultithreadingSupported => true;
 #if FEATURE_WASM_MANAGED_THREADS
         internal static void ThrowIfMultithreadingIsNotSupported()
         {

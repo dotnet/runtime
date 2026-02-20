@@ -134,9 +134,9 @@ namespace System.Threading.Tasks
         [SupportedOSPlatformGuard("browser")]
         [SupportedOSPlatformGuard("wasi")]
 #if FEATURE_SINGLE_THREADED
-        internal static bool IsSingleThreaded => true;
+        internal static bool IsMultithreadingSupported => false;
 #else
-        internal static bool IsSingleThreaded => false;
+        internal static bool IsMultithreadingSupported => true;
 #endif
 
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
