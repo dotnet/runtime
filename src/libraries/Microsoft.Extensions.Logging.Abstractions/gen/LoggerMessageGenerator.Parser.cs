@@ -22,10 +22,14 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
-            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via reflection
-            // so the same source file compiles against all supported Roslyn versions.
-            private static readonly System.Reflection.PropertyInfo? s_allowsRefLikeTypeProperty =
-                typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType");
+            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via a compiled
+            // delegate so the same source file compiles against all supported Roslyn versions, while
+            // avoiding the per-call overhead of PropertyInfo.GetValue boxing.
+            private static readonly Func<ITypeParameterSymbol, bool>? s_getAllowsRefLikeType =
+                typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType") is { } prop
+                    ? (Func<ITypeParameterSymbol, bool>)Delegate.CreateDelegate(
+                        typeof(Func<ITypeParameterSymbol, bool>), prop.GetGetMethod()!)
+                    : null;
 
             private readonly CancellationToken _cancellationToken;
             private readonly INamedTypeSymbol _loggerMessageAttribute;
@@ -259,7 +263,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                     // fields in a generated struct, so ref-struct type arguments cannot be supported.
                                     foreach (ITypeParameterSymbol tp in logMethodSymbol.TypeParameters)
                                     {
-                                        if (s_allowsRefLikeTypeProperty?.GetValue(tp) is true)
+                                        if (s_getAllowsRefLikeType?.Invoke(tp) == true)
                                         {
                                             Diag(DiagnosticDescriptors.LoggingMethodHasAllowsRefStructConstraint, method.Identifier.GetLocation());
                                             keepMethod = false;

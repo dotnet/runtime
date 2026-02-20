@@ -839,6 +839,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
                     [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Value: {value} Extra: {extra}"")]
                     static partial void M2<T1, T2>(ILogger logger, T1 value, T2 extra) where T1 : class where T2 : new();
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = ""Data: {data}"")]
+                    static partial void M3<T>(ILogger logger, T data) where T : unmanaged;
                 }
             ");
 
