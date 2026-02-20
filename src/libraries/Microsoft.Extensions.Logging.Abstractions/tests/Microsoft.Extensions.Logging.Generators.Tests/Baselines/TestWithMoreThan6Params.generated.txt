@@ -75,6 +75,10 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
+        /// <summary>
+        /// <para><b>Message:</b> M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}</para>
+        /// <para><b>Level:</b> Error</para>
+        /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         public static partial void Method9(global::Microsoft.Extensions.Logging.ILogger logger, global::System.Int32 p1, global::System.Int32 p2, global::System.Int32 p3, global::System.Int32 p4, global::System.Int32 p5, global::System.Int32 p6, global::System.Collections.Generic.IEnumerable<global::System.Int32> p7)
         {

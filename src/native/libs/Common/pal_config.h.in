@@ -97,7 +97,6 @@
 #cmakedefine01 HAVE_LINUX_ERRQUEUE_H
 #cmakedefine01 HAVE_GETDOMAINNAME_SIZET
 #cmakedefine01 HAVE_INOTIFY
-#cmakedefine01 HAVE_CLOCK_MONOTONIC
 #cmakedefine01 HAVE_CLOCK_REALTIME
 #cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
 #cmakedefine01 HAVE_PTHREAD_CONDATTR_SETCLOCK
@@ -145,10 +144,6 @@
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
-
-#ifndef HOST_WASI
-#cmakedefine01 HAVE_GETRUSAGE
-#endif
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

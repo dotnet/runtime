@@ -16,7 +16,7 @@ import GitHash from "consts:gitHash";
 import { loaderConfig, getLoaderConfig } from "./config";
 import { exit, isExited, isRuntimeRunning, addOnExitListener, registerExit, quitNow } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
-import { check, error, info, warn, debug, fastCheck } from "./logging";
+import { check, error, info, warn, debug, fastCheck, normalizeException } from "./logging";
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise, abortStartup } from "./run";
@@ -66,6 +66,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         addOnExitListener,
         abortStartup,
         quitNow,
+        normalizeException,
     };
     Object.assign(dotnetLoaderExports, loaderFunctions);
     const logger: LoggerType = {
@@ -112,6 +113,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
             dotnetLoaderExports.addOnExitListener,
             dotnetLoaderExports.abortStartup,
             dotnetLoaderExports.quitNow,
+            dotnetLoaderExports.normalizeException,
         ];
     }
 

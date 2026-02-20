@@ -389,6 +389,7 @@ class PEDecoder
 
     enum
     {
+        // [cDAC] [Loader]: Contract depends on the value of FLAG_MAPPED.
         FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
         FLAG_CONTENTS           = 0x02, // the file has contents
         FLAG_RELOCATED          = 0x04, // relocs have been applied

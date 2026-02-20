@@ -395,9 +395,11 @@ private:
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
-    bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    GenTree* LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    bool     TryLowerConstIntUDivOrUMod(GenTreeOp* divMod);
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
+    void     LowerDivOrMod(GenTreeOp* divMod);
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);

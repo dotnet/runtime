@@ -8,7 +8,7 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchDll, fetchIcu, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
+import { fetchDll, fetchIcu, fetchNativeSymbols, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateWasmFeatures } from "./bootstrap";
 
@@ -45,6 +45,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         if (loaderConfig.resources.jsModuleDiagnostics && loaderConfig.resources.jsModuleDiagnostics.length > 0) {
             const diagnosticsModule = await loadDotnetModule(loaderConfig.resources.jsModuleDiagnostics[0]);
             diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
+            if (loaderConfig.resources.wasmSymbols && loaderConfig.resources.wasmSymbols.length > 0) {
+                await fetchNativeSymbols(loaderConfig.resources.wasmSymbols[0]);
+            }
         }
         const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleNative[0]);
         const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);

@@ -8,6 +8,10 @@
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 VolatilePtr<Bucket> SyncClean::m_HashMap = NULL;
 VolatilePtr<EEHashEntry*> SyncClean::m_EEHashTable;
 
@@ -95,4 +99,9 @@ void SyncClean::CleanUp ()
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();
+
+#ifdef FEATURE_INTERPRETER
+    // Reclaim dead interpreter dispatch cache entries
+    InterpDispatchCache_ReclaimAll();
+#endif
 }

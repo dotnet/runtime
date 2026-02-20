@@ -4,8 +4,8 @@
 
 using System;
 using System.Threading;
-using Xunit;
 using TestLibrary;
+using Xunit;
 
 public class ThreadData
 {
@@ -62,8 +62,7 @@ public class BringUpTest_LocallocLarge
         return ok;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static int TestEntryPoint()
     {
         for (int j = 2; j < 1024 * 100; j += 331)

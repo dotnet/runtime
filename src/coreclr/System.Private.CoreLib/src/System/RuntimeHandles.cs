@@ -2207,5 +2207,57 @@ namespace System
         internal abstract byte[]? ResolveSignature(int token, int fromMethod);
         //
         internal abstract MethodInfo GetDynamicMethod();
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetJitContext(Resolver* pResolver, int* pSecurityControlFlags, RuntimeType* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetJitContext(out *pSecurityControlFlags);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetCodeInfo(Resolver* pResolver, int* pStackSize, int* pInitLocals, int* pEHCount, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetCodeInfo(out *pStackSize, out *pInitLocals, out *pEHCount);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetLocalsSignature(Resolver* pResolver, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetLocalsSignature();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetStringLiteral(Resolver* pResolver, int token, string* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetStringLiteral(token);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

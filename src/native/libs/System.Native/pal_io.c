@@ -560,6 +560,13 @@ int32_t SystemNative_CloseDir(DIR* dir)
 
 int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 {
+#ifdef TARGET_WASM
+    // Pipe is not supported on Wasm (browser or WASI)
+    (void)pipeFds;
+    (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#else // TARGET_WASM
     switch (flags)
     {
         case 0:
@@ -608,6 +615,7 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     result = -1;
 #endif /* HAVE_PIPE */
     return result;
+#endif // TARGET_WASM
 }
 
 int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)

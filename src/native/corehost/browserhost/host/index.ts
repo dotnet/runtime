@@ -63,12 +63,6 @@ function setupEmscripten() {
     for (const key in loaderConfig.environmentVariables) {
         _ems_.ENV[key] = loaderConfig.environmentVariables[key];
     }
-
-    _ems_.Module.preInit = [() => {
-        _ems_.FS.createPath("/", loaderConfig.virtualWorkingDirectory!, true, true);
-        _ems_.FS.chdir(loaderConfig.virtualWorkingDirectory!);
-    }, ...(_ems_.Module.preInit || [])];
-
 }
 
 export { BrowserHost_ExternalAssemblyProbe } from "./assets";

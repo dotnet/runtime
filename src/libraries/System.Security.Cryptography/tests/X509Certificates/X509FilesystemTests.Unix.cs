@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
 using System.IO;
-using System.Linq;
+using System.Net.Http;
+using System.Net.Security;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -77,6 +82,77 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 valid = chain.Build(microsoftDotComIssuer);
                 Assert.True(valid, "Chain should build validly now");
                 Assert.Equal(initialErrorCount, chain.ChainStatus.Length);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static async Task CrlDiskCacheRecovers()
+        {
+            using X509Certificate2 getDotNetCert = await GetGetDotNetCert();
+            string crlFileName;
+
+            using (CrlCacheNameFinderEventListener listener = new(getDotNetCert.Subject))
+            using (CancellationTokenSource tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                Task<string> nameTask = listener.GetCacheFileNameAsync(tokenSource.Token);
+
+                _ = chainHolder.Chain.Build(getDotNetCert);
+                crlFileName = await nameTask.ConfigureAwait(false);
+            }
+
+            string crlDirectory = PersistedFiles.GetUserFeatureDirectory("cryptography", "crls");
+            string crlFile = Path.Combine(crlDirectory, crlFileName);
+            string crlPem = await File.ReadAllTextAsync(crlFile).ConfigureAwait(false);
+
+            await File.WriteAllTextAsync(crlFile, crlPem.AsMemory(0, crlPem.Length / 2)).ConfigureAwait(false);
+
+            RemoteExecutor.Invoke(
+                static base64Cert =>
+                {
+                    using (X509Certificate2 cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(base64Cert)))
+                    using (ChainHolder chainHolder = new ChainHolder())
+                    {
+                        bool valid = chainHolder.Chain.Build(cert);
+
+                        return valid ? RemoteExecutor.SuccessExitCode : 0;
+                    }
+                },
+                Convert.ToBase64String(getDotNetCert.RawDataMemory.Span))
+                .Dispose();
+
+            string pem2 = await File.ReadAllTextAsync(crlFile).ConfigureAwait(false);
+
+            // Rather than assert the CRL didn't change, just check that it's a valid CRL:
+            CertificateRevocationListBuilder.LoadPem(pem2, out _);
+
+            static async Task<X509Certificate2> GetGetDotNetCert()
+            {
+                X509Certificate2 getDotNetCert = null;
+
+                SocketsHttpHandler handler = new SocketsHttpHandler
+                {
+                    SslOptions =
+                    {
+                        RemoteCertificateValidationCallback = (sender, certificate, chain, errors) =>
+                        {
+                            getDotNetCert = X509CertificateLoader.LoadCertificate(certificate.Export(X509ContentType.Cert));
+                            Assert.NotNull(getDotNetCert.Subject);
+                            return errors == SslPolicyErrors.None;
+                        }
+                    }
+                };
+
+                using (HttpClient client = new HttpClient(handler))
+                using (CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
+                {
+                    using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Head, "https://get.dot.net/");
+                    using HttpResponseMessage response = await client.SendAsync(req, cts.Token).ConfigureAwait(false);
+                }
+
+                Assert.NotNull(getDotNetCert);
+                Assert.NotNull(getDotNetCert.Subject);
+                return getDotNetCert;
             }
         }
 
@@ -718,6 +794,53 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     // Don't allow any (additional?) I/O errors to propagate.
                 }
+            }
+        }
+
+        private class CrlCacheNameFinderEventListener : EventListener
+        {
+            private readonly string _certificateName;
+            private string _cacheName;
+
+            internal CrlCacheNameFinderEventListener(string certificateName)
+            {
+                _certificateName = certificateName;
+            }
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name.Equals("System.Security.Cryptography.X509Certificates.X509Chain.OpenSsl"))
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName == "CrlIdentifiersDetermined")
+                {
+                    if (eventData.Payload?.Count == 3)
+                    {
+                        if (eventData.Payload[0] is string certName &&
+                            certName == _certificateName &&
+                            eventData.Payload[1] is string cdp &&
+                            eventData.Payload[2] is string cacheName)
+                        {
+                            _cacheName = cacheName;
+                        }
+                    }
+                }
+            }
+
+            internal async Task<string> GetCacheFileNameAsync(CancellationToken cancellationToken)
+            {
+                while (_cacheName == null)
+                {
+                    await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+                }
+
+                Dispose();
+                return _cacheName;
             }
         }
 

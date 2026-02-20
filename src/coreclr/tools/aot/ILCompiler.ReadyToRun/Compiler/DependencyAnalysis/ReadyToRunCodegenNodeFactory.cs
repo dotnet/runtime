@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
@@ -357,6 +358,11 @@ namespace ILCompiler.DependencyAnalysis
             _copiedManagedResources = new NodeCache<EcmaModule, CopiedManagedResourcesNode>(module =>
             {
                 return new CopiedManagedResourcesNode(module);
+            });
+
+            _wasmTypeNodes = new(key =>
+            {
+                return new WasmTypeNode(key.Types);
             });
         }
 
@@ -1071,6 +1077,28 @@ namespace ILCompiler.DependencyAnalysis
                 return new Utf8String("RTR_HEADER"u8);
             }
             return default;
+        }
+
+        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
+        {
+            public readonly CorInfoWasmType[] Types;
+
+            public WasmTypeNodeKey(CorInfoWasmType[] types)
+            {
+                Types = types;
+            }
+
+            public bool Equals(WasmTypeNodeKey other) => Types.SequenceEqual(other.Types);
+            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
+            public override int GetHashCode()
+                => Types.Length; // TODO-WASM: Hash all the types
+        }
+
+        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(types));
         }
     }
 }

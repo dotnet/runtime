@@ -51,7 +51,7 @@ export function initializeCoreCLR(): number {
         buffers.push(valuePtr as any);
     }
 
-    const res = _ems_._BrowserHost_InitializeCoreCLR(propertyCount, appctx_keys, appctx_values);
+    const res = _ems_._BrowserHost_InitializeDotnet(propertyCount, appctx_keys, appctx_values);
     for (const buf of buffers) {
         _ems_._free(buf as any);
     }
@@ -81,14 +81,14 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
                 ptrs.push(ptr);
                 _ems_.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
             }
-            const res = _ems_._BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
+            _ems_.EXITSTATUS = _ems_._BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
             for (const ptr of ptrs) {
                 _ems_._free(ptr);
             }
 
-            if (res != 0) {
+            if (_ems_.EXITSTATUS == -1) {
                 const reason = new Error("Failed to execute assembly");
-                _ems_.dotnetApi.exit(res, reason);
+                _ems_.dotnetApi.exit(-1, reason);
                 throw reason;
             }
 
@@ -107,9 +107,9 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
 }
 
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
-    const res = await runMain(mainAssemblyName, args);
+    const exitCode = await runMain(mainAssemblyName, args);
     try {
-        _ems_.dotnetApi.exit(0, null);
+        _ems_.dotnetApi.exit(exitCode, null);
     } catch (error: any) {
         // do not propagate ExitStatus exception
         if (!error || typeof error.status !== "number") {
@@ -118,6 +118,6 @@ export async function runMainAndExit(mainAssemblyName?: string, args?: string[])
         }
         return error.status;
     }
-    return res;
+    return exitCode;
 }
 

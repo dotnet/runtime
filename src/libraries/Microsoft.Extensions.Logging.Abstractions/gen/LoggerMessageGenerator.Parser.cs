@@ -6,11 +6,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics.Hashing;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -21,12 +23,32 @@ namespace Microsoft.Extensions.Logging.Generators
             internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
             private readonly CancellationToken _cancellationToken;
-            private readonly Compilation _compilation;
-            private readonly Action<Diagnostic> _reportDiagnostic;
+            private readonly INamedTypeSymbol _loggerMessageAttribute;
+            private readonly INamedTypeSymbol _loggerSymbol;
+            private readonly INamedTypeSymbol _logLevelSymbol;
+            private readonly INamedTypeSymbol _exceptionSymbol;
+            private readonly INamedTypeSymbol _enumerableSymbol;
+            private readonly INamedTypeSymbol _stringSymbol;
+            private readonly Action<Diagnostic>? _reportDiagnostic;
 
-            public Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
+            public List<DiagnosticInfo> Diagnostics { get; } = new();
+
+            public Parser(
+                INamedTypeSymbol loggerMessageAttribute,
+                INamedTypeSymbol loggerSymbol,
+                INamedTypeSymbol logLevelSymbol,
+                INamedTypeSymbol exceptionSymbol,
+                INamedTypeSymbol enumerableSymbol,
+                INamedTypeSymbol stringSymbol,
+                Action<Diagnostic>? reportDiagnostic,
+                CancellationToken cancellationToken)
             {
-                _compilation = compilation;
+                _loggerMessageAttribute = loggerMessageAttribute;
+                _loggerSymbol = loggerSymbol;
+                _logLevelSymbol = logLevelSymbol;
+                _exceptionSymbol = exceptionSymbol;
+                _enumerableSymbol = enumerableSymbol;
+                _stringSymbol = stringSymbol;
                 _cancellationToken = cancellationToken;
                 _reportDiagnostic = reportDiagnostic;
             }
@@ -34,39 +56,8 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Gets the set of logging classes containing methods to output.
             /// </summary>
-            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
+            public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes, SemanticModel semanticModel)
             {
-                INamedTypeSymbol? loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
-                if (loggerMessageAttribute == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
-                if (loggerSymbol == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
-                if (logLevelSymbol == null)
-                {
-                    // nothing to do if this type isn't available
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol? exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
-                if (exceptionSymbol == null)
-                {
-                    Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");
-                    return Array.Empty<LoggerClass>();
-                }
-
-                INamedTypeSymbol enumerableSymbol = _compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-                INamedTypeSymbol stringSymbol = _compilation.GetSpecialType(SpecialType.System_String);
-
                 var results = new List<LoggerClass>();
                 var eventIds = new HashSet<int>();
                 var eventNames = new HashSet<string>();
@@ -75,7 +66,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classes.GroupBy(x => x.SyntaxTree))
                 {
                     SyntaxTree syntaxTree = group.Key;
-                    SemanticModel sm = _compilation.GetSemanticModel(syntaxTree);
+                    SemanticModel sm = semanticModel.Compilation.GetSemanticModel(syntaxTree);
 
                     foreach (ClassDeclarationSyntax classDec in group)
                     {
@@ -110,7 +101,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 foreach (AttributeSyntax ma in mal.Attributes)
                                 {
                                     IMethodSymbol attrCtorSymbol = sm.GetSymbolInfo(ma, _cancellationToken).Symbol as IMethodSymbol;
-                                    if (attrCtorSymbol == null || !loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
+                                    if (attrCtorSymbol == null || !_loggerMessageAttribute.Equals(attrCtorSymbol.ContainingType, SymbolEqualityComparer.Default))
                                     {
                                         // badly formed attribute definition, or not the right attribute
                                         continue;
@@ -126,7 +117,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                     foreach (AttributeData attributeData in boundAttributes)
                                     {
-                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, loggerMessageAttribute))
+                                        if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _loggerMessageAttribute))
                                         {
                                             continue;
                                         }
@@ -386,10 +377,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             Qualifier = qualifier,
                                             CodeName = needsAtSign ? "@" + paramName : paramName,
-                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
-                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
-                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
-                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, _loggerSymbol, sm.Compilation),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, _exceptionSymbol, sm.Compilation),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm.Compilation),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm.Compilation) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm.Compilation),
                                         };
 
                                         foundLogger |= lp.IsLogger;
@@ -450,7 +441,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             if (loggerField == null)
                                             {
-                                                (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, loggerSymbol);
+                                                (loggerField, multipleLoggerFields) = FindLoggerField(sm, classDec, _loggerSymbol);
                                             }
 
                                             if (multipleLoggerFields)
@@ -591,7 +582,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
-                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+                if (results.Count > 0 && semanticModel.Compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
                 {
                     // we only support C# 8.0 and above
                     Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
@@ -661,7 +652,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             continue;
                         }
-                        if (IsBaseOrIdentity(fs.Type, loggerSymbol))
+                        if (IsBaseOrIdentity(fs.Type, loggerSymbol, sm.Compilation))
                         {
                             if (loggerField == null)
                             {
@@ -696,7 +687,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 {
                     foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
                     {
-                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol, sm.Compilation))
                         {
                             if (shadowedNames.Contains(parameter.Name))
                             {
@@ -725,12 +716,17 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
-                _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
+                // Report immediately if callback is provided (preserves pragma suppression with original locations)
+                _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
+
+                // Also collect for scenarios that need the diagnostics list; in Roslyn 4.0+ incremental generators,
+                // this list is exposed via parser.Diagnostics (as ImmutableEquatableArray<DiagnosticInfo>) and reported in Execute.
+                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
             }
 
-            private bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest)
+            private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
             {
-                Conversion conversion = _compilation.ClassifyConversion(source, dest);
+                Conversion conversion = compilation.ClassifyConversion(source, dest);
                 return conversion.IsIdentity || (conversion.IsReference && conversion.IsImplicit);
             }
 
@@ -869,6 +865,48 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Namespace = string.Empty;
             public string Name = string.Empty;
             public LoggerClass? ParentClass;
+
+            public LoggerClassSpec ToSpec() => new LoggerClassSpec
+            {
+                Methods = Methods.Select(m => m.ToSpec()).ToImmutableEquatableArray(),
+                Keyword = Keyword,
+                Namespace = Namespace,
+                Name = Name,
+                ParentClass = ParentClass?.ToSpec()
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger class for incremental caching.
+        /// </summary>
+        internal sealed record LoggerClassSpec : IEquatable<LoggerClassSpec>
+        {
+            public required ImmutableEquatableArray<LoggerMethodSpec> Methods { get; init; }
+            public required string Keyword { get; init; }
+            public required string Namespace { get; init; }
+            public required string Name { get; init; }
+            public required LoggerClassSpec? ParentClass { get; init; }
+
+            public bool Equals(LoggerClassSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return Methods.Equals(other.Methods) &&
+                       Keyword == other.Keyword &&
+                       Namespace == other.Namespace &&
+                       Name == other.Name &&
+                       Equals(ParentClass, other.ParentClass);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Methods.GetHashCode();
+                hash = HashHelpers.Combine(hash, Keyword.GetHashCode());
+                hash = HashHelpers.Combine(hash, Namespace.GetHashCode());
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+                hash = HashHelpers.Combine(hash, ParentClass?.GetHashCode() ?? 0);
+                return hash;
+            }
         }
 
         /// <summary>
@@ -890,6 +928,84 @@ namespace Microsoft.Extensions.Logging.Generators
             public string Modifiers = string.Empty;
             public string LoggerField = string.Empty;
             public bool SkipEnabledCheck;
+
+            public LoggerMethodSpec ToSpec() => new LoggerMethodSpec
+            {
+                AllParameters = AllParameters.Select(p => p.ToSpec()).ToImmutableEquatableArray(),
+                TemplateParameters = TemplateParameters.Select(p => p.ToSpec()).ToImmutableEquatableArray(),
+                TemplateMap = TemplateMap.Select(kvp => new KeyValuePairEquatable<string, string>(kvp.Key, kvp.Value)).ToImmutableEquatableArray(),
+                TemplateList = TemplateList.ToImmutableEquatableArray(),
+                Name = Name,
+                UniqueName = UniqueName,
+                Message = Message,
+                Level = Level,
+                EventId = EventId,
+                EventName = EventName,
+                IsExtensionMethod = IsExtensionMethod,
+                Modifiers = Modifiers,
+                LoggerField = LoggerField,
+                SkipEnabledCheck = SkipEnabledCheck
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger method for incremental caching.
+        /// </summary>
+        internal sealed record LoggerMethodSpec : IEquatable<LoggerMethodSpec>
+        {
+            public required ImmutableEquatableArray<LoggerParameterSpec> AllParameters { get; init; }
+            public required ImmutableEquatableArray<LoggerParameterSpec> TemplateParameters { get; init; }
+            public required ImmutableEquatableArray<KeyValuePairEquatable<string, string>> TemplateMap { get; init; }
+            public required ImmutableEquatableArray<string> TemplateList { get; init; }
+            public required string Name { get; init; }
+            public required string UniqueName { get; init; }
+            public required string Message { get; init; }
+            public required int? Level { get; init; }
+            public required int EventId { get; init; }
+            public required string? EventName { get; init; }
+            public required bool IsExtensionMethod { get; init; }
+            public required string Modifiers { get; init; }
+            public required string LoggerField { get; init; }
+            public required bool SkipEnabledCheck { get; init; }
+
+            public bool Equals(LoggerMethodSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return AllParameters.Equals(other.AllParameters) &&
+                       TemplateParameters.Equals(other.TemplateParameters) &&
+                       TemplateMap.Equals(other.TemplateMap) &&
+                       TemplateList.Equals(other.TemplateList) &&
+                       Name == other.Name &&
+                       UniqueName == other.UniqueName &&
+                       Message == other.Message &&
+                       Level == other.Level &&
+                       EventId == other.EventId &&
+                       EventName == other.EventName &&
+                       IsExtensionMethod == other.IsExtensionMethod &&
+                       Modifiers == other.Modifiers &&
+                       LoggerField == other.LoggerField &&
+                       SkipEnabledCheck == other.SkipEnabledCheck;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = AllParameters.GetHashCode();
+                hash = HashHelpers.Combine(hash, TemplateParameters.GetHashCode());
+                hash = HashHelpers.Combine(hash, TemplateMap.GetHashCode());
+                hash = HashHelpers.Combine(hash, TemplateList.GetHashCode());
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+                hash = HashHelpers.Combine(hash, UniqueName.GetHashCode());
+                hash = HashHelpers.Combine(hash, Message.GetHashCode());
+                hash = HashHelpers.Combine(hash, Level?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, EventId.GetHashCode());
+                hash = HashHelpers.Combine(hash, EventName?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, IsExtensionMethod.GetHashCode());
+                hash = HashHelpers.Combine(hash, Modifiers.GetHashCode());
+                hash = HashHelpers.Combine(hash, LoggerField.GetHashCode());
+                hash = HashHelpers.Combine(hash, SkipEnabledCheck.GetHashCode());
+                return hash;
+            }
         }
 
         /// <summary>
@@ -908,6 +1024,82 @@ namespace Microsoft.Extensions.Logging.Generators
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+
+            public LoggerParameterSpec ToSpec() => new LoggerParameterSpec
+            {
+                Name = Name,
+                Type = Type,
+                CodeName = CodeName,
+                Qualifier = Qualifier,
+                IsLogger = IsLogger,
+                IsException = IsException,
+                IsLogLevel = IsLogLevel,
+                IsEnumerable = IsEnumerable
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a logger parameter for incremental caching.
+        /// </summary>
+        internal sealed record LoggerParameterSpec : IEquatable<LoggerParameterSpec>
+        {
+            public required string Name { get; init; }
+            public required string Type { get; init; }
+            public required string CodeName { get; init; }
+            public required string? Qualifier { get; init; }
+            public required bool IsLogger { get; init; }
+            public required bool IsException { get; init; }
+            public required bool IsLogLevel { get; init; }
+            public required bool IsEnumerable { get; init; }
+
+            // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
+            // but instead is supposed to be taken as a parameter for the template.
+            public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+
+            public bool Equals(LoggerParameterSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return Name == other.Name &&
+                       Type == other.Type &&
+                       CodeName == other.CodeName &&
+                       Qualifier == other.Qualifier &&
+                       IsLogger == other.IsLogger &&
+                       IsException == other.IsException &&
+                       IsLogLevel == other.IsLogLevel &&
+                       IsEnumerable == other.IsEnumerable;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Name.GetHashCode();
+                hash = HashHelpers.Combine(hash, Type.GetHashCode());
+                hash = HashHelpers.Combine(hash, CodeName.GetHashCode());
+                hash = HashHelpers.Combine(hash, Qualifier?.GetHashCode() ?? 0);
+                hash = HashHelpers.Combine(hash, IsLogger.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsException.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsLogLevel.GetHashCode());
+                hash = HashHelpers.Combine(hash, IsEnumerable.GetHashCode());
+                return hash;
+            }
+        }
+
+        /// <summary>
+        /// Equatable KeyValuePair wrapper for use in ImmutableEquatableArray.
+        /// </summary>
+        internal readonly record struct KeyValuePairEquatable<TKey, TValue>(TKey Key, TValue Value) : IEquatable<KeyValuePairEquatable<TKey, TValue>>
+            where TKey : IEquatable<TKey>
+            where TValue : IEquatable<TValue>
+        {
+            public bool Equals(KeyValuePairEquatable<TKey, TValue> other)
+            {
+                return Key.Equals(other.Key) && Value.Equals(other.Value);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashHelpers.Combine(Key.GetHashCode(), Value.GetHashCode());
+            }
         }
 
         /// <summary>

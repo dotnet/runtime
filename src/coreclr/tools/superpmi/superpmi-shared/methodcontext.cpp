@@ -6447,6 +6447,26 @@ void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     }
 }
 
+void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType value)
+{
+    if (GetWasmLowering == nullptr)
+        GetWasmLowering = new LightWeightMap<DWORDLONG, DWORD>();
+    DWORDLONG key = CastHandle(structHnd);
+    GetWasmLowering->Add(key, (DWORD) value);
+    DEBUG_REC(dmpGetWasmLowering(key, value));
+}
+void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
+{
+    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d ", key, value);
+}
+CorInfoWasmType MethodContext::repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+    DWORD value = LookupByKeyOrMiss(GetWasmLowering, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetWasmLowering(key, value));
+    return (CorInfoWasmType) value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, CorInfoReloc result)
 {
     if (GetRelocTypeHint == nullptr)
@@ -7334,6 +7354,46 @@ CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDL
     DWORDLONG value = LookupByKeyOrMiss(GetSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
     return (CORINFO_METHOD_HANDLE)value;
+}
+
+void MethodContext::recGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize, CORINFO_WASM_TYPE_SYMBOL_HANDLE result)
+{
+    if (GetWasmTypeSymbol == nullptr)
+        GetWasmTypeSymbol = new LightWeightMap<Agnostic_GetWasmTypeSymbol, DWORDLONG>();
+
+    Agnostic_GetWasmTypeSymbol key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.types = (DWORD)GetWasmTypeSymbol->AddBuffer((unsigned char*)types, (unsigned)(sizeof(CorInfoWasmType) * typesSize));
+    key.typesSize = (DWORD)typesSize;
+
+    DWORDLONG value = CastHandle(result);
+    GetWasmTypeSymbol->Add(key, value);
+    DEBUG_REC(dmpGetWasmTypeSymbol(key, value));
+}
+
+void MethodContext::dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, DWORDLONG value)
+{
+    printf("getWasmTypeSymbol types %u, typesSize %u, value %016" PRIX64 "", key.types, key.typesSize, value);
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
+{
+    if (GetWasmTypeSymbol == nullptr)
+    {
+        // Fake up a result so we can cross-replay onto wasm
+        return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)0xbadcab;
+    }
+
+    AssertMapExistsNoMessage(GetWasmTypeSymbol);
+
+    Agnostic_GetWasmTypeSymbol key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.types = (DWORD)GetWasmTypeSymbol->Contains((unsigned char*)types, (unsigned)(sizeof(CorInfoWasmType) * typesSize));
+    key.typesSize = (DWORD)typesSize;
+
+    DWORDLONG value = LookupByKeyOrMiss(GetWasmTypeSymbol, key, ": types %u, typesSize %u", key.types, key.typesSize);
+    DEBUG_REP(dmpGetWasmTypeSymbol(key, value));
+    return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)value;
 }
 
 void MethodContext::dmpSigInstHandleMap(DWORD key, DWORDLONG value)

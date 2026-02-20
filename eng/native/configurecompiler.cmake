@@ -727,6 +727,8 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
       endif()
     endif()
     add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
+    # Keep the Catalyst version in the -target triples below in sync
+    # with MacCatalystVersionMin in SetOSTargetMinVersions in Directory.Build.props.
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios17.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
