@@ -13,6 +13,8 @@
 // Combined with the epoch value in m_localEpoch for a single atomic field.
 static constexpr uint32_t ACTIVE_FLAG = 0x80000000U;
 
+static EbrCollector* const DetachedCollector = (EbrCollector*)-1;
+
 struct EbrThreadData
 {
     EbrCollector*      m_pCollector = nullptr;
@@ -59,7 +61,6 @@ struct EbrTlsDestructor final
         if (pData->m_pCollector != nullptr)
         {
             pData->m_pCollector->ThreadDetach();
-            *pData = {};
         }
     }
 };
@@ -138,6 +139,8 @@ EbrCollector::GetOrCreateThreadData()
     EbrThreadData* pData = &t_pThreadData;
     if (pData->m_pCollector == this)
         return pData;
+
+    _ASSERTE_ALL_BUILDS(pData->m_pCollector != DetachedCollector && "Attempt to reattach detached thread.");
 
     pData->m_pCollector = this;
 
@@ -255,8 +258,9 @@ EbrCollector::ThreadDetach()
             pp = &(*pp)->m_pNext;
     }
 
-    // Reset the thread's EBR data.
+    // Reset and then poison the thread's EBR data.
     *pData = {};
+    pData->m_pCollector = DetachedCollector;
 }
 
 // ============================================
@@ -412,13 +416,22 @@ EbrCollector::QueueForDeletion(void* pObject, EbrDeleteFunc pfnDelete, size_t es
     }
 
     // Insert into the current epoch's pending list.
+    size_t oldPending;
     {
         CrstHolder lock(&m_pendingLock);
 
+        oldPending = (size_t)m_pendingSizeInBytes;
         uint32_t slot = m_globalEpoch.Load();
         pEntry->m_pNext = m_pPendingHeads[slot];
         m_pPendingHeads[slot] = pEntry;
-        m_pendingSizeInBytes = (size_t)m_pendingSizeInBytes + estimatedSize;
+        m_pendingSizeInBytes = oldPending + estimatedSize;
     }
+
+    const size_t threshold = 128 * 1024; // 128KB is an arbitrary threshold for enabling finalization. Tune as needed.
+    if (oldPending < threshold && threshold <= (size_t)m_pendingSizeInBytes)
+    {
+        FinalizerThread::EnableFinalization();
+    }
+
     return true;
 }
