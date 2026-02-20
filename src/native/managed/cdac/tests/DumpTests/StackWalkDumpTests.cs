@@ -28,6 +28,7 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void StackWalk_CanWalkCrashingThread()
     {
+        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
         IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
@@ -43,6 +44,7 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void StackWalk_HasMultipleFrames()
     {
+        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
         IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
@@ -62,6 +64,7 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void StackWalk_ManagedFramesHaveValidMethodDescs()
     {
+        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
         IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -88,6 +91,7 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
     [ConditionalFact]
     public void StackWalk_FramesHaveRawContext()
     {
+        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
         IThread threadContract = Target.Contracts.Thread;
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
