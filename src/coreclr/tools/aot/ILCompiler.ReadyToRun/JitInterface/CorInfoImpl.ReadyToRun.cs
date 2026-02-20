@@ -1274,26 +1274,17 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.ReversePInvokeExit;
                     break;
 
-                // TODO: Encoding these as r2r helpers creates eager fixups. During fixup processing, the runtime asserts that no typeloading happens.
-                // However, in resolving these methods, they are loaded and their containing types are loaded, and the assertion fails.
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
-                {
-                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
-                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
-                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                }
+                    id = ReadyToRunHelper.AllocContinuation;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
-                {
-                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationMethod"u8, null);
-                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
-                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                }
+                    id = ReadyToRunHelper.AllocContinuationMethod;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
-                {
-                    var method = _compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8, null);
-                    var methodWithToken = new MethodWithToken(method, _compilation.CompilationModuleGroup.Resolver.GetModuleTokenForMethod(method, true, true), null, false, null);
-                    return _compilation.NodeFactory.MethodEntrypoint(methodWithToken, false, false, false);
-                }
+                    id = ReadyToRunHelper.AllocContinuationClass;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
