@@ -192,7 +192,7 @@ jobs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
     # CMake tryrun cache — restore cached feature detection results to speed up configure
-    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+    - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
       - script: |
           compiler_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
           echo "##vso[task.setvariable variable=CompilerVersion]${compiler_version}"
@@ -238,7 +238,7 @@ jobs:
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
     # CMake tryrun cache — extract results after build on cache miss
-    - ${{ if eq(parameters.enableNativeBuildCaching, true) }}:
+    - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
       - script: |
           if [[ "$(CMAKE_TRYRUN_CACHE_RESTORED)" == "true" ]]; then
             echo "Cache was restored, skipping extraction."

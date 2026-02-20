@@ -167,6 +167,7 @@ extends:
           jobParameters:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            enableNativeBuildCaching: true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -201,6 +202,7 @@ extends:
           jobParameters:
             nameSuffix: CoreCLR_Libraries
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            enableNativeBuildCaching: true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
