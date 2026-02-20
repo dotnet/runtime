@@ -244,13 +244,19 @@ namespace System.Buffers
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
             where T : struct, INumber<T>, IMinMaxValue<T>
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
+            T min;
+            T max;
 
-            foreach (T value in values)
+            if (typeof(T) == typeof(char))
             {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
+                // char is not a valid Vector128 element type; treat as ushort instead.
+                GetMinMax(MemoryMarshal.Cast<T, ushort>(values), out ushort minUshort, out ushort maxUshort);
+                min = Unsafe.BitCast<ushort, T>(minUshort);
+                max = Unsafe.BitCast<ushort, T>(maxUshort);
+            }
+            else
+            {
+                GetMinMax(values, out min, out max);
             }
 
             minInclusive = min;
@@ -278,6 +284,58 @@ namespace System.Buffers
             }
 
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void GetMinMax<T>(ReadOnlySpan<T> values, out T min, out T max)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            Debug.Assert(values.Length >= 1);
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && values.Length >= Vector128<T>.Count)
+            {
+                ref T current = ref MemoryMarshal.GetReference(values);
+                ref T lastVectorStart = ref Unsafe.Add(ref current, values.Length - Vector128<T>.Count);
+
+                Vector128<T> vMin = Vector128.Create(T.MaxValue);
+                Vector128<T> vMax = Vector128.Create(T.MinValue);
+
+                do
+                {
+                    Vector128<T> v = Vector128.LoadUnsafe(ref current);
+                    vMin = Vector128.Min(vMin, v);
+                    vMax = Vector128.Max(vMax, v);
+                    current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                }
+                while (Unsafe.IsAddressLessThan(ref current, ref lastVectorStart));
+
+                // Process the last (possibly overlapping) vector.
+                Vector128<T> last = Vector128.LoadUnsafe(ref lastVectorStart);
+                vMin = Vector128.Min(vMin, last);
+                vMax = Vector128.Max(vMax, last);
+
+                // Horizontal reduction.
+                min = vMin[0];
+                max = vMax[0];
+                for (int i = 1; i < Vector128<T>.Count; i++)
+                {
+                    min = T.Min(vMin[i], min);
+                    max = T.Max(vMax[i], max);
+                }
+                return;
+            }
+
+            // Scalar fallback.
+            T fallbackMin = T.MaxValue;
+            T fallbackMax = T.MinValue;
+            foreach (T value in values)
+            {
+                fallbackMin = T.Min(fallbackMin, value);
+                fallbackMax = T.Max(fallbackMax, value);
+            }
+
+            min = fallbackMin;
+            max = fallbackMax;
         }
 
         internal interface IRuntimeConst

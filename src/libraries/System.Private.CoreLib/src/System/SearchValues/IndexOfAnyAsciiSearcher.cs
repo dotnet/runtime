@@ -75,24 +75,62 @@ namespace System.Buffers
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(char));
 
-            Vector128<byte> bitmapSpace = default;
-            byte* bitmapLocal = (byte*)&bitmapSpace;
             BitVector256 lookupLocal = default;
 
-            foreach (T tValue in values)
+            if (Vector128.IsHardwareAccelerated)
             {
-                int value = int.CreateChecked(tValue);
+                // Build a boolean "seen" array first, then convert to the bitmap using SIMD.
+                // The bitmap encodes: bitmap[lowNibble] has bit highNibble set iff value (highNibble << 4 | lowNibble) is in the set.
+                // seen[r * 16 + c] == 1 iff value (r << 4 | c) is in the set (r = highNibble, c = lowNibble).
+                Span<byte> seen = stackalloc byte[128];
+                seen.Clear();
 
-                if (value > 127)
+                foreach (T tValue in values)
                 {
-                    continue;
+                    int value = int.CreateChecked(tValue);
+
+                    if (value > 127)
+                    {
+                        continue;
+                    }
+
+                    lookupLocal.Set(value);
+                    seen[value] = 1;
                 }
 
-                lookupLocal.Set(value);
-                SetBitmapBit(bitmapLocal, value);
-            }
+                // Convert seen[] to the bitmap vectorially.
+                // For each high-nibble row r (0-7), shift the 16 seen bytes left by r bits and OR into the bitmap.
+                // seen[] values are 0 or 1, so shifting by r (0-7) fits within each byte without cross-byte contamination.
+                ref byte seenRef = ref seen[0];
+                Vector128<byte> bitmap = Vector128<byte>.Zero;
+                for (int r = 0; r < 8; r++)
+                {
+                    Vector128<byte> row = Vector128.LoadUnsafe(ref Unsafe.Add(ref seenRef, r * 16));
+                    bitmap |= (row.AsUInt16() << r).AsByte();
+                }
 
-            state = new AsciiState(bitmapSpace, lookupLocal);
+                state = new AsciiState(bitmap, lookupLocal);
+            }
+            else
+            {
+                Vector128<byte> bitmapSpace = default;
+                byte* bitmapLocal = (byte*)&bitmapSpace;
+
+                foreach (T tValue in values)
+                {
+                    int value = int.CreateChecked(tValue);
+
+                    if (value > 127)
+                    {
+                        continue;
+                    }
+
+                    lookupLocal.Set(value);
+                    SetBitmapBit(bitmapLocal, value);
+                }
+
+                state = new AsciiState(bitmapSpace, lookupLocal);
+            }
         }
 
         public static bool CanUseUniqueLowNibbleSearch<T>(ReadOnlySpan<T> values, int maxInclusive)
