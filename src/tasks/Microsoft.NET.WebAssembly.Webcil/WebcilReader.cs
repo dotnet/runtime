@@ -75,7 +75,7 @@ public sealed partial class WebcilReader : IDisposable
             header.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_rva);
             header.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_size);
             header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_rva);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
+            header.pe_debug_size = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
         }
         if (header.id[0] != 'W' || header.id[1] != 'b'
             || header.id[2] != 'I' || header.id[3] != 'L'
