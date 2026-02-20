@@ -418,23 +418,50 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
                     {
-                        ushort flagsValue = Unsafe.As<byte, ushort>(ref pFlagsValue);
+                        ushort flagsValue;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        flagsValue = Unsafe.As<byte, ushort>(ref pFlagsValue);
+                    }
+                // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
                         return (Unsafe.As<byte, ushort>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+                }
 
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
                     {
-                        uint flagsValue = Unsafe.As<byte, uint>(ref pFlagsValue);
+                        uint flagsValue;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        flagsValue = Unsafe.As<byte, uint>(ref pFlagsValue);
+                    }
+                // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
                         return (Unsafe.As<byte, uint>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+                }
 
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
                     {
-                        ulong flagsValue = Unsafe.As<byte, ulong>(ref pFlagsValue);
+                        ulong flagsValue;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        flagsValue = Unsafe.As<byte, ulong>(ref pFlagsValue);
+                    }
+                // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
                         return (Unsafe.As<byte, ulong>(ref pThisValue) & flagsValue) == flagsValue;
                     }
+                }
 
 #if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -891,20 +918,111 @@ namespace System
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(sbyte)) return TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
-            if (underlyingType == typeof(byte)) return TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
-            if (underlyingType == typeof(short)) return TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
-            if (underlyingType == typeof(ushort)) return TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
-            if (underlyingType == typeof(int)) return TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
-            if (underlyingType == typeof(uint)) return TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
-            if (underlyingType == typeof(long)) return TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
-            if (underlyingType == typeof(ulong)) return TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
+            if (underlyingType == typeof(sbyte))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
+                }
+            }
+            if (underlyingType == typeof(byte))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
+                }
+            }
+            if (underlyingType == typeof(short))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
+                }
+            }
+            if (underlyingType == typeof(ushort))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
+                }
+            }
+            if (underlyingType == typeof(int))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
+                }
+            }
+            if (underlyingType == typeof(uint))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
+                }
+            }
+            if (underlyingType == typeof(long))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
+                }
+            }
+            if (underlyingType == typeof(ulong))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
+                }
+            }
 #if RARE_ENUMS
-            if (underlyingType == typeof(nint)) return TryParseRareTypeByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
-            if (underlyingType == typeof(nuint)) return TryParseRareTypeByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
-            if (underlyingType == typeof(float)) return TryParseRareTypeByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, float>(ref result));
-            if (underlyingType == typeof(double)) return TryParseRareTypeByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, double>(ref result));
-            if (underlyingType == typeof(char)) return TryParseRareTypeByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, char>(ref result));
+            if (underlyingType == typeof(nint))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseRareTypeByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
+                }
+            }
+            if (underlyingType == typeof(nuint))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseRareTypeByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
+                }
+            }
+            if (underlyingType == typeof(float))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseRareTypeByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, float>(ref result));
+                }
+            }
+            if (underlyingType == typeof(double))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseRareTypeByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, double>(ref result));
+                }
+            }
+            if (underlyingType == typeof(char))
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return TryParseRareTypeByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, char>(ref result));
+                }
+            }
 #endif
 
             throw CreateUnknownEnumTypeException();
@@ -935,7 +1053,11 @@ namespace System
                 if (!char.IsAsciiDigit(c) && c != '-' && c != '+')
                 {
                     Unsafe.SkipInit(out result);
-                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    }
                 }
 
                 NumberFormatInfo numberFormat = NumberFormatInfo.InvariantInfo;
@@ -950,7 +1072,11 @@ namespace System
                 if (status != Number.ParsingStatus.Overflow)
                 {
                     Unsafe.SkipInit(out result);
-                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    }
                 }
 
                 if (throwOnFailure)
@@ -993,7 +1119,11 @@ namespace System
                 if (!char.IsAsciiDigit(c) && c != '-' && c != '+')
                 {
                     Unsafe.SkipInit(out result);
-                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    }
                 }
 
 #if RARE_ENUMS
@@ -1017,7 +1147,11 @@ namespace System
                 if (status != Number.ParsingStatus.Overflow)
                 {
                     Unsafe.SkipInit(out result);
-                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                    }
                 }
 
                 if (throwOnFailure)
@@ -1164,7 +1298,10 @@ namespace System
         internal object GetValue()
         {
             ref byte data = ref this.GetRawData();
-            return InternalGetCorElementType() switch
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data),
                 CorElementType.ELEMENT_TYPE_U1 => data,
@@ -1184,6 +1321,7 @@ namespace System
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
+            }
         }
 
         /// <inheritdoc/>
@@ -1210,15 +1348,27 @@ namespace System
 
                 case CorElementType.ELEMENT_TYPE_I2:
                 case CorElementType.ELEMENT_TYPE_U2:
-                    return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pOtherValue);
+                    }
 
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pOtherValue);
+                    }
 
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pOtherValue);
+                    }
 
 #if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
@@ -1255,7 +1405,10 @@ namespace System
             // The runtime can bypass calls to Enum::GetHashCode and call the underlying type's GetHashCode directly
             // to avoid boxing the enum.
             ref byte data = ref this.GetRawData();
-            return InternalGetCorElementType() switch
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return InternalGetCorElementType() switch
             {
                 CorElementType.ELEMENT_TYPE_I1 => Unsafe.As<byte, sbyte>(ref data).GetHashCode(),
                 CorElementType.ELEMENT_TYPE_U1 => data.GetHashCode(),
@@ -1275,6 +1428,7 @@ namespace System
 #endif
                 _ => throw CreateUnknownEnumTypeException(),
             };
+            }
         }
 
         /// <inheritdoc/>
@@ -1295,35 +1449,71 @@ namespace System
             switch (InternalGetCorElementType())
             {
                 case CorElementType.ELEMENT_TYPE_I1:
-                    return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, sbyte>(ref pThisValue).CompareTo(Unsafe.As<byte, sbyte>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_U1:
                     return pThisValue.CompareTo(pTargetValue);
 
                 case CorElementType.ELEMENT_TYPE_I2:
-                    return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, short>(ref pThisValue).CompareTo(Unsafe.As<byte, short>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_U2:
-                    return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_I4:
-                    return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_U4:
-                    return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_I8:
-                    return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_U8:
-                    return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));
+                    }
 
 #if RARE_ENUMS
                 case CorElementType.ELEMENT_TYPE_R4:
-                    return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, float>(ref pThisValue).CompareTo(Unsafe.As<byte, float>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_R8:
-                    return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<byte, double>(ref pThisValue).CompareTo(Unsafe.As<byte, double>(ref pTargetValue));
+                    }
 
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     goto case CorElementType.ELEMENT_TYPE_U1;
@@ -1467,7 +1657,12 @@ namespace System
         {
             AssertValidGenerics<TUnderlying, TStorage>();
 
-            TStorage value = Unsafe.As<byte, TStorage>(ref rawData);
+            TStorage value;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                value = Unsafe.As<byte, TStorage>(ref rawData);
+            }
 
             EnumInfo<TStorage> enumInfo = GetEnumInfo<TStorage>(enumType);
             string? result = enumInfo.HasFlagsAttribute ?
@@ -1497,7 +1692,12 @@ namespace System
         {
             AssertValidGenerics<TUnderlying, TStorage>();
 
-            TStorage value = Unsafe.As<byte, TStorage>(ref rawData);
+            TStorage value;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                value = Unsafe.As<byte, TStorage>(ref rawData);
+            }
 
             string? result;
             switch (format | 0x20)
@@ -1693,7 +1893,10 @@ namespace System
 
             if (format.IsEmpty)
             {
-                return corElementType switch
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return corElementType switch
                 {
                     CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveDefault<sbyte, byte>(enumType, (sbyte)rawData, destination, out charsWritten),
                     CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveDefault<byte, byte>(enumType, rawData, destination, out charsWritten),
@@ -1712,10 +1915,14 @@ namespace System
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
+                }
             }
             else
             {
-                return corElementType switch
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return corElementType switch
                 {
                     CorElementType.ELEMENT_TYPE_I1 => TryFormatPrimitiveNonDefault<sbyte, byte>(enumType, (sbyte)rawData, destination, out charsWritten, format),
                     CorElementType.ELEMENT_TYPE_U1 => TryFormatPrimitiveNonDefault<byte, byte>(enumType, rawData, destination, out charsWritten, format),
@@ -1734,6 +1941,7 @@ namespace System
 #endif
                     _ => throw CreateUnknownEnumTypeException(),
                 };
+                }
             }
         }
 
@@ -1908,7 +2116,11 @@ namespace System
                         return value.TryFormat(destination, out charsWritten, format: default, provider: null);
 
                     case 'x':
-                        return TryFormatNumberAsHex<TStorage>(ref Unsafe.As<TUnderlying, byte>(ref value), destination, out charsWritten);
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return TryFormatNumberAsHex<TStorage>(ref Unsafe.As<TUnderlying, byte>(ref value), destination, out charsWritten);
+                        }
 
                     case 'f':
                         bool destinationIsTooSmall = false;

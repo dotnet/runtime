@@ -401,7 +401,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             int length = @this.Length;
             return length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(@this, length);
         }
@@ -411,7 +416,12 @@ namespace System
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
 
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             Array.Copy(@this, 0, array, index, @this.Length);
         }
 
@@ -419,7 +429,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             return @this.Length;
         }
 
@@ -427,7 +442,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             if ((uint)index >= (uint)@this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
@@ -440,7 +460,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             if ((uint)index >= (uint)@this.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
@@ -459,7 +484,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             return Array.IndexOf(@this, value, 0, @this.Length) >= 0;
         }
 
@@ -480,7 +510,12 @@ namespace System
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above
             // ! or you may introduce a security hole!
-            T[] @this = Unsafe.As<T[]>(this);
+            T[] @this;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                @this = Unsafe.As<T[]>(this);
+            }
             return Array.IndexOf(@this, value, 0, @this.Length);
         }
 

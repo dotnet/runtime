@@ -943,7 +943,12 @@ namespace System
                     // and string.Concat(IEnumerable<char>) can be used as an efficient
                     // enumerable-based equivalent of new string(char[]).
 
-                    IEnumerator<char> en = Unsafe.As<IEnumerator<char>>(e);
+                    IEnumerator<char> en;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        en = Unsafe.As<IEnumerator<char>>(e);
+                    }
 
                     char c = en.Current; // save the first value
                     if (!en.MoveNext())
@@ -2072,13 +2077,16 @@ namespace System
             else
             {
                 var map = new ProbabilisticMap(separators);
-                ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
-
-                for (int i = 0; i < source.Length; i++)
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref uint charMap = ref Unsafe.As<ProbabilisticMap, uint>(ref map);
+                    for (int i = 0; i < source.Length; i++)
                 {
                     if (ProbabilisticMap.Contains(ref charMap, separators, source[i]))
                     {
                         sepListBuilder.Append(i);
+                    }
                     }
                 }
             }

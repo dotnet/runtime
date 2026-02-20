@@ -2381,8 +2381,12 @@ namespace System.Threading.Tasks
         private static readonly ContextCallback s_ecCallback = obj =>
         {
             Debug.Assert(obj is Task);
+            // TODO(unsafe): Baselining unsafe usage
             // Only used privately to pass directly to EC.Run
-            Unsafe.As<Task>(obj).InnerInvoke();
+            unsafe
+            {
+                Unsafe.As<Task>(obj).InnerInvoke();
+            }
         };
 
         /// <summary>
@@ -6728,7 +6732,11 @@ namespace System.Threading.Tasks
                 // since if argument was strongly-typed as an array, it would have bound to the array-based overload.
                 if (tasks.GetType() == typeof(List<TTask>))
                 {
-                    return WhenAnyCore((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(Unsafe.As<List<TTask>>(tasks)));
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return WhenAnyCore((ReadOnlySpan<TTask>)CollectionsMarshal.AsSpan(Unsafe.As<List<TTask>>(tasks)));
+                    }
                 }
                 if (tasks is TTask[] tasksAsArray)
                 {

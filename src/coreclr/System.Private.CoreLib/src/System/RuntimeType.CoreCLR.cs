@@ -2448,7 +2448,11 @@ namespace System
                 {
                     object? cache = GCHandle.InternalGet(m_cache);
                     Debug.Assert(cache == null || cache is RuntimeTypeCache);
-                    return Unsafe.As<RuntimeTypeCache>(cache);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return Unsafe.As<RuntimeTypeCache>(cache);
+                    }
                 }
                 return null;
             }
@@ -2465,7 +2469,11 @@ namespace System
                     if (cache != null)
                     {
                         Debug.Assert(cache is RuntimeTypeCache);
-                        return Unsafe.As<RuntimeTypeCache>(cache);
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return Unsafe.As<RuntimeTypeCache>(cache);
+                        }
                     }
                 }
                 return InitializeCache();

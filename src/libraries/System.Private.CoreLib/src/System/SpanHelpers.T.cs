@@ -1463,7 +1463,11 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
-                return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), Unsafe.BitCast<T, short>(value), length);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return PackedSpanHelpers.Contains(ref Unsafe.As<T, short>(ref searchSpace), Unsafe.BitCast<T, short>(value), length);
+                }
             }
 
             return NonPackedContainsValueType(ref searchSpace, value, length);
@@ -1621,15 +1625,33 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfChar(ref char searchSpace, char value, int length)
-            => IndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfChar(ref char searchSpace, char value, int length)
-            => LastIndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return LastIndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int NonPackedIndexOfChar(ref char searchSpace, char value, int length) =>
-            NonPackedIndexOfValueType<short, DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        internal static int NonPackedIndexOfChar(ref char searchSpace, char value, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NonPackedIndexOfValueType<short, DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
@@ -1646,9 +1668,13 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value))
             {
-                return typeof(TNegator) == typeof(DontNegate<short>)
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOf(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value), length)
                     : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value), length);
+                }
             }
 
             return NonPackedIndexOfValueType<TValue, TNegator>(ref searchSpace, value, length);
@@ -1840,11 +1866,23 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAnyChar(ref char searchSpace, char value0, char value1, int length)
-            => IndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfAnyChar(ref char searchSpace, char value0, char value1, int length)
-            => LastIndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return LastIndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
@@ -1872,16 +1910,24 @@ namespace System
                     if ((char0 ^ char1) == 0x20)
                     {
                         char lowerCase = (char)Math.Max(char0, char1);
+                        // TODO(unsafe): Baselining unsafe usage
 
-                        return typeof(TNegator) == typeof(DontNegate<short>)
+                        unsafe
+                        {
+                            return typeof(TNegator) == typeof(DontNegate<short>)
                             ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length)
                             : PackedSpanHelpers.IndexOfAnyExceptIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length);
+                        }
                     }
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return typeof(TNegator) == typeof(DontNegate<short>)
+                unsafe
+                {
+                    return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), char0, char1, length)
                     : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), char0, char1, length);
+                }
             }
 
             return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, length);
@@ -2121,9 +2167,13 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2))
             {
-                return typeof(TNegator) == typeof(DontNegate<short>)
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value0), Unsafe.BitCast<TValue, char>(value1), Unsafe.BitCast<TValue, char>(value2), length)
                     : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), Unsafe.BitCast<TValue, char>(value0), Unsafe.BitCast<TValue, char>(value1), Unsafe.BitCast<TValue, char>(value2), length);
+                }
             }
 
             return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, value2, length);
@@ -3868,13 +3918,16 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(T) == typeof(ushort) && PackedSpanHelpers.CanUsePackedIndexOf(lowInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(highInclusive) && highInclusive >= lowInclusive)
             {
-                ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
-                char charLowInclusive = Unsafe.BitCast<T, char>(lowInclusive);
-                char charRange = (char)(Unsafe.BitCast<T, char>(highInclusive) - charLowInclusive);
-
-                return typeof(TNegator) == typeof(DontNegate<ushort>)
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref char charSearchSpace = ref Unsafe.As<T, char>(ref searchSpace);
+                    char charLowInclusive = Unsafe.BitCast<T, char>(lowInclusive);
+                    char charRange = (char)(Unsafe.BitCast<T, char>(highInclusive) - charLowInclusive);
+                    return typeof(TNegator) == typeof(DontNegate<ushort>)
                     ? PackedSpanHelpers.IndexOfAnyInRange(ref charSearchSpace, charLowInclusive, charRange, length)
                     : PackedSpanHelpers.IndexOfAnyExceptInRange(ref charSearchSpace, charLowInclusive, charRange, length);
+                }
             }
 
             return NonPackedIndexOfAnyInRangeUnsignedNumber<T, TNegator>(ref searchSpace, lowInclusive, highInclusive, length);

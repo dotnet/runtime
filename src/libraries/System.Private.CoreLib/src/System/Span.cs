@@ -379,7 +379,11 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _reference), _length));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _reference), _length));
+                }
             }
             return $"System.Span<{typeof(T).Name}>[{_length}]";
         }

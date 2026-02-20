@@ -36,7 +36,13 @@ namespace System
         }
 
         public bool Contains(char value)
-            => SpanHelpers.ContainsValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.ContainsValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+            }
+        }
 
         public bool Contains(char value, StringComparison comparisonType)
         {
@@ -443,7 +449,13 @@ namespace System
         // The character at position startIndex is included in the search.  startIndex is the larger
         // index within the string.
         public int LastIndexOf(char value)
-            => SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref _firstChar), (short)value, Length);
+            }
+        }
 
         public int LastIndexOf(char value, int startIndex)
         {
@@ -468,7 +480,12 @@ namespace System
             }
 
             int startSearchAt = startIndex + 1 - count;
-            int result = SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref Unsafe.Add(ref _firstChar, startSearchAt)), (short)value, count);
+            int result;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                result = SpanHelpers.LastIndexOfValueType(ref Unsafe.As<char, short>(ref Unsafe.Add(ref _firstChar, startSearchAt)), (short)value, count);
+            }
 
             return result < 0 ? result : result + startSearchAt;
         }

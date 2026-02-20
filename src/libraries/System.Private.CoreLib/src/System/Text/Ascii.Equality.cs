@@ -27,8 +27,14 @@ namespace System.Text
 
         /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool Equals(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return left.Length == right.Length
             && Equals<byte, ushort, WideningLoader>(ref MemoryMarshal.GetReference(left), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
+            }
+        }
 
         /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
         public static bool Equals(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
@@ -36,8 +42,14 @@ namespace System.Text
 
         /// <inheritdoc cref="Equals(ReadOnlySpan{byte}, ReadOnlySpan{char})"/>
         public static bool Equals(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return left.Length == right.Length
             && Equals<ushort, ushort, PlainLoader<ushort>>(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(left)), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
+            }
+        }
 
         private static bool Equals<TLeft, TRight, TLoader>(ref TLeft left, ref TRight right, nuint length)
             where TLeft : unmanaged, INumberBase<TLeft>
@@ -178,8 +190,14 @@ namespace System.Text
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return left.Length == right.Length
             && EqualsIgnoreCase<byte, ushort, WideningLoader>(ref MemoryMarshal.GetReference(left), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
+            }
+        }
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
@@ -187,11 +205,23 @@ namespace System.Text
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return left.Length == right.Length
             && EqualsIgnoreCase<ushort, ushort, PlainLoader<ushort>>(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(left)), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
+            }
+        }
 
-        internal static bool EqualsIgnoreCase(ref char left, ref char right, nuint length) =>
-            EqualsIgnoreCase<ushort, ushort, PlainLoader<ushort>>(ref Unsafe.As<char, ushort>(ref left), ref Unsafe.As<char, ushort>(ref right), length);
+        internal static bool EqualsIgnoreCase(ref char left, ref char right, nuint length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return EqualsIgnoreCase<ushort, ushort, PlainLoader<ushort>>(ref Unsafe.As<char, ushort>(ref left), ref Unsafe.As<char, ushort>(ref right), length);
+            }
+        }
 
         private static bool EqualsIgnoreCase<TLeft, TRight, TLoader>(ref TLeft left, ref TRight right, nuint length)
             where TLeft : unmanaged, INumberBase<TLeft>

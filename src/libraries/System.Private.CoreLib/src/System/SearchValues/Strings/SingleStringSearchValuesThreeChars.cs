@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -256,8 +256,18 @@ namespace System.Buffers
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace));
-                Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
-                Vector128<ushort> cmpCh3 = Vector128.Equals(ch3, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                Vector128<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
+                }
+                Vector128<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector128.Equals(ch3, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                }
                 // AND all 3 together to get a mask of possible match positions that match in at least 3 places.
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
@@ -269,8 +279,18 @@ namespace System.Buffers
                 Vector128<ushort> caseConversion = Vector128.Create(CaseConversionMask);
 
                 Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace) & caseConversion);
-                Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
-                Vector128<ushort> cmpCh3 = Vector128.Equals(ch3, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                Vector128<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
+                }
+                Vector128<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector128.Equals(ch3, Vector128.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                }
                 // AND all 3 together to get a mask of possible match positions that likely match in at least 3 places.
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
@@ -284,8 +304,18 @@ namespace System.Buffers
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace));
-                Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
-                Vector256<ushort> cmpCh3 = Vector256.Equals(ch3, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                Vector256<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
+                }
+                Vector256<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector256.Equals(ch3, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                }
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
             else
@@ -293,8 +323,18 @@ namespace System.Buffers
                 Vector256<ushort> caseConversion = Vector256.Create(CaseConversionMask);
 
                 Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace) & caseConversion);
-                Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
-                Vector256<ushort> cmpCh3 = Vector256.Equals(ch3, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                Vector256<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
+                }
+                Vector256<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector256.Equals(ch3, Vector256.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                }
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
         }
@@ -307,8 +347,18 @@ namespace System.Buffers
             if (typeof(TCaseSensitivity) == typeof(CaseSensitive))
             {
                 Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace));
-                Vector512<ushort> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
-                Vector512<ushort> cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                Vector512<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16());
+                }
+                Vector512<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16());
+                }
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
             else
@@ -316,8 +366,18 @@ namespace System.Buffers
                 Vector512<ushort> caseConversion = Vector512.Create(CaseConversionMask);
 
                 Vector512<ushort> cmpCh1 = Vector512.Equals(ch1, Vector512.LoadUnsafe(ref searchSpace) & caseConversion);
-                Vector512<ushort> cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
-                Vector512<ushort> cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                Vector512<ushort> cmpCh2;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh2 = Vector512.Equals(ch2, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch2ByteOffset).AsUInt16() & caseConversion);
+                }
+                Vector512<ushort> cmpCh3;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmpCh3 = Vector512.Equals(ch3, Vector512.LoadUnsafe(ref Unsafe.As<char, byte>(ref searchSpace), ch3ByteOffset).AsUInt16() & caseConversion);
+                }
                 return (cmpCh1 & cmpCh2 & cmpCh3).AsByte();
             }
         }

@@ -695,7 +695,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([NotNullWhen(true)] string? s, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(s, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <summary>Tries to convert a character span containing the string representation of a number to its floating-point number equivalent.</summary>
@@ -705,7 +709,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(s, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its floating-point number equivalent.</summary>
@@ -715,7 +723,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(utf8Text, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(utf8Text, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <summary>Tries to convert the string representation of a number in a specified style and culture-specific format to its floating-point number equivalent.</summary>
@@ -732,7 +744,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <summary>Tries to convert a character span containing the string representation of a number in a specified style and culture-specific format to its floating-point number equivalent.</summary>
@@ -749,7 +765,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <summary>Compares this instance to a specified object and returns an integer that indicates whether the value of this instance is less than, equal to, or greater than the value of the specified object.</summary>
@@ -1920,7 +1940,11 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(utf8Text, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return NativeType.TryParse(utf8Text, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+            }
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

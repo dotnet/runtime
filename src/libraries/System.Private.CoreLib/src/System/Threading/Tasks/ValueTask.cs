@@ -173,19 +173,27 @@ namespace System.Threading.Tasks
         {
             object? obj = _obj;
             Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
-            return
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return
                 obj == null ? Task.CompletedTask :
                 obj as Task ??
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
+            }
         }
 
         internal object AsTaskOrNotifier()
         {
             object? obj = _obj;
             Debug.Assert(obj is Task || obj is IValueTaskSource);
-            return
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return
                 obj as Task ??
                 (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource>(obj), _token);
+            }
         }
 
         private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
@@ -333,8 +341,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCompleted;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) != ValueTaskSourceStatus.Pending;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) != ValueTaskSourceStatus.Pending;
+                }
             }
         }
 
@@ -356,8 +368,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCompletedSuccessfully;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
+                }
             }
         }
 
@@ -378,8 +394,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsFaulted;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Faulted;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Faulted;
+                }
             }
         }
 
@@ -405,8 +425,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCanceled;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Canceled;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) == ValueTaskSourceStatus.Canceled;
+                }
             }
         }
 
@@ -425,7 +449,11 @@ namespace System.Threading.Tasks
                 }
                 else
                 {
-                    Unsafe.As<IValueTaskSource>(obj).GetResult(_token);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        Unsafe.As<IValueTaskSource>(obj).GetResult(_token);
+                    }
                 }
             }
         }
@@ -608,17 +636,25 @@ namespace System.Threading.Tasks
             {
                 return t;
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
+            unsafe
+            {
+                return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
+            }
         }
 
         internal object AsTaskOrNotifier()
         {
             object? obj = _obj;
             Debug.Assert(obj is Task<TResult> || obj is IValueTaskSource<TResult>);
-            return
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return
                 obj as Task ??
                 (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource<TResult>>(obj), _token);
+            }
         }
 
         private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
@@ -764,8 +800,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCompleted;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) != ValueTaskSourceStatus.Pending;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) != ValueTaskSourceStatus.Pending;
+                }
             }
         }
 
@@ -787,8 +827,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCompletedSuccessfully;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Succeeded;
+                }
             }
         }
 
@@ -809,8 +853,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsFaulted;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Faulted;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Faulted;
+                }
             }
         }
 
@@ -836,8 +884,12 @@ namespace System.Threading.Tasks
                 {
                     return t.IsCanceled;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Canceled;
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource<TResult>>(obj).GetStatus(_token) == ValueTaskSourceStatus.Canceled;
+                }
             }
         }
 
@@ -861,8 +913,12 @@ namespace System.Threading.Tasks
                     TaskAwaiter.ValidateEnd(t);
                     return t.ResultOnSuccess;
                 }
+                // TODO(unsafe): Baselining unsafe usage
 
-                return Unsafe.As<IValueTaskSource<TResult>>(obj).GetResult(_token);
+                unsafe
+                {
+                    return Unsafe.As<IValueTaskSource<TResult>>(obj).GetResult(_token);
+                }
             }
         }
 

@@ -443,7 +443,11 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
-            return Unsafe.ReadUnaligned<Vector3>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.ReadUnaligned<Vector3>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
+            }
         }
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -731,8 +735,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 LoadUnsafe(ref readonly float source)
         {
-            ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.AsRef(in source));
-            return Unsafe.ReadUnaligned<Vector3>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.AsRef(in source));
+                return Unsafe.ReadUnaligned<Vector3>(in address);
+            }
         }
 
         /// <inheritdoc cref="Vector4.LoadUnsafe(ref readonly float, nuint)" />
@@ -741,8 +749,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 LoadUnsafe(ref readonly float source, nuint elementOffset)
         {
-            ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
-            return Unsafe.ReadUnaligned<Vector3>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<float, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+                return Unsafe.ReadUnaligned<Vector3>(in address);
+            }
         }
 
         /// <inheritdoc cref="Vector4.Log(Vector4)" />
@@ -980,8 +992,12 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[0]), this);
+            }
         }
 
         /// <summary>Copies the elements of the vector to a specified array starting at a specified index position.</summary>
@@ -1008,8 +1024,12 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref array[index]), this);
+            }
         }
 
         /// <summary>Copies the vector to the given <see cref="Span{T}" />. The length of the destination span must be at least 3.</summary>
@@ -1022,8 +1042,12 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            }
         }
 
         /// <summary>Attempts to copy the vector to the given <see cref="Span{Single}" />. The length of the destination span must be at least 3.</summary>
@@ -1036,8 +1060,12 @@ namespace System.Numerics
             {
                 return false;
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            }
             return true;
         }
 

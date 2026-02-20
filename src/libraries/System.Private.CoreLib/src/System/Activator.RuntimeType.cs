@@ -142,6 +142,7 @@ namespace System
             if (!rtType.IsValueType)
             {
                 object o = rtType.CreateInstanceOfT()!;
+                // TODO(unsafe): Baselining unsafe usage
 
                 // Casting the above object to T is technically invalid because
                 // T can be ByRefLike (that is, ref struct). Roslyn blocks the
@@ -149,12 +150,19 @@ namespace System
                 // which is correct. However, since we are doing the IsValueType
                 // check above, we know this code path will only be taken with
                 // reference types and therefore the below Unsafe.As<> is safe.
-                return Unsafe.As<object, T>(ref o);
+                unsafe
+                {
+                    return Unsafe.As<object, T>(ref o);
+                }
             }
             else
             {
                 T t = default!;
-                rtType.CallDefaultStructConstructor(ref Unsafe.As<T, byte>(ref t));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    rtType.CallDefaultStructConstructor(ref Unsafe.As<T, byte>(ref t));
+                }
                 return t;
             }
         }

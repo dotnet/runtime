@@ -367,7 +367,11 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(transientValue is null || transientValue is StateMachineBox<TStateMachine>,
                         $"Expected null or {nameof(StateMachineBox<TStateMachine>)}, got '{transientValue}'");
 #endif
-                    return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref s_perCoreCache[i].Object);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref s_perCoreCache[i].Object);
+                    }
                 }
             }
 
