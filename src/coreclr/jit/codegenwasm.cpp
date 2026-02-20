@@ -839,7 +839,6 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 
     switch (desc.CheckKind())
     {
-
         case GenIntCastDesc::CHECK_POSITIVE:
         {
             // INT or LONG to ULONG
@@ -896,6 +895,8 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             }
             else
             {
+                // We need to check a range around zero, eg [-128, 127] for 8-bit signed.
+                // Do two compares and combine the results: (src > max) | (src < min).
                 assert(!cast->IsUnsigned());
                 GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
                 GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_s : INS_i32_gt_s);
@@ -1744,8 +1745,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    assert(!call->IsTailCall());
-
     regNumber thisReg = REG_NA;
 
     if (call->NeedsNullCheck())
