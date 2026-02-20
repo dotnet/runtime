@@ -23,6 +23,22 @@
 #define PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE (47)
 #endif
 
+#ifndef PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE (64)
+#endif
+
+#ifndef PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE (49)
+#endif
+
+#ifndef PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_SHA3_INSTRUCTIONS_AVAILABLE (55)
+#endif
+
+#ifndef PF_ARM_SVE_SM4_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE_SM4_INSTRUCTIONS_AVAILABLE (56)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -663,10 +679,7 @@ int minipal_getcpufeatures(void)
         result |= ARM64IntrinsicConstants_Sha3;
     }
 
-    if (IsProcessorFeaturePresent(PF_ARM_SM4_INSTRUCTIONS_AVAILABLE))
-    {
-        result |= ARM64IntrinsicConstants_Sm4;
-    }
+    // PF_ARM_SM4_INSTRUCTIONS_AVAILABLE does not exist
 
     if (IsProcessorFeaturePresent(PF_ARM_SVE_AES_INSTRUCTIONS_AVAILABLE))
     {
