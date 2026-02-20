@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.Interop.UnitTests;
@@ -54,19 +56,20 @@ namespace JSImportGenerator.Unit.Tests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToFail))]
-        public void ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
+        public async Task ValidateFailSnippets(string source, string[]? analyzerMessages, string[]? compilerMessages)
         {
             Compilation comp = TestUtils.CreateCompilation(source, allowUnsafe: true);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
+            var newComp = TestUtils.RunGenerators(comp, out var _,
                 new Microsoft.Interop.JavaScript.JSImportGenerator(),
                 new Microsoft.Interop.JavaScript.JSExportGenerator());
-            // uncomment for debugging JSTestUtils.DumpCode(source, newComp, generatorDiags);
+            // uncomment for debugging JSTestUtils.DumpCode(source, newComp, _);
 
-            if (generatorMessages != null)
+            if (analyzerMessages != null)
             {
-                JSTestUtils.AssertMessages(generatorDiags, generatorMessages);
+                ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
+                JSTestUtils.AssertMessages(analyzerDiags, analyzerMessages);
             }
             var compilationDiags = newComp.GetDiagnostics();
             if (compilerMessages != null)
@@ -76,19 +79,23 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public void ValidateRequireAllowUnsafeBlocksDiagnostic()
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
         {
             string source = CodeSnippets.TrivialClassDeclarations;
             Compilation comp = TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
-                new Microsoft.Interop.JavaScript.JSImportGenerator(),
-                new Microsoft.Interop.JavaScript.JSExportGenerator());
+            ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
 
             // The errors should indicate the AllowUnsafeBlocks is required.
-            Assert.True(generatorDiags.Single(d => d.Id == "SYSLIB1074") != null);
-            Assert.True(generatorDiags.Single(d => d.Id == "SYSLIB1075") != null);
+            Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1074") != null);
+            Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1075") != null);
+        }
+
+        private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)
+        {
+            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(new Microsoft.Interop.JavaScript.JSImportExportDiagnosticsAnalyzer());
+            return comp.WithAnalyzers(analyzers).GetAnalyzerDiagnosticsAsync();
         }
     }
 }
