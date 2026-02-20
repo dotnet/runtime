@@ -927,11 +927,22 @@ namespace System.Text.RegularExpressions
                             }
 
                             char ch = (char)Operand(0);
-                            while (c-- > 0)
+                            if (!_rightToLeft)
                             {
-                                if (Forwardcharnext(inputSpan) == ch)
+                                if (inputSpan.Slice(runtextpos, c).Contains(ch))
                                 {
                                     goto BreakBackward;
+                                }
+                                runtextpos += c;
+                            }
+                            else
+                            {
+                                while (c-- > 0)
+                                {
+                                    if (Forwardcharnext(inputSpan) == ch)
+                                    {
+                                        goto BreakBackward;
+                                    }
                                 }
                             }
                         }
