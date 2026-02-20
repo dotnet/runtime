@@ -14106,6 +14106,40 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_StaticBaseNonGC:
+    case READYTORUN_FIXUP_StaticBaseGC:
+        {
+            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
+
+            _ASSERTE(!th.IsTypeDesc());
+
+            MethodTable * pMT = th.AsMethodTable();
+            pMT->EnsureInstanceActive();
+            pMT->CheckRunClassInitThrowing();
+
+            if (kind == READYTORUN_FIXUP_StaticBaseNonGC)
+            {
+                result = (size_t)pMT->GetNonGCStaticsBasePointer();
+            }
+            else
+            {
+                _ASSERTE(kind == READYTORUN_FIXUP_StaticBaseGC);
+                result = (size_t)pMT->GetGCStaticsBasePointer();
+            }
+        }
+        break;
+
+    case READYTORUN_FIXUP_ClassInitFlags:
+        {
+            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
+
+            _ASSERTE(!th.IsTypeDesc());
+            th.AsMethodTable()->EnsureInstanceActive();
+
+            result = (size_t)th.AsMethodTable()->getIsClassInitedFlagAddress();
+        }
+        break;
+
     case READYTORUN_FIXUP_Helper:
         {
             DWORD helperNum = CorSigUncompressData(pBlob);

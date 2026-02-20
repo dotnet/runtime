@@ -1436,13 +1436,13 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //    |     \--*  CNS_INT   int    -8 (offset)
     //    \--*  CNS_INT   int    0
     //
-    assert(flagAddr.accessType == IAT_VALUE);
-
     GenTree* cachedStaticBase = nullptr;
     GenTree* isInitedActualValueNode;
     GenTree* isInitedExpectedValue;
     if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
+        assert(flagAddr.accessType == IAT_VALUE);
+
         GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
 
         // Save it to a temp - we'll be using its value for the replacementNode.
@@ -1459,9 +1459,23 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
     }
+    else if (IsReadyToRun())
+    {
+        assert(isInitOffset == 0);
+        assert(flagAddr.accessType == IAT_PVALUE);
+
+        GenTree* flagAddrNode   = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
+        isInitedActualValueNode = gtNewIndir(TYP_INT, flagAddrNode, GTF_IND_NONFAULTING | GTF_IND_VOLATILE);
+        isInitedActualValueNode->SetHasOrderingSideEffect();
+
+        // Check ClassInitFlags::INITIALIZED_FLAG bit
+        isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
+        isInitedExpectedValue   = gtNewIconNode(1);
+    }
     else
     {
         assert(isInitOffset == 0);
+        assert(flagAddr.accessType == IAT_VALUE);
 
         isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;

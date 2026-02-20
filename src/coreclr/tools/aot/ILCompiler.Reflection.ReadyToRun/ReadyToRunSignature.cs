@@ -1307,6 +1307,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (CCTOR_TRIGGER)");
                     break;
 
+                case ReadyToRunFixupKind.ClassInitFlags:
+                    ParseType(builder);
+                    builder.Append(" (CLASS_INIT_FLAGS)");
+                    break;
+
 
                 case ReadyToRunFixupKind.StaticBaseNonGC:
                     ParseType(builder);

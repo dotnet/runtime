@@ -17,6 +17,12 @@ namespace ILCompiler.DependencyAnalysis
             public ISymbolNode TypeNonGCStaticsSymbol(MetadataType type)
                 => factory.ReadyToRunPreinitializationManager.GetOrCreateTypeNonGCStaticsImport(type);
 
+            public ISymbolNode TypeGCStaticsSymbol(MetadataType type)
+                => factory.ReadyToRunPreinitializationManager.GetOrCreateTypeGCStaticsImport(type);
+
+            public ISymbolNode TypeClassInitFlagSymbol(MetadataType type)
+                => factory.ReadyToRunPreinitializationManager.GetOrCreateTypeClassInitFlagsImport(type);
+
             public ISymbolNode ConstructedTypeSymbol(TypeDesc type)
                 => factory.ReadyToRunPreinitializationManager.GetOrCreateConstructedTypeImport(type);
 

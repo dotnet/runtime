@@ -2896,6 +2896,12 @@ static PCODE getHelperForInitializedStatic(Module * pModule, ReadyToRunFixupKind
     case READYTORUN_FIXUP_CctorTrigger:
         pHelper = DynamicHelpers::CreateReturn(pModule->GetLoaderAllocator());
         break;
+    case READYTORUN_FIXUP_ClassInitFlags:
+        {
+            PVOID classInitFlags = pMT->getIsClassInitedFlagAddress();
+            pHelper = DynamicHelpers::CreateReturnConst(pModule->GetLoaderAllocator(), (TADDR)classInitFlags);
+        }
+        break;
     case READYTORUN_FIXUP_FieldAddress:
         {
             _ASSERTE(pFD->IsStatic());
@@ -3262,6 +3268,12 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         fReliable = true;
         break;
 
+    case READYTORUN_FIXUP_ClassInitFlags:
+        th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
+        th.AsMethodTable()->EnsureInstanceActive();
+        fReliable = true;
+        break;
+
     case READYTORUN_FIXUP_FieldAddress:
         pFD = ZapSig::DecodeField(pModule, pInfoModule, pBlob, &th);
         _ASSERTE(pFD->IsStatic());
@@ -3364,6 +3376,13 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                         if (pMT->IsClassInitedOrPreinited())
                             pHelper = getHelperForInitializedStatic(pModule, (ReadyToRunFixupKind)kind, pMT, pFD);
                     }
+                }
+                break;
+
+            case READYTORUN_FIXUP_ClassInitFlags:
+                {
+                    MethodTable * pMT = th.AsMethodTable();
+                    pHelper = getHelperForInitializedStatic(pModule, (ReadyToRunFixupKind)kind, pMT, NULL);
                 }
                 break;
 
@@ -3601,6 +3620,9 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
         case READYTORUN_FIXUP_CctorTrigger:
+            break;
+        case READYTORUN_FIXUP_ClassInitFlags:
+            result = (SIZE_T)th.AsMethodTable()->getIsClassInitedFlagAddress();
             break;
         case READYTORUN_FIXUP_FieldAddress:
             result = (SIZE_T)pFD->GetCurrentStaticAddress();

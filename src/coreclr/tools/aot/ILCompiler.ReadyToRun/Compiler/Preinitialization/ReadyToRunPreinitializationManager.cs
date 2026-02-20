@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         private readonly Dictionary<EcmaModule, bool> _moduleHasPreinitializedTypes = new();
         private readonly Dictionary<string, Import> _serializedStringImports = new(StringComparer.Ordinal);
         private readonly Dictionary<TypeDesc, Import> _constructedTypeImports = new();
+        private readonly Dictionary<MetadataType, Import> _typeClassInitFlagsImports = new();
+        private readonly Dictionary<MetadataType, Import> _typeGCStaticsImports = new();
         private readonly Dictionary<MetadataType, Import> _typeNonGCStaticsImports = new();
         private readonly Dictionary<SerializedFrozenObjectKey, SerializedPreinitializationObjectDataNode> _serializedFrozenObjects = new();
         private readonly Dictionary<MethodImportKey, Import> _exactCallableAddressImports = new();
@@ -205,6 +207,50 @@ namespace ILCompiler.DependencyAnalysis
                     return existingImport;
 
                 _typeNonGCStaticsImports[type] = createdImport;
+                return createdImport;
+            }
+        }
+
+        public Import GetOrCreateTypeGCStaticsImport(MetadataType type)
+        {
+            lock (_typeRecords)
+            {
+                if (_typeGCStaticsImports.TryGetValue(type, out Import existingImport))
+                    return existingImport;
+            }
+
+            Import createdImport = new Import(
+                _factory.PreinitializationImports,
+                _factory.TypeSignature(ReadyToRunFixupKind.StaticBaseGC, type));
+
+            lock (_typeRecords)
+            {
+                if (_typeGCStaticsImports.TryGetValue(type, out Import existingImport))
+                    return existingImport;
+
+                _typeGCStaticsImports[type] = createdImport;
+                return createdImport;
+            }
+        }
+
+        public Import GetOrCreateTypeClassInitFlagsImport(MetadataType type)
+        {
+            lock (_typeRecords)
+            {
+                if (_typeClassInitFlagsImports.TryGetValue(type, out Import existingImport))
+                    return existingImport;
+            }
+
+            Import createdImport = new Import(
+                _factory.PreinitializationImports,
+                _factory.TypeSignature(ReadyToRunFixupKind.ClassInitFlags, type));
+
+            lock (_typeRecords)
+            {
+                if (_typeClassInitFlagsImports.TryGetValue(type, out Import existingImport))
+                    return existingImport;
+
+                _typeClassInitFlagsImports[type] = createdImport;
                 return createdImport;
             }
         }

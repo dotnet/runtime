@@ -937,7 +937,7 @@ namespace ILCompiler.DependencyAnalysis
                 ReadyToRunImportSectionType.Unknown,
                 ReadyToRunImportSectionFlags.None,
                 (byte)Target.PointerSize,
-                emitPrecode: false,
+                emitPrecode: true,
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(PreinitializationImports);
 

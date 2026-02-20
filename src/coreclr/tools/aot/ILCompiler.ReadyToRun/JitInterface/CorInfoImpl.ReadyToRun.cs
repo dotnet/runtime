@@ -3371,13 +3371,69 @@ namespace Internal.JitInterface
         private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
-            FieldDesc field = HandleToObject(fieldHandle);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize > 0);
+            Debug.Assert(valueOffset >= 0);
 
-            // For crossgen2 we only support RVA fields
-            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) && field.HasRva)
+            FieldDesc field = HandleToObject(fieldHandle);
+            Debug.Assert(field.IsStatic);
+
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType))
+            {
+                return false;
+            }
+
+            if (field.HasRva)
             {
                 return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
             }
+
+            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            {
+                if (_compilation.NodeFactory.ReadyToRunPreinitializationManager.IsTypePreinitialized(owningType))
+                {
+                    TypePreinit.ISerializableValue value = _compilation.NodeFactory.PreinitializationManager
+                        .GetPreinitializationInfo(owningType).GetFieldValue(field);
+
+                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
+
+                    if (value == null)
+                    {
+                        if ((valueOffset == 0) && (bufferSize == targetPtrSize))
+                        {
+                            // null
+                            new Span<byte>(buffer, targetPtrSize).Clear();
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    if (value.GetRawData(_compilation.NodeFactory, out object data))
+                    {
+                        switch (data)
+                        {
+                            case byte[] bytes:
+                                if (bytes.Length >= bufferSize && valueOffset <= bytes.Length - bufferSize)
+                                {
+                                    bytes.AsSpan(valueOffset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+                                    return true;
+                                }
+                                return false;
+                        }
+                    }
+                }
+                else if (!owningType.HasStaticConstructor)
+                {
+                    // initonly without cctor, setting to default value
+                    int size = field.FieldType.GetElementSize().AsInt;
+                    if (size >= bufferSize && valueOffset <= size - bufferSize)
+                    {
+                        new Span<byte>(buffer, bufferSize).Clear();
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -3413,14 +3469,47 @@ namespace Internal.JitInterface
 
         private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
         {
-            // Implemented for JIT and NativeAOT only for now.
-            return false;
+            MetadataType type = HandleToObject(cls) as MetadataType;
+            if (type == null || !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+            {
+                return false;
+            }
+
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                return false;
+            }
+
+            if (!_compilation.NodeFactory.ReadyToRunPreinitializationManager.IsTypePreinitialized(type))
+            {
+                return false;
+            }
+
+            addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeClassInitFlagSymbol(type));
+            addr.accessType = InfoAccessType.IAT_PVALUE;
+            offset = 0;
+            return true;
         }
 
         private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
         {
-            // Implemented for JIT and NativeAOT only for now.
-            return false;
+            MetadataType type = HandleToObject(cls) as MetadataType;
+            if (type == null || !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+            {
+                return false;
+            }
+
+            if (isGc)
+            {
+                addr.accessType = InfoAccessType.IAT_PVALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
+                return true;
+            }
+
+            addr.accessType = InfoAccessType.IAT_PVALUE;
+            addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+
+            return true;
         }
 
         private void ValidateSafetyOfUsingTypeEquivalenceInSignature(MethodSignature signature)

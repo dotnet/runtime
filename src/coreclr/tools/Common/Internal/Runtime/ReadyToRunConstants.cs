@@ -189,6 +189,8 @@ namespace Internal.ReadyToRunConstants
 
         ContinuationLayout = 0x37, /* Layout of an async method continuation type */
 
+        ClassInitFlags = 0x38, /* Address of class init flags */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or

@@ -2740,6 +2740,14 @@ namespace Internal.JitInterface
             }
 #endif
 
+#if READYTORUN
+            if (type is MetadataType metadataType &&
+                _compilation.NodeFactory.ReadyToRunPreinitializationManager.IsTypePreinitialized(metadataType))
+            {
+                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+            }
+#endif
+
             MetadataType typeToInit = (MetadataType)type;
 
             if (fd == null)
