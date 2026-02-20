@@ -3004,7 +3004,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
@@ -3061,7 +3061,7 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
@@ -3141,7 +3141,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (!Thread.IsMultithreadingSupported)
+            if (!RuntimeFeature.IsMultithreadingSupported)
             {
                 return false;
             }
@@ -4998,7 +4998,7 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // Block waiting for the tasks to complete.
                 returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
@@ -5073,7 +5073,7 @@ namespace System.Threading.Tasks
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 
-            Thread.ThrowIfMultithreadingIsNotSupported();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             bool waitCompleted = false;
             var mres = new SetOnCountdownMres(tasks.Count);
@@ -5340,7 +5340,7 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                Thread.ThrowIfMultithreadingIsNotSupported();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
