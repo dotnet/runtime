@@ -2008,7 +2008,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (size->isContainedIntOrIImmed())
     {
         size_t amount = size->AsIntCon()->gtIconVal;
-        amount        = AlignUp(amount, STACK_ALIGN);
 
         // Handle zero
         //
@@ -2018,6 +2017,10 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else
         {
+            // Add in the reserved space and round up.
+            //
+            amount = AlignUp(amount + reservedSpace, STACK_ALIGN);
+
             // Decrease the stack pointer by amount
             //
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
@@ -2029,12 +2032,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             //
             if (needsZeroing)
             {
-                // Adjust the base address to zero to account for the reserved space
-                //
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
-                GetEmitter()->emitIns(INS_I_add);
-
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
 
@@ -2081,9 +2079,9 @@ void CodeGen::genLclHeap(GenTree* tree)
             // Prepare to subtract from SP
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
 
-            // Round up request size to a multiple of STACK_ALIGN
+            // Add reserved space and round up request size to a multiple of STACK_ALIGN
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
-            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, STACK_ALIGN - 1);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace + STACK_ALIGN - 1);
             GetEmitter()->emitIns(INS_I_add);
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
             GetEmitter()->emitIns(INS_I_and);
@@ -2100,10 +2098,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
             if (needsZeroing)
             {
-                // Adjust the base address to zero to account for the reserved space
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
-                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
-                GetEmitter()->emitIns(INS_I_add);
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
                 // TODO-WASM-CQ: possibly do small fills directly
