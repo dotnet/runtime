@@ -43,7 +43,11 @@ namespace Microsoft.Interop.JavaScript
                    static (node, ct) => node is MethodDeclarationSyntax,
                    static (context, ct) => new { Syntax = (MethodDeclarationSyntax)context.TargetNode, Symbol = (IMethodSymbol)context.TargetSymbol })
                 .Where(static data =>
-                    JSImportExportDiagnosticsAnalyzer.GetDiagnosticIfInvalidImportMethodForGeneration(data.Syntax, data.Symbol) is null);
+                    JSImportExportDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(
+                        data.Syntax, data.Symbol,
+                        GeneratorDiagnostics.InvalidImportAttributedMethodSignature,
+                        GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers,
+                        requiresImplementation: false) is null);
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 

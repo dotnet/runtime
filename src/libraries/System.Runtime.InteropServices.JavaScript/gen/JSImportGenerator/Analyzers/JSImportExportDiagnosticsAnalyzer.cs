@@ -115,7 +115,11 @@ namespace Microsoft.Interop.JavaScript
             {
                 if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
                 {
-                    DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidImportMethodForGeneration(methodSyntax, method);
+                    DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(
+                        methodSyntax, method,
+                        GeneratorDiagnostics.InvalidImportAttributedMethodSignature,
+                        GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers,
+                        requiresImplementation: false);
                     if (invalidMethodDiagnostic is not null)
                     {
                         context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
@@ -138,7 +142,11 @@ namespace Microsoft.Interop.JavaScript
             {
                 if (syntaxRef.GetSyntax(context.CancellationToken) is MethodDeclarationSyntax methodSyntax)
                 {
-                    DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidExportMethodForGeneration(methodSyntax, method);
+                    DiagnosticInfo? invalidMethodDiagnostic = GetDiagnosticIfInvalidMethodForGeneration(
+                        methodSyntax, method,
+                        GeneratorDiagnostics.InvalidExportAttributedMethodSignature,
+                        GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers,
+                        requiresImplementation: true);
                     if (invalidMethodDiagnostic is not null)
                     {
                         context.ReportDiagnostic(invalidMethodDiagnostic.ToDiagnostic());
@@ -224,19 +232,33 @@ namespace Microsoft.Interop.JavaScript
         }
 
         /// <summary>
-        /// Checks if a JSImport method is invalid for generation and returns a diagnostic if so.
+        /// Checks if a JSImport or JSExport method is invalid for generation and returns a diagnostic if so.
         /// </summary>
+        /// <param name="invalidSignatureDescriptor">Descriptor for an invalid method signature.</param>
+        /// <param name="containingTypeMissingModifiersDescriptor">Descriptor for a containing type missing modifiers.</param>
+        /// <param name="requiresImplementation">
+        /// When <see langword="true"/> (JSExport), the method must have a body and must not be partial.
+        /// When <see langword="false"/> (JSImport), the method must not have a body and must be partial.
+        /// </param>
         /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
-        internal static DiagnosticInfo? GetDiagnosticIfInvalidImportMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
+        internal static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(
+            MethodDeclarationSyntax methodSyntax,
+            IMethodSymbol method,
+            DiagnosticDescriptor invalidSignatureDescriptor,
+            DiagnosticDescriptor containingTypeMissingModifiersDescriptor,
+            bool requiresImplementation)
         {
-            // Verify the method has no generic types or defined implementation
-            // and is marked static and partial.
+            bool hasImplementation = methodSyntax.Body is not null || methodSyntax.ExpressionBody is not null;
+            bool isPartial = methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword);
+
+            // requiresImplementation=false (JSImport): must have no body, must be partial.
+            // requiresImplementation=true (JSExport): must have a body, must not be partial.
             if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
+                || hasImplementation != requiresImplementation
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
+                || isPartial == requiresImplementation)
             {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidImportAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
+                return DiagnosticInfo.Create(invalidSignatureDescriptor, methodSyntax.Identifier.GetLocation(), method.Name);
             }
 
             // Verify that the types the method is declared in are marked partial.
@@ -244,41 +266,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
-                    return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
-                }
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Checks if a JSExport method is invalid for generation and returns a diagnostic if so.
-        /// </summary>
-        /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
-        internal static DiagnosticInfo? GetDiagnosticIfInvalidExportMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types, has a defined implementation,
-            // is marked static, and is not partial.
-            if (methodSyntax.TypeParameterList is not null
-                || (methodSyntax.Body is null && methodSyntax.ExpressionBody is null)
-                || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
-            {
-                return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidExportAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            for (SyntaxNode? parentNode = methodSyntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
-            {
-                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
-                {
-                    return DiagnosticInfo.Create(GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
+                    return DiagnosticInfo.Create(containingTypeMissingModifiersDescriptor, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
                 }
             }
 
