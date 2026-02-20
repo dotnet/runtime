@@ -288,7 +288,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
         if (pendingFlushTable == NULL)
         {
-            // OK we need to rellocate the table and reregister.  First figure out our 'desiredSpace'
+            // OK we need to reallocate the table and reregister.  First figure out our 'desiredSpace'
             // We could imagine being much more efficient for 'bulk' updates, but we don't try
             // because we assume that this is rare and we want to keep the code simple
 
@@ -349,6 +349,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     }
 
     // Fast path: make the deferred OS call outside the lock to reduce contention.
+    // We only reach here when the fast path was taken; all other code paths return early above.
     // The m_nPendingFlushes increment above ensures the table and handle remain valid.
     _ASSERTE(pendingFlushTable != NULL);
     pRtlGrowFunctionTable(pendingFlushHandle, pendingFlushCount);
