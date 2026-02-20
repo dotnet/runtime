@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -51,12 +51,12 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -79,7 +79,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 -----BEGIN CERTIFICATE-----
 MII=
 -----END CERTIFICATE-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -102,7 +102,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 -----BEGIN CERTIFICATE-----
 $$$ BAD PEM
 -----END CERTIFICATE-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -143,14 +143,14 @@ PKRWBQ==
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
 fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -176,7 +176,7 @@ MKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6fve7
 qsHywr1WjmoyRnIn4Stq5FqNlHhUGkgKyAA4qshjgn1uOYQGGiWQXBi9JJmoOWY8
 PKRWBQ==
 -----END PUBLIC KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -194,7 +194,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
 7Gx1D5lL4/nZ94fRa+Hl4nGEX4gmjuxH6pOHKyywwflAyXNTfVhOCP9zBedwENx9
@@ -203,7 +203,7 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6
@@ -221,7 +221,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
 7Gx1D5lL4/nZ94fRa+Hl4nGEX4gmjuxH6pOHKyywwflAyXNTfVhOCP9zBedwENx9
@@ -256,7 +256,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
 7Gx1D5lL4/nZ94fRa+Hl4nGEX4gmjuxH6pOHKyywwflAyXNTfVhOCP9zBedwENx9
@@ -278,7 +278,7 @@ v8pi3w==
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBLDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIfcoipdEY/C4CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBC9heEphj00fB89aP6chSOjBIHQ
 HF2RLrIw6654q2hjUdCG4PhhYNXlck0zD0mOuaVQHmnKIKArk/1DSpgSrYnKw6aE
@@ -301,7 +301,7 @@ xTL6VO9mx52x6h5WDAQAisMVeMkBoxQUWLANXiw1zSfVbsmB7mDknsRcvD3tcgMs
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBLDBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIfcoipdEY/C4CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBC9heEphj00fB89aP6chSOjBIHQ
 HF2RLrIw6654q2hjUdCG4PhhYNXlck0zD0mOuaVQHmnKIKArk/1DSpgSrYnKw6aE
@@ -310,7 +310,7 @@ ho0YNYGUDSgOs6RxBpw1rJUCnAlHNU09peCjEP+aZSrhsxlejN/GpVS4e0JTmMeo
 xTL6VO9mx52x6h5WDAQAisMVeMkBoxQUWLANXiw1zSfVbsmB7mDknsRcvD3tcgMs
 7YLD7LQMiPAIjDlOP8XP/w==
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBIDBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIkM/kCKe6rYsCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBOccveL65bDBIHQiCcCqwxJs93g1+16
 7Gx1D5lL4/nZ94fRa+Hl4nGEX4gmjuxH6pOHKyywwflAyXNTfVhOCP9zBedwENx9
@@ -355,7 +355,7 @@ v8pi3w==
             using (DSA dsa = DSAFactory.Create())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHGAgEAMIGoBgcqhkjOOAQBMIGcAkEA1qi38cr3ppZNB2Y/xpHSL2q81Vw3rvWN
 IHRnQNgv4U4UY2NifZGSUULc3uOEvgoeBO1b9fRxSG9NmG1CoufflQIVAPq19iXV
 1eFkMKHvYw6+M4l8wiT5AkAIRMSQ5S71jgWQLGNtZNHV6yxggqDU87/RzgeOh7Q6

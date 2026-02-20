@@ -52,7 +52,7 @@ MII
         public static void CreateFromPem_CryptographicException_MalformedKey()
         {
             const string CertContents = @"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MII
 -----END RSA PRIVATE KEY-----
 ";
@@ -834,6 +834,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
                 SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
                 bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
@@ -868,6 +871,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
                 SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
                 bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
@@ -904,6 +910,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN ENCRYPTED PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
                 mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
                 XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p
@@ -944,6 +953,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN ENCRYPTED PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
                 mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
                 XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p
@@ -981,6 +993,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
                 SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
                 bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
@@ -1013,6 +1028,9 @@ MII
             const string PrivateKey =
                 """
                 -----BEGIN ENCRYPTED PRIVATE KEY-----
+
+                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + """
                 MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
                 mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
                 XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p

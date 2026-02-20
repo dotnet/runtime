@@ -224,8 +224,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             5zxlebR5n56wEN1ealdDjGtB1earlLrHZ6W0QdgQDP0pd+ILzSmALq5epYWjogkx
             UYKYCyx6a5bvjcD1H5i09iK2IW4247sY2h0kRg1lKLZq");
 
-        internal static byte[] IetfSlhDsaSha2_128sCertificatePfx => field ??= Convert.FromBase64String(@"
-            MIIikwIBAzCCIk0GCSqGSIb3DQEHAaCCIj4EgiI6MIIiNjCCIRkGCSqGSIb3DQEHBqCCIQowgiEG
+        internal static byte[] IetfSlhDsaSha2_128sCertificatePfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIikwIBAzCCIk0GCSqGSIb3DQEHAaCCIj4EgiI6MIIiNjCCIRkGCSqGSIb3DQEHBqCCIQowgiEG
             AgEAMIIg/wYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBA8ekXULsx7
             p87/yC/Sn5v9AgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBDZA8q6IUBZ09jX3R3ZyPM7
             gIIgkIRa+6roH4nUtZdOjbJmG1Mkl564uZh9poEf9wiNUKbeuv54ZNf2GVC89DnMMiq/HB+J92XZ
@@ -382,8 +383,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             Z4NhU9dnCLXx0RFVp0owPTAxMA0GCWCGSAFlAwQCAQUABCAubP2HPfJaPbDchgSrpgDZceKwhPu+
             9j+ysQ+T65ZlCwQIacD7cnRNodA=");
 
-        internal static byte[] IetfSlhDsaSha2_128sCertificatePfx_Pbes1 => field ??= Convert.FromBase64String(@"
-            MIIh9gIBAzCCIbwGCSqGSIb3DQEHAaCCIa0EgiGpMIIhpTCCINcGCSqGSIb3DQEHBqCCIMgwgiDE
+        internal static byte[] IetfSlhDsaSha2_128sCertificatePfx_Pbes1 => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIh9gIBAzCCIbwGCSqGSIb3DQEHAaCCIa0EgiGpMIIhpTCCINcGCSqGSIb3DQEHBqCCIMgwgiDE
             AgEAMIIgvQYJKoZIhvcNAQcBMBwGCiqGSIb3DQEMAQMwDgQI1o+3mvU/8HUCAgfQgIIgkFR+bVUP
             aqwDnXYM37UjGyn+v7aZzC7rMEC2gonaMhTt33152TkZkGJ3eOxR4JjMcWpLJ3VscG98Ec8S/J6v
             AFG/0NfWi9wlWl/7tsY5rQPcsS8rjI8uepNaNFcN08s48rFmX5RQ3cRTGbaQ7A8mrCSjr+VBZIu2

@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -54,7 +54,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C
 mtFqhUPJbSU+VDGbk1MsQcPBR3uJ2y0vM9e5qHRYSOBqjmg7UERRHhvKNiUn4Xz0
 KzgGFQIDAQABAkEAr+byNi+cr17FpJH4MCEiPXaKnmkH4c4U52EJtL9yg2gijBrp
@@ -78,12 +78,12 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C
 mtFqhUPJbSU+VDGbk1MsQcPBR3uJ2y0vM9e5qHRYSOBqjmg7UERRHhvKNiUn4Xz0
 KzgGFQIDAQABAkEAr+byNi+cr17FpJH4MCEiPXaKnmkH4c4U52EJtL9yg2gijBrp
@@ -124,7 +124,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -179,7 +179,7 @@ dRUwHwYDVR0jBBgwFoAU5FG2Fmi86hJOCf4KnjaxOGWVdRUwDAYDVR0TBAUwAwEB
 /zANBgkqhkiG9w0BAQUFAAMxAEzDg/u8TlApCnE8qxhcbTXk2MbX+2n5PCn+MVrW
 wggvPj3b2WMXsVWiPr4S1Y/nBA==
 -----END CERTIFICATE-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -204,7 +204,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 -----BEGIN CERTIFICATE-----
 $$ I AM NOT A PEM
 -----END CERTIFICATE-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -226,12 +226,12 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END EC PRIVATE KEY-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -253,10 +253,10 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MII=
 -----END RSA PRIVATE KEY-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -279,7 +279,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 -----BEGIN PUBLIC KEY-----
 MII=
 -----END PUBLIC KEY-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -302,7 +302,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 -----BEGIN RSA PUBLIC KEY-----
 MII=
 -----END RSA PUBLIC KEY-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -322,10 +322,10 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MII=
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -345,7 +345,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBsTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIioaQaFwlfasCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECJLGzSuIgnSkBIIBYHofFpp5AsrkNc9w
 s0uebkLBgMXbmhu+t6XQYXhnZXguT4KF4g49vIE3XwtZkXzEeSrNRIWZcPH1UWp2
@@ -369,7 +369,7 @@ pBORBb0=
             {
                 string pem = @"
 The below PEM is a 1024-bit DSA key.
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBSgIBADCCASsGByqGSM44BAEwggEeAoGBAL5KGXEaazCA+k1pMcCBc/+bodFh
 0P4U2QDLyDtnmytusGPaHcFp69pVdJZWMBycwJdaFQkraQNmqQsjAmBHtpqMeJpE
 VLgjzve83oMAw5aysmaQC4Wy35vnBZnshvdzgbPRHZD2dWmFvWxToqBnxh74rb/H
@@ -388,7 +388,7 @@ eDr38gQ/Hk0CgW3/RFrNWdbIpfMifs80vqCUNqDggcQixEmDVZ0gwq4+wz8EVyYG
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBsTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIcvgI1lw9LqYCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECFDpLREQXt5pBIIBYOKuM5ljAvCViDL+
 nTFq7A/fI9rqdL20TMdf0wy7s43oXmsw5gCStoNEaoVToFCQWYYBRU99mK8YNFA8
@@ -413,7 +413,7 @@ CA7ffFk=
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBvTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIciLWmWb33X0CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBBVEmHhJdbi+HKzPttNjXm4BIIB
 YFejknurbot2VDXwc671A0mfA0cw/u7K44gsYXcZwAARC8j6f3lSzB0tN2kMEx/L
@@ -438,7 +438,7 @@ raZNyk8KAsLs+FJq9T2tda0=
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBvTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIciLWmWb33X0CAggA
 MAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBBVEmHhJdbi+HKzPttNjXm4BIIB
 YFejknurbot2VDXwc671A0mfA0cw/u7K44gsYXcZwAARC8j6f3lSzB0tN2kMEx/L
@@ -450,7 +450,7 @@ E+nr7hyinl51raM1RSHojJB22oOW+GwV7GgWYIjUgIEMDOhN10FcGNfTeC65PCXx
 5QSEe7EKVF0aHXBYB5SzMGVuxR/BqydDa26jlhVzO3LNvy9FYuqLKUslCrBCmPrt
 raZNyk8KAsLs+FJq9T2tda0=
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBsTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIcvgI1lw9LqYCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECFDpLREQXt5pBIIBYOKuM5ljAvCViDL+
 nTFq7A/fI9rqdL20TMdf0wy7s43oXmsw5gCStoNEaoVToFCQWYYBRU99mK8YNFA8
@@ -486,7 +486,7 @@ CA7ffFk=
             using (RSA rsa = RSAFactory.Create())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAtz9Z9e6L1V4kt/8C
 mtFqhUPJbSU+VDGbk1MsQcPBR3uJ2y0vM9e5qHRYSOBqjmg7UERRHhvKNiUn4Xz0
 KzgGFQIDAQABAkEAr+byNi+cr17FpJH4MCEiPXaKnmkH4c4U52EJtL9yg2gijBrp

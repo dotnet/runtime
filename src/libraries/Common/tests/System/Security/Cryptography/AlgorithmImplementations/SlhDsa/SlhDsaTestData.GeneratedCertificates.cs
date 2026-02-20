@@ -1358,7 +1358,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 GZpdBQCuwSXGGM24dglnye+QSPxLMOwpUDUsEzeD615CbWV+v7MfBJq4b53gk8De
                 dxUlf/IcJOuk
                 """,
-                """
+                /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ """
                 MIIiUwIBAzCCIg0GCSqGSIb3DQEHAaCCIf4EgiH6MIIh9jCCINkGCSqGSIb3DQEH
                 BqCCIMowgiDGAgEAMIIgvwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqG
                 SIb3DQEFDDAjBBBWQXADtbgU/D/jv30dy7XHAgEBMAwGCCqGSIb3DQIJBQAwHQYJ

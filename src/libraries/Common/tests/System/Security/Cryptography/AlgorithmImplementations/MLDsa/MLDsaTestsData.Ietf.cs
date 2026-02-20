@@ -493,7 +493,7 @@ namespace System.Security.Cryptography.Tests
             RUdidnuDkpSm1hIoLz4/SW2Tm6C2u9La5evu7xAfIy1ul8LE3/P0AAAAAAAAAAAA
             AAAAABcmOEM=
             """,
-            """
+            /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ """
             MIIR4wIBAzCCEZoGCSqGSIb3DQEHAaCCEYsEghGHMIIRgzCCEIkGCSqGSIb3DQEHBqCCEHowghB2
             AgEAMIIQbwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBAuVrlQTYne
             b3NqNh2HMM4GAgECMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBCt9DjQzlXkPYAU417iswCY
@@ -576,7 +576,7 @@ namespace System.Security.Cryptography.Tests
             ATTOKvdPbkxUhFP1HpcwQDAxMA0GCWCGSAFlAwQCAQUABCDEbkfxIz1AOsm6+dGrD1HmtAxxFde8
             Awq3M8kdp1LIiwQIOBF3KT6ee5ACAQI=
             """,
-            """
+            /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ """
             MIIbzAIBAzCCG4MGCSqGSIb3DQEHAaCCG3QEghtwMIIbbDCCEIkGCSqGSIb3DQEHBqCCEHowghB2
             AgEAMIIQbwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBBOUF0kIzUY
             V7XjxIKMr80yAgECMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBBwGFjLnRDhNmajTG468riL
@@ -2900,7 +2900,7 @@ namespace System.Security.Cryptography.Tests
             rnVLSDqKkbgKCwwRPEiw8SU8WZu5zwG9ygURLGN4obLeSQU8UHyCteEbbpGrstXp
             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQMEhUdHiUs
             """,
-            """
+            /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ """
             MIIfkAIBAzCCHyoGCSqGSIb3DQEHAaCCHxsEgh8XMIIfEzCCHhkGCSqGSIb3DQEHBqCCHgowgh4G
             AgEAMIId/wYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBBjSx5v47Wc
             UKU1Oqs039x+AgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBAHJWz2iMbr3yP4Q2g0g7e3

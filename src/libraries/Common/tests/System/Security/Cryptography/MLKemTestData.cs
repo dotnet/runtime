@@ -354,8 +354,9 @@ namespace System.Security.Cryptography.Tests
             -----END CERTIFICATE-----
             """;
 
-        internal static byte[] IetfMlKem512PrivateKeySeedPfx => field ??= Convert.FromBase64String(@"
-            MIIQEwIBAzCCD80GCSqGSIb3DQEHAaCCD74Egg+6MIIPtjCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
+        internal static byte[] IetfMlKem512PrivateKeySeedPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIQEwIBAzCCD80GCSqGSIb3DQEHAaCCD74Egg+6MIIPtjCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
             AgEAMIIOfwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBBGFVg0hDNJ
             /d6+faLWpA/gAgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBBJqFKOypvy9l2k+lqwEdH4
             gIIOEKY1Ie0nHUsX5h4A25fOjDVyJZyKXnMjETRi9VRxQKBcxPohNQO8d40F5VtYl2krjnLeOhCQ
@@ -429,8 +430,9 @@ namespace System.Security.Cryptography.Tests
             i9MLIHgD+izRMD0wMTANBglghkgBZQMEAgEFAAQgPpSzThW5bhHc+QEYldmxk/FQ/D1TJlt6+j+u
             HByFmhsECMjL3w/0Sz6Z");
 
-        internal static byte[] IetfMlKem512PrivateKeyExpandedKeyPfx => field ??= Convert.FromBase64String(@"
-            MIIWOQIBAzCCFfMGCSqGSIb3DQEHAaCCFeQEghXgMIIV3DCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
+        internal static byte[] IetfMlKem512PrivateKeyExpandedKeyPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIWOQIBAzCCFfMGCSqGSIb3DQEHAaCCFeQEghXgMIIV3DCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
             AgEAMIIOfwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBAfr3NeipfR
             lzfoBDxGXdGcAgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBAHXL2+ASt7dDLaISGq/M9e
             gIIOEOX/BRkyVb+o49McEdfSGz//dm/3R0XkVjPg9q6IDrQIL/xlpzD89ely7uDnHXnuOPSgSpA+
@@ -531,8 +533,9 @@ namespace System.Security.Cryptography.Tests
             urIjyBsxJTAjBgkqhkiG9w0BCRUxFgQUCh6rpP7WbdLFBxKL0wsgeAP6LNEwPTAxMA0GCWCGSAFl
             AwQCAQUABCCibXa9glmTuVQNdGVfxBZhMWILzzHDs1ho8iW8Zss/AAQINVEeXmUL838=");
 
-        internal static byte[] IetfMlKem512PrivateKeyBothPfx => field ??= Convert.FromBase64String(@"
-            MIIWiQIBAzCCFkMGCSqGSIb3DQEHAaCCFjQEghYwMIIWLDCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
+        internal static byte[] IetfMlKem512PrivateKeyBothPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIWiQIBAzCCFkMGCSqGSIb3DQEHAaCCFjQEghYwMIIWLDCCDpkGCSqGSIb3DQEHBqCCDoowgg6G
             AgEAMIIOfwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBBtd0fFgmMZ
             ZNDw9AtN0u16AgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBAgI1AlhpQJ80oKEKOvxPrc
             gIIOEAzDGpbgJwbB7L8DCDdhCVRO04aZM4dkBN5ypaznXYW+r9IfafbmQT0YslgFyny1YloqAdvx
@@ -1072,8 +1075,9 @@ namespace System.Security.Cryptography.Tests
             -----END CERTIFICATE-----
             """;
 
-        internal static byte[] IetfMlKem768PrivateKeySeedPfx => field ??= Convert.FromBase64String(@"
-            MIIVAwIBAzCCFL0GCSqGSIb3DQEHAaCCFK4EghSqMIIUpjCCE4kGCSqGSIb3DQEHBqCCE3owghN2
+        internal static byte[] IetfMlKem768PrivateKeySeedPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIVAwIBAzCCFL0GCSqGSIb3DQEHAaCCFK4EghSqMIIUpjCCE4kGCSqGSIb3DQEHBqCCE3owghN2
             AgEAMIITbwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBDdzMQKtF55
             SvPeZFAGQPmdAgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBCWy6DcQ/y9EgDn/fO+qQ+h
             gIITAG818eaBoLfJ5QdGblKIAepXm14Gjws/KSasPF6w2vuX6PdBdZiyz4kjyKWiejZnJFnJJIDJ
@@ -1169,8 +1173,9 @@ namespace System.Security.Cryptography.Tests
             Puw2UVrnzRWTr0XqrWRVHO7fJTA9MDEwDQYJYIZIAWUDBAIBBQAEIDXNJQbFMC/wxRwy6kMD2B12
             bcCEA1NQN5sxhZ6oZXeABAjntONbR2PLBQ==");
 
-        internal static byte[] IetfMlKem768PrivateKeyExpandedKeyPfx => field ??= Convert.FromBase64String(@"
-            MIIeKQIBAzCCHeMGCSqGSIb3DQEHAaCCHdQEgh3QMIIdzDCCE4kGCSqGSIb3DQEHBqCCE3owghN2
+        internal static byte[] IetfMlKem768PrivateKeyExpandedKeyPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIeKQIBAzCCHeMGCSqGSIb3DQEHAaCCHdQEgh3QMIIdzDCCE4kGCSqGSIb3DQEHBqCCE3owghN2
             AgEAMIITbwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBBgDNwYoixk
             0++PpGrUUgs7AgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBA1Qrh3GqAb3WPiVFaboKkI
             gIITAGrlb4v6neWjqQ62JsjpNmz3zwUpQ9JTgXeBVgmYzMMLrz13BUVe87CbLae3nw2dP3YkCFPU
@@ -1307,8 +1312,9 @@ namespace System.Security.Cryptography.Tests
             MRYEFAg+7DZRWufNFZOvReqtZFUc7t8lMD0wMTANBglghkgBZQMEAgEFAAQgf3mf0fdz6/LpisAI
             4rCIk4voFlFnPyNsXpHjPJDyqNcECOInQ3PBkvhE");
 
-        internal static byte[] IetfMlKem768PrivateKeyBothPfx => field ??= Convert.FromBase64String(@"
-            MIIeeQIBAzCCHjMGCSqGSIb3DQEHAaCCHiQEgh4gMIIeHDCCE4kGCSqGSIb3DQEHBqCCE3owghN2
+        internal static byte[] IetfMlKem768PrivateKeyBothPfx => field ??= Convert.FromBase64String(
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")]
+          @"MIIeeQIBAzCCHjMGCSqGSIb3DQEHAaCCHiQEgh4gMIIeHDCCE4kGCSqGSIb3DQEHBqCCE3owghN2
             AgEAMIITbwYJKoZIhvcNAQcBMF4GCSqGSIb3DQEFDTBRMDAGCSqGSIb3DQEFDDAjBBCKxqs/OfZN
             94hd7nrVnTJeAgEBMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBDH9M8NNJVdR3WV2d7q5id6
             gIITANkqg4/GaFHdfTzsEybGUqmWl8u/04TJ/1EZ/rBqT3G+1SSmARtJl9D7w4RqPTFjtkRMlG00

@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Tests
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -49,7 +49,7 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -58,7 +58,7 @@ Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk
 rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC
 yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 -----END RSA PRIVATE KEY-----
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEIHChLC2xaEXtVv9oz8IaRys/BNfWhRv2NJ8tfVs0UrOKoAoGCCqGSM49
 AwEHoUQDQgAEgQHs5HRkpurXDPaabivT2IaRoyYtIsuk92Ner/JmgKjYoSumHVmS
 NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
@@ -75,7 +75,7 @@ NfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
@@ -92,7 +92,7 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -101,7 +101,7 @@ Q079SlHzXuvocqIdt4IM1EmIlrlU9GGvAh8Ijv3FFPUSLfANgfOIH9mX7ldpzzGk
 rmaUzxQvyuVLAiEArCTM8dSbopUADWnD4jArhU50UhWAIaM6ZrKqC8k0RKsCIQDC
 yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
 -----END RSA PRIVATE KEY-----
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
@@ -165,7 +165,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
             using (TAlg key = CreateKey())
             {
                 key.ImportFromPem(@"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBOwIBAAJBALc/WfXui9VeJLf/AprRaoVDyW0lPlQxm5NTLEHDwUd7idstLzPX
 uah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQJBAK/m8jYvnK9exaSR+DAh
 Ij12ip5pB+HOFOdhCbS/coNoIowa6WJGrd3Np1m9BBhouWloF8UB6Iu8/e/wAg+F
@@ -228,7 +228,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -254,7 +254,7 @@ Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEgQHs5HRkpurXDPaabivT2IaRoyYt
 Isuk92Ner/JmgKjYoSumHVmSNfZ9nLTVjxeD08pD548KWrqmJAeZNsDDqQ==
 -----END PUBLIC KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -272,7 +272,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -290,14 +290,14 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -315,7 +315,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -335,7 +335,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
 iE/+pIb/4quf+Y524bXUKTGYXzdSUE8Dp1qdZFcwDiCYCTtpL+065fGhmf1KZS2c
@@ -355,14 +355,14 @@ aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
 iE/+pIb/4quf+Y524bXUKTGYXzdSUE8Dp1qdZFcwDiCYCTtpL+065fGhmf1KZS2c
 /OMt/tWvtMSj17+dJvShsu/NYJXF5fsfpSJbd3e50Y3AisW0Ob7mmF54KBfg6Y+4
 aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -383,14 +383,14 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHsMFcGCSqGSIb3DQEFDTBKMCkGCSqGSIb3DQEFDDAcBAgf9krO2ZiPvAICCAAw
 DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEEv4Re1ATH9lHzx+13GoZU0EgZAV
 iE/+pIb/4quf+Y524bXUKTGYXzdSUE8Dp1qdZFcwDiCYCTtpL+065fGhmf1KZS2c
 /OMt/tWvtMSj17+dJvShsu/NYJXF5fsfpSJbd3e50Y3AisW0Ob7mmF54KBfg6Y+4
 aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
 -----END ENCRYPTED PRIVATE KEY-----
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAjVvm4KTLb0JgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIuHgfok8Ytl0EgZDkDSJ9vt8UvSesdyV+
 Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
@@ -409,7 +409,7 @@ Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
             using (TAlg key = CreateKey())
             {
                 string pem = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgcKEsLbFoRe1W/2jP
 whpHKz8E19aFG/Y0ny19WzRSs4qhRANCAASBAezkdGSm6tcM9ppuK9PYhpGjJi0i
 y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp

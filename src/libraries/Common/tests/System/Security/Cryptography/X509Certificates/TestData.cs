@@ -2880,7 +2880,7 @@ hjikjlM5O6v+IjbDMCEdduXflbwf4qEbG02TUPQmiow=
 -----END CERTIFICATE-----";
 
         public const string EcDhPkcs8Key = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIgCUm3/m+ftoRITe
 YV98jl/5auSR4u+J8K0v3fa9HbehRANCAARDN/OcerdGAVAY3g4j+UqALq6WreiY
 WM/kgugTzSvfQKGsiG8sHWE1x97EnsHuiS0fj5bnXK/4Qg0u/tJpYp54
@@ -2893,7 +2893,7 @@ mFjP5ILoE80r30ChrIhvLB1hNcfexJ7B7oktH4+W51yv+EINLv7SaWKeeA==
 -----END PUBLIC KEY-----";
 
         public const string ECDsaPkcs8Key = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgIg/wHlL4nNyuLFbK
 00Ga7N5LbP/2YCgEXqBiB3el8syhRANCAAQyB0wIKKfk5lmK4Z907qQnPsRRXh3T
 rU/VPMCTHxuBwoZqFBSE7gGmJWLTnGwZ0MGMACP+N1HK4dU1S9VNoNw9
@@ -2906,7 +2906,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMgdMCCin5OZZiuGfdO6kJz7EUV4d
 -----END PUBLIC KEY-----";
 
         public const string ECDsaEncryptedPkcs8Key = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIHgMEsGCSqGSIb3DQEFDTA+MCkGCSqGSIb3DQEFDDAcBAh5RmzN7/AXZgICCAAw
 DAYIKoZIhvcNAgkFADARBgUrDgMCBwQIQHgahqqSQKcEgZCvEBMgW8a7IXmT+weI
 0mlM4AcTELDkE+SEKpYC5qVF4ZDyrw4OmnVLkSPiu0GUwgJIopazWOQfetMdgC5Q
@@ -2915,14 +2915,14 @@ FEixDW6ObZIXVBbxl+zK1KwtCpdewXE4HRX/qpBrPhB8z2s=
 -----END ENCRYPTED PRIVATE KEY-----";
 
         public const string ECDsaECPrivateKey = @"
------BEGIN EC PRIVATE KEY-----
+-----BEGIN EC PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MHcCAQEEICIP8B5S+JzcrixWytNBmuzeS2z/9mAoBF6gYgd3pfLMoAoGCCqGSM49
 AwEHoUQDQgAEMgdMCCin5OZZiuGfdO6kJz7EUV4d061P1TzAkx8bgcKGahQUhO4B
 piVi05xsGdDBjAAj/jdRyuHVNUvVTaDcPQ==
 -----END EC PRIVATE KEY-----";
 
         public const string RsaPkcs1Key = @"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIEogIBAAKCAQEAv/IFsfwyjEu4Cm9SFYwxX7mH6/XnFj2iv5PHICTDC0/SYsox
 Y94dmbZLg5PwkKd8mbPsn7sng1/dUHQdgM37jW4QTA1fcJqmzfQq3Xt1wmbf+wb2
 4EHt6JB1uPYc1JKfPFgrt3aYqdbBmUeDQjv9lHlMwzx4J0mkRKwdGkXl08aB1YWB
@@ -2972,7 +2972,7 @@ xaZ215lcJfw3qiE/ACX1bTak5rlWrfvHC5RnVW9P0bad2L5VFGA3nUcKYbWoHUuG
 -----END PUBLIC KEY-----";
 
         public const string RsaPkcs8Key = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC/8gWx/DKMS7gK
 b1IVjDFfuYfr9ecWPaK/k8cgJMMLT9JiyjFj3h2ZtkuDk/CQp3yZs+yfuyeDX91Q
 dB2AzfuNbhBMDV9wmqbN9Crde3XCZt/7BvbgQe3okHW49hzUkp88WCu3dpip1sGZ
@@ -3003,7 +3003,7 @@ hgETV75kafH69VOmQTeCPA==
 
         // password is `test`.
         public const string RsaEncryptedPkcs8Key = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIFGTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQIozMG90LwJXECAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECK51Ahgtvr/LBIIEyO38HrNbUgAI95h6
 JolbqSkwpPeDfQsxmRlWsqtlin8K63U5gCZS/I1nkkkC13xXHB6WOQ0DrYIGv5pk
@@ -3051,7 +3051,7 @@ mf0l9zwCygC+aA8=
 -----END CERTIFICATE-----";
 
         public const string OtherRsaPkcs1Key = @"
------BEGIN RSA PRIVATE KEY-----
+-----BEGIN RSA PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIEowIBAAKCAQEA05yPUFo642M7gUYBYZgp9Itk/yPcrLcisUImPvQAsrrCeQDR
 kKxo1rNApfEZAK5UffEL7kbYFRY7v0mhwWY4K2g17FJ5Bd7W54Sj5ziDzk5LKvvN
 dxjZIIDi69z+AZYKcPWu4D6Znbi8isDeWv8mUTeFcA8Ine4YuvsAJ6b6IHGuz0Kr
@@ -3080,7 +3080,7 @@ w4qGwpDllP58gBySGj3BQS8PG8d9fuOlCSfOQIW10dE8U9H0wwlE
 -----END RSA PRIVATE KEY-----";
 
         public const string OtherRsaPkcs8EncryptedKey = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIFGTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQICs3NqD8hVe0CAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECBLUM63bM9vSBIIEyAk8lJcgxlkclPR0
 9BlUXGQA/ll6zCQa1DDiXdrLxTKuuedwOv0YF3X/iiZlhpey0E8zjKo13HQt7P+w
@@ -3134,7 +3134,7 @@ FQD6plYf60MDCvMjf1yQ8SBaFX3YYwIVAKqRQklh2b0Qhv+US222hb8xySJV
 -----END CERTIFICATE-----";
 
         public const string DsaPkcs8Key = @"
------BEGIN PRIVATE KEY-----
+-----BEGIN PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBSwIBADCCASsGByqGSM44BAEwggEeAoGBAJyiyioeXx1O98gRCMEjlPKMpr79
 KrcDkoroghtuXO1U6Cx34pBRjOQmQLDPqSOriEo5VuG6SJc/ppfZx9TrSrzqB26h
 KTUmiaOKmwpfIfzpi72wgsZeMOtU7JQ+FThfGyS8VxGh6G0h7xw26B/9ALxRw25z
@@ -3145,7 +3145,7 @@ J0RRkYwacgCVXsvHv/eAkA8qq136dwQXAhUA216Tqp4OvdUBNv8QLv8Z5QPopGQ=
 -----END PRIVATE KEY-----";
 
         public const string DsaEncryptedPkcs8Key = @"
------BEGIN ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----" /* [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Private key for testing purpose.")] */ + @"
 MIIBoTBLBgkqhkiG9w0BBQ0wPjApBgkqhkiG9w0BBQwwHAQI+PhdT1Kk/SkCAggA
 MAwGCCqGSIb3DQIJBQAwEQYFKw4DAgcECGV1ZmaiQtz2BIIBUA/6pNqTkXpkOLlI
 22Lh0cm5+/foDRh3qTrAOSHHHV0Dz1xYvYMa9MFzONatLf55Rpb2ZPji3hXwUQfn
