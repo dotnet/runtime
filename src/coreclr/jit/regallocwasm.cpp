@@ -331,7 +331,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
-    uint16_t offset = lclNode->GetLclOffs();
+
+    var_types storeType = lclNode->TypeGet();
+    uint16_t  offset    = lclNode->GetLclOffs();
     lclNode->SetOper(GT_LCL_ADDR);
     lclNode->ChangeType(TYP_I_IMPL);
     lclNode->AsLclFld()->SetLclOffs(offset);
@@ -344,7 +346,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(lclNode->TypeGet(), lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
