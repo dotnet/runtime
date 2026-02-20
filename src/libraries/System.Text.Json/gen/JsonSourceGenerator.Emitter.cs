@@ -712,17 +712,6 @@ namespace System.Text.Json.SourceGeneration
             }
 
             /// <summary>
-            /// Determines whether an init-only property is set in the constructor delegate's object initializer
-            /// (and therefore doesn't need a real setter delegate).
-            /// </summary>
-            private static bool IsRequiredInitOnlyPropertyInObjectInitializer(PropertyGenerationSpec property, TypeGenerationSpec typeGenerationSpec)
-            {
-                // Init-only properties are in the object initializer only if they are required
-                // and the constructor doesn't already set required members.
-                return property.IsInitOnlySetter && property.IsRequired && !typeGenerationSpec.ConstructorSetsRequiredParameters;
-            }
-
-            /// <summary>
             /// Returns true if the property requires an unsafe accessor or reflection fallback
             /// for its getter (i.e. it's inaccessible but has [JsonInclude]).
             /// </summary>
@@ -731,18 +720,17 @@ namespace System.Text.Json.SourceGeneration
 
             /// <summary>
             /// Returns true if the property requires an unsafe accessor or reflection fallback
-            /// for its setter (i.e. init-only not in the object initializer, or inaccessible with [JsonInclude]).
+            /// for its setter (i.e. init-only properties, or inaccessible with [JsonInclude]).
             /// </summary>
-            private static bool NeedsAccessorForSetter(PropertyGenerationSpec property, TypeGenerationSpec typeGenerationSpec)
+            private static bool NeedsAccessorForSetter(PropertyGenerationSpec property)
             {
                 if (property.DefaultIgnoreCondition is JsonIgnoreCondition.Always)
                 {
                     return false;
                 }
 
-                // Init-only properties not in the object initializer need an accessor.
-                if (property is { CanUseSetter: true, IsInitOnlySetter: true } &&
-                    !IsRequiredInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
+                // All init-only properties need an accessor.
+                if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
                     return true;
                 }
@@ -807,14 +795,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
-                    if (IsRequiredInitOnlyPropertyInObjectInitializer(property, typeGenerationSpec))
-                    {
-                        // Required init-only property set via the constructor delegate's object initializer;
-                        // a direct setter is not needed.
-                        return $"""static (obj, value) => throw new {InvalidOperationExceptionTypeRef}("{ExceptionMessages.InitOnlyPropertySetterNotSupported}")""";
-                    }
-
-                    // Init-only property not in the object initializer: generate a real setter
+                    // Init-only property: generate a real setter
                     // using UnsafeAccessor (when available) or reflection (as fallback).
                     return GetUnsafeSetterExpression(property, typeGenerationSpec, propertyTypeFQN, propertyIndex);
                 }
@@ -826,7 +807,7 @@ namespace System.Text.Json.SourceGeneration
                         : $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""";
                 }
 
-                if (NeedsAccessorForSetter(property, typeGenerationSpec))
+                if (NeedsAccessorForSetter(property))
                 {
                     return GetUnsafeSetterExpression(property, typeGenerationSpec, propertyTypeFQN, propertyIndex);
                 }
@@ -869,7 +850,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     PropertyGenerationSpec property = properties[i];
                     bool needsGetterAccessor = NeedsAccessorForGetter(property);
-                    bool needsSetterAccessor = NeedsAccessorForSetter(property, typeGenerationSpec);
+                    bool needsSetterAccessor = NeedsAccessorForSetter(property);
 
                     if (!needsGetterAccessor && !needsSetterAccessor)
                     {
