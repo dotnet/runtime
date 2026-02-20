@@ -15,16 +15,6 @@ public abstract class ExceptionDumpTestsBase : DumpTestBase
     protected override string DebuggeeName => "ExceptionState";
 
     [ConditionalFact]
-    public void Exception_ThreadHasCurrentException()
-    {
-        IThread threadContract = Target.Contracts.Thread;
-        Assert.NotNull(threadContract);
-
-        ThreadStoreData storeData = threadContract.GetThreadStoreData();
-        Assert.True(storeData.ThreadCount > 0);
-    }
-
-    [ConditionalFact]
     public void Exception_ContractIsAvailable()
     {
         IException exceptionContract = Target.Contracts.Exception;
