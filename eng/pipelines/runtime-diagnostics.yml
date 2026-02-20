@@ -162,6 +162,7 @@ extends:
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
                 /t:GenerateAllDumps
                 /p:CIDumpVersionsOnly=true
+                /p:SetDisableAuxProviderSignatureCheck=true
                 /p:TargetArchitecture=$(archType)
                 -bl:$(Build.SourcesDirectory)/artifacts/log/DumpGeneration.binlog
               displayName: 'Generate cDAC Dumps'

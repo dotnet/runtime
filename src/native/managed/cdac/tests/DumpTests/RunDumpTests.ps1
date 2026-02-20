@@ -43,6 +43,11 @@
     the extracted dumps. Skips dump generation entirely.
     The archive should contain: {version}/{dumptype}/{debuggee}/{debuggee}.dmp
 
+.PARAMETER SetSignatureCheck
+    When set, configures the DisableAuxProviderSignatureCheck registry key
+    (Windows 11+ / Server 2022+) to allow heap dumps with an unsigned DAC.
+    Requires running as Administrator. Used by CI and for first-time local setup.
+
 .EXAMPLE
     .\RunDumpTests.ps1
 
@@ -60,6 +65,9 @@
 
 .EXAMPLE
     .\RunDumpTests.ps1 -DumpArchive C:\Downloads\CdacDumps_linux_x64.tar.gz
+
+.EXAMPLE
+    .\RunDumpTests.ps1 -SetSignatureCheck
 #>
 
 [CmdletBinding()]
@@ -75,7 +83,9 @@ param(
 
     [string]$Filter = "",
 
-    [string]$DumpArchive = ""
+    [string]$DumpArchive = "",
+
+    [switch]$SetSignatureCheck
 )
 
 Set-StrictMode -Version Latest
@@ -245,6 +255,10 @@ if ($Action -in @("dumps", "all")) {
 
     if ($selectedVersions.Count -eq 1 -and $selectedVersions[0] -eq "local") {
         $msbuildArgs += "/p:CIDumpVersionsOnly=true"
+    }
+
+    if ($SetSignatureCheck) {
+        $msbuildArgs += "/p:SetDisableAuxProviderSignatureCheck=true"
     }
 
     & $dotnet @msbuildArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
