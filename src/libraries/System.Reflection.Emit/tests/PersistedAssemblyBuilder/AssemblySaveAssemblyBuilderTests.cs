@@ -17,6 +17,9 @@ namespace System.Reflection.Emit.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveAssemblyBuilderTests
     {
+        // AssemblyContentType is encoded in AssemblyFlags starting at bit 9 (ECMA-335 II.22.2 Assembly Flags).
+        private const int ContentTypeFlagShift = 9;
+        private const int ProcessorArchitectureMask = 0xF0;
         private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
         public class Outer
         {
@@ -72,7 +75,8 @@ namespace System.Reflection.Emit.Tests
             assemblyName.ProcessorArchitecture = ProcessorArchitecture.X86;
 #pragma warning restore SYSLIB0037 // Type or member is obsolete
 
-            byte[] expectedPublicKey = [1, 2, 3, 4];
+            byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
+            Assert.NotEmpty(expectedPublicKey);
             assemblyName.SetPublicKey(expectedPublicKey);
 
             PersistedAssemblyBuilder ab = CreateSimplePersistedAssembly(assemblyName);
@@ -84,7 +88,9 @@ namespace System.Reflection.Emit.Tests
             MetadataReader metadataReader = peReader.GetMetadataReader();
             AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
 
-            Assert.Equal((AssemblyFlags)assemblyName.Flags | (AssemblyFlags)((int)assemblyName.ContentType << 9), assemblyDefinition.Flags);
+            Assert.Equal((AssemblyFlags)assemblyName.Flags | (AssemblyFlags)((int)assemblyName.ContentType << ContentTypeFlagShift), assemblyDefinition.Flags);
+            Assert.True((assemblyDefinition.Flags & AssemblyFlags.PublicKey) != 0);
+            Assert.Equal(((int)assemblyName.Flags) & ProcessorArchitectureMask, ((int)assemblyDefinition.Flags) & ProcessorArchitectureMask);
             Assert.Equal(expectedPublicKey, metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
         }
 
@@ -92,8 +98,10 @@ namespace System.Reflection.Emit.Tests
         public void PersistedAssemblyBuilder_SaveGenerateMetadataLifecycleValidation()
         {
             PersistedAssemblyBuilder afterGenerateMetadata = CreateSimplePersistedAssembly(new AssemblyName("GenerateThenSave"));
-            afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
+            afterGenerateMetadata.GenerateMetadata(out BlobBuilder generatedIlStream, out BlobBuilder generatedFieldData);
             Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
+            Assert.NotNull(generatedIlStream);
+            Assert.NotNull(generatedFieldData);
 
             PersistedAssemblyBuilder afterSave = CreateSimplePersistedAssembly(new AssemblyName("SaveThenGenerate"));
             afterSave.Save(new MemoryStream());
@@ -122,7 +130,7 @@ namespace System.Reflection.Emit.Tests
         public void PersistedAssemblyBuilder_SaveToStreamValidation()
         {
             PersistedAssemblyBuilder nonWritableAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToNonWritableStream"));
-            using MemoryStream nonWritableStream = new MemoryStream([1, 2, 3], writable: false);
+            using MemoryStream nonWritableStream = new MemoryStream(Array.Empty<byte>(), writable: false);
             Assert.Throws<NotSupportedException>(() => nonWritableAssembly.Save(nonWritableStream));
 
             PersistedAssemblyBuilder disposedAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToDisposedStream"));
@@ -557,25 +565,21 @@ namespace System.Reflection.Emit.Tests
         {
             private readonly Stream _innerStream;
 
-            public NonSeekableWriteStream(Stream innerStream) => _innerStream = innerStream;
+            public NonSeekableWriteStream(Stream innerStream)
+            {
+                ArgumentNullException.ThrowIfNull(innerStream);
+                _innerStream = innerStream;
+            }
             public override bool CanRead => false;
             public override bool CanSeek => false;
             public override bool CanWrite => _innerStream.CanWrite;
-            public override long Length => _innerStream.Length;
+            public override long Length => throw new NotSupportedException();
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
             public override void Flush() => _innerStream.Flush();
             public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => _innerStream.SetLength(value);
+            public override void SetLength(long value) => throw new NotSupportedException();
             public override void Write(byte[] buffer, int offset, int count) => _innerStream.Write(buffer, offset, count);
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _innerStream.Dispose();
-                }
-                base.Dispose(disposing);
-            }
         }
 
         void CheckCattr(IList<CustomAttributeData> attributes)
