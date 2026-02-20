@@ -42,17 +42,17 @@ need full memory content (e.g., metadata-heavy scenarios) override this to `Full
 Each test class targets a specific cDAC contract and specifies which debuggee dump to
 use. Tests that require full dumps override `DumpType` to `"full"`.
 
-| Test Class | Contract | Debuggee | Dump Type |
-|------------|----------|----------|-----------|
-| ThreadDumpTests | Thread | BasicThreads | heap |
-| RuntimeInfoDumpTests | RuntimeInfo | BasicThreads | heap |
-| ExceptionDumpTests | Exception | ExceptionState | heap |
-| ObjectDumpTests | Object | GCRoots | heap |
-| ServerGCDumpTests | GCHeap | ServerGC | heap |
-| StackWalkDumpTests | StackWalk | StackWalk | heap |
-| RuntimeTypeSystemDumpTests | RuntimeTypeSystem | TypeHierarchy | full |
-| LoaderDumpTests | Loader | MultiModule | full |
-| EcmaMetadataDumpTests | EcmaMetadata | MultiModule | full |
+| Test Class | Contract | Debuggee |
+|------------|----------|----------|
+| ThreadDumpTests | Thread | BasicThreads |
+| RuntimeInfoDumpTests | RuntimeInfo | BasicThreads |
+| ExceptionDumpTests | Exception | ExceptionState |
+| ObjectDumpTests | Object | GCRoots |
+| ServerGCDumpTests | GCHeap | ServerGC |
+| StackWalkDumpTests | StackWalk | StackWalk |
+| RuntimeTypeSystemDumpTests | RuntimeTypeSystem | TypeHierarchy |
+| LoaderDumpTests | Loader | MultiModule |
+| EcmaMetadataDumpTests | EcmaMetadata | MultiModule |
 
 ### Runtime Versions
 
