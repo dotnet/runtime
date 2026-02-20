@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Moq;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -30,7 +30,7 @@ internal class TestPlaceholderTarget : Target
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        _contractRegistry = new Mock<ContractRegistry>().Object;
+        _contractRegistry = new TestContractRegistry();
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
@@ -41,6 +41,71 @@ internal class TestPlaceholderTarget : Target
     internal void SetContracts(ContractRegistry contracts)
     {
         _contractRegistry = contracts;
+    }
+
+    /// <summary>
+    /// Fluent builder for <see cref="TestPlaceholderTarget"/>. Accumulates types,
+    /// globals, and contract factories from mock descriptors, then materializes the
+    /// target and wires contracts in <see cref="Build"/>.
+    /// </summary>
+    internal class Builder
+    {
+        private readonly MockTarget.Architecture _arch;
+        private readonly MockMemorySpace.Builder _memBuilder;
+        private readonly Dictionary<DataType, Target.TypeInfo> _types = new();
+        private readonly List<(string Name, ulong Value)> _globals = new();
+        private readonly List<(string Name, string Value)> _globalStrings = new();
+        private readonly List<(Type Type, Func<Target, IContract> Factory)> _contractFactories = new();
+
+        public Builder(MockTarget.Architecture arch)
+        {
+            _arch = arch;
+            _memBuilder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
+        }
+
+        internal MockMemorySpace.Builder MemoryBuilder => _memBuilder;
+
+        public Builder AddTypes(Dictionary<DataType, Target.TypeInfo> types)
+        {
+            foreach (var kvp in types)
+                _types[kvp.Key] = kvp.Value;
+            return this;
+        }
+
+        public Builder AddGlobals(params (string Name, ulong Value)[] globals)
+        {
+            _globals.AddRange(globals);
+            return this;
+        }
+
+        public Builder AddGlobalStrings(params (string Name, string Value)[] globalStrings)
+        {
+            _globalStrings.AddRange(globalStrings);
+            return this;
+        }
+
+        public Builder AddContract<TContract>(Func<Target, TContract> factory) where TContract : IContract
+        {
+            _contractFactories.Add((typeof(TContract), target => factory(target)));
+            return this;
+        }
+
+        public TestPlaceholderTarget Build()
+        {
+            var target = new TestPlaceholderTarget(
+                _arch,
+                _memBuilder.GetMemoryContext().ReadFromTarget,
+                _types,
+                _globals.ToArray(),
+                _globalStrings.ToArray());
+
+            var registry = new TestContractRegistry();
+            foreach (var (type, factory) in _contractFactories)
+                registry.Add(type, new Lazy<IContract>(() => factory(target)));
+            target.SetContracts(registry);
+
+            return target;
+        }
     }
 
     public override int PointerSize { get; }
@@ -369,6 +434,21 @@ internal class TestPlaceholderTarget : Target
         public void Clear()
         {
             _readDataByAddress.Clear();
+        }
+    }
+
+    private sealed class TestContractRegistry : ContractRegistry
+    {
+        private readonly Dictionary<Type, Lazy<IContract>> _contracts = new();
+
+        public void Add(Type type, Lazy<IContract> contract) => _contracts[type] = contract;
+
+        public override TContract GetContract<TContract>()
+        {
+            if (_contracts.TryGetValue(typeof(TContract), out var lazy))
+                return (TContract)lazy.Value;
+
+            throw new NotImplementedException($"Contract {typeof(TContract).Name} is not registered.");
         }
     }
 
