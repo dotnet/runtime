@@ -7,6 +7,6 @@ To update the code in the future, follow these steps:
 3. From the extracted tarball, copy the 'cmake', 'lib' and 'src' directories into 'src/native/external/xz/'
 4. Rebuild the native components and run the relevant tests
 
-Only the 'cmake', 'src/common' and 'src/liblzma' directories from the original source were included to minimize unnecessary code inclusions.
+Only the 'cmake', 'src/common', 'src/liblzma' and 'src/scripts' directories from the original source were included to minimize unnecessary code inclusions.
 
 To fix build-time warnings in the currently released version, the xz-patch.diff file was applied. These changes should be upstreamed to the xz project and should not be necessary when upgrading to a future version.
