@@ -423,7 +423,8 @@ namespace {lc.Namespace}
                 {
                     if (tp.Constraints is not null)
                     {
-                        _builder.Append($"\n            {nestedIndentation}where {tp.Name} : {tp.Constraints}");
+                        _builder.Append(@$"
+            {nestedIndentation}where {tp.Name} : {tp.Constraints}");
                     }
                 }
             }
