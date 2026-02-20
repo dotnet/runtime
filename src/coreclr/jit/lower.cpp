@@ -569,6 +569,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_LCLHEAP:
             LowerLclHeap(node);
+            AfterLowerLclHeap(node);
             break;
 
 #ifdef TARGET_XARCH

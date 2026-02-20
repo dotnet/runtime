@@ -597,6 +597,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCLHEAP:
             genLclHeap(treeNode);
+            break;
 
         case GT_INDEX_ADDR:
             genCodeForIndexAddr(treeNode->AsIndexAddr());
@@ -2081,7 +2082,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
 
             // Round up request size to a multiple of STACK_ALIGN
-            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, sizeReg);
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, STACK_ALIGN);
             GetEmitter()->emitIns(INS_I_add);
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
@@ -2090,7 +2091,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             // Save the aligned size for the zeroing call below if needed.
             if (needsZeroing)
             {
-                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, sizeReg);
+                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, WasmRegToIndex(sizeReg));
             }
 
             // Subtract rounded-up size from SP value, and save back to SP
@@ -2104,7 +2105,7 @@ void CodeGen::genLclHeap(GenTree* tree)
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
                 GetEmitter()->emitIns(INS_I_add);
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
-                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, sizeReg);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
                 // TODO-WASM-CQ: possibly do small fills directly
                 GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
             }

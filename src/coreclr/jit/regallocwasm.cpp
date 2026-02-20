@@ -91,7 +91,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals)
+    if (anyFrameLocals || m_codeGen->isFramePointerRequired())
     {
         AllocateFramePointer();
     }
@@ -282,6 +282,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_LCLHEAP:
+            CollectReferencesForLclHeap(node->AsOp());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -312,7 +316,7 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 // Arguments:
 //    lclHeapNode - The LCLHEAP node
 //
-void WasmRegAlloc::CollectReferencesForLclHeap(GenTree* lclHeapNode)
+void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
 {
     ConsumeTemporaryRegForOperand(lclHeapNode->gtGetOp1() DEBUGARG("lcl heap"));
 }

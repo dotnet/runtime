@@ -478,6 +478,7 @@ void Lowering::AfterLowerLclHeap(GenTree* treeNode)
     {
         size = m_compiler->gtNewCastNode(TYP_I_IMPL, size, false, TYP_I_IMPL);
         BlockRange().InsertBefore(treeNode, size);
+        treeNode->AsOp()->gtOp1 = size;
         size->gtLIRFlags |= LIR::Flags::MultiplyUsed;
     }
 }

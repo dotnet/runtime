@@ -119,7 +119,7 @@ private:
     void CollectReferencesForBlock(BasicBlock* block);
     void CollectReferencesForNode(GenTree* node);
     void CollectReferencesForDivMod(GenTreeOp* divModNode);
-    void CollectReferencesForLclHeap(GenTree* lclHeapNode);
+    void CollectReferencesForLclHeap(GenTreeOp* lclHeapNode);
     void RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void CollectReference(GenTree* node);
     void RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
