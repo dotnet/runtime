@@ -1977,11 +1977,8 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_BLK));
+    assert(!blkOp->gtBlkOpGcUnsafe);
 
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        GetEmitter()->emitDisableGC();
-    }
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
     switch (blkOp->gtBlkOpKind)
@@ -2005,11 +2002,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
         default:
             unreached();
-    }
-
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        GetEmitter()->emitEnableGC();
     }
 }
 
