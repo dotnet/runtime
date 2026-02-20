@@ -42,6 +42,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Atomics: return ReadyToRunInstructionSet.Atomics;
                             case InstructionSet.ARM64_Vector64: return null;
                             case InstructionSet.ARM64_Vector128: return null;
+                            case InstructionSet.ARM64_VectorT: return null;
                             case InstructionSet.ARM64_Dczva: return null;
                             case InstructionSet.ARM64_Rcpc: return ReadyToRunInstructionSet.Rcpc;
                             case InstructionSet.ARM64_VectorT128: return ReadyToRunInstructionSet.VectorT128;

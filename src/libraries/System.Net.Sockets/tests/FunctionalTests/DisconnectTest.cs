@@ -50,6 +50,65 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task DisconnectAndReuse_SameHost_Succeeds()
+        {
+            // After DisconnectAsync(reuseSocket: true), reconnecting to the same
+            // host and exchanging data should work without any stale data leaking
+            // from the previous connection.
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+
+            using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Connection 1: connect, exchange data, disconnect with reuse.
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            using (Socket server1 = await listener.AcceptAsync())
+            {
+                byte[] serverPayload = new byte[2048];
+                Random.Shared.NextBytes(serverPayload);
+                await server1.SendAsync(serverPayload);
+
+                byte[] recvBuf = new byte[4096];
+                int received = await client.ReceiveAsync(recvBuf);
+                Assert.Equal(2048, received);
+            }
+
+            await client.DisconnectAsync(reuseSocket: true);
+
+            // Connection 2: reconnect and send a known message.
+            await client.ConnectAsync(listener.LocalEndPoint!);
+            using Socket server2 = await listener.AcceptAsync();
+
+            byte[] message = "HELLO"u8.ToArray();
+            await client.SendAsync(message);
+
+            // The server should receive exactly the message bytes and nothing else.
+            byte[] serverRecvBuf = new byte[65536 + message.Length];
+            int totalReceived = 0;
+
+            // Read with a short timeout to ensure no extra data arrives.
+            server2.ReceiveTimeout = 1000;
+            try
+            {
+                while (true)
+                {
+                    int n = server2.Receive(serverRecvBuf, totalReceived, serverRecvBuf.Length - totalReceived, SocketFlags.None);
+                    if (n == 0) break;
+                    totalReceived += n;
+                }
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
+            {
+                // Expected: timeout means no more data.
+            }
+
+            Assert.Equal(message.Length, totalReceived);
+            Assert.Equal(message, serverRecvBuf[..totalReceived]);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task DisconnectAndReuse_ReconnectSync_ThrowsInvalidOperationException()
         {

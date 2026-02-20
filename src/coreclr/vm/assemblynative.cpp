@@ -1419,7 +1419,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     BEGIN_QCALL;
 
 #ifdef FEATURE_METADATA_UPDATER
-    result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
+    result = CORDebuggerAttached() || g_pConfig->DebugAssembliesModifiable();
 #endif
 
     END_QCALL;
