@@ -109,9 +109,9 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add("--out");
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
             recordTraceStartInfo.ArgumentList.Add("--log-mode");
-            recordTraceStartInfo.ArgumentList.Add("verbose");
+            recordTraceStartInfo.ArgumentList.Add("console");
             recordTraceStartInfo.ArgumentList.Add("--log-filter");
-            recordTraceStartInfo.ArgumentList.Add("*");
+            recordTraceStartInfo.ArgumentList.Add("trace");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
