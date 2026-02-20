@@ -61,6 +61,83 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void PersistedAssemblyBuilder_AssemblyIdentityRoundTrip()
+        {
+            AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
+            {
+                Flags = AssemblyNameFlags.PublicKey,
+                ContentType = AssemblyContentType.WindowsRuntime
+            };
+#pragma warning disable SYSLIB0037 // Type or member is obsolete
+            assemblyName.ProcessorArchitecture = ProcessorArchitecture.X86;
+#pragma warning restore SYSLIB0037 // Type or member is obsolete
+
+            byte[] expectedPublicKey = [1, 2, 3, 4];
+            assemblyName.SetPublicKey(expectedPublicKey);
+
+            PersistedAssemblyBuilder ab = CreateSimplePersistedAssembly(assemblyName);
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+
+            stream.Position = 0;
+            using PEReader peReader = new PEReader(stream);
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
+
+            Assert.Equal((AssemblyFlags)assemblyName.Flags | (AssemblyFlags)((int)assemblyName.ContentType << 9), assemblyDefinition.Flags);
+            Assert.Equal(expectedPublicKey, metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_SaveGenerateMetadataLifecycleValidation()
+        {
+            PersistedAssemblyBuilder afterGenerateMetadata = CreateSimplePersistedAssembly(new AssemblyName("GenerateThenSave"));
+            afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
+            Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
+
+            PersistedAssemblyBuilder afterSave = CreateSimplePersistedAssembly(new AssemblyName("SaveThenGenerate"));
+            afterSave.Save(new MemoryStream());
+            Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
+            Assert.Throws<InvalidOperationException>(() => afterSave.Save(new MemoryStream()));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_SaveToStreamWithOffset()
+        {
+            PersistedAssemblyBuilder ab = CreateSimplePersistedAssembly(new AssemblyName("SaveToStreamWithOffset"));
+            byte[] prefix = [10, 20, 30];
+            using MemoryStream stream = new MemoryStream();
+
+            stream.Write(prefix);
+            long saveStartPosition = stream.Position;
+
+            ab.Save(stream);
+
+            Assert.Equal(stream.Length, stream.Position);
+            Assert.True(stream.Length > saveStartPosition);
+            Assert.Equal(prefix, stream.GetBuffer().AsSpan(0, prefix.Length).ToArray());
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_SaveToStreamValidation()
+        {
+            PersistedAssemblyBuilder nonWritableAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToNonWritableStream"));
+            using MemoryStream nonWritableStream = new MemoryStream([1, 2, 3], writable: false);
+            Assert.Throws<NotSupportedException>(() => nonWritableAssembly.Save(nonWritableStream));
+
+            PersistedAssemblyBuilder disposedAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToDisposedStream"));
+            MemoryStream disposedStream = new MemoryStream();
+            disposedStream.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => disposedAssembly.Save(disposedStream));
+
+            PersistedAssemblyBuilder nonSeekableAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToNonSeekableStream"));
+            using MemoryStream backingStream = new MemoryStream();
+            using NonSeekableWriteStream nonSeekableStream = new NonSeekableWriteStream(backingStream);
+            nonSeekableAssembly.Save(nonSeekableStream);
+            Assert.NotEqual(0, backingStream.Length);
+        }
+
+        [Fact]
         public void PersistedAssemblyBuilder_GenerateMetadataWithEntryPoint()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(_assemblyName);
@@ -103,6 +180,87 @@ namespace System.Reflection.Emit.Tests
             MethodInfo method = assembly.EntryPoint;
             Assert.Equal("Main", method.Name);
             Assert.Equal(12, method.Invoke(null, null));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_GenerateMetadataWithNestedTypeEntryPoint()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssemblyWithNestedEntryPoint"));
+            TypeBuilder outerType = ab.DefineDynamicModule("MyModule").DefineType("OuterType", TypeAttributes.Public | TypeAttributes.Class);
+            TypeBuilder nestedType = outerType.DefineNestedType("NestedType", TypeAttributes.NestedPublic | TypeAttributes.Class);
+            MethodBuilder entryPoint = nestedType.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+            ILGenerator il = entryPoint.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4, 42);
+            il.Emit(OpCodes.Ret);
+            nestedType.CreateType();
+            outerType.CreateType();
+
+            MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
+            ManagedPEBuilder peBuilder = new ManagedPEBuilder(
+                header: new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage, subsystem: Subsystem.WindowsCui),
+                metadataRootBuilder: new MetadataRootBuilder(metadataBuilder),
+                ilStream: ilStream,
+                mappedFieldData: fieldData,
+                entryPoint: MetadataTokens.MethodDefinitionHandle(entryPoint.MetadataToken));
+
+            BlobBuilder peBlob = new BlobBuilder();
+            peBuilder.Serialize(peBlob);
+
+            using MemoryStream stream = new MemoryStream();
+            peBlob.WriteContentTo(stream);
+            stream.Position = 0;
+            TestAssemblyLoadContext testAssemblyLoadContext = new();
+            try
+            {
+                Assembly assembly = testAssemblyLoadContext.LoadFromStream(stream);
+                MethodInfo method = assembly.EntryPoint;
+                Assert.Equal("OuterType+NestedType", method.DeclaringType.FullName);
+                Assert.Equal(42, method.Invoke(null, null));
+            }
+            finally
+            {
+                testAssemblyLoadContext.Unload();
+            }
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_GenerateMetadataWithGenericEntryPoint()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssemblyWithGenericEntryPoint"));
+            TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("Program", TypeAttributes.Public | TypeAttributes.Class);
+            MethodBuilder entryPoint = tb.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+            entryPoint.DefineGenericParameters("T");
+            ILGenerator il = entryPoint.GetILGenerator();
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Ret);
+            tb.CreateType();
+
+            MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
+            ManagedPEBuilder peBuilder = new ManagedPEBuilder(
+                header: new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage, subsystem: Subsystem.WindowsCui),
+                metadataRootBuilder: new MetadataRootBuilder(metadataBuilder),
+                ilStream: ilStream,
+                mappedFieldData: fieldData,
+                entryPoint: MetadataTokens.MethodDefinitionHandle(entryPoint.MetadataToken));
+
+            BlobBuilder peBlob = new BlobBuilder();
+            peBuilder.Serialize(peBlob);
+
+            using MemoryStream stream = new MemoryStream();
+            peBlob.WriteContentTo(stream);
+            stream.Position = 0;
+            TestAssemblyLoadContext testAssemblyLoadContext = new();
+            try
+            {
+                Assembly assembly = testAssemblyLoadContext.LoadFromStream(stream);
+                MethodInfo method = assembly.EntryPoint;
+                Assert.True(method.ContainsGenericParameters);
+                Assert.Throws<InvalidOperationException>(() => method.Invoke(null, null));
+            }
+            finally
+            {
+                testAssemblyLoadContext.Unload();
+            }
         }
 
         [Fact]
@@ -385,6 +543,39 @@ namespace System.Reflection.Emit.Tests
             }
 
             public Guid MyGuid { get; init; }
+        }
+
+        private static PersistedAssemblyBuilder CreateSimplePersistedAssembly(AssemblyName assemblyName)
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
+            TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            typeBuilder.CreateType();
+            return ab;
+        }
+
+        private sealed class NonSeekableWriteStream : Stream
+        {
+            private readonly Stream _innerStream;
+
+            public NonSeekableWriteStream(Stream innerStream) => _innerStream = innerStream;
+            public override bool CanRead => false;
+            public override bool CanSeek => false;
+            public override bool CanWrite => _innerStream.CanWrite;
+            public override long Length => _innerStream.Length;
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() => _innerStream.Flush();
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => _innerStream.SetLength(value);
+            public override void Write(byte[] buffer, int offset, int count) => _innerStream.Write(buffer, offset, count);
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _innerStream.Dispose();
+                }
+                base.Dispose(disposing);
+            }
         }
 
         void CheckCattr(IList<CustomAttributeData> attributes)
