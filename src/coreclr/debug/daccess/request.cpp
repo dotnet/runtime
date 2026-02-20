@@ -1864,7 +1864,8 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         {
             MTData->Module = HOST_CDADDR(pMT->GetModule());
             // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
-            MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
+            PTR_EEClass pClass = pMT->GetClassWithPossibleAV();
+            MTData->Class = pClass != NULL ? HOST_CDADDR(pClass->GetMethodTable()) : 0;
             MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
             MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
             MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
@@ -2054,6 +2055,10 @@ ClrDataAccess::GetMethodTableFieldData(CLRDATA_ADDRESS mt, struct DacpMethodTabl
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!pMT || !DacValidateMethodTable(pMT, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else if (pMT->GetClassWithPossibleAV() == NULL)
     {
         hr = E_INVALIDARG;
     }
@@ -5650,6 +5655,10 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
 
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else if (mTable->GetClassWithPossibleAV() == NULL)
     {
         hr = E_INVALIDARG;
     }
