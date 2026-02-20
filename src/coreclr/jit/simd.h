@@ -1990,7 +1990,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     for (uint32_t i = 0; i < count; i++)
     {
         const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
-        TBase elem = (TBase)(lane & laneMask);
+        TBase          elem = (TBase)(lane & laneMask);
 
         if (elem == 0)
         {
@@ -2010,7 +2010,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     for (uint32_t i = firstZero; i < count; i++)
     {
         const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
-        TBase elem = (TBase)(lane & laneMask);
+        TBase          elem = (TBase)(lane & laneMask);
 
         if (elem != 0)
         {
