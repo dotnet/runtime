@@ -210,7 +210,6 @@ namespace System.Text.RegularExpressions
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
         {
             int c = str.Length;
-            int pos;
 
             if (!_rightToLeft)
             {
@@ -219,7 +218,13 @@ namespace System.Text.RegularExpressions
                     return false;
                 }
 
-                pos = runtextpos + c;
+                if (!inputSpan.Slice(runtextpos, c).SequenceEqual(str.AsSpan()))
+                {
+                    return false;
+                }
+
+                runtextpos += c;
+                return true;
             }
             else
             {
@@ -228,25 +233,18 @@ namespace System.Text.RegularExpressions
                     return false;
                 }
 
-                pos = runtextpos;
-            }
-
-            while (c != 0)
-            {
-                if (str[--c] != inputSpan[--pos])
+                int pos = runtextpos;
+                while (c != 0)
                 {
-                    return false;
+                    if (str[--c] != inputSpan[--pos])
+                    {
+                        return false;
+                    }
                 }
+
+                runtextpos = pos;
+                return true;
             }
-
-            if (!_rightToLeft)
-            {
-                pos += str.Length;
-            }
-
-            runtextpos = pos;
-
-            return true;
         }
 
         private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)
