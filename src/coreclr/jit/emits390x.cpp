@@ -16,7 +16,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #if defined(TARGET_S390X)
-
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -97,8 +96,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    _ASSERTE(!"NYI");
-#if 0
     if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
@@ -173,7 +170,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
             return sizeof(instrDesc);
         }
     }
-#endif
 }
 
 #ifdef DEBUG
@@ -1410,8 +1406,6 @@ static const char * const  bRegNames[] =
 //
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(reg < REG_COUNT);
 
     const char* rn = nullptr;
@@ -1438,16 +1432,11 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
         {
             rn = bRegNames[reg - REG_V0];
         }
-        else if (size == EA_SCALABLE)
-        {
-            rn = emitSveRegName(reg);
-        }
     }
 
     assert(rn != nullptr);
 
     return rn;
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -1478,8 +1467,6 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
-    _ASSERTE(!"NYI");
-#if 0
     // clang-format off
     const static insFormat insFormats[] =
     {
@@ -1510,7 +1497,6 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     assert((insFormats[ins] != IF_NONE));
 
     return insFormats[ins];
-#endif
 }
 
 #define LD  1
@@ -1700,8 +1686,6 @@ bool emitter::emitInsDestIsOp2(instruction ins)
 
 emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
-    _ASSERTE(!"NYI");
-#if 0
     // clang-format off
     const static code_t insCodes1[] =
     {
@@ -2399,30 +2383,26 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     assert((code != BAD_CODE));
 
     return code;
-#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a mov instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_mov(INT64 imm, emitAttr size)
 {
-    _ASSERTE(!"NYI");
-#if 0
-    // Check for "MOV (wide immediate)".
-    if (canEncodeHalfwordImm(imm, size))
-        return true;
-
-    // Next try the ones-complement form of 'halfword immediate' imm(i16,hw),
-    // namely "MOV (inverted wide immediate)".
-    ssize_t notOfImm = NOT_helper(imm, getBitWidth(size));
-    if (canEncodeHalfwordImm(notOfImm, size))
-        return true;
+//    // Check for "MOV (wide immediate)".
+//    if (canEncodeHalfwordImm(imm, size))
+//        return true;
+//
+//    // Next try the ones-complement form of 'halfword immediate' imm(i16,hw),
+//    // namely "MOV (inverted wide immediate)".
+//    ssize_t notOfImm = NOT_helper(imm, getBitWidth(size));
+//    if (canEncodeHalfwordImm(notOfImm, size))
+//        return true;
 
     // Finally try "MOV (bitmask immediate)" imm(N,r,s)
     if (canEncodeBitMaskImm(imm, size))
         return true;
 
     return false;
-#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a vector movi instruction
@@ -2815,7 +2795,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeBitMaskImm(INT64 imm, emitAttr size, emitter::bitMaskImm* wbBMI)
 {
-    _ASSERTE(!"NYI");
 #if 0
     unsigned immWidth = getBitWidth(size);
     unsigned maxLen;
@@ -3040,8 +3019,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ INT64 emitter::emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size)
 {
-    _ASSERTE(!"NYI");
-#if 0
     assert(isValidGeneralDatasize(size)); // Only EA_4BYTE or EA_8BYTE forms
 
     unsigned hw  = hwImm.immHW;
@@ -3051,7 +3028,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
     INT64 result = val << (16 * hw);
     return result;
-#endif
 }
 
 /************************************************************************
@@ -3826,8 +3802,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 void emitter::emitIns(instruction ins)
 {
-    _ASSERTE(!"NYI");
-#if 0
+	return;
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -3841,7 +3816,6 @@ void emitter::emitIns(instruction ins)
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -3891,8 +3865,6 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
@@ -3904,6 +3876,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             fmt = IF_BR_1A;
             break;
 
+#if 0
         case INS_dczva:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
@@ -3914,9 +3887,10 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             fmt = IF_SR_1A;
             break;
 
+#endif
         default:
             // fallback to emit SVE instructions.
-            return emitInsSve_R(ins, attr, reg, opt);
+//            return emitInsSve_R(ins, attr, reg, opt);
     }
 
     assert(fmt != IF_NONE);
@@ -3929,7 +3903,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -4026,8 +3999,6 @@ void emitter::emitIns_R_I(instruction ins,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                               DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
@@ -4040,7 +4011,7 @@ void emitter::emitIns_R_I(instruction ins,
         halfwordImm    hwi;
         byteShiftedImm bsi;
         ssize_t        notOfImm;
-
+#if 0
         case INS_tst:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg));
@@ -4070,12 +4041,13 @@ void emitter::emitIns_R_I(instruction ins,
             canEncode = true;
             fmt       = IF_DI_1B;
             break;
-
+#endif
         case INS_mov:
             assert(isValidGeneralDatasize(size));
             assert(insOptsNone(opt)); // No explicit LSL here
             // We will automatically determine the shift based upon the imm
-
+		fmt = IF_DI_1B;
+#if 0
             // First try the standard 'halfword immediate' imm(i16,hw)
             hwi.immHWVal = 0;
             canEncode    = canEncodeHalfwordImm(imm, size, &hwi);
@@ -4118,9 +4090,9 @@ void emitter::emitIns_R_I(instruction ins,
             {
                 assert(!"Instruction cannot be encoded: mov imm");
             }
-
+#endif
             break;
-
+#if 0
         case INS_movi:
             assert(isValidVectorDatasize(size));
             assert(isVectorRegister(reg));
@@ -4259,14 +4231,14 @@ void emitter::emitIns_R_I(instruction ins,
                 assert(!"Instruction cannot be encoded: IF_DI_1A");
             }
             break;
-
+#endif
         default:
             // fallback to emit SVE instructions.
-            return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
+      //      return emitInsSve_R_I(ins, attr, reg, imm, opt, sopt);
     } // end switch (ins)
 
-    assert(canEncode);
-    assert(fmt != IF_NONE);
+    //assert(canEncode);
+    //ssert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrSC(attr, imm);
 
@@ -4283,7 +4255,6 @@ void emitter::emitIns_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -4392,7 +4363,8 @@ void emitter::emitIns_R_F(
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
+    //s390xmarker: use in prolog :- unimplemented
+	return;
 #if 0
     assert(IsMovInstruction(ins));
 
@@ -6197,8 +6169,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
                             insOpts         opt /* = INS_OPTS_NONE */,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
@@ -6206,6 +6176,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+#if 0
         case INS_mul:
         case INS_smull:
         case INS_umull:
@@ -6257,7 +6228,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isGeneralRegister(reg3));
             fmt = IF_DR_3A;
             break;
-
+#endif
         case INS_add:
         case INS_sub:
             if (isVectorRegister(reg1))
@@ -6290,7 +6261,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_subs:
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
             return;
-
+#if 0
         case INS_cmeq:
         case INS_cmge:
         case INS_cmgt:
@@ -6852,7 +6823,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
         default:
             // fallback to emit SVE instructions.
             return emitInsSve_R_R_R(ins, attr, reg1, reg2, reg3, opt, sopt);
-
+#endif
     } // end switch (ins)
 
     assert(fmt != IF_NONE);
@@ -6869,7 +6840,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -7020,8 +6990,6 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
                               emitAttr        attrReg2 /* = EA_UNKNOWN */,
                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
@@ -7034,6 +7002,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+#if 0
         case INS_extr:
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
@@ -7119,13 +7088,13 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             }
             fmt = IF_DV_3AI;
             break;
-
+#endif
         case INS_add:
         case INS_sub:
             setFlags = false;
             isAddSub = true;
             break;
-
+#if 0
         case INS_adds:
         case INS_subs:
             setFlags = true;
@@ -7311,11 +7280,11 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
         default:
             // fallback to emit SVE instructions.
             return emitInsSve_R_R_R_I(ins, attr, reg1, reg2, reg3, imm, opt, sopt);
-
+#endif
     } // end switch (ins)
 
     assert(insScalableOptsNone(sopt));
-
+#if 0
     if (isLdSt)
     {
         assert(!isAddSub);
@@ -7376,32 +7345,34 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
 #endif
         }
     }
-    else if (isAddSub)
+    else 
+#endif
+    if (isAddSub)
     {
         bool reg2IsSP = (reg2 == REG_SP);
         assert(!isLdSt);
         assert(isValidGeneralDatasize(size));
         assert(isGeneralRegister(reg3));
 
-        if (setFlags || insOptsAluShift(opt)) // Can't encode SP in reg1 with setFlags or AluShift option
-        {
-            assert(isGeneralRegisterOrZR(reg1));
-        }
-        else
-        {
-            assert(isGeneralRegisterOrSP(reg1));
-            reg1 = encodingSPtoZR(reg1);
-        }
+    //    if (setFlags || insOptsAluShift(opt)) // Can't encode SP in reg1 with setFlags or AluShift option
+    //    {
+    //        assert(isGeneralRegisterOrZR(reg1));
+    //    }
+    //    else
+    //    {
+    //        assert(isGeneralRegisterOrSP(reg1));
+    //        reg1 = encodingSPtoZR(reg1);
+    //    }
 
-        if (insOptsAluShift(opt)) // Can't encode SP in reg2 with AluShift option
-        {
-            assert(isGeneralRegister(reg2));
-        }
-        else
-        {
-            assert(isGeneralRegisterOrSP(reg2));
-            reg2 = encodingSPtoZR(reg2);
-        }
+    //    if (insOptsAluShift(opt)) // Can't encode SP in reg2 with AluShift option
+    //    {
+    //        assert(isGeneralRegister(reg2));
+    //    }
+    //    else
+    //    {
+    //        assert(isGeneralRegisterOrSP(reg2));
+    //        reg2 = encodingSPtoZR(reg2);
+    //    }
 
         if (insOptsAnyExtend(opt))
         {
@@ -7467,7 +7438,6 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -8151,8 +8121,6 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
     unsigned  scale        = 0;
@@ -8168,7 +8136,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     int     disp = base + offs;
     ssize_t imm  = disp;
 
-    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+    regNumber reg2 = REG_SPBASE;//encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -8317,14 +8285,14 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
 
     assert(fmt != IF_NONE);
-
+#if 0
     // Try to optimize a load/store with an alternative instruction.
     if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
         OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
-
+#endif
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
@@ -8342,7 +8310,6 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -8449,8 +8416,9 @@ void emitter::emitIns_R_R_S_S(
  */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    _ASSERTE(!"NYI");
-#if 0
+	//s390xmarker : used in function prolog:- unimplemented
+	//return;
+
     assert(offs >= 0);
     emitAttr  size          = EA_SIZE(attr);
     insFormat fmt           = IF_NONE;
@@ -8467,7 +8435,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     ssize_t imm  = disp;
 
     // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
-    regNumber reg2 = encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
+    regNumber reg2 = REG_SPBASE;//encodingSPtoZR(FPbased ? REG_FPBASE : REG_SPBASE);
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -8475,20 +8443,21 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     {
         case INS_strb:
             scale = 0;
-            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegister(reg1));
             break;
 
         case INS_strh:
             scale = 1;
-            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegister(reg1));
             break;
 
         case INS_str:
-            if (isGeneralRegisterOrZR(reg1))
+            if (isGeneralRegister(reg1))
             {
                 assert(isValidGeneralDatasize(size));
                 scale = (size == EA_8BYTE) ? 3 : 2;
             }
+#if 0
             else
             {
                 assert(isVectorRegister(reg1));
@@ -8496,6 +8465,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 scale         = NaturalScale_helper(size);
                 isVectorStore = true;
             }
+#endif
             isStr = true;
             break;
 /*
@@ -8603,14 +8573,14 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     }
 
     assert(fmt != IF_NONE);
-
+#if 0
     // Try to optimize a store with an alternative instruction.
     if (isStr && emitComp->opts.OptimizationEnabled() &&
         OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
-
+#endif
     instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
@@ -8628,7 +8598,6 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     dispIns(id);
     appendToCurIG(id);
-#endif
 }
 
 /*****************************************************************************
@@ -9705,8 +9674,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasize(emitAttr size)
 {
-    _ASSERTE(!"NYI");
-#if 0
+	//s390xmarker : do we really need this? this toggles a bit in the
+	// instruction to treat it as a 64 bit operation instruction
     if (size == EA_8BYTE)
     {
         return 0x80000000; // set the bit at location 31
@@ -9716,7 +9685,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(size == EA_4BYTE);
         return 0;
     }
-#endif
 }
 
 /*****************************************************************************
@@ -11316,14 +11284,12 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
-    _ASSERTE(!"NYI");
-#if 0
+	//s390xmarker: this also needs to be looked into
     assert(sizeof(code_t) == 4);
-    BYTE* dstRW       = dst + writeableOffset;
+    BYTE* dstRW    = dst + writeableOffset;
     *((code_t*)dstRW) = code;
 
     return sizeof(code_t);
-#endif
 }
 
 /*****************************************************************************
@@ -11337,8 +11303,6 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    _ASSERTE(!"NYI");
-#if 0
     BYTE*       dst  = *dp;
     BYTE*       odst = dst;
     code_t      code = 0;
@@ -11368,7 +11332,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         unsigned immShift;
         emitAttr elemsize;
         emitAttr datasize;
-
+#if 0
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
         case IF_LARGEJMP:
@@ -11401,16 +11365,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst = emitOutputLJ(ig, dst, id);
             sz  = sizeof(instrDescJmp);
             break;
-
+#endif
         case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_ret) || (ins == INS_br));
             code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+            code = ((code << 8) | (0xf << 4) | (id->idReg1())); // nnnnn
 
-            dst += emitOutput_Instr(dst, code);
+            //dst += emitOutput_Instr(dst, code);
+            dst += emitOutputWord(dst, (ssize_t)code);
             break;
-
+#if 0
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_br_tail) || (ins == INS_blr));
@@ -11484,14 +11449,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
-
+#endif
         case IF_LS_2C: // LS_2C   .X.......X.iiiii iiiiPPnnnnnttttt      Rt Rn    imm(-256..+255) no/pre/post inc
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
-            imm = emitGetInsSC(id);
+            imm = emitGetInsSC(id); //get instruction's constant value
             assert((imm >= -256) && (imm <= 255)); // signed 9 bits
-            imm &= 0x1ff;                          // force into unsigned 9 bit representation
+            //imm &= 0x1ff;                          // force into unsigned 9 bit representation
             code = emitInsCode(ins, fmt);
-            // Is the target a vector register?
+#if 0
+		// Is the target a vector register?
             if (isVectorRegister(id->idReg1()))
             {
                 code &= 0x3FFFFFFF;                                 // clear the size bits
@@ -11501,13 +11467,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code |= insEncodeDatasizeLS(code, id->idOpSize()); // .X.......X
-                code |= insEncodeReg_Rt(id->idReg1());             // ttttt
+                code |= id->idReg1();             // SPBASE = R15
             }
+
             code |= insEncodeIndexedOpt(id->idInsOpt()); // PP
             code |= ((code_t)imm << 12);                 // iiiiiiiii
             code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
+#endif
+            code = ((code << 24) | ((id->idReg1()) << 20) | (0 << 16) | ((id->idReg2()) << 12) | ((imm) & 0xfff)); //x is always 0 in other compilers 0 << 16 is kept for the sake of visualizing fmt RX
             dst += emitOutput_Instr(dst, code);
-
+#if 0
             // With pre or post-indexing we may have a second GC register to
             // update.
             if (insOptsIndexed(id->idInsOpt()) && !id->idIsSmallDsc())
@@ -11537,9 +11506,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 goto SKIP_GC_UPDATE;
             }
-
+#endif
             break;
-
+#if 0
         case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
         case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
             elemsize = optGetElemsize(id->idInsOpt());
@@ -11718,17 +11687,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rn(id->idReg1());       // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
-
+#endif
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
             imm = emitGetInsSC(id);
-            assert(isValidImmHWVal(imm, id->idOpSize()));
+            //assert(isValidImmHWVal(imm, id->idOpSize()));
             code = emitInsCode(ins, fmt);
-            code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= ((code_t)imm << 5);                // hwiiiii iiiiiiiiiii
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            dst += emitOutput_Instr(dst, code);
+            code = (((code >> 4)<<8)|((id->idReg1())<<4)|(code & 0xf));                // hwiiiii iiiiiiiiiii
+            dst += emitOutputWord(dst, (ssize_t)code);
+            dst += emitOutputLong(dst, (ssize_t)imm);
             break;
-
+#if 0
         case IF_DI_1C: // DI_1C   X........Nrrrrrr ssssssnnnnn.....         Rn    imm(N,r,s)
             imm = emitGetInsSC(id);
             assert(isValidImmNRS(imm, id->idOpSize()));
@@ -12026,23 +11994,23 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst += emitOutput_Instr(dst, code);
             }
             break;
-
+#endif
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             code = emitInsCode(ins, fmt);
-            code |= insEncodeDatasize(id->idOpSize()); // X
-            code |= insEncodeReg_Rd(id->idReg1());     // ddddd
-            code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
+            //code |= insEncodeDatasize(id->idOpSize()); // X
+            code = (code << 16) | (insEncodeReg_Rd(id->idReg3())<< 12) | (insEncodeReg_Rn(id->idReg1())<< 4)|(insEncodeReg_Rn(id->idReg2()));     // ddddd
+            //code |= insEncodeReg_Rn(id->idReg2());     // nnnnn
             if (id->idIsLclVar())
             {
                 code |= insEncodeReg_Rm(codeGen->rsGetRsvdReg()); // mmmmm
             }
             else
             {
-                code |= insEncodeReg_Rm(id->idReg3()); // mmmmm
+              //  code |= insEncodeReg_Rm(id->idReg3()); // mmmmm
             }
             dst += emitOutput_Instr(dst, code);
             break;
-
+#if 0
         case IF_DR_3B: // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
             code = emitInsCode(ins, fmt);
             imm  = emitGetInsSC(id);
@@ -12607,12 +12575,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
             dst += emitOutput_Instr(dst, code);
             break;
-
+#endif
         default:
-            dst = emitOutput_InstrSve(dst, id);
+     //       dst = emitOutput_InstrSve(dst, id);
             break;
     }
-
+#if 0
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
     // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
@@ -12751,7 +12719,7 @@ SKIP_GC_UPDATE:
             }
         }
     }
-
+#endif
 #ifdef DEBUG
     /* Make sure we set the instruction descriptor size correctly */
 
@@ -12794,7 +12762,6 @@ SKIP_GC_UPDATE:
     *dp = dst;
 
     return sz;
-#endif
 }
 
 /*****************************************************************************/
@@ -12838,8 +12805,6 @@ void emitter::emitDispInst(instruction ins)
  */
 void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /* =false */)
 {
-    _ASSERTE(!"NYI");
-#if 0
     if (isAddrOffset)
     {
         alwaysHex = true;
@@ -12896,7 +12861,6 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
     if (addComma)
         emitDispComma();
-#endif
 }
 
 /*****************************************************************************
@@ -13097,14 +13061,11 @@ void emitter::emitDispExtendOpts(insOpts opt)
 //
 void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
-    _ASSERTE(!"NYI");
-#if 0
     emitAttr size = EA_SIZE(attr);
     printf(emitRegName(reg, size));
 
     if (addComma)
         emitDispComma();
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -13495,8 +13456,6 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    _ASSERTE(!"NYI");
-#if 0
     if (!emitComp->opts.disCodeBytes)
     {
         return;
@@ -13505,16 +13464,23 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
-        if (sz == 4)
+        if (sz == 2)
+        {
+            printf("  %04X    ", (*((code_t*)code)));
+	}
+        else if (sz == 4)
         {
             printf("  %08X    ", (*((code_t*)code)));
-        }
-        else
+	}
+        else if (sz == 6)
         {
-            printf("              ");
-        }
+            printf("  %12X    ", (*((code_t*)code)));
+	}
+       else
+       {
+           printf("              ");
+       }
     }
-#endif
 }
 
 /*****************************************************************************
@@ -13608,7 +13574,6 @@ void emitter::emitDispLargeJmp(
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    _ASSERTE(!"NYI");
 #if 0
     // Special case: IF_LARGEJMP
 
@@ -13629,9 +13594,9 @@ void emitter::emitDispIns(
     }
     else
     {
-        emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
-    }
 #endif
+        emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
+//    }
 }
 
 //--------------------------------------------------------------------
@@ -13653,8 +13618,6 @@ void emitter::emitDispIns(
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    _ASSERTE(!"NYI");
-#if 0
 #ifdef DEBUG
     if (EMITVERBOSE)
     {
@@ -13688,7 +13651,7 @@ void emitter::emitDispInsHelp(
     {
         /* Display the instruction hex code */
         assert(((pCode >= emitCodeBlock) && (pCode < emitCodeBlock + emitTotalHotCodeSize)) ||
-               ((pCode >= emitColdCodeBlock) && (pCode < emitColdCodeBlock + emitTotalColdCodeSize)));
+              ((pCode >= emitColdCodeBlock) && (pCode < emitColdCodeBlock + emitTotalColdCodeSize)));
 
         pCodeRW = pCode + writeableOffset;
     }
@@ -13736,6 +13699,7 @@ void emitter::emitDispInsHelp(
         unsigned     registerListSize;
         const char*  targetName;
 
+#if 0
         case IF_BI_0A: // BI_0A   ......iiiiiiiiii iiiiiiiiiiiiiiii               simm26:00
         case IF_BI_0B: // BI_0B   ......iiiiiiiiii iiiiiiiiiii.....               simm19:00
         case IF_LARGEJMP:
@@ -13815,12 +13779,12 @@ void emitter::emitDispInsHelp(
             }
         }
         break;
-
+#endif
         case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             emitDispReg(id->idReg1(), size, false);
             break;
-
+#if 0
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             // The size of a branch target is always EA_PTRSIZE
             assert(insOptsNone(id->idInsOpt()));
@@ -14046,7 +14010,7 @@ void emitter::emitDispInsHelp(
             emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
-
+#endif
         case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
             emitDispReg(id->idReg1(), size, true);
             hwi.immHWVal = (unsigned)emitGetInsSC(id);
@@ -14065,7 +14029,7 @@ void emitter::emitDispInsHelp(
             }
             emitDispCommentForHandle(0, id->idDebugOnlyInfo()->idMemCookie, id->idDebugOnlyInfo()->idFlags);
             break;
-
+#if 0
         case IF_DI_1C: // DI_1C   X........Nrrrrrr ssssssnnnnn.....         Rn    imm(N,r,s)
             emitDispReg(id->idReg1(), size, true);
             bmi.immNRS = (unsigned)emitGetInsSC(id);
@@ -14263,12 +14227,12 @@ void emitter::emitDispInsHelp(
             emitDispComma();
             emitDispCond(cfi.cond);
             break;
-
+#endif
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             if ((ins == INS_add) || (ins == INS_sub))
             {
-                emitDispReg(encodingZRtoSP(id->idReg1()), size, true);
-                emitDispReg(encodingZRtoSP(id->idReg2()), size, true);
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, true);
             }
             else if ((ins == INS_smulh) || (ins == INS_umulh))
             {
@@ -14300,7 +14264,7 @@ void emitter::emitDispInsHelp(
             }
 
             break;
-
+#if 0
         case IF_DR_3B: // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
@@ -14870,10 +14834,10 @@ void emitter::emitDispInsHelp(
                 emitDispReg(id->idReg1(), size, false);
             }
             break;
-
+#endif
         default:
             // fallback to display SVE instructions.
-            emitDispInsSveHelp(id);
+      //      emitDispInsSveHelp(id);
             break;
     }
 
@@ -14894,7 +14858,6 @@ void emitter::emitDispInsHelp(
 #endif
 
     printf("\n");
-#endif
 }
 
 /*****************************************************************************
@@ -14904,8 +14867,6 @@ void emitter::emitDispInsHelp(
 
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
-    _ASSERTE(!"NYI");
-#if 0
 #ifdef DEBUG
     printf("[");
 
@@ -14937,7 +14898,6 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
             printf("'");
         }
     }
-#endif
 #endif
 }
 
@@ -15152,8 +15112,6 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
 regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2)
 {
-    _ASSERTE(!"NYI");
-#if 0
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -15299,7 +15257,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
 
     return dst->GetRegNum();
-#endif
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)

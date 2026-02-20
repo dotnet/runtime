@@ -1129,7 +1129,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
 
     // For arm64/LoongArch64/RISCV64, we want to allocate JIT data always adjacent to code similar to what native
     // compiler does.
@@ -1163,7 +1163,7 @@ void Compiler::eeAllocMem(AllocMemArgs* args, const UNATIVE_OFFSET roDataSection
 
 #endif // DEBUG
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
 
     // Fix up data section pointers.
     assert(args->roDataBlock == nullptr);

@@ -59,7 +59,7 @@
 INST9(invalid,     "INVALID",      0,      IF_NONE,   BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE,    BAD_CODE)
 
 //    enum         name            info               DR_2E        DR_2G        DI_1B        DI_1D        DV_3C        DV_2B        DV_2C        DV_2E        DV_2F
-INST9(mov,         "mov",          0,      IF_EN9,    0x2A0003E0,  0x11000000,  0x52800000,  0x320003E0,  0x0EA01C00,  0x0E003C00,  0x4E001C00,  0x5E000400,  0x6E000400)
+INST9(mov,         "lgfi",          0,      IF_EN9,    0x2A0003E0,  0x11000000,  0xc01,  0x320003E0,  0x0EA01C00,  0x0E003C00,  0x4E001C00,  0x5E000400,  0x6E000400)
                                    //  mov     Rd,Rm                DR_2E  X0101010000mmmmm 00000011111ddddd   2A00 03E0
                                    //  mov     Rd,Rn                DR_2G  X001000100000000 000000nnnnnddddd   1100 0000   mov to/from SP only
                                    //  mov     Rd,imm(i16,hw)       DI_1B  X10100101hwiiiii iiiiiiiiiiiddddd   5280 0000   imm(i16,hw)
@@ -71,7 +71,7 @@ INST9(mov,         "mov",          0,      IF_EN9,    0x2A0003E0,  0x11000000,  
                                    //  mov     Vd[],Vn[]            DV_2F  01101110000iiiii 0jjjj1nnnnnddddd   6E00 0400   Vd[],Vn[] (from/to elem)
 
 //    enum         name            info               DR_3A        DR_3B        DR_3C        DI_2A        DV_3A        DV_3E
-INST6(add,         "add",          0,      IF_EN6A,   0x0B000000,  0x0B000000,  0x0B200000,  0x11000000,  0x0E208400,  0x5E208400)
+INST6(add,         "ark",          0,      IF_EN6A,   0xb9f8,  0x0B000000,  0x0B200000,  0x11000000,  0x0E208400,  0x5E208400)
                                    //  add     Rd,Rn,Rm             DR_3A  X0001011000mmmmm 000000nnnnnddddd   0B00 0000   Rd,Rn,Rm
                                    //  add     Rd,Rn,(Rm,shk,imm)   DR_3B  X0001011sh0mmmmm ssssssnnnnnddddd   0B00 0000   Rm {LSL,LSR,ASR} imm(0-63)
                                    //  add     Rd,Rn,(Rm,ext,shl)   DR_3C  X0001011001mmmmm ooosssnnnnnddddd   0B20 0000   ext(Rm) LSL imm(0-4)
@@ -169,7 +169,7 @@ INST6(st4,         "st4",          ST,     IF_EN6B,   0x0C000000,  0x0C800000,  
                                    //  st4     {Vt-Vt4}[],[Xn],#imm LS_2G  0Q00110110111111 xx1Sssnnnnnttttt   0DBF 2000   post-indexed by an immediate
 
 //    enum         name            info               LS_2A        LS_2B        LS_2C        LS_3A        LS_1A
-INST5(ldr,         "ldr",          LD,     IF_EN5A,   0xB9400000,  0xB9400000,  0xB8400000,  0xB8600800,  0x18000000)
+INST5(ldr,         "l",          LD,     IF_EN5A,   0xB9400000,  0xB9400000,  0x58,  0xB8600800,  0x18000000)
                                    //  ldr     Rt,[Xn]              LS_2A  1X11100101000000 000000nnnnnttttt   B940 0000
                                    //  ldr     Rt,[Xn+pimm12]       LS_2B  1X11100101iiiiii iiiiiinnnnnttttt   B940 0000   imm(0-4095<<{2,3})
                                    //  ldr     Rt,[Xn+simm9]        LS_2C  1X111000010iiiii iiiiPPnnnnnttttt   B840 0000   [Xn imm(-256..+255) pre/post/no inc]
@@ -224,7 +224,7 @@ INST4(ldrsh,       "ldrsh",        LD,     IF_EN4A,   0x79800000,  0x79800000,  
                                    //  ldrsh   Rt,[Xn+simm9]        LS_2C  011110001X0iiiii iiiiPPnnnnnttttt   7880 0000   [Xn imm(-256..+255) pre/post/no inc]
                                    //  ldrsh   Rt,[Xn,(Rm,ext,shl)] LS_3A  011110001X1mmmmm oooS10nnnnnttttt   78A0 0800   [Xn, ext(Rm) LSL {0,1}]
 
-INST4(str,         "str",          ST,     IF_EN4A,   0xB9000000,  0xB9000000,  0xB8000000,  0xB8200800)
+INST4(str,         "sty",          ST,     IF_EN4A,   0xB9000000,  0xB9000000,  0x50,  0xB8200800)
                                    //  str     Rt,[Xn]              LS_2A  1X11100100000000 000000nnnnnttttt   B900 0000
                                    //  str     Rt,[Xn+pimm12]       LS_2B  1X11100100iiiiii iiiiiinnnnnttttt   B900 0000   imm(0-4095<<{2,3})
                                    //  str     Rt,[Xn+simm9]        LS_2C  1X111000000iiiii iiiiPPnnnnnttttt   B800 0000   [Xn imm(-256..+255) pre/post/no inc]
@@ -1308,10 +1308,12 @@ INST1(br,          "br",           0,      IF_BR_1A,  0xD61F0000)
 INST1(br_tail,     "br",           0,      IF_BR_1B,  0xD61F0000)
                                    //  br      Rn                   BR_1B  1101011000011111 000000nnnnn00000   D61F 0000, same as br representing a tail call of blr. Encode target with Reg3.
 
+
 INST1(blr,         "blr",          0,      IF_BR_1B,  0xD63F0000)
                                    //  blr     Rn                   BR_1B  1101011000111111 000000nnnnn00000   D63F 0000, Encode target with Reg3.
 
-INST1(ret,         "ret",          0,      IF_BR_1A,  0xD65F0000)
+INST1(ret,         "br",          0,      IF_BR_1A,  0x07)
+
                                    //  ret     Rn                   BR_1A  1101011001011111 000000nnnnn00000   D65F 0000
 
 INST1(beq,         "beq",          0,      IF_BI_0B,  0x54000000)

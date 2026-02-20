@@ -1844,6 +1844,26 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             else
                 ins = INS_ldrsh;
         }
+#elif defined(TARGET_S390X)
+        if (!varTypeIsSmall(srcType))
+        {
+            ins = INS_ldr;
+        }
+        else if (varTypeIsByte(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ldrb;
+            else
+                ins = INS_ldrsb;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_ldrh;
+            else
+                ins = INS_ldrsh;
+        }
+#
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(srcType))
         {
@@ -2193,6 +2213,13 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             ins = INS_strb;
         else if (varTypeIsShort(dstType))
             ins = INS_strh;
+#elif defined(TARGET_S390X)
+        if (!varTypeIsSmall(dstType))
+            ins = INS_str;
+        else if (varTypeIsByte(dstType))
+            ins = INS_strb;
+        else if (varTypeIsShort(dstType))
+            ins = INS_strh;
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(dstType))
             ins = aligned ? INS_stx_b : INS_st_b;
@@ -2254,6 +2281,8 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     }
 #elif defined(TARGET_ARM64)
     return INS_str;
+#elif defined(TARGET_S390X)
+   return INS_str;
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(dstType));
     return INS_vstr;

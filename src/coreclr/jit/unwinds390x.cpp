@@ -140,7 +140,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::unwindBegProlog()
 {
-    _ASSERTE(!"NYI");
+//s390xmarker: unimplemented
+	return;
+    //_ASSERTE(!"NYI");
 #if 0
     assert(compGeneratingProlog);
     assert(!compGeneratingUnwindProlog);
@@ -172,7 +174,9 @@ void Compiler::unwindBegProlog()
 
 void Compiler::unwindEndProlog()
 {
-    _ASSERTE(!"NYI");
+//s390xmarker: unimplemented
+	return;
+    //_ASSERTE(!"NYI");
 #if 0
     assert(compGeneratingProlog);
     assert(compGeneratingUnwindProlog);
@@ -182,6 +186,7 @@ void Compiler::unwindEndProlog()
 
 void Compiler::unwindBegEpilog()
 {
+	return;
     _ASSERTE(!"NYI");
 #if 0
     assert(compGeneratingEpilog);
@@ -201,12 +206,10 @@ void Compiler::unwindBegEpilog()
 
 void Compiler::unwindEndEpilog()
 {
-    _ASSERTE(!"NYI");
-#if 0
+    //_ASSERTE(!"NYI");
     assert(compGeneratingEpilog);
-    assert(compGeneratingUnwindEpilog);
+    //assert(compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = false;
-#endif
 }
 
 #if defined(TARGET_S390X)
@@ -597,7 +600,8 @@ void Compiler::unwindPadding()
 // all its funclets.
 void Compiler::unwindReserve()
 {
-    _ASSERTE(!"NYI");
+	//s390xmarker: this is used by EmitMachineCode:- unimplemented
+	return;
 #if 0
     assert(!compGeneratingProlog);
     assert(!compGeneratingEpilog);
@@ -688,7 +692,9 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     }
 #endif
 }
-
+void Compiler::unwindReturn(regNumber reg)
+{
+}
 // unwindEmit: Report all the unwind information to the VM.
 // Arguments:
 //      pHotCode:  Pointer to the beginning of the memory with the function and funclet hot  code
@@ -696,7 +702,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    _ASSERTE(!"NYI");
+	//s390xmarker: unwind is not yet implemented
+	return;
 #if 0
     assert(compFuncInfoCount > 0);
     for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)

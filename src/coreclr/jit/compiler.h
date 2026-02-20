@@ -8807,7 +8807,9 @@ public:
     void unwindSaveNext();                                                        // unwind code: save_next
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
-
+#if defined(TARGET_S390X)
+    void unwindReturn(regNumber reg);                                             // ret lr
+#endif
 #if defined(TARGET_LOONGARCH64)
     void unwindNop();
     void unwindPadding(); // Generate a sequence of unwind NOP codes representing instructions between the last
