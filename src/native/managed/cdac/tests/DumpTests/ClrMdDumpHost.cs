@@ -73,7 +73,7 @@ internal sealed class ClrMdDumpHost : IDisposable
             // so split on both separators to extract the file name correctly when
             // analyzing cross-platform dumps.
             int lastSep = Math.Max(fileName.LastIndexOf('/'), fileName.LastIndexOf('\\'));
-            string name = lastSep >= 0 ? fileName.Substring(lastSep + 1) : fileName;
+            string name = lastSep >= 0 ? fileName[(lastSep + 1)..] : fileName;
             if (!IsRuntimeModule(name))
                 continue;
 

@@ -139,7 +139,7 @@ if ($DumpArchive) {
         exit 1
     }
     foreach ($f in $dumpFiles) {
-        $rel = $f.FullName.Substring($extractDir.Length + 1)
+        $rel = $f.FullName.Replace("$extractDir\", "")
         $size = [math]::Round($f.Length / 1MB, 1)
         Write-Host "  Found: $rel (${size} MB)" -ForegroundColor Green
     }
