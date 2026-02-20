@@ -1262,6 +1262,15 @@ void WrapICorJitInfo::getFpStructLowering(
     API_LEAVE(getFpStructLowering);
 }
 
+CorInfoWasmType WrapICorJitInfo::getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getWasmLowering);
+    CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
+    API_LEAVE(getWasmLowering);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

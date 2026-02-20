@@ -204,6 +204,158 @@ namespace System.Net.NameResolution.Tests
                 Assert.Empty(addresses);
             }
         }
+
+        // RFC 6761 Section 6.4: "invalid" and "*.invalid" must always return NXDOMAIN (HostNotFound).
+        [Theory]
+        [InlineData("invalid")]
+        [InlineData("invalid.")]
+        [InlineData("test.invalid")]
+        [InlineData("test.invalid.")]
+        [InlineData("foo.bar.invalid")]
+        [InlineData("INVALID")]
+        [InlineData("Test.INVALID")]
+        public async Task DnsGetHostAddresses_InvalidDomain_ThrowsHostNotFound(string hostName)
+        {
+            SocketException ex = Assert.ThrowsAny<SocketException>(() => Dns.GetHostAddresses(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+
+            ex = await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostAddressesAsync(hostName));
+            Assert.Equal(SocketError.HostNotFound, ex.SocketErrorCode);
+        }
+
+        // RFC 6761 Section 6.3: "*.localhost" subdomains - OS resolver is tried first,
+        // falling back to plain "localhost" resolution if OS resolver fails or returns empty.
+        [Theory]
+        [InlineData("foo.localhost")]
+        [InlineData("bar.foo.localhost")]
+        [InlineData("test.localhost")]
+        [InlineData("FOO.LOCALHOST")]
+        [InlineData("Test.LocalHost")]
+        public async Task DnsGetHostAddresses_LocalhostSubdomain_ReturnsLoopback(string hostName)
+        {
+            // The subdomain goes to OS resolver first. If it fails (likely on most systems),
+            // it falls back to resolving plain "localhost", which should return loopback addresses.
+            IPAddress[] addresses = Dns.GetHostAddresses(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            addresses = await Dns.GetHostAddressesAsync(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: "*.localhost" subdomains should respect AddressFamily parameter.
+        // OS resolver is tried first, falling back to plain "localhost" resolution.
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public async Task DnsGetHostAddresses_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
+        {
+            // Skip IPv6 test if OS doesn't support it.
+            if (addressFamily == AddressFamily.InterNetworkV6 && !Socket.OSSupportsIPv6)
+            {
+                return;
+            }
+
+            string hostName = "test.localhost";
+
+            // The subdomain goes to OS resolver first. If it fails, it falls back to
+            // resolving plain "localhost" with the same address family filter.
+            IPAddress[] addresses = Dns.GetHostAddresses(hostName, addressFamily);
+            if (addressFamily == AddressFamily.InterNetwork)
+            {
+                Assert.True(addresses.Length >= 1, "Expected at least one IPv4 address");
+            }
+            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+
+            addresses = await Dns.GetHostAddressesAsync(hostName, addressFamily);
+            if (addressFamily == AddressFamily.InterNetwork)
+            {
+                Assert.True(addresses.Length >= 1, "Expected at least one IPv4 address");
+            }
+            Assert.All(addresses, addr => Assert.Equal(addressFamily, addr.AddressFamily));
+        }
+
+        // RFC 6761: Verify that localhost subdomains return loopback addresses.
+        // Note: We don't require exact equality with plain "localhost" because:
+        // 1. The OS resolver is tried first for subdomains
+        // 2. The OS may return different results (e.g., both IPv4+IPv6 vs IPv4 only)
+        // 3. Different systems configure localhost differently
+        // The key requirement is that localhost subdomains return loopback addresses.
+        [Fact]
+        public async Task DnsGetHostAddresses_LocalhostAndSubdomain_BothReturnLoopback()
+        {
+            IPAddress[] localhostAddresses = Dns.GetHostAddresses("localhost");
+            IPAddress[] subdomainAddresses = Dns.GetHostAddresses("foo.localhost");
+
+            // Both should return loopback addresses
+            Assert.True(localhostAddresses.Length >= 1);
+            Assert.True(subdomainAddresses.Length >= 1);
+            Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+            Assert.All(subdomainAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            // Async version
+            localhostAddresses = await Dns.GetHostAddressesAsync("localhost");
+            subdomainAddresses = await Dns.GetHostAddressesAsync("bar.localhost");
+
+            Assert.True(localhostAddresses.Length >= 1);
+            Assert.True(subdomainAddresses.Length >= 1);
+            Assert.All(localhostAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+            Assert.All(subdomainAddresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: Localhost subdomains with trailing dot should work (e.g., "foo.localhost.")
+        [Theory]
+        [InlineData("foo.localhost.")]
+        [InlineData("bar.test.localhost.")]
+        public async Task DnsGetHostAddresses_LocalhostSubdomainWithTrailingDot_ReturnsLoopback(string hostName)
+        {
+            IPAddress[] addresses = Dns.GetHostAddresses(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            addresses = await Dns.GetHostAddressesAsync(hostName);
+            Assert.True(addresses.Length >= 1, "Expected at least one loopback address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
+
+        // RFC 6761: Ensure names that look similar but are not reserved are still resolved via OS.
+        [Theory]
+        [InlineData("notlocalhost")]
+        [InlineData("localhostfoo")]
+        [InlineData("invalidname")]
+        [InlineData("testinvalid")]
+        public async Task DnsGetHostAddresses_SimilarButNotReserved_ThrowsSocketException(string hostName)
+        {
+            Assert.ThrowsAny<SocketException>(() => Dns.GetHostAddresses(hostName));
+            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostAddressesAsync(hostName));
+        }
+
+        // Malformed hostnames should not be treated as RFC 6761 reserved names.
+        // Note: Only ".invalid" variants are tested here. Malformed localhost names
+        // (e.g., ".localhost") may succeed on some platforms because the OS resolver
+        // handles localhost specially.
+        [Theory]
+        [InlineData(".invalid")]
+        [InlineData("test..invalid")]
+        public async Task DnsGetHostAddresses_MalformedReservedName_NotTreatedAsReserved(string hostName)
+        {
+            Assert.ThrowsAny<Exception>(() => Dns.GetHostAddresses(hostName));
+            await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostAddressesAsync(hostName));
+        }
+
+        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
+        [Fact]
+        public async Task DnsGetHostAddresses_LocalhostWithTrailingDot_ReturnsLoopback()
+        {
+            IPAddress[] addresses = Dns.GetHostAddresses("localhost.");
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+
+            addresses = await Dns.GetHostAddressesAsync("localhost.");
+            Assert.True(addresses.Length >= 1, "Expected at least one address");
+            Assert.All(addresses, addr => Assert.True(IPAddress.IsLoopback(addr), $"Expected loopback address but got: {addr}"));
+        }
     }
 
     // Cancellation tests are sequential to reduce the chance of timing issues.

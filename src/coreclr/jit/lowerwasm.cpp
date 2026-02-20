@@ -164,6 +164,30 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 }
 
 //------------------------------------------------------------------------
+// LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    divMod - the node to be lowered
+//
+void Lowering::LowerDivOrMod(GenTreeOp* divMod)
+{
+    ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
+    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+    else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
+    ContainCheckDivOrMod(divMod);
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:

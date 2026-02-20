@@ -167,7 +167,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Assembly.IsDynamic), DataType.uint8),
             new(nameof(Data.Assembly.Error), DataType.pointer),
             new(nameof(Data.Assembly.NotifyFlags), DataType.uint32),
-            new(nameof(Data.Assembly.Level), DataType.uint32),
+            new(nameof(Data.Assembly.IsLoaded), DataType.uint8),
         ]
     };
 

@@ -835,6 +835,34 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             DWORDLONG fixupLocation = tmp.location;
             DWORDLONG address       = section_begin + (size_t)fixupLocation - (size_t)originalAddr;
 
+            DWORDLONG target = tmp.target + (int32_t)tmp.addlDelta;
+            if (relocType == CorInfoReloc::ARM64_PAGEBASE_REL21 || relocType == CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21 ||
+                relocType == CorInfoReloc::ARM64_PAGEOFFSET_12A)
+            {
+                if ((rc->originalRoDataAddress2 <= (size_t)target) &&
+                    ((size_t)target < rc->originalRoDataAddress2 + rc->roDataSize2))
+                {
+                    size_t ro_section_offset     = (size_t)target - rc->originalRoDataAddress2;
+                    size_t ro_section_fake_start = (size_t)-1;
+
+                    // Looks like the target is in the RO data section.
+                    if ((rc->originalHotCodeAddress <= (size_t)fixupLocation) &&
+                        ((size_t)fixupLocation < rc->originalHotCodeAddress + rc->hotCodeSize))
+                    {
+                        // Fixup location is in the hot section
+                        ro_section_fake_start = rc->originalHotCodeAddress + rc->hotCodeSize;
+                        target                = (INT64)(ro_section_fake_start + ro_section_offset - fixupLocation);
+                    }
+                    else if ((rc->originalColdCodeAddress <= (size_t)fixupLocation) &&
+                             ((size_t)fixupLocation < rc->originalColdCodeAddress + rc->coldCodeSize))
+                    {
+                        // Fixup location is in the cold section
+                        ro_section_fake_start = rc->originalColdCodeAddress + rc->coldCodeSize;
+                        target                = (INT64)(ro_section_fake_start + ro_section_offset - fixupLocation);
+                    }
+                }
+            }
+
             switch (relocType)
             {
                 case CorInfoReloc::ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
@@ -844,7 +872,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         // Similar to x64's IMAGE_REL_BASED_REL32 handling we
                         // will handle this by also hardcoding the bottom bits
                         // of the target into the instruction.
-                        PutArm64Rel28((UINT32*)address, (INT32)tmp.target);
+                        PutArm64Rel28((UINT32*)address, (INT32)target);
                     }
                     wasRelocHandled = true;
                 }
@@ -855,7 +883,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        INT64 targetPage        = (INT64)tmp.target & 0xFFFFFFFFFFFFF000LL;
+                        INT64 targetPage        = (INT64)target & 0xFFFFFFFFFFFFF000LL;
                         INT64 fixupLocationPage = (INT64)fixupLocation & 0xFFFFFFFFFFFFF000LL;
                         INT64 pageDelta         = (INT64)(targetPage - targetPage);
                         INT32 imm21             = (INT32)(pageDelta >> 12) & 0x1FFFFF;
@@ -869,7 +897,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
-                        INT32 imm12 = (INT32)(SIZE_T)tmp.target & 0xFFFLL;
+                        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
                         PutArm64Rel12((UINT32*)address, imm12);
                     }
                     wasRelocHandled = true;
@@ -1052,10 +1080,10 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         // fits in 32-bits for both the baseline and diff compilations. To do that, we pretend the RO
                         // data section exists immediately after the current code section.
 
-                        if ((rc->originalRoDataAddress <= (size_t)target) &&
-                            ((size_t)target < rc->originalRoDataAddress + rc->roDataSize))
+                        if ((rc->originalRoDataAddress1 <= (size_t)target) &&
+                            ((size_t)target < rc->originalRoDataAddress1 + rc->roDataSize1))
                         {
-                            size_t ro_section_offset     = (size_t)target - rc->originalRoDataAddress;
+                            size_t ro_section_offset     = (size_t)target - rc->originalRoDataAddress1;
                             size_t ro_section_fake_start = (size_t)-1;
 
                             // Looks like the target is in the RO data section.

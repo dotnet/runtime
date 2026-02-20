@@ -4,8 +4,6 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
-#define SIZE_UNKNOWN UINT8_MAX
-
 template <typename T>
 static bool ElementsAreSame(T* array, size_t size)
 {

@@ -1773,9 +1773,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         assert(!call->IsUnmanaged());
 
-        GenTree* arg = call->gtCallCookie;
-        noway_assert(arg != nullptr);
+        GenTree* arg       = comp->gtNewIconEmbHndNode(call->gtCallCookie, GTF_ICON_PINVKI_HDL, nullptr);
         call->gtCallCookie = nullptr;
+
+        // TODO: this is preserving existing behavior, but do we actually need these NO_CSEs?
+        GenTree* argConst = arg->OperIs(GT_IND) ? arg->AsIndir()->Addr() : arg;
+        argConst->gtFlags |= GTF_DONT_CSE;
+        arg->gtFlags |= GTF_DONT_CSE;
 
         // All architectures pass the cookie in a register.
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));

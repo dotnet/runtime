@@ -66,7 +66,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <Content Include="$(MonoProjectRoot)browser\test-main.mjs" Link="wwwroot\test-main.mjs" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
     <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
@@ -328,7 +328,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.mjs</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>

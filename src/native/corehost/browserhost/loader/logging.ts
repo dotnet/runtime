@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { loaderConfig } from "./config";
+import { dotnetDiagnosticsExports } from "./cross-module";
 
 export function check(condition: unknown, message: string): asserts condition {
     if (!condition) {
@@ -41,16 +42,48 @@ export function warn(msg: string, ...data: any) {
     console.warn(prefix + msg, ...data);
 }
 
-export function error(msg: string, ...data: any) {
-    if (data && data.length > 0 && data[0] && typeof data[0] === "object") {
-        // don't log silent errors
-        if (data[0].silent) {
-            return;
+export function error(msg: string, reason: any) {
+    if (reason && typeof reason === "object" && reason.silent) {
+        return;
+    }
+    console.error(prefix + msg, normalizeException(reason));
+}
+
+export function normalizeException(reason: any) {
+    let res = "unknown exception";
+    let stack: string | undefined;
+    if (reason) {
+        if (typeof reason === "object" && reason.status === undefined) {
+            if (reason.stack === undefined) {
+                stack = reason.stack + "";
+            } else {
+                stack = new Error().stack + "";
+            }
         }
-        if (data[0].toString) {
-            console.error(prefix + msg, data[0].toString());
-            return;
+        if (reason.message) {
+            res = reason.message;
+        } else if (typeof reason.toString === "function") {
+            res = reason.toString();
+        } else {
+            res = reason + "";
+        }
+        if (stack) {
+            // Some JS runtimes insert the error message at the top of the stack, some don't,
+            //  so normalize it by using the stack as the result if it already contains the error
+            if (stack.startsWith(res))
+                res = symbolicateStackTrace(stack);
+            else
+                res += "\n" + symbolicateStackTrace(stack);
+        } else {
+            res = symbolicateStackTrace(res);
         }
     }
-    console.error(prefix + msg, ...data);
+    return res;
+}
+
+function symbolicateStackTrace(message: string): string {
+    if (dotnetDiagnosticsExports.symbolicateStackTrace) {
+        return dotnetDiagnosticsExports.symbolicateStackTrace(message);
+    }
+    return message;
 }

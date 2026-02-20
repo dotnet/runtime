@@ -755,13 +755,19 @@ PAL_ProbeMemory(
     DWORD cbBuffer,
     BOOL fWriteAccess)
 {
-#if defined(__EMSCRIPTEN__)
+#if defined(TARGET_BROWSER)
     if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= emscripten_get_heap_size())
     {
         return TRUE;
     }
     return FALSE;
-#else // __EMSCRIPTEN__
+#elif defined(TARGET_WASI)
+    if ((uintptr_t)((PBYTE)pBuffer + cbBuffer) <= (__builtin_wasm_memory_size(0) * 65536))
+    {
+        return TRUE;
+    }
+    return FALSE;
+#else // TARGET_BROWSER || TARGET_WASI
     int fds[2];
     int flags;
 
@@ -818,7 +824,7 @@ PAL_ProbeMemory(
     close(fds[1]);
 
     return result;
-#endif // __EMSCRIPTEN__
+#endif // TARGET_BROWSER || TARGET_WASI
 }
 
 } // extern "C"
