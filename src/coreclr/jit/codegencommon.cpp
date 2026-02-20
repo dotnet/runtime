@@ -2016,7 +2016,7 @@ void CodeGen::genGenerateMachineCode()
         }
 
         printf(" for ");
-        printf(Target::g_tgtCPUName);
+        printf("%s", Target::g_tgtCPUName);
 
 #if defined(TARGET_XARCH)
         // Check ISA directly here instead of using

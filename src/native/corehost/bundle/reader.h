@@ -64,12 +64,12 @@ namespace bundle
             if (magic == FAT_MAGIC)
             {
                 m_offset_in_file = OSSwapBigToHostInt32(*(uint32_t*)offset_in_FAT_universal_binary<fat_arch>(base_ptr));
-                trace::info(_X("FAT container detected. Offset in file:[%lx]"), m_offset_in_file);
+                trace::info(_X("FAT container detected. Offset in file:[%llx]"), (long long)m_offset_in_file);
             }
             else if (magic == FAT_MAGIC_64)
             {
                 m_offset_in_file = OSSwapBigToHostInt64(*(uint64_t*)offset_in_FAT_universal_binary<fat_arch_64>(base_ptr));
-                trace::info(_X("FAT64 container detected. Offset in file:[%lx]"), m_offset_in_file);
+                trace::info(_X("FAT64 container detected. Offset in file:[%llx]"), (long long)m_offset_in_file);
             }
 #endif
 

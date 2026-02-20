@@ -24,10 +24,6 @@
 #define PRIu64 FORMAT_PREFIX "lu"
 #endif
 
-#ifndef PRId64
-#define PRId64 FORMAT_PREFIX "ld"
-#endif
-
 // Format attribute for printf-style functions
 #ifdef __GNUC__
 #define MINIPAL_ATTR_FORMAT_PRINTF(fmt_pos, arg_pos) __attribute__ ((__format__(__printf__, fmt_pos, arg_pos)))
