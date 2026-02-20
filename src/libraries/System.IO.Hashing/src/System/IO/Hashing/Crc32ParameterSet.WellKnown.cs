@@ -186,14 +186,14 @@ namespace System.IO.Hashing
         }
 
 #if NET
-        private sealed class Crc32CParameterSet : Crc32ParameterSet
+        private sealed class Crc32CParameterSet : ReflectedCrc32
         {
             public Crc32CParameterSet()
-                : base(0x1edc6f41, 0xffffffff, 0xffffffff, reflectValues: true)
+                : base(0x1edc6f41, 0xffffffff, 0xffffffff)
             {
             }
 
-            internal override uint Update(uint value, ReadOnlySpan<byte> source) => UpdateIntrinsic(value, source);
+            protected override uint UpdateScalar(uint value, ReadOnlySpan<byte> source) => UpdateIntrinsic(value, source);
 
             private static uint UpdateIntrinsic(uint crc, ReadOnlySpan<byte> source)
             {
