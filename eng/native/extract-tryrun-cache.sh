@@ -92,7 +92,7 @@ cat > "$output_file" << 'HEADER'
 #
 # DO NOT CHECK THIS FILE IN. It is generated dynamically by CI.
 #
-# To disable: export CLR_CMAKE_SKIP_PLATFORM_CACHE=1
+# To enable: export CLR_CMAKE_USE_PLATFORM_CACHE=1
 #
 
 # Helper macro for TRY_RUN results

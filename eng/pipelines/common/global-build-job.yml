@@ -161,6 +161,10 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
+      - ${{ if and(eq(parameters.enableNativeBuildCaching, true), ne(parameters.osGroup, 'windows')) }}:
+        - name: CLR_CMAKE_USE_PLATFORM_CACHE
+          value: '1'
+
     steps:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
