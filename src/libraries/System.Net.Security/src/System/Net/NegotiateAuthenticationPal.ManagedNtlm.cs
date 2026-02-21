@@ -302,8 +302,9 @@ namespace System.Net
                 asBytes.Clear();
                 NtlmHeader.CopyTo(asBytes);
                 message.Header.MessageType = MessageType.Negotiate;
-                message.Flags = requiredFlags;
+                message.Flags = BitConverter.IsLittleEndian ? requiredFlags : (Flags)BinaryPrimitives.ReverseEndianness((uint)requiredFlags);
                 message.Version = s_version;
+                if (!BitConverter.IsLittleEndian) message.Version.ProductBuild = (ushort)BinaryPrimitives.ReverseEndianness((ushort)message.Version.ProductBuild);
             }
 
             private static unsafe int GetFieldLength(MessageField field)
@@ -486,7 +487,7 @@ namespace System.Net
 
                         if (ID == AvId.Timestamp)
                         {
-                            time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
+                            time = DateTime.FromFileTimeUtc(BinaryPrimitives.ReadInt64LittleEndian(info.Slice(4, 8)));
                         }
                         else if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
                         {
@@ -628,8 +629,9 @@ namespace System.Net
                 NtlmHeader.CopyTo(responseAsSpan);
 
                 response.Header.MessageType = MessageType.Authenticate;
-                response.Flags = s_requiredFlags | (flags & Flags.NegotiateSeal);
+                response.Flags = BitConverter.IsLittleEndian ? (s_requiredFlags | (flags & Flags.NegotiateSeal)) : (Flags)BinaryPrimitives.ReverseEndianness((uint)(s_requiredFlags | (flags & Flags.NegotiateSeal)));;
                 response.Version = s_version;
+                if (!BitConverter.IsLittleEndian) response.Version.ProductBuild = BinaryPrimitives.ReverseEndianness((ushort)response.Version.ProductBuild);
 
                 // Calculate hash for hmac - same for lm2 and ntlm2
                 Span<byte> ntlm2hash = stackalloc byte[DigestLength];
@@ -662,7 +664,8 @@ namespace System.Net
 
                 // Derive session base key
                 Span<byte> sessionBaseKey = stackalloc byte[HMACMD5.HashSizeInBytes];
-                int sessionKeyWritten = HMACMD5.HashData(ntlm2hash, responseAsSpan.Slice(response.NtChallengeResponse.PayloadOffset, 16), sessionBaseKey);
+                var payloadSlice = (BitConverter.IsLittleEndian) ? responseAsSpan.Slice(response.NtChallengeResponse.PayloadOffset, 16) : responseAsSpan.Slice(BinaryPrimitives.ReverseEndianness(response.NtChallengeResponse.PayloadOffset), 16);
+                int sessionKeyWritten = HMACMD5.HashData(ntlm2hash, payloadSlice, sessionBaseKey);
                 Debug.Assert(sessionKeyWritten == HMACMD5.HashSizeInBytes);
 
                 // Encrypt exportedSessionKey with sessionBaseKey
