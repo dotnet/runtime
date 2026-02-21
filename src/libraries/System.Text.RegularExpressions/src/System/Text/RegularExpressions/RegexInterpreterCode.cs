@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -19,8 +20,60 @@ namespace System.Text.RegularExpressions
         public readonly string[] Strings = strings;
         /// <summary>ASCII lookup table optimization for sets in <see cref="Strings"/>.</summary>
         public readonly uint[]?[] StringsAsciiLookup = new uint[strings.Length][];
+        /// <summary>Precomputed set matchers for character class strings in <see cref="Strings"/>, enabling vectorized scanning for Set opcodes.</summary>
+        public readonly SetSearchValues?[] StringsSetSearchValues = CreateSetSearchValues(strings);
         /// <summary>How many instructions in <see cref="Codes"/> use backtracking.</summary>
         public readonly int TrackCount = trackcount;
+
+        /// <summary>Tries to create SetSearchValues for each character class string.</summary>
+        private static SetSearchValues?[] CreateSetSearchValues(string[] strings)
+        {
+            var result = new SetSearchValues?[strings.Length];
+            Span<char> chars = stackalloc char[128];
+
+            for (int i = 0; i < strings.Length; i++)
+            {
+                string set = strings[i];
+
+                // The Strings table contains both character class strings and Multi literal strings.
+                // Character class strings have a flags byte of 0 (not negated) or 1 (negated) at index 0,
+                // followed by set length and category length. Validate the encoding before calling GetSetChars,
+                // which assumes a well-formed char-class string and could otherwise throw on arbitrary input.
+                if (set.Length >= RegexCharClass.SetStartIndex &&
+                    set[RegexCharClass.FlagsIndex] is '\0' or '\u0001' &&
+                    RegexCharClass.SetStartIndex + set[RegexCharClass.SetLengthIndex] + set[RegexCharClass.CategoryLengthIndex] <= set.Length)
+                {
+                    // GetSetChars returns the characters that back the set. For a negated set, these are
+                    // the characters excluded from the class; the separate IsNegated flag indicates how
+                    // to interpret them. If the set uses Unicode categories or has too many chars, it returns 0.
+                    int count = RegexCharClass.GetSetChars(set, chars);
+                    if (count > 0)
+                    {
+                        result[i] = new SetSearchValues(
+                            SearchValues.Create(chars.Slice(0, count)),
+                            RegexCharClass.IsNegated(set));
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Wraps a <see cref="SearchValues{Char}"/> with the set's negation flag so the interpreter
+        /// can test "is character in class" without knowing whether the class was defined as negated.</summary>
+        internal readonly struct SetSearchValues(SearchValues<char> values, bool negated)
+        {
+            private readonly SearchValues<char> _values = values;
+            private readonly bool _negated = negated;
+
+            /// <summary>Returns true if all characters in <paramref name="span"/> are in the character class.</summary>
+            public bool AllMatch(ReadOnlySpan<char> span) =>
+                _negated ? !span.ContainsAny(_values) : !span.ContainsAnyExcept(_values);
+
+            /// <summary>Returns the index of the first character not in the character class, or -1 if all match.</summary>
+            public int IndexOfAnyNonMatch(ReadOnlySpan<char> span) =>
+                _negated ? span.IndexOfAny(_values) : span.IndexOfAnyExcept(_values);
+        }
 
         /// <summary>Gets whether the specified opcode may incur backtracking.</summary>
         public static bool OpcodeBacktracks(RegexOpcode opcode)

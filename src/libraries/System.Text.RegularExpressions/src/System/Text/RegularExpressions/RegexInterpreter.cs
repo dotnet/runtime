@@ -936,14 +936,28 @@ namespace System.Text.RegularExpressions
                             }
 
                             int operand0 = Operand(0);
-                            string set = _code.Strings[operand0];
-                            ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
 
-                            while (c-- > 0)
+                            if (!_rightToLeft &&
+                                _code.StringsSetSearchValues[operand0] is RegexInterpreterCode.SetSearchValues setSearchValues)
                             {
-                                if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
+                                if (!setSearchValues.AllMatch(inputSpan.Slice(runtextpos, c)))
                                 {
                                     goto BreakBackward;
+                                }
+
+                                runtextpos += c;
+                            }
+                            else
+                            {
+                                string set = _code.Strings[operand0];
+                                ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
+
+                                while (c-- > 0)
+                                {
+                                    if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
+                                    {
+                                        goto BreakBackward;
+                                    }
                                 }
                             }
                         }
@@ -1022,16 +1036,35 @@ namespace System.Text.RegularExpressions
                         {
                             int len = Math.Min(Operand(1), Forwardchars());
                             int operand0 = Operand(0);
-                            string set = _code.Strings[operand0];
-                            ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
                             int i;
 
-                            for (i = len; i > 0; i--)
+                            if (!_rightToLeft &&
+                                _code.StringsSetSearchValues[operand0] is RegexInterpreterCode.SetSearchValues setSearchValues)
                             {
-                                if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
+                                int idx = setSearchValues.IndexOfAnyNonMatch(inputSpan.Slice(runtextpos, len));
+                                if (idx == -1)
                                 {
-                                    Backwardnext();
-                                    break;
+                                    runtextpos += len;
+                                    i = 0;
+                                }
+                                else
+                                {
+                                    runtextpos += idx;
+                                    i = len - idx;
+                                }
+                            }
+                            else
+                            {
+                                string set = _code.Strings[operand0];
+                                ref uint[]? setLookup = ref _code.StringsAsciiLookup[operand0];
+
+                                for (i = len; i > 0; i--)
+                                {
+                                    if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
+                                    {
+                                        Backwardnext();
+                                        break;
+                                    }
                                 }
                             }
 
