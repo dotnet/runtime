@@ -3441,5 +3441,73 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(AnyNewLine_Integration_TestData))]
+        public async Task AnyNewLine_Integration(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection matches = r.Matches(input);
+            Assert.Equal(expectedValues.Length, matches.Count);
+            for (int i = 0; i < expectedValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], matches[i].Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_Integration_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // Combined ^ and $ with Multiline|AnyNewLine
+                yield return new object[] { engine, @"^.+$", "foo\r\nbar\rbaz\nqux", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar", "baz", "qux" } };
+
+                // $ does not match between \r and \n of \r\n
+                yield return new object[] { engine, @"^.+$", "a\r\nb", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b" } };
+
+                // \Z matches before trailing \r
+                yield return new object[] { engine, @"\w+\Z", "hello\r", RegexOptions.AnyNewLine, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+\Z", "hello\r\n", RegexOptions.AnyNewLine, new[] { "hello" } };
+
+                // Empty lines: ^ at start of line after newline, followed immediately by $
+                yield return new object[] { engine, @"^$", "a\r\n\r\nb", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "" } };
+
+                // RightToLeft matching
+                yield return new object[] { engine, @".+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
+
+                // Anchors in character-consuming patterns
+                yield return new object[] { engine, @"\w+$", "line1\r\nline2\rline3\nline4", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "line1", "line2", "line3", "line4" } };
+
+                // Single char lines
+                yield return new object[] { engine, @"^.$", "a\rb\nc", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b", "c" } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AnyNewLine_ReplaceSplit_TestData))]
+        public async Task AnyNewLine_ReplaceSplit(RegexEngine engine, string pattern, string input, RegexOptions options, string expectedReplace, string[] expectedSplit)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            Assert.Equal(expectedReplace, r.Replace(input, "*"));
+            Assert.Equal(expectedSplit, r.Split(input));
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_ReplaceSplit_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // Replace: . does not match \r with AnyNewLine
+                yield return new object[] { engine, @".", "ab\rcd", RegexOptions.AnyNewLine, "**\r**", new[] { "", "", "\r", "", "" } };
+
+                // Split on newlines using . boundary: split at each character
+                yield return new object[] { engine, @".+", "ab\rcd", RegexOptions.AnyNewLine, "*\r*", new[] { "", "\r", "" } };
+            }
+        }
+
     }
 }
