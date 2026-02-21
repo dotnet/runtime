@@ -153,7 +153,7 @@ namespace System.Text.RegularExpressions.Generator
         /// Validates the operation arguments ensuring the pattern and options are constant values.
         /// Returns false if a timeout argument is used.
         /// </summary>
-        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
+        internal static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";

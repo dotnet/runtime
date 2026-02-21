@@ -1086,6 +1086,311 @@ public partial class Program
         }
 
         [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossPartialClassDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        var r = [|new Regex|](""abc"");
+        return r;
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        var r = [|new Regex|](""def"");
+        return r;
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        var r = MyRegex;
+        return r;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        var r = MyRegex1;
+        return r;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossPartialClassDeclarationsInSeparateFiles()
+        {
+            await new VerifyCS.Test
+            {
+                TestState =
+                {
+                    Sources =
+                    {
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+",
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+"
+                    }
+                },
+                FixedState =
+                {
+                    Sources =
+                    {
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+",
+                        @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex1 { get; }
+}
+"
+                    }
+                },
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesAcrossThreePartialClassDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""aaa"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""bbb"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""ccc"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""aaa"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""bbb"")]
+    private static partial Regex MyRegex1 { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex2;
+    }
+
+    [GeneratedRegex(""ccc"")]
+    private static partial Regex MyRegex2 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerGeneratesUniqueNamesWhenExistingMemberNamedMyRegex()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    private static void MyRegex() { }
+
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    private static void MyRegex() { }
+
+    public static Regex A()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex1 { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex2;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex2 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixerIgnoresNonFixableRegexCallsAcrossPartialDeclarations()
+        {
+            string test = @"using System;
+using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return [|new Regex|](""abc"");
+    }
+
+    public static Regex NonFixable()
+    {
+        return new Regex(""def"", RegexOptions.None, TimeSpan.FromSeconds(1));
+    }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return [|new Regex|](""ghi"");
+    }
+}
+";
+
+            string fixedSource = @"using System;
+using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static Regex A()
+    {
+        return MyRegex;
+    }
+
+    public static Regex NonFixable()
+    {
+        return new Regex(""def"", RegexOptions.None, TimeSpan.FromSeconds(1));
+    }
+
+    [GeneratedRegex(""abc"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex B()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""ghi"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task CodeFixerSupportsNamedParameters()
         {
             string test = @"using System.Text.RegularExpressions;
