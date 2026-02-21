@@ -60,7 +60,7 @@
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
-    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
+    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == 'WasmTestOnV8'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>

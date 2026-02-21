@@ -80,10 +80,10 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
         mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
-        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
     }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 

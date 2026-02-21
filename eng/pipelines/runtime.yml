@@ -965,6 +965,8 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+            - WasmTestOnFirefox
+            - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
