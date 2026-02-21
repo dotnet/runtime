@@ -1509,7 +1509,8 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
     genConsumeOperands(treeNode);
 
     // Handle intrinsics that can be implemented by target-specific instructions
-    instruction ins;
+    instruction ins = INS_invalid;
+
     switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
     {
         case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
@@ -1534,16 +1535,20 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
 
         case PackIntrinsicAndType(NI_System_Math_Max, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_FLOAT):
             ins = INS_f32_max;
             break;
         case PackIntrinsicAndType(NI_System_Math_Max, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_DOUBLE):
             ins = INS_f64_max;
             break;
 
         case PackIntrinsicAndType(NI_System_Math_Min, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_FLOAT):
             ins = INS_f32_min;
             break;
         case PackIntrinsicAndType(NI_System_Math_Min, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_DOUBLE):
             ins = INS_f64_min;
             break;
 
@@ -1566,6 +1571,27 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             break;
         case PackIntrinsicAndType(NI_System_Math_Truncate, TYP_DOUBLE):
             ins = INS_f64_trunc;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+            ins = INS_i32_clz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+            ins = INS_i64_clz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+            ins = INS_i32_ctz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+            ins = INS_i64_ctz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+            ins = INS_i32_popcnt;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+            ins = INS_i64_popcnt;
             break;
 
         default:
