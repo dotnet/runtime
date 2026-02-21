@@ -151,6 +151,31 @@ static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
 //  nextBb:
 //    ...
 //
+// For BBJ_RETURN blocks where the bounds checks are in the return statement,
+// both fastpathBb and fallbackBb are BBJ_RETURN blocks (no nextBb needed):
+//
+//  prevBb:
+//    goto lowerBndBb
+//
+//  lowerBndBb:
+//    if (idx < 0)
+//        goto fallbackBb
+//    else
+//        goto upperBndBb
+//
+//  upperBndBb:
+//    if (idx < len - maxConstOffset)
+//        goto fastpathBb
+//    else
+//        goto fallbackBb
+//
+//  fallbackBb:
+//    [Original block with bounds checks, includes return]
+//
+//  fastpathBb:
+//    [Cloned block with no bounds checks, includes return]
+//
+//
 // Arguments:
 //    comp        - The compiler instance
 //    block       - The block to clone
@@ -190,7 +215,16 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     // Now split the block at the last bounds check using fgSplitBlockAfterStatement:
     // TODO-RangeCheckCloning: call gtSplitTree for lastBndChkStmt as well, to cut off
     // the stuff we don't have to clone.
-    BasicBlock* lastBb = comp->fgSplitBlockAfterStatement(fastpathBb, lastStmt);
+    //
+    // For BBJ_RETURN blocks where lastStmt is the block's last statement (i.e., the return
+    // statement contains bounds checks), we don't need to split - both fast and slow paths
+    // will be BBJ_RETURN blocks directly.
+    bool        isReturnBlock = fastpathBb->KindIs(BBJ_RETURN) && (lastStmt == fastpathBb->lastStmt());
+    BasicBlock* lastBb        = nullptr;
+    if (!isReturnBlock)
+    {
+        lastBb = comp->fgSplitBlockAfterStatement(fastpathBb, lastStmt);
+    }
 
     DebugInfo debugInfo = fastpathBb->firstStmt()->GetDebugInfo();
 
@@ -270,8 +304,9 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     // 3) fallbackBb:
     //
     // For the fallback (slow path), we just entirely clone the fast path.
+    // For BBJ_RETURN blocks, the fallback is also a return block.
     //
-    BasicBlock* fallbackBb = comp->fgNewBBafter(BBJ_ALWAYS, upperBndBb, false);
+    BasicBlock* fallbackBb = comp->fgNewBBafter(isReturnBlock ? BBJ_RETURN : BBJ_ALWAYS, upperBndBb, false);
     BasicBlock::CloneBlockState(comp, fallbackBb, fastpathBb);
 
     // 4) fastBlockBb:
@@ -281,12 +316,15 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     // Wire up the edges
     //
     comp->fgRedirectEdge(prevBb->TargetEdgeRef(), lowerBndBb);
-    FlowEdge* fallbackToNextBb       = comp->fgAddRefPred(lastBb, fallbackBb);
     FlowEdge* lowerBndToUpperBndEdge = comp->fgAddRefPred(upperBndBb, lowerBndBb);
     FlowEdge* lowerBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, lowerBndBb);
     FlowEdge* upperBndToFastPathEdge = comp->fgAddRefPred(fastpathBb, upperBndBb);
     FlowEdge* upperBndToFallbackEdge = comp->fgAddRefPred(fallbackBb, upperBndBb);
-    fallbackBb->SetTargetEdge(fallbackToNextBb);
+    if (!isReturnBlock)
+    {
+        FlowEdge* fallbackToNextBb = comp->fgAddRefPred(lastBb, fallbackBb);
+        fallbackBb->SetTargetEdge(fallbackToNextBb);
+    }
     lowerBndBb->SetTrueEdge(lowerBndToFallbackEdge);
     lowerBndBb->SetFalseEdge(lowerBndToUpperBndEdge);
     upperBndBb->SetTrueEdge(upperBndToFastPathEdge);
@@ -298,7 +336,6 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     upperBndBb->inheritWeight(prevBb);
     fastpathBb->inheritWeight(prevBb);
     fallbackBb->bbSetRunRarely();
-    fallbackToNextBb->setLikelihood(1.0f);
     lowerBndToUpperBndEdge->setLikelihood(1.0f);
     lowerBndToFallbackEdge->setLikelihood(0.0f);
     upperBndToFastPathEdge->setLikelihood(1.0f);
@@ -357,7 +394,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     assert(BasicBlock::sameEHRegion(prevBb, upperBndBb));
     assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
     assert(BasicBlock::sameEHRegion(prevBb, fallbackBb));
-    assert(BasicBlock::sameEHRegion(prevBb, lastBb));
+    assert(isReturnBlock || BasicBlock::sameEHRegion(prevBb, lastBb));
 
     return fastpathBb;
 }
@@ -525,9 +562,26 @@ PhaseStatus Compiler::optRangeCheckCloning()
             stmtIdx++;
             if (block->HasTerminator() && (stmt == block->lastStmt()))
             {
-                // TODO-RangeCheckCloning: Splitting these blocks at the last statements
-                // require using gtSplitTree for the last bounds check.
-                break;
+                // For BBJ_RETURN blocks, we can still process the last statement since
+                // we can duplicate return blocks without needing a diamond/join shape.
+                // However, we must skip if:
+                //   - JIT32_GCENCODER is defined (hard limit on epilogue count)
+                //   - The block is genReturnBB (shared return block)
+                if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
+                {
+#ifndef JIT32_GCENCODER
+                    // Allow scanning the return statement for bounds checks.
+                    // The DoClone path will handle BBJ_RETURN specially.
+#else
+                    break;
+#endif
+                }
+                else
+                {
+                    // TODO-RangeCheckCloning: Splitting these blocks at the last statements
+                    // require using gtSplitTree for the last bounds check.
+                    break;
+                }
             }
 
             // Now just record all the bounds checks in the block (in the execution order)
