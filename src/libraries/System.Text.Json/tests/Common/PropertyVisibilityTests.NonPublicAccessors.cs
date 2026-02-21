@@ -473,5 +473,191 @@ namespace System.Text.Json.Serialization.Tests
         {
             private protected object _thisLock = new object();
         }
+
+        // ---- Extensive test types for [JsonInclude] with inaccessible members ----
+
+        public class ClassWithPrivateJsonIncludeProperties_Roundtrip
+        {
+            [JsonInclude]
+            private string Name { get; set; } = "default";
+            [JsonInclude]
+            private int Age { get; set; }
+
+            public static ClassWithPrivateJsonIncludeProperties_Roundtrip Create(string name, int age)
+            {
+                var obj = new ClassWithPrivateJsonIncludeProperties_Roundtrip();
+                obj.Name = name;
+                obj.Age = age;
+                return obj;
+            }
+
+            // For test validation.
+            internal string GetName() => Name;
+            internal int GetAge() => Age;
+        }
+
+        public class ClassWithProtectedJsonIncludeProperties_Roundtrip
+        {
+            [JsonInclude]
+            protected string Name { get; set; } = "default";
+            [JsonInclude]
+            protected int Age { get; set; }
+
+            public static ClassWithProtectedJsonIncludeProperties_Roundtrip Create(string name, int age)
+            {
+                var obj = new ClassWithProtectedJsonIncludeProperties_Roundtrip();
+                obj.Name = name;
+                obj.Age = age;
+                return obj;
+            }
+
+            // For test validation.
+            internal string GetName() => Name;
+            internal int GetAge() => Age;
+        }
+
+        public class ClassWithMixedAccessibilityJsonIncludeProperties
+        {
+            [JsonInclude]
+            public int PublicProp { get; set; }
+            [JsonInclude]
+            internal int InternalProp { get; set; }
+            [JsonInclude]
+            private int PrivateProp { get; set; }
+            [JsonInclude]
+            protected int ProtectedProp { get; set; }
+
+            internal int GetPrivateProp() => PrivateProp;
+            internal int GetProtectedProp() => ProtectedProp;
+        }
+
+        public class ClassWithJsonIncludePrivateInitOnlyProperties
+        {
+            [JsonInclude]
+            public string Name { get; private init; } = "DefaultName";
+            [JsonInclude]
+            public int Number { get; private init; } = 42;
+        }
+
+        public class ClassWithJsonIncludePrivateGetterProperties
+        {
+            [JsonInclude]
+            public string Name { private get; set; } = "DefaultName";
+            [JsonInclude]
+            public int Number { private get; set; } = 42;
+
+            internal string GetName() => Name;
+            internal int GetNumber() => Number;
+        }
+
+        public struct StructWithJsonIncludePrivateProperties
+        {
+            [JsonInclude]
+            private string Name { get; set; }
+            [JsonInclude]
+            private int Number { get; set; }
+
+            public static StructWithJsonIncludePrivateProperties Create(string name, int number) =>
+                new StructWithJsonIncludePrivateProperties { Name = name, Number = number };
+
+            internal readonly string GetName() => Name;
+            internal readonly int GetNumber() => Number;
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_PrivateProperties_CanRoundtrip()
+        {
+            var obj = ClassWithPrivateJsonIncludeProperties_Roundtrip.Create("Test", 25);
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""Name"":""Test""", json);
+            Assert.Contains(@"""Age"":25", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithPrivateJsonIncludeProperties_Roundtrip>(json);
+            Assert.Equal("Test", deserialized.GetName());
+            Assert.Equal(25, deserialized.GetAge());
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_ProtectedProperties_CanRoundtrip()
+        {
+            var obj = ClassWithProtectedJsonIncludeProperties_Roundtrip.Create("Test", 25);
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""Name"":""Test""", json);
+            Assert.Contains(@"""Age"":25", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithProtectedJsonIncludeProperties_Roundtrip>(json);
+            Assert.Equal("Test", deserialized.GetName());
+            Assert.Equal(25, deserialized.GetAge());
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_MixedAccessibility_AllPropertiesRoundtrip()
+        {
+            string json = """{"PublicProp":1,"InternalProp":2,"PrivateProp":3,"ProtectedProp":4}""";
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithMixedAccessibilityJsonIncludeProperties>(json);
+            Assert.Equal(1, deserialized.PublicProp);
+            Assert.Equal(2, deserialized.InternalProp);
+            Assert.Equal(3, deserialized.GetPrivateProp());
+            Assert.Equal(4, deserialized.GetProtectedProp());
+
+            string actualJson = await Serializer.SerializeWrapper(deserialized);
+            Assert.Contains(@"""PublicProp"":1", actualJson);
+            Assert.Contains(@"""InternalProp"":2", actualJson);
+            Assert.Contains(@"""PrivateProp"":3", actualJson);
+            Assert.Contains(@"""ProtectedProp"":4", actualJson);
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_PrivateInitOnlyProperties_PreservesDefaults()
+        {
+            // Deserializing empty JSON should preserve default values.
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithJsonIncludePrivateInitOnlyProperties>("{}");
+            Assert.Equal("DefaultName", deserialized.Name);
+            Assert.Equal(42, deserialized.Number);
+
+            // Deserializing with values should override defaults.
+            deserialized = await Serializer.DeserializeWrapper<ClassWithJsonIncludePrivateInitOnlyProperties>("""{"Name":"Override","Number":100}""");
+            Assert.Equal("Override", deserialized.Name);
+            Assert.Equal(100, deserialized.Number);
+
+            // Serialization should work.
+            string json = await Serializer.SerializeWrapper(deserialized);
+            Assert.Contains(@"""Name"":""Override""", json);
+            Assert.Contains(@"""Number"":100", json);
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_PrivateGetterProperties_CanSerialize()
+        {
+            var obj = new ClassWithJsonIncludePrivateGetterProperties { Name = "Test", Number = 99 };
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""Name"":""Test""", json);
+            Assert.Contains(@"""Number"":99", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithJsonIncludePrivateGetterProperties>(json);
+            Assert.Equal("Test", deserialized.GetName());
+            Assert.Equal(99, deserialized.GetNumber());
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_PrivateProperties_EmptyJson_DeserializesToDefault()
+        {
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithPrivateJsonIncludeProperties_Roundtrip>("{}");
+            Assert.Equal("default", deserialized.GetName());
+            Assert.Equal(0, deserialized.GetAge());
+        }
+
+        [Fact]
+        public virtual async Task JsonInclude_StructWithPrivateProperties_CanRoundtrip()
+        {
+            var obj = StructWithJsonIncludePrivateProperties.Create("Hello", 42);
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""Name"":""Hello""", json);
+            Assert.Contains(@"""Number"":42", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<StructWithJsonIncludePrivateProperties>(json);
+            Assert.Equal("Hello", deserialized.GetName());
+            Assert.Equal(42, deserialized.GetNumber());
+        }
     }
 }
