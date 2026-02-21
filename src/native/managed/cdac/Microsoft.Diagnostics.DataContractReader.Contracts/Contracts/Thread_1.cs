@@ -76,6 +76,18 @@ internal readonly struct Thread_1 : IThread
             GetThreadFromLink(thread.LinkNext));
     }
 
+    StackLimitData IThread.GetStackLimitData(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
+        TargetPointer frameFieldAddr = threadPointer + (ulong)type.Fields[nameof(Data.Thread.Frame)].Offset;
+
+        return new StackLimitData(
+            thread.CachedStackBase,
+            thread.CachedStackLimit,
+            frameFieldAddr);
+    }
+
     // happens inside critical section
     TargetPointer IThread.IdToThread(uint id)
     {
