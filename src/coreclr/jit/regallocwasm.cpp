@@ -282,6 +282,14 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_CALL:
+            CollectReferencesForCall(node->AsCall());
+            break;
+
+        case GT_CAST:
+            CollectReferencesForCast(node->AsOp());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -305,6 +313,37 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForCall: Collect virtual register references for a call.
+//
+// Consumes temporary registers for a call.
+//
+// Arguments:
+//    callNode - The GT_CALL node
+//
+void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
+{
+    CallArg* thisArg = callNode->gtArgs.GetThisArg();
+
+    if (thisArg != nullptr)
+    {
+        ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
+    }
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForCast: Collect virtual register references for a cast.
+//
+// Consumes temporary registers for a cast.
+//
+// Arguments:
+//    castNode - The GT_CAST node
+//
+void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
+{
+    ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
+}
+
+//------------------------------------------------------------------------
 // RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the
@@ -318,16 +357,8 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 {
     // At this point, the IR is already stackified, so we just need to find the first node in the dataflow.
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
-    GenTree*             value = lclNode->Data();
-    GenTree*             op    = value;
-    GenTree::VisitResult visitResult;
-    do
-    {
-        visitResult = op->VisitOperands([&op](GenTree* operand) {
-            op = operand;
-            return GenTree::VisitResult::Abort;
-        });
-    } while (visitResult == GenTree::VisitResult::Abort);
+    GenTree* value          = lclNode->Data();
+    GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
 
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
@@ -348,7 +379,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
-    CurrentRange().InsertBefore(op, lclNode);
+    CurrentRange().InsertBefore(insertionPoint, lclNode);
 }
 
 //------------------------------------------------------------------------
@@ -379,6 +410,14 @@ void WasmRegAlloc::CollectReference(GenTree* node)
     refs->Nodes[m_lastVirtualRegRefsCount++] = node;
 }
 
+//------------------------------------------------------------------------
+// RequestTemporaryRegisterForMultiplyUsedNode: request a temporary register for a node with multiple uses.
+//
+// To be later assigned a physical register.
+//
+// Arguments:
+//    node - A node possibly needing a temporary register
+//
 void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 {
     if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)

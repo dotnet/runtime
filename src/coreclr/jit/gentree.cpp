@@ -31035,6 +31035,11 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_WASM)
+
+            // For Wasm, structs are either returned by-ref or as primitives.
+            unreached();
+
 #else //  TARGET_XXX
 
             // This target needs support here!
@@ -34174,4 +34179,27 @@ ValueSize ValueSize::FromJitType(var_types type)
             assert(genTypeSize(type) != SIZE_UNKNOWN);
             return ValueSize(genTypeSize(type));
     }
+}
+
+//------------------------------------------------------------------------
+// gtFirstNodeInOperandOrder : return the first node of this tree
+//    in operand order
+//
+// Returns:
+//   If tree is a leaf, return the tree.
+//   If the tree has operands, recurse on the first operand.
+//
+GenTree* GenTree::gtFirstNodeInOperandOrder()
+{
+    GenTree*             op = this;
+    GenTree::VisitResult visitResult;
+    do
+    {
+        visitResult = op->VisitOperands([&op](GenTree* operand) {
+            op = operand;
+            return GenTree::VisitResult::Abort;
+        });
+    } while (visitResult == GenTree::VisitResult::Abort);
+
+    return op;
 }
