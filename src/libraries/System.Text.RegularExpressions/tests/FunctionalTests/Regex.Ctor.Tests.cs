@@ -114,7 +114,7 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.IgnorePatternWhitespace));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.ECMAScript | RegexHelpers.RegexOptionNonBacktracking));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.RightToLeft | RegexHelpers.RegexOptionNonBacktracking));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexOptions.AnyNewLine | RegexHelpers.RegexOptionNonBacktracking));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexHelpers.RegexOptionAnyNewLine | RegexHelpers.RegexOptionNonBacktracking));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => new Regex("foo", RegexOptions.None, new TimeSpan(-1)));
