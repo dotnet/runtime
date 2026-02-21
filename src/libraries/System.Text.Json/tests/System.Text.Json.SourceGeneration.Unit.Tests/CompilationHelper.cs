@@ -829,6 +829,30 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateTypeAnnotatedWithJsonIgnoreAlways()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(MyClass))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+                    public class MyClass
+                    {
+                        public string? MyString { get; set; }
+                        public int MyInt { get; set; }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         internal static void AssertEqualDiagnosticMessages(
             IEnumerable<DiagnosticData> expectedDiags,
             IEnumerable<Diagnostic> actualDiags)
