@@ -9253,7 +9253,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN));
-    assert(m_compiler->IsMathIntrinsic(gtMathFN) RISCV64_ONLY(|| m_compiler->IsBitCountingIntrinsic(gtMathFN)));
+
+#if defined(TARGET_RISCV64) || defined(TARGET_WASM)
+    assert(m_compiler->IsMathIntrinsic(gtMathFN) || m_compiler->IsBitCountingIntrinsic(gtMathFN));
+#else
+    assert(m_compiler->IsMathIntrinsic(gtMathFN));
+#endif
 
     // If the math intrinsic is not implemented by target-specific instructions, such as implemented
     // by user calls, then don't do constant folding on it during ReadyToRun. This minimizes precision loss.
