@@ -1196,7 +1196,7 @@ struct CORINFO_RUNTIME_LOOKUP
     // This is signature you must pass back to the runtime lookup helper
     void*                   signature;
 
-    // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
+    // Here is the helper to call.
     CorInfoHelpFunc         helper;
 
     // Number of indirections to get there

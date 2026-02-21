@@ -250,10 +250,11 @@ namespace Internal.JitInterface
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
-                lookup.lookupKind.needsRuntimeLookup = true;
-                lookup.runtimeLookup.signature = null;
-
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
+
+                lookup.lookupKind.needsRuntimeLookup = true;
+                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
+                lookup.runtimeLookup.signature = null;
 
                 if (genericLookup.UseHelper)
                 {
@@ -299,8 +300,6 @@ namespace Internal.JitInterface
                     lookup.runtimeLookup.indirectFirstOffset = false;
                     lookup.runtimeLookup.indirectSecondOffset = false;
                 }
-
-                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
             }
             else
             {
@@ -439,7 +438,7 @@ namespace Internal.JitInterface
                     MethodDesc contextMethod = HandleToObject(callerHandle);
                     pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                     pLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                    pLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR;
                     ISymbolNode helper = GetGenericLookupHelper(pLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.DelegateCtor, contextMethod, delegateInfo);
                     pLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
