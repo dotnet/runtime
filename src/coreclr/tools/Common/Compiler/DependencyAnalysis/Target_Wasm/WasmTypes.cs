@@ -41,6 +41,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
                 WasmValueType.I64 => "i64",
                 WasmValueType.F32 => "f32",
                 WasmValueType.F64 => "f64",
+                WasmValueType.V128 => "v128",
                 _ => "unknown",
             };
         }
