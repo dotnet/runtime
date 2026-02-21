@@ -281,19 +281,19 @@ struct Agnostic_CORINFO_LOOKUP_KIND
 {
     DWORD needsRuntimeLookup;
     DWORD runtimeLookupKind;
-    WORD  runtimeLookupFlags;
 };
 
 struct Agnostic_CORINFO_RUNTIME_LOOKUP
 {
-    DWORDLONG signature;
-    DWORD     helper;
-    DWORD     indirections;
-    DWORD     testForNull;
-    WORD      sizeOffset;
-    DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
-    DWORD     indirectFirstOffset;
-    DWORD     indirectSecondOffset;
+    DWORDLONG                     signature;
+    DWORD                         helper;
+    DWORD                         indirections;
+    DWORD                         testForNull;
+    WORD                          sizeOffset;
+    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
+    DWORD                         indirectFirstOffset;
+    DWORD                         indirectSecondOffset;
+    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
 };
 
 struct Agnostic_CORINFO_LOOKUP

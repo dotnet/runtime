@@ -1408,7 +1408,7 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
@@ -1627,9 +1627,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
           to lookup the handle.
  */
 
-GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_LOOKUP*         pLookup,
-                                          void*                   compileTimeHandle)
+GenTree* Compiler::impRuntimeLookupToTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
@@ -1637,13 +1635,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
-#ifdef FEATURE_READYTORUN
-        if (IsAot())
-        {
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pLookup->lookupKind, ctxTree);
-        }
-#endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
@@ -2774,8 +2765,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pCallInfo->codePointerLookup.lookupKind, ctxTree);
+            assert(pCallInfo->codePointerLookup.runtimeLookup.indirections == CORINFO_USEHELPER);
+            call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
 #endif

@@ -3027,7 +3027,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
-    pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
     CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
     pResult->signature = NULL;

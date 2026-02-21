@@ -292,7 +292,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         return TYP_UNDEF;
                     }
 
-                    GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
+                    GenTree* stubAddr = impRuntimeLookupToTree(&callInfo->stubLookup, methHnd);
 
                     // stubAddr tree may require a new temp.
                     // If we're inlining, this may trigger the too many locals inline failure.
