@@ -3321,5 +3321,49 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(AnyNewLine_DollarMultiline_TestData))]
+        public async Task AnyNewLine_DollarMultiline(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection matches = r.Matches(input);
+            Assert.Equal(expectedValues.Length, matches.Count);
+            for (int i = 0; i < expectedValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], matches[i].Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_DollarMultiline_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // Simple: $ matches before \r in middle of string
+                yield return new object[] { engine, @"x$", "x\ry", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "x" } };
+
+                // $ with Multiline|AnyNewLine matches before \r\n, \r, \n, and at end
+                yield return new object[] { engine, @"[^\r\n]+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"[^\r\n]+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"[^\r\n]+$", "foo\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+
+                // \w+$ finds words before all newline types
+                yield return new object[] { engine, @"\w+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+
+                // $ does NOT match between \r and \n of \r\n
+                yield return new object[] { engine, @"[^\n]+$", "ab\r\ncd", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "ab", "cd" } };
+
+                // $ with Multiline|AnyNewLine at end of string (no trailing newline)
+                yield return new object[] { engine, @"\w+$", "hello", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "hello" } };
+
+                // Three lines with mixed newlines
+                yield return new object[] { engine, @"\w+$", "a\rb\nc", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b", "c" } };
+            }
+        }
+
     }
 }
