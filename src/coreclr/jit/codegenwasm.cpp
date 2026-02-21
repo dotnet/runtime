@@ -13,6 +13,8 @@
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
+static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
 static const instruction INS_I_le_u  = INS_i64_le_u;
@@ -21,6 +23,8 @@ static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
+static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
 static const instruction INS_I_le_u  = INS_i32_le_u;
@@ -355,11 +359,11 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                instGen(INS_loop);
+                GetEmitter()->emitIns_B(INS_loop);
             }
             else
             {
-                instGen(INS_block);
+                GetEmitter()->emitIns_B(INS_block);
             }
 
             wasmCursor++;
@@ -589,6 +593,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // TODO-WASM-RA: remove KEEPALIVE after we've produced the GC info.
             genConsumeRegs(treeNode->AsOp()->gtOp1);
             GetEmitter()->emitIns(INS_drop);
+            break;
+
+        case GT_LCLHEAP:
+            genLclHeap(treeNode);
             break;
 
         case GT_INDEX_ADDR:
@@ -1449,7 +1457,7 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns(INS_if);
+        GetEmitter()->emitIns_B(INS_if);
         // Throw helper arity is (i (sp)) -> (void).
         // Push SP here as the arg for the call.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
@@ -2216,6 +2224,157 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genLclHeap: Generate code for LCLHEAP
+//
+// Arguments:
+//    tree -- LCLHEAP tree
+//
+// Notes:
+//   Codegen varies depending on:
+//   * whether the size operand is a constant or not
+//   * whether the allocated memory needs to be zeroed or not (info.compInitMem)
+//
+//   If the sp is changed, the value at sp[0] must be the frame pointer
+//   so that the runtime unwinder can locate the base of the fixed area
+//   in the shadow stack.
+//
+void CodeGen::genLclHeap(GenTree* tree)
+{
+    assert(tree->OperIs(GT_LCLHEAP));
+    assert(m_compiler->compLocallocUsed);
+    assert(isFramePointerUsed());
+
+    bool const     needsZeroing = m_compiler->info.compInitMem;
+    GenTree* const size         = tree->AsOp()->gtOp1;
+
+    assert(genActualType(size->gtType) == TYP_I_IMPL);
+
+    // We reserve this amount of space below any allocation for
+    // establishing unwind invariants.
+    //
+    size_t const reservedSpace = STACK_ALIGN;
+
+    // Constant LCLHEAP size operands are contained by lower.
+    //
+    if (size->isContainedIntOrIImmed())
+    {
+        size_t amount = size->AsIntCon()->gtIconVal;
+
+        // Handle zero
+        //
+        if (amount == 0)
+        {
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Add in the reserved space and round up.
+            //
+            amount = AlignUp(amount + reservedSpace, STACK_ALIGN);
+
+            // Decrease the stack pointer by amount
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+
+            // Zero the newly allocated space if needed
+            //
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, amount);
+
+                // TODO-WASM-CQ: possibly do small fills directly
+                //
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+            }
+
+            // SP now points at the reserved space just below the allocation.
+            // Save the frame pointer at sp[0].
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Leave the base address of the allocated region on the stack.
+            //
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+    }
+    else
+    {
+        assert(size->TypeIs(TYP_I_IMPL));
+        bool const is64Bit = (TARGET_POINTER_SIZE == 8);
+
+        genConsumeReg(size);
+        regNumber sizeReg = GetMultiUseOperandReg(size);
+
+        // Check for zero-size.
+        GetEmitter()->emitIns(INS_I_eqz);
+        GetEmitter()->emitIns_B(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+
+        {
+            // If size is zero, leave a zero on the stack
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+
+        // Else ... nonzero size case.
+        GetEmitter()->emitIns(INS_else);
+
+        {
+            // Prepare to subtract from SP
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+
+            // Add reserved space and round up request size to a multiple of STACK_ALIGN
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace + STACK_ALIGN - 1);
+            GetEmitter()->emitIns(INS_I_add);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, ~cnsval_ssize_t(STACK_ALIGN - 1));
+            GetEmitter()->emitIns(INS_I_and);
+
+            // Save the aligned size for the zeroing call below if needed.
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+            }
+
+            // Subtract rounded-up size from SP value, and save back to SP
+            GetEmitter()->emitIns(INS_I_sub);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+
+            if (needsZeroing)
+            {
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+                GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
+                // TODO-WASM-CQ: possibly do small fills directly
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+            }
+
+            // Re-establish unwind invariant: store FP at SP[0]
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            // Return value
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, reservedSpace);
+            GetEmitter()->emitIns(INS_I_add);
+        }
+
+        // end if
+        GetEmitter()->emitIns(INS_end);
+    }
+
+    WasmProduceReg(tree);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)

@@ -28,6 +28,26 @@ void emitter::emitIns(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// emitIns_B: Emit a block instruction with simple type signature
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - type of object left on the stack at block end (for the block sig),
+//              with WasmValueType::Invalid representing no object left on the stack.
+//
+void emitter::emitIns_B(instruction ins, WasmValueType valType)
+{
+    instrDesc* id  = emitNewInstrSC(EA_4BYTE, (cnsval_ssize_t)valType);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
 // Arguments:
@@ -542,6 +562,18 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
     }
 }
 
+size_t emitter::emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype)
+{
+    if (valtype == WasmValueType::Invalid)
+    {
+        return emitOutputByte(destination, 0x40 /* block type of void */);
+    }
+    else
+    {
+        return emitOutputByte(destination, GetWasmValueTypeCode(valtype));
+    }
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     const bool SIGNED   = true;
@@ -561,9 +593,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_BLOCK:
+        {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputByte(dst, 0x40 /* block type of void */);
+            dst += emitOutputValtypeSig(dst, (WasmValueType)emitGetInsSC(id));
             break;
+        }
         case IF_ULEB128:
         {
             assert(!id->idIsCnsReloc());
@@ -771,8 +805,17 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
-        case IF_BLOCK:
             break;
+
+        case IF_BLOCK:
+        {
+            WasmValueType valType = (WasmValueType)emitGetInsSC(id);
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+            break;
+        }
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
