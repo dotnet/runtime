@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -70,11 +71,65 @@ namespace System.Numerics.Tensors
         private readonly struct Atan2Operator<T> : IBinaryOperator<T>
             where T : IFloatingPointIeee754<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+#if NET11_0_OR_GREATER
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
+#else
+            public static bool Vectorizable => false;
+#endif
+
             public static T Invoke(T y, T x) => T.Atan2(y, x);
-            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Atan2(y.AsDouble(), x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Atan2(y.AsSingle(), x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Atan2(y.AsDouble(), x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Atan2(y.AsSingle(), x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x)
+            {
+#if NET11_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Atan2(y.AsDouble(), x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Atan2(y.AsSingle(), x.AsSingle()).As<float, T>();
+                }
+#else
+                throw new NotSupportedException();
+#endif
+            }
         }
     }
 }
