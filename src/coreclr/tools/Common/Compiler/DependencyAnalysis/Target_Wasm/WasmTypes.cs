@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -44,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public static WasmValueType FromCorInfoType(CorInfoWasmType ty)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(byte.MaxValue, (int)ty);
-            if (Enum.IsDefined(typeof(WasmValueType), (int)ty))
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)ty, byte.MaxValue);
+            if (Enum.IsDefined(typeof(WasmValueType), (byte)ty))
             {
                 return (WasmValueType)ty;
             }
@@ -136,9 +139,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
     public static class WasmResultTypeExtensions
     {
-        public static string ToTypeListString(this WasmResultType result, string sep = " ")
+        public static string ToTypeListString(this WasmResultType result)
         {
-            return string.Join(sep, result.Types.ToArray().Select(t => t.ToTypeString()));
+            return string.Join(" ", result.Types.ToArray().Select(t => t.ToTypeString()));
         }
     }
 
@@ -157,6 +160,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public static WasmFuncType FromCorInfoSignature(CorInfoWasmType[] types)
         {
+            Console.WriteLine($"types: {types}");
             WasmResultType rs;
             if (types.Length == 0)
             {
@@ -176,9 +180,10 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             if (types.Length > 1)
             {
                 WasmValueType[] paramTypes = new WasmValueType[types.Length - 1];
-                for (int i = 1; i < paramTypes.Length; i++)
+                int idx = 0;
+                foreach (CorInfoWasmType paramType in types.AsSpan().Slice(1))
                 {
-                    paramTypes[i] = WasmValueTypeExtensions.FromCorInfoType(types[i]);
+                    paramTypes[idx++] = WasmValueTypeExtensions.FromCorInfoType(paramType);
                 }
                 ps = new WasmResultType(paramTypes);
             }
@@ -227,11 +232,21 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             string paramList = _params.ToTypeListString();
             string returnList = _returns.ToTypeListString();
 
-            if (string.IsNullOrEmpty(returnList))
+            if (string.IsNullOrEmpty(returnList) && string.IsNullOrEmpty(paramList))
+            {
+                return "(func)";
+            }
+            else if (string.IsNullOrEmpty(returnList))
+            {
                 return $"(func (param {paramList}))";
+            }
+            else if (string.IsNullOrEmpty(paramList))
+            {
+                return $"(func (result {returnList})";
+            }
+
             return $"(func (param {paramList}) (result {returnList}))";
         }
-
 
         public int CompareTo(WasmFuncType other)
         {
@@ -243,10 +258,16 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public void AppendMangledName(Internal.Text.Utf8StringBuilder sb)
         {
+            sb.Append("__wasmtype_"u8);
             _returns.AppendMangledName(sb, isReturn: true);
             _params.AppendMangledName(sb);
         }
+
+        public Internal.Text.Utf8String GetMangledName()
+        {
+            Internal.Text.Utf8StringBuilder sb = new();
+            AppendMangledName(sb);
+            return sb.ToUtf8String();
+        }
     }
 }
-
-
