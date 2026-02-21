@@ -10,6 +10,8 @@
 #include "regallocwasm.h"
 #include "fgwasm.h"
 
+static const int LINEAR_MEMORY_INDEX = 0;
+
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
@@ -1995,7 +1997,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genConsumeOperands(blkOp);
             // Emit the size constant expected by the memory.copy and memory.fill opcodes
             GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, /* memory index */ 0);
+            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
             break;
 
         default:
@@ -2027,7 +2029,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
     GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
     // Emit the size constant expected by the memory.copy and memory.fill opcodes
     GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
-    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, /* memory index */ 0);
+    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)

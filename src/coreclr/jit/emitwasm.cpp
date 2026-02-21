@@ -430,7 +430,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
         }
-        case IF_MEMCPY:
+        case IF_MEMIDX_MEMIDX:
         {
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
@@ -657,7 +657,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputByte(dst, valType);
             break;
         }
-        case IF_MEMCPY:
+        case IF_MEMIDX_MEMIDX:
         {
             dst += emitOutputOpcode(dst, ins);
             cnsval_ssize_t constant = emitGetInsSC(id);
@@ -806,7 +806,7 @@ void emitter::emitDispIns(
             dispHandleIfAny();
         }
         break;
-        case IF_MEMCPY:
+        case IF_MEMIDX_MEMIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
