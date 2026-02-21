@@ -2346,9 +2346,8 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 {
 #if defined(TARGET_WASM)
     // TODO-WASM: may need adjustments for other hidden args
-    // For now: managed calls get extra SP + PortableEntryPoint args, but
-    // we're not adding the PE arg yet. So just note one extra arg.
-    return IsUnmanaged() ? 0 : 1;
+    // For now: managed calls get extra SP + PortableEntryPoint args.
+    return IsUnmanaged() ? 0 : 2;
 #endif // defined(TARGET_WASM)
 
     if (IsUnmanaged() && !compiler->opts.ShouldUsePInvokeHelpers())
