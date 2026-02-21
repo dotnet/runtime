@@ -48,6 +48,7 @@
 
 static pthread_mutex_t memory_barrier_process_wide_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void *memory_barrier_process_wide_helper_page;
+static guint32 system_stacksize = 0;
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
@@ -72,10 +73,30 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		if (RUNNING_ON_VALGRIND)
 			set_stack_size = 1 << 20;
 		else
-			set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
-#else
-		set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
+		{
+			if (system_stacksize == 0) {
+				// Use RLIMIT_STACK as the default stack size.
+				// This matches the default stack size of pthreads on glibc Linux distros.
+				// On Musl Linux, pthread defaults to a small size of 128KB. Using RLIMIT_STACK aligns the behavior with glibc Linux.
+				struct rlimit lim;
+				if (getrlimit (RLIMIT_STACK, &lim) == 0) {
+					// When unlimited, use 8MB.
+					size_t rlim_stack_size;
+					if (lim.rlim_cur == RLIM_INFINITY)
+						rlim_stack_size = 8 * 1024 * 1024;
+					else
+						rlim_stack_size = (size_t)lim.rlim_cur;
+
+					system_stacksize = (rlim_stack_size > (size_t)UINT32_MAX) ? UINT32_MAX : (guint32)rlim_stack_size;
+				}
+				// If we can't get a limit from the system, default to Windows stack size (1.5MB).
+				if (system_stacksize == 0)
+					system_stacksize = 1536 * 1024;
+			}
+
+			set_stack_size = system_stacksize;
+		}
 	}
 
 #ifdef PTHREAD_STACK_MIN
