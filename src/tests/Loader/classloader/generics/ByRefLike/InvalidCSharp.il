@@ -395,86 +395,6 @@
     }
 }
 
-.class interface public auto ansi abstract InvalidCSharp.SimpleInterface
-{
-    .method public hidebysig newslot abstract virtual
-        instance int32 Method() cil managed
-    {
-    }
-}
-
-.class interface public auto ansi abstract InvalidCSharp.DefaultInterface
-{
-    .method public hidebysig newslot virtual
-        instance int32 Method() cil managed
-    {
-        ldc.i4.0
-        ret
-    }
-}
-
-.class public sequential ansi sealed beforefieldinit ByRefLikeType
-    extends [System.Runtime]System.ValueType
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
-        01 00 00 00
-    )
-}
-
-.class public sequential ansi sealed beforefieldinit ByRefLikeType2
-    extends [System.Runtime]System.ValueType
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
-        01 00 00 00
-    )
-}
-
-.class public sequential ansi sealed beforefieldinit ByRefLikeTypeWithInterface
-    extends [System.Runtime]System.ValueType
-    implements InvalidCSharp.SimpleInterface
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
-        01 00 00 00
-    )
-
-    .method public final hidebysig newslot virtual
-        instance int32 Method() cil managed
-    {
-        ldc.i4.1
-        ret
-    }
-}
-
-.class public sequential ansi sealed beforefieldinit RegularValueType
-    extends [System.Runtime]System.ValueType
-{
-}
-
-.class public sequential ansi sealed beforefieldinit RS_DI1
-    extends [System.Runtime]System.ValueType
-    implements InvalidCSharp.DefaultInterface
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
-        01 00 00 00
-    )
-}
-
-.class public sequential ansi sealed beforefieldinit RS_DI2
-    extends [System.Runtime]System.ValueType
-    implements InvalidCSharp.DefaultInterface
-{
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
-        01 00 00 00
-    )
-
-    .method public hidebysig newslot virtual
-        instance int32 Method() cil managed
-    {
-        ldc.i4.1
-        ret
-    }
-}
-
 .class public sequential ansi sealed beforefieldinit InvalidCSharp.GenericClass_WithStaticField`1<byreflike T>
     extends [System.Runtime]System.Object
 {
@@ -513,6 +433,94 @@
         call instance void [System.Runtime]System.Object::.ctor()
         ret
     }
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType2
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeType`1<T>
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class interface public auto ansi abstract InvalidCSharp.SimpleInterface
+{
+    .method public hidebysig newslot abstract virtual
+        instance int32 Method() cil managed
+    {
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit ByRefLikeTypeWithInterface
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.SimpleInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .method public final hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
+}
+
+.class interface public auto ansi abstract InvalidCSharp.DefaultInterface
+{
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI1
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+}
+
+.class public sequential ansi sealed beforefieldinit RS_DI2
+    extends [System.Runtime]System.ValueType
+    implements InvalidCSharp.DefaultInterface
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .method public hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit RegularValueType
+    extends [System.Runtime]System.ValueType
+{
 }
 
 .class public auto ansi beforefieldinit ClassWithInterface
