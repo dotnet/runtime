@@ -5716,10 +5716,6 @@ HRESULT STDMETHODCALLTYPE ClrDataAccess::GetThreadStaticBaseAddress(CLRDATA_ADDR
     {
         hr = E_INVALIDARG;
     }
-    else if (mTable->GetClass() == NULL)
-    {
-        hr = E_INVALIDARG;
-    }
     else
     {
         PTR_EEClass pClass = mTable->GetClassWithPossibleAV();
