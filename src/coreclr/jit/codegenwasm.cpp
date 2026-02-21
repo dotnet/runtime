@@ -1974,7 +1974,7 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 // genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
 //
 // Arguments:
-//    tree - the node
+//    blkOp - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
