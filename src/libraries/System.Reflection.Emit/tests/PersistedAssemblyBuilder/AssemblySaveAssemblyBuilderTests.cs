@@ -49,7 +49,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("stream", () => ab.Save(stream: null));
             Assert.Throws<InvalidOperationException>(() => ab.Save(assemblyFileName: "File")); // no module defined
 
-            PersistedAssemblyBuilder afterGenerateMetadata = CreateSimplePersistedAssembly(new AssemblyName("GenerateThenSave"));
+            PersistedAssemblyBuilder afterGenerateMetadata = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder generatedTypeBuilder);
+            generatedTypeBuilder.CreateType();
             afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
             Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
         }
@@ -66,7 +67,8 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(mappedFieldData);
             Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
 
-            PersistedAssemblyBuilder afterSave = CreateSimplePersistedAssembly(new AssemblyName("SaveThenGenerate"));
+            PersistedAssemblyBuilder afterSave = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            typeBuilder.CreateType();
             afterSave.Save(new MemoryStream());
             Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
         }
@@ -87,7 +89,9 @@ namespace System.Reflection.Emit.Tests
             Assert.NotEmpty(expectedPublicKey);
             assemblyName.SetPublicKey(expectedPublicKey);
 
-            PersistedAssemblyBuilder ab = CreateSimplePersistedAssembly(assemblyName);
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
+            TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            typeBuilder.CreateType();
             using MemoryStream stream = new MemoryStream();
             ab.Save(stream);
 
@@ -427,14 +431,6 @@ namespace System.Reflection.Emit.Tests
             }
 
             public Guid MyGuid { get; init; }
-        }
-
-        private static PersistedAssemblyBuilder CreateSimplePersistedAssembly(AssemblyName assemblyName)
-        {
-            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
-            TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
-            typeBuilder.CreateType();
-            return ab;
         }
 
         void CheckCattr(IList<CustomAttributeData> attributes)
