@@ -277,9 +277,7 @@ namespace System.Collections.Immutable.Tests
                 (b, v, eq) => b.LastIndexOf(v, b.Count > 0 ? b.Count - 1 : 0, b.Count, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
-                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq),
-                "startIndex",
-                "count");
+                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
         }
 
         [Fact]

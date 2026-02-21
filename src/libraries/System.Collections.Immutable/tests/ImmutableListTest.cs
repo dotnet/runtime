@@ -512,18 +512,14 @@ namespace System.Collections.Immutable.Tests
                 (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
-                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq),
-                "index",
-                "count");
+                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
             IndexOfTests.LastIndexOfTest(
                 seq => (IImmutableList<int>)ImmutableList.CreateRange(seq),
                 (b, v) => b.LastIndexOf(v),
                 (b, v, eq) => b.LastIndexOf(v, eq),
                 (b, v, i) => b.LastIndexOf(v, i),
                 (b, v, i, c) => b.LastIndexOf(v, i, c),
-                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq),
-                "index",
-                "count");
+                (b, v, i, c, eq) => b.LastIndexOf(v, i, c, eq));
         }
 
         [Fact]
