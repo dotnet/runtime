@@ -567,16 +567,9 @@ PhaseStatus Compiler::optRangeCheckCloning()
                 // However, we must skip if:
                 //   - JIT32_GCENCODER is defined (hard limit on epilogue count)
                 //   - The block is genReturnBB (shared return block)
-                if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
-                {
 #ifndef JIT32_GCENCODER
-                    // Allow scanning the return statement for bounds checks.
-                    // The DoClone path will handle BBJ_RETURN specially.
-#else
-                    break;
+                if (!block->KindIs(BBJ_RETURN) || (block == genReturnBB))
 #endif
-                }
-                else
                 {
                     // TODO-RangeCheckCloning: Splitting these blocks at the last statements
                     // require using gtSplitTree for the last bounds check.
