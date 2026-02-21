@@ -891,7 +891,7 @@ namespace System
             DebugAssertInCtor();
             Debug.Assert((otherUri._flags & Flags.Debug_LeftConstructor) != 0);
 
-            _flags = otherUri._flags;
+            _flags = otherUri._flags & ~Flags.Debug_LeftConstructor;
 
             if (InFact(Flags.AllUriInfoSet))
             {
