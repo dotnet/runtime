@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.NetworkInformation
 {
@@ -385,6 +386,7 @@ namespace System.Net.NetworkInformation
             return ipAddress;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte HexToByte(char val)
         {
             int result = HexConverter.FromChar(val);

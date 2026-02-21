@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System
@@ -505,6 +506,7 @@ namespace System
         /// Converts 2 hex chars to a byte (returned in a char), e.g, "0a" becomes (char)0x0A.
         /// <para>If either char is not hex, returns <see cref="Uri.c_DummyChar"/>.</para>
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static char DecodeHexChars(int first, int second)
         {
             int a = HexConverter.FromChar(first);

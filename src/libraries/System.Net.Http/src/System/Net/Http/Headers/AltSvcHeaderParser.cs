@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -285,6 +286,7 @@ namespace System.Net.Http.Headers
         /// <summary>
         /// Reads a hex nibble. Specialized for ALPN protocol names as they explicitly can not contain lower-case hex.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryReadAlpnHexDigit(char ch, out int nibble)
         {
             int result = HexConverter.FromUpperChar(ch);
