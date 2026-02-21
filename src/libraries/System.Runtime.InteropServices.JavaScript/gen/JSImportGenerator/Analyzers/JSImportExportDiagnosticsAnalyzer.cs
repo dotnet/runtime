@@ -16,6 +16,24 @@ namespace Microsoft.Interop.JavaScript
     /// </summary>
     public abstract class JSInteropDiagnosticsAnalyzer : DiagnosticAnalyzer
     {
+        // Diagnostic descriptors shared by both JSImport and JSExport analyzers.
+        private static readonly ImmutableArray<DiagnosticDescriptor> s_sharedDescriptors = ImmutableArray.Create(
+            GeneratorDiagnostics.ParameterTypeNotSupported,
+            GeneratorDiagnostics.ReturnTypeNotSupported,
+            GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
+            GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
+            GeneratorDiagnostics.ParameterConfigurationNotSupported,
+            GeneratorDiagnostics.ReturnConfigurationNotSupported,
+            GeneratorDiagnostics.ConfigurationNotSupported,
+            GeneratorDiagnostics.ConfigurationValueNotSupported,
+            GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
+            s_sharedDescriptors
+                .Add(InvalidSignatureDescriptor)
+                .Add(ContainingTypeMissingModifiersDescriptor)
+                .Add(RequiresAllowUnsafeBlocksDescriptor);
+
         /// <summary>The metadata name of the attribute this analyzer handles.</summary>
         protected abstract string AttributeMetadataName { get; }
 
@@ -29,8 +47,8 @@ namespace Microsoft.Interop.JavaScript
         protected abstract DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor { get; }
 
         /// <summary>
-        /// When <see langword="true"/> (JSExport), the method must have a body and must not be partial.
-        /// When <see langword="false"/> (JSImport), the method must not have a body and must be partial.
+        /// When <see langword="true"/>, the method must have a body and must not be partial.
+        /// When <see langword="false"/>, the method must not have a body and must be partial.
         /// </summary>
         protected abstract bool RequiresImplementation { get; }
 
@@ -58,8 +76,9 @@ namespace Microsoft.Interop.JavaScript
                     context.Compilation,
                     context.Compilation.GetEnvironmentFlags());
 
-                int foundMethod = 0;
                 bool unsafeEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
+
+                int foundMethod = 0;
 
                 context.RegisterSymbolAction(symbolContext =>
                 {
@@ -77,13 +96,16 @@ namespace Microsoft.Interop.JavaScript
                     }
                 }, SymbolKind.Method);
 
-                context.RegisterCompilationEndAction(endContext =>
+                if (!unsafeEnabled)
                 {
-                    if (!unsafeEnabled && Volatile.Read(ref foundMethod) != 0)
+                    context.RegisterCompilationEndAction(endContext =>
                     {
-                        endContext.ReportDiagnostic(DiagnosticInfo.Create(RequiresAllowUnsafeBlocksDescriptor, null).ToDiagnostic());
-                    }
-                });
+                        if (Volatile.Read(ref foundMethod) != 0)
+                        {
+                            endContext.ReportDiagnostic(DiagnosticInfo.Create(RequiresAllowUnsafeBlocksDescriptor, null).ToDiagnostic());
+                        }
+                    });
+                }
             });
         }
 
@@ -120,8 +142,8 @@ namespace Microsoft.Interop.JavaScript
         /// <param name="invalidSignatureDescriptor">Descriptor for an invalid method signature.</param>
         /// <param name="containingTypeMissingModifiersDescriptor">Descriptor for a containing type missing modifiers.</param>
         /// <param name="requiresImplementation">
-        /// When <see langword="true"/> (JSExport), the method must have a body and must not be partial.
-        /// When <see langword="false"/> (JSImport), the method must not have a body and must be partial.
+        /// When <see langword="true"/>, the method must have a body and must not be partial.
+        /// When <see langword="false"/>, the method must not have a body and must be partial.
         /// </param>
         /// <returns>A diagnostic if the method is invalid, null otherwise.</returns>
         internal static DiagnosticInfo? GetDiagnosticIfInvalidMethodForGeneration(
@@ -134,8 +156,8 @@ namespace Microsoft.Interop.JavaScript
             bool hasImplementation = methodSyntax.Body is not null || methodSyntax.ExpressionBody is not null;
             bool isPartial = methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword);
 
-            // requiresImplementation=false (JSImport): must have no body, must be partial.
-            // requiresImplementation=true (JSExport): must have a body, must not be partial.
+            // requiresImplementation=false: must have no body, must be partial.
+            // requiresImplementation=true: must have a body, must not be partial.
             if (methodSyntax.TypeParameterList is not null
                 || hasImplementation != requiresImplementation
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)

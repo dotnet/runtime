@@ -15,21 +15,6 @@ namespace Microsoft.Interop.JavaScript
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class JSImportDiagnosticsAnalyzer : JSInteropDiagnosticsAnalyzer
     {
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-            ImmutableArray.Create(
-                GeneratorDiagnostics.InvalidImportAttributedMethodSignature,
-                GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers,
-                GeneratorDiagnostics.ParameterTypeNotSupported,
-                GeneratorDiagnostics.ReturnTypeNotSupported,
-                GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
-                GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
-                GeneratorDiagnostics.ParameterConfigurationNotSupported,
-                GeneratorDiagnostics.ReturnConfigurationNotSupported,
-                GeneratorDiagnostics.ConfigurationNotSupported,
-                GeneratorDiagnostics.ConfigurationValueNotSupported,
-                GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
-                GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks);
-
         protected override string AttributeMetadataName => Constants.JSImportAttribute;
         protected override DiagnosticDescriptor InvalidSignatureDescriptor => GeneratorDiagnostics.InvalidImportAttributedMethodSignature;
         protected override DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor => GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers;
