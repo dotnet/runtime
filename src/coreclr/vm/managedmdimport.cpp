@@ -50,7 +50,7 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 
     *safeArraySubType = info.m_SafeArrayElementVT;
 
-    *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName;
+    *safeArrayUserDefinedSubType = info.m_cSafeArrayUserDefTypeNameBytes > 0 ? info.m_strSafeArrayUserDefTypeName : NULL;
 #else
     *iidParamIndex = 0;
 
@@ -59,9 +59,9 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     *safeArrayUserDefinedSubType = NULL;
 #endif
 
-    *marshalType = info.m_strCMMarshalerTypeName;
+    *marshalType = info.m_cCMMarshalerTypeNameBytes > 0 ? info.m_strCMMarshalerTypeName : NULL;
 
-    *marshalCookie = info.m_strCMCookie;
+    *marshalCookie = info.m_cCMCookieStrBytes > 0 ? info.m_strCMCookie : NULL;
 
     FC_RETURN_BOOL(TRUE);
 }
