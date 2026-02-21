@@ -12846,6 +12846,12 @@ void Compiler::gtDispTree(GenTree*                    tree,
                         printf(" (Loop)");
                         break;
 
+#ifdef TARGET_WASM
+                    case GenTreeBlk::BlkOpKindNativeOpcode:
+                        printf(" (memory.copy|fill)");
+                        break;
+#endif
+
                     default:
                         unreached();
                 }
