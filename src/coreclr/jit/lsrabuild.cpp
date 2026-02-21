@@ -4387,6 +4387,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     case TYP_VOID:
                         useCandidates = RBM_NONE;
                         break;
+                    case TYP_HALF:
                     case TYP_FLOAT:
 #ifdef TARGET_X86
                         useCandidates = RBM_FLOATRET;

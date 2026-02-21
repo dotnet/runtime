@@ -415,7 +415,20 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         for (; TransitionBlock::InvalidOffset != (ofs = m_argIt.GetNextOffset()); arg++)
         {
 #ifdef CALLDESCR_REGTYPEMAP
-            FillInRegTypeMap(ofs, m_argIt.GetArgType(), pMap);
+            {
+                CorElementType regMapType = m_argIt.GetArgType();
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+                // System.Half is passed in floating point registers like a float
+                if (regMapType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    TypeHandle th;
+                    m_argIt.GetArgType(&th);
+                    if (!th.IsNull() && th.AsMethodTable()->IsNativeHalfType())
+                        regMapType = ELEMENT_TYPE_R4;
+                }
+#endif // TARGET_AMD64 || TARGET_X86
+                FillInRegTypeMap(ofs, regMapType, pMap);
+            }
 #endif
 
 #ifdef CALLDESCR_FPARGREGS

@@ -78,6 +78,17 @@ inline bool varTypeIsSIMD(T vt)
 }
 
 template <class T>
+inline bool varTypeIsAccelerated(T vt)
+{
+#ifdef FEATURE_SIMD
+    return (varTypeIsSIMD(vt) || (TypeGet(vt) == TYP_HALF));
+#else
+    // Always return false if FEATURE_SIMD is not enabled
+    return false;
+#endif
+}
+
+template <class T>
 inline bool varTypeIsMask(T vt)
 {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -341,7 +352,7 @@ inline bool varTypeUsesFloatArgReg(T vt)
     return varTypeUsesFloatReg(vt);
 #else
     // Other targets pass them as regular structs - by reference or by value.
-    return varTypeIsFloating(vt);
+    return varTypeIsFloating(vt) || TypeGet(vt) == TYP_HALF;
 #endif
 }
 
