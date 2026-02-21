@@ -152,29 +152,7 @@ static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
 //    ...
 //
 // For BBJ_RETURN blocks where the bounds checks are in the return statement,
-// both fastpathBb and fallbackBb are BBJ_RETURN blocks (no nextBb needed):
-//
-//  prevBb:
-//    goto lowerBndBb
-//
-//  lowerBndBb:
-//    if (idx < 0)
-//        goto fallbackBb
-//    else
-//        goto upperBndBb
-//
-//  upperBndBb:
-//    if (idx < len - maxConstOffset)
-//        goto fastpathBb
-//    else
-//        goto fallbackBb
-//
-//  fallbackBb:
-//    [Original block with bounds checks, includes return]
-//
-//  fastpathBb:
-//    [Cloned block with no bounds checks, includes return]
-//
+// both fastpathBb and fallbackBb are BBJ_RETURN blocks (no nextBb needed).
 //
 // Arguments:
 //    comp        - The compiler instance
