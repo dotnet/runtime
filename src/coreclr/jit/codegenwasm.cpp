@@ -613,6 +613,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             JITDUMP("Ignoring GT_MEMORYBARRIER; single-threaded codegen\n");
             break;
 
+        case GT_INTRINSIC:
+            genIntrinsic(treeNode->AsIntrinsic());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -755,16 +759,19 @@ static constexpr uint32_t PackTypes(var_types toType, var_types fromType)
 //
 void CodeGen::genIntToIntCast(GenTreeCast* cast)
 {
-    if (cast->gtOverflow())
+    GenIntCastDesc desc(cast);
+
+    if (desc.CheckKind() != GenIntCastDesc::CHECK_NONE)
     {
-        NYI_WASM("Overflow checks");
+        GenTree*  castValue = cast->gtGetOp1();
+        regNumber castReg   = GetMultiUseOperandReg(castValue);
+        genIntCastOverflowCheck(cast, desc, castReg);
     }
 
-    GenIntCastDesc desc(cast);
-    var_types      toType     = genActualType(cast->CastToType());
-    var_types      fromType   = genActualType(cast->CastOp());
-    int            extendSize = desc.ExtendSrcSize();
-    instruction    ins        = INS_none;
+    var_types   toType     = genActualType(cast->CastToType());
+    var_types   fromType   = genActualType(cast->CastOp());
+    int         extendSize = desc.ExtendSrcSize();
+    instruction ins        = INS_none;
     assert(fromType == TYP_INT || fromType == TYP_LONG);
 
     genConsumeOperands(cast);
@@ -825,6 +832,98 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
         GetEmitter()->emitIns(ins);
     }
     WasmProduceReg(cast);
+}
+
+//------------------------------------------------------------------------
+// genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//    desc - The cast description
+//    reg  - The register containing the value to check
+//
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
+{
+    bool const     is64BitSrc = (desc.CheckSrcSize() == 8);
+    emitAttr const srcSize    = is64BitSrc ? EA_8BYTE : EA_4BYTE;
+
+    GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+
+    switch (desc.CheckKind())
+    {
+        case GenIntCastDesc::CHECK_POSITIVE:
+        {
+            // INT or LONG to ULONG
+            GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, 0);
+            GetEmitter()->emitIns(is64BitSrc ? INS_i64_lt_s : INS_i32_lt_s);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_UINT_RANGE:
+        {
+            // (U)LONG to UINT
+            assert(is64BitSrc);
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, UINT32_MAX);
+            // We can re-interpret LONG as ULONG
+            // Then negative values will be larger than UINT32_MAX
+            GetEmitter()->emitIns(INS_i64_gt_u);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
+        {
+            // ULONG to INT
+            GetEmitter()->emitIns_I(INS_i64_const, srcSize, INT32_MAX);
+            GetEmitter()->emitIns(INS_i64_gt_u);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_INT_RANGE:
+        {
+            // LONG to INT
+            GetEmitter()->emitIns(INS_i64_extend32_s);
+            GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+            GetEmitter()->emitIns(INS_i64_ne);
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        case GenIntCastDesc::CHECK_SMALL_INT_RANGE:
+        {
+            // (U)(INT|LONG) to Small INT
+            const int castMaxValue = desc.CheckSmallIntMax();
+            const int castMinValue = desc.CheckSmallIntMin();
+
+            if (castMinValue == 0)
+            {
+                // When the minimum is 0, a single unsigned upper-bound check is sufficient.
+                // For signed sources, negative values become large unsigned values and
+                // thus also trigger the overflow via the same comparison.
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_u : INS_i32_gt_u);
+            }
+            else
+            {
+                // We need to check a range around zero, eg [-128, 127] for 8-bit signed.
+                // Do two compares and combine the results: (src > max) | (src < min).
+                assert(!cast->IsUnsigned());
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMaxValue);
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_gt_s : INS_i32_gt_s);
+                GetEmitter()->emitIns_I(INS_local_get, srcSize, WasmRegToIndex(reg));
+                GetEmitter()->emitIns_I(is64BitSrc ? INS_i64_const : INS_i32_const, srcSize, castMinValue);
+                GetEmitter()->emitIns(is64BitSrc ? INS_i64_lt_s : INS_i32_lt_s);
+                GetEmitter()->emitIns(INS_i32_or);
+            }
+            genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            break;
+        }
+
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1376,6 +1475,22 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
+    genEmitNullCheck(REG_NA);
+}
+
+//---------------------------------------------------------------------
+// genEmitNullCheck - generate code for a null check
+//
+// Arguments:
+//    regNum - register to check, or REG_NA if value to check is on the stack
+//
+void CodeGen::genEmitNullCheck(regNumber reg)
+{
+    if (reg != REG_NA)
+    {
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(reg));
+    }
+
     GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
     GetEmitter()->emitIns(INS_I_le_u);
     genJumpToThrowHlpBlk(SCK_NULL_CHECK);
@@ -1477,6 +1592,135 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
 
     WasmProduceReg(lea);
+}
+
+//------------------------------------------------------------------------
+// PackIntrinsicAndType: Pack a intrinsic and var_types into a uint32_t
+//
+// Arguments:
+//    ni - a NamedIntrinsic to pack
+//    type - a var_types to pack
+//
+// Return Value:
+//    intrinsic and type packed into an integer that can be used as a switch value/case
+//
+static constexpr uint32_t PackIntrinsicAndType(NamedIntrinsic ni, var_types type)
+{
+    if ((type == TYP_BYREF) || (type == TYP_REF))
+    {
+        type = TYP_I_IMPL;
+    }
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    return ((uint32_t)ni << shift1) | ((uint32_t)type);
+}
+
+//---------------------------------------------------------------------
+// genIntrinsic - generate code for a given intrinsic
+//
+// Arguments
+//    treeNode - the GT_INTRINSIC node
+//
+// Return value:
+//    None
+//
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    // Handle intrinsics that can be implemented by target-specific instructions
+    instruction ins = INS_invalid;
+
+    switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
+    {
+        case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
+            ins = INS_f32_abs;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Abs, TYP_DOUBLE):
+            ins = INS_f64_abs;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_FLOAT):
+            ins = INS_f32_ceil;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_DOUBLE):
+            ins = INS_f64_ceil;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Floor, TYP_FLOAT):
+            ins = INS_f32_floor;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Floor, TYP_DOUBLE):
+            ins = INS_f64_floor;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Max, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_FLOAT):
+            ins = INS_f32_max;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Max, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_DOUBLE):
+            ins = INS_f64_max;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Min, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_FLOAT):
+            ins = INS_f32_min;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Min, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_DOUBLE):
+            ins = INS_f64_min;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Round, TYP_FLOAT):
+            ins = INS_f32_nearest;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Round, TYP_DOUBLE):
+            ins = INS_f64_nearest;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_FLOAT):
+            ins = INS_f32_sqrt;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_DOUBLE):
+            ins = INS_f64_sqrt;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Truncate, TYP_FLOAT):
+            ins = INS_f32_trunc;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Truncate, TYP_DOUBLE):
+            ins = INS_f64_trunc;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+            ins = INS_i32_clz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+            ins = INS_i64_clz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+            ins = INS_i32_ctz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+            ins = INS_i64_ctz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+            ins = INS_i32_popcnt;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+            ins = INS_i64_popcnt;
+            break;
+
+        default:
+            assert(!"genIntrinsic: Unsupported intrinsic");
+            unreached();
+    }
+
+    GetEmitter()->emitIns(ins);
+
+    WasmProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -1637,14 +1881,19 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
+// Arguments:
+//    call - the GT_CALL node
+//
 void CodeGen::genCall(GenTreeCall* call)
 {
+    regNumber thisReg = REG_NA;
+
     if (call->NeedsNullCheck())
     {
-        NYI_WASM("Insert nullchecks for calls that need it in lowering");
+        CallArg* thisArg  = call->gtArgs.GetThisArg();
+        GenTree* thisNode = thisArg->GetNode();
+        thisReg           = GetMultiUseOperandReg(thisNode);
     }
-
-    assert(!call->IsTailCall());
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
@@ -1654,6 +1903,11 @@ void CodeGen::genCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         genConsumeReg(arg.GetLateNode());
+    }
+
+    if (call->NeedsNullCheck())
+    {
+        genEmitNullCheck(thisReg);
     }
 
     genCallInstruction(call);

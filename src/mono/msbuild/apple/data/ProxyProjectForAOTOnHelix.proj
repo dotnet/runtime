@@ -36,7 +36,7 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <OutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'bin'))</OutputPath>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
-    <_IlcLibraryBuildDependsOn>LinkNative;CopyNativeBinary</_IlcLibraryBuildDependsOn>
+    <_IlcLibraryBuildDependsOn>LinkNative</_IlcLibraryBuildDependsOn>
     <!-- we should not strip symbols from the generated library as xcode build will attempt to strip already stripped symbols -->
     <StripSymbols>false</StripSymbols>
   </PropertyGroup>
