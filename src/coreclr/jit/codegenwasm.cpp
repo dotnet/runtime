@@ -1601,7 +1601,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 
     GetEmitter()->emitIns(ins);
 
-    genProduceReg(treeNode);
+    WasmProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
