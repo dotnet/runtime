@@ -225,7 +225,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            // TODO-WASM: Is this true for wasm as well?
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
