@@ -100,8 +100,8 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)(-1), new TimeSpan()));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)0x800));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)0x800, new TimeSpan()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)0x1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", (RegexOptions)0x1000, new TimeSpan()));
             if (PlatformDetection.IsNetFramework)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => new Regex("foo", RegexHelpers.RegexOptionNonBacktracking));
