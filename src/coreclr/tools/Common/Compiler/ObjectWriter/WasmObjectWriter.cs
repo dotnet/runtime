@@ -80,7 +80,7 @@ namespace ILCompiler.ObjectWriter
             Utf8String key = signature.GetMangledName();
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
-                throw new InvalidOperationException($"Signature index not found for function: {desc.GetName()}");
+                throw new InvalidOperationException($"Signature index of {key} not found for function: {desc.GetName()}");
             }
 
             writer.WriteULEB128((ulong)signatureIndex);
