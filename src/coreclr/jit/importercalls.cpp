@@ -8829,6 +8829,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
     const bool              needsCompileTimeLookup = impDevirtualizedCallHasConstInstParam(dvInfo);
     const bool              needsInstParam         = needsRuntimeLookup || needsCompileTimeLookup;
+    const bool              isArrayInterfaceDevirt = ((objClassAttribs & CORINFO_FLG_ARRAY) != 0);
 
     if (derivedMethod != nullptr)
     {
@@ -8844,7 +8845,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             // Generic virtual method devirt also returns a generic method.
             //
-            assert(call->IsGenericVirtual(this) || needsInstParam || ((objClassAttribs & CORINFO_FLG_ARRAY) != 0));
+            assert(call->IsGenericVirtual(this) || isArrayInterfaceDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8869,6 +8870,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // We should only end up with generic methods that need a method context (eg. array interface, GVM).
             //
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+
+            // If we don't know the array type exactly we may have the wrong interface type here.
+            // Bail out.
+            //
+            if (isArrayInterfaceDevirt && !isExact)
+            {
+                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+                return;
+            }
 
             // We don't expect R2R/NAOT to end up here for array interface devirtualization.
             // For NAOT, it has Array<T> and normal devirtualization.
