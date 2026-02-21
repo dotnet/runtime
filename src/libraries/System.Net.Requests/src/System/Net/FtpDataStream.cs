@@ -77,32 +77,20 @@ namespace System.Net
             {
                 try
                 {
-                    // If we have an SslStream wrapping the NetworkStream, close it first.
-                    // The SslStream will handle proper SSL/TLS shutdown and close the underlying NetworkStream.
+                    // If we have an SslStream wrapping the NetworkStream, close it first to perform SSL/TLS shutdown.
+                    // Since leaveInnerStreamOpen=true, the SslStream won't close the NetworkStream.
+                    // We then explicitly close the NetworkStream with the appropriate timeout.
                     if (_stream != _originalStream)
                     {
-                        // Close the SslStream with appropriate timeout
-                        if ((closeState & CloseExState.Abort) == 0)
-                        {
-                            // For normal close, use Close() which sends TLS close_notify
-                            // The SslStream will close the underlying NetworkStream
-                            _stream.Close();
-                        }
-                        else
-                        {
-                            // For abort, just dispose without graceful shutdown
-                            _stream.Dispose();
-                            _originalStream.Close(0);
-                        }
+                        // Close the SslStream first for proper SSL/TLS shutdown
+                        _stream.Close();
                     }
+
+                    // Close the NetworkStream with appropriate timeout
+                    if ((closeState & CloseExState.Abort) == 0)
+                        _originalStream.Close(DefaultCloseTimeout);
                     else
-                    {
-                        // No SslStream wrapping, close the NetworkStream directly with timeout
-                        if ((closeState & CloseExState.Abort) == 0)
-                            _originalStream.Close(DefaultCloseTimeout);
-                        else
-                            _originalStream.Close(0);
-                    }
+                        _originalStream.Close(0);
                 }
                 finally
                 {
