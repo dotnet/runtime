@@ -7,7 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class EncryptDecrypt_Span : EncryptDecrypt
+    public abstract class EncryptDecrypt_Span<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             WithOutputArray(dest => rsa.Encrypt(data, dest, padding));
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class EncryptDecrypt_AllocatingSpan : EncryptDecrypt
+    public abstract class EncryptDecrypt_AllocatingSpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             rsa.Encrypt(new ReadOnlySpan<byte>(data), padding);
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class EncryptDecrypt_TrySpan : EncryptDecrypt
+    public abstract class EncryptDecrypt_TrySpan<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             TryWithOutputArray(dest => rsa.TryEncrypt(data, dest, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Decrypt_VariousSizeSpans_Success()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] cipherBytes = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Encrypt_VariousSizeSpans_Success()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] cipherBytes = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void EncryptDefaultSpan()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 byte[] dest = new byte[rsa.KeySize / 8];
 
@@ -166,8 +166,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private static void Decrypt_WrongKey(RSAEncryptionPadding padding)
         {
-            using (RSA rsa1 = RSAFactory.Create())
-            using (RSA rsa2 = RSAFactory.Create())
+            using (RSA rsa1 = s_provider.Create())
+            using (RSA rsa2 = s_provider.Create())
             {
                 byte[] input = TestData.HelloBytes;
                 byte[] encrypted = rsa1.Encrypt(input, padding);

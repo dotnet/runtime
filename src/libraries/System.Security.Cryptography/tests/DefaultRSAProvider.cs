@@ -39,8 +39,21 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha3 { get; } = SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 
-    public partial class RSAFactory
-    {
-        private static readonly IRSAProvider s_provider = new DefaultRSAProvider();
-    }
+    // Concrete test classes for DefaultRSAProvider
+    public class DefaultRSAImportExport : ImportExport<DefaultRSAProvider> { }
+    public class DefaultRSAEncryptDecrypt_Array : EncryptDecrypt_Array<DefaultRSAProvider> { }
+    public class DefaultRSAEncryptDecrypt_Span : EncryptDecrypt_Span<DefaultRSAProvider> { }
+    public class DefaultRSAEncryptDecrypt_AllocatingSpan : EncryptDecrypt_AllocatingSpan<DefaultRSAProvider> { }
+    public class DefaultRSAEncryptDecrypt_TrySpan : EncryptDecrypt_TrySpan<DefaultRSAProvider> { }
+    public class DefaultRSASignVerify_Array : SignVerify_Array<DefaultRSAProvider> { }
+    public class DefaultRSASignVerify_AllocatingSpan : SignVerify_AllocatingSpan<DefaultRSAProvider> { }
+    public class DefaultRSASignVerify_Span : SignVerify_Span<DefaultRSAProvider> { }
+    public class DefaultRSASignVerify_TrySpan : SignVerify_TrySpan<DefaultRSAProvider> { }
+    public class DefaultRSAKeyGeneration : KeyGeneration<DefaultRSAProvider> { }
+    public class DefaultRSAXml : RSAXml<DefaultRSAProvider> { }
+    public class DefaultRSASignatureFormatterTests : RSASignatureFormatterTests<DefaultRSAProvider> { }
+    public class DefaultRSAKeyExchangeFormatterTests : RSAKeyExchangeFormatterTests<DefaultRSAProvider> { }
+    public class DefaultRSAFactoryTests : RSAFactoryTests<DefaultRSAProvider> { }
+    public class DefaultRSAKeyFileTests : RSAKeyFileTests<DefaultRSAProvider> { }
+    public class DefaultRSAKeyPemTests : RSAKeyPemTests<DefaultRSAProvider> { }
 }
