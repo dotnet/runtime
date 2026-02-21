@@ -1091,11 +1091,20 @@ namespace System.Text.RegularExpressions
                 case 'B':
                 case 'A':
                 case 'G':
-                case 'Z':
                 case 'z':
                     _pos++;
                     return scanOnly ? null :
                         new RegexNode(TypeFromCode(ch), _options);
+
+                case 'Z':
+                    _pos++;
+                    if (scanOnly)
+                    {
+                        return null;
+                    }
+                    return (_options & RegexOptions.AnyNewLine) != 0 ?
+                        AnyNewLineEndZNode() :
+                        new RegexNode(RegexNodeKind.EndZ, _options);
 
                 case 'w':
                     _pos++;

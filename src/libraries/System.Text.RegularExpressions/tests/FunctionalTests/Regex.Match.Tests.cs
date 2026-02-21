@@ -3280,5 +3280,46 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"line$", "line", RegexOptions.AnyNewLine, true, "line" };
             }
         }
+        [Theory]
+        [MemberData(nameof(AnyNewLine_EndZ_TestData))]
+        public async Task AnyNewLine_EndZ(RegexEngine engine, string pattern, string input, RegexOptions options, bool expectedSuccess, string expectedValue)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            Match m = r.Match(input);
+            Assert.Equal(expectedSuccess, m.Success);
+            if (expectedSuccess)
+            {
+                Assert.Equal(expectedValue, m.Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_EndZ_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // \Z with AnyNewLine matches before \n at end
+                yield return new object[] { engine, @".\Z", "abc\n", RegexOptions.AnyNewLine, true, "c" };
+
+                // \Z with AnyNewLine matches before \r at end
+                yield return new object[] { engine, @".\Z", "abc\r", RegexOptions.AnyNewLine, true, "c" };
+
+                // \Z with AnyNewLine matches before \r\n at end
+                yield return new object[] { engine, @".\Z", "abc\r\n", RegexOptions.AnyNewLine, true, "c" };
+
+                // \Z with AnyNewLine matches at end of string
+                yield return new object[] { engine, @".\Z", "abc", RegexOptions.AnyNewLine, true, "c" };
+
+                // \Z is NOT affected by Multiline — still only matches at end
+                yield return new object[] { engine, @".\Z", "abc\r", RegexOptions.AnyNewLine | RegexOptions.Multiline, true, "c" };
+                yield return new object[] { engine, @".\Z", "abc\r\n", RegexOptions.AnyNewLine | RegexOptions.Multiline, true, "c" };
+
+                // \Z does NOT match between \r and \n
+                yield return new object[] { engine, @"\r\Z", "abc\r\n", RegexOptions.AnyNewLine, false, "" };
+            }
+        }
+
     }
 }
