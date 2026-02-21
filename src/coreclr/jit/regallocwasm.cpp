@@ -341,7 +341,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-    if (lclNode->TypeIs(TYP_STRUCT))
+    if (storeType == TYP_STRUCT)
     {
         store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
     }
