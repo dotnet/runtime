@@ -70,5 +70,24 @@ namespace System.Text.Json.Tests
             string result = JsonNamingPolicy.KebabCaseUpper.ConvertName(input);
             Assert.Equal(expected, result);
         }
+
+        [Theory]
+        [InlineData("MyProperty", "MyProperty")]
+        [InlineData("myProperty", "MyProperty")]
+        [InlineData("ABC", "Abc")]
+        [InlineData("HTMLParser", "HtmlParser")]
+        [InlineData("IO", "Io")]
+        [InlineData("io", "Io")]
+        [InlineData("AIProvider", "AiProvider")]
+        [InlineData("aiProvider", "AiProvider")]
+        [InlineData("AI_Provider", "Ai_Provider")]
+        [InlineData("camelCase", "CamelCase")]
+        [InlineData("A", "A")]
+        [InlineData("", "")]
+        public static void PascalCase_ConvertName(string input, string expected)
+        {
+            string result = JsonNamingPolicy.PascalCase.ConvertName(input);
+            Assert.Equal(expected, result);
+        }
     }
 }
