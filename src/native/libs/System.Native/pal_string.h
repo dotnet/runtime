@@ -14,7 +14,7 @@
  * success; if the return value is equal to the size then the result may have been truncated.
  * On failure, returns a negative value.
  */
-PALEXPORT int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* format, ...);
+PALEXPORT int32_t SystemNative_SNPrintF(char* string, int32_t size, const char* format, ...) ATTR_FORMAT_PRINTF(3, 4);
 
 /**
  * Two specialized overloads for use from Interop.Sys, because these two signatures are not equivalent

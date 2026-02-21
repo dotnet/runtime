@@ -6817,7 +6817,7 @@ void emitter::emitDispCond(int cond)
     const static char* armCond[16] = {"eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc",
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
     assert(0 <= cond && (unsigned)cond < ArrLen(armCond));
-    printf(armCond[cond]);
+    printf("%s", armCond[cond]);
 }
 
 /*****************************************************************************

@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _COMPILER_H_
 /*****************************************************************************/
 
+#include <minipal/types.h>
 #include "jit.h"
 #include "opcode.h"
 #include "varset.h"
@@ -10833,7 +10834,7 @@ public:
 
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
-    const char* printfAlloc(const char* format, ...);
+    const char* printfAlloc(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 
     void convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src, size_t utf16SrcLen, char* utf8Dst, size_t utf8DstLen);
 
@@ -11636,7 +11637,7 @@ public:
     // more log information
 
     // levels are currently unused: #define JITDUMP(level,...)                     ();
-    void JitLogEE(unsigned level, const char* fmt, ...);
+    void JitLogEE(unsigned level, const char* fmt, ...) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 
     bool compDebugBreak;
 
