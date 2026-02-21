@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
         private readonly static CamelCaseNamingStrategy s_newtonsoftCamelCaseNamingStrategy = new();
 
         [Theory]
-        // These test cases were copied from Json.NET.
+        // CamelCase: (name, expectedResult). These test cases were copied from Json.NET.
         [InlineData("URLValue", "urlValue")]
         [InlineData("URL", "url")]
         [InlineData("ID", "id")]
@@ -74,6 +74,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        // SnakeCaseLower: (name, expectedResult)
         [InlineData("XMLHttpRequest", "xml_http_request")]
         [InlineData("SHA512HashAlgorithm", "sha512_hash_algorithm")]
         [InlineData("i18n", "i18n")]
@@ -145,6 +146,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        // SnakeCaseUpper: (name, expectedResult)
         [InlineData("XMLHttpRequest", "XML_HTTP_REQUEST")]
         [InlineData("SHA512HashAlgorithm", "SHA512_HASH_ALGORITHM")]
         [InlineData("i18n", "I18N")]
@@ -216,6 +218,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        // KebabCaseLower: (name, expectedResult)
         [InlineData("XMLHttpRequest", "xml-http-request")]
         [InlineData("SHA512HashAlgorithm", "sha512-hash-algorithm")]
         [InlineData("i18n", "i18n")]
@@ -287,6 +290,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        // KebabCaseUpper: (name, expectedResult)
         [InlineData("XMLHttpRequest", "XML-HTTP-REQUEST")]
         [InlineData("SHA512HashAlgorithm", "SHA512-HASH-ALGORITHM")]
         [InlineData("i18n", "I18N")]
@@ -358,6 +362,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        // PascalCase: (name, expectedResult)
         [InlineData("XMLHttpRequest", "XmlHttpRequest")]
         [InlineData("SHA512HashAlgorithm", "Sha512HashAlgorithm")]
         [InlineData("i18n", "I18n")]
