@@ -8829,7 +8829,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
     const bool              needsCompileTimeLookup = impDevirtualizedCallHasConstInstParam(dvInfo);
     const bool              needsInstParam         = needsRuntimeLookup || needsCompileTimeLookup;
-    const bool              isArrayInterfaceDevirt = ((objClassAttribs & CORINFO_FLG_ARRAY) != 0);
+    const bool              isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
 
     if (derivedMethod != nullptr)
     {
