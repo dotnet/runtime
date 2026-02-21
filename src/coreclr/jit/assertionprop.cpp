@@ -2097,7 +2097,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 {
                     ValueNum lenVN = vnStore->VNIgnoreIntToLongCast(optConservativeNormalVN(lenArg));
                     if ((lenVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lenVN) &&
-                        vnStore->TypeOfVN(lenVN) == TYP_INT)
+                        (vnStore->TypeOfVN(lenVN) == TYP_INT))
                     {
                         ValueNum zeroVN = vnStore->VNZeroForType(TYP_INT);
                         assertionInfo = optAddAssertion(AssertionDsc::CreateConstantBound(this, VNF_GE, lenVN, zeroVN));
@@ -2110,7 +2110,8 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 // arr[idx] = value; - creates idx is within bounds of arr assertion
                 //
-                if (call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
+                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
                 {
                     assert(call->gtArgs.CountUserArgs() == 3);
                     GenTree* arrRef = call->gtArgs.GetUserArgByIndex(0)->GetNode();
