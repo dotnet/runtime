@@ -1,0 +1,153 @@
+<Project>
+  <!--
+    DumpTests.targets — Builds debuggee apps, runs them to produce crash dumps,
+    and makes dump paths available to the test project.
+
+    Dump output: $(DumpOutputDir)/{RuntimeVersion}/{DebuggeeName}/{DebuggeeName}.dmp
+
+    Each Debuggee × RuntimeVersion combination produces one dump.
+
+    Properties:
+      DumpOutputDir          — Where dumps are written (default: artifacts/dumps/cdac/)
+      TestHostDir            — Path to the local-build testhost runtime (auto-detected)
+      DebuggeeConfiguration  — Build configuration for debuggees (default: Release)
+      CIDumpVersionsOnly     — When 'true', only generate dumps for "local" version (CI mode)
+      SkipDumpGeneration     — When 'true', skip dump generation entirely (CI test-only phase)
+
+    RuntimeVersion values:
+      "local"  — framework-dependent build, run with the repo's testhost
+      "net10.0" — self-contained publish against .NET 10, run directly
+  -->
+
+  <PropertyGroup>
+    <DumpOutputDir Condition="'$(DumpOutputDir)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'dumps', 'cdac'))</DumpOutputDir>
+    <DebuggeeConfiguration Condition="'$(DebuggeeConfiguration)' == ''">Release</DebuggeeConfiguration>
+    <DebuggeesDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'Debuggees'))</DebuggeesDir>
+    <!-- Platform-aware dotnet host and exe suffix -->
+    <_DotNetExe>$([MSBuild]::NormalizePath('$(RepoRoot)', '.dotnet', 'dotnet$(ExeSuffix)'))</_DotNetExe>
+  </PropertyGroup>
+
+  <!-- Auto-detect testhost from repo artifacts (used for "local" runtime version). -->
+  <PropertyGroup Condition="'$(TestHostDir)' == ''">
+    <_TestHostConfig Condition="'$(TestHostConfiguration)' == ''">Release</_TestHostConfig>
+    <_TestHostConfig Condition="'$(TestHostConfiguration)' != ''">$(TestHostConfiguration)</_TestHostConfig>
+    <_HostArch>$(TargetArchitecture)</_HostArch>
+    <_HostArch Condition="'$(_HostArch)' == ''">x64</_HostArch>
+    <TestHostDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(HostOS)-$(_TestHostConfig)-$(_HostArch)'))</TestHostDir>
+  </PropertyGroup>
+
+  <!-- Debuggees to build and crash -->
+  <ItemGroup>
+    <Debuggee Include="BasicThreads" />
+    <Debuggee Include="TypeHierarchy" />
+    <Debuggee Include="ExceptionState" />
+    <Debuggee Include="MultiModule" />
+    <Debuggee Include="GCRoots" />
+    <Debuggee Include="ServerGC" />
+    <Debuggee Include="StackWalk" />
+  </ItemGroup>
+
+  <!-- Runtime versions to create dumps for.
+       "local" uses the repo's testhost; others publish self-contained.
+       Set CIDumpVersionsOnly=true to only generate "local" dumps (for CI). -->
+  <ItemGroup>
+    <DumpRuntimeVersion Include="local" />
+    <DumpRuntimeVersion Include="net10.0" Condition="'$(CIDumpVersionsOnly)' != 'true'" />
+  </ItemGroup>
+
+  <Target Name="GenerateAllDumps" BeforeTargets="Build" Condition="'$(SkipDumpGeneration)' != 'true'">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateDumpsForDebuggee"
+             Properties="DebuggeeName=%(Debuggee.Identity)" />
+  </Target>
+
+  <!-- Build all debuggees without running them (for Helix payload preparation). -->
+  <Target Name="BuildDebuggeesOnly" BeforeTargets="PrepareHelixPayload" Condition="'$(PrepareHelixPayload)' == 'true' AND '$(SkipDumpGeneration)' == 'true'">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_BuildSingleDebuggee"
+             Properties="DebuggeeName=%(Debuggee.Identity)" />
+  </Target>
+
+  <Target Name="_BuildSingleDebuggee">
+    <PropertyGroup>
+      <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
+          WorkingDirectory="$(_DebuggeeDir)" />
+  </Target>
+
+  <Target Name="_GenerateDumpsForDebuggee">
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateSingleDump"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+  </Target>
+
+  <Target Name="_GenerateSingleDump">
+    <PropertyGroup>
+      <_DebuggeeDir>$([MSBuild]::NormalizeDirectory('$(DebuggeesDir)', '$(DebuggeeName)'))</_DebuggeeDir>
+      <_DumpDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)', '$(DebuggeeName)'))</_DumpDir>
+      <_DumpFile>$([MSBuild]::NormalizePath('$(_DumpDir)', '$(DebuggeeName).dmp'))</_DumpFile>
+    </PropertyGroup>
+
+    <!-- Skip if dump already exists -->
+    <Message Text="Dump already exists: $(_DumpFile). Skipping." Condition="Exists('$(_DumpFile)')" Importance="high" />
+
+    <!-- Determine build/run strategy based on runtime version -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GenerateLocalDump"
+             Properties="DebuggeeName=$(DebuggeeName);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' == 'local'" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_GeneratePublishedDump"
+             Properties="DebuggeeName=$(DebuggeeName);DumpRuntimeVersion=$(DumpRuntimeVersion);_DebuggeeDir=$(_DebuggeeDir);_DumpDir=$(_DumpDir);_DumpFile=$(_DumpFile)"
+             Condition="!Exists('$(_DumpFile)') AND '$(DumpRuntimeVersion)' != 'local'" />
+
+    <Message Text="Dump created: $(_DumpFile)" Importance="high" Condition="Exists('$(_DumpFile)')" />
+  </Target>
+
+  <!-- Local build: framework-dependent, run with testhost -->
+  <Target Name="_GenerateLocalDump">
+    <PropertyGroup>
+      <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
+      <_TestHostDotNet>$([MSBuild]::NormalizePath('$(TestHostDir)', 'dotnet$(ExeSuffix)'))</_TestHostDotNet>
+      <_DebuggeeDll>$([MSBuild]::NormalizePath('$(_DebuggeeBinDir)', '$(DebuggeeName).dll'))</_DebuggeeDll>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent)"
+          WorkingDirectory="$(_DebuggeeDir)" />
+
+    <MakeDir Directories="$(_DumpDir)" />
+
+    <Exec Command="&quot;$(_TestHostDotNet)&quot; exec &quot;$(_DebuggeeDll)&quot;"
+          WorkingDirectory="$(_DumpDir)"
+          IgnoreExitCode="true"
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+
+    <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
+  </Target>
+
+  <!-- Released runtime: self-contained publish, run the exe directly -->
+  <Target Name="_GeneratePublishedDump">
+    <PropertyGroup>
+      <_PublishDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(DumpRuntimeVersion)-publish'))</_PublishDir>
+      <_DebuggeeCsproj>$([MSBuild]::NormalizePath('$(_DebuggeeDir)', '$(DebuggeeName).csproj'))</_DebuggeeCsproj>
+      <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained -o &quot;$(_PublishDir)&quot;"
+          WorkingDirectory="$(_DebuggeeDir)" />
+
+    <MakeDir Directories="$(_DumpDir)" />
+
+    <Exec Command="&quot;$(_PublishedExe)&quot;"
+          WorkingDirectory="$(_DumpDir)"
+          IgnoreExitCode="true"
+          EnvironmentVariables="DOTNET_DbgEnableMiniDump=1;DOTNET_DbgMiniDumpType=2;DOTNET_DbgMiniDumpName=$(_DumpFile)" />
+
+    <Error Text="Dump file could not be created: $(_DumpFile)" Condition="!Exists('$(_DumpFile)')" />
+  </Target>
+
+</Project>
