@@ -1187,6 +1187,21 @@ void DacDbiInterfaceImpl::GetNativeCodeInfo(VMPTR_DomainAssembly         vmDomai
     Module *     pModule     = pDomainAssembly->GetAssembly()->GetModule();
 
     MethodDesc* pMethodDesc = FindLoadedMethodRefOrDef(pModule, functionToken);
+    if (pMethodDesc->IsAsyncThunkMethod())
+    {
+        MethodTable * pMT = pMethodDesc->GetMethodTable();
+        MethodTable::IntroducedMethodIterator it(pMT);
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc * pMD = it.GetMethodDesc();
+            CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
+            if (!pMD->IsDiagnosticsHidden())
+            {
+                pMethodDesc = pMD;
+                break;
+            }
+        }
+    }
     pCodeInfo->vmNativeCodeMethodDescToken.SetHostPtr(pMethodDesc);
 
     // if we are loading a module and trying to bind a previously set breakpoint, we may not have
