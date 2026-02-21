@@ -1,14 +1,16 @@
 trigger: none
-pr:
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - eng/pipelines/**
-    - src/coreclr/jit/**
-    - src/tests/Common/GenerateHWIntrinsicTests/**
-    - src/tests/JIT/HardwareIntrinsics/**
+# TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
+pr: none
+# pr:
+#   branches:
+#     include:
+#     - main
+#   paths:
+#     include:
+#     - eng/pipelines/**
+#     - src/coreclr/jit/**
+#     - src/tests/Common/GenerateHWIntrinsicTests/**
+#     - src/tests/JIT/HardwareIntrinsics/**
 
 variables:
   - template: /eng/pipelines/common/variables.yml
