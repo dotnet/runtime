@@ -789,7 +789,7 @@ void emitter::emitDispIns(
         case IF_CALL_INDIRECT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu 0", (uint64_t)imm);
+            printf(" %" PRIu64 " 0", (uint64_t)imm);
             dispHandleIfAny();
         }
         break;
