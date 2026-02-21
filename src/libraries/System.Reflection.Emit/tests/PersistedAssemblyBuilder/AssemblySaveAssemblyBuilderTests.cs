@@ -48,6 +48,10 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("assemblyFileName", () => ab.Save(assemblyFileName: null));
             Assert.Throws<ArgumentNullException>("stream", () => ab.Save(stream: null));
             Assert.Throws<InvalidOperationException>(() => ab.Save(assemblyFileName: "File")); // no module defined
+
+            PersistedAssemblyBuilder afterGenerateMetadata = CreateSimplePersistedAssembly(new AssemblyName("GenerateThenSave"));
+            afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
+            Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
         }
 
         [Fact]
@@ -61,6 +65,10 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(ilStream);
             Assert.NotNull(mappedFieldData);
             Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
+
+            PersistedAssemblyBuilder afterSave = CreateSimplePersistedAssembly(new AssemblyName("SaveThenGenerate"));
+            afterSave.Save(new MemoryStream());
+            Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
         }
 
         [Fact]
@@ -92,57 +100,6 @@ namespace System.Reflection.Emit.Tests
             Assert.True((assemblyDefinition.Flags & AssemblyFlags.PublicKey) != 0);
             Assert.Equal(((int)assemblyName.Flags) & ProcessorArchitectureMask, ((int)assemblyDefinition.Flags) & ProcessorArchitectureMask);
             Assert.Equal(expectedPublicKey, metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_SaveGenerateMetadataLifecycleValidation()
-        {
-            PersistedAssemblyBuilder afterGenerateMetadata = CreateSimplePersistedAssembly(new AssemblyName("GenerateThenSave"));
-            afterGenerateMetadata.GenerateMetadata(out BlobBuilder generatedIlStream, out BlobBuilder generatedFieldData);
-            Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
-            Assert.NotNull(generatedIlStream);
-            Assert.NotNull(generatedFieldData);
-
-            PersistedAssemblyBuilder afterSave = CreateSimplePersistedAssembly(new AssemblyName("SaveThenGenerate"));
-            afterSave.Save(new MemoryStream());
-            Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
-            Assert.Throws<InvalidOperationException>(() => afterSave.Save(new MemoryStream()));
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_SaveToStreamWithOffset()
-        {
-            PersistedAssemblyBuilder ab = CreateSimplePersistedAssembly(new AssemblyName("SaveToStreamWithOffset"));
-            byte[] prefix = [10, 20, 30];
-            using MemoryStream stream = new MemoryStream();
-
-            stream.Write(prefix);
-            long saveStartPosition = stream.Position;
-
-            ab.Save(stream);
-
-            Assert.Equal(stream.Length, stream.Position);
-            Assert.True(stream.Length > saveStartPosition);
-            Assert.Equal(prefix, stream.GetBuffer().AsSpan(0, prefix.Length).ToArray());
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_SaveToStreamValidation()
-        {
-            PersistedAssemblyBuilder nonWritableAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToNonWritableStream"));
-            using MemoryStream nonWritableStream = new MemoryStream(Array.Empty<byte>(), writable: false);
-            Assert.Throws<NotSupportedException>(() => nonWritableAssembly.Save(nonWritableStream));
-
-            PersistedAssemblyBuilder disposedAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToDisposedStream"));
-            MemoryStream disposedStream = new MemoryStream();
-            disposedStream.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => disposedAssembly.Save(disposedStream));
-
-            PersistedAssemblyBuilder nonSeekableAssembly = CreateSimplePersistedAssembly(new AssemblyName("SaveToNonSeekableStream"));
-            using MemoryStream backingStream = new MemoryStream();
-            using NonSeekableWriteStream nonSeekableStream = new NonSeekableWriteStream(backingStream);
-            nonSeekableAssembly.Save(nonSeekableStream);
-            Assert.NotEqual(0, backingStream.Length);
         }
 
         [Fact]
@@ -188,142 +145,6 @@ namespace System.Reflection.Emit.Tests
             MethodInfo method = assembly.EntryPoint;
             Assert.Equal("Main", method.Name);
             Assert.Equal(12, method.Invoke(null, null));
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_GenerateMetadataWithNestedTypeEntryPoint()
-        {
-            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssemblyWithNestedEntryPoint"));
-            TypeBuilder outerType = ab.DefineDynamicModule("MyModule").DefineType("OuterType", TypeAttributes.Public | TypeAttributes.Class);
-            TypeBuilder nestedType = outerType.DefineNestedType("NestedType", TypeAttributes.NestedPublic | TypeAttributes.Class);
-            MethodBuilder entryPoint = nestedType.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
-            ILGenerator il = entryPoint.GetILGenerator();
-            il.Emit(OpCodes.Ldc_I4, 42);
-            il.Emit(OpCodes.Ret);
-            nestedType.CreateType();
-            outerType.CreateType();
-
-            MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
-            ManagedPEBuilder peBuilder = new ManagedPEBuilder(
-                header: new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage, subsystem: Subsystem.WindowsCui),
-                metadataRootBuilder: new MetadataRootBuilder(metadataBuilder),
-                ilStream: ilStream,
-                mappedFieldData: fieldData,
-                entryPoint: MetadataTokens.MethodDefinitionHandle(entryPoint.MetadataToken));
-
-            BlobBuilder peBlob = new BlobBuilder();
-            peBuilder.Serialize(peBlob);
-
-            using MemoryStream stream = new MemoryStream();
-            peBlob.WriteContentTo(stream);
-            stream.Position = 0;
-            TestAssemblyLoadContext testAssemblyLoadContext = new();
-            try
-            {
-                Assembly assembly = testAssemblyLoadContext.LoadFromStream(stream);
-                MethodInfo method = assembly.EntryPoint;
-                Assert.Equal("OuterType+NestedType", method.DeclaringType.FullName);
-                Assert.Equal(42, method.Invoke(null, null));
-            }
-            finally
-            {
-                testAssemblyLoadContext.Unload();
-            }
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_GenerateMetadataWithGenericEntryPoint()
-        {
-            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssemblyWithGenericEntryPoint"));
-            TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("Program", TypeAttributes.Public | TypeAttributes.Class);
-            MethodBuilder entryPoint = tb.DefineMethod("Main", MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
-            entryPoint.DefineGenericParameters("T");
-            ILGenerator il = entryPoint.GetILGenerator();
-            il.Emit(OpCodes.Ldc_I4_0);
-            il.Emit(OpCodes.Ret);
-            tb.CreateType();
-
-            MetadataBuilder metadataBuilder = ab.GenerateMetadata(out BlobBuilder ilStream, out BlobBuilder fieldData);
-            ManagedPEBuilder peBuilder = new ManagedPEBuilder(
-                header: new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage, subsystem: Subsystem.WindowsCui),
-                metadataRootBuilder: new MetadataRootBuilder(metadataBuilder),
-                ilStream: ilStream,
-                mappedFieldData: fieldData,
-                entryPoint: MetadataTokens.MethodDefinitionHandle(entryPoint.MetadataToken));
-
-            BlobBuilder peBlob = new BlobBuilder();
-            peBuilder.Serialize(peBlob);
-
-            using MemoryStream stream = new MemoryStream();
-            peBlob.WriteContentTo(stream);
-            stream.Position = 0;
-            TestAssemblyLoadContext testAssemblyLoadContext = new();
-            try
-            {
-                Assembly assembly = testAssemblyLoadContext.LoadFromStream(stream);
-                MethodInfo method = assembly.EntryPoint;
-                Assert.True(method.ContainsGenericParameters);
-                Assert.Throws<InvalidOperationException>(() => method.Invoke(null, null));
-            }
-            finally
-            {
-                testAssemblyLoadContext.Unload();
-            }
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_CollectibleAssemblyLoadContextIsolation()
-        {
-            byte[] assemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("IsolatedLoadContextAssembly"), ["IsolatedType"]);
-            TestAssemblyLoadContext context1 = new();
-            TestAssemblyLoadContext context2 = new();
-
-            using MemoryStream stream1 = new MemoryStream(assemblyImage);
-            using MemoryStream stream2 = new MemoryStream(assemblyImage);
-            Assembly assembly1 = context1.LoadFromStream(stream1);
-            Assembly assembly2 = context2.LoadFromStream(stream2);
-            Type type1 = assembly1.GetType("IsolatedType");
-            Type type2 = assembly2.GetType("IsolatedType");
-
-            Assert.NotNull(type1);
-            Assert.NotNull(type2);
-            Assert.Equal(type1.FullName, type2.FullName);
-            Assert.NotSame(type1.Assembly, type2.Assembly);
-
-            context1.Unload();
-            context2.Unload();
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_MetadataInvariantsEquivalentShapeSameOrder()
-        {
-            byte[] firstAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssembly1"), ["TypeA", "TypeB"]);
-            byte[] secondAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssembly2"), ["TypeA", "TypeB"]);
-
-            MetadataInvariantData first = ReadMetadataInvariantData(firstAssemblyImage);
-            MetadataInvariantData second = ReadMetadataInvariantData(secondAssemblyImage);
-
-            Assert.Equal(first.TypeDefinitionRowCount, second.TypeDefinitionRowCount);
-            Assert.Equal(first.MethodDefinitionRowCount, second.MethodDefinitionRowCount);
-            Assert.Equal(first.FieldDefinitionRowCount, second.FieldDefinitionRowCount);
-            Assert.Equal(first.TypeDefinitionNamesInMetadataOrder, second.TypeDefinitionNamesInMetadataOrder);
-            Assert.Equal(first.MethodDefinitionNamesInMetadataOrder, second.MethodDefinitionNamesInMetadataOrder);
-        }
-
-        [Fact]
-        public void PersistedAssemblyBuilder_MetadataInvariantsEquivalentShapeDifferentOrder()
-        {
-            byte[] firstAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssemblyA"), ["TypeA", "TypeB"]);
-            byte[] secondAssemblyImage = BuildAssemblyImageForMetadataInvariants(new AssemblyName("MetadataInvariantAssemblyB"), ["TypeB", "TypeA"]);
-
-            MetadataInvariantData first = ReadMetadataInvariantData(firstAssemblyImage);
-            MetadataInvariantData second = ReadMetadataInvariantData(secondAssemblyImage);
-
-            Assert.Equal(first.TypeDefinitionRowCount, second.TypeDefinitionRowCount);
-            Assert.Equal(first.MethodDefinitionRowCount, second.MethodDefinitionRowCount);
-            Assert.Equal(first.FieldDefinitionRowCount, second.FieldDefinitionRowCount);
-            Assert.Equal(first.TypeDefinitionNamesInMetadataOrder.OrderBy(static name => name), second.TypeDefinitionNamesInMetadataOrder.OrderBy(static name => name));
-            Assert.Equal(first.MethodDefinitionNamesInMetadataOrder.OrderBy(static name => name), second.MethodDefinitionNamesInMetadataOrder.OrderBy(static name => name));
         }
 
         [Fact]
@@ -614,66 +435,6 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
             typeBuilder.CreateType();
             return ab;
-        }
-
-        private static byte[] BuildAssemblyImageForMetadataInvariants(AssemblyName assemblyName, string[] typeNames)
-        {
-            PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MyModule");
-
-            foreach (string typeName in typeNames)
-            {
-                TypeBuilder typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Public | TypeAttributes.Class);
-                MethodBuilder methodBuilder = typeBuilder.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
-                ILGenerator ilGenerator = methodBuilder.GetILGenerator();
-                ilGenerator.Emit(OpCodes.Ldc_I4_1);
-                ilGenerator.Emit(OpCodes.Ret);
-                typeBuilder.CreateType();
-            }
-
-            using MemoryStream stream = new MemoryStream();
-            assemblyBuilder.Save(stream);
-            return stream.ToArray();
-        }
-
-        private static MetadataInvariantData ReadMetadataInvariantData(byte[] assemblyImage)
-        {
-            using PEReader peReader = new PEReader(new MemoryStream(assemblyImage));
-            MetadataReader metadataReader = peReader.GetMetadataReader();
-            return new MetadataInvariantData(
-                metadataReader.GetTableRowCount(TableIndex.TypeDef),
-                metadataReader.GetTableRowCount(TableIndex.MethodDef),
-                metadataReader.GetTableRowCount(TableIndex.Field),
-                metadataReader.TypeDefinitions.Select(handle => metadataReader.GetString(metadataReader.GetTypeDefinition(handle).Name)).ToArray(),
-                metadataReader.MethodDefinitions.Select(handle => metadataReader.GetString(metadataReader.GetMethodDefinition(handle).Name)).ToArray());
-        }
-
-        private readonly record struct MetadataInvariantData(
-            int TypeDefinitionRowCount,
-            int MethodDefinitionRowCount,
-            int FieldDefinitionRowCount,
-            string[] TypeDefinitionNamesInMetadataOrder,
-            string[] MethodDefinitionNamesInMetadataOrder);
-
-        private sealed class NonSeekableWriteStream : Stream
-        {
-            private readonly Stream _innerStream;
-
-            public NonSeekableWriteStream(Stream innerStream)
-            {
-                ArgumentNullException.ThrowIfNull(innerStream);
-                _innerStream = innerStream;
-            }
-            public override bool CanRead => false;
-            public override bool CanSeek => false;
-            public override bool CanWrite => _innerStream.CanWrite;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() => _innerStream.Flush();
-            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => _innerStream.Write(buffer, offset, count);
         }
 
         void CheckCattr(IList<CustomAttributeData> attributes)

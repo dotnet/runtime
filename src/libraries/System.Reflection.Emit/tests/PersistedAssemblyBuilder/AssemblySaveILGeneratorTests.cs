@@ -3102,7 +3102,7 @@ public class MyType
                 Type listElementType = createListMethod.ReturnType.GetGenericArguments()[0];
 
                 Assert.True(listElementType.IsGenericType);
-                Assert.Equal("HostType", listElementType.Name);
+                Assert.Equal("HostType", listElementType.GetGenericTypeDefinition().Name);
                 Assert.Equal(typeof(string).FullName, listElementType.GetGenericArguments()[0].FullName);
                 Assert.Equal("ProducerAssembly", listElementType.Assembly.GetName().Name);
                 tlc.Unload();
