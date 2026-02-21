@@ -3404,5 +3404,42 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(AnyNewLine_Dot_TestData))]
+        public async Task AnyNewLine_Dot(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection matches = r.Matches(input);
+            Assert.Equal(expectedValues.Length, matches.Count);
+            for (int i = 0; i < expectedValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], matches[i].Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_Dot_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // . does not match \r with AnyNewLine
+                yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\ndef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\r\ndef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+
+                // . with Singleline|AnyNewLine still matches everything (Singleline takes precedence)
+                yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.Singleline | RegexOptions.AnyNewLine, new[] { "abc\rdef" } };
+
+                // Without AnyNewLine, . matches \r (baseline)
+                yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.None, new[] { "abc\rdef" } };
+
+                // .+$ with Multiline|AnyNewLine now works correctly
+                yield return new object[] { engine, @".+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @".+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+            }
+        }
+
     }
 }

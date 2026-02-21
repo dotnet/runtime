@@ -415,9 +415,18 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '.':
-                        _unit = (_options & RegexOptions.Singleline) != 0 ?
-                            new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
-                            new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        if ((_options & RegexOptions.Singleline) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass);
+                        }
+                        else if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotNewLineOrCarriageReturnClass);
+                        }
+                        else
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        }
                         break;
 
                     case '{':
