@@ -3912,6 +3912,20 @@ namespace System.Text.RegularExpressions.Tests
                 // --- Explicit newline chars in character class NOT affected by AnyNewLine ---
                 yield return new object[] { engine, @"[\r\n]+", "a\r\nb\rc\nd", A, new[] { "\r\n", "\r", "\n" } };
                 yield return new object[] { engine, @"[^\r\n]+", "a\r\nb\rc\nd", A, new[] { "a", "b", "c", "d" } };
+
+                // --- PCRE2-inspired: (.+)# greedy — .+ can't cross newlines (PCRE2 JIT test 472) ---
+                yield return new object[] { engine, @"(.+)#", "#\rMn\u0085#\n###", A, new[] { "###" } };
+
+                // --- PCRE2-inspired: (.)(.) consecutive non-newlines (PCRE2 JIT test 471) ---
+                yield return new object[] { engine, @"(.)(.)", "#\u0085#\r#\n#\r\n#\x84", A, new[] { "#\x84" } };
+
+                // --- PCRE2-inspired: (.). mixed newlines (PCRE2 JIT test 469) ---
+                yield return new object[] { engine, @"(.).", "a\rb\nc\r\n\u0085\u2029$de", A, new[] { "$d" } };
+
+                // --- Blank line detection: ^ +$ between different newline types ---
+                yield return new object[] { engine, @"^ +$", "line1\n   \nline2", MA, new[] { "   " } };
+                yield return new object[] { engine, @"^ +$", "line1\r\n   \r\nline2", MA, new[] { "   " } };
+                yield return new object[] { engine, @"^ +$", "line1\u0085   \u0085line2", MA, new[] { "   " } };
             }
         }
 
