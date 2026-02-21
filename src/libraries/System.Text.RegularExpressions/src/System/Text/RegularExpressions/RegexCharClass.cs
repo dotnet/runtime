@@ -102,7 +102,7 @@ namespace System.Text.RegularExpressions
         internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitRanges;
 
         internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
-        internal const string NotNewLineOrCarriageReturnClass = "\x01\x04\x00\x0A\x0B\x0D\x0E";
+        internal const string NotNewLineOrCarriageReturnClass = "\x01\x08\x00\x0A\x0B\x0D\x0E\x85\x86\u2028\u202A";
 
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";

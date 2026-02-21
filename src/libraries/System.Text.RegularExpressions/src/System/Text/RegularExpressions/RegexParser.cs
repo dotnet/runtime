@@ -21,6 +21,9 @@ namespace System.Text.RegularExpressions
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
 
+        /// <summary>Character class for [\u0085\u2028\u2029] (NEL, LS, PS).</summary>
+        private const string UnicodeNewLineClass = "\x00\x04\x00\x85\x86\u2028\u202A";
+
         private RegexNode? _stack;
         private RegexNode? _group;
         private RegexNode? _alternation;
@@ -1685,9 +1688,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Builds a tree equivalent to $ or \Z with AnyNewLine (non-Multiline).
-        /// Matches at end of string, or before \r\n, \r, or \n at end of string,
+        /// Matches at end of string, or before any newline at end of string,
         /// but not between \r and \n.
-        /// Equivalent to: (?=\r\n\z|\r?\z)|(?&lt;!\r)(?=\n\z)
+        /// Equivalent to: (?=\r\n\z|\r?\z)|(?&lt;!\r)(?=\n\z)|(?=[\u0085\u2028\u2029]\z)
         /// </summary>
         private RegexNode AnyNewLineEndZNode()
         {
@@ -1731,19 +1734,26 @@ namespace System.Text.RegularExpressions
             branch2.AddChild(negLookbehind);
             branch2.AddChild(lookahead2);
 
-            // (?=\r\n\z|\r?\z)|(?<!\r)(?=\n\z)
+            // (?=[\u0085\u2028\u2029]\z)
+            var unicodeNlEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            unicodeNlEnd.AddChild(new RegexNode(RegexNodeKind.Set, laNoCase, UnicodeNewLineClass));
+            unicodeNlEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+            var lookahead3 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead3.AddChild(unicodeNlEnd);
+
+            // (?=\r\n\z|\r?\z)|(?<!\r)(?=\n\z)|(?=[\u0085\u2028\u2029]\z)
             var result = new RegexNode(RegexNodeKind.Alternate, opts);
             result.AddChild(lookahead1);
             result.AddChild(branch2);
+            result.AddChild(lookahead3);
 
             return result;
         }
 
         /// <summary>
         /// Builds a tree equivalent to $ with AnyNewLine and Multiline.
-        /// Matches before any newline (\r\n, \r, \n) or at end of string,
-        /// but not between \r and \n.
-        /// Equivalent to: (?=\r\n|\r|\z)|(?&lt;!\r)(?=\n)
+        /// Matches before any newline or at end of string, but not between \r and \n.
+        /// Equivalent to: (?=\r\n|\r|[\u0085\u2028\u2029]|\z)|(?&lt;!\r)(?=\n)
         /// </summary>
         private RegexNode AnyNewLineEolNode()
         {
@@ -1758,10 +1768,11 @@ namespace System.Text.RegularExpressions
             crlf.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\r'));
             crlf.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
 
-            // (?=\r\n|\r|\z)
+            // (?=\r\n|\r|[\u0085\u2028\u2029]|\z)
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, laOpts);
             innerAlt.AddChild(crlf);
             innerAlt.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\r'));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, laNoCase, UnicodeNewLineClass));
             innerAlt.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
             var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
             lookahead1.AddChild(innerAlt);
@@ -1779,7 +1790,7 @@ namespace System.Text.RegularExpressions
             branch2.AddChild(negLookbehind);
             branch2.AddChild(lookahead2);
 
-            // (?=\r\n|\r|\z)|(?<!\r)(?=\n)
+            // (?=\r\n|\r|[\u0085\u2028\u2029]|\z)|(?<!\r)(?=\n)
             var result = new RegexNode(RegexNodeKind.Alternate, opts);
             result.AddChild(lookahead1);
             result.AddChild(branch2);
@@ -1789,8 +1800,8 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Builds a tree equivalent to ^ with AnyNewLine and Multiline.
-        /// Matches after any newline (\r\n, \n, \r not followed by \n) or at start of string.
-        /// Equivalent to: (?&lt;=\A|\r\n|\n)|(?&lt;=\r)(?!\n)
+        /// Matches after any newline or at start of string, but not between \r and \n.
+        /// Equivalent to: (?&lt;=\A|\r\n|\n|[\u0085\u2028\u2029])|(?&lt;=\r)(?!\n)
         /// </summary>
         private RegexNode AnyNewLineBolNode()
         {
@@ -1805,11 +1816,12 @@ namespace System.Text.RegularExpressions
             crlf.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\n'));
             crlf.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\r'));
 
-            // (?<=\A|\r\n|\n)
+            // (?<=\A|\r\n|\n|[\u0085\u2028\u2029])
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, lbOpts);
             innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lbOpts));
             innerAlt.AddChild(crlf);
             innerAlt.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\n'));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lbNoCase, UnicodeNewLineClass));
             var lookbehind1 = new RegexNode(RegexNodeKind.PositiveLookaround, lbOpts);
             lookbehind1.AddChild(innerAlt);
 
@@ -1826,7 +1838,7 @@ namespace System.Text.RegularExpressions
             branch2.AddChild(lookbehind2);
             branch2.AddChild(negLookahead);
 
-            // (?<=\A|\r\n|\n)|(?<=\r)(?!\n)
+            // (?<=\A|\r\n|\n|[\u0085\u2028\u2029])|(?<=\r)(?!\n)
             var result = new RegexNode(RegexNodeKind.Alternate, opts);
             result.AddChild(lookbehind1);
             result.AddChild(branch2);
