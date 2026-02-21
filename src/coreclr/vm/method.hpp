@@ -3027,6 +3027,13 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateShuffleThunk;
     }
+    bool IsAsyncResumptionStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        ILStubType type = GetILStubType();
+        return type == DynamicMethodDesc::StubAsyncResume;
+    }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
     // See RequiresMDContextArg() for the non-stub version.

@@ -1025,6 +1025,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     builder.Append("[ASYNC] ");
                 }
+                if ((flags & ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
+                {
+                    builder.Append("[RESUME] ");
+                }
                 builder.Append(method);
                 return builder.ToString();
             }
@@ -1364,6 +1368,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                         ReadyToRunFixupKind.ContinuationLayout => " (CONTINUATION_LAYOUT)",
                         _ => throw new UnreachableException()
                     });
+                    break;
+
+                case ReadyToRunFixupKind.ResumptionStubEntryPoint:
+                    uint runtimeFunctionIndex = ReadUInt();
+                    builder.Append($" (RESUMPTION_STUB RuntimeFunction[{runtimeFunctionIndex}])");
                     break;
 
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
@@ -2038,7 +2047,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 default:
-                    throw new BadImageFormatException();
+                    throw new BadImageFormatException(helperType.ToString());
             }
         }
 

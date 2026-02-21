@@ -14142,6 +14142,32 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     case READYTORUN_FIXUP_Helper:
         {
+#ifdef _DEBUG
+            // Reenable loading types during Eager fixups. These types should all be from CoreLib.
+            class EnableTypeLoadHolder
+            {
+                ULONG _previousForbidTypeLoad = (ULONG)-1;
+            public:
+                EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0)
+                    {
+                        _previousForbidTypeLoad = GetThreadNULLOk()->m_ulForbidTypeLoad;
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = 0;
+                    }
+                }
+
+                ~EnableTypeLoadHolder()
+                {
+                    if (GetThreadNULLOk() != 0 && _previousForbidTypeLoad != -1)
+                    {
+                        _ASSERTE(GetThreadNULLOk()->m_ulForbidTypeLoad == 0);
+                        GetThreadNULLOk()->m_ulForbidTypeLoad = _previousForbidTypeLoad;
+                    }
+                }
+            }
+            enableTypeLoad;
+#endif
             DWORD helperNum = CorSigUncompressData(pBlob);
 
             CorInfoHelpFunc corInfoHelpFunc = MapReadyToRunHelper((ReadyToRunHelper)helperNum);
@@ -14273,6 +14299,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             TypeHandle th = TypeHandle(continuationTypeMethodTable);
             result = (size_t)th.AsPtr();
+        }
+        break;
+
+    case READYTORUN_FIXUP_ResumptionStubEntryPoint:
+        {
+            ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
+
+            DWORD runtimeFunctionIndex = CorSigUncompressData(pBlob);
+            PCODE stubEntryPoint = pR2RInfo->GetEntryPointByRuntimeFunctionIndex(runtimeFunctionIndex);
+
+            pR2RInfo->RegisterResumptionStub(stubEntryPoint);
+
+            result = (size_t)stubEntryPoint;
         }
         break;
 

@@ -356,6 +356,98 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     RETURN pMD;
 }
 
+// Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
+// Unlike regular IL stubs, this does not create a resolver or precode - it points
+// directly to the R2R native code.
+MethodDesc* ILStubCache::CreateR2RBackedILStub(
+    LoaderAllocator* pAllocator,
+    MethodTable* pMT,
+    PCODE r2rEntryPoint,
+    DWORD stubType,
+    PCCOR_SIGNATURE pSig,
+    DWORD cbSig,
+    BOOL isAsync,
+    AllocMemTracker* pamTracker)
+{
+    CONTRACT(MethodDesc*)
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(r2rEntryPoint != (PCODE)NULL);
+        PRECONDITION(stubType != DynamicMethodDesc::StubNotSet);
+        POSTCONDITION(CheckPointer(RETVAL));
+    }
+    CONTRACT_END;
+
+    DynamicMethodDesc::ILStubType ilStubType = (DynamicMethodDesc::ILStubType)stubType;
+
+    LoaderHeap* pCreationHeap = pAllocator->GetHighFrequencyHeap();
+
+    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(
+        pCreationHeap,
+        1,                      // count
+        mcDynamic,              // classification
+        TRUE,                   // fNonVtableSlot - Dynamic methods don't have vtable slots
+        TRUE,                   // fNativeCodeSlot - we will set the native code pointer directly to the R2R entry point
+        isAsync,                // HasAsyncMethodData
+        pMT,
+        pamTracker);
+
+    DynamicMethodDesc* pMD = (DynamicMethodDesc*)pChunk->GetFirstMethodDesc();
+
+    pMD->SetMemberDef(0);
+    pMD->SetSlot(MethodTable::NO_SLOT);
+
+    if (isAsync)
+    {
+        pMD->SetHasAsyncMethodData();
+        pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
+    }
+
+    // Determine static vs instance from the signature calling convention
+    SigPointer sigPtr(pSig, cbSig);
+    uint32_t callConvInfo;
+    IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
+
+    if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
+    {
+        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                             DynamicMethodDesc::FlagIsILStub);
+    }
+    else
+    {
+        pMD->SetStatic();
+        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                             DynamicMethodDesc::FlagStatic |
+                             DynamicMethodDesc::FlagIsILStub);
+    }
+
+    pMD->SetILStubType(ilStubType);
+
+    // No resolver needed - code already exists in R2R image
+    pMD->m_pResolver = nullptr;
+
+    pMD->m_pszMethodName = GetStubMethodName(ilStubType);
+
+    // Copy the signature into the loader heap
+    PVOID pNewSig = pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(cbSig)));
+    memcpy(pNewSig, pSig, cbSig);
+    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pNewSig, cbSig);
+
+    // Set the native code directly - no precode needed since code already exists
+    pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+
+#ifdef _DEBUG
+    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
+    pMD->m_pszDebugClassName = "ILStubClass";
+    pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
+    pMD->m_pDebugMethodTable = pMT;
+#endif // _DEBUG
+
+    RETURN pMD;
+}
+
 //
 // This will get or create a MethodTable in the Module/AppDomain on which
 // we can place a new IL stub MethodDesc.

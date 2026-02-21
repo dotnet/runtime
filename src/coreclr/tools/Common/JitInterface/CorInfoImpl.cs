@@ -27,6 +27,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
 #if READYTORUN
+using ILCompiler.ReadyToRun.TypeSystem;
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
@@ -120,7 +121,7 @@ namespace Internal.JitInterface
         private static extern uint getLikelyClasses(LikelyClassMethodRecord* pLikelyClasses, uint maxLikelyClasses, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
 
         [DllImport(JitLibrary)]
-        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset);
+        private static extern uint getLikelyMethods(LikelyClassMethodRecord* pLikelyMethods, uint maxLikelyMethods, PgoInstrumentationSchema* schema, uint countSchemaItems, byte* pInstrumentationData, int ilOffset);
 
         [DllImport(JitSupportLibrary)]
         private static extern IntPtr GetJitHost(IntPtr configProvider);
@@ -1385,7 +1386,9 @@ namespace Internal.JitInterface
                 // cases where the virtual function resolution algorithm either does not function, or is not used
                 // correctly.
 #if DEBUG
-                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN)
+                if (info->detail == CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN
+                    // TODO: resolution and devirtualization of async variants https://github.com/dotnet/runtime/issues/124620
+                    && !decl.IsAsyncVariant())
                 {
                     Console.Error.WriteLine($"Failed devirtualization with unexpected unknown failure while compiling {MethodBeingCompiled} with decl {decl} targeting type {objType}");
                     Debug.Assert(info->detail != CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN);
@@ -3865,7 +3868,13 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
 #if READYTORUN
-            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
+            var resumptionStub = new AsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
+
+            // CompiledMethodNode instead of MethodEntrypoint for the pointer to the code instead of a fixup
+            var compiledStubNode = _compilation.NodeFactory.CompiledMethodNode(resumptionStub);
+            entryPoint = (void*)ObjectToHandle(compiledStubNode);
+            AddResumptionStubFixup(compiledStubNode);
+            return ObjectToHandle(resumptionStub);
 #else
             _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
