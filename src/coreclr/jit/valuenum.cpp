@@ -2062,6 +2062,11 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
+    if (TypeOfVN(vn) != TYP_LONG)
+    {
+        return vn;
+    }
+
     VNFuncApp funcApp;
     if (GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_Cast))
     {
@@ -2072,6 +2077,11 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
         {
             return funcApp.m_args[0];
         }
+    }
+    int intCns;
+    if (IsVNIntegralConstant(vn, &intCns))
+    {
+        return VNForIntCon(intCns);
     }
     return vn;
 }

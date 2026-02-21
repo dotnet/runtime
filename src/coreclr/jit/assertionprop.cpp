@@ -2089,6 +2089,9 @@ void Compiler::optAssertionGen(GenTree* tree)
             else if (!optLocalAssertionProp)
             {
                 // Array allocation creates an assertion that the length argument is non-negative.
+                //
+                // var arr = new int[n]; - creates n >= 0 assertion
+                //
                 GenTree* lenArg = getArrayLengthFromAllocation(call);
                 if (lenArg != nullptr)
                 {
@@ -2101,9 +2104,58 @@ void Compiler::optAssertionGen(GenTree* tree)
                         break;
                     }
                 }
+
+                // CORINFO_HELP_ARRADDR_ST(arrRef, idx, value) creates an assertion that "idx" is within the bounds of
+                // "arrRef" array
+                //
+                // arr[idx] = value; - creates idx is within bounds of arr assertion
+                //
+                if (call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
+                {
+                    GenTree* arrRef = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTree* idx    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+                    ValueNum idxVN = vnStore->VNIgnoreIntToLongCast(optConservativeNormalVN(idx));
+                    if ((idxVN != ValueNumStore::NoVN) && (vnStore->TypeOfVN(idxVN) == TYP_INT))
+                    {
+                        ValueNum arrRefVN = optConservativeNormalVN(arrRef);
+                        if (arrRefVN != ValueNumStore::NoVN)
+                        {
+                            // Compose a VN_ARR_LENGTH VN for the array reference and use it
+                            // to create a bounds check assertion on the index.
+                            ValueNum lenVN = vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, arrRefVN);
+                            assertionInfo  = optAddAssertion(AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN));
+                            break;
+                        }
+                    }
+                }
             }
         }
         break;
+
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
+            if (!optLocalAssertionProp)
+            {
+                // For division/modulo, we can create an assertion that the divisor is not zero
+                //
+                // c = a / b; - creates b != 0 assertion
+                //
+                ValueNum divisorVN = optConservativeNormalVN(tree->AsOp()->gtGetOp2());
+                if ((divisorVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(divisorVN))
+                {
+                    var_types divisorType = vnStore->TypeOfVN(divisorVN);
+                    if (varTypeIsIntegral(divisorType))
+                    {
+                        ValueNum zeroVN = vnStore->VNZeroForType(divisorType);
+                        assertionInfo =
+                            optAddAssertion(AssertionDsc::CreateConstantBound(this, VNF_NE, divisorVN, zeroVN));
+                    }
+                }
+            }
+            break;
 
         case GT_JTRUE:
             assertionInfo = optAssertionGenJtrue(tree);
