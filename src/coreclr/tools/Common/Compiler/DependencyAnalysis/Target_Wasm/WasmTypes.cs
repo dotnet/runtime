@@ -241,7 +241,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             }
             else if (string.IsNullOrEmpty(paramList))
             {
-                return $"(func (result {returnList})";
+                return $"(func (result {returnList}))";
             }
 
             return $"(func (param {paramList}) (result {returnList}))";
