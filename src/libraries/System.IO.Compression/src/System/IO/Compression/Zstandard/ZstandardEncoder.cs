@@ -10,6 +10,8 @@ using Microsoft.Win32.SafeHandles;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle _context;

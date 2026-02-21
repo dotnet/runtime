@@ -4,6 +4,8 @@
 namespace System.IO.Compression
 {
     /// <summary>Provides compression options to be used with Zstandard compression.</summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardCompressionOptions
     {
         /// <summary>Gets the default compression quality level.</summary>

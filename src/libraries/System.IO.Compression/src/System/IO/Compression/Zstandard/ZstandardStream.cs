@@ -9,6 +9,8 @@ using System.Threading;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties used to compress and decompress streams by using the Zstandard data format specification.</summary>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed partial class ZstandardStream : Stream
     {
         private const int DefaultInternalBufferSize = 65536; // 64KB default buffer
