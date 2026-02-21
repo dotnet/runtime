@@ -1035,6 +1035,34 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                 limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(),
                                 curAssertion.GetOp2().GetCheckedBoundConstant());
             }
+            // "(normalLclVN + addOpCns) <relop> (checkedBndVN + cns)"
+            // We can deduce normalLclVN <relop> (checkedBndVN + cns - addOpCns)
+            // Example: "(index + 1) < array.Length" => "index < (array.Length + (-1))"
+            else if (canUseCheckedBounds && (normalLclVN != curAssertion.GetOp1().GetVN()))
+            {
+                ValueNum addOpVN;
+                int      addOpCns;
+                if (comp->vnStore->IsVNBinFuncWithConst(curAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, &addOpCns) &&
+                    (addOpVN == normalLclVN) && (addOpCns >= 0))
+                {
+                    int boundCns = curAssertion.GetOp2().GetCheckedBoundConstant();
+                    int adjusted = boundCns - addOpCns;
+                    // Check for overflow
+                    if ((int64_t)boundCns - (int64_t)addOpCns == (int64_t)adjusted)
+                    {
+                        cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                        limit   = Limit(Limit::keBinOpArray, curAssertion.GetOp2().GetCheckedBound(), adjusted);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
             else if ((normalLclVN == curAssertion.GetOp2().GetCheckedBound()) &&
                      (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
             {

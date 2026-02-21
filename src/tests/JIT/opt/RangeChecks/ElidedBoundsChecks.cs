@@ -83,6 +83,22 @@ public class ElidedBoundsChecks
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static (int, int) ManualBoundsCheckSubFromLen(int[] array, int index)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        if ((index < 0) || ((array.Length - index) < 2))
+        {
+            ThrowHelper();
+        }
+
+        return (array[index + 0], array[index + 1]);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void ThrowHelper() => throw new ArgumentOutOfRangeException();
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -117,6 +133,12 @@ public class ElidedBoundsChecks
             return 0;
 
         if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
+            return 0;
+
+        if (ManualBoundsCheckSubFromLen(new int[] { 10, 20, 30 }, 0) != (10, 20))
+            return 0;
+
+        if (ManualBoundsCheckSubFromLen(new int[] { 10, 20, 30 }, 1) != (20, 30))
             return 0;
 
         return 100;

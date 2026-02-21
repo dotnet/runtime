@@ -1740,6 +1740,46 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return idx;
     }
 
+    // "SUB(CheckedBnd, X) <relop> CNS"
+    // Algebraically: (CheckedBnd - X) <relop> CNS => X <swapped_relop> (CheckedBnd + (-CNS))
+    // Example: "(array.Length - index) < 2" => "index > (array.Length + (-2))"
+    {
+        VNFuncApp subFuncApp;
+        ssize_t   subCns;
+        if (!isUnsignedRelop && vnStore->GetVNFunc(op1VN, &subFuncApp) && (subFuncApp.m_func == VNF_SUB) &&
+            vnStore->IsVNCheckedBound(subFuncApp.m_args[0]) && !vnStore->IsVNConstant(subFuncApp.m_args[1]) &&
+            vnStore->IsVNIntegralConstant(op2VN, &subCns) && FitsIn<int>(subCns))
+        {
+            int intCns = static_cast<int>(subCns);
+            if (intCns != INT32_MIN)
+            {
+                relopFunc          = ValueNumStore::SwapRelop(relopFunc);
+                AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(
+                    this, relopFunc, subFuncApp.m_args[1], subFuncApp.m_args[0], -intCns);
+                AssertionIndex idx = optAddAssertion(dsc);
+                optCreateComplementaryAssertion(idx);
+                return idx;
+            }
+        }
+
+        // "CNS <relop> SUB(CheckedBnd, X)"
+        // Algebraically: CNS <relop> (CheckedBnd - X) => X <relop> (CheckedBnd + (-CNS))
+        if (!isUnsignedRelop && vnStore->GetVNFunc(op2VN, &subFuncApp) && (subFuncApp.m_func == VNF_SUB) &&
+            vnStore->IsVNCheckedBound(subFuncApp.m_args[0]) && !vnStore->IsVNConstant(subFuncApp.m_args[1]) &&
+            vnStore->IsVNIntegralConstant(op1VN, &subCns) && FitsIn<int>(subCns))
+        {
+            int intCns = static_cast<int>(subCns);
+            if (intCns != INT32_MIN)
+            {
+                AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(
+                    this, relopFunc, subFuncApp.m_args[1], subFuncApp.m_args[0], -intCns);
+                AssertionIndex idx = optAddAssertion(dsc);
+                optCreateComplementaryAssertion(idx);
+                return idx;
+            }
+        }
+    }
+
     // Loop condition like "(uint)i < (uint)bnd" or equivalent
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
