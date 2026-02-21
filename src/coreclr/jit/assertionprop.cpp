@@ -2086,6 +2086,22 @@ void Compiler::optAssertionGen(GenTree* tree)
                 assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, /*equals*/ false);
             }
+            else if (!optLocalAssertionProp)
+            {
+                // Array allocation creates an assertion that the length argument is non-negative.
+                GenTree* lenArg = getArrayLengthFromAllocation(call);
+                if (lenArg != nullptr)
+                {
+                    ValueNum lenVN = vnStore->VNIgnoreIntToLongCast(optConservativeNormalVN(lenArg));
+                    if ((lenVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lenVN) &&
+                        vnStore->TypeOfVN(lenVN) == TYP_INT)
+                    {
+                        ValueNum zeroVN = vnStore->VNZeroForType(TYP_INT);
+                        assertionInfo = optAddAssertion(AssertionDsc::CreateConstantBound(this, VNF_GE, lenVN, zeroVN));
+                        break;
+                    }
+                }
+            }
         }
         break;
 
