@@ -29,6 +29,9 @@ namespace System.Text.Json
         // Stores the non-string dictionary keys for continuation.
         public object? DictionaryKey;
 
+        // When true, the current dictionary key is being skipped due to DictionaryKeyFilter.
+        public bool SkipCurrentDictionaryKey;
+
         /// <summary>
         /// Records the Utf8JsonReader Depth at the start of the current value.
         /// </summary>
