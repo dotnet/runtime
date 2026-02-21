@@ -450,7 +450,6 @@ inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LO
         genericLookupKind.needsRuntimeLookup = (DWORD)pGenericLookupKind->needsRuntimeLookup;
         genericLookupKind.runtimeLookupKind  = (DWORD)pGenericLookupKind->runtimeLookupKind;
     }
-    // We don't store result->runtimeLookupArgs, which is opaque data. Ok?
     return genericLookupKind;
 }
 

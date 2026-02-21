@@ -2619,8 +2619,6 @@ namespace Internal.JitInterface
                 case DictionaryEntryKind.DeclaringTypeHandleSlot:
                     Debug.Assert(templateMethod != null);
                     helperId = ReadyToRunHelperId.DeclaringTypeHandle;
-                    // TODO: Seems unused by CORINFO_HELP_READYTORUN_GENERIC_HANDLE?
-                    // pResultLookup.lookupKind.runtimeLookupArgs = ObjectToHandle(templateMethod.OwningType);
                     break;
 
                 case DictionaryEntryKind.TypeHandleSlot:
