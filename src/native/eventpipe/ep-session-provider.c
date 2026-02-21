@@ -6,10 +6,26 @@
 #define EP_IMPL_SESSION_PROVIDER_GETTER_SETTER
 #include "ep-session-provider.h"
 #include "ep-rt.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h> // session_register_tracepoint
+#include <errno.h>
 #endif // HAVE_SYS_IOCTL_H
+
+// Temporary diagnostic logging for userevents investigation (https://github.com/dotnet/runtime/issues/123442).
+// Enabled when DOTNET_DiagnosticServerDiag=1 is set.
+static int ep_sp_diag_enabled = -1; // -1 = uninitialized
+static inline int ep_sp_diag_is_enabled (void) {
+	if (ep_sp_diag_enabled == -1) {
+		const char *val = getenv ("DOTNET_DiagnosticServerDiag");
+		ep_sp_diag_enabled = (val != NULL && val[0] == '1') ? 1 : 0;
+	}
+	return ep_sp_diag_enabled;
+}
+#define EP_SP_DIAG_LOG(...) do { if (ep_sp_diag_is_enabled ()) { fprintf (stderr, "[EP_SP_DIAG] " __VA_ARGS__); fflush (stderr); } } while (0)
 
 /*
  * Forward declares of all static functions.
@@ -163,10 +179,15 @@ session_provider_tracepoint_register (
 
 	reg.name_args = (uint64_t)tracepoint->tracepoint_format;
 
-	if (ioctl(user_events_data_fd, DIAG_IOCSREG, &reg) == -1)
+	EP_SP_DIAG_LOG ("tracepoint_register: registering tracepoint format='%s', fd=%d.\n", tracepoint->tracepoint_format ? tracepoint->tracepoint_format : "(null)", user_events_data_fd);
+
+	if (ioctl(user_events_data_fd, DIAG_IOCSREG, &reg) == -1) {
+		EP_SP_DIAG_LOG ("tracepoint_register: ioctl DIAG_IOCSREG failed, errno=%d (%s).\n", errno, strerror (errno));
 		return false;
+	}
 
 	tracepoint->write_index = reg.write_index;
+	EP_SP_DIAG_LOG ("tracepoint_register: success, write_index=%u.\n", (unsigned)reg.write_index);
 
 	return true;
 }
@@ -227,28 +248,39 @@ ep_session_provider_register_tracepoints (
 	EP_ASSERT (session_provider != NULL);
 	EP_ASSERT (user_events_data_fd != -1);
 
-	if (user_events_data_fd < 0)
+	if (user_events_data_fd < 0) {
+		EP_SP_DIAG_LOG ("register_tracepoints: invalid fd=%d.\n", user_events_data_fd);
 		return false;
+	}
 
 	EventPipeSessionProviderTracepointConfiguration *tracepoint_config = session_provider->tracepoint_config;
-	if (tracepoint_config == NULL)
+	if (tracepoint_config == NULL) {
+		EP_SP_DIAG_LOG ("register_tracepoints: tracepoint_config is NULL.\n");
 		return false;
+	}
 
-	if (tracepoint_config->default_tracepoint.tracepoint_format == NULL && tracepoint_config->tracepoints == NULL)
+	if (tracepoint_config->default_tracepoint.tracepoint_format == NULL && tracepoint_config->tracepoints == NULL) {
+		EP_SP_DIAG_LOG ("register_tracepoints: no tracepoints configured (both default and list are NULL).\n");
 		return false;
+	}
 
 	if (tracepoint_config->default_tracepoint.tracepoint_format != NULL &&
-		!session_provider_tracepoint_register (&tracepoint_config->default_tracepoint, user_events_data_fd))
+		!session_provider_tracepoint_register (&tracepoint_config->default_tracepoint, user_events_data_fd)) {
+		EP_SP_DIAG_LOG ("register_tracepoints: default tracepoint registration failed.\n");
 		return false;
+	}
 
 	if (tracepoint_config->tracepoints != NULL) {
 		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeSessionProviderTracepoint *, tracepoint, tracepoint_config->tracepoints) {
 			EP_ASSERT (tracepoint != NULL);
-			if (!session_provider_tracepoint_register (tracepoint, user_events_data_fd))
+			if (!session_provider_tracepoint_register (tracepoint, user_events_data_fd)) {
+				EP_SP_DIAG_LOG ("register_tracepoints: tracepoint registration failed.\n");
 				return false;
+			}
 		} DN_VECTOR_PTR_FOREACH_END;
 	}
 
+	EP_SP_DIAG_LOG ("register_tracepoints: all tracepoints registered successfully.\n");
 	return true;
 }
 

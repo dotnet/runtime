@@ -25,12 +25,19 @@ namespace Tracing.UserEvents.Tests.Basic
             }
         }
 
-        private readonly static Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private readonly static Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             bool allocationSampledEventFound = false;
+            int eventsFromOtherProcesses = 0;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (e.ProviderName == "Microsoft-Windows-DotNETRuntime")
                 {
                     // TraceEvent's ClrTraceEventParser does not know about the AllocationSampled Event, so it shows up as "Unknown(303)"
@@ -43,9 +50,14 @@ namespace Tracing.UserEvents.Tests.Basic
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             if (!allocationSampledEventFound)
             {
-                Console.Error.WriteLine("The trace did not contain an AllocationSampled event.");
+                Console.Error.WriteLine($"The trace did not contain an AllocationSampled event from tracee PID {traceePid}.");
             }
             return allocationSampledEventFound;
         };

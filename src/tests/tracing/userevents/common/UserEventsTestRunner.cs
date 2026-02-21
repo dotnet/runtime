@@ -27,7 +27,7 @@ namespace Tracing.UserEvents.Tests.Common
             string[] args,
             string scenarioName,
             Action traceeAction,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
             int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs,
             int traceeDelayToSetupTracepoints = DefaultTraceeDelayToSetupTracepointsMs)
@@ -52,7 +52,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
@@ -108,6 +108,10 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
             recordTraceStartInfo.ArgumentList.Add("--out");
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--log-mode");
+            recordTraceStartInfo.ArgumentList.Add("console");
+            recordTraceStartInfo.ArgumentList.Add("--log-filter");
+            recordTraceStartInfo.ArgumentList.Add("trace");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
@@ -154,6 +158,10 @@ namespace Tracing.UserEvents.Tests.Common
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
+
+            // Enable diagnostic logging in the runtime's eventpipe/diagnostic server code
+            // for investigation of flaky userevents tests (https://github.com/dotnet/runtime/issues/123442).
+            traceeStartInfo.Environment["DOTNET_DiagnosticServerDiag"] = "1";
 
             // record-trace currently only searches /tmp/ for diagnostic ports https://github.com/microsoft/one-collect/issues/183
             string diagnosticPortDir = "/tmp";
@@ -220,7 +228,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
-            if (!traceValidator(source))
+            if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
                 UploadTraceFileFromHelix(traceFilePath, scenarioName);

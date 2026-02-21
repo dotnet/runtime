@@ -46,12 +46,19 @@ namespace Tracing.UserEvents.Tests.MultiThread
             Task.WaitAll(tasks);
         }
 
-        private static readonly Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private static readonly Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             HashSet<int> seenWorkers = new HashSet<int>();
+            int eventsFromOtherProcesses = 0;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (!string.Equals(e.ProviderName, "DemoMultiThread", StringComparison.Ordinal))
                 {
                     return;
@@ -80,11 +87,16 @@ namespace Tracing.UserEvents.Tests.MultiThread
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             for (int i = 0; i < WorkerCount; i++)
             {
                 if (!seenWorkers.Contains(i))
                 {
-                    Console.Error.WriteLine($"Did not observe event for worker {i}.");
+                    Console.Error.WriteLine($"Did not observe event for worker {i} from tracee PID {traceePid}.");
                     return false;
                 }
             }
