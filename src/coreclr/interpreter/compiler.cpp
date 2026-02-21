@@ -1035,6 +1035,28 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     {
         if (InterpOpIsEmitNop(ins->opcode))
         {
+            // In debug builds, emit INTOP_NOP to give sequence points unique native offsets
+            // for proper debugger stepping on `{` and `}` braces
+            if (ins->opcode == INTOP_NOP && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+            {
+                ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+                *ip++ = INTOP_NOP;
+                
+                // Record sequence point mapping for this NOP
+                if (ins->ilOffset != -1 && ins->ilOffset >= 0 && (uint32_t)ins->ilOffset < (uint32_t)m_ILCodeSizeFromILHeader)
+                {
+                    uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+                    if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != (uint32_t)ins->ilOffset))
+                    {
+                        assert(m_ILToNativeMapSize < m_ILCodeSize);
+                        m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ins->ilOffset;
+                        m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+                        m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+                        m_ILToNativeMapSize++;
+                    }
+                }
+                continue;
+            }
             ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
             continue;
         }
@@ -8094,6 +8116,12 @@ retry_emit:
         switch (opcode)
         {
             case CEE_NOP:
+                // In debug builds, emit INTOP_NOP to create sequence point mapping for the IL nop.
+                // This allows debugger to bind breakpoints on IL offsets like `{` braces.
+                if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    AddIns(INTOP_NOP);
+                }
                 m_ip++;
                 break;
             case CEE_LDC_I4_M1:
@@ -9209,6 +9237,13 @@ retry_emit:
                     EmitBranch(INTOP_BR, 5 + offset);
                     linkBBlocks = false;
                 }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit NOP for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br <next_instruction>" followed by "ret".
+                    AddIns(INTOP_NOP);
+                }
                 m_ip += 5;
                 break;
             }
@@ -9219,6 +9254,13 @@ retry_emit:
                 {
                     EmitBranch(INTOP_BR, 2 + (int8_t)m_ip [1]);
                     linkBBlocks = false;
+                }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit NOP for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br.s <next_instruction>" followed by "ret".
+                    AddIns(INTOP_NOP);
                 }
                 m_ip += 2;
                 break;
