@@ -47,9 +47,9 @@
         <target state="translated">Protokollierungsmethoden dürfen keinen Text enthalten.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Protokollierungsmethoden können nicht generisch sein.</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="needs-translation">Protokollierungsmethoden können nicht generisch sein.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">

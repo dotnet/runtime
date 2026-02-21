@@ -47,9 +47,9 @@
         <target state="translated">Günlüğe kaydetme yöntemleri gövde içeremez</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Günlüğe kaydetme yöntemleri genel olamaz</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="needs-translation">Günlüğe kaydetme yöntemleri genel olamaz</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
