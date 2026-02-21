@@ -1119,6 +1119,8 @@ NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
@@ -1134,6 +1136,8 @@ NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
     blx r5
     mov sp, r4
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI4, _TEXT
 
@@ -1150,6 +1154,8 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     mov sp, r4
     str r0, [r10]
     str r1, [r10, 4]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
@@ -1172,6 +1178,8 @@ NESTED_ENTRY CallJittedMethodRetBuffR0, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR0, _TEXT
 
@@ -1186,6 +1194,8 @@ NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
     CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR1, _TEXT
 
@@ -1202,6 +1212,8 @@ NESTED_ENTRY CallJittedMethodRetI1, _TEXT, NoHandler
     mov sp, r4
     sxtb r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI1, _TEXT
 
@@ -1218,6 +1230,8 @@ NESTED_ENTRY CallJittedMethodRetI2, _TEXT, NoHandler
     mov sp, r4
     sxth r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI2, _TEXT
 
@@ -1234,6 +1248,8 @@ NESTED_ENTRY CallJittedMethodRetU1, _TEXT, NoHandler
     mov sp, r4
     uxtb r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetU1, _TEXT
 
@@ -1250,6 +1266,8 @@ NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
     mov sp, r4
     uxth r0, r0
     str r0, [r10]
+    ldr r4, [r4, 32]
+    str r2, [r4]
     EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetU2, _TEXT
 
@@ -1283,12 +1301,15 @@ LOCAL_LABEL(HaveInterpThreadContext):
     cmp r7, #0
     beq LOCAL_LABEL(NoManagedThreadOrCallStub)
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
-    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
+    ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer]
     ldr r5, [r6], 4 // InterpThreadContext
 
     EPILOG_POP "{r0-r3}"
     CHECK_STACK_ALIGNMENT
     blx r5
+
+    // Fill in the ContinuationContext register
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 8]
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
