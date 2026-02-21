@@ -5,10 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
-using Internal.JitInterface;
-using System.Runtime.CompilerServices;
-using Internal.TypeSystem;
-using System.IO;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
