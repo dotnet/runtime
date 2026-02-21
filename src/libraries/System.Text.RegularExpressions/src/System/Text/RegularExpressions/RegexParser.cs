@@ -407,9 +407,7 @@ namespace System.Text.RegularExpressions
                     case '$':
                         if ((_options & RegexOptions.AnyNewLine) != 0)
                         {
-                            _unit = (_options & RegexOptions.Multiline) != 0 ?
-                                AnyNewLineEolNode() :
-                                AnyNewLineEndZNode();
+                            _unit = (_options & RegexOptions.Multiline) != 0 ? AnyNewLineEolNode() : AnyNewLineEndZNode();
                         }
                         else
                         {
@@ -1119,13 +1117,8 @@ namespace System.Text.RegularExpressions
 
                 case 'Z':
                     _pos++;
-                    if (scanOnly)
-                    {
-                        return null;
-                    }
-                    return (_options & RegexOptions.AnyNewLine) != 0 ?
-                        AnyNewLineEndZNode() :
-                        new RegexNode(RegexNodeKind.EndZ, _options);
+                    return scanOnly ? null :
+                        (_options & RegexOptions.AnyNewLine) != 0 ? AnyNewLineEndZNode() : new RegexNode(RegexNodeKind.EndZ, _options);
 
                 case 'w':
                     _pos++;
