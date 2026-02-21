@@ -1092,7 +1092,7 @@ namespace ILCompiler.DependencyAnalysis
             public bool Equals(WasmTypeNodeKey other) => Type.Equals(other.Type);
             public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
             public override int GetHashCode()
-                => Type.GetHashCode(); // TODO-WASM: Hash all the types
+                => Type.GetHashCode();
         }
 
         private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
