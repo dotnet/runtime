@@ -1391,6 +1391,66 @@ internal partial class C
         }
 
         [Fact]
+        public async Task CodeFixerIgnoresNonFixableStaticMethodsAcrossPartialDeclarations()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static string A()
+    {
+        return Regex.Escape(""abc"");
+    }
+
+    public static Regex B()
+    {
+        return [|new Regex|](""def"");
+    }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return [|new Regex|](""ghi"");
+    }
+}
+";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+internal partial class C
+{
+    public static string A()
+    {
+        return Regex.Escape(""abc"");
+    }
+
+    public static Regex B()
+    {
+        return MyRegex;
+    }
+
+    [GeneratedRegex(""def"")]
+    private static partial Regex MyRegex { get; }
+}
+
+internal partial class C
+{
+    public static Regex D()
+    {
+        return MyRegex1;
+    }
+
+    [GeneratedRegex(""ghi"")]
+    private static partial Regex MyRegex1 { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task CodeFixerSupportsNamedParameters()
         {
             string test = @"using System.Text.RegularExpressions;

@@ -512,6 +512,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         IInvocationOperation inv => inv.TargetMethod.IsStatic &&
                             SymbolEqualityComparer.Default.Equals(inv.TargetMethod.ContainingType, regexSymbol) &&
+                            UpgradeToGeneratedRegexAnalyzer.FixableMethodNames.Contains(inv.TargetMethod.Name) &&
                             UpgradeToGeneratedRegexAnalyzer.ValidateParameters(inv.Arguments),
                         IObjectCreationOperation create => SymbolEqualityComparer.Default.Equals(create.Type, regexSymbol) &&
                             create.Arguments.Length <= 2 &&

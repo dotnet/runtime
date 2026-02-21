@@ -28,6 +28,9 @@ namespace System.Text.RegularExpressions.Generator
         internal const string PatternArgumentName = "pattern";
         internal const string OptionsArgumentName = "options";
 
+        /// <summary>Names of static Regex methods the analyzer considers fixable.</summary>
+        internal static readonly HashSet<string> FixableMethodNames = new() { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" };
+
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration);
 
@@ -51,7 +54,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Pre-compute a hash with all of the method symbols that we want to analyze for possibly emitting
                 // a diagnostic.
                 HashSet<IMethodSymbol> staticMethodsToDetect = GetMethodSymbolHash(regexTypeSymbol,
-                    new HashSet<string> { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split", "Replace" });
+                    FixableMethodNames);
 
                 // Register analysis of calls to the Regex constructors
                 context.RegisterOperationAction(context => AnalyzeObjectCreation(context, regexTypeSymbol), OperationKind.ObjectCreation);
@@ -63,10 +66,6 @@ namespace System.Text.RegularExpressions.Generator
             // Creates a HashSet of all of the method Symbols containing the static methods to analyze.
             static HashSet<IMethodSymbol> GetMethodSymbolHash(INamedTypeSymbol regexTypeSymbol, HashSet<string> methodNames)
             {
-                // This warning is due to a false positive bug https://github.com/dotnet/roslyn-analyzers/issues/5804
-                // This issue has now been fixed, but we are not yet consuming the fix and getting this package
-                // as a transitive dependency from Microsoft.CodeAnalysis.CSharp.Workspaces. Once that dependency
-                // is updated at the repo-level, we should come and remove the pragma disable.
                 HashSet<IMethodSymbol> hash = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
                 ImmutableArray<ISymbol> allMembers = regexTypeSymbol.GetMembers();
 
