@@ -1102,7 +1102,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
                     {
                         CORINFO_CONST_LOOKUP genericLookup;
-                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
+                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token,
                                                               CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
                                                               info.compMethodHnd, &genericLookup);
                         GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);

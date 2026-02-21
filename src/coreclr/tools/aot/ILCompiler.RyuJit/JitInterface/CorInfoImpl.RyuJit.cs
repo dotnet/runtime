@@ -310,7 +310,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
             {
@@ -329,20 +329,6 @@ namespace Internal.JitInterface
                             return false;
                         var helperId = GetReadyToRunHelperFromStaticBaseHelper(id);
                         pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, type));
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-                    {
-                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
-                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        DefType typeToInitialize = (DefType)HandleToObject(callerHandle).OwningType;
-                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
-
-                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
-                        pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
                 default:
