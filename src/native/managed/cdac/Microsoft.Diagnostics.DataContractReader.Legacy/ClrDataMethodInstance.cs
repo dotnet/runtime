@@ -346,7 +346,11 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
+            // DAC returns E_FAIL while cDAC returns CORDBG_E_READVIRTUAL_FAILURE for read failures
+            Debug.Assert(hrLocal == hr
+                || (IsReadFailure(hrLocal) && IsReadFailure(hr)),
+                $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
+            static bool IsReadFailure(int hr) => hr == HResults.E_FAIL || hr == CorDbgHResults.CORDBG_E_READVIRTUAL_FAILURE;
 
             if (hr == HResults.S_OK)
             {
@@ -364,7 +368,6 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 }
             }
         }
-
 #endif
 
         return hr;
