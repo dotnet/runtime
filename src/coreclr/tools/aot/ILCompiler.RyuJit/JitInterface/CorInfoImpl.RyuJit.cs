@@ -331,6 +331,20 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ReadyToRunHelper(helperId, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
+                    {
+                        // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
+                        Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
+                        Debug.Assert(MethodBeingCompiled.IsSharedByGenericInstantiations);
+
+                        DefType typeToInitialize = (DefType)HandleToObject(callerHandle).OwningType;
+                        Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
+
+                        DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
+                        ISymbolNode helper = GetGenericLookupHelper(GetGenericRuntimeLookupKind(MethodBeingCompiled), ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
+                        pLookup = CreateConstLookupToSymbol(helper);
+                    }
+                    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
