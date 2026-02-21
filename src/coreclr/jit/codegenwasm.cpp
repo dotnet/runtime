@@ -1977,7 +1977,6 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_BLK));
-    assert(!blkOp->gtBlkOpGcUnsafe);
 
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
