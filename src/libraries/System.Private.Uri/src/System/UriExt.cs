@@ -548,6 +548,12 @@ namespace System
                 return false;
             }
 
+            if (destination.Length < indexOfFirstToUnescape)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
             // We may throw for very large inputs (when growing the ValueStringBuilder).
             scoped ValueStringBuilder vsb;
 
