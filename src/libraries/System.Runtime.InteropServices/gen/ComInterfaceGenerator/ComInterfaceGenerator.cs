@@ -157,8 +157,6 @@ namespace Microsoft.Interop
                         );
                     });
 
-            context.RegisterDiagnostics(attributedInterfaces.SelectMany(static (data, ct) => data.Diagnostics));
-
             // Create list of methods (inherited and declared) and their owning interface
             var interfaceContextsToGenerate = attributedInterfaces.SelectMany(static (a, ct) => a.InterfaceContexts);
             var comMethodContexts = attributedInterfaces.Select(static (a, ct) => a.MethodContexts);
@@ -184,11 +182,6 @@ namespace Microsoft.Interop
                     GenerateInterfaceInformation(x.Interface.Info, ct).NormalizeWhitespace(),
                     GenerateIUnknownDerivedAttributeApplication(x.Interface.Info, ct).NormalizeWhitespace()
                 ]));
-
-            // Report diagnostics for managed-to-unmanaged and unmanaged-to-managed stubs, deduplicating diagnostics that are reported for both.
-            context.RegisterDiagnostics(
-                interfaceAndMethodsContexts
-                    .SelectMany(static (data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics).Union(data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics))));
 
             var filesToGenerate = syntaxes
                 .Select(static (methodSyntaxes, ct) =>
@@ -443,7 +436,7 @@ namespace Microsoft.Interop
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
+        internal static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax? syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ComInterfaceInfo owningInterface, CancellationToken ct)
         {
             ISignatureDiagnosticLocations locations = syntax is null
                 ? NoneSignatureDiagnosticLocations.Instance
