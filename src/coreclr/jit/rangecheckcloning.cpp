@@ -324,6 +324,7 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
     {
         FlowEdge* fallbackToNextBb = comp->fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(fallbackToNextBb);
+        fallbackToNextBb->setLikelihood(1.0f);
     }
     lowerBndBb->SetTrueEdge(lowerBndToFallbackEdge);
     lowerBndBb->SetFalseEdge(lowerBndToUpperBndEdge);
@@ -567,14 +568,16 @@ PhaseStatus Compiler::optRangeCheckCloning()
                 // However, we must skip if:
                 //   - JIT32_GCENCODER is defined (hard limit on epilogue count)
                 //   - The block is genReturnBB (shared return block)
-#ifndef JIT32_GCENCODER
+#ifdef JIT32_GCENCODER
+                break;
+#else
                 if (!block->KindIs(BBJ_RETURN) || (block == genReturnBB))
-#endif
                 {
                     // TODO-RangeCheckCloning: Splitting these blocks at the last statements
                     // require using gtSplitTree for the last bounds check.
                     break;
                 }
+#endif
             }
 
             // Now just record all the bounds checks in the block (in the execution order)
