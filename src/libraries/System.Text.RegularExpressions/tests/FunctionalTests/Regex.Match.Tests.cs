@@ -3255,29 +3255,57 @@ namespace System.Text.RegularExpressions.Tests
                 if (engine == RegexEngine.NonBacktracking)
                     continue;
 
-                // $ with AnyNewLine matches before \n at end (existing behavior preserved)
+                // $ with AnyNewLine matches before each newline type at end
                 yield return new object[] { engine, @".$", "abc\n", RegexOptions.AnyNewLine, true, "c" };
-
-                // $ with AnyNewLine matches before \r at end
                 yield return new object[] { engine, @".$", "abc\r", RegexOptions.AnyNewLine, true, "c" };
-
-                // $ with AnyNewLine matches before \r\n at end
                 yield return new object[] { engine, @".$", "abc\r\n", RegexOptions.AnyNewLine, true, "c" };
+                yield return new object[] { engine, @".$", "abc\u0085", RegexOptions.AnyNewLine, true, "c" };
+                yield return new object[] { engine, @".$", "abc\u2028", RegexOptions.AnyNewLine, true, "c" };
+                yield return new object[] { engine, @".$", "abc\u2029", RegexOptions.AnyNewLine, true, "c" };
 
                 // $ with AnyNewLine matches at end of string (no trailing newline)
                 yield return new object[] { engine, @".$", "abc", RegexOptions.AnyNewLine, true, "c" };
 
-                // $ does NOT match between \r and \n in \r\n: use literal \r to test position
+                // $ does NOT match between \r and \n in \r\n
                 yield return new object[] { engine, @"\r$", "abc\r\n", RegexOptions.AnyNewLine, false, "" };
 
-                // Without AnyNewLine, $ does NOT match before \r (but does match at true end)
+                // Without AnyNewLine, $ does NOT match before \r
                 yield return new object[] { engine, @"c$", "abc\rdef", RegexOptions.None, false, "" };
 
                 // Trailing newlines: line content before various endings
                 yield return new object[] { engine, @"line$", "line\n", RegexOptions.AnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\r", RegexOptions.AnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\r\n", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\u0085", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\u2028", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\u2029", RegexOptions.AnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line", RegexOptions.AnyNewLine, true, "line" };
+
+                // $ does NOT match mid-string without Multiline (each newline type)
+                yield return new object[] { engine, @"foo$", "foo\nbar", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\rbar", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\r\nbar", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\u0085bar", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\u2028bar", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\u2029bar", RegexOptions.AnyNewLine, false, "" };
+
+                // Multiple trailing newlines: no word char before last newline, so \w+$ fails
+                yield return new object[] { engine, @"\w+$", "abc\r\n\n", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+$", "abc\n\r", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+$", "abc\r\r", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+$", "abc\n\n", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+$", "abc\r\n\r\n", RegexOptions.AnyNewLine, false, "" };
+
+                // Empty string
+                yield return new object[] { engine, @"$", "", RegexOptions.AnyNewLine, true, "" };
+
+                // String that is just a newline — $ matches at pos 0 (before the newline)
+                yield return new object[] { engine, @"$", "\r", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\n", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\r\n", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\u0085", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\u2028", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\u2029", RegexOptions.AnyNewLine, true, "" };
             }
         }
         [Theory]
@@ -3318,6 +3346,37 @@ namespace System.Text.RegularExpressions.Tests
 
                 // \Z does NOT match between \r and \n
                 yield return new object[] { engine, @"\r\Z", "abc\r\n", RegexOptions.AnyNewLine, false, "" };
+
+                // \Z before trailing Unicode newlines
+                yield return new object[] { engine, @".\Z", "abc\u0085", RegexOptions.AnyNewLine, true, "c" };
+                yield return new object[] { engine, @".\Z", "abc\u2028", RegexOptions.AnyNewLine, true, "c" };
+                yield return new object[] { engine, @".\Z", "abc\u2029", RegexOptions.AnyNewLine, true, "c" };
+
+                // \Z does NOT match mid-string
+                yield return new object[] { engine, @"a\Z", "a\rb", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\nb", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\r\nb", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\u0085b", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\u2028b", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\u2029b", RegexOptions.AnyNewLine, false, "" };
+
+                // Multiple trailing newlines: no word char before last newline
+                yield return new object[] { engine, @"\w+\Z", "abc\r\n\n", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+\Z", "abc\n\r", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+\Z", "abc\r\r", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+\Z", "abc\n\n", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+\Z", "abc\r\n\r\n", RegexOptions.AnyNewLine, false, "" };
+                yield return new object[] { engine, @"\w+\Z", "abc\u0085\u2029", RegexOptions.AnyNewLine, false, "" };
+
+                // Empty string
+                yield return new object[] { engine, @"\Z", "", RegexOptions.AnyNewLine, true, "" };
+
+                // String that is just a newline
+                yield return new object[] { engine, @"\Z", "\r", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\n", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\r\n", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\u0085", RegexOptions.AnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\u2029", RegexOptions.AnyNewLine, true, "" };
             }
         }
 
@@ -3341,30 +3400,80 @@ namespace System.Text.RegularExpressions.Tests
                 if (engine == RegexEngine.NonBacktracking)
                     continue;
 
-                // Simple: $ matches before \r in middle of string
-                yield return new object[] { engine, @"x$", "x\ry", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "x" } };
+                const RegexOptions MA = RegexOptions.Multiline | RegexOptions.AnyNewLine;
 
-                // $ with Multiline|AnyNewLine matches before \r\n, \r, \n, and at end
-                yield return new object[] { engine, @"[^\r\n]+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"[^\r\n]+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"[^\r\n]+$", "foo\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-
-                // \w+$ finds words before all newline types
-                yield return new object[] { engine, @"\w+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"\w+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"\w+$", "foo\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                // Basic: $ matches before each newline type mid-string
+                yield return new object[] { engine, @"x$", "x\ry", MA, new[] { "x" } };
+                yield return new object[] { engine, @"\w+$", "foo\r\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\rbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u0085bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u2028bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u2029bar", MA, new[] { "foo", "bar" } };
 
                 // $ does NOT match between \r and \n of \r\n
-                yield return new object[] { engine, @"[^\n]+$", "ab\r\ncd", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "ab", "cd" } };
+                yield return new object[] { engine, @"[^\n]+$", "ab\r\ncd", MA, new[] { "ab", "cd" } };
 
-                // $ with Multiline|AnyNewLine at end of string (no trailing newline)
-                yield return new object[] { engine, @"\w+$", "hello", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "hello" } };
+                // At end of string (no trailing newline)
+                yield return new object[] { engine, @"\w+$", "hello", MA, new[] { "hello" } };
 
                 // Three lines with mixed newlines
-                yield return new object[] { engine, @"\w+$", "a\rb\nc", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b", "c" } };
+                yield return new object[] { engine, @"\w+$", "a\rb\nc", MA, new[] { "a", "b", "c" } };
+
+                // Adjacent same newlines (empty lines between) — use \w+$ to find words
+                yield return new object[] { engine, @"\w+$", "a\r\rb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\n\nb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\r\n\r\nb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\u0085\u0085b", MA, new[] { "a", "b" } };
+
+                // \n\r is TWO separate newlines (not one)
+                yield return new object[] { engine, @"\w+$", "a\n\rb", MA, new[] { "a", "b" } };
+
+                // \r\r\n: bare CR followed by CRLF — two newlines
+                yield return new object[] { engine, @"\w+$", "a\r\r\nb", MA, new[] { "a", "b" } };
+
+                // \r\n\r: CRLF followed by bare CR — two newlines
+                yield return new object[] { engine, @"\w+$", "a\r\n\rb", MA, new[] { "a", "b" } };
+
+                // \r\n\n: CRLF followed by LF — two newlines
+                yield return new object[] { engine, @"\w+$", "a\r\n\nb", MA, new[] { "a", "b" } };
+
+                // \n\r\n: LF followed by CRLF — two newlines
+                yield return new object[] { engine, @"\w+$", "a\n\r\nb", MA, new[] { "a", "b" } };
+
+                // Trailing newline: \w+$ finds only the word before the newline
+                yield return new object[] { engine, @"\w+$", "foo\r", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "foo\n", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "foo\r\n", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "foo\u0085", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "foo\u2029", MA, new[] { "foo" } };
+
+                // \w*$ with trailing newline gets extra zero-width matches at $ positions
+                yield return new object[] { engine, @"\w*$", "foo\r", MA, new[] { "foo", "", "" } };
+                yield return new object[] { engine, @"\w*$", "foo\r\n", MA, new[] { "foo", "", "" } };
+
+                // \w*$ with adjacent newlines: zero-width match at each $ position
+                yield return new object[] { engine, @"\w*$", "a\r\rb", MA, new[] { "a", "", "", "b", "" } };
+                yield return new object[] { engine, @"\w*$", "a\n\rb", MA, new[] { "a", "", "", "b", "" } };
+                yield return new object[] { engine, @"\w*$", "a\r\n\r\nb", MA, new[] { "a", "", "", "b", "" } };
+
+                // String starting with newline
+                yield return new object[] { engine, @"\w+$", "\rfoo", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "\nfoo", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+$", "\r\nfoo", MA, new[] { "foo" } };
+
+                // Unicode newlines adjacent to ASCII newlines
+                yield return new object[] { engine, @"\w+$", "a\r\u0085b", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\u2028\nb", MA, new[] { "a", "b" } };
+
+                // Only newlines (no word chars) — \w*$ matches "" at each $ position
+                yield return new object[] { engine, @"\w*$", "\r\n", MA, new[] { "", "" } };
+
+                // Empty string
+                yield return new object[] { engine, @"$", "", MA, new[] { "" } };
 
                 // RightToLeft
-                yield return new object[] { engine, @"\w+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
+                yield return new object[] { engine, @"\w+$", "foo\rbar", MA | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
             }
         }
 
@@ -3388,28 +3497,82 @@ namespace System.Text.RegularExpressions.Tests
                 if (engine == RegexEngine.NonBacktracking)
                     continue;
 
-                // ^ matches after \r\n, \r, \n, and at start of string
-                yield return new object[] { engine, @"^\w+", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"^\w+", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"^\w+", "foo\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                const RegexOptions MA = RegexOptions.Multiline | RegexOptions.AnyNewLine;
+
+                // ^ matches after each newline type
+                yield return new object[] { engine, @"^\w+", "foo\r\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\rbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u0085bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u2028bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u2029bar", MA, new[] { "foo", "bar" } };
 
                 // ^ does NOT match between \r and \n of \r\n
-                yield return new object[] { engine, @"^[^\r]+", "ab\r\ncd", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "ab", "cd" } };
+                yield return new object[] { engine, @"^[^\r]+", "ab\r\ncd", MA, new[] { "ab", "cd" } };
 
-                // ^ at start of string only
-                yield return new object[] { engine, @"^\w+", "hello", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "hello" } };
+                // At start of string only
+                yield return new object[] { engine, @"^\w+", "hello", MA, new[] { "hello" } };
 
                 // Three lines with mixed newlines
-                yield return new object[] { engine, @"^\w+", "a\rb\nc", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b", "c" } };
+                yield return new object[] { engine, @"^\w+", "a\rb\nc", MA, new[] { "a", "b", "c" } };
 
                 // Without Multiline, AnyNewLine alone doesn't change ^ (still matches only at start)
                 yield return new object[] { engine, @"^\w+", "foo\rbar", RegexOptions.AnyNewLine, new[] { "foo" } };
+                yield return new object[] { engine, @"^\w+", "foo\u0085bar", RegexOptions.AnyNewLine, new[] { "foo" } };
+
+                // Adjacent same newlines (empty lines)
+                yield return new object[] { engine, @"^\w*", "a\r\rb", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\n\nb", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\r\n\r\nb", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\u0085\u0085b", MA, new[] { "a", "", "b" } };
+
+                // \n\r is TWO separate newlines (not one)
+                yield return new object[] { engine, @"^\w*", "a\n\rb", MA, new[] { "a", "", "b" } };
+
+                // \r\r\n: bare CR then CRLF — two newlines
+                yield return new object[] { engine, @"^\w+", "a\r\r\nb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\r\r\nb", MA, new[] { "a", "", "b" } };
+
+                // \r\n\r: CRLF then bare CR — two newlines
+                yield return new object[] { engine, @"^\w+", "a\r\n\rb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\r\n\rb", MA, new[] { "a", "", "b" } };
+
+                // \r\n\n: CRLF then LF — two newlines
+                yield return new object[] { engine, @"^\w+", "a\r\n\nb", MA, new[] { "a", "b" } };
+
+                // \n\r\n: LF then CRLF — two newlines
+                yield return new object[] { engine, @"^\w+", "a\n\r\nb", MA, new[] { "a", "b" } };
+
+                // String starting with newline
+                yield return new object[] { engine, @"^\w*", "\rfoo", MA, new[] { "", "foo" } };
+                yield return new object[] { engine, @"^\w*", "\nfoo", MA, new[] { "", "foo" } };
+                yield return new object[] { engine, @"^\w*", "\r\nfoo", MA, new[] { "", "foo" } };
+                yield return new object[] { engine, @"^\w*", "\u0085foo", MA, new[] { "", "foo" } };
+
+                // String ending with newline: ^ matches after it (at end, which is also BOL)
+                yield return new object[] { engine, @"^\w*", "foo\r", MA, new[] { "foo", "" } };
+                yield return new object[] { engine, @"^\w*", "foo\n", MA, new[] { "foo", "" } };
+                yield return new object[] { engine, @"^\w*", "foo\r\n", MA, new[] { "foo", "" } };
+                yield return new object[] { engine, @"^\w*", "foo\u2029", MA, new[] { "foo", "" } };
+
+                // Unicode newlines adjacent to ASCII newlines
+                yield return new object[] { engine, @"^\w+", "a\r\u0085b", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"^\w+", "a\u2028\nb", MA, new[] { "a", "b" } };
+
+                // Only newlines
+                yield return new object[] { engine, @"^\w*", "\r\n", MA, new[] { "", "" } };
+
+                // Empty string
+                yield return new object[] { engine, @"^", "", MA, new[] { "" } };
 
                 // Empty lines: ^ at start of line after newline, followed immediately by $
-                yield return new object[] { engine, @"^$", "a\r\n\r\nb", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "" } };
+                yield return new object[] { engine, @"^$", "a\r\n\r\nb", MA, new[] { "" } };
+                yield return new object[] { engine, @"^$", "a\r\rb", MA, new[] { "" } };
+                yield return new object[] { engine, @"^$", "a\n\nb", MA, new[] { "" } };
+                yield return new object[] { engine, @"^$", "a\u0085\u0085b", MA, new[] { "" } };
 
                 // RightToLeft
-                yield return new object[] { engine, @"^\w+", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
+                yield return new object[] { engine, @"^\w+", "foo\rbar", MA | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
             }
         }
 
@@ -3433,20 +3596,49 @@ namespace System.Text.RegularExpressions.Tests
                 if (engine == RegexEngine.NonBacktracking)
                     continue;
 
-                // . does not match \r with AnyNewLine
+                // . does not match \r, \n, or \r\n with AnyNewLine
                 yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
                 yield return new object[] { engine, @".+", "abc\ndef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
                 yield return new object[] { engine, @".+", "abc\r\ndef", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
 
+                // . does not match Unicode newlines with AnyNewLine
+                yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\u2028def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\u2029def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+
                 // . with Singleline|AnyNewLine still matches everything (Singleline takes precedence)
                 yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.Singleline | RegexOptions.AnyNewLine, new[] { "abc\rdef" } };
+                yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.Singleline | RegexOptions.AnyNewLine, new[] { "abc\u0085def" } };
 
-                // Without AnyNewLine, . matches \r (baseline)
+                // Without AnyNewLine, . matches \r and Unicode newlines (baseline)
                 yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.None, new[] { "abc\rdef" } };
+                yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.None, new[] { "abc\u0085def" } };
+                yield return new object[] { engine, @".+", "abc\u2028def", RegexOptions.None, new[] { "abc\u2028def" } };
 
-                // .+$ with Multiline|AnyNewLine now works correctly
+                // .+$ with Multiline|AnyNewLine
                 yield return new object[] { engine, @".+$", "foo\r\nbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @".+$", "foo\rbar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+
+                // Adjacent different newlines: . doesn't match any of them
+                yield return new object[] { engine, @".+", "a\r\n\rb", RegexOptions.AnyNewLine, new[] { "a", "b" } };
+                yield return new object[] { engine, @".+", "a\n\rb", RegexOptions.AnyNewLine, new[] { "a", "b" } };
+                yield return new object[] { engine, @".+", "a\r\u0085b", RegexOptions.AnyNewLine, new[] { "a", "b" } };
+                yield return new object[] { engine, @".+", "a\u2028\u2029b", RegexOptions.AnyNewLine, new[] { "a", "b" } };
+
+                // String of only newlines — no . matches at all
+                yield return new object[] { engine, @".+", "\r\n\r\n", RegexOptions.AnyNewLine, Array.Empty<string>() };
+                yield return new object[] { engine, @".+", "\u0085\u2028", RegexOptions.AnyNewLine, Array.Empty<string>() };
+
+                // Single char between newlines
+                yield return new object[] { engine, @".", "a\rb\nc", RegexOptions.AnyNewLine, new[] { "a", "b", "c" } };
+                yield return new object[] { engine, @".", "\ra\r", RegexOptions.AnyNewLine, new[] { "a" } };
+
+                // . still matches non-newline Unicode chars (tabs, spaces, accented, emoji, etc.)
+                yield return new object[] { engine, @".+", "héllo\rwörld", RegexOptions.AnyNewLine, new[] { "héllo", "wörld" } };
+                yield return new object[] { engine, @".+", "\t\t\r\t\t", RegexOptions.AnyNewLine, new[] { "\t\t", "\t\t" } };
+
+                // .{n} with newlines — segments are only 2 chars, so .{2} finds them
+                yield return new object[] { engine, @".{2}", "ab\rcd\nef", RegexOptions.AnyNewLine, new[] { "ab", "cd", "ef" } };
             }
         }
 
@@ -3550,32 +3742,226 @@ namespace System.Text.RegularExpressions.Tests
                 if (engine == RegexEngine.NonBacktracking)
                     continue;
 
+                const RegexOptions A = RegexOptions.AnyNewLine;
+                const RegexOptions MA = RegexOptions.Multiline | RegexOptions.AnyNewLine;
+
                 // . does not match Unicode newlines with AnyNewLine
-                yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
-                yield return new object[] { engine, @".+", "abc\u2028def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
-                yield return new object[] { engine, @".+", "abc\u2029def", RegexOptions.AnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\u0085def", A, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\u2028def", A, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\u2029def", A, new[] { "abc", "def" } };
 
                 // $ matches before Unicode newlines (non-Multiline)
-                yield return new object[] { engine, @"\w+$", "hello\u0085", RegexOptions.AnyNewLine, new[] { "hello" } };
-                yield return new object[] { engine, @"\w+$", "hello\u2028", RegexOptions.AnyNewLine, new[] { "hello" } };
-                yield return new object[] { engine, @"\w+$", "hello\u2029", RegexOptions.AnyNewLine, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+$", "hello\u0085", A, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+$", "hello\u2028", A, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+$", "hello\u2029", A, new[] { "hello" } };
 
                 // \Z matches before Unicode newlines
-                yield return new object[] { engine, @"\w+\Z", "hello\u0085", RegexOptions.AnyNewLine, new[] { "hello" } };
-                yield return new object[] { engine, @"\w+\Z", "hello\u2028", RegexOptions.AnyNewLine, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+\Z", "hello\u0085", A, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+\Z", "hello\u2028", A, new[] { "hello" } };
+                yield return new object[] { engine, @"\w+\Z", "hello\u2029", A, new[] { "hello" } };
 
                 // $ with Multiline matches before Unicode newlines
-                yield return new object[] { engine, @"\w+$", "foo\u0085bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"\w+$", "foo\u2028bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"\w+$", "foo\u2029bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u0085bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u2028bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\u2029bar", MA, new[] { "foo", "bar" } };
 
                 // ^ with Multiline matches after Unicode newlines
-                yield return new object[] { engine, @"^\w+", "foo\u0085bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"^\w+", "foo\u2028bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
-                yield return new object[] { engine, @"^\w+", "foo\u2029bar", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u0085bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u2028bar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\u2029bar", MA, new[] { "foo", "bar" } };
 
                 // Combined ^.+$ with Unicode newlines
-                yield return new object[] { engine, @"^.+$", "a\u0085b\u2028c\u2029d", RegexOptions.Multiline | RegexOptions.AnyNewLine, new[] { "a", "b", "c", "d" } };
+                yield return new object[] { engine, @"^.+$", "a\u0085b\u2028c\u2029d", MA, new[] { "a", "b", "c", "d" } };
+
+                // Unicode newline adjacent to \r\n
+                yield return new object[] { engine, @"\w+$", "a\u0085\r\nb", MA, new[] { "a", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\r\n\u2028b", MA, new[] { "a", "b" } };
+
+                // Unicode newline adjacent to \r — these are separate newlines, not merged
+                yield return new object[] { engine, @"^\w*", "a\r\u0085b", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\u0085\rb", MA, new[] { "a", "", "b" } };
+
+                // Unicode newlines adjacent to each other
+                yield return new object[] { engine, @"^\w*", "a\u0085\u2028b", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"^\w*", "a\u2028\u2029b", MA, new[] { "a", "", "b" } };
+                yield return new object[] { engine, @"\w+$", "a\u0085\u2028\u2029b", MA, new[] { "a", "b" } };
+
+                // Without AnyNewLine, Unicode newlines are matched by . (baseline)
+                yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.None, new[] { "abc\u0085def" } };
+                yield return new object[] { engine, @".+", "abc\u2028def", RegexOptions.None, new[] { "abc\u2028def" } };
+                yield return new object[] { engine, @".+", "abc\u2029def", RegexOptions.None, new[] { "abc\u2029def" } };
+
+                // \s still matches newlines (AnyNewLine only affects ., ^, $, \Z)
+                yield return new object[] { engine, @"\s+", "a\r\nb", A, new[] { "\r\n" } };
+                yield return new object[] { engine, @"\s+", "a\u0085b", A, new[] { "\u0085" } };
+                yield return new object[] { engine, @"\s+", "a\u2028b", A, new[] { "\u2028" } };
+
+                // \S does NOT match newlines (unchanged by AnyNewLine)
+                yield return new object[] { engine, @"\S+", "abc\r\ndef", A, new[] { "abc", "def" } };
+                yield return new object[] { engine, @"\S+", "abc\u0085def", A, new[] { "abc", "def" } };
+
+                // [^\n] still matches \r without AnyNewLine on dot — AnyNewLine doesn't affect explicit char classes
+                yield return new object[] { engine, @"[^\n]+", "a\rb\nc", A, new[] { "a\rb", "c" } };
+
+                // \w does NOT match newlines (unchanged)
+                yield return new object[] { engine, @"\w+", "abc\rdef\u0085ghi", A, new[] { "abc", "def", "ghi" } };
+
+                // Named char class \p{Zl} (Line Separator) still matches \u2028 — AnyNewLine doesn't change Unicode categories
+                yield return new object[] { engine, @"\p{Zl}", "a\u2028b", A, new[] { "\u2028" } };
+                yield return new object[] { engine, @"\p{Zp}", "a\u2029b", A, new[] { "\u2029" } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AnyNewLine_Advanced_TestData))]
+        public async Task AnyNewLine_Advanced(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            MatchCollection matches = r.Matches(input);
+            Assert.Equal(expectedValues.Length, matches.Count);
+            for (int i = 0; i < expectedValues.Length; i++)
+            {
+                Assert.Equal(expectedValues[i], matches[i].Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_Advanced_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                const RegexOptions A = RegexOptions.AnyNewLine;
+                const RegexOptions MA = RegexOptions.Multiline | RegexOptions.AnyNewLine;
+
+                // --- Inline options: (?m) enables Multiline within pattern ---
+                yield return new object[] { engine, @"(?m)^\w+$", "foo\rbar", A, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"(?m)\w+$", "foo\rbar", A, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"(?m)^\w+", "foo\rbar", A, new[] { "foo", "bar" } };
+
+                // Inline (?s) enables Singleline — dot matches everything including \r
+                yield return new object[] { engine, @"(?s).+", "abc\rdef", A, new[] { "abc\rdef" } };
+
+                // Inline options scoped to group: (?m:^.+$) inside non-multiline
+                yield return new object[] { engine, @"(?m:^.+$)", "foo\rbar", A, new[] { "foo", "bar" } };
+
+                // --- IgnoreCase + AnyNewLine ---
+                yield return new object[] { engine, @"^[a-z]+$", "Foo\rBar", MA | RegexOptions.IgnoreCase, new[] { "Foo", "Bar" } };
+                yield return new object[] { engine, @".+$", "FOO\rBAR", MA | RegexOptions.IgnoreCase, new[] { "FOO", "BAR" } };
+
+                // --- Backreferences: captured text across newline boundaries ---
+                yield return new object[] { engine, @"^(\w+)\r\n\1$", "abc\r\nabc", A, new[] { "abc\r\nabc" } };
+
+                // --- Alternation with anchors ---
+                yield return new object[] { engine, @"^foo|^bar", "foo\rbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"foo$|bar$", "foo\rbar", MA, new[] { "foo", "bar" } };
+
+                // --- Conditional: (?(condition)yes|no) ---
+                // If line starts with digit, match digits; else match word chars
+                yield return new object[] { engine, @"^(?(\d)\d+|\w+)$", "abc\r123", MA, new[] { "abc", "123" } };
+
+                // --- Lookahead/lookbehind combined with AnyNewLine anchors ---
+                yield return new object[] { engine, @"(?<=^)\w+", "foo\rbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+(?=$)", "foo\rbar", MA, new[] { "foo", "bar" } };
+
+                // --- Quantified dot with AnyNewLine ---
+                yield return new object[] { engine, @".{1,5}", "abc\rde\nfghij", A, new[] { "abc", "de", "fghij" } };
+                yield return new object[] { engine, @".?", "a\rb", A, new[] { "a", "", "b", "" } };
+
+                // --- Lazy quantifiers ---
+                yield return new object[] { engine, @".+?$", "foo\rbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^.+?", "foo\rbar", MA, new[] { "f", "b" } };
+
+                // --- Capturing groups across lines ---
+                yield return new object[] { engine, @"^(\w+)$", "foo\rbar\nbaz", MA, new[] { "foo", "bar", "baz" } };
+
+                // --- Named groups ---
+                yield return new object[] { engine, @"^(?<word>\w+)$", "foo\rbar", MA, new[] { "foo", "bar" } };
+
+                // --- Atomic groups (?>...) ---
+                yield return new object[] { engine, @"^(?>(\w+))$", "foo\rbar", MA, new[] { "foo", "bar" } };
+
+                // --- Non-capturing groups ---
+                yield return new object[] { engine, @"^(?:\w+)$", "foo\rbar", MA, new[] { "foo", "bar" } };
+
+                // --- \b word boundary near newlines ---
+                yield return new object[] { engine, @"\b\w+\b", "foo\rbar\nbaz", A, new[] { "foo", "bar", "baz" } };
+
+                // --- \A and \z are NOT affected by AnyNewLine ---
+                yield return new object[] { engine, @"\A\w+", "foo\rbar", A, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+\z", "foo\rbar", A, new[] { "bar" } };
+                yield return new object[] { engine, @"\A\w+", "foo\rbar", MA, new[] { "foo" } };
+                yield return new object[] { engine, @"\w+\z", "foo\rbar", MA, new[] { "bar" } };
+
+                // --- RightToLeft with various constructs ---
+                yield return new object[] { engine, @"^.+$", "foo\rbar\nbaz", MA | RegexOptions.RightToLeft, new[] { "baz", "bar", "foo" } };
+                yield return new object[] { engine, @"\w+$", "a\u0085b\u2028c", MA | RegexOptions.RightToLeft, new[] { "c", "b", "a" } };
+                yield return new object[] { engine, @"^\w+", "a\r\nb\rc", MA | RegexOptions.RightToLeft, new[] { "c", "b", "a" } };
+
+                // --- Compiled + AnyNewLine (exercised by engine parameter, but explicit for clarity) ---
+                yield return new object[] { engine, @"^.+$", "line1\r\nline2\rline3", MA, new[] { "line1", "line2", "line3" } };
+
+                // --- \G (start anchor) not affected by AnyNewLine ---
+                yield return new object[] { engine, @"\G\w+", "foo\rbar", A, new[] { "foo" } };
+
+                // --- Empty pattern with anchors — matches at each anchor position ---
+                yield return new object[] { engine, @"^", "a\rb", MA, new[] { "", "" } };
+                yield return new object[] { engine, @"$", "a\rb", MA, new[] { "", "" } };
+
+                // --- Explicit newline chars in character class NOT affected by AnyNewLine ---
+                yield return new object[] { engine, @"[\r\n]+", "a\r\nb\rc\nd", A, new[] { "\r\n", "\r", "\n" } };
+                yield return new object[] { engine, @"[^\r\n]+", "a\r\nb\rc\nd", A, new[] { "a", "b", "c", "d" } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AnyNewLine_Methods_TestData))]
+        public async Task AnyNewLine_Methods(RegexEngine engine)
+        {
+            const RegexOptions A = RegexOptions.AnyNewLine;
+            const RegexOptions MA = RegexOptions.Multiline | RegexOptions.AnyNewLine;
+
+            // IsMatch
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, @"^bar$", MA);
+            Assert.True(r1.IsMatch("foo\rbar\nbaz"));
+            Assert.True(r1.IsMatch("foo\u0085bar"));
+
+            // Count
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, @"^.+$", MA);
+            Assert.Equal(3, r2.Count("a\rb\nc"));
+            Assert.Equal(4, r2.Count("a\rb\u0085c\u2028d"));
+
+            // EnumerateMatches
+            Regex r3 = await RegexHelpers.GetRegexAsync(engine, @"\w+$", MA);
+            int count = 0;
+            foreach (ValueMatch _ in r3.EnumerateMatches("foo\rbar"))
+                count++;
+            Assert.Equal(2, count);
+
+            // Match with startat past a newline
+            Regex r4 = await RegexHelpers.GetRegexAsync(engine, @"^\w+", MA);
+            Match m = r4.Match("foo\rbar", 4);
+            Assert.True(m.Success);
+            Assert.Equal("bar", m.Value);
+
+            // Replace with group reference
+            Regex r5 = await RegexHelpers.GetRegexAsync(engine, @"^(.+)$", MA);
+            Assert.Equal("[foo]\r[bar]", r5.Replace("foo\rbar", "[$1]"));
+
+            // Split preserving newlines
+            Regex r6 = await RegexHelpers.GetRegexAsync(engine, @".+", A);
+            Assert.Equal(new[] { "", "\r\n", "\r", "\n", "" }, r6.Split("one\r\ntwo\rthree\nfour"));
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_Methods_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                yield return new object[] { engine };
             }
         }
 
