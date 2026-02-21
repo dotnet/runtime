@@ -244,6 +244,18 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
+        /// <inheritdoc/>
+        public override void EmitCalli(Type functionPointerType)
+        {
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(m_scope, functionPointerType);
+            Emit(OpCodes.Calli, sig);
+        }
+
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             ArgumentNullException.ThrowIfNull(methodInfo);

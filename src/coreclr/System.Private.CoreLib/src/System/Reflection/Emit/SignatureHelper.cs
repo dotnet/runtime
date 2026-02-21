@@ -105,6 +105,51 @@ namespace System.Reflection.Emit
             return new SignatureHelper(mod, intCall, returnType, null, null);
         }
 
+        internal static SignatureHelper GetMethodSigHelper(DynamicScope scope, Type functionPointerType)
+        {
+            Debug.Assert(functionPointerType.IsFunctionPointer);
+
+            Type retType = functionPointerType.GetFunctionPointerReturnType();
+            Type[] retTypeModReqs = retType.GetRequiredCustomModifiers();
+            Type[] retTypeModOpts = retType.GetOptionalCustomModifiers();
+            Type[] paramTypes = functionPointerType.GetFunctionPointerParameterTypes();
+            Type[][] paramModReqs = new Type[paramTypes.Length][];
+            Type[][] paramModOpts = new Type[paramTypes.Length][];
+
+            retType = retType.UnderlyingSystemType;
+
+            for (int i = 0; i < paramTypes.Length; i++)
+            {
+                paramModReqs[i] = paramTypes[i].GetRequiredCustomModifiers();
+                paramModOpts[i] = paramTypes[i].GetOptionalCustomModifiers();
+                paramTypes[i] = paramTypes[i].UnderlyingSystemType;
+            }
+
+            MdSigCallingConvention callConv = MdSigCallingConvention.Default;
+
+            if (functionPointerType.IsUnmanagedFunctionPointer)
+            {
+                callConv = MdSigCallingConvention.Unmanaged;
+
+                if (functionPointerType.GetFunctionPointerCallingConventions() is { Length: 1 } conventions)
+                {
+                    callConv = conventions[0].FullName switch
+                    {
+                        "System.Runtime.CompilerServices.CallConvCdecl" => MdSigCallingConvention.C,
+                        "System.Runtime.CompilerServices.CallConvStdcall" => MdSigCallingConvention.StdCall,
+                        "System.Runtime.CompilerServices.CallConvThiscall" => MdSigCallingConvention.ThisCall,
+                        "System.Runtime.CompilerServices.CallConvFastcall" => MdSigCallingConvention.FastCall,
+                        _ => MdSigCallingConvention.Unmanaged
+                    };
+                }
+            }
+
+            SignatureHelper sig = new(null, callConv);
+            sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
+            sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
+            return sig;
+        }
+
         public static SignatureHelper GetLocalVarSigHelper()
         {
             return GetLocalVarSigHelper(null);
@@ -320,8 +365,8 @@ namespace System.Reflection.Emit
             AddOneArgTypeHelper(clsArgument);
         }
 
-        private void AddOneArgTypeHelper(Type clsArgument) { AddOneArgTypeHelperWorker(clsArgument, false); }
-        private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst)
+        private void AddOneArgTypeHelper(Type clsArgument, DynamicScope? scope = null) { AddOneArgTypeHelperWorker(clsArgument, false, scope); }
+        private void AddOneArgTypeHelperWorker(Type clsArgument, bool lastWasGenericInst, DynamicScope? scope)
         {
             if (clsArgument.IsGenericParameter)
             {
@@ -336,7 +381,7 @@ namespace System.Reflection.Emit
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
 
-                AddOneArgTypeHelperWorker(clsArgument.GetGenericTypeDefinition(), true);
+                AddOneArgTypeHelperWorker(clsArgument.GetGenericTypeDefinition(), true, scope);
 
                 Type[] args = clsArgument.GetGenericArguments();
 
@@ -394,12 +439,12 @@ namespace System.Reflection.Emit
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_BYREF);
                 clsArgument = clsArgument.GetElementType()!;
-                AddOneArgTypeHelper(clsArgument);
+                AddOneArgTypeHelper(clsArgument, scope);
             }
             else if (clsArgument.IsPointer)
             {
                 AddElementType(CorElementType.ELEMENT_TYPE_PTR);
-                AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
             }
             else if (clsArgument.IsArray)
             {
@@ -407,13 +452,13 @@ namespace System.Reflection.Emit
                 {
                     AddElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
 
-                    AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                    AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
                 }
                 else
                 {
                     AddElementType(CorElementType.ELEMENT_TYPE_ARRAY);
 
-                    AddOneArgTypeHelper(clsArgument.GetElementType()!);
+                    AddOneArgTypeHelper(clsArgument.GetElementType()!, scope);
 
                     // put the rank information
                     int rank = clsArgument.GetArrayRank();
@@ -422,6 +467,25 @@ namespace System.Reflection.Emit
                     AddData(rank);  // lower bound
                     for (int i = 0; i < rank; i++)
                         AddData(0);
+                }
+            }
+            else if (clsArgument.IsFunctionPointer)
+            {
+                if (scope == null)
+                    throw new NotSupportedException(SR.NotSupported_FunctionPointerSignature);
+
+                AddData((int)CorElementType.ELEMENT_TYPE_FNPTR);
+                SignatureHelper sig = GetMethodSigHelper(scope, clsArgument);
+                byte[] bytes = sig.GetSignature();
+
+                if (m_currSig + bytes.Length > m_signature.Length)
+                {
+                    m_signature = ExpandArray(m_signature, m_signature.Length + bytes.Length);
+                }
+
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    m_signature[m_currSig++] = bytes[i];
                 }
             }
             else
@@ -729,9 +793,10 @@ namespace System.Reflection.Emit
             return temp;
         }
 
-        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        internal void AddDynamicArgument(DynamicScope dynamicScope, Type clsArgument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, bool incrementArgCount = true)
         {
-            IncrementArgCounts();
+            if (incrementArgCount)
+                IncrementArgCounts();
 
             Debug.Assert(clsArgument != null);
 
@@ -749,6 +814,9 @@ namespace System.Reflection.Emit
 
                     if (t.ContainsGenericParameters)
                         throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
+
+                    if (t.IsFunctionPointer)
+                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(optionalCustomModifiers));
 
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
@@ -773,6 +841,9 @@ namespace System.Reflection.Emit
                     if (t.ContainsGenericParameters)
                         throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
 
+                    if (t.IsFunctionPointer)
+                        throw new ArgumentException(SR.Argument_FunctionPointersInvalid, nameof(requiredCustomModifiers));
+
                     AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
                     int token = dynamicScope.GetTokenFor(rtType.TypeHandle);
@@ -781,7 +852,18 @@ namespace System.Reflection.Emit
                 }
             }
 
-            AddOneArgTypeHelper(clsArgument);
+            AddOneArgTypeHelper(clsArgument, dynamicScope);
+        }
+
+        internal void AddArguments(DynamicScope dynamicScope, Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        {
+            if (arguments is null)
+                return;
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                AddDynamicArgument(dynamicScope, arguments[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
+            }
         }
 
         #endregion

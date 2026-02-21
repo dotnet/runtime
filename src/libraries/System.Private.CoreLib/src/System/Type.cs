@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -645,9 +646,148 @@ namespace System
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
 
+        /// <summary>
+        /// Creates a function pointer signature type with the specified return type, parameter types and calling conventions.
+        /// </summary>
+        /// <param name="returnType">The return type of the function pointer.</param>
+        /// <param name="parameterTypes">An array of types representing the parameters of the function pointer.</param>
+        /// <param name="isUnmanaged"><see langword="true"/> if the function pointer uses unmanaged calling conventions; otherwise, <see langword="false"/>.</param>
+        /// <param name="callingConventions">An array of types representing the calling conventions applied to the function pointer.</param>
+        /// <returns>A <see cref="Type"/> object representing the constructed function pointer signature.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="returnType"/>, any supplied parameter type
+        /// or any supplied calling convention is <see langword="null"/>.
+        /// </exception>
+        public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
+        {
+            ArgumentNullException.ThrowIfNull(returnType);
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
+
+            for (int i = 0; i < parameterTypes.Length; i++)
+            {
+                Type paramType = parameterTypes[i];
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
+            }
+
+            for (int i = 0; i < callingConventions.Length; i++)
+                ArgumentNullException.ThrowIfNull(callingConventions[i], nameof(callingConventions));
+
+            if (!isUnmanaged && callingConventions.Length >= 1)
+                throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
+
+            // Reverse calling conventions for consistency with Roslyn:
+            // delegate* unmanaged[Cdecl, MemberFunction]<int> => int32 modopt(CallConvMemberFunction) modopt(CallConvCdecl) *()
+            Array.Reverse(callingConventions);
+
+            bool builtInCallConv = false;
+            if (callingConventions.Length == 1)
+            {
+                // Known calling conventions with direct IL equivalent
+                string? callConv = callingConventions[0].FullName;
+                if (!string.IsNullOrEmpty(callConv) &&
+                    (callConv == "System.Runtime.CompilerServices.CallConvCdecl"
+                    || callConv == "System.Runtime.CompilerServices.CallConvStdcall"
+                    || callConv == "System.Runtime.CompilerServices.CallConvThiscall"
+                    || callConv == "System.Runtime.CompilerServices.CallConvFastcall"))
+                    builtInCallConv = true;
+            }
+
+            List<Type> modoptCallConvs = [];
+            if (returnType is SignatureModifiedType modifiedType
+                && modifiedType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
+            {
+                for (int i = 0; i < retTypeModOpts.Length; i++)
+                {
+                    Type modopt = retTypeModOpts[i];
+
+                    if (modopt != null && modopt.FullName != null
+                        && modopt.FullName.StartsWith("System.Runtime.CompilerServices.CallConv", StringComparison.Ordinal))
+                        modoptCallConvs.Add(modopt);
+                }
+            }
+
+            if (isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
+            {
+                // Newer or multiple calling conventions specified -> encoded as modopts
+                returnType = MakeModifiedSignatureType(
+                    returnType,
+                    requiredCustomModifiers: [],
+                    optionalCustomModifiers: callingConventions);
+            }
+
+            return new SignatureFunctionPointerType(
+                returnType,
+                parameterTypes,
+                isUnmanaged,
+                [.. modoptCallConvs, .. callingConventions]);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Type"/> object that represents a function pointer type
+        /// with the specified parameter types. The return type is represented by the
+        /// current <see cref="Type"/> instance.
+        /// </summary>
+        /// <param name="parameterTypes">An array of <see cref="Type"/> objects that represent the parameter types of
+        /// the function pointer. If <see langword="null"/>, an empty parameter list
+        /// is assumed.
+        /// </param>
+        /// <param name="isUnmanaged">
+        /// <see langword="true"/> to create an unmanaged function pointer type; otherwise,
+        /// <see langword="false"/> to create a managed function pointer type.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Type"/> object that represents the function pointer type whose
+        /// return type is the current <see cref="Type"/> and whose parameter types are
+        /// specified by <paramref name="parameterTypes"/>.
+        /// </returns>
+        public virtual Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
+        /// <summary>
+        /// Creates a <see cref="Type"/> that represents <paramref name="type"/> with the specified
+        /// required and optional custom modifiers applied to its signature.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> to modify. This parameter cannot be <see langword="null"/>.</param>
+        /// <param name="requiredCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent required custom modifiers
+        /// (<c>modreq</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no required custom modifiers are applied.
+        /// </param>
+        /// <param name="optionalCustomModifiers">
+        /// An array of <see cref="Type"/> objects that represent optional custom modifiers
+        /// (<c>modopt</c>) to apply to the returned type.
+        /// If <see langword="null"/>, no optional custom modifiers are applied.
+        /// </param>
+        /// <returns>A new <see cref="Type"/> instance that represents the specified <paramref name="type"/>
+        /// with the given required and optional custom modifiers.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when <paramref name="type"/>
+        /// or any specified modifier type is <see langword="null"/>.
+        /// </exception>
+        public static Type MakeModifiedSignatureType(Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
+        {
+            ArgumentNullException.ThrowIfNull(type);
+            requiredCustomModifiers = (requiredCustomModifiers != null) ? (Type[])requiredCustomModifiers.Clone() : [];
+            optionalCustomModifiers = (optionalCustomModifiers != null) ? (Type[])optionalCustomModifiers.Clone() : [];
+
+            for (int i = 0; i < requiredCustomModifiers.Length; i++)
+                ArgumentNullException.ThrowIfNull(requiredCustomModifiers[i], nameof(requiredCustomModifiers));
+
+            for (int i = 0; i < optionalCustomModifiers.Length; i++)
+                ArgumentNullException.ThrowIfNull(optionalCustomModifiers[i], nameof(optionalCustomModifiers));
+
+            return new SignatureModifiedType(
+                type,
+                requiredCustomModifiers,
+                optionalCustomModifiers);
+        }
 
         public virtual Type MakePointerType() => throw new NotSupportedException();
 

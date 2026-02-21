@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -213,5 +215,16 @@ namespace System.Reflection.Emit.Tests
             public override Type[] GetRequiredCustomModifiers() => requiredModifiers;
             public override Type[] GetOptionalCustomModifiers() => optionalModifiers;
         }
+    }
+
+    public unsafe class ClassWithFunctionPointers
+    {
+        public static delegate*<int, int, int> FuncManaged;
+        public static int Add(int a, int b) => a + b;
+        public static void Init() => FuncManaged = &Add;
+
+        public static delegate* unmanaged[Cdecl]<string, bool> FuncUnmanaged1;
+        public static delegate* unmanaged[Fastcall, SuppressGCTransition]<int, void> FuncUnmanaged2;
+        public static delegate* unmanaged[Swift]<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, string> FuncUnmanaged3;
     }
 }
