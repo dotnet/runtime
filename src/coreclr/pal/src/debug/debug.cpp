@@ -730,8 +730,10 @@ PAL_ReadProcessMemory(
     //
     // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
     // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
-    // on other Linux distros would hit the same issue, so the strip is applied unconditionally.
+    // on other Linux distros would hit the same issue.
+#ifdef TARGET_ARM64
     address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
     read = pread(handle, buffer, size, address);
     if (read == (size_t)-1)
     {
