@@ -25,6 +25,7 @@ using Internal.Pgo;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
@@ -1782,28 +1783,6 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private bool IsCallEffectivelyDirect(MethodDesc method)
-        {
-            if (!method.IsVirtual)
-            {
-                return true;
-            }
-
-            // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
-            if (method.OwningType.IsInterface)
-            {
-                return false;
-            }
-
-            // Check if we can devirt per metadata
-            if (method.IsFinal || method.OwningType.IsSealed())
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private static object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
         {
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, token);
@@ -1901,7 +1880,7 @@ namespace Internal.JitInterface
 #if !READYTORUN
                     if (allowAsyncVariant)
                     {
-                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || IsCallEffectivelyDirect(method);
+                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || method.IsCallEffectivelyDirect();
                         if (isDirect && !method.IsAsync)
                         {
                             // Async variant would be a thunk. Do not resolve direct calls
@@ -3671,6 +3650,52 @@ namespace Internal.JitInterface
             else
             {
                 lowering.byIntegerCallConv = true;
+            }
+        }
+
+        private CorInfoWasmType getWasmLowering(CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            TypeDesc type = HandleToObject(structHnd);
+
+#if READYTORUN
+            LayoutInt classSize = type.GetElementSize();
+
+            if (classSize.IsIndeterminate)
+            {
+                throw new RequiresRuntimeJitException(type);
+            }
+
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            TypeDesc abiType = WasmLowering.LowerToAbiType(type);
+
+            if (abiType == null)
+            {
+                // Indicate type should be passed by-ref.
+                return CorInfoWasmType.CORINFO_WASM_TYPE_VOID;
+            }
+
+            WasmValueType wasmAbiType = WasmLowering.LowerType(abiType);
+
+            switch (wasmAbiType)
+            {
+                case WasmValueType.I32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32;
+                case WasmValueType.I64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I64;
+                case WasmValueType.F32:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
+                case WasmValueType.F64:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_I32; // unreachable
+
             }
         }
 

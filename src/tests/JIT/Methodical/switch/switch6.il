@@ -6,6 +6,8 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern legacy library mscorlib { auto }
 .assembly extern System.Console { auto }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .assembly 'switch6'
 {
@@ -87,6 +89,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/124222')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsWasm')
+    }
     .entrypoint
     .maxstack  8
     IL_0000:  ldc.i4.1

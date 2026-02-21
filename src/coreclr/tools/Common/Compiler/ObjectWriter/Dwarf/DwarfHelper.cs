@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal static class DwarfHelper
+    public static class DwarfHelper
     {
         public static uint SizeOfULEB128(ulong value)
         {

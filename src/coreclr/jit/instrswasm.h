@@ -48,6 +48,7 @@ INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 
 INST(local_get,    "local.get",    0, IF_ULEB128, 0x20)
 INST(local_set,    "local.set",    0, IF_ULEB128, 0x21)
+INST(local_tee,    "local.tee",    0, IF_ULEB128, 0x22)
 INST(i32_load,     "i32.load",     0, IF_MEMARG,  0x28)
 INST(i64_load,     "i64.load",     0, IF_MEMARG,  0x29)
 INST(f32_load,     "f32.load",     0, IF_MEMARG,  0x2A)

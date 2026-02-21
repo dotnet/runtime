@@ -139,6 +139,7 @@ struct JitInterfaceCallbacks
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     void (* getSwiftLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
+    CorInfoWasmType (* getWasmLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
@@ -1440,6 +1441,15 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getFpStructLowering(_thisHandle, &pException, structHnd, pLowering);
     if (pException != nullptr) throw pException;
+}
+
+    virtual CorInfoWasmType getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CorInfoWasmType temp = _callbacks->getWasmLowering(_thisHandle, &pException, structHnd);
+    if (pException != nullptr) throw pException;
+    return temp;
 }
 
     virtual uint32_t getThreadTLSIndex(

@@ -430,10 +430,8 @@ namespace ILCompiler.ObjectWriter
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
-                bool recordSize = isMethod;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 #else
-                bool recordSize = true;
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
@@ -463,7 +461,7 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
-                        n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
+                        n.Offset == 0 ? nodeContents.Data.Length : 0);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
@@ -474,7 +472,7 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
-                            n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
+                            n.Offset == 0 ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 
                         if (n is IMethodNode)
@@ -772,8 +770,9 @@ namespace ILCompiler.ObjectWriter
         private struct ProgressReporter
         {
             private readonly Logger _logger;
-            private readonly int _increment;
+            private readonly int _total;
             private int _current;
+            private int _lastReportedStep;
 
             // Will report progress every (100 / 10) = 10%
             private const int Steps = 10;
@@ -781,18 +780,20 @@ namespace ILCompiler.ObjectWriter
             public ProgressReporter(Logger logger, int total)
             {
                 _logger = logger;
-                _increment = total / Steps;
+                _total = total;
                 _current = 0;
+                _lastReportedStep = 0;
             }
 
             public void LogProgress()
             {
                 _current++;
 
-                int adjusted = _current + Steps - 1;
-                if ((adjusted % _increment) == 0)
+                int step = (_current * Steps) / _total;
+                if (step > _lastReportedStep)
                 {
-                    _logger.LogMessage($"{(adjusted / _increment) * (100 / Steps)}%...");
+                    _logger.LogMessage($"{step * (100 / Steps)}%...");
+                    _lastReportedStep = step;
                 }
             }
         }

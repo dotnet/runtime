@@ -22,7 +22,6 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         public WasmTypeNode(WasmFuncType type)
         {
             _type = type;
-
             _data = new byte[_type.EncodeSize()];
             _type.Encode(_data);
         }

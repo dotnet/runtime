@@ -2569,6 +2569,14 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     EE_TO_JIT_TRANSITION();
 }
 
+CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    LIMITED_METHOD_CONTRACT;
+    // Only needed for a Wasm Jit.
+    UNREACHABLE();
+    return CORINFO_WASM_TYPE_VOID;
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {

@@ -1412,37 +1412,6 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 #ifdef FEATURE_READYTORUN
-GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
-                                             GenTreeFlags          handleFlags,
-                                             void*                 compileTimeHandle)
-{
-    CORINFO_GENERIC_HANDLE handle       = nullptr;
-    void*                  pIndirection = nullptr;
-    assert(pLookup->accessType != IAT_PPVALUE && pLookup->accessType != IAT_RELPVALUE);
-
-    if (pLookup->accessType == IAT_VALUE)
-    {
-        handle = pLookup->handle;
-    }
-    else if (pLookup->accessType == IAT_PVALUE)
-    {
-        pIndirection = pLookup->addr;
-    }
-    GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
-#ifdef DEBUG
-    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
-    if (handle != nullptr)
-    {
-        addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-    else
-    {
-        addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-#endif //  DEBUG
-    return addr;
-}
-
 //------------------------------------------------------------------------
 // impIsCastHelperEligibleForClassProbe: Checks whether a tree is a cast helper eligible to
 //    to be profiled and then optimized with PGO data
@@ -2978,8 +2947,6 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
-    CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
 
     // We still make some assumptions about the layout of Nullable<T> in JIT
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
@@ -2990,10 +2957,14 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
     lvaSetStruct(resultTmp, nullableCls, false);
 
+    ClassLayout*         layout;
+    CORINFO_CLASS_HANDLE valueStructCls;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+
     // Now do two stores:
-    GenTree*     hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
-    ClassLayout* layout        = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
-    GenTree*     valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
+    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    GenTree* valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
 
     // ABI handling for struct values
     if (varTypeIsStruct(valueStore))
@@ -3023,9 +2994,11 @@ void Compiler::impLoadNullableFields(GenTree*             nullableObj,
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+
+    ClassLayout*         valueLayout;
     CORINFO_CLASS_HANDLE valueStructCls;
-    var_types            valueType   = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
-    ClassLayout*         valueLayout = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
+    CorInfoType          corFldType = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types            valueType  = TypeHandleToVarType(corFldType, valueStructCls, &valueLayout);
 
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
