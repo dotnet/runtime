@@ -2014,7 +2014,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 //    to use memset call due to atomicity requirements.
 //
 // Arguments:
-//    initBlkNode - the GT_STORE_BLK node
+//    blkOp - the GT_STORE_BLK node
 //
 void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
 {
