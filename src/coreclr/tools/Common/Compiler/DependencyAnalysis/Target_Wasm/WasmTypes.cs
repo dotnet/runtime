@@ -160,7 +160,6 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public static WasmFuncType FromCorInfoSignature(CorInfoWasmType[] types)
         {
-            Console.WriteLine($"types: {types}");
             WasmResultType rs;
             if (types.Length == 0)
             {
