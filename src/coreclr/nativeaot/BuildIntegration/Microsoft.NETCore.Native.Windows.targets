@@ -51,6 +51,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IlcSdkPath)brotlienc$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)brotlidec$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)zstd_static$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)lzma$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>

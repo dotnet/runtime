@@ -53,3 +53,4 @@ ZSTD_DCtx_refPrefix
 ZSTD_CCtx_refPrefix
 ZSTD_CCtx_setPledgedSrcSize
 ZDICT_trainFromBuffer
+lzma_stream_decoder
