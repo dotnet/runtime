@@ -47,11 +47,15 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
+                // TODO(unsafe): Baselining unsafe usage
                 // The array is actually a U[] where U:T. We'll make sure to create
                 // an array of the exact same backing type. The cast to T[] will
                 // never fail.
 
-                dest = Unsafe.As<T[]>(Array.CreateInstanceFromArrayType(array.GetType(), length));
+                unsafe
+                {
+                    dest = Unsafe.As<T[]>(Array.CreateInstanceFromArrayType(array.GetType(), length));
+                }
             }
 
             // In either case, the newly-allocated array is the exact same type as the
@@ -158,7 +162,13 @@ namespace System.Runtime.CompilerServices
             // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
             => throw new PlatformNotSupportedException();
 #else
-            => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+            }
+        }
 #endif
 
 

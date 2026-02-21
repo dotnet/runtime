@@ -366,13 +366,21 @@ namespace System.Runtime.Intrinsics
 
             if (Vector<T>.Count >= Vector256<T>.Count)
             {
-                ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
-                return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
+                    return Unsafe.ReadUnaligned<Vector256<T>>(ref address);
+                }
             }
             else
             {
                 Vector256<T> result = default;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<Vector256<T>, byte>(ref result), value);
+                }
                 return result;
             }
         }
@@ -390,13 +398,21 @@ namespace System.Runtime.Intrinsics
 
             if (Vector256<T>.Count >= Vector<T>.Count)
             {
-                ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
-                return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
+                    return Unsafe.ReadUnaligned<Vector<T>>(ref address);
+                }
             }
             else
             {
                 Vector<T> result = default;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+                }
                 return result;
             }
         }
@@ -765,8 +781,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[0]), vector);
+            }
         }
 
         /// <summary>Copies a <see cref="Vector256{T}" /> to a given array starting at the specified index.</summary>
@@ -792,8 +812,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination[startIndex]), vector);
+            }
         }
 
         /// <summary>Copies a <see cref="Vector256{T}" /> to a given span.</summary>
@@ -809,8 +833,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+            }
         }
 
         /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
@@ -993,8 +1021,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[0]));
+            unsafe
+            {
+                return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[0]));
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
@@ -1014,8 +1046,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[index]));
+            unsafe
+            {
+                return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref values[index]));
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given readonly span.</summary>
@@ -1031,8 +1067,12 @@ namespace System.Runtime.Intrinsics
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            unsafe
+            {
+                return Unsafe.ReadUnaligned<Vector256<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            }
         }
 
         /// <summary>Creates a new <see langword="Vector256&lt;Byte&gt;" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -2443,8 +2483,12 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
-            return Unsafe.ReadUnaligned<Vector256<T>>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+                return Unsafe.ReadUnaligned<Vector256<T>>(in address);
+            }
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -2459,20 +2503,38 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
-            return Unsafe.ReadUnaligned<Vector256<T>>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+                return Unsafe.ReadUnaligned<Vector256<T>>(in address);
+            }
         }
 
         /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort" />.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
-        internal static Vector256<ushort> LoadUnsafe(ref char source) => LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+        internal static Vector256<ushort> LoadUnsafe(ref char source)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+            }
+        }
 
         /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort" />.</summary>
         /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
         /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
-        internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset) => LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+        internal static Vector256<ushort> LoadUnsafe(ref char source, nuint elementOffset)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+            }
+        }
 
         /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3920,8 +3982,12 @@ namespace System.Runtime.Intrinsics
         public static void StoreUnsafe<T>(this Vector256<T> source, ref T destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref destination);
-            Unsafe.WriteUnaligned(ref address, source);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref byte address = ref Unsafe.As<T, byte>(ref destination);
+                Unsafe.WriteUnaligned(ref address, source);
+            }
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -3937,7 +4003,11 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
+            }
         }
 
         /// <inheritdoc cref="Vector128.Subtract{T}(Vector128{T}, Vector128{T})" />
@@ -4072,8 +4142,12 @@ namespace System.Runtime.Intrinsics
             {
                 return false;
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+            }
             return true;
         }
 
@@ -4408,16 +4482,24 @@ namespace System.Runtime.Intrinsics
         internal static T GetElementUnsafe<T>(in this Vector256<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
-            ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
-            return Unsafe.Add(ref address, index);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
+                return Unsafe.Add(ref address, index);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetElementUnsafe<T>(in this Vector256<T> vector, int index, T value)
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
-            ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
-            Unsafe.Add(ref address, index) = value;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref T address = ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector));
+                Unsafe.Add(ref address, index) = value;
+            }
         }
 
         internal static void SetLowerUnsafe<T>(in this Vector256<T> vector, Vector128<T> value) => Unsafe.AsRef(in vector._lower) = value;

@@ -46,14 +46,25 @@ namespace System.Threading
         [NonVersionable]
         public static double Read(ref readonly double location)
         {
-            long result = Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location)));
+            long result;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                result = Read(ref Unsafe.As<double, long>(ref Unsafe.AsRef(in location)));
+            }
             return BitConverter.Int64BitsToDouble(result);
         }
 
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref double location, double value) =>
-            Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
+        public static void Write(ref double location, double value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
+            }
+        }
         #endregion
 
         #region Int16
@@ -186,14 +197,26 @@ namespace System.Threading
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static ulong Read(ref readonly ulong location) =>
-            (ulong)Read(ref Unsafe.As<ulong, long>(ref Unsafe.AsRef(in location)));
+        public static ulong Read(ref readonly ulong location)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)Read(ref Unsafe.As<ulong, long>(ref Unsafe.AsRef(in location)));
+            }
+        }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref ulong location, ulong value) =>
-            Write(ref Unsafe.As<ulong, long>(ref location), (long)value);
+        public static void Write(ref ulong location, ulong value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Write(ref Unsafe.As<ulong, long>(ref location), (long)value);
+            }
+        }
         #endregion
 
         #region UIntPtr
@@ -218,8 +241,14 @@ namespace System.Threading
         [Intrinsic]
         [NonVersionable]
         [return: NotNullIfNotNull(nameof(location))]
-        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref readonly T location) where T : class? =>
-            Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value)!;
+        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref readonly T location) where T : class?
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value)!;
+            }
+        }
 
         [Intrinsic]
         [NonVersionable]

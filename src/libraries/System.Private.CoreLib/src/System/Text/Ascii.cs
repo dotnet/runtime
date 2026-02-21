@@ -28,8 +28,14 @@ namespace System.Text
         /// <returns>True if <paramref name="value"/> contains only ASCII chars or is
         /// empty; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsValid(ReadOnlySpan<char> value) =>
-            IsValidCore(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(value)), value.Length);
+        public static bool IsValid(ReadOnlySpan<char> value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IsValidCore(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(value)), value.Length);
+            }
+        }
 
         /// <summary>
         /// Determines whether the provided value is ASCII byte.

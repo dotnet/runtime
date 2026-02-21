@@ -1926,38 +1926,54 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, byte>(lowInclusive),
                         Unsafe.BitCast<T, byte>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ushort>(lowInclusive),
                         Unsafe.BitCast<T, ushort>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, uint>(lowInclusive),
                         Unsafe.BitCast<T, uint>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ulong>(lowInclusive),
                         Unsafe.BitCast<T, ulong>(highInclusive),
                         span.Length);
+                    }
                 }
             }
 
@@ -1997,38 +2013,54 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, byte>(lowInclusive),
                         Unsafe.BitCast<T, byte>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ushort>(lowInclusive),
                         Unsafe.BitCast<T, ushort>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, uint>(lowInclusive),
                         Unsafe.BitCast<T, uint>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.IndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ulong>(lowInclusive),
                         Unsafe.BitCast<T, ulong>(highInclusive),
                         span.Length);
+                    }
                 }
             }
 
@@ -2068,38 +2100,54 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, byte>(lowInclusive),
                         Unsafe.BitCast<T, byte>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ushort>(lowInclusive),
                         Unsafe.BitCast<T, ushort>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, uint>(lowInclusive),
                         Unsafe.BitCast<T, uint>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyInRangeUnsignedNumber(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ulong>(lowInclusive),
                         Unsafe.BitCast<T, ulong>(highInclusive),
                         span.Length);
+                    }
                 }
             }
 
@@ -2139,38 +2187,54 @@ namespace System
             {
                 if (lowInclusive is byte or sbyte)
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, byte>(lowInclusive),
                         Unsafe.BitCast<T, byte>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is short or ushort or char)
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ushort>(lowInclusive),
                         Unsafe.BitCast<T, ushort>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is int or uint || (IntPtr.Size == 4 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, uint>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, uint>(lowInclusive),
                         Unsafe.BitCast<T, uint>(highInclusive),
                         span.Length);
+                    }
                 }
 
                 if (lowInclusive is long or ulong || (IntPtr.Size == 8 && (lowInclusive is nint or nuint)))
                 {
-                    return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return SpanHelpers.LastIndexOfAnyExceptInRangeUnsignedNumber(
                         ref Unsafe.As<T, ulong>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, ulong>(lowInclusive),
                         Unsafe.BitCast<T, ulong>(highInclusive),
                         span.Length);
+                    }
                 }
             }
 
@@ -3536,18 +3600,30 @@ namespace System
             // equality checks, not about CompareTo checks.
 
             if (typeof(T) == typeof(byte))
-                return SpanHelpers.SequenceCompareTo(
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return SpanHelpers.SequenceCompareTo(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
                     other.Length);
+                }
+            }
 
             if (typeof(T) == typeof(char))
-                return SpanHelpers.SequenceCompareTo(
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return SpanHelpers.SequenceCompareTo(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(other)),
                     other.Length);
+                }
+            }
 
             return SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(other), other.Length);
         }
@@ -5926,7 +6002,11 @@ namespace System
                 _source = source;
                 if (typeof(T) == typeof(char) && separators.Length == 0)
                 {
-                    _searchValues = Unsafe.As<SearchValues<T>>(string.SearchValuesStorage.WhiteSpaceChars);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        _searchValues = Unsafe.As<SearchValues<T>>(string.SearchValuesStorage.WhiteSpaceChars);
+                    }
                     _splitMode = SpanSplitEnumeratorMode.SearchValues;
                 }
                 else

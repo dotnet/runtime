@@ -1054,7 +1054,11 @@ namespace System.Threading
                 Debug.Assert(workItem is IThreadPoolWorkItem);
                 try
                 {
-                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                    }
                 }
                 catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {

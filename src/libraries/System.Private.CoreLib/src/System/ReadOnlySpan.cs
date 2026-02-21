@@ -224,7 +224,11 @@ namespace System
         /// <remarks>This method uses a covariant cast, producing a read-only span that shares the same memory as the source. The relationships expressed in the type constraints ensure that the cast is a safe operation.</remarks>
         public static ReadOnlySpan<T> CastUp<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : class?, T
         {
-            return new ReadOnlySpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items.Length);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return new ReadOnlySpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items.Length);
+            }
         }
 
         /// <summary>Gets an enumerator for this span.</summary>
@@ -355,7 +359,11 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _reference), _length));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _reference), _length));
+                }
             }
             return $"System.ReadOnlySpan<{typeof(T).Name}>[{_length}]";
         }

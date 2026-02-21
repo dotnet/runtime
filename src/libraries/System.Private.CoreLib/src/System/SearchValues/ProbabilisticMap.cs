@@ -82,7 +82,11 @@ namespace System.Buffers
         {
             if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
             {
-                Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) |= (byte)(1u << (value >> VectorizedIndexShift));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) |= (byte)(1u << (value >> VectorizedIndexShift));
+                }
             }
             else
             {
@@ -92,9 +96,16 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [BypassReadyToRun]
-        private static bool IsCharBitSet(ref uint charMap, byte value) => Sse41.IsSupported || AdvSimd.Arm64.IsSupported
+        private static bool IsCharBitSet(ref uint charMap, byte value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Sse41.IsSupported || AdvSimd.Arm64.IsSupported
             ? (Unsafe.Add(ref Unsafe.As<uint, byte>(ref charMap), value & VectorizedIndexMask) & (1u << (value >> VectorizedIndexShift))) != 0
             : (Unsafe.Add(ref charMap, value & PortableIndexMask) & (1u << (value >> PortableIndexShift))) != 0;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool Contains(ref uint charMap, ReadOnlySpan<char> values, int ch) =>
@@ -103,11 +114,17 @@ namespace System.Buffers
             Contains(values, (char)ch);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Contains(ReadOnlySpan<char> values, char ch) =>
-            SpanHelpers.NonPackedContainsValueType(
+        internal static bool Contains(ReadOnlySpan<char> values, char ch)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return SpanHelpers.NonPackedContainsValueType(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
                 (short)ch,
                 values.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
@@ -425,7 +442,12 @@ namespace System.Buffers
 
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-            Vector256<byte> charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            Vector256<byte> charMap256;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            }
 
             if (searchSpaceLength > 32)
             {
@@ -510,8 +532,18 @@ namespace System.Buffers
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
 
-            Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
-            Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map), (nuint)Vector128<byte>.Count);
+            Vector128<byte> charMapLower;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            }
+            Vector128<byte> charMapUpper;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map), (nuint)Vector128<byte>.Count);
+            }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Avx2 is considered supported or unsupported
             if (Avx2.IsSupported && searchSpaceLength >= 32)
@@ -600,7 +632,12 @@ namespace System.Buffers
 
             ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-            Vector256<byte> charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            Vector256<byte> charMap256;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMap256 = Vector256.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            }
 
             if (searchSpaceLength > 32)
             {
@@ -687,8 +724,18 @@ namespace System.Buffers
 
             ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-            Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
-            Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map), (nuint)Vector128<byte>.Count);
+            Vector128<byte> charMapLower;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map));
+            }
+            Vector128<byte> charMapUpper;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<ProbabilisticMap, byte>(ref state.Map), (nuint)Vector128<byte>.Count);
+            }
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Avx2 is considered supported or unsupported
             if (Avx2.IsSupported && searchSpaceLength >= 32)

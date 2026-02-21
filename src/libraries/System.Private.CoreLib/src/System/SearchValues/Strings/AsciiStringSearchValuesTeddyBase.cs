@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -559,12 +559,16 @@ namespace System.Buffers
 
                     object? bucket = _buckets[candidateOffset];
                     Debug.Assert(bucket is not null);
+                    // TODO(unsafe): Baselining unsafe usage
 
-                    if (TBucketized.Value
+                    unsafe
+                    {
+                        if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
                         : StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string>(bucket)))
                     {
                         return true;
+                        }
                     }
 
                     candidateMask = BitOperations.ResetLowestSetBit(candidateMask);
@@ -604,12 +608,16 @@ namespace System.Buffers
 
                     object? bucket = _buckets[candidateOffset];
                     Debug.Assert(bucket is not null);
+                    // TODO(unsafe): Baselining unsafe usage
 
-                    if (TBucketized.Value
+                    unsafe
+                    {
+                        if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
                         : StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string>(bucket)))
                     {
                         return true;
+                        }
                     }
 
                     candidateMask = BitOperations.ResetLowestSetBit(candidateMask);
@@ -649,12 +657,16 @@ namespace System.Buffers
 
                     object? bucket = _buckets[candidateOffset];
                     Debug.Assert(bucket is not null);
+                    // TODO(unsafe): Baselining unsafe usage
 
-                    if (TBucketized.Value
+                    unsafe
+                    {
+                        if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
                         : StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string>(bucket)))
                     {
                         return true;
+                        }
                     }
 
                     candidateMask = BitOperations.ResetLowestSetBit(candidateMask);

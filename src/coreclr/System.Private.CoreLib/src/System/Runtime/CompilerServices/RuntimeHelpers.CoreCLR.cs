@@ -419,8 +419,12 @@ namespace System.Runtime.CompilerServices
         internal static ref int GetMultiDimensionalArrayBounds(this Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
+            // TODO(unsafe): Baselining unsafe usage
             // See comment on RawArrayData for details
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(array).Data);
+            unsafe
+            {
+                return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(array).Data);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

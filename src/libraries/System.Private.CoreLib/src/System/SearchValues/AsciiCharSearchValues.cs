@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -45,48 +45,84 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
+        internal override int IndexOfAny(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
+        internal override int IndexOfAnyExcept(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAny(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
+        internal override int LastIndexOfAny(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override bool ContainsAny(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
+        internal override bool ContainsAny(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.DontNegate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override bool ContainsAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
+        internal override bool ContainsAnyExcept(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.ContainsAny<IndexOfAnyAsciiSearcher.Negate, TOptimizations, TUniqueLowNibble>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
     }
 }

@@ -2282,13 +2282,21 @@ namespace System.Text
             {
                 Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
                 Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                }
             }
             else if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
+                }
             }
             else
 #endif

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -30,41 +30,81 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOf(ref char searchSpace, char value, int length) =>
-            IndexOf<SpanHelpers.DontNegate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        public static int IndexOf(ref char searchSpace, char value, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOf<SpanHelpers.DontNegate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAnyExcept(ref char searchSpace, char value, int length) =>
-            IndexOf<SpanHelpers.Negate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOf<SpanHelpers.Negate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAny(ref char searchSpace, char value0, char value1, int length) =>
-            IndexOfAny<SpanHelpers.DontNegate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        public static int IndexOfAny(ref char searchSpace, char value0, char value1, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.DontNegate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length) =>
-            IndexOfAny<SpanHelpers.Negate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.Negate<short>, NopTransform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length) =>
-            IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+        public static int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length) =>
-            IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+        public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyIgnoreCase(ref char searchSpace, char value, int length)
         {
             Debug.Assert((value | 0x20) == value);
+            // TODO(unsafe): Baselining unsafe usage
 
-            return IndexOf<SpanHelpers.DontNegate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            unsafe
+            {
+                return IndexOf<SpanHelpers.DontNegate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,8 +112,12 @@ namespace System
         public static int IndexOfAnyExceptIgnoreCase(ref char searchSpace, char value, int length)
         {
             Debug.Assert((value | 0x20) == value);
+            // TODO(unsafe): Baselining unsafe usage
 
-            return IndexOf<SpanHelpers.Negate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            unsafe
+            {
+                return IndexOf<SpanHelpers.Negate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,8 +126,12 @@ namespace System
         {
             Debug.Assert((value0 | 0x20) == value0);
             Debug.Assert((value1 | 0x20) == value1);
+            // TODO(unsafe): Baselining unsafe usage
 
-            return IndexOfAny<SpanHelpers.DontNegate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.DontNegate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,19 +140,35 @@ namespace System
         {
             Debug.Assert((value0 | 0x20) == value0);
             Debug.Assert((value1 | 0x20) == value1);
+            // TODO(unsafe): Baselining unsafe usage
 
-            return IndexOfAny<SpanHelpers.Negate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            unsafe
+            {
+                return IndexOfAny<SpanHelpers.Negate<short>, Or20Transform>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
-            IndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+        public static int IndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
-        public static int IndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
-            IndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+        public static int IndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
+            }
+        }
 
         [CompExactlyDependsOn(typeof(Sse2))]
         public static bool Contains(ref short searchSpace, short value, int length)

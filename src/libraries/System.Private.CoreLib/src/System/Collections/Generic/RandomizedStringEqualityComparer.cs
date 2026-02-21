@@ -85,11 +85,17 @@ namespace System.Collections.Generic
                     _seed.p0, _seed.p1);
             }
 
-            int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> alternate) =>
-                Marvin.ComputeHash32(
+            int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> alternate)
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return Marvin.ComputeHash32(
                     ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(alternate)),
                     (uint)alternate.Length * 2,
                     _seed.p0, _seed.p1);
+                }
+            }
         }
 
         private sealed class OrdinalIgnoreCaseComparer : RandomizedStringEqualityComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>

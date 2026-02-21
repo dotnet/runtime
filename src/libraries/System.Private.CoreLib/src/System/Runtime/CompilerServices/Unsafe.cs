@@ -63,6 +63,7 @@ namespace System.Runtime.CompilerServices
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         [return: NotNullIfNotNull(nameof(o))]
         public static T? As<T>(object? o) where T : class?
         {
@@ -83,6 +84,7 @@ namespace System.Runtime.CompilerServices
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
             where TFrom : allows ref struct
             where TTo : allows ref struct

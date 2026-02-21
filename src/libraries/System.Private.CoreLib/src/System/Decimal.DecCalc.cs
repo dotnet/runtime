@@ -21,7 +21,14 @@ namespace System
 
         internal ulong Low64 => _lo64;
 
-        private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
+        private static ref DecCalc AsMutable(ref decimal d)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return ref Unsafe.As<decimal, DecCalc>(ref d);
+            }
+        }
 
         #region APIs need by number formatting.
 
@@ -2215,7 +2222,12 @@ ThrowOverflow:
                 // In the operation x % y the sign of y does not matter. Result will have the sign of x.
                 d2.uflags = (d2.uflags & ~SignMask) | (d1.uflags & SignMask);
 
-                int cmp = VarDecCmpSub(in Unsafe.As<DecCalc, decimal>(ref d1), in Unsafe.As<DecCalc, decimal>(ref d2));
+                int cmp;
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    cmp = VarDecCmpSub(in Unsafe.As<DecCalc, decimal>(ref d1), in Unsafe.As<DecCalc, decimal>(ref d2));
+                }
                 if (cmp == 0)
                 {
                     d1.ulo = 0;
