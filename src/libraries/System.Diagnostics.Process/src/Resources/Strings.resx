@@ -339,4 +339,16 @@
   <data name="FileNotFoundResolvePath" xml:space="preserve">
     <value>Could not resolve the file.</value>
   </data>
+  <data name="InvalidProcessHandle" xml:space="preserve">
+    <value>Invalid process handle.</value>
+  </data>
+  <data name="KillProcessGroupWithoutNewProcessGroup" xml:space="preserve">
+    <value>Cannot terminate entire process group because the process was not started with CreateNewProcessGroup=true.</value>
+  </data>
+  <data name="CannotResumeNonSuspendedProcess" xml:space="preserve">
+    <value>Cannot resume a process that was not started with StartSuspended.</value>
+  </data>
+  <data name="SignalNotSupportedOnWindows" xml:space="preserve">
+    <value>Signal {0} is not supported on Windows. Only SIGINT, SIGQUIT, and SIGKILL are supported.</value>
+  </data>
 </root>
