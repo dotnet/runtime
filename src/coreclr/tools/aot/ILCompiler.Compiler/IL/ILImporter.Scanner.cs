@@ -449,60 +449,6 @@ namespace Internal.IL
                     Debug.Assert(false); break;
             }
 
-            // Are we scanning a call within a state machine?
-            if (opcode is ILOpcode.call or ILOpcode.callvirt
-                && _canonMethod.IsAsyncCall())
-            {
-                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
-                if (!_asyncDependenciesReported && method.IsAsync)
-                {
-                    _asyncDependenciesReported = true;
-
-                    const string asyncReason = "Async state machine";
-
-                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
-
-                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
-
-                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
-                }
-
-                // If this is the task await pattern, we're actually going to call the variant
-                // so switch our focus to the variant.
-
-                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                // we cannot resolve to an Async variant in such case.
-                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                if (allowAsyncVariant)
-                {
-                    bool isDirect = opcode == ILOpcode.call || method.IsCallEffectivelyDirect();
-                    if (isDirect && !method.IsAsync)
-                    {
-                        // Async variant would be a thunk. Do not resolve direct calls
-                        // to async thunks. That just creates and JITs unnecessary
-                        // thunks, and the thunks are harder for the JIT to optimize.
-                        allowAsyncVariant = false;
-                    }
-                }
-
-                if (allowAsyncVariant && MatchTaskAwaitPattern())
-                {
-                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
-                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
-                }
-            }
-
             if (opcode == ILOpcode.newobj)
             {
                 TypeDesc owningType = runtimeDeterminedMethod.OwningType;
@@ -671,16 +617,6 @@ namespace Internal.IL
 
             MethodDesc targetMethod = methodAfterConstraintResolution;
 
-            bool exactContextNeedsRuntimeLookup;
-            if (targetMethod.HasInstantiation)
-            {
-                exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
-            }
-            else
-            {
-                exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
-            }
-
             //
             // Determine whether to perform direct call
             //
@@ -710,6 +646,55 @@ namespace Internal.IL
                 {
                     directCall = true;
                 }
+            }
+
+            // Are we scanning a call within a state machine?
+            if (opcode is ILOpcode.call or ILOpcode.callvirt && _canonMethod.IsAsyncCall())
+            {
+                if (MatchTaskAwaitPattern()
+                    && method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask() &&
+                    !method.OwningType.IsDelegate)
+                {
+                    if (!directCall || targetMethod.IsAsync)
+                    {
+                        // Either a virtual call or a direct call where the async variant
+                        // is user-defined. Switch to the async variant in these cases.
+                        method = _compilation.TypeSystemContext.GetAsyncVariantMethod(method);
+                        targetMethod = _compilation.TypeSystemContext.GetAsyncVariantMethod(targetMethod);
+                        runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    }
+                }
+
+                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+                if (!_asyncDependenciesReported && method.IsAsync)
+                {
+                    _asyncDependenciesReported = true;
+
+                    const string asyncReason = "Async state machine";
+
+                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+                }
+            }
+
+            bool exactContextNeedsRuntimeLookup;
+            if (targetMethod.HasInstantiation)
+            {
+                exactContextNeedsRuntimeLookup = targetMethod.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
 
             if (directCall && targetMethod.IsAbstract)
