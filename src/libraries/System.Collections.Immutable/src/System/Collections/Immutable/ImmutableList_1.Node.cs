@@ -1246,7 +1246,7 @@ namespace System.Collections.Immutable
 
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Range(startIndex - count + 1 >= 0, nameof(startIndex));
+                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))
                 {

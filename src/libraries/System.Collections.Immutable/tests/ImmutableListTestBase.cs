@@ -184,7 +184,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> multipleElementList = ImmutableList.Create(1, 2, 3, 4);
             Assert.Equal(2, this.GetListQuery(multipleElementList).FindLastIndex(3, 4, n => n == 3));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, n => n == 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(2, 4, n => n == 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(2, 4, n => n == 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 1, n => n == 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => this.GetListQuery(multipleElementList).FindLastIndex(4, 4, n => n == 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => this.GetListQuery(multipleElementList).FindLastIndex(3, 5, n => n == 1));
