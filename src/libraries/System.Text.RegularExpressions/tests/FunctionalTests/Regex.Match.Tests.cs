@@ -3232,4 +3232,53 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
     }
+
+    public partial class RegexMatchTests
+    {
+        [Theory]
+        [MemberData(nameof(AnyNewLine_Dollar_TestData))]
+        public async Task AnyNewLine_Dollar(RegexEngine engine, string pattern, string input, RegexOptions options, bool expectedSuccess, string expectedValue)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            Match m = r.Match(input);
+            Assert.Equal(expectedSuccess, m.Success);
+            if (expectedSuccess)
+            {
+                Assert.Equal(expectedValue, m.Value);
+            }
+        }
+
+        public static IEnumerable<object[]> AnyNewLine_Dollar_TestData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (engine == RegexEngine.NonBacktracking)
+                    continue;
+
+                // $ with AnyNewLine matches before \n at end (existing behavior preserved)
+                yield return new object[] { engine, @".$", "abc\n", RegexOptions.AnyNewLine, true, "c" };
+
+                // $ with AnyNewLine matches before \r at end
+                yield return new object[] { engine, @".$", "abc\r", RegexOptions.AnyNewLine, true, "c" };
+
+                // $ with AnyNewLine matches before \r\n at end
+                yield return new object[] { engine, @".$", "abc\r\n", RegexOptions.AnyNewLine, true, "c" };
+
+                // $ with AnyNewLine matches at end of string (no trailing newline)
+                yield return new object[] { engine, @".$", "abc", RegexOptions.AnyNewLine, true, "c" };
+
+                // $ does NOT match between \r and \n in \r\n: use literal \r to test position
+                yield return new object[] { engine, @"\r$", "abc\r\n", RegexOptions.AnyNewLine, false, "" };
+
+                // Without AnyNewLine, $ does NOT match before \r (but does match at true end)
+                yield return new object[] { engine, @"c$", "abc\rdef", RegexOptions.None, false, "" };
+
+                // Trailing newlines: line content before various endings
+                yield return new object[] { engine, @"line$", "line\n", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\r", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\r\n", RegexOptions.AnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line", RegexOptions.AnyNewLine, true, "line" };
+            }
+        }
+    }
 }

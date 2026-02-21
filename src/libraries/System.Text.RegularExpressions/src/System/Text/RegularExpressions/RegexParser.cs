@@ -395,7 +395,14 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '$':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        if ((_options & RegexOptions.AnyNewLine) != 0 && (_options & RegexOptions.Multiline) == 0)
+                        {
+                            _unit = AnyNewLineEndZNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        }
                         break;
 
                     case '.':
@@ -1647,6 +1654,62 @@ namespace System.Text.RegularExpressions
             }
 
             return capname;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ or \Z with AnyNewLine (non-Multiline).
+        /// Matches at end of string, or before \r\n, \r, or \n at end of string,
+        /// but not between \r and \n.
+        /// Equivalent to: (?=\r\n\z|\r?\z)|(?&lt;!\r)(?=\n\z)
+        /// </summary>
+        private RegexNode AnyNewLineEndZNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions laOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lbOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions laNoCase = laOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lbNoCase = lbOpts & ~RegexOptions.IgnoreCase;
+
+            // \r\n\z
+            var crlfEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\r'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+
+            // \r?\z
+            var rOptEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            rOptEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\r').MakeQuantifier(false, 0, 1));
+            rOptEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+
+            // (?=\r\n\z|\r?\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, laOpts);
+            innerAlt.AddChild(crlfEnd);
+            innerAlt.AddChild(rOptEnd);
+            var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead1.AddChild(innerAlt);
+
+            // (?<!\r)
+            var negLookbehind = new RegexNode(RegexNodeKind.NegativeLookaround, lbOpts);
+            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\r'));
+
+            // (?=\n\z)
+            var nEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            nEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+            nEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+            var lookahead2 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead2.AddChild(nEnd);
+
+            // (?<!\r)(?=\n\z)
+            var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
+            branch2.AddChild(negLookbehind);
+            branch2.AddChild(lookahead2);
+
+            // (?=\r\n\z|\r?\z)|(?<!\r)(?=\n\z)
+            var result = new RegexNode(RegexNodeKind.Alternate, opts);
+            result.AddChild(lookahead1);
+            result.AddChild(branch2);
+
+            return result;
         }
 
         /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>
