@@ -20,10 +20,15 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
+      <_PublishFramework Include="$(NetCoreAppToolCurrent)">
+        <SubFolder>net</SubFolder>
+      </_PublishFramework>
+      <_PublishFramework Include="$(NetFrameworkToolCurrent)" Condition="'$(NetFrameworkToolCurrent)' != ''">
+        <SubFolder>%(Identity)</SubFolder>
+      </_PublishFramework>
 
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tools\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tools\%(_PublishFramework.SubFolder)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tools\%(_PublishFramework.SubFolder)" />
     </ItemGroup>
   </Target>
 </Project>
