@@ -355,96 +355,164 @@ internal static class RuntimeLookupBridgeShared<TMethod>
 
 internal static class RuntimeLookupDispatcher<TContext>
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static TMethod SameClassSameMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
     {
-        return RuntimeLookupThunks<TContext>.InvokeSameClassSameMethod(caller, value);
+        RuntimeLookupVirtualInvoker invoker = new RuntimeLookupVirtualStage<TContext>();
+        return invoker.SameClassSameMethod(caller, value);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static TMethod SameClassDifferentMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
-    {
-        return RuntimeLookupThunks<TContext>.InvokeSameClassDifferentMethod(caller, value);
-    }
-
-    public static TMethod DifferentClassSameMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
-    {
-        return RuntimeLookupThunks<TContext>.InvokeDifferentClassSameMethod(caller, value);
-    }
-
-    public static TMethod DifferentClassDifferentMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
-    {
-        return RuntimeLookupThunks<TContext>.InvokeDifferentClassDifferentMethod(caller, value);
-    }
-}
-
-internal static class RuntimeLookupThunks<TContext>
-{
-    public static T InvokeSameClassSameMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return RuntimeLookupHost<TContext>.SameClassSameMethod(caller, value);
-    }
-
-    public static T InvokeDifferentClassSameMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return RuntimeLookupHost<TContext>.DifferentClassSameMethod(caller, value);
-    }
-
-    public static T InvokeSameClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return RuntimeLookupHost<TContext>.SameClassDifferentMethod(caller, value);
-    }
-
-    public static T InvokeDifferentClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return RuntimeLookupHost<TContext>.DifferentClassDifferentMethod(caller, value);
-    }
-}
-
-internal static class RuntimeLookupHost<TContext>
-{
-    public static T SameClassSameMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return caller.Invoke(value);
-    }
-
-    public static T DifferentClassSameMethod<T>(IBaseMethodCaller caller, T value)
-    {
-        return RuntimeLookupRemote<TContext, T>.SameMethod(caller, value);
-    }
-
-    public static T SameClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
     {
         return SameClassDifferentMethodCore(caller, value);
     }
 
-    public static T DifferentClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static TMethod DifferentClassSameMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
     {
-        return RuntimeLookupRemote<TContext, T>.DifferentMethod(caller, value);
+        return RuntimeLookupDifferentClass<TContext>.SameMethod(caller, value);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static TMethod DifferentClassDifferentMethod<TMethod>(IBaseMethodCaller caller, TMethod value)
+    {
+        return RuntimeLookupDifferentClass<TContext>.DifferentMethod(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TMethod SameClassDifferentMethodCore<TMethod>(IBaseMethodCaller caller, TMethod value)
+    {
+        RuntimeLookupVirtualInvoker invoker = new RuntimeLookupVirtualStage<TContext>();
+        return invoker.SameClassDifferentMethod(caller, value);
+    }
+}
+
+internal static class RuntimeLookupDifferentClass<TContext>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static T SameMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = new RuntimeLookupVirtualStage<TContext>();
+        return invoker.DifferentClassSameMethod(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static T DifferentMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return DifferentMethodCore(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T DifferentMethodCore<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = new RuntimeLookupVirtualStage<TContext>();
+        return invoker.DifferentClassDifferentMethod(caller, value);
+    }
+}
+
+internal abstract class RuntimeLookupVirtualInvoker
+{
+    public abstract T SameClassSameMethod<T>(IBaseMethodCaller caller, T value);
+    public abstract T SameClassDifferentMethod<T>(IBaseMethodCaller caller, T value);
+    public abstract T DifferentClassSameMethod<T>(IBaseMethodCaller caller, T value);
+    public abstract T DifferentClassDifferentMethod<T>(IBaseMethodCaller caller, T value);
+}
+
+internal sealed class RuntimeLookupVirtualStage<TContext> : RuntimeLookupVirtualInvoker
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T SameClassSameMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = RuntimeLookupTerminalFactory.CreateInvoker();
+        return invoker.SameClassSameMethod(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T SameClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return SameClassDifferentMethodCore(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T DifferentClassSameMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = RuntimeLookupTerminalFactory.CreateInvoker();
+        return invoker.DifferentClassSameMethod(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T DifferentClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return DifferentClassDifferentMethodCore(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T SameClassDifferentMethodCore<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = RuntimeLookupTerminalFactory.CreateInvoker();
+        return invoker.SameClassDifferentMethod(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T DifferentClassDifferentMethodCore<T>(IBaseMethodCaller caller, T value)
+    {
+        RuntimeLookupVirtualInvoker invoker = RuntimeLookupTerminalFactory.CreateInvoker();
+        return invoker.DifferentClassDifferentMethod(caller, value);
+    }
+}
+
+internal static class RuntimeLookupTerminalFactory
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static RuntimeLookupVirtualInvoker CreateInvoker()
+    {
+        return new RuntimeLookupTerminalInvoker();
+    }
+}
+
+internal sealed class RuntimeLookupTerminalInvoker : RuntimeLookupVirtualInvoker
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T SameClassSameMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return caller.Invoke(value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T SameClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return SameClassDifferentMethodCore(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T DifferentClassSameMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return caller.Invoke(value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override T DifferentClassDifferentMethod<T>(IBaseMethodCaller caller, T value)
+    {
+        return DifferentClassDifferentMethodCore(caller, value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static T SameClassDifferentMethodCore<T>(IBaseMethodCaller caller, T value)
     {
         return caller.Invoke(value);
     }
-}
 
-internal static class RuntimeLookupRemote<TContext, T>
-{
-    public static T SameMethod(IBaseMethodCaller caller, T value)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T DifferentClassDifferentMethodCore<T>(IBaseMethodCaller caller, T value)
     {
-        return caller.Invoke(value);
+        return DifferentClassDifferentMethodCoreInner.Invoke(caller, value);
     }
 
-    public static T DifferentMethod(IBaseMethodCaller caller, T value)
+    private static class DifferentClassDifferentMethodCoreInner
     {
-        return RemoteInner.Invoke(caller, value);
-    }
-
-    private static class RemoteInner
-    {
-        public static T Invoke(IBaseMethodCaller caller, T value)
-        {
-            return caller.Invoke(value);
-        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static T Invoke<T>(IBaseMethodCaller caller, T value) => caller.Invoke(value);
     }
 }
 

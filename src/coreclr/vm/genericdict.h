@@ -58,6 +58,7 @@ enum DictionaryEntryKind
     DispatchStubAddrSlot = 5,
     FieldDescSlot = 6,
     DeclaringTypeHandleSlot = 7,
+    DevirtualizedMethodDescSlot = 8,
 };
 
 enum DictionaryEntrySignatureSource : BYTE
