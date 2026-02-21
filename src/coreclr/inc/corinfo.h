@@ -1201,7 +1201,7 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // Number of indirections to get there
     // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead.
-    //                     The entry point of the helper is stored in the union below for AOT compilations.
+    //                     For AOT the entry point of the helper is stored in helperEntryPoint.
     // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
     // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
     //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
