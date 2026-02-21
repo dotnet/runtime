@@ -25,7 +25,9 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     {
         if (!strcmp(className, "Double") || !strcmp(className, "Single"))
         {
-            if (!strcmp(methodName, "ConvertToIntegerNative"))
+            if (!strcmp(methodName, "ConvertToInteger"))
+                return NI_PRIMITIVE_ConvertToInteger;
+            else if (!strcmp(methodName, "ConvertToIntegerNative"))
                 return NI_PRIMITIVE_ConvertToIntegerNative;
             else if (!strcmp(methodName, "MultiplyAddEstimate"))
                 return NI_System_Math_MultiplyAddEstimate;
