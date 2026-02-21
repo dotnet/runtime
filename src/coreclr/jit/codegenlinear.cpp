@@ -801,13 +801,11 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             // 2. If this is this is the last block of the hot section.
             // 3. If the subsequent block is a special throw block.
             // 4. On AMD64, if the next block is in a different EH region.
-            bool addedBreakpoint = false;
             if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                 (!isFramePointerUsed() && m_compiler->fgIsThrowHlpBlk(block->Next())) ||
                 m_compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(m_compiler))
             {
                 instGen(INS_BREAKPOINT); // This should never get executed
-                addedBreakpoint = true;
             }
             // Do likewise for blocks that end in DOES_NOT_RETURN calls
             // that were not caught by the above rules. This ensures that
@@ -821,7 +819,6 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
                     if (call->AsCall()->IsNoReturn())
                     {
                         instGen(INS_BREAKPOINT); // This should never get executed
-                        addedBreakpoint = true;
                     }
                 }
             }
@@ -829,7 +826,7 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
 #if defined(TARGET_WASM)
             // For wasm the last instruction in a function or funclet must be end.
             //
-            if (addedBreakpoint && (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next())))
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
             {
                 GetEmitter()->emitIns(INS_end);
             }
