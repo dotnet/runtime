@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             // Put shorter signatures earlier in the sort order, on the assumption that they are more likely to be used.
             int result = _type.SignatureLength.CompareTo(wtn.Type.SignatureLength);
             if (result == 0)
-                return wtn.Type.CompareTo(_type);
+                return _type.CompareTo(wtn.Type);
             return result;
         }
 
