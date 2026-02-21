@@ -17,9 +17,6 @@ namespace System.Reflection.Emit.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveAssemblyBuilderTests
     {
-        // AssemblyContentType is encoded in AssemblyFlags starting at bit 9 (ECMA-335 II.22.2 Assembly Flags).
-        private const int ContentTypeFlagShift = 9;
-        private const int ProcessorArchitectureMask = 0xF0;
         private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
         public class Outer
         {
@@ -78,12 +75,10 @@ namespace System.Reflection.Emit.Tests
         {
             AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
             {
-                Flags = AssemblyNameFlags.PublicKey,
+                Flags = AssemblyNameFlags.PublicKey | AssemblyNameFlags.Retargetable,
+                Version = new Version(9, 8, 7, 6),
                 ContentType = AssemblyContentType.WindowsRuntime
             };
-#pragma warning disable SYSLIB0037 // Type or member is obsolete
-            assemblyName.ProcessorArchitecture = ProcessorArchitecture.X86;
-#pragma warning restore SYSLIB0037 // Type or member is obsolete
 
             byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
             Assert.NotEmpty(expectedPublicKey);
@@ -99,11 +94,29 @@ namespace System.Reflection.Emit.Tests
             using PEReader peReader = new PEReader(stream);
             MetadataReader metadataReader = peReader.GetMetadataReader();
             AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
+            AssemblyContentType contentType = (assemblyDefinition.Flags & AssemblyFlags.ContentTypeMask) switch
+            {
+                0 => AssemblyContentType.Default,
+                AssemblyFlags.WindowsRuntime => AssemblyContentType.WindowsRuntime,
+                _ => throw new InvalidOperationException($"Unexpected AssemblyContentType flags: {assemblyDefinition.Flags & AssemblyFlags.ContentTypeMask}"),
+            };
+            AssemblyName loadedAssemblyName = new AssemblyName(metadataReader.GetString(assemblyDefinition.Name))
+            {
+                Version = assemblyDefinition.Version,
+                Flags = (AssemblyNameFlags)assemblyDefinition.Flags,
+                ContentType = contentType,
+            };
+            loadedAssemblyName.SetPublicKey(metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
+            if (!assemblyDefinition.Culture.IsNil)
+            {
+                loadedAssemblyName.CultureName = metadataReader.GetString(assemblyDefinition.Culture);
+            }
 
-            Assert.Equal((AssemblyFlags)assemblyName.Flags | (AssemblyFlags)((int)assemblyName.ContentType << ContentTypeFlagShift), assemblyDefinition.Flags);
-            Assert.True((assemblyDefinition.Flags & AssemblyFlags.PublicKey) != 0);
-            Assert.Equal(((int)assemblyName.Flags) & ProcessorArchitectureMask, ((int)assemblyDefinition.Flags) & ProcessorArchitectureMask);
-            Assert.Equal(expectedPublicKey, metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
+            Assert.Equal(assemblyName.Name, loadedAssemblyName.Name);
+            Assert.Equal(assemblyName.Version, loadedAssemblyName.Version);
+            Assert.Equal(assemblyName.ContentType, loadedAssemblyName.ContentType);
+            Assert.Equal(assemblyName.Flags, loadedAssemblyName.Flags);
+            Assert.Equal(expectedPublicKey, loadedAssemblyName.GetPublicKey());
         }
 
         [Fact]
