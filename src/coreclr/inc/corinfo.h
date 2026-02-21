@@ -1176,11 +1176,12 @@ struct CORINFO_LOOKUP_KIND
 {
     bool                        needsRuntimeLookup;
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-    // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
+    
+    // The 'runtimeLookupFlags', 'runtimeLookupArgs' and 'runtimeLookupDevirtualized' fields
     // are just for internal VM / ZAP communication, not to be used by the JIT.
     uint16_t                    runtimeLookupFlags;
     void *                      runtimeLookupArgs;
+    bool                        runtimeLookupDevirtualized;
 } ;
 
 

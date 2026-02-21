@@ -920,7 +920,7 @@ namespace Internal.JitInterface
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                         }
                         ref CORINFO_RESOLVED_TOKEN helperArgToken = ref pResolvedToken;
-                        if (helperId == ReadyToRunHelperId.MethodHandle && pGenericLookupKind.runtimeLookupArgs != null)
+                        if (pGenericLookupKind.runtimeLookupDevirtualized)
                         {
                             helperArgToken = ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs;
                         }
@@ -931,9 +931,15 @@ namespace Internal.JitInterface
                             var methodIL = HandleToObject(helperArgToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            if (helperArgToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+                            if (pGenericLookupKind.runtimeLookupDevirtualized)
                             {
-                                helperArg = ComputeMethodWithToken(HandleToObject(pResolvedToken.hMethod), ref helperArgToken, constrainedType, false);
+                                helperArg = new MethodWithToken(
+                                    sharedMethod,
+                                    HandleToModuleToken(ref helperArgToken),
+                                    constrainedType,
+                                    unboxing: false,
+                                    context: HandleToObject(helperArgToken.hMethod),
+                                    devirtualizedMethodOwner: HandleToObject(helperArgToken.hClass));
                             }
                             else
                             {
@@ -2627,6 +2633,7 @@ namespace Internal.JitInterface
 
             pResultLookup.lookupKind.needsRuntimeLookup = true;
             pResultLookup.lookupKind.runtimeLookupFlags = 0;
+            pResultLookup.lookupKind.runtimeLookupDevirtualized = false;
 
             ref CORINFO_RUNTIME_LOOKUP pResult = ref pResultLookup.runtimeLookup;
             pResult.signature = null;
@@ -2688,6 +2695,7 @@ namespace Internal.JitInterface
                         if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
                         {
                             pResultLookup.lookupKind.runtimeLookupArgs = Unsafe.AsPointer(ref pResolvedToken);
+                            pResultLookup.lookupKind.runtimeLookupDevirtualized = true;
                         }
                         else
                         {
