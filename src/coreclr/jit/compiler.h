@@ -3359,7 +3359,8 @@ public:
                                  GenTree*    op1,
                                  GenTree*    op2,
                                  var_types   simdBaseType,
-                                 unsigned    simdSize);
+                                 unsigned    simdSize,
+                                 bool        inputsAlreadyClamped = false);
 
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
