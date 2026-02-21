@@ -539,6 +539,28 @@ public partial class Program
     [GeneratedRegex("""", RegexConstants.DefaultOptions)]
     private static partial Regex MyRegex { get; }
 }" };
+
+                // Test options with AnyNewLine
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = " + ConstructRegexInvocationWithDiagnostic(invocationType, "\"\"", "RegexOptions.AnyNewLine | RegexOptions.Multiline") + @"" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex.IsMatch("""");
+    }
+
+    [GeneratedRegex("""", RegexOptions.Multiline | RegexOptions.AnyNewLine)]
+    private static partial Regex MyRegex { get; }
+}" };
             }
         }
 
