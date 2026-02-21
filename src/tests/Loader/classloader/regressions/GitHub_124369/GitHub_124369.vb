@@ -1150,4 +1150,291 @@ Public Class GitHub_124369
     Public Interface ILayer1_4_111(Of T)
         Function GetEnumerator() As IEnumerator(Of T)
     End Interface
+
+    ' Test the scenario where the implied interface is in the interface map of a containing interface as a special marker type, and the containing interface itself is ALSO a special marker type.
+    ' The critical path is that when establishing the interface map for ILayer3_1(Of T) we find ILayer1_1(Of IList(Of T)) as an exact instantiation, and are able to identify that it is a problematic scenario which requires us to stop using all of the special marker type logic
+    <Fact>
+    Public Shared Sub Test_Method5_000()
+        Test_Method5_000_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_000_Inner()
+        Dim w As New TestClass5_000(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_000(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_000(Of T)
+        Implements ILayer3_5_000(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_000(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_000(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_000(Of T)
+        Inherits ILayer2_5_000(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_000(Of T)
+        Inherits ILayer1_5_000(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_000(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_001()
+        GetType(ILayer3_5_001(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_001_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_001_Inner()
+        Dim w As New TestClass5_001(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_001(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_001(Of T)
+        Implements ILayer3_5_001(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_001(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_001(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_001(Of T)
+        Inherits ILayer2_5_001(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_001(Of T)
+        Inherits ILayer1_5_001(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_001(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_010()
+        GetType(ILayer2_5_010(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_010_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_010_Inner()
+        Dim w As New TestClass5_010(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_010(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_010(Of T)
+        Implements ILayer3_5_010(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_010(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_010(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_010(Of T)
+        Inherits ILayer2_5_010(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_010(Of T)
+        Inherits ILayer1_5_010(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_010(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_011()
+        GetType(ILayer2_5_011(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        GetType(ILayer3_5_011(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_011_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_011_Inner()
+        Dim w As New TestClass5_011(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_011(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_011(Of T)
+        Implements ILayer3_5_011(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_011(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_011(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_011(Of T)
+        Inherits ILayer2_5_011(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_011(Of T)
+        Inherits ILayer1_5_011(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_011(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_100()
+        GetType(ILayer1_5_100(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_100_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_100_Inner()
+        Dim w As New TestClass5_100(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_100(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_100(Of T)
+        Implements ILayer3_5_100(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_100(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_100(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_100(Of T)
+        Inherits ILayer2_5_100(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_100(Of T)
+        Inherits ILayer1_5_100(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_100(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_101()
+        GetType(ILayer1_5_101(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        GetType(ILayer3_5_101(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_101_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_101_Inner()
+        Dim w As New TestClass5_101(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_101(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_101(Of T)
+        Implements ILayer3_5_101(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_101(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_101(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_101(Of T)
+        Inherits ILayer2_5_101(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_101(Of T)
+        Inherits ILayer1_5_101(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_101(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_110()
+        GetType(ILayer1_5_110(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        GetType(ILayer2_5_110(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_110_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_110_Inner()
+        Dim w As New TestClass5_110(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_110(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_110(Of T)
+        Implements ILayer3_5_110(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_110(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_110(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_110(Of T)
+        Inherits ILayer2_5_110(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_110(Of T)
+        Inherits ILayer1_5_110(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_110(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
+    <Fact>
+    Public Shared Sub Test_Method5_111()
+        GetType(ILayer1_5_111(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        GetType(ILayer2_5_111(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        GetType(ILayer3_5_111(Of Integer)).GetGenericTypeDefinition().GetInterfaces()
+        Test_Method5_111_Inner()
+    End Sub
+
+    <MethodImpl(MethodImplOptions.NoInlining)>
+    Public Shared Sub Test_Method5_111_Inner()
+        Dim w As New TestClass5_111(Of Integer)
+        Dim en As IEnumerator(Of IList(Of Integer)) = DirectCast(w, ILayer1_5_111(Of IList(Of Integer))).GetEnumerator()
+    End Sub
+
+    Public Class TestClass5_111(Of T)
+        Implements ILayer3_5_111(Of T)
+
+        Public ReadOnly Property Count As Integer Implements ILayer2_5_111(Of T).Count
+
+        Public Function GetEnumerator() As IEnumerator(Of IList(Of T)) Implements ILayer1_5_111(Of IList(Of T)).GetEnumerator
+            Return DirectCast(Array.Empty(Of IList(Of T))(), IEnumerable(Of IList(Of T))).GetEnumerator()
+        End Function
+    End Class
+
+    Public Interface ILayer3_5_111(Of T)
+        Inherits ILayer2_5_111(Of T)
+    End Interface
+
+    Public Interface ILayer2_5_111(Of T)
+        Inherits ILayer1_5_111(Of IList(Of T))
+        ReadOnly Property Count As Integer
+    End Interface
+
+    Public Interface ILayer1_5_111(Of T)
+        Function GetEnumerator() As IEnumerator(Of T)
+    End Interface
+
 End Class
