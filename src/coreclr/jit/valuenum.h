@@ -508,7 +508,6 @@ public:
     // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
     void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
-    // Returns the underlying value number if 'vn' represents a sign-extending int-to-long cast; otherwise returns 'vn'.
     ValueNum VNIgnoreIntToLongCast(ValueNum vn);
 
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant

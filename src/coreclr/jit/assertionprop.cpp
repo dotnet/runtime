@@ -2112,6 +2112,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 if (call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
                 {
+                    assert(call->gtArgs.CountUserArgs() == 3);
                     GenTree* arrRef = call->gtArgs.GetUserArgByIndex(0)->GetNode();
                     GenTree* idx    = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 

@@ -2046,42 +2046,39 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 }
 
 //------------------------------------------------------------------------
-// VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast.
+// VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
+//    or convert long-typed integral constants to int.
 //
 // Arguments:
 //    vn - The value number to inspect.
 //
 // Return Value:
 //    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
-//    that sign-extends a TYP_INT to TYP_LONG; otherwise returns 'vn' unchanged.
-//
-// Notes:
-//    This is useful when comparing array lengths or indices whose value numbers
-//    may differ only by an int-to-long widening cast introduced during IR
-//    transformations.
+//    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
+//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
-    if (TypeOfVN(vn) != TYP_LONG)
+    if (TypeOfVN(vn) == TYP_LONG)
     {
-        return vn;
-    }
-
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_Cast))
-    {
-        var_types castToType;
-        bool      srcIsUnsigned;
-        GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
-        if (castToType == TYP_LONG && !srcIsUnsigned && TypeOfVN(funcApp.m_args[0]) == TYP_INT)
+        VNFuncApp funcApp;
+        if (GetVNFunc(vn, &funcApp) && funcApp.FuncIs(VNF_Cast))
         {
-            return funcApp.m_args[0];
+            var_types castToType;
+            bool      srcIsUnsigned;
+            GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+            if ((castToType == TYP_LONG) && !srcIsUnsigned && TypeOfVN(funcApp.m_args[0]) == TYP_INT)
+            {
+                return funcApp.m_args[0];
+            }
         }
-    }
-    int intCns;
-    if (IsVNIntegralConstant(vn, &intCns))
-    {
-        return VNForIntCon(intCns);
+
+        // Also look through any long-typed integral constant that fits in an int.
+        int intCns;
+        if (IsVNIntegralConstant(vn, &intCns))
+        {
+            return VNForIntCon(intCns);
+        }
     }
     return vn;
 }
@@ -2669,7 +2666,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 ValueNum actualSizeVN = VNIgnoreIntToLongCast(newArrFuncApp.m_args[1]);
                 if (TypeOfVN(actualSizeVN) == TYP_INT)
                 {
-                    return actualSizeVN;
+                    *resultVN = actualSizeVN;
                 }
             }
         }
