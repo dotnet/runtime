@@ -82,8 +82,16 @@ namespace System.Net
                     // We then explicitly close the NetworkStream with the appropriate timeout.
                     if (_stream != _originalStream)
                     {
-                        // Close the SslStream first for proper SSL/TLS shutdown
-                        _stream.Close();
+                        if ((closeState & CloseExState.Abort) == 0)
+                        {
+                            // For normal close, perform graceful SSL/TLS shutdown
+                            _stream.Close();
+                        }
+                        else
+                        {
+                            // For abort, just dispose without graceful SSL shutdown
+                            _stream.Dispose();
+                        }
                     }
 
                     // Close the NetworkStream with appropriate timeout
