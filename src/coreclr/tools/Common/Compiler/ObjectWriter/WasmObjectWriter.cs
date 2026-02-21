@@ -359,7 +359,9 @@ namespace ILCompiler.ObjectWriter
                                 WriteRelocDataSpan(reloc, pData);
                             }
                             else
+                            {
                                 throw new InvalidDataException($"Type signature symbol definition '{reloc.SymbolName}' not found");
+                            }
 
                             break;
                         }
