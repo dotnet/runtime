@@ -3434,6 +3434,7 @@ namespace Internal.JitInterface
         private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
         {
             CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
+
             WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
             return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
         }
