@@ -60,5 +60,12 @@ namespace System.Text.RegularExpressions
         /// the top-level match.
         /// </remarks>
         NonBacktracking = 0x0400,
+
+        /// <summary>
+        /// Make <c>^</c>, <c>$</c>, <c>\Z</c>, and <c>.</c> recognize all common newline sequences
+        /// (<c>\r\n</c>, <c>\r</c>, <c>\n</c>, and the Unicode newlines <c>\u0085</c>, <c>\u2028</c>, <c>\u2029</c>)
+        /// instead of only <c>\n</c>.
+        /// </summary>
+        AnyNewLine = 0x0800,
     }
 }

@@ -186,7 +186,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexOptions.Multiline |
                 RegexOptions.NonBacktracking |
                 RegexOptions.RightToLeft |
-                RegexOptions.Singleline;
+                RegexOptions.Singleline |
+                RegexOptions.AnyNewLine;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
                 return new DiagnosticData(DiagnosticDescriptors.InvalidRegexArguments, GetComparableLocation(memberSyntax), "options");
