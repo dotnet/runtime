@@ -158,6 +158,7 @@ public:
     BOOL IsPtrInImage(PTR_CVOID data);
 
     BOOL HasNTHeaders();
+    BOOL HasHeaders();
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
     BOOL HasDirectoryEntry(int entry);

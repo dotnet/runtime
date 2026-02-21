@@ -14,7 +14,6 @@ import { validateWasmFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-// WASM-TODO: webCIL
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
 // WASM-TODO: loadAllSatelliteResources
 // WASM-TODO: debugLevel

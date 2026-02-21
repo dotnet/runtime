@@ -75,7 +75,7 @@ public sealed partial class WebcilReader : IDisposable
             header.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_rva);
             header.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_size);
             header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_rva);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
+            header.pe_debug_size = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
         }
         if (header.id[0] != 'W' || header.id[1] != 'b'
             || header.id[2] != 'I' || header.id[3] != 'L'
@@ -342,7 +342,12 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                return section.PointerToRawData + (rva - section.VirtualAddress) + _webcilInWasmOffset;
+                uint offset = (uint)(rva - section.VirtualAddress);
+                if (offset >= section.SizeOfRawData)
+                {
+                    throw new BadImageFormatException("RVA maps to an offset beyond the section's raw data", nameof(_stream));
+                }
+                return section.PointerToRawData + offset + _webcilInWasmOffset;
             }
         }
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
@@ -354,7 +359,7 @@ public sealed partial class WebcilReader : IDisposable
     {
         WebcilSectionHeader secheader;
         var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
-        var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
+        var buffer = new byte[sizeof(WebcilSectionHeader)];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
         for (int i = 0; i < _header.coff_sections; i++)
         {
@@ -368,21 +373,20 @@ public sealed partial class WebcilReader : IDisposable
             }
             if (!BitConverter.IsLittleEndian)
             {
-                sections.Add
-                (
-                    new WebcilSectionHeader
-                    (
-                        virtualSize: BinaryPrimitives.ReverseEndianness(secheader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData)
-                    )
-                );
+                // Name is a byte array, no endian swap needed
+                secheader.VirtualSize = BinaryPrimitives.ReverseEndianness(secheader.VirtualSize);
+                secheader.VirtualAddress = BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress);
+                secheader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData);
+                secheader.PointerToRawData = BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData);
+                // Remaining fields are specified as zero in Webcil v1.0;
+                // zero them out so we don't mis-interpret garbage on big-endian.
+                secheader.PointerToRelocations = 0;
+                secheader.PointerToLinenumbers = 0;
+                secheader.NumberOfRelocations = 0;
+                secheader.NumberOfLinenumbers = 0;
+                secheader.Characteristics = 0;
             }
-            else
-            {
-                sections.Add(secheader);
-            }
+            sections.Add(secheader);
         }
         return sections.MoveToImmutable();
     }

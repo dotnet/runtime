@@ -46,6 +46,10 @@ typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 typedef DPTR(IMAGE_COR20_HEADER)    PTR_IMAGE_COR20_HEADER;
 
+#ifdef TARGET_BROWSER
+#include "webcil.h"
+#endif // TARGET_BROWSER
+
 // --------------------------------------------------------------------------------
 // Forward declared types
 // --------------------------------------------------------------------------------
@@ -167,6 +171,17 @@ class PEDecoder
     BOOL HasNTHeaders() const;
     CHECK CheckNTHeaders() const;
 
+#ifdef TARGET_BROWSER
+    BOOL HasWebcilHeaders() const;
+    CHECK CheckWebcilHeaders() const;
+    inline BOOL HasHeaders() const { return HasWebcilHeaders() || HasNTHeaders(); }
+#else
+    inline BOOL HasWebcilHeaders() const { return FALSE; }
+    inline BOOL HasHeaders() const { return HasNTHeaders(); }
+#endif
+
+    CHECK CheckHeaders() const;
+
     IMAGE_NT_HEADERS32 *GetNTHeaders32() const;
     IMAGE_NT_HEADERS64 *GetNTHeaders64() const;
     BOOL Has32BitNTHeaders() const;
@@ -189,7 +204,6 @@ class PEDecoder
     SIZE_T GetSizeOfHeapCommit() const;
     UINT32 GetLoaderFlags() const;
     UINT32 GetWin32VersionValue() const;
-    COUNT_T GetNumberOfRvaAndSizes() const;
     COUNT_T GetNumberOfSections() const;
     PTR_IMAGE_SECTION_HEADER FindFirstSection() const;
     IMAGE_SECTION_HEADER *FindSection(LPCSTR sectionName) const;
@@ -365,6 +379,8 @@ class PEDecoder
 
     IMAGE_DATA_DIRECTORY *GetMetaDataHelper(METADATA_SECTION_TYPE type) const;
 
+    COUNT_T GetNumberOfRvaAndSizes() const;
+
     static PTR_IMAGE_SECTION_HEADER FindFirstSection(IMAGE_NT_HEADERS * pNTHeaders);
 
     IMAGE_COR20_HEADER *FindCorHeader() const;
@@ -399,6 +415,8 @@ class PEDecoder
         FLAG_NATIVE_CHECKED     = 0x80,
 
         FLAG_HAS_NO_READYTORUN_HEADER = 0x100,
+        FLAG_WEBCIL             = 0x200,
+        FLAG_WEBCIL_CHECKED     = 0x400,
     };
 
     TADDR               m_base;

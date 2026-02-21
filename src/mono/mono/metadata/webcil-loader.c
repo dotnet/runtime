@@ -13,14 +13,14 @@
 
 /* keep in sync with webcil-writer */
 enum {
-	MONO_WEBCIL_VERSION_MAJOR = 0,
+	MONO_WEBCIL_VERSION_MAJOR = 1,
 	MONO_WEBCIL_VERSION_MINOR = 0,
 };
 
-typedef struct MonoWebCilHeader {
+typedef struct MonoWebcilHeader {
 	uint8_t id[4]; // 'W' 'b' 'I' 'L'
 	// 4 bytes
-	uint16_t version_major; // 0
+	uint16_t version_major; // 1
 	uint16_t version_minor; // 0
 	// 8 bytes
 	uint16_t coff_sections;
@@ -34,7 +34,7 @@ typedef struct MonoWebCilHeader {
 	uint32_t pe_debug_rva;
 	uint32_t pe_debug_size;
 	// 28 bytes
-} MonoWebCilHeader;
+} MonoWebcilHeader;
 
 static gboolean
 find_webcil_in_wasm (const uint8_t *ptr, const uint8_t *boundp, const uint8_t **webcil_payload_start);
@@ -43,7 +43,7 @@ static gboolean
 webcil_image_match (MonoImage *image)
 {
 	gboolean success = FALSE;
-	if (image->raw_data_len >= sizeof (MonoWebCilHeader)) {
+	if (image->raw_data_len >= sizeof (MonoWebcilHeader)) {
 		success = image->raw_data[0] == 'W' && image->raw_data[1] == 'b' && image->raw_data[2] == 'I' && image->raw_data[3] == 'L';
 
 		if (!success && mono_wasm_module_is_wasm ((const uint8_t*)image->raw_data, (const uint8_t*)image->raw_data + image->raw_data_len)) {
@@ -64,7 +64,7 @@ webcil_image_match (MonoImage *image)
 static int32_t
 do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header, int32_t *raw_data_rva_map_wasm_bump)
 {
-	MonoWebCilHeader wcheader;
+	MonoWebcilHeader wcheader;
 	const uint8_t *raw_data_bound = (const uint8_t*)raw_data + raw_data_len;
 	*raw_data_rva_map_wasm_bump = 0;
 	if (mono_wasm_module_is_wasm ((const uint8_t*)raw_data, raw_data_bound)) {
@@ -79,12 +79,13 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 		offset += offset_adjustment;
 	}
 
-	if (offset + sizeof (MonoWebCilHeader) > raw_data_len)
+	if (offset + sizeof (MonoWebcilHeader) > raw_data_len)
 		return -1;
 	memcpy (&wcheader, raw_data + offset, sizeof (wcheader));
 
 	if (!(wcheader.id [0] == 'W' && wcheader.id [1] == 'b' && wcheader.id[2] == 'I' && wcheader.id[3] == 'L' &&
-	      GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR && GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
+		GUINT16_FROM_LE (wcheader.version_major) == MONO_WEBCIL_VERSION_MAJOR &&
+		GUINT16_FROM_LE (wcheader.version_minor) == MONO_WEBCIL_VERSION_MINOR))
 		return -1;
 
 	memset (header, 0, sizeof(MonoDotNetHeader));
@@ -101,21 +102,29 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 int32_t
 mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, int32_t webcil_section_adjustment, MonoSectionTable *t)
 {
-	/* WebCIL section table entries are a subset of a PE section
-	 * header. Initialize just the parts we have.
+	/* Webcil v1.0 section headers are standard IMAGE_SECTION_HEADER (40 bytes).
+	 * Layout: Name[8], VirtualSize, VirtualAddress, SizeOfRawData,
+	 * PointerToRawData, plus unused trailing fields.
 	 */
-	uint32_t st [4];
+	#define IMAGE_SECTION_HEADER_SIZE 40
 
 	if (G_UNLIKELY (offset < 0))
 		return offset;
-	if ((uint32_t)offset > raw_data_len)
+	if ((uint32_t)(offset + IMAGE_SECTION_HEADER_SIZE) > raw_data_len)
 		return -1;
-	memcpy (st, raw_data + offset, sizeof (st));
-	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
-	t->st_virtual_address = GUINT32_FROM_LE (st [1]);
-	t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
-	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]) + (uint32_t)webcil_section_adjustment;
-	offset += sizeof(st);
+
+	const uint8_t *p = (const uint8_t *)(raw_data + offset);
+	uint32_t virtual_size, virtual_address, raw_data_size, raw_data_ptr;
+	memcpy (&virtual_size, p + 8, sizeof (uint32_t));
+	memcpy (&virtual_address, p + 12, sizeof (uint32_t));
+	memcpy (&raw_data_size, p + 16, sizeof (uint32_t));
+	memcpy (&raw_data_ptr, p + 20, sizeof (uint32_t));
+
+	t->st_virtual_size = GUINT32_FROM_LE (virtual_size);
+	t->st_virtual_address = GUINT32_FROM_LE (virtual_address);
+	t->st_raw_data_size = GUINT32_FROM_LE (raw_data_size);
+	t->st_raw_data_ptr = GUINT32_FROM_LE (raw_data_ptr) + (uint32_t)webcil_section_adjustment;
+	offset += IMAGE_SECTION_HEADER_SIZE;
 	return offset;
 }
 

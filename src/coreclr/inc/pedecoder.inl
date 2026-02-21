@@ -502,12 +502,24 @@ inline BOOL PEDecoder::HasDirectoryEntry(int entry) const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        if (entry == IMAGE_DIRECTORY_ENTRY_COMHEADER)
+            return VAL32(pWC->pe_cli_header_rva) != 0;
+        if (entry == IMAGE_DIRECTORY_ENTRY_DEBUG)
+            return VAL32(pWC->pe_debug_rva) != 0;
+        return FALSE;
+    }
+#endif
 
     if (Has32BitNTHeaders())
         return (GetNTHeaders32()->OptionalHeader.DataDirectory[entry].VirtualAddress != 0);
@@ -546,8 +558,8 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        PRECONDITION(CheckDirectoryEntry(entry, 0, NULL_OK));
+        PRECONDITION(CheckHeaders());
+        PRECONDITION((HasWebcilHeaders() || CheckDirectoryEntry(entry, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize, NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -556,6 +568,71 @@ inline TADDR PEDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
         SUPPORTS_DAC;
     }
     CONTRACT_END;
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        RVA rva = 0;
+        COUNT_T size = 0;
+        if (entry == IMAGE_DIRECTORY_ENTRY_COMHEADER)
+        {
+            rva = VAL32(pWC->pe_cli_header_rva);
+            size = VAL32(pWC->pe_cli_header_size);
+        }
+        else if (entry == IMAGE_DIRECTORY_ENTRY_DEBUG)
+        {
+            rva = VAL32(pWC->pe_debug_rva);
+            size = VAL32(pWC->pe_debug_size);
+        }
+        else
+        {
+            // Webcil only supports COMHEADER and DEBUG directory entries.
+            _ASSERTE(!"Unsupported directory entry for Webcil");
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        // Validate that the {rva, size} range falls within a section's
+        // backed data.  The normal PE path does this via CheckDirectoryEntry
+        // / CheckRva; for Webcil we must check explicitly.
+        if (rva == 0)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        IMAGE_SECTION_HEADER *section = RvaToSection(rva);
+        if (section == NULL)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        // RvaToSection guarantees rva >= sectionBase, so the subtraction
+        // is safe.  Verify the full [rva, rva+size) range fits within the
+        // section's raw data (for flat/unmapped images) or virtual extent.
+        RVA sectionBase = VAL32(section->VirtualAddress);
+        _ASSERTE(rva >= sectionBase);
+        COUNT_T sectionLimit = IsMapped()
+            ? VAL32(section->Misc.VirtualSize)
+            : VAL32(section->SizeOfRawData);
+        COUNT_T offsetInSection = rva - sectionBase;
+        if (offsetInSection > sectionLimit || size > sectionLimit - offsetInSection)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            RETURN (TADDR)NULL;
+        }
+
+        if (pSize != NULL)
+            *pSize = size;
+        RETURN GetRvaData(rva);
+    }
+#endif
 
     IMAGE_DATA_DIRECTORY *pDir = GetDirectoryEntry(entry);
 
@@ -570,8 +647,8 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        PRECONDITION(CheckDirectory(pDir, 0, NULL_OK));
+        PRECONDITION(CheckHeaders());
+        PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
@@ -588,8 +665,8 @@ inline TADDR PEDecoder::GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pS
     CONTRACT(TADDR)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
-        PRECONDITION(CheckDirectory(pDir, 0, NULL_OK));
+        PRECONDITION(CheckHeaders());
+        PRECONDITION((HasWebcilHeaders() || CheckDirectory(pDir, 0, NULL_OK)));
         PRECONDITION(CheckPointer(pSize));
         NOTHROW;
         GC_NOTRIGGER;
@@ -625,7 +702,7 @@ inline BOOL PEDecoder::HasCorHeader() const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         SUPPORTS_DAC;
         GC_NOTRIGGER;
@@ -656,7 +733,7 @@ inline COUNT_T PEDecoder::RvaToOffset(RVA rva) const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckRva(rva,NULL_OK));
         NOTHROW;
         CANNOT_TAKE_LOCK;
@@ -680,7 +757,7 @@ inline RVA PEDecoder::OffsetToRva(COUNT_T fileOffset) const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(CheckOffset(fileOffset,NULL_OK));
         NOTHROW;
         GC_NOTRIGGER;
@@ -734,7 +811,7 @@ inline CHECK PEDecoder::CheckStrongNameSignature() const
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(HasCorHeader());
         PRECONDITION(HasStrongNameSignature());
         NOTHROW;
@@ -852,7 +929,7 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
     CONTRACT(IMAGE_COR20_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(CheckHeaders());
         PRECONDITION(HasCorHeader());
         NOTHROW;
         GC_NOTRIGGER;
@@ -871,7 +948,9 @@ inline IMAGE_COR20_HEADER *PEDecoder::GetCorHeader() const
 
 inline BOOL PEDecoder::IsNativeMachineFormat() const
 {
-    if (!HasContents() || !HasNTHeaders() )
+    if (!HasContents() || !HasHeaders() )
+        return FALSE;
+    if (HasWebcilHeaders())
         return FALSE;
     _ASSERTE(m_pNTHeaders);
     WORD expectedFormat = HasCorHeader() && HasReadyToRunHeader() ?
@@ -883,7 +962,9 @@ inline BOOL PEDecoder::IsNativeMachineFormat() const
 
 inline BOOL PEDecoder::IsI386() const
 {
-    if (!HasContents() || !HasNTHeaders() )
+    if (!HasContents() || !HasHeaders() )
+        return FALSE;
+    if (HasWebcilHeaders())
         return FALSE;
     _ASSERTE(m_pNTHeaders);
     //do not call GetNTHeaders as we do not want to bother with PE32->PE32+ conversion
@@ -907,12 +988,20 @@ inline COUNT_T PEDecoder::GetNumberOfSections() const
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+    {
+        const WebcilHeader* pWC = (const WebcilHeader*)(TADDR)m_base;
+        return VAL16(pWC->coff_sections);
+    }
+#endif
 
     return VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
 }
@@ -930,13 +1019,18 @@ inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection() const
     CONTRACT(IMAGE_SECTION_HEADER *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckNTHeaders());
+        PRECONDITION(HasHeaders());
         NOTHROW;
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL));
         SUPPORTS_DAC;
     }
     CONTRACT_END;
+
+#ifdef TARGET_BROWSER
+    if (HasWebcilHeaders())
+        RETURN dac_cast<PTR_IMAGE_SECTION_HEADER>(m_base + sizeof(WebcilHeader));
+#endif
 
     RETURN FindFirstSection(FindNTHeaders());
 }
@@ -1027,65 +1121,73 @@ inline void PEDecoder::GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine)
     CONTRACTL_END;
 
     DWORD dwKind=0,dwMachine=0;
-    if(HasContents() && HasNTHeaders())
+    if(HasContents() && HasHeaders())
     {
-        dwMachine = GetMachine();
-
-        BOOL fIsPE32Plus = !Has32BitNTHeaders();
-
-        if (fIsPE32Plus)
-            dwKind |= (DWORD)pe32Plus;
-
-        if (HasCorHeader())
+        if (HasWebcilHeaders())
         {
-            IMAGE_COR20_HEADER * pCorHdr = GetCorHeader();
-            if(pCorHdr != NULL)
-            {
-                DWORD dwCorFlags = pCorHdr->Flags;
+            dwKind = peILonly;
+            dwMachine = IMAGE_FILE_MACHINE_I386;
+        }
+        else
+        {
+            dwMachine = GetMachine();
 
-                if (dwCorFlags & VAL32(COMIMAGE_FLAGS_ILONLY))
+            BOOL fIsPE32Plus = !Has32BitNTHeaders();
+
+            if (fIsPE32Plus)
+                dwKind |= (DWORD)pe32Plus;
+
+            if (HasCorHeader())
+            {
+                IMAGE_COR20_HEADER * pCorHdr = GetCorHeader();
+                if(pCorHdr != NULL)
                 {
-                    dwKind |= (DWORD)peILonly;
+                    DWORD dwCorFlags = pCorHdr->Flags;
+
+                    if (dwCorFlags & VAL32(COMIMAGE_FLAGS_ILONLY))
+                    {
+                        dwKind |= (DWORD)peILonly;
 #ifdef HOST_64BIT
-                    // compensate for shim promotion of PE32/ILONLY headers to PE32+ on WIN64
-                    if (fIsPE32Plus && (GetMachine() == IMAGE_FILE_MACHINE_I386))
-                        dwKind &= ~((DWORD)pe32Plus);
+                        // compensate for shim promotion of PE32/ILONLY headers to PE32+ on WIN64
+                        if (fIsPE32Plus && (GetMachine() == IMAGE_FILE_MACHINE_I386))
+                            dwKind &= ~((DWORD)pe32Plus);
 #endif
+                    }
+
+                    if (COR_IS_32BIT_REQUIRED(dwCorFlags))
+                        dwKind |= (DWORD)pe32BitRequired;
+                    else if (COR_IS_32BIT_PREFERRED(dwCorFlags))
+                        dwKind |= (DWORD)pe32BitPreferred;
+
+                    // compensate for MC++ peculiarity
+                    if(dwKind == 0)
+                        dwKind = (DWORD)pe32BitRequired;
+                }
+                else
+                {
+                    dwKind |= (DWORD)pe32Unmanaged;
                 }
 
-                if (COR_IS_32BIT_REQUIRED(dwCorFlags))
-                    dwKind |= (DWORD)pe32BitRequired;
-                else if (COR_IS_32BIT_PREFERRED(dwCorFlags))
-                    dwKind |= (DWORD)pe32BitPreferred;
+                if (HasReadyToRunHeader())
+                {
+                    if (dwMachine == IMAGE_FILE_MACHINE_NATIVE_NI)
+                    {
+                        // Supply the original machine type to the assembly binder
+                        dwMachine = IMAGE_FILE_MACHINE_NATIVE;
+                    }
 
-                // compensate for MC++ peculiarity
-                if(dwKind == 0)
-                    dwKind = (DWORD)pe32BitRequired;
+                    if ((GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
+                    {
+                        // Supply the original PEKind/Machine to the assembly binder to make the full assembly name look like the original
+                        dwKind = peILonly;
+                        dwMachine = IMAGE_FILE_MACHINE_I386;
+                    }
+                }
             }
             else
             {
                 dwKind |= (DWORD)pe32Unmanaged;
             }
-
-            if (HasReadyToRunHeader())
-            {
-                if (dwMachine == IMAGE_FILE_MACHINE_NATIVE_NI)
-                {
-                    // Supply the original machine type to the assembly binder
-                    dwMachine = IMAGE_FILE_MACHINE_NATIVE;
-                }
-
-                if ((GetReadyToRunHeader()->CoreHeader.Flags & READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE) != 0)
-                {
-                    // Supply the original PEKind/Machine to the assembly binder to make the full assembly name look like the original
-                    dwKind = peILonly;
-                    dwMachine = IMAGE_FILE_MACHINE_I386;
-                }
-            }
-        }
-        else
-        {
-            dwKind |= (DWORD)pe32Unmanaged;
         }
     }
 
