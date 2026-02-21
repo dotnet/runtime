@@ -183,6 +183,9 @@ Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 // Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
 Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
 
+// Function to call to log the managed callstack for a signal. Used by Android since CoreCLR doesn't support CreateDump on Android.
+Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalCallback = nullptr;
+
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
@@ -1344,6 +1347,26 @@ PAL_SetCreateDumpCallback(
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetLogManagedCallstackForSignalCallback
+
+Abstract:
+  Sets a callback that is executed when a signal is received to log the managed callstack.
+  Used by Android CoreCLR since CreateDump is not supported on Android.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback)
+{
+    _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
+    g_logManagedCallstackForSignalCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -2672,6 +2695,7 @@ Return:
     FALSE failed
 --*/
 BOOL
+PALAPI
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
@@ -2710,6 +2734,43 @@ static void DoNotOptimize(const void* p)
     (void)p;
 }
 
+static LPCWSTR GetSignalName(int signal)
+{
+    switch (signal)
+    {
+        case SIGSEGV: return W("SIGSEGV");
+        case SIGBUS:  return W("SIGBUS");
+        case SIGFPE:  return W("SIGFPE");
+        case SIGILL:  return W("SIGILL");
+        case SIGABRT: return W("SIGABRT");
+        case SIGTRAP: return W("SIGTRAP");
+        case SIGTERM: return W("SIGTERM");
+        default:      return W("Unknown signal");
+    }
+}
+
+/*++
+Function:
+  PROCLogManagedCallstackForSignal
+
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
+--*/
+VOID
+PROCLogManagedCallstackForSignal(int signal)
+{
+    if (g_logManagedCallstackForSignalCallback != nullptr)
+    {
+        LPCWSTR signalName = GetSignalName(signal);
+        g_logManagedCallstackForSignalCallback(signalName);
+    }
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2733,7 +2794,6 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }

@@ -186,7 +186,7 @@ regNumber WasmRegAlloc::AllocateVirtualRegister(WasmValueType type)
 }
 
 //------------------------------------------------------------------------
-// AllocateInternalRegister: Allocate a new internal (virtual) register.
+// AllocateTemporaryRegister: Allocate a new temporary (virtual) register.
 //
 // Arguments:
 //    type - The register's type
@@ -195,29 +195,31 @@ regNumber WasmRegAlloc::AllocateVirtualRegister(WasmValueType type)
 //    The allocated register.
 //
 // Notes:
-//    Internal (virtual) regisers live in an index space different from
+//    Temporary (virtual) regisers live in an index space different from
 //    the ordinary virtual registers, to which they are mapped just before
 //    resolution.
 //
-regNumber WasmRegAlloc::AllocateInternalRegister(var_types type)
+regNumber WasmRegAlloc::AllocateTemporaryRegister(var_types type)
 {
     WasmValueType wasmType = TypeToWasmValueType(type);
-    unsigned      index    = m_internalRegs[static_cast<unsigned>(wasmType)].Push();
+    unsigned      index    = m_temporaryRegs[static_cast<unsigned>(wasmType)].Push();
     return MakeWasmReg(index, wasmType);
 }
 
 //------------------------------------------------------------------------
-// FreeInternalRegisters: Release the currently allocated internal registers.
+// ReleaseTemporaryRegister: Release the most recently allocated temporary register.
 //
-// Call this after processing a node that required internal registers to
-// make them available for the next node.
+// Arguments:
+//    type - The register's type
 //
-void WasmRegAlloc::FreeInternalRegisters()
+// Return Value:
+//    The released register.
+//
+regNumber WasmRegAlloc::ReleaseTemporaryRegister(var_types type)
 {
-    for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-    {
-        m_internalRegs[static_cast<unsigned>(type)].PopAll();
-    }
+    WasmValueType wasmType = TypeToWasmValueType(type);
+    unsigned      index    = m_temporaryRegs[static_cast<unsigned>(wasmType)].Pop();
+    return MakeWasmReg(index, wasmType);
 }
 
 //------------------------------------------------------------------------
@@ -280,31 +282,65 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_CALL:
+            CollectReferencesForCall(node->AsCall());
+            break;
+
+        case GT_CAST:
+            CollectReferencesForCast(node->AsOp());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
     }
+
+    RequestTemporaryRegisterForMultiplyUsedNode(node);
 }
 
 //------------------------------------------------------------------------
 // CollectReferencesForDivMod: Collect virtual register references for a DIV/MOD.
 //
-// Allocates internal registers for the div-by-zero and overflow checks.
+// Consumes temporary registers for the div-by-zero and overflow checks.
 //
 // Arguments:
 //    divModNode - The [U]DIV/[U]MOD node
 //
 void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 {
-    ExceptionSetFlags exSetFlags = divModNode->OperExceptions(m_compiler);
+    ConsumeTemporaryRegForOperand(divModNode->gtGetOp2() DEBUGARG("div-by-zero / overflow check"));
+    ConsumeTemporaryRegForOperand(divModNode->gtGetOp1() DEBUGARG("div-by-zero / overflow check"));
+}
 
-    // TODO-WASM: implement overflow checking.
-    if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+//------------------------------------------------------------------------
+// CollectReferencesForCall: Collect virtual register references for a call.
+//
+// Consumes temporary registers for a call.
+//
+// Arguments:
+//    callNode - The GT_CALL node
+//
+void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
+{
+    CallArg* thisArg = callNode->gtArgs.GetThisArg();
+
+    if (thisArg != nullptr)
     {
-        RequestInternalRegForOperand(divModNode, divModNode->gtGetOp2() DEBUGARG("div by zero check - divisor"));
+        ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
     }
+}
 
-    FreeInternalRegisters();
+//------------------------------------------------------------------------
+// CollectReferencesForCast: Collect virtual register references for a cast.
+//
+// Consumes temporary registers for a cast.
+//
+// Arguments:
+//    castNode - The GT_CAST node
+//
+void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
+{
+    ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
 }
 
 //------------------------------------------------------------------------
@@ -321,16 +357,8 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 {
     // At this point, the IR is already stackified, so we just need to find the first node in the dataflow.
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
-    GenTree*             value = lclNode->Data();
-    GenTree*             op    = value;
-    GenTree::VisitResult visitResult;
-    do
-    {
-        visitResult = op->VisitOperands([&op](GenTree* operand) {
-            op = operand;
-            return GenTree::VisitResult::Abort;
-        });
-    } while (visitResult == GenTree::VisitResult::Abort);
+    GenTree* value          = lclNode->Data();
+    GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
 
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
@@ -351,7 +379,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
-    CurrentRange().InsertBefore(op, lclNode);
+    CurrentRange().InsertBefore(insertionPoint, lclNode);
 }
 
 //------------------------------------------------------------------------
@@ -362,7 +390,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 // Arguments:
 //    node - The node to collect
 //
-void WasmRegAlloc::CollectReference(GenTreeLclVarCommon* node)
+void WasmRegAlloc::CollectReference(GenTree* node)
 {
     VirtualRegReferences* refs = m_virtualRegRefs;
     if (refs == nullptr)
@@ -383,25 +411,65 @@ void WasmRegAlloc::CollectReference(GenTreeLclVarCommon* node)
 }
 
 //------------------------------------------------------------------------
-// RequestInternalRegForOperand: Add an internal register to 'node' if needed.
+// RequestTemporaryRegisterForMultiplyUsedNode: request a temporary register for a node with multiple uses.
 //
-// So that 'operand' can be used multiple times in codegen. Thus we can skip
-// adding internal registers when 'operand' is a candidate, expecting codegen
-// to use the local assigned to 'operand' directly.
+// To be later assigned a physical register.
 //
 // Arguments:
-//    node - The node to add internal registers
+//    node - A node possibly needing a temporary register
 //
-void WasmRegAlloc::RequestInternalRegForOperand(GenTree* node, GenTree* operand DEBUGARG(const char* reason))
+void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 {
-    if (operand->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(operand->AsLclVar())->lvIsRegCandidate())
+    if ((node->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)
     {
         return;
     }
 
-    regNumber reg = AllocateInternalRegister(genActualType(operand));
-    m_codeGen->internalRegisters.Add(node, reg);
-    JITDUMP("Allocated an internal reg for [%06u]: %s\n", Compiler::dspTreeID(node), reason);
+    assert(node->IsValue());
+    if (node->IsUnusedValue())
+    {
+        // Liveness removed the parent node - no need to do anything.
+        node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+        return;
+    }
+
+    if (node->OperIs(GT_LCL_VAR) && m_compiler->lvaGetDesc(node->AsLclVar())->lvIsRegCandidate())
+    {
+        // Will be allocated into its own register, no need for a temporary.
+        node->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+        return;
+    }
+
+    // Note how due to the fact we're processing nodes in stack order,
+    // we don't need to maintain free/busy sets, only a simple stack.
+    regNumber reg = AllocateTemporaryRegister(genActualType(node));
+    node->SetRegNum(reg);
+}
+
+//------------------------------------------------------------------------
+// ConsumeTemporaryRegForOperand: Consume the temporary register for a multiply-used operand.
+//
+// The contract with codegen is that such operands will have their register
+// number set to a valid WASM local, to be "local.tee"d after the node is
+// generated.
+//
+// Arguments:
+//    operand - The node to consume the register for
+//    reason  - What was the register allocated for
+//
+void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason))
+{
+    if ((operand->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None)
+    {
+        return;
+    }
+
+    regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
+    assert(reg == operand->GetRegNum());
+    CollectReference(operand);
+
+    operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+    JITDUMP("Consumed a temporary reg for [%06u]: %s\n", Compiler::dspTreeID(operand), reason);
 }
 
 //------------------------------------------------------------------------
@@ -411,23 +479,29 @@ void WasmRegAlloc::RequestInternalRegForOperand(GenTree* node, GenTree* operand 
 //
 void WasmRegAlloc::ResolveReferences()
 {
-    // Finish the allocation by allocating internal registers to virtual registers.
-    struct InternalRegBank
+    // Finish the allocation by allocating temporary registers to virtual registers.
+    struct TemporaryRegBank
     {
-        regNumber Regs[InternalRegs::MAX_REG_COUNT];
-        unsigned  Count;
+        regNumber* Regs;
+        unsigned   Count;
     };
-    InternalRegBank internalRegMap[static_cast<unsigned>(WasmValueType::Count)];
+    TemporaryRegBank temporaryRegMap[static_cast<unsigned>(WasmValueType::Count)];
     for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
     {
-        InternalRegStack& internalRegs          = m_internalRegs[static_cast<unsigned>(type)];
-        InternalRegBank&  allocatedInternalRegs = internalRegMap[static_cast<unsigned>(type)];
-        assert(internalRegs.Count == 0);
+        TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
+        TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
+        assert(temporaryRegs.Count == 0);
 
-        allocatedInternalRegs.Count = internalRegs.MaxCount;
-        for (unsigned i = 0; i < allocatedInternalRegs.Count; i++)
+        allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
+        if (allocatedTemporaryRegs.Count == 0)
         {
-            allocatedInternalRegs.Regs[i] = AllocateVirtualRegister(type);
+            continue;
+        }
+
+        allocatedTemporaryRegs.Regs = new (m_compiler->getAllocator(CMK_LSRA)) regNumber[allocatedTemporaryRegs.Count];
+        for (unsigned i = 0; i < allocatedTemporaryRegs.Count; i++)
+        {
+            allocatedTemporaryRegs.Regs[i] = AllocateVirtualRegister(type);
         }
     }
 
@@ -552,10 +626,10 @@ void WasmRegAlloc::ResolveReferences()
 
     for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
     {
-        InternalRegBank& internalRegs = internalRegMap[static_cast<unsigned>(type)];
-        for (unsigned i = 0; i < internalRegs.Count; i++)
+        TemporaryRegBank& regs = temporaryRegMap[static_cast<unsigned>(type)];
+        for (unsigned i = 0; i < regs.Count; i++)
         {
-            internalRegs.Regs[i] = allocPhysReg(internalRegs.Regs[i], nullptr);
+            regs.Regs[i] = allocPhysReg(regs.Regs[i], nullptr);
         }
     }
 
@@ -565,9 +639,21 @@ void WasmRegAlloc::ResolveReferences()
     {
         for (size_t i = 0; i < refsCount; i++)
         {
-            GenTreeLclVarCommon* node   = refs->Nodes[i];
-            LclVarDsc*           varDsc = m_compiler->lvaGetDesc(node);
-            node->SetRegNum(varDsc->GetRegNum());
+            regNumber physReg;
+            GenTree*  node = refs->Nodes[i];
+            if (node->OperIs(GT_STORE_LCL_VAR))
+            {
+                physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
+            }
+            else
+            {
+                assert(!node->OperIsLocal() || !m_compiler->lvaGetDesc(node->AsLclVarCommon())->lvIsRegCandidate());
+                WasmValueType type;
+                unsigned      index = UnpackWasmReg(node->GetRegNum(), &type);
+                physReg             = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
+            }
+
+            node->SetRegNum(physReg);
         }
         refsCount = ARRAY_SIZE(refs->Nodes);
     }
@@ -580,7 +666,7 @@ void WasmRegAlloc::ResolveReferences()
         {
             WasmValueType type;
             unsigned      index   = UnpackWasmReg(regs->GetAt(i), &type);
-            regNumber     physReg = internalRegMap[static_cast<unsigned>(type)].Regs[index];
+            regNumber     physReg = temporaryRegMap[static_cast<unsigned>(type)].Regs[index];
             regs->SetAt(i, physReg);
         }
     }

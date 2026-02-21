@@ -469,7 +469,7 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    m_updater.UpdateLife(node);
+    m_updater.UpdateLife<true>(node);
 }
 
 //------------------------------------------------------------------------
