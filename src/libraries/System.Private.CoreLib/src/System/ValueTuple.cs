@@ -387,12 +387,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ")";
+            return $"({Item1})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ")";
+            return $"{Item1})";
         }
 
         /// <summary>
@@ -592,12 +592,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ")";
+            return $"({Item1}, {Item2})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ")";
+            return $"{Item1}, {Item2})";
         }
 
         /// <summary>
@@ -789,12 +789,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3})";
         }
 
         /// <summary>
@@ -1004,12 +1004,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3}, {Item4})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3}, {Item4})";
         }
 
         /// <summary>
@@ -1237,12 +1237,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3}, {Item4}, {Item5})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3}, {Item4}, {Item5})";
         }
 
         /// <summary>
@@ -1488,12 +1488,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6})";
         }
 
         /// <summary>
@@ -1757,12 +1757,12 @@ namespace System
         /// </remarks>
         public override string ToString()
         {
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7})";
         }
 
         /// <summary>
@@ -2172,20 +2172,20 @@ namespace System
         {
             if (Rest is IValueTupleInternal)
             {
-                return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
+                return $"({Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7}, {((IValueTupleInternal)Rest).ToStringEnd()}";
             }
 
-            return "(" + Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
+            return $"({Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7}, {Rest})";
         }
 
         string IValueTupleInternal.ToStringEnd()
         {
             if (Rest is IValueTupleInternal)
             {
-                return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + ((IValueTupleInternal)Rest).ToStringEnd();
+                return $"{Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7}, {((IValueTupleInternal)Rest).ToStringEnd()}";
             }
 
-            return Item1?.ToString() + ", " + Item2?.ToString() + ", " + Item3?.ToString() + ", " + Item4?.ToString() + ", " + Item5?.ToString() + ", " + Item6?.ToString() + ", " + Item7?.ToString() + ", " + Rest.ToString() + ")";
+            return $"{Item1}, {Item2}, {Item3}, {Item4}, {Item5}, {Item6}, {Item7}, {Rest})";
         }
 
         /// <summary>
