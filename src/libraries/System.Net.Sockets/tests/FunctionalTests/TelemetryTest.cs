@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -20,6 +22,18 @@ namespace System.Net.Sockets.Tests
     {
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ActivityName = ActivitySourceName + ".Connect";
+        private static readonly string[] s_ioUringCounterNames = GetIoUringCounterNames();
+        private static readonly string[] s_expectedIoUringCounterNames = new[]
+        {
+            "io-uring-completion-slot-exhaustions",
+            "io-uring-cq-overflows",
+            "io-uring-prepare-nonpinnable-fallbacks",
+            "io-uring-prepare-queue-overflow-fallbacks",
+            "io-uring-prepare-queue-overflows",
+            "io-uring-socket-event-buffer-full",
+            "io-uring-sqpoll-submissions-skipped",
+            "io-uring-sqpoll-wakeups"
+        };
 
         private static readonly Lazy<Task<bool>> s_remoteServerIsReachable = new Lazy<Task<bool>>(() => Task.Run(async () =>
         {
@@ -46,6 +60,24 @@ namespace System.Net.Sockets.Tests
             _output = output;
         }
 
+        private static string[] GetIoUringCounterNames()
+        {
+            Type? counterNamesType =
+                typeof(Socket).Assembly.GetType("System.Net.Sockets.SocketsTelemetry+IoUringCounterNames", throwOnError: false);
+
+            if (counterNamesType is null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return counterNamesType
+                .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .Where(field => field.IsLiteral && !field.IsInitOnly && field.FieldType == typeof(string))
+                .Select(field => (string)field.GetRawConstantValue()!)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public static void EventSource_ExistsWithCorrectId()
@@ -57,6 +89,160 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(Guid.Parse("d5b2e7d4-b6ec-50ae-7cde-af89427ad21f"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)] // Socket engine backend event is emitted by Linux engine initialization.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
+        public async Task EventSource_SocketEngineBackendSelected_Emitted()
+        {
+            await RemoteExecutor.Invoke(async () =>
+            {
+                using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
+                listener.AddActivityTracking();
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    server.Listen();
+
+                    using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                    Task connectTask = client.ConnectAsync(server.LocalEndPoint);
+                    using var accepted = await server.AcceptAsync();
+                    await connectTask;
+
+                    await WaitForEventAsync(events, "SocketEngineBackendSelected");
+                });
+
+                EventWrittenEventArgs[] backendEvents = events
+                    .Where(e => e.Event.EventName == "SocketEngineBackendSelected")
+                    .Select(e => e.Event)
+                    .ToArray();
+
+                Assert.NotEmpty(backendEvents);
+                foreach (EventWrittenEventArgs backendEvent in backendEvents)
+                {
+                    Assert.Equal(3, backendEvent.Payload?.Count ?? 0);
+                    string backend = Assert.IsType<string>(backendEvent.Payload![0]);
+                    int isIoUringPort = Convert.ToInt32(backendEvent.Payload[1]);
+                    int sqPollEnabled = Convert.ToInt32(backendEvent.Payload[2]);
+
+                    Assert.True(
+                        backend == "epoll" || backend == "io_uring_completion",
+                        $"Unexpected backend payload: {backend}");
+                    Assert.Equal(backend == "io_uring_completion" ? 1 : 0, isIoUringPort);
+                    Assert.True(sqPollEnabled == 0 || sqPollEnabled == 1, $"Unexpected sqpoll payload: {sqPollEnabled}");
+                    if (backend == "epoll")
+                    {
+                        Assert.Equal(0, sqPollEnabled);
+                    }
+                }
+            }).DisposeAsync();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // io_uring interop types are Linux-only.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
+        public static void IoUringSocketEventPortDiagnostics_LayoutContract()
+        {
+            Type? type = typeof(Socket).Assembly.GetType("Interop+Sys+IoUringSocketEventPortDiagnostics", throwOnError: false, ignoreCase: false);
+            if (type is null)
+            {
+                return;
+            }
+
+            Assert.True(type.IsLayoutSequential);
+
+            Assert.Equal(0, Marshal.OffsetOf(type, "AsyncCancelRequestCqeCount").ToInt32());
+            Assert.Equal(8, Marshal.OffsetOf(type, "AsyncCancelRequestCqeEnoentCount").ToInt32());
+            Assert.Equal(16, Marshal.OffsetOf(type, "AsyncCancelRequestCqeEalreadyCount").ToInt32());
+            Assert.Equal(24, Marshal.OffsetOf(type, "AsyncCancelRequestCqeOtherCount").ToInt32());
+            Assert.Equal(32, Marshal.OffsetOf(type, "SocketEventBufferFullCount").ToInt32());
+
+            if (type.GetField("CompletionBufferFullCount", BindingFlags.Public | BindingFlags.Instance) is not null)
+            {
+                Assert.Equal(40, Marshal.OffsetOf(type, "CompletionBufferFullCount").ToInt32());
+                Assert.Equal(48, Marshal.OffsetOf(type, "UnsupportedOpcodePrepareCount").ToInt32());
+                Assert.Equal(56, Marshal.OffsetOf(type, "CqOverflowCount").ToInt32());
+                Assert.Equal(64, Marshal.SizeOf(type));
+            }
+            else
+            {
+                Assert.Equal(40, Marshal.OffsetOf(type, "UnsupportedOpcodePrepareCount").ToInt32());
+                Assert.Equal(48, Marshal.OffsetOf(type, "CqOverflowCount").ToInt32());
+                Assert.Equal(56, Marshal.SizeOf(type));
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // io_uring interop types are Linux-only.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
+        public static void IoUringProvidedBufferInterop_LayoutContract()
+        {
+            Type ioUringBufType = GetInteropSysNestedType("IoUringBuf");
+            Assert.True(ioUringBufType.IsExplicitLayout);
+            Assert.Equal(0, Marshal.OffsetOf(ioUringBufType, "Address").ToInt32());
+            Assert.Equal(8, Marshal.OffsetOf(ioUringBufType, "Length").ToInt32());
+            Assert.Equal(12, Marshal.OffsetOf(ioUringBufType, "BufferId").ToInt32());
+            Assert.Equal(14, Marshal.OffsetOf(ioUringBufType, "Reserved").ToInt32());
+            Assert.Equal(16, Marshal.SizeOf(ioUringBufType));
+
+            Type ioUringBufRingHeaderType = GetInteropSysNestedType("IoUringBufRingHeader");
+            Assert.True(ioUringBufRingHeaderType.IsExplicitLayout);
+            Assert.Equal(0, Marshal.OffsetOf(ioUringBufRingHeaderType, "Reserved1").ToInt32());
+            Assert.Equal(8, Marshal.OffsetOf(ioUringBufRingHeaderType, "Reserved2").ToInt32());
+            Assert.Equal(12, Marshal.OffsetOf(ioUringBufRingHeaderType, "Reserved3").ToInt32());
+            Assert.Equal(14, Marshal.OffsetOf(ioUringBufRingHeaderType, "Tail").ToInt32());
+            Assert.Equal(16, Marshal.SizeOf(ioUringBufRingHeaderType));
+
+            Type ioUringBufRegType = GetInteropSysNestedType("IoUringBufReg");
+            Assert.True(ioUringBufRegType.IsExplicitLayout);
+            Assert.Equal(0, Marshal.OffsetOf(ioUringBufRegType, "RingAddress").ToInt32());
+            Assert.Equal(8, Marshal.OffsetOf(ioUringBufRegType, "RingEntries").ToInt32());
+            Assert.Equal(12, Marshal.OffsetOf(ioUringBufRegType, "BufferGroupId").ToInt32());
+            Assert.Equal(14, Marshal.OffsetOf(ioUringBufRegType, "Padding").ToInt32());
+            Assert.Equal(16, Marshal.OffsetOf(ioUringBufRegType, "Reserved0").ToInt32());
+            Assert.Equal(24, Marshal.OffsetOf(ioUringBufRegType, "Reserved1").ToInt32());
+            Assert.Equal(32, Marshal.OffsetOf(ioUringBufRegType, "Reserved2").ToInt32());
+            Assert.Equal(40, Marshal.SizeOf(ioUringBufRegType));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // io_uring interop types are Linux-only.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
+        public static void IoUringCompletionInteropType_IsAbsent()
+        {
+            Type? type = typeof(Socket).Assembly.GetType("Interop+Sys+IoUringCompletion", throwOnError: false, ignoreCase: false);
+            Assert.Null(type);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
+        public static void MessageHeaderAndIoVector_LayoutContract()
+        {
+            Type messageHeaderType = GetInteropSysNestedType("MessageHeader");
+            Type ioVectorType = GetInteropSysNestedType("IOVector");
+
+            Assert.True(messageHeaderType.IsLayoutSequential);
+            Assert.True(ioVectorType.IsLayoutSequential);
+
+            int pointerSize = IntPtr.Size;
+
+            Assert.Equal(0, Marshal.OffsetOf(ioVectorType, "Base").ToInt32());
+            Assert.Equal(pointerSize, Marshal.OffsetOf(ioVectorType, "Count").ToInt32());
+            Assert.Equal(pointerSize * 2, Marshal.SizeOf(ioVectorType));
+
+            Assert.Equal(0, Marshal.OffsetOf(messageHeaderType, "SocketAddress").ToInt32());
+            Assert.Equal(pointerSize, Marshal.OffsetOf(messageHeaderType, "IOVectors").ToInt32());
+            Assert.Equal(pointerSize * 2, Marshal.OffsetOf(messageHeaderType, "ControlBuffer").ToInt32());
+            Assert.Equal(pointerSize * 3, Marshal.OffsetOf(messageHeaderType, "SocketAddressLen").ToInt32());
+            Assert.Equal(pointerSize * 3 + sizeof(int), Marshal.OffsetOf(messageHeaderType, "IOVectorCount").ToInt32());
+            Assert.Equal(pointerSize * 3 + sizeof(int) * 2, Marshal.OffsetOf(messageHeaderType, "ControlBufferLen").ToInt32());
+            Assert.Equal(pointerSize * 3 + sizeof(int) * 3, Marshal.OffsetOf(messageHeaderType, "Flags").ToInt32());
+            Assert.Equal(pointerSize * 3 + sizeof(int) * 4, Marshal.SizeOf(messageHeaderType));
         }
 
         public static IEnumerable<object[]> SocketMethods_MemberData()
@@ -108,6 +294,13 @@ namespace System.Net.Sockets.Tests
                 "Eap" => new SocketHelperEap(),
                 _ => throw new ArgumentException(socketMethod)
             };
+        }
+
+        private static Type GetInteropSysNestedType(string nestedTypeName)
+        {
+            Type? type = typeof(Socket).Assembly.GetType($"Interop+Sys+{nestedTypeName}", throwOnError: false, ignoreCase: false);
+            Assert.NotNull(type);
+            return type!;
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -663,6 +856,20 @@ namespace System.Net.Sockets.Tests
             if (shouldHaveDatagrams)
             {
                 Assert.True(datagramsSent[^1] > 0);
+            }
+
+            // Guard against telemetry drift: verify every canonical io_uring counter name exists.
+            // io_uring counters are only registered on Linux (OnEventCommand returns early on non-Linux).
+            if (OperatingSystem.IsLinux())
+            {
+                Assert.Equal(s_expectedIoUringCounterNames, s_ioUringCounterNames);
+                foreach (string counterName in s_ioUringCounterNames)
+                {
+                    Assert.True(
+                        eventCounters.TryGetValue(counterName, out double[] ioUringCounterValues),
+                        $"Missing io_uring EventCounter '{counterName}'.");
+                    Assert.True(ioUringCounterValues[^1] >= 0, $"Unexpected negative counter value for '{counterName}'.");
+                }
             }
         }
     }

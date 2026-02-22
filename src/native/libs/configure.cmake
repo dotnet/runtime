@@ -470,6 +470,10 @@ check_symbol_exists(
     sys/epoll.h
     HAVE_EPOLL)
 
+check_include_files(
+    "linux/io_uring.h;sys/syscall.h"
+    HAVE_LINUX_IO_URING_H)
+
 check_symbol_exists(
     gethostname
     unistd.h
