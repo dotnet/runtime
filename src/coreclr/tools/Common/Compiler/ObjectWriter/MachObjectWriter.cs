@@ -486,12 +486,10 @@ namespace ILCompiler.ObjectWriter
                         addend -= offset - temporaryLabelOffset;
                         if ((int)addend != (((int)addend << 8) >> 8))
                         {
-                            var oldAddend = addend;
                             addend += offset - temporaryLabelOffset;
-                            temporaryLabelOffset = offset;
-                            _temporaryLabels.Add(new SymbolDefinition(sectionIndex, temporaryLabelOffset, 0, false));
-                            _sections[sectionIndex].TemporaryLabelOffset = temporaryLabelOffset;
-                            _sections[sectionIndex].TemporaryLabelIndex = (uint)_temporaryLabels.Count;
+                            _temporaryLabels.Add(new SymbolDefinition(sectionIndex, offset, 0, false));
+                            _sections[sectionIndex].TemporaryLabelOffset = temporaryLabelOffset = offset;
+                            _sections[sectionIndex].TemporaryLabelIndex = temporaryLabelIndex = (uint)_temporaryLabels.Count;
                         }
 
                         BinaryPrimitives.WriteInt32LittleEndian(
