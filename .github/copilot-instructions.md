@@ -159,6 +159,29 @@ cd src/tests
 
 ---
 
+## Analysis Tools
+
+Code analyzers, API compatibility validation, and ILLink trimming are **disabled by default** to speed up local builds and CI. Before checking in, you SHOULD run analysis to catch issues early. Pass these MSBuild properties to enable them:
+
+| Property | What it enables |
+|----------|----------------|
+| `/p:RunAnalyzersInBuild=true` | Roslyn code analyzers (style, correctness, performance) and API compatibility validation |
+| `/p:RunILLinkInBuild=true` | ILLink trimming analysis for shared-framework libraries |
+
+**Run analysis before check-in:**
+```bash
+./build.sh libs -rc release /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+```
+
+Or for a single project:
+```bash
+dotnet build /p:RunAnalyzersInBuild=true
+```
+
+These checks run automatically in the global-build CI pipeline, so fixing issues locally avoids CI failures.
+
+---
+
 ## Troubleshooting
 
 | Error | Solution |

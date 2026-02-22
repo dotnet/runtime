@@ -229,6 +229,27 @@ One can build in Debug or Release mode from the root by doing `./build.sh libs -
 
 One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh libs -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
 
+### Building with Analyzers and Linker
+
+By default, code analyzers and ILLink trimming are disabled during local builds and CI to improve build performance. To enable these features during a build, pass the following properties:
+
+- **Analyzers**: To run code analyzers during the build, use `/p:RunAnalyzersInBuild=true`:
+  ```bash
+  ./build.sh libs -c Release /p:RunAnalyzersInBuild=true
+  ```
+
+- **ILLink Trimming**: To run ILLink trimming during the build, use `/p:RunILLinkInBuild=true`:
+  ```bash
+  ./build.sh libs -c Release /p:RunILLinkInBuild=true
+  ```
+
+- **Both**: To enable both analyzers and trimming:
+  ```bash
+  ./build.sh libs -c Release /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+  ```
+
+These features are automatically run in the global-build CI pipeline for all PRs to ensure code quality without impacting regular build times. Individual projects can still override these settings by explicitly setting `RunAnalyzers` or `ILLinkTrimAssembly` properties in their project files.
+
 ## Working in Visual Studio
 
 If you are working on Windows, and use Visual Studio, you can open individual libraries projects into it. From within Visual Studio you can then build, debug, and run tests.

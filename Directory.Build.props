@@ -355,8 +355,9 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
-    <!-- Must be defined in a props file as imports in Microsoft.DotNet.ApiCompat.Task.targets depend on it. -->
-    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
+    <!-- Must be defined in a props file as imports in Microsoft.DotNet.ApiCompat.Task.targets depend on it.
+         ApiCompat is disabled by default to speed up local builds unless RunAnalyzersInBuild is set. -->
+    <ApiCompatValidateAssemblies Condition="'$(RunAnalyzersInBuild)' == 'true'">true</ApiCompatValidateAssemblies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
