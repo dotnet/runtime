@@ -17,7 +17,7 @@ namespace System.Data.OleDb
         {
             OleDbHResult hr;
             int lcid = System.Globalization.CultureInfo.CurrentCulture.LCID;
-            UnsafeNativeMethods.IErrorInfo errorInfo = errorRecords.GetErrorInfo(index, lcid);
+            errorRecords.GetErrorInfo(index, lcid, out UnsafeNativeMethods.IErrorInfo? errorInfo);
             if (null != errorInfo)
             {
                 hr = errorInfo.GetDescription(out this.message);
@@ -26,7 +26,7 @@ namespace System.Data.OleDb
                 {
                     UnsafeNativeMethods.ReleaseComWrappersObject(errorInfo);
                     lcid = Interop.Kernel32.GetUserDefaultLCID();
-                    errorInfo = errorRecords.GetErrorInfo(index, lcid);
+                    errorRecords.GetErrorInfo(index, lcid, out errorInfo);
 
                     if (null != errorInfo)
                     {
@@ -45,7 +45,7 @@ namespace System.Data.OleDb
                     {
                         UnsafeNativeMethods.ReleaseComWrappersObject(errorInfo);
                         lcid = Interop.Kernel32.GetUserDefaultLCID();
-                        errorInfo = errorRecords.GetErrorInfo(index, lcid);
+                        errorRecords.GetErrorInfo(index, lcid, out errorInfo);
 
                         if (null != errorInfo)
                         {

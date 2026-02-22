@@ -1773,7 +1773,7 @@ namespace System
         private static partial void GetDynamicMethod(
             QCallModule module,
             string name,
-            byte[] sig,
+            [In] byte[] sig,
             int sigLen,
             ObjectHandleOnStack resolver,
             ObjectHandleOnStack result);

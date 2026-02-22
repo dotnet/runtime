@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.WebSocket)]
         internal static partial int WebSocketCreateServerHandle(
-            Property[] properties,
+            [In] Property[] properties,
             uint propertyCount,
             out SafeWebSocketHandle webSocketHandle);
     }

@@ -10,10 +10,10 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptEncodeObject(CertEncodingType dwCertEncodingType, IntPtr lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded);
+        internal static unsafe partial bool CryptEncodeObject(CertEncodingType dwCertEncodingType, IntPtr lpszStructType, void* pvStructInfo, [Out] byte[]? pbEncoded, ref int pcbEncoded);
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptEncodeObject(CertEncodingType dwCertEncodingType, [MarshalAs(UnmanagedType.LPStr)] string lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded);
+        internal static unsafe partial bool CryptEncodeObject(CertEncodingType dwCertEncodingType, [MarshalAs(UnmanagedType.LPStr)] string lpszStructType, void* pvStructInfo, [Out] byte[]? pbEncoded, ref int pcbEncoded);
     }
 }

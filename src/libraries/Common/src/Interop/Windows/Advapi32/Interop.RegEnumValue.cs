@@ -20,8 +20,8 @@ internal static partial class Interop
             [Out] char[] lpValueName,
             ref int lpcbValueName,
             IntPtr lpReserved_MustBeZero,
-            int[]? lpType,
-            byte[]? lpData,
-            int[]? lpcbData);
+            [Out] int[]? lpType,
+            [Out] byte[]? lpData,
+            [In, Out] int[]? lpcbData);
     }
 }

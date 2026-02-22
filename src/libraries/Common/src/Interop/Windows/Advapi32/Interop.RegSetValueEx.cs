@@ -18,7 +18,7 @@ internal static partial class Interop
             string? lpValueName,
             int Reserved,
             int dwType,
-            byte[]? lpData,
+            [In] byte[]? lpData,
             int cbData);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]
@@ -27,7 +27,7 @@ internal static partial class Interop
             string? lpValueName,
             int Reserved,
             int dwType,
-            char[]? lpData,
+            [In] char[]? lpData,
             int cbData);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", StringMarshalling = StringMarshalling.Utf16)]

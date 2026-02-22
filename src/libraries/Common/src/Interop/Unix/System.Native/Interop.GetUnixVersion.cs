@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUnixVersion", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        private static partial int GetUnixVersion(byte[] version, ref int capacity);
+        private static partial int GetUnixVersion([Out] byte[] version, ref int capacity);
 
         internal static string GetUnixVersion()
         {

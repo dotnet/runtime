@@ -18,7 +18,7 @@ internal static partial class Interop
             SafeEventLogReadHandle hEventLog,
             int dwReadFlags,
             int dwRecordOffset,
-            byte[] lpBuffer,
+            [Out] byte[] lpBuffer,
             int nNumberOfBytesRead,
             out int pnBytesRead,
             out int pnMinNumberOfBytesNeeded);
