@@ -160,9 +160,9 @@ namespace System.IO.Tests
                 ms.Capacity = MaxSupportedLength;
                 Assert.Equal(MaxSupportedLength, ms.Capacity);
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => ms.Capacity = MaxSupportedLength + 1);
+                Assert.Throws<OutOfMemoryException>(() => ms.Capacity = MaxSupportedLength + 1);
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => ms.Capacity = int.MaxValue);
+                Assert.Throws<OutOfMemoryException>(() => ms.Capacity = int.MaxValue);
             }
         }
 
