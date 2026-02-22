@@ -67,11 +67,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = null;
 
-            if (_typeDefinition.HasBaseType)
-            {
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), _typeDefinition.BaseType, _typeDefinition);
-            }
-
             if (_typeDefinition is MetadataType metadataType)
             {
                 foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)

@@ -48,7 +48,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             var location = Operation.Syntax.GetLocation();
             var typeNameResolver = new TypeNameResolver(context.Compilation);
             var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer(reportDiagnostic, typeNameResolver, typeHierarchyType: null);
-            if (context.EnableTrimAnalyzer &&
+            if (context.TrimAnalyzer is not null &&
                 !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
                 !FeatureContext.IsEnabled(RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
             {
