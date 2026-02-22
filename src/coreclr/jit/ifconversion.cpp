@@ -366,6 +366,11 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 //
 void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 {
+    if (fromBlock == m_startBlock)
+    {
+        return;
+    }
+
     Statement* stmtList1 = m_startBlock->firstStmt();
     Statement* stmtList2 = fromBlock->firstStmt();
     Statement* stmtLast1 = m_startBlock->lastStmt();
@@ -696,6 +701,27 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     GenTree*  selectFalseInput;
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
+        if (!m_doElseConversion)
+        {
+            // Look for a previous unconditional store to the same lclVar which is equivalent to an else case
+            Statement* last   = m_startBlock->lastStmt();
+            unsigned   lclNum = m_thenOperation.node->AsLclVar()->GetLclNum();
+
+            for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
+            {
+                GenTree* tree = stmt->GetRootNode();
+                if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == lclNum))
+                {
+                    m_doElseConversion    = true;
+                    m_elseOperation.block = m_startBlock;
+                    m_elseOperation.stmt  = stmt;
+                    m_elseOperation.node  = tree;
+
+                    break;
+                }
+            }
+        }
+
         selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
         selectTrueInput  = m_doElseConversion ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
 
