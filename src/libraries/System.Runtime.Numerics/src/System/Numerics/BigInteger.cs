@@ -1900,13 +1900,22 @@ namespace System.Numerics
             ulong h = bits[length - 1];
             ulong m = length > 1 ? bits[length - 2] : 0;
             ulong l = length > 2 ? bits[length - 3] : 0;
+            if (length > 3 && bits.AsSpan()[..^3].ContainsAnyExcept(0u)) {
+                l |= 1; // sticky bit
+            }
 
             int z = BitOperations.LeadingZeroCount((uint)h);
 
-            int exp = (length - 2) * 32 - z;
             ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
+            if ((l & ((1UL << (32 - z)) - 1)) != 0) {
+                man |= 1; // sticky bit
+            }
 
-            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+            // NumericsHelpers.GetDoubleFromParts does not handle rounding correctly here
+            int expP64 = length * 32 - z;
+            double y = (double)sign * man;
+            double u = BitConverter.Int64BitsToDouble(((long)(0x3ff - 64 + expP64) << 52));
+            return y * u;
         }
 
         /// <summary>Explicitly converts a big integer to a <see cref="Half" /> value.</summary>
