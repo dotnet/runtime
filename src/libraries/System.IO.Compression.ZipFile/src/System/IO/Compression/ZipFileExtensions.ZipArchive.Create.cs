@@ -77,6 +77,45 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination, string sourceFileName, string entryName, string password, EncryptionMethod encryption) =>
+            DoCreateEntryFromFile(destination, sourceFileName, entryName, null, password, encryption);
+
+
+        /// <summary>
+        /// <p>Adds a file from the file system to the archive under the specified entry name with encryption.
+        /// The new entry in the archive will contain the contents of the file.
+        /// The last write time of the archive entry is set to the last write time of the file on the file system.
+        /// If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.
+        /// If the specified source file has an invalid last modified time, the first datetime representable in the Zip timestamp format
+        /// (midnight on January 1, 1980) will be used.</p>
+        /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
+        /// </summary>
+        /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only whitespace, or contains one or more
+        /// invalid characters as defined by InvalidPathChars. -or- entryName is a zero-length string. -or- password is null or empty when encryption is not None.</exception>
+        /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
+        /// <exception cref="PathTooLongException">In sourceFileName, the specified path, file name, or both exceed the system-defined maximum length.
+        /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
+        /// <exception cref="DirectoryNotFoundException">The specified sourceFileName is invalid, (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">An I/O error occurred while opening the file specified by sourceFileName.</exception>
+        /// <exception cref="UnauthorizedAccessException">sourceFileName specified a directory.
+        /// -or- The caller does not have the required permission.</exception>
+        /// <exception cref="FileNotFoundException">The file specified in sourceFileName was not found. </exception>
+        /// <exception cref="NotSupportedException">sourceFileName is in an invalid format or the ZipArchive does not support writing.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive has already been closed.</exception>
+        ///
+        /// <param name="destination">The zip archive to add the file to.</param>
+        /// <param name="sourceFileName">The path to the file on the file system to be copied from. The path is permitted to specify relative
+        /// or absolute path information. Relative path information is interpreted as relative to the current working directory.</param>
+        /// <param name="entryName">The name of the entry to be created.</param>
+        /// <param name="compressionLevel">The level of the compression (speed/memory vs. compressed size trade-off).</param>
+        /// <param name="password">The password to use for encrypting the entry.</param>
+        /// <param name="encryption">The encryption method to use.</param>
+        /// <returns>A wrapper for the newly created entry.</returns>
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
+                                                          string sourceFileName, string entryName, CompressionLevel compressionLevel,
+                                                          string password, EncryptionMethod encryption) =>
+            DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, password, encryption);
+
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
@@ -85,6 +124,26 @@ namespace System.IO.Compression
             using (fs)
             {
                 using (Stream es = entry.Open())
+                {
+                    fs.CopyTo(es);
+                }
+            }
+
+            return entry;
+        }
+
+        internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
+                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel,
+                                                              string password, EncryptionMethod encryption)
+        {
+
+            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: false);
+
+            using (fs)
+            {
+                using (Stream es = encryption != EncryptionMethod.None
+                    ? entry.Open(password, encryption)
+                    : entry.Open())
                 {
                     fs.CopyTo(es);
                 }

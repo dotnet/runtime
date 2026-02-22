@@ -105,6 +105,68 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Creates a file on the file system with the entry's contents decrypted using the specified password.
+        /// The last write time of the file is set to the entry's last write time.
+        /// This method does not allow overwriting of an existing file with the same name.
+        /// </summary>
+        /// <param name="source">The zip archive entry to extract a file from.</param>
+        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
+        /// <param name="password">The password used to decrypt the encrypted entry.</param>
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, string password) =>
+            ExtractToFile(source, destinationFileName, overwrite: false, password: password);
+
+        /// <summary>
+        /// Creates a file on the file system with the entry's contents decrypted using the specified password.
+        /// The last write time of the file is set to the entry's last write time.
+        /// This method allows overwriting of an existing file with the same name.
+        /// </summary>
+        /// <param name="source">The zip archive entry to extract a file from.</param>
+        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.</param>
+        /// <param name="overwrite">True to indicate overwrite.</param>
+        /// <param name="password">The password used to decrypt the encrypted entry.</param>
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
+        {
+            ExtractToFileInitialize(source, destinationFileName, overwrite, useAsync: false, out FileStreamOptions fileStreamOptions);
+
+            // When overwriting, extract to a temporary file first to avoid corrupting the destination file
+            // if an exception occurs during extraction (e.g., password-protected archive, corrupted data).
+            string extractPath = destinationFileName;
+            string? tempPath = null;
+
+            if (overwrite && File.Exists(destinationFileName))
+            {
+                tempPath = Path.GetTempFileName();
+                extractPath = tempPath;
+            }
+
+            try
+            {
+                using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
+                {
+                    using (Stream es = !string.IsNullOrEmpty(password) ? source.Open(password) : source.Open())
+                        es.CopyTo(fs);
+                }
+
+                // Move the temporary file to the destination only after successful extraction
+                if (tempPath is not null)
+                {
+                    File.Move(tempPath, destinationFileName, overwrite: true);
+                }
+
+                ExtractToFileFinalize(source, destinationFileName);
+            }
+            catch
+            {
+                // Clean up the temporary file if extraction failed
+                if (tempPath is not null && File.Exists(tempPath))
+                {
+                    try { File.Delete(tempPath); } catch { }
+                }
+                throw;
+            }
+        }
+
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, bool useAsync, out FileStreamOptions fileStreamOptions)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -170,14 +232,17 @@ namespace System.IO.Compression
             return true; // It is a file
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, string? password = null)
         {
             if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
             {
                 // If it is a file:
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
-                source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
+                if (!string.IsNullOrEmpty(password))
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite, password: password);
+                else
+                    source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
             }
         }
     }
