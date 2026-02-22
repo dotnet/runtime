@@ -18,19 +18,7 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
-    list (APPEND NATIVE_SOURCES
-        pal_dynamicload.c
-        pal_interfaceaddresses.c
-        pal_mount.c
-        pal_networking.c
-        pal_networkstatistics.c
-        pal_process.c
-        pal_signal.c
-        pal_threading.c
-        pal_uid.c
-    )
-elseif (CLR_CMAKE_TARGET_BROWSER)
+if (CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload_wasm.c
         pal_interfaceaddresses_browser.c
@@ -42,7 +30,7 @@ elseif (CLR_CMAKE_TARGET_BROWSER)
         pal_threading.c
         pal_uid.c
     )
-else() # WASI
+elseif (CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload_wasm.c
         pal_interfaceaddresses.c
@@ -53,6 +41,30 @@ else() # WASI
         pal_signal_wasm.c
         pal_threading_wasi.c
         pal_uid_wasi.c
+    )
+elseif (CLR_CMAKE_TARGET_SUNOS)
+    list (APPEND NATIVE_SOURCES
+        pal_dynamicload.c
+        pal_interfaceaddresses.c
+        pal_mount.c
+        pal_networking.c
+        pal_networkstatistics_sunos.c
+        pal_process.c
+        pal_signal.c
+        pal_threading.c
+        pal_uid.c
+    )
+else()
+    list (APPEND NATIVE_SOURCES
+        pal_dynamicload.c
+        pal_interfaceaddresses.c
+        pal_mount.c
+        pal_networking.c
+        pal_networkstatistics.c
+        pal_process.c
+        pal_signal.c
+        pal_threading.c
+        pal_uid.c
     )
 endif()
 

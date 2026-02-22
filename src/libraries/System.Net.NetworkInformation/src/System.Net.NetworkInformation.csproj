@@ -206,8 +206,22 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs" Link="Common\Interop\Unix\System.Native\Interop.NetworkChange.cs" />
   </ItemGroup>
 
+  <!-- SunOS (Solaris, illumos) -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
+    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.SunOS.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.SunOS.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSIPGlobalProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSIPGlobalStatistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSIPInterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSIPv6InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\SunOSNetworkInterface.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
+    <!--  Could port NetworkAddressChange.Android.cs using a PF_ROUTE socket -->
+  </ItemGroup>
+
   <!-- Unknown Unix -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris' or '$(TargetPlatformIdentifier)' == 'haiku'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'haiku'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />

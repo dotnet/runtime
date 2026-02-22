@@ -19,12 +19,16 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract bool IsDnsEnabled { get; }
 
         /// <summary>
         /// Gets the Domain Name System (DNS) suffix associated with this interface.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract string DnsSuffix { get; }
 
         /// <summary>
@@ -53,12 +57,16 @@ namespace System.Net.NetworkInformation
         /// The address is that of a Domain Name Service (DNS) server for the local computer.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IPAddressCollection DnsAddresses { get; }
 
         /// <summary>
         /// Gets the network gateway addresses.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract GatewayIPAddressInformationCollection GatewayAddresses { get; }
 
         /// <summary>
@@ -69,6 +77,8 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IPAddressCollection DhcpServerAddresses { get; }
 
         /// <summary>
@@ -79,6 +89,8 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("freebsd")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IPAddressCollection WinsServersAddresses { get; }
 
         /// <summary>

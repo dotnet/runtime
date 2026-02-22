@@ -153,9 +153,14 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_FULLFSYNC)
 
+set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
+if (CLR_CMAKE_TARGET_SUNOS)
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+endif()
 check_function_exists(
     getifaddrs
     HAVE_GETIFADDRS)
+set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_symbol_exists(
     fork

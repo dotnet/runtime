@@ -11,24 +11,18 @@ namespace System.Net.NetworkInformation
         /// Returns objects that describe the network interfaces on the local computer.
         /// </summary>
         /// <returns>An array of all network interfaces on the local computer.</returns>
-        [UnsupportedOSPlatform("illumos")]
-        [UnsupportedOSPlatform("solaris")]
         [UnsupportedOSPlatform("haiku")]
         public static NetworkInterface[] GetAllNetworkInterfaces()
         {
             return NetworkInterfacePal.GetAllNetworkInterfaces();
         }
 
-        [UnsupportedOSPlatform("illumos")]
-        [UnsupportedOSPlatform("solaris")]
         [UnsupportedOSPlatform("haiku")]
         public static bool GetIsNetworkAvailable()
         {
             return NetworkInterfacePal.GetIsNetworkAvailable();
         }
 
-        [UnsupportedOSPlatform("illumos")]
-        [UnsupportedOSPlatform("solaris")]
         [UnsupportedOSPlatform("haiku")]
         public static int IPv6LoopbackInterfaceIndex
         {
@@ -38,8 +32,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        [UnsupportedOSPlatform("illumos")]
-        [UnsupportedOSPlatform("solaris")]
         [UnsupportedOSPlatform("haiku")]
         public static int LoopbackInterfaceIndex
         {
@@ -75,6 +67,8 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <returns>The interface's IP statistics.</returns>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public virtual IPInterfaceStatistics GetIPStatistics()
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);
@@ -87,6 +81,8 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <returns>The interface's IP statistics.</returns>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public virtual IPv4InterfaceStatistics GetIPv4Statistics()
         {
             throw NotImplemented.ByDesignWithMessage(SR.net_MethodNotImplementedException);

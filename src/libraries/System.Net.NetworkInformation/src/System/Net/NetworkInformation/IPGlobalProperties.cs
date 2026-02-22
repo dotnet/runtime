@@ -12,8 +12,6 @@ namespace System.Net.NetworkInformation
     /// </summary>
     public abstract class IPGlobalProperties
     {
-        [UnsupportedOSPlatform("illumos")]
-        [UnsupportedOSPlatform("solaris")]
         [UnsupportedOSPlatform("haiku")]
         public static IPGlobalProperties GetIPGlobalProperties()
         {
@@ -24,24 +22,32 @@ namespace System.Net.NetworkInformation
         /// Gets the Active Udp Listeners on this machine.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IPEndPoint[] GetActiveUdpListeners();
 
         /// <summary>
         /// Gets the Active Tcp Listeners on this machine.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IPEndPoint[] GetActiveTcpListeners();
 
         /// <summary>
         /// Gets the Active Udp Listeners on this machine.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract TcpConnectionInformation[] GetActiveTcpConnections();
 
         /// <summary>
         /// Gets the Dynamic Host Configuration Protocol (DHCP) scope name.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract string DhcpScopeName { get; }
 
         /// <summary>
@@ -58,6 +64,8 @@ namespace System.Net.NetworkInformation
         /// Gets a bool value that specifies whether the local computer is acting as a Windows Internet Name Service (WINS) proxy.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract bool IsWinsProxy { get; }
 
         /// <summary>
@@ -76,30 +84,42 @@ namespace System.Net.NetworkInformation
         }
 
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract TcpStatistics GetTcpIPv4Statistics();
 
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract TcpStatistics GetTcpIPv6Statistics();
 
         /// <summary>
         /// Provides User Datagram Protocol (UDP) statistical data for the local computer.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract UdpStatistics GetUdpIPv4Statistics();
 
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract UdpStatistics GetUdpIPv6Statistics();
 
         /// <summary>
         /// Provides Internet Control Message Protocol (ICMP) version 4 statistical data for the local computer.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IcmpV4Statistics GetIcmpV4Statistics();
 
         /// <summary>
         /// Provides Internet Control Message Protocol (ICMP) version 6 statistical data for the local computer.
         /// </summary>
         [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public abstract IcmpV6Statistics GetIcmpV6Statistics();
 
         /// <summary>
