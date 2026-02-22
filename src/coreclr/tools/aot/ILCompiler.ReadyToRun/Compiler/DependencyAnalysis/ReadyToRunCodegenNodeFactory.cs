@@ -20,6 +20,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
+using ILCompiler.ReadyToRun;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -99,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
             if (HotColdMap == null)
             {
                 HotColdMap = new HotColdMapNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap, HotColdMap);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.HotColdMap, HotColdMap);
                 dependencyGraph.AddRoot(HotColdMap, "HotColdMap is generated because there is cold code");
             }
         }
@@ -396,6 +397,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public InstrumentationDataTableNode InstrumentationDataTable;
         public InliningInfoNode CrossModuleInlningInfo;
+        public ImportReferenceProvider ImportReferenceProvider;
 
         public Import ModuleImport;
 
@@ -701,37 +703,37 @@ namespace ILCompiler.DependencyAnalysis
             graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
 
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode);
 
             RuntimeFunctionsTable = new RuntimeFunctionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable, RuntimeFunctionsTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.RuntimeFunctions, RuntimeFunctionsTable);
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
             graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
             graph.AddRoot(exceptionInfoLookupTableNode, "ExceptionInfoLookupTable is always generated");
 
             ManifestMetadataTable = new ManifestMetadataTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable);
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
             ((ReadyToRunILProvider)ilProvider).InitManifestMutableModule(ManifestMetadataTable._mutableModule);
             Resolver.InitManifestMutableModule(ManifestMetadataTable._mutableModule);
 
             ManifestAssemblyMvidHeaderNode mvidTableNode = new ManifestAssemblyMvidHeaderNode(ManifestMetadataTable);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode, mvidTableNode);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestAssemblyMvids, mvidTableNode);
 
             AssemblyTableNode assemblyTable = null;
 
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 assemblyTable = new AssemblyTableNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable);
             }
 
             // Generate per assembly header tables
@@ -739,7 +741,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
             {
                 assemblyIndex++;
-                HeaderNode tableHeader = Header;
+                ReadyToRunHeaderNode tableHeader = Header;
                 if (assemblyTable != null)
                 {
                     AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
@@ -748,15 +750,15 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule);
-                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable);
 
                 TypesTableNode typesTable = new TypesTableNode(inputModule);
-                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable);
 
                 if (CompilationModuleGroup.IsCompositeBuildMode)
                 {
                     InliningInfoNode inliningInfoTable = new InliningInfoNode(inputModule, InliningInfoNode.InfoType.InliningInfo2);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable);
                 }
 
                 // Core library attributes are checked FAR more often than other dlls
@@ -766,41 +768,48 @@ namespace ILCompiler.DependencyAnalysis
                 if (inputModule == TypeSystemContext.SystemModule)
                 {
                     AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable);
                 }
 
                 if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new EnclosingTypeMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node);
                 }
 
                 if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new TypeGenericInfoMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node);
                 }
 
                 if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
                 {
                     var node = new MethodIsGenericMapNode(inputModule);
-                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
+                    tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node);
                 }
+                ImportReferenceProvider ??= new ImportReferenceProvider();
+
+                TypeMapMetadata metadata = TypeMapMetadata.CreateFromAssembly((EcmaAssembly)inputModule.Assembly, TypeSystemContext.SystemModule, TypeMapAssemblyTargetsMode.Record);
+
+                ReadyToRunTypeMapManager typeMapManager = new(inputModule, metadata);
+                typeMapManager.AddToReadyToRunHeader(tableHeader, this, ImportReferenceProvider);
+                typeMapManager.AttachToDependencyGraph(graph);
             }
 
             InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable);
 
             DebugInfoTable = new DebugInfoTableNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable);
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",
@@ -854,7 +863,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (ProfileDataManager.SynthesizeRandomPgoData || HasAnyProfileDataForInput())
                 {
                     InstrumentationDataTable = new InstrumentationDataTableNode(this, ProfileDataManager);
-                    Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable, InstrumentationDataTable);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.PgoInstrumentationData, InstrumentationDataTable);
                 }
             }
 

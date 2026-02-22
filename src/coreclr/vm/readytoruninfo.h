@@ -143,6 +143,10 @@ class ReadyToRunInfo
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
 
+    NativeFormat::NativeHashtable   m_externalTypeMaps;
+    NativeFormat::NativeHashtable   m_proxyTypeMaps;
+    NativeFormat::NativeHashtable   m_typeMapAssemblyTargets;
+
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
 public:
@@ -329,6 +333,16 @@ public:
 
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
+
+    bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
+
+    bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
+    TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
+
+    bool HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount);
+
+    COUNT_T GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count);
 
     BOOL IsImageVersionAtLeast(int majorVersion, int minorVersion);
 private:
