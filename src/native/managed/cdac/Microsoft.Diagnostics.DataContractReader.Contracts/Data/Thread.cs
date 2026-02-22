@@ -33,7 +33,10 @@ internal sealed class Thread : IData<Thread>
 
         // Address of the exception tracker
         ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
-        UEWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(UEWatsonBucketTrackerBuckets)].Offset);
+        // UEWatsonBucketTrackerBuckets does not exist on certain platforms
+        UEWatsonBucketTrackerBuckets = type.Fields.TryGetValue(nameof(UEWatsonBucketTrackerBuckets), out Target.FieldInfo watsonFieldInfo)
+            ? target.ReadPointer(address + (ulong)watsonFieldInfo.Offset)
+            : TargetPointer.Null;
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
     }
 

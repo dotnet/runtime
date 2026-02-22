@@ -130,7 +130,7 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
-    [ActiveIssue("System.Threading.Thread.ThrowIfSingleThreaded: PlatformNotSupportedException", TestPlatforms.Browser)]
+    [ActiveIssue("System.Threading.Thread.ThrowIfMultithreadingIsNotSupported: PlatformNotSupportedException", TestPlatforms.Browser)]
     [Fact]
     public static void RunTestCase()
     {

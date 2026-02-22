@@ -202,7 +202,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void MutualExclusionTest()
         {
             var threadLocked = new AutoResetEvent(false);
@@ -316,7 +316,7 @@ namespace System.Threading.Tests
                 Assert.Throws<UnauthorizedAccessException>(() => new Mutex(Guid.NewGuid().ToString("N"), options)));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(GetValidNames))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void OpenExisting(string name)
@@ -595,7 +595,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void AbandonExisting(
@@ -851,7 +851,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/96191", TestPlatforms.Browser)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
@@ -914,7 +914,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {

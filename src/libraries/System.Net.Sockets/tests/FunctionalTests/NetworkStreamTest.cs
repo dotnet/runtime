@@ -565,7 +565,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task NetworkStream_ReadTimeout_RemainUseable()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();

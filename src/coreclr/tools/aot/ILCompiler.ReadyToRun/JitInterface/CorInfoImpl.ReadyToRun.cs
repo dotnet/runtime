@@ -846,7 +846,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
             {
@@ -906,39 +906,6 @@ namespace Internal.JitInterface
                             return false;
                         var helperId = GetReadyToRunHelperFromStaticBaseHelper(id);
                         pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, type));
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
-                    {
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        TypeDesc constrainedType = null;
-                        if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
-                        {
-                            constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
-                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
-                        }
-                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        if (helperArg is MethodDesc methodDesc)
-                        {
-                            var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                            MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
-                        }
-                        else if (helperArg is FieldDesc fieldDesc)
-                        {
-                            helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
-                        }
-
-                        var methodContext = new GenericContext(HandleToObject(callerHandle));
-                        ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
-                            pGenericLookupKind.runtimeLookupKind,
-                            helperId,
-                            helperArg,
-                            methodContext);
-                        pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
                 default:
@@ -2613,7 +2580,6 @@ namespace Internal.JitInterface
             Debug.Assert(callerHandle != null);
 
             pResultLookup.lookupKind.needsRuntimeLookup = true;
-            pResultLookup.lookupKind.runtimeLookupFlags = 0;
 
             ref CORINFO_RUNTIME_LOOKUP pResult = ref pResultLookup.runtimeLookup;
             pResult.signature = null;
@@ -2623,6 +2589,7 @@ namespace Internal.JitInterface
 
             // Unless we decide otherwise, just do the lookup via a helper function
             pResult.indirections = CORINFO.USEHELPER;
+            pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
             MethodDesc contextMethod = callerHandle;
@@ -2645,43 +2612,73 @@ namespace Internal.JitInterface
                     pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
             }
 
-            pResultLookup.lookupKind.runtimeLookupArgs = null;
-
+            ReadyToRunHelperId helperId;
+            TypeDesc constrainedType = null;
             switch (entryKind)
             {
                 case DictionaryEntryKind.DeclaringTypeHandleSlot:
                     Debug.Assert(templateMethod != null);
-                    pResultLookup.lookupKind.runtimeLookupArgs = ObjectToHandle(templateMethod.OwningType);
-                    pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DeclaringTypeHandle;
+                    helperId = ReadyToRunHelperId.DeclaringTypeHandle;
                     break;
 
                 case DictionaryEntryKind.TypeHandleSlot:
-                    pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.TypeHandle;
+                    helperId = ReadyToRunHelperId.TypeHandle;
                     break;
 
                 case DictionaryEntryKind.MethodDescSlot:
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
+                {
+                    if (entryKind == DictionaryEntryKind.MethodDescSlot)
                     {
-                        if (entryKind == DictionaryEntryKind.MethodDescSlot)
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodHandle;
-                        else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                        else
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
-
-                        pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
-                        break;
+                        helperId = ReadyToRunHelperId.MethodHandle;
                     }
+                    else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
+                    {
+                        if (pConstrainedResolvedToken != null)
+                        {
+                            constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
+                        }
+                        helperId = ReadyToRunHelperId.MethodEntry;
+                    }
+                    else
+                    {
+                        helperId = ReadyToRunHelperId.VirtualDispatchCell;
+                    }
+                    break;
+                }
 
                 case DictionaryEntryKind.FieldDescSlot:
-                    pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.FieldHandle;
+                    helperId = ReadyToRunHelperId.FieldHandle;
                     break;
 
                 default:
                     throw new NotImplementedException(entryKind.ToString());
             }
+
+            object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            if (helperArg is MethodDesc methodDesc)
+            {
+                var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+            }
+            else if (helperArg is FieldDesc fieldDesc)
+            {
+                helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+            }
+
+            var methodContext = new GenericContext(callerHandle);
+            ISymbolNode helper = _compilation.SymbolNodeFactory.GenericLookupHelper(
+                pResultLookup.lookupKind.runtimeLookupKind,
+                helperId,
+                helperArg,
+                methodContext);
+
+            pResultLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
 
             // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a
             // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
