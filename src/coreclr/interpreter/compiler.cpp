@@ -4551,10 +4551,13 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
+        unsigned flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB;
+        const uint8_t* callIP = m_ip;
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
-            resolvedCallToken = m_resolvedAsyncCallToken;
+            ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
             continuationContextHandling = m_currentContinuationContextHandling;
+            flags |= CORINFO_CALLINFO_ALLOWASYNCVARIANT;
         }
         else
         {
@@ -4570,11 +4573,23 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_compHnd->getNewHelper(resolvedCallToken.hClass, &hasSideEffects);
         }
 
-        CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
-            flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
+            flags |= CORINFO_CALLINFO_CALLVIRT;
 
-        m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+        m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, (CORINFO_CALLINFO_FLAGS)flags, &callInfo);
+
+        if (flags & CORINFO_CALLINFO_ALLOWASYNCVARIANT)
+        {
+            if (callInfo.resolvedAsyncVariant != NULL)
+            {
+                resolvedCallToken.hMethod = callInfo.resolvedAsyncVariant;
+            }
+            else
+            {
+                // Undo the IP change from the peep
+                m_ip = callIP + 5;
+            }
+        }
 
         if (callInfo.sig.isVarArg())
         {
@@ -6739,14 +6754,6 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     return -1;
 }
 
-bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
-{
-    CorInfoTokenKind tokenKind =
-        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
-    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
-    return m_resolvedAsyncCallToken.hMethod != NULL;
-}
-
 bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     CORINFO_RESOLVED_TOKEN awaitResolvedToken;
@@ -6757,10 +6764,6 @@ bool InterpCompiler::IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* pa
         return false;
     }
 
-    if (!ResolveAsyncCallToken(ip))
-    {
-        return false;
-    }
     m_currentContinuationContextHandling = ContinuationContextHandling::ContinueOnCapturedContext;
     return true;
 }
@@ -6825,7 +6828,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, Opc
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return true;
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6895,7 +6898,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const u
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return true;
 }
 
 bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -6928,7 +6931,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
 
-    return ResolveAsyncCallToken(ip);
+    return true;
 }
 
 int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)

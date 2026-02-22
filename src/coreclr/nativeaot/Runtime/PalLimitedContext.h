@@ -25,6 +25,8 @@ struct PAL_LIMITED_CONTEXT
     // Includes special registers, callee saved registers and general purpose registers used to return values from functions (not floating point return registers)
 #ifdef TARGET_ARM
     uintptr_t  R0;
+    uintptr_t  R1;
+    uintptr_t  R2;
     uintptr_t  R4;
     uintptr_t  R5;
     uintptr_t  R6;
