@@ -165,6 +165,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
+
+    if (binOp->gtOverflow() && (binOp->OperIs(GT_ADD, GT_SUB)))
+    {
+        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
     return binOp->gtNext;
 }
 

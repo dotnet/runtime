@@ -7127,6 +7127,22 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+
+#if defined(TARGET_WASM)
+            if (tree->gtOverflow())
+            {
+                // For long multiply with overflow, call the helper.
+                if (tree->TypeIs(TYP_LONG))
+                {
+                    helper = tree->IsUnsigned() ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
+                    goto USE_HELPER_FOR_ARITH;
+                }
+                else
+                {
+                    // TODO-WASM_CQ: Transform to a long multiply and then a checked cast?
+                }
+            }
+#endif
             break;
 
         case GT_ARR_LENGTH:
