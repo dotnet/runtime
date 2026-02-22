@@ -458,6 +458,7 @@
     <Compile Include="Compiler\DependencyAnalysis\GenericVarianceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellInfoSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InvalidProxyTypeMapNode.cs" />
