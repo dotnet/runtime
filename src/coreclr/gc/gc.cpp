@@ -53130,6 +53130,15 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 #else
         true;
 #endif //MULTIPLE_HEAPS
+#if BUILD_AS_STANDALONE
+    if (g_runtimeSupportedVersion.MajorVersion >= 4)
+#endif //BUILD_AS_STANDALONE
+        etw_settings->dynamic_heap_count_p = 
+#ifdef DYNAMIC_HEAP_COUNT
+            gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes;
+#else
+            false;
+#endif //DYNAMIC_HEAP_COUNT
 #endif //FEATURE_EVENT_TRACE
 }
 
