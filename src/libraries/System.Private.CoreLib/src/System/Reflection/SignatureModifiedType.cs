@@ -7,13 +7,13 @@ namespace System.Reflection
     {
         internal SignatureModifiedType(Type baseType, Type[] requiredCustomModifiers, Type[] optionalCustomModifiers)
         {
-            if (baseType is SignatureModifiedType modifiedType)
-            {
-                baseType = modifiedType.UnderlyingSystemType;
-                requiredCustomModifiers = [.. requiredCustomModifiers, .. modifiedType.GetRequiredCustomModifiers()];
-                optionalCustomModifiers = [.. optionalCustomModifiers, .. modifiedType.GetOptionalCustomModifiers()];
-            }
+            if (baseType.GetRequiredCustomModifiers() is Type[] modreqs)
+                requiredCustomModifiers = [.. requiredCustomModifiers, .. modreqs];
 
+            if (baseType.GetOptionalCustomModifiers() is Type[] modopts)
+                optionalCustomModifiers = [.. optionalCustomModifiers, .. modopts];
+
+            baseType = baseType.UnderlyingSystemType;
             _unmodifiedType = baseType;
             _requiredCustomModifiers = requiredCustomModifiers;
             _optionalCustomModifiers = optionalCustomModifiers;
