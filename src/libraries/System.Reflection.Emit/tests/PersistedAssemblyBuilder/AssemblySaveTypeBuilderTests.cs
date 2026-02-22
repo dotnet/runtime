@@ -889,8 +889,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(int).FullName, field1.FieldType.GetFunctionPointerReturnType().FullName);
 
             FieldInfo field2 = testType.GetField("FuncPtr2");
-            Type field2Type = field2.GetModifiedFieldType();
             Assert.NotNull(field2);
+            Type field2Type = field2.GetModifiedFieldType();
             Assert.True(field2Type.IsFunctionPointer);
             Assert.True(field2Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes2 = field2Type.GetFunctionPointerParameterTypes();
@@ -902,8 +902,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Contains(callingConventions2, t => t.FullName == typeof(CallConvCdecl).FullName);
 
             FieldInfo field3 = testType.GetField("FuncPtr3");
-            Type field3Type = field3.GetModifiedFieldType();
             Assert.NotNull(field3);
+            Type field3Type = field3.GetModifiedFieldType();
             Assert.True(field3Type.IsFunctionPointer);
             Assert.True(field3Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes3 = field3Type.GetFunctionPointerParameterTypes();

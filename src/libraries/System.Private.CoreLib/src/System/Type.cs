@@ -660,57 +660,66 @@ namespace System
         /// </exception>
         public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
+            static bool IsBuiltInCallingConvention(Type type) =>
+                type is not null && type.FullName is
+                "System.Runtime.CompilerServices.CallConvCdecl" or
+                "System.Runtime.CompilerServices.CallConvFastcall" or
+                "System.Runtime.CompilerServices.CallConvStdcall" or
+                "System.Runtime.CompilerServices.CallConvThiscall";
+
             ArgumentNullException.ThrowIfNull(returnType);
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 
-            for (int i = 0; i < parameterTypes.Length; i++)
+            foreach (Type paramType in parameterTypes)
             {
-                Type paramType = parameterTypes[i];
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
                     throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
             }
 
-            for (int i = 0; i < callingConventions.Length; i++)
-                ArgumentNullException.ThrowIfNull(callingConventions[i], nameof(callingConventions));
+            foreach (Type callConv in callingConventions)
+                ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
 
             if (!isUnmanaged && callingConventions.Length >= 1)
                 throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
 
-            // Reverse calling conventions for consistency with Roslyn:
-            // delegate* unmanaged[Cdecl, MemberFunction]<int> => int32 modopt(CallConvMemberFunction) modopt(CallConvCdecl) *()
-            Array.Reverse(callingConventions);
-
             bool builtInCallConv = false;
             if (callingConventions.Length == 1)
-            {
-                // Known calling conventions with direct IL equivalent
-                string? callConv = callingConventions[0].FullName;
-                if (!string.IsNullOrEmpty(callConv) &&
-                    (callConv == "System.Runtime.CompilerServices.CallConvCdecl"
-                    || callConv == "System.Runtime.CompilerServices.CallConvStdcall"
-                    || callConv == "System.Runtime.CompilerServices.CallConvThiscall"
-                    || callConv == "System.Runtime.CompilerServices.CallConvFastcall"))
-                    builtInCallConv = true;
-            }
+                builtInCallConv = IsBuiltInCallingConvention(callingConventions[0]);
 
-            List<Type> modoptCallConvs = [];
-            if (returnType is SignatureModifiedType modifiedType
-                && modifiedType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
+            Type[] retTypeModOpts = returnType.GetOptionalCustomModifiers();
+            bool callConvInModOpts = false;
+
+            if (retTypeModOpts is Type[])
             {
-                for (int i = 0; i < retTypeModOpts.Length; i++)
+                foreach (Type modopt in retTypeModOpts)
                 {
-                    Type modopt = retTypeModOpts[i];
+                    if (modopt is null || modopt.FullName is null
+                        || !modopt.FullName.StartsWith("System.Runtime.CompilerServices.CallConv", StringComparison.Ordinal))
+                        continue;
 
-                    if (modopt != null && modopt.FullName != null
-                        && modopt.FullName.StartsWith("System.Runtime.CompilerServices.CallConv", StringComparison.Ordinal))
-                        modoptCallConvs.Add(modopt);
+                    callConvInModOpts = true;
+
+                    if (!callingConventions.Contains(modopt))
+                        throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+                    if (builtInCallConv && IsBuiltInCallingConvention(modopt))
+                        throw new ArgumentException(SR.Format(SR.FunctionPointer_InvalidCallingConventionEncoding, modopt.Name), nameof(returnType));
                 }
             }
 
-            if (isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
+            if (callConvInModOpts)
+            {
+                foreach (Type callConv in callingConventions)
+                {
+                    if (!retTypeModOpts.Contains(callConv))
+                        throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+                }
+            }
+
+            if (!callConvInModOpts && isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
             {
                 // Newer or multiple calling conventions specified -> encoded as modopts
                 returnType = MakeModifiedSignatureType(
@@ -723,7 +732,7 @@ namespace System
                 returnType,
                 parameterTypes,
                 isUnmanaged,
-                [.. modoptCallConvs, .. callingConventions]);
+                callingConventions);
         }
 
         /// <summary>

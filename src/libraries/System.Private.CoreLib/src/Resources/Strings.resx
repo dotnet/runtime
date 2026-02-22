@@ -4450,6 +4450,12 @@
   <data name="FunctionPointer_ParameterInvalid">
     <value>'{0}' cannot be used as a parameter type for a function pointer.</value>
   </data>
+  <data name="FunctionPointer_CallingConventionsUnbalanced">
+    <value>Calling conventions present on modified return type must match explicitly specified calling conventions.</value>
+  </data>
+  <data name="FunctionPointer_InvalidCallingConventionEncoding">
+    <value>Calling convention '{0}' cannot be specified as a custom modifier on the function pointer return type.</value>
+  </data>
   <data name="NotSupported_FunctionPointerSignature">
     <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
   </data>
