@@ -664,6 +664,25 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void RoundTrip_AllCompressionLevels()
+        {
+            byte[] input = CreateTestData();
+
+            for (int quality = 0; quality <= 9; quality++)
+            {
+                byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+                using var encoder = CreateEncoder(quality, ValidWindowLog);
+                encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
+
+                byte[] decompressed = new byte[input.Length];
+                using var decoder = CreateDecoder();
+                decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out _, out _);
+
+                Assert.Equal(input, decompressed);
+            }
+        }
+
         public static byte[] CreateTestData(int size = 1000)
         {
             // Create test data of specified size
