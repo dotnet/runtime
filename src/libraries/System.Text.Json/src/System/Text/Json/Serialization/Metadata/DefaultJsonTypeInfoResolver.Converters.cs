@@ -189,6 +189,16 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
+                // Handle open generic converter types (e.g., OptionConverter<> on Option<T>).
+                // If the converter type is an open generic and the type to convert is a closed generic
+                // with matching type arity, construct the closed converter type.
+                if (converterType.IsGenericTypeDefinition &&
+                    typeToConvert.IsGenericType &&
+                    converterType.GetGenericArguments().Length == typeToConvert.GetGenericArguments().Length)
+                {
+                    converterType = converterType.MakeGenericType(typeToConvert.GetGenericArguments());
+                }
+
                 ConstructorInfo? ctor = converterType.GetConstructor(Type.EmptyTypes);
                 if (!typeof(JsonConverter).IsAssignableFrom(converterType) || ctor == null || !ctor.IsPublic)
                 {
