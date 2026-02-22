@@ -14,6 +14,29 @@ namespace System.Net.Sockets
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
         private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
 
+        internal static class Keywords
+        {
+            // Stable operational counters are always published when the source is enabled on Linux.
+            // Diagnostic counters are opt-in and can evolve without name stability guarantees.
+            internal const EventKeywords IoUringDiagnostics = (EventKeywords)0x1;
+        }
+
+        internal static class IoUringCounterNames
+        {
+            internal const string PrepareNonPinnableFallbacks = "io-uring-prepare-nonpinnable-fallbacks";
+            internal const string SocketEventBufferFull = "io-uring-socket-event-buffer-full";
+            internal const string CqOverflows = "io-uring-cq-overflows";
+            internal const string CqOverflowRecoveries = "io-uring-cq-overflow-recoveries";
+            internal const string PrepareQueueOverflows = "io-uring-prepare-queue-overflows";
+            internal const string PrepareQueueOverflowFallbacks = "io-uring-prepare-queue-overflow-fallbacks";
+            internal const string CompletionSlotExhaustions = "io-uring-completion-slot-exhaustions";
+            internal const string CompletionSlotHighWaterMark = "io-uring-completion-slot-high-water-mark";
+            internal const string CancellationQueueOverflows = "io-uring-cancellation-queue-overflows";
+            internal const string ProvidedBufferDepletions = "io-uring-provided-buffer-depletions";
+            internal const string SqPollWakeups = "io-uring-sqpoll-wakeups";
+            internal const string SqPollSubmissionsSkipped = "io-uring-sqpoll-submissions-skipped";
+        }
+
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
         private PollingCounter? _currentOutgoingConnectAttemptsCounter;
@@ -23,6 +46,20 @@ namespace System.Net.Sockets
         private PollingCounter? _bytesSentCounter;
         private PollingCounter? _datagramsReceivedCounter;
         private PollingCounter? _datagramsSentCounter;
+        // Keep io_uring counter backing fields always present so EventCounter name contracts remain stable
+        // across platforms; OnEventCommand only registers these counters on Linux.
+        private PollingCounter? _ioUringPrepareNonPinnableFallbacksCounter;
+        private PollingCounter? _ioUringSocketEventBufferFullCounter;
+        private PollingCounter? _ioUringCqOverflowCounter;
+        private PollingCounter? _ioUringCqOverflowRecoveriesCounter;
+        private PollingCounter? _ioUringPrepareQueueOverflowsCounter;
+        private PollingCounter? _ioUringPrepareQueueOverflowFallbacksCounter;
+        private PollingCounter? _ioUringCompletionSlotExhaustionsCounter;
+        private PollingCounter? _ioUringCompletionSlotHighWaterMarkCounter;
+        private PollingCounter? _ioUringCancellationQueueOverflowsCounter;
+        private PollingCounter? _ioUringProvidedBufferDepletionsCounter;
+        private PollingCounter? _ioUringSqPollWakeupsCounter;
+        private PollingCounter? _ioUringSqPollSubmissionsSkippedCounter;
 
         private long _currentOutgoingConnectAttempts;
         private long _outgoingConnectionsEstablished;
@@ -31,6 +68,92 @@ namespace System.Net.Sockets
         private long _bytesSent;
         private long _datagramsReceived;
         private long _datagramsSent;
+        // Backing fields stay cross-platform for contract stability; they are only surfaced as counters on Linux.
+        private long _ioUringPrepareNonPinnableFallbacks;
+        private long _ioUringAsyncCancelRequestCqes;
+        private long _ioUringSocketEventBufferFull;
+        private long _ioUringCqOverflow;
+        private long _ioUringCqOverflowRecoveries;
+        private long _ioUringCompletionRequeueFailures;
+        private long _ioUringZeroCopyNotificationPendingSlots;
+        private long _ioUringPrepareQueueOverflows;
+        private long _ioUringPrepareQueueOverflowFallbacks;
+        private long _ioUringPrepareQueueDepth;
+        private long _ioUringCompletionSlotExhaustions;
+        private long _ioUringCompletionSlotHighWaterMark;
+        private long _ioUringCancellationQueueOverflows;
+        private long _ioUringCompletionSlotDrainRecoveries;
+        private long _ioUringProvidedBufferDepletions;
+        private long _ioUringProvidedBufferCurrentSize;
+        private long _ioUringProvidedBufferRecycles;
+        private long _ioUringProvidedBufferResizes;
+        private long _ioUringRegisteredBuffersInitialSuccess;
+        private long _ioUringRegisteredBuffersInitialFailure;
+        private long _ioUringRegisteredBuffersReregistrationSuccess;
+        private long _ioUringRegisteredBuffersReregistrationFailure;
+        private long _ioUringFixedRecvSelected;
+        private long _ioUringFixedRecvFallbacks;
+        private long _ioUringSqPollWakeups;
+        private long _ioUringSqPollSubmissionsSkipped;
+        private long _ioUringPersistentMultishotRecvReuse;
+        private long _ioUringPersistentMultishotRecvTermination;
+        private long _ioUringPersistentMultishotRecvEarlyData;
+
+        internal enum IoUringCounterFieldForTest
+        {
+            PrepareNonPinnableFallbacks,
+            AsyncCancelRequestCqes,
+            SocketEventBufferFull,
+            CqOverflow,
+            CqOverflowRecoveries,
+            CompletionRequeueFailures,
+            PrepareQueueOverflows,
+            PrepareQueueOverflowFallbacks,
+            CompletionSlotExhaustions,
+            CompletionSlotHighWaterMark,
+            CancellationQueueOverflows,
+            SqPollWakeups,
+            SqPollSubmissionsSkipped,
+            ProvidedBufferDepletions,
+            ProvidedBufferRecycles,
+            RegisteredBuffersInitialSuccess,
+            RegisteredBuffersInitialFailure,
+            RegisteredBuffersReregistrationSuccess,
+            RegisteredBuffersReregistrationFailure,
+            PersistentMultishotRecvReuse,
+            PersistentMultishotRecvTermination,
+        }
+
+        internal static ulong GetIoUringCounterValueForTest(IoUringCounterFieldForTest field)
+        {
+            // Test hook used by io_uring functional tests to validate counter deltas without
+            // reflecting over private fields that are brittle under refactoring.
+            return field switch
+            {
+                IoUringCounterFieldForTest.PrepareNonPinnableFallbacks => (ulong)Interlocked.Read(ref Log._ioUringPrepareNonPinnableFallbacks),
+                IoUringCounterFieldForTest.AsyncCancelRequestCqes => (ulong)Interlocked.Read(ref Log._ioUringAsyncCancelRequestCqes),
+                IoUringCounterFieldForTest.SocketEventBufferFull => (ulong)Interlocked.Read(ref Log._ioUringSocketEventBufferFull),
+                IoUringCounterFieldForTest.CqOverflow => (ulong)Interlocked.Read(ref Log._ioUringCqOverflow),
+                IoUringCounterFieldForTest.CqOverflowRecoveries => (ulong)Interlocked.Read(ref Log._ioUringCqOverflowRecoveries),
+                IoUringCounterFieldForTest.CompletionRequeueFailures => (ulong)Interlocked.Read(ref Log._ioUringCompletionRequeueFailures),
+                IoUringCounterFieldForTest.PrepareQueueOverflows => (ulong)Interlocked.Read(ref Log._ioUringPrepareQueueOverflows),
+                IoUringCounterFieldForTest.PrepareQueueOverflowFallbacks => (ulong)Interlocked.Read(ref Log._ioUringPrepareQueueOverflowFallbacks),
+                IoUringCounterFieldForTest.CompletionSlotExhaustions => (ulong)Interlocked.Read(ref Log._ioUringCompletionSlotExhaustions),
+                IoUringCounterFieldForTest.CompletionSlotHighWaterMark => (ulong)Interlocked.Read(ref Log._ioUringCompletionSlotHighWaterMark),
+                IoUringCounterFieldForTest.CancellationQueueOverflows => (ulong)Interlocked.Read(ref Log._ioUringCancellationQueueOverflows),
+                IoUringCounterFieldForTest.SqPollWakeups => (ulong)Interlocked.Read(ref Log._ioUringSqPollWakeups),
+                IoUringCounterFieldForTest.SqPollSubmissionsSkipped => (ulong)Interlocked.Read(ref Log._ioUringSqPollSubmissionsSkipped),
+                IoUringCounterFieldForTest.ProvidedBufferDepletions => (ulong)Interlocked.Read(ref Log._ioUringProvidedBufferDepletions),
+                IoUringCounterFieldForTest.ProvidedBufferRecycles => (ulong)Interlocked.Read(ref Log._ioUringProvidedBufferRecycles),
+                IoUringCounterFieldForTest.RegisteredBuffersInitialSuccess => (ulong)Interlocked.Read(ref Log._ioUringRegisteredBuffersInitialSuccess),
+                IoUringCounterFieldForTest.RegisteredBuffersInitialFailure => (ulong)Interlocked.Read(ref Log._ioUringRegisteredBuffersInitialFailure),
+                IoUringCounterFieldForTest.RegisteredBuffersReregistrationSuccess => (ulong)Interlocked.Read(ref Log._ioUringRegisteredBuffersReregistrationSuccess),
+                IoUringCounterFieldForTest.RegisteredBuffersReregistrationFailure => (ulong)Interlocked.Read(ref Log._ioUringRegisteredBuffersReregistrationFailure),
+                IoUringCounterFieldForTest.PersistentMultishotRecvReuse => (ulong)Interlocked.Read(ref Log._ioUringPersistentMultishotRecvReuse),
+                IoUringCounterFieldForTest.PersistentMultishotRecvTermination => (ulong)Interlocked.Read(ref Log._ioUringPersistentMultishotRecvTermination),
+                _ => 0UL,
+            };
+        }
 
         [Event(1, Level = EventLevel.Informational)]
         private void ConnectStart(string? address)
@@ -77,6 +200,33 @@ namespace System.Net.Sockets
             if (IsEnabled(EventLevel.Error, EventKeywords.All))
             {
                 WriteEvent(eventId: 6, (int)error, exceptionMessage);
+            }
+        }
+
+        [Event(7, Level = EventLevel.Informational)]
+        private void SocketEngineBackendSelected(string backend, int isIoUringPort, int sqPollEnabled)
+        {
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 7, backend, isIoUringPort, sqPollEnabled);
+            }
+        }
+
+        [Event(8, Level = EventLevel.Warning)]
+        private void IoUringSqPollNegotiatedWarning(string message)
+        {
+            if (IsEnabled(EventLevel.Warning, EventKeywords.All))
+            {
+                WriteEvent(eventId: 8, message);
+            }
+        }
+
+        [Event(9, Level = EventLevel.Informational)]
+        private void IoUringResolvedConfiguration(string configuration)
+        {
+            if (IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                WriteEvent(eventId: 9, configuration);
             }
         }
 
@@ -190,6 +340,43 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
+        internal void ReportSocketEngineBackendSelected(bool isIoUringPort, bool isCompletionMode, bool sqPollEnabled)
+        {
+            if (!IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                return;
+            }
+
+            SocketEngineBackendSelected(
+                isCompletionMode ? "io_uring_completion" : "epoll",
+                isIoUringPort ? 1 : 0,
+                sqPollEnabled ? 1 : 0);
+        }
+
+        [NonEvent]
+        internal void ReportIoUringSqPollNegotiatedWarning()
+        {
+            if (!IsEnabled(EventLevel.Warning, EventKeywords.All))
+            {
+                return;
+            }
+
+            IoUringSqPollNegotiatedWarning(
+                "io_uring SQPOLL negotiated: kernel polling thread is enabled and may increase privileges in containerized environments.");
+        }
+
+        [NonEvent]
+        internal void ReportIoUringResolvedConfiguration(string configuration)
+        {
+            if (!IsEnabled(EventLevel.Informational, EventKeywords.All))
+            {
+                return;
+            }
+
+            IoUringResolvedConfiguration(configuration);
+        }
+
+        [NonEvent]
         public void AfterAccept(SocketError error, string? exceptionMessage = null)
         {
             if (error == SocketError.Success)
@@ -229,6 +416,222 @@ namespace System.Net.Sockets
         public void DatagramSent()
         {
             Interlocked.Increment(ref _datagramsSent);
+        }
+
+        [NonEvent]
+        public void IoUringPrepareNonPinnableFallback(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPrepareNonPinnableFallbacks, count);
+        }
+
+        [NonEvent]
+        public void IoUringAsyncCancelRequestCqes(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringAsyncCancelRequestCqes, count);
+        }
+
+        [NonEvent]
+        public void IoUringSocketEventBufferFull(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringSocketEventBufferFull, count);
+        }
+
+        [NonEvent]
+        public void IoUringCqOverflow(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCqOverflow, count);
+        }
+
+        [NonEvent]
+        public void IoUringCqOverflowRecovery(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCqOverflowRecoveries, count);
+        }
+
+        [NonEvent]
+        public void IoUringCompletionRequeueFailure(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCompletionRequeueFailures, count);
+        }
+
+        [NonEvent]
+        public void IoUringZeroCopyNotificationPendingSlots(int count)
+        {
+            Debug.Assert(count >= 0);
+            Volatile.Write(ref _ioUringZeroCopyNotificationPendingSlots, count);
+        }
+
+        [NonEvent]
+        public void IoUringPrepareQueueOverflow(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPrepareQueueOverflows, count);
+        }
+
+        [NonEvent]
+        public void IoUringPrepareQueueOverflowFallback(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPrepareQueueOverflowFallbacks, count);
+        }
+
+        [NonEvent]
+        public void IoUringPrepareQueueDepthDelta(long delta)
+        {
+            long value = Interlocked.Add(ref _ioUringPrepareQueueDepth, delta);
+            Debug.Assert(value >= 0, $"io_uring prepare queue depth cannot be negative: {value}");
+        }
+
+        [NonEvent]
+        public void IoUringCompletionSlotExhaustion(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCompletionSlotExhaustions, count);
+        }
+
+        [NonEvent]
+        public void IoUringCompletionSlotHighWaterMark(long count)
+        {
+            Debug.Assert(count >= 0);
+            while (true)
+            {
+                long observed = Volatile.Read(ref _ioUringCompletionSlotHighWaterMark);
+                if (count <= observed)
+                {
+                    return;
+                }
+
+                if (Interlocked.CompareExchange(ref _ioUringCompletionSlotHighWaterMark, count, observed) == observed)
+                {
+                    return;
+                }
+            }
+        }
+
+        [NonEvent]
+        public void IoUringCompletionSlotDrainRecovery(long count)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCompletionSlotDrainRecoveries, count);
+        }
+
+        [NonEvent]
+        public void IoUringCancellationQueueOverflow(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringCancellationQueueOverflows, count);
+        }
+
+        [NonEvent]
+        public void IoUringProvidedBufferDepletion(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringProvidedBufferDepletions, count);
+        }
+
+        [NonEvent]
+        public void IoUringProvidedBufferCurrentSize(int size)
+        {
+            Debug.Assert(size >= 0);
+            Volatile.Write(ref _ioUringProvidedBufferCurrentSize, size);
+        }
+
+        [NonEvent]
+        public void IoUringProvidedBufferRecycle(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringProvidedBufferRecycles, count);
+        }
+
+        [NonEvent]
+        public void IoUringProvidedBufferResize(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringProvidedBufferResizes, count);
+        }
+
+        [NonEvent]
+        public void IoUringRegisteredBuffersResult(bool success, int bufferCount, int bufferSize)
+        {
+            Debug.Assert(bufferCount >= 0);
+            Debug.Assert(bufferSize >= 0);
+
+            if (success)
+            {
+                Interlocked.Increment(ref _ioUringRegisteredBuffersInitialSuccess);
+            }
+            else
+            {
+                Interlocked.Increment(ref _ioUringRegisteredBuffersInitialFailure);
+            }
+        }
+
+        [NonEvent]
+        public void IoUringRegisteredBuffersReregistration(bool success)
+        {
+            if (success)
+            {
+                Interlocked.Increment(ref _ioUringRegisteredBuffersReregistrationSuccess);
+            }
+            else
+            {
+                Interlocked.Increment(ref _ioUringRegisteredBuffersReregistrationFailure);
+            }
+        }
+
+        [NonEvent]
+        public void IoUringFixedRecvSelected(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringFixedRecvSelected, count);
+        }
+
+        [NonEvent]
+        public void IoUringFixedRecvFallback(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringFixedRecvFallbacks, count);
+        }
+
+        [NonEvent]
+        public void IoUringSqPollWakeup(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringSqPollWakeups, count);
+        }
+
+        [NonEvent]
+        public void IoUringSqPollSubmissionSkipped(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringSqPollSubmissionsSkipped, count);
+        }
+
+        [NonEvent]
+        public void IoUringPersistentMultishotRecvReuse(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPersistentMultishotRecvReuse, count);
+        }
+
+        [NonEvent]
+        public void IoUringPersistentMultishotRecvTermination(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPersistentMultishotRecvTermination, count);
+        }
+
+        [NonEvent]
+        public void IoUringPersistentMultishotRecvEarlyData(long count = 1)
+        {
+            Debug.Assert(count >= 0);
+            Interlocked.Add(ref _ioUringPersistentMultishotRecvEarlyData, count);
         }
 
         private static string GetErrorType(SocketError socketError) => socketError switch
@@ -290,6 +693,60 @@ namespace System.Net.Sockets
                 _datagramsSentCounter ??= new PollingCounter("datagrams-sent", this, () => Interlocked.Read(ref _datagramsSent))
                 {
                     DisplayName = "Datagrams Sent",
+                };
+
+                if (!OperatingSystem.IsLinux())
+                {
+                    return;
+                }
+
+                _ioUringPrepareNonPinnableFallbacksCounter ??= new PollingCounter(IoUringCounterNames.PrepareNonPinnableFallbacks, this, () => Interlocked.Read(ref _ioUringPrepareNonPinnableFallbacks))
+                {
+                    DisplayName = "io_uring Prepare Non-Pinnable Fallbacks",
+                };
+                _ioUringSocketEventBufferFullCounter ??= new PollingCounter(IoUringCounterNames.SocketEventBufferFull, this, () => Interlocked.Read(ref _ioUringSocketEventBufferFull))
+                {
+                    DisplayName = "io_uring Socket Event Buffer Full",
+                };
+                _ioUringCqOverflowCounter ??= new PollingCounter(IoUringCounterNames.CqOverflows, this, () => Interlocked.Read(ref _ioUringCqOverflow))
+                {
+                    DisplayName = "io_uring Completion Queue Overflow",
+                };
+                _ioUringCqOverflowRecoveriesCounter ??= new PollingCounter(IoUringCounterNames.CqOverflowRecoveries, this, () => Interlocked.Read(ref _ioUringCqOverflowRecoveries))
+                {
+                    DisplayName = "io_uring Completion Queue Overflow Recoveries",
+                };
+                _ioUringPrepareQueueOverflowsCounter ??= new PollingCounter(IoUringCounterNames.PrepareQueueOverflows, this, () => Interlocked.Read(ref _ioUringPrepareQueueOverflows))
+                {
+                    DisplayName = "io_uring Prepare Queue Overflows",
+                };
+                _ioUringPrepareQueueOverflowFallbacksCounter ??= new PollingCounter(IoUringCounterNames.PrepareQueueOverflowFallbacks, this, () => Interlocked.Read(ref _ioUringPrepareQueueOverflowFallbacks))
+                {
+                    DisplayName = "io_uring Prepare Queue Overflow Fallbacks",
+                };
+                _ioUringCompletionSlotExhaustionsCounter ??= new PollingCounter(IoUringCounterNames.CompletionSlotExhaustions, this, () => Interlocked.Read(ref _ioUringCompletionSlotExhaustions))
+                {
+                    DisplayName = "io_uring Completion Slot Exhaustions",
+                };
+                _ioUringCompletionSlotHighWaterMarkCounter ??= new PollingCounter(IoUringCounterNames.CompletionSlotHighWaterMark, this, () => Interlocked.Read(ref _ioUringCompletionSlotHighWaterMark))
+                {
+                    DisplayName = "io_uring Completion Slot High-Water Mark",
+                };
+                _ioUringCancellationQueueOverflowsCounter ??= new PollingCounter(IoUringCounterNames.CancellationQueueOverflows, this, () => Interlocked.Read(ref _ioUringCancellationQueueOverflows))
+                {
+                    DisplayName = "io_uring Cancellation Queue Overflows",
+                };
+                _ioUringProvidedBufferDepletionsCounter ??= new PollingCounter(IoUringCounterNames.ProvidedBufferDepletions, this, () => Interlocked.Read(ref _ioUringProvidedBufferDepletions))
+                {
+                    DisplayName = "io_uring Provided Buffer Depletions",
+                };
+                _ioUringSqPollWakeupsCounter ??= new PollingCounter(IoUringCounterNames.SqPollWakeups, this, () => Interlocked.Read(ref _ioUringSqPollWakeups))
+                {
+                    DisplayName = "io_uring SQPOLL Wakeups",
+                };
+                _ioUringSqPollSubmissionsSkippedCounter ??= new PollingCounter(IoUringCounterNames.SqPollSubmissionsSkipped, this, () => Interlocked.Read(ref _ioUringSqPollSubmissionsSkipped))
+                {
+                    DisplayName = "io_uring SQPOLL Submissions Skipped",
                 };
             }
         }

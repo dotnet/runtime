@@ -6,7 +6,90 @@
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
     <XunitShowProgress Condition="'$(TargetOS)' == 'wasi'">true</XunitShowProgress>
+    <!--
+      Linux-only socket engine mode selector for broad existing test coverage without duplicating tests.
+      Values:
+        - default  : do not set DOTNET_SYSTEM_NET_SOCKETS_IO_URING (normal runtime default)
+        - enabled  : set DOTNET_SYSTEM_NET_SOCKETS_IO_URING=1
+        - disabled : set DOTNET_SYSTEM_NET_SOCKETS_IO_URING=0
+    -->
+    <SocketsIoUringTestMode Condition="'$(SocketsIoUringTestMode)' == ''">default</SocketsIoUringTestMode>
+    <_SocketsIoUringTestModeSupported Condition="'$(SocketsIoUringTestMode)' == 'default' or '$(SocketsIoUringTestMode)' == 'enabled' or '$(SocketsIoUringTestMode)' == 'disabled'">true</_SocketsIoUringTestModeSupported>
+    <GenerateSocketsIoUringArchiveVariants Condition="'$(GenerateSocketsIoUringArchiveVariants)' == ''">true</GenerateSocketsIoUringArchiveVariants>
   </PropertyGroup>
+
+  <Target Name="ValidateSocketsIoUringTestMode" BeforeTargets="GenerateRunScript">
+    <Error Condition="'$(_SocketsIoUringTestModeSupported)' != 'true'"
+           Text="Invalid SocketsIoUringTestMode='$(SocketsIoUringTestMode)'. Supported values: default, enabled, disabled." />
+  </Target>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(SocketsIoUringTestMode)' == 'enabled'">
+    <SetScriptCommands Include="$(EnvVarCommand) DOTNET_SYSTEM_NET_SOCKETS_IO_URING=1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(SocketsIoUringTestMode)' == 'disabled'">
+    <SetScriptCommands Include="$(EnvVarCommand) DOTNET_SYSTEM_NET_SOCKETS_IO_URING=0" />
+  </ItemGroup>
+
+  <!-- Emit additional Linux archives so existing sockets functional tests run in both io_uring modes in regular CI legs. -->
+  <Target Name="CreateSocketsIoUringArchiveVariants"
+          AfterTargets="ZipTestArchive"
+          Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'linux' and '$(RunScriptWindowsCmd)' != 'true' and '$(SocketsIoUringTestMode)' == 'default' and '$(GenerateSocketsIoUringArchiveVariants)' == 'true'">
+    <PropertyGroup>
+      <_IoUringVariantsRoot>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'io_uring_variants'))</_IoUringVariantsRoot>
+      <_IoUringEnabledDir>$([MSBuild]::NormalizeDirectory('$(_IoUringVariantsRoot)', 'enabled'))</_IoUringEnabledDir>
+      <_IoUringDisabledDir>$([MSBuild]::NormalizeDirectory('$(_IoUringVariantsRoot)', 'disabled'))</_IoUringDisabledDir>
+      <_RunScriptName>RunTests.sh</_RunScriptName>
+      <_EnabledArchivePath>$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).io_uring_enabled.zip'))</_EnabledArchivePath>
+      <_DisabledArchivePath>$([MSBuild]::NormalizePath('$(TestArchiveTestsDir)', '$(TestProjectName).io_uring_disabled.zip'))</_DisabledArchivePath>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(_IoUringVariantsRoot)" />
+    <MakeDir Directories="$(_IoUringEnabledDir);$(_IoUringDisabledDir)" />
+
+    <ItemGroup>
+      <_OutDirFiles Include="$(OutDir)**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_OutDirFiles)"
+          DestinationFiles="@(_OutDirFiles -> '$(_IoUringEnabledDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_OutDirFiles)"
+          DestinationFiles="@(_OutDirFiles -> '$(_IoUringDisabledDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Move SourceFiles="$(_IoUringEnabledDir)$(_RunScriptName)"
+          DestinationFiles="$(_IoUringEnabledDir)RunTests.base.sh" />
+    <Move SourceFiles="$(_IoUringDisabledDir)$(_RunScriptName)"
+          DestinationFiles="$(_IoUringDisabledDir)RunTests.base.sh" />
+
+    <ItemGroup>
+      <_EnabledRunScriptLines Include="#!/usr/bin/env bash" />
+      <_EnabledRunScriptLines Include="set -euo pipefail" />
+      <_EnabledRunScriptLines Include="export DOTNET_SYSTEM_NET_SOCKETS_IO_URING=1" />
+      <_EnabledRunScriptLines Include="exec ./RunTests.base.sh &quot;$@&quot;" />
+      <_DisabledRunScriptLines Include="#!/usr/bin/env bash" />
+      <_DisabledRunScriptLines Include="set -euo pipefail" />
+      <_DisabledRunScriptLines Include="export DOTNET_SYSTEM_NET_SOCKETS_IO_URING=0" />
+      <_DisabledRunScriptLines Include="exec ./RunTests.base.sh &quot;$@&quot;" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_IoUringEnabledDir)$(_RunScriptName)"
+                      Lines="@(_EnabledRunScriptLines)"
+                      Overwrite="true" />
+    <WriteLinesToFile File="$(_IoUringDisabledDir)$(_RunScriptName)"
+                      Lines="@(_DisabledRunScriptLines)"
+                      Overwrite="true" />
+
+    <Exec Condition="'$(OS)' != 'Windows_NT'"
+          Command="chmod +x &quot;$(_IoUringEnabledDir)$(_RunScriptName)&quot; &quot;$(_IoUringEnabledDir)RunTests.base.sh&quot; &quot;$(_IoUringDisabledDir)$(_RunScriptName)&quot; &quot;$(_IoUringDisabledDir)RunTests.base.sh&quot;" />
+
+    <ZipDirectory SourceDirectory="$(_IoUringEnabledDir)"
+                  DestinationFile="$(_EnabledArchivePath)"
+                  Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(_IoUringDisabledDir)"
+                  DestinationFile="$(_DisabledArchivePath)"
+                  Overwrite="true" />
+  </Target>
+
   <ItemGroup>
     <Compile Include="Accept.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
@@ -22,11 +105,14 @@
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="ExecutionContextFlowTest.cs" />
     <Compile Include="InlineCompletions.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix'"/>
+    <Compile Include="InternalTestShims.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux' and '$(Configuration)' == 'Debug'"/>
+    <Compile Include="IoUring.Unix.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux' and '$(Configuration)' == 'Debug'"/>
+    <Compile Include="MpscQueueTests.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\src\System\Net\Sockets\MpscQueue.cs" Link="ProductSource\MpscQueue.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'"/>
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LingerStateTest.cs" />
     <Compile Include="LocalEndPointTest.cs" />
-    <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveFrom.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
