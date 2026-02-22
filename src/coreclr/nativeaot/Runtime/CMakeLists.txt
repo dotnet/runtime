@@ -346,3 +346,5 @@ endif()
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
+
+add_subdirectory(createdump)
