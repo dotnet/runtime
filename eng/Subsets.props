@@ -485,6 +485,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\src\ildasm\ildasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
@@ -551,6 +552,8 @@
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ILAssembler\ILAssembler.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\tests\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\src\ILDisassembler\ILDisassembler.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ildasm\tests\ILDisassembler.Tests\ILDisassembler.Tests.csproj" Category="tools" Test="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
