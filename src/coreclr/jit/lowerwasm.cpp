@@ -121,7 +121,12 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     //
     GenTree* x    = node->gtGetOp1();
     GenTree* zero = m_compiler->gtNewZeroConNode(node->TypeGet());
-    BlockRange().InsertBefore(x, zero);
+
+    // To preserve stack order we must insert the zero before the entire
+    // tree rooted at x.
+    //
+    GenTree* insertBefore = x->gtFirstNodeInOperandOrder();
+    BlockRange().InsertBefore(insertBefore, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);
     node->gtOp1 = zero;
@@ -221,6 +226,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperIs(GT_CAST));
+
+    if (tree->gtOverflow())
+    {
+        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
     ContainCheckCast(tree->AsCast());
 }
 
@@ -462,4 +472,20 @@ void Lowering::AfterLowerBlock()
 
     Stackifier stackifier(this);
     stackifier.StackifyCurrentBlock();
+}
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        // Prepare for explicit null check
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
 }

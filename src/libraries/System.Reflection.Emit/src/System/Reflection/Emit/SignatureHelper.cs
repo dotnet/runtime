@@ -262,7 +262,12 @@ namespace System.Reflection.Emit
             if (returnTypeToWrite.IsSignatureType)
                 returnTypeToWrite = returnTypeToWrite.UnderlyingSystemType;
 
-            WriteSignatureForType(retTypeEncoder.Type(), returnTypeToWrite, module);
+            WriteSignatureForType(
+                retTypeEncoder.Type(),
+                returnTypeToWrite,
+                module,
+                returnType.GetRequiredCustomModifiers(),
+                returnType.GetOptionalCustomModifiers());
 
             foreach (Type paramType in paramTypes)
             {
@@ -272,7 +277,12 @@ namespace System.Reflection.Emit
                 if (paramTypeToWrite.IsSignatureType)
                     paramTypeToWrite = paramTypeToWrite.UnderlyingSystemType;
 
-                WriteSignatureForType(paramEncoder.Type(), paramTypeToWrite, module);
+                WriteSignatureForType(
+                    paramEncoder.Type(),
+                    paramTypeToWrite,
+                    module,
+                    paramType.GetRequiredCustomModifiers(),
+                    paramType.GetOptionalCustomModifiers());
             }
         }
 

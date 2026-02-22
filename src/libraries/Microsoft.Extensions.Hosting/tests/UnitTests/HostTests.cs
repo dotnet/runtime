@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(environment, hostEnv.EnvironmentName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/48696")]
         public async Task CreateDefaultBuilder_ConfigJsonDoesNotReload()
         {

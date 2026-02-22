@@ -766,7 +766,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     else
     {
-        howToReturnStruct = SPK_ByValue;
+        howToReturnStruct = SPK_PrimitiveType;
         useType           = WasmClassifier::ToJitType(abiType);
     }
 

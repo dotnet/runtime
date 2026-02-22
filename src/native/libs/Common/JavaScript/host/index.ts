@@ -3,7 +3,7 @@
 
 import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExportsTable, LoaderConfigInternal } from "./types";
 import { InternalExchangeIndex } from "./types";
-import { _ems_ } from "../../../libs/Common/JavaScript/ems-ambient";
+import { _ems_ } from "../ems-ambient";
 
 import GitHash from "consts:gitHash";
 
@@ -63,12 +63,6 @@ function setupEmscripten() {
     for (const key in loaderConfig.environmentVariables) {
         _ems_.ENV[key] = loaderConfig.environmentVariables[key];
     }
-
-    _ems_.Module.preInit = [() => {
-        _ems_.FS.createPath("/", loaderConfig.virtualWorkingDirectory!, true, true);
-        _ems_.FS.chdir(loaderConfig.virtualWorkingDirectory!);
-    }, ...(_ems_.Module.preInit || [])];
-
 }
 
 export { BrowserHost_ExternalAssemblyProbe } from "./assets";

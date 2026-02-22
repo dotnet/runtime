@@ -691,25 +691,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     else if ((opcode == CEE_CALLI) && ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_DEFAULT) &&
              ((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG))
     {
-        GenTree* cookie = eeGetPInvokeCookie(sig);
-
-        // This cookie is required to be either a simple GT_CNS_INT or
-        // an indirection of a GT_CNS_INT
-        //
-        GenTree* cookieConst = cookie;
-        if (cookie->OperIs(GT_IND))
-        {
-            cookieConst = cookie->AsOp()->gtOp1;
-        }
-        assert(cookieConst->OperIs(GT_CNS_INT));
-
-        // Setting GTF_DONT_CSE on the GT_CNS_INT as well as on the GT_IND (if it exists) will ensure that
-        // we won't allow this tree to participate in any CSE logic
-        //
-        cookie->gtFlags |= GTF_DONT_CSE;
-        cookieConst->gtFlags |= GTF_DONT_CSE;
-
-        call->AsCall()->gtCallCookie = cookie;
+        void*                pCookie;
+        void*                cookie       = info.compCompHnd->GetCookieForPInvokeCalliSig(sig, &pCookie);
+        CORINFO_CONST_LOOKUP cookieLookup = eeConvertToLookup(cookie, pCookie);
+        call->AsCall()->gtCallCookie      = new (getAllocator(CMK_ASTNode)) CORINFO_CONST_LOOKUP(cookieLookup);
 
         if (canTailCall)
         {
@@ -800,8 +785,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #ifdef FEATURE_READYTORUN
                     if (IsAot())
                     {
-                        instParam = impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL,
-                                                              exactMethodHandle);
+                        instParam =
+                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
                         if (instParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -851,7 +836,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     if (IsAot())
                     {
                         instParam =
-                            impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
                         if (instParam == nullptr)
                         {
                             assert(compDonotInline());
@@ -5994,7 +5979,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -6003,15 +5988,19 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !TARGET_64BIT
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
                 impPopStack();
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
+#elif defined(TARGET_WASM)
+            impPopStack();
+            result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
+                                                               nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -6174,7 +6163,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -6185,13 +6174,17 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
                 impPopStack();
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
+#elif defined(TARGET_WASM)
+            impPopStack();
+            result = new (this, GT_INTRINSIC)
+                GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             // Pop the value from the stack
@@ -6332,7 +6325,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (varTypeIsLong(baseType))
             {
                 // TODO-CQ: Adding long decomposition support is more complex
@@ -6341,15 +6334,19 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-#endif // !TARGET_64BIT
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
             if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
             {
                 impPopStack();
                 result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
                                                                    nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
             }
+#elif defined(TARGET_WASM)
+            impPopStack();
+            result = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
+                                                               nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
 #elif defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_XARCH)
             if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -8481,6 +8478,32 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
 
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
+            return true;
+
+        default:
+            return false;
+    }
+
+#elif defined(TARGET_WASM)
+
+    // TODO-WASM-CQ: we can likely support more intrinsics here
+    switch (intrinsicName)
+    {
+        case NI_System_Math_Abs:
+        case NI_System_Math_Ceiling:
+        case NI_System_Math_Floor:
+        case NI_System_Math_Max:
+        case NI_System_Math_MaxNative:
+        case NI_System_Math_Min:
+        case NI_System_Math_MinNative:
+        case NI_System_Math_Round:
+        case NI_System_Math_Sqrt:
+        case NI_System_Math_Truncate:
+            return true;
+
+        case NI_PRIMITIVE_LeadingZeroCount:
+        case NI_PRIMITIVE_TrailingZeroCount:
+        case NI_PRIMITIVE_PopCount:
             return true;
 
         default:

@@ -41,6 +41,7 @@ namespace TestFunctionPointer
     public unsafe class Program
     {
         [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
         [Fact]
         public static int TestEntryPoint()
         {
