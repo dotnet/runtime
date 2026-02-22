@@ -743,7 +743,7 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+#if defined(TARGET_OSX)
     while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
     if (result >= 0)
         return result;
