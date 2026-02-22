@@ -1009,7 +1009,10 @@ namespace System.Net.Sockets
 
                     if (socketError == SocketError.Success)
                     {
-                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, _currentSocket._rightEndPoint!.Create(remoteSocketAddress));
+                        EndPoint? remoteEndPoint = remoteSocketAddress.Size > 0 ?
+                            _currentSocket._rightEndPoint!.Create(remoteSocketAddress) :
+                            null;
+                        _acceptSocket = _currentSocket.UpdateAcceptSocket(_acceptSocket!, remoteEndPoint);
 
                         if (NetEventSource.Log.IsEnabled())
                         {

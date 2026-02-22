@@ -9,6 +9,7 @@ set(NATIVE_SOURCES
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
+    pal_io_uring_shim.c
     pal_random.c
     pal_runtimeinformation.c
     pal_string.c

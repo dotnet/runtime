@@ -224,6 +224,11 @@ namespace System.Net.Sockets
             return true;
         }
 
+        partial void TryWakeIoUringEventLoop()
+        {
+            _asyncContext?.WakeIoUringEventLoopIfNeeded();
+        }
+
         private unsafe SocketError DoCloseHandle(bool abortive)
         {
             Interop.Error errorCode = Interop.Error.SUCCESS;

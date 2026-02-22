@@ -7,6 +7,8 @@
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_SOCKETS_DLL</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Keep Socket internals reachable for reflection-based functional test shims in DEBUG only. -->
+    <ILLinkTrimAssembly Condition="'$(Configuration)' == 'Debug'">false</ILLinkTrimAssembly>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -197,9 +199,34 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Unix.cs"/>
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringConfiguration.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringSqeWriters.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringCompletionDispatch.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringSlots.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringRings.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringDiagnostics.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="..\tests\FunctionalTests\IoUringTestInfrastructure\SocketAsyncEngine.IoUringTestHooks.Linux.cs"
+             Link="System\Net\Sockets\SocketAsyncEngine.IoUringTestHooks.Linux.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux' and '$(Configuration)' == 'Debug'" />
+    <Compile Include="..\tests\FunctionalTests\IoUringTestInfrastructure\SocketAsyncEngine.IoUringTestAccessors.Linux.cs"
+             Link="System\Net\Sockets\SocketAsyncEngine.IoUringTestAccessors.Linux.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux' and '$(Configuration)' == 'Debug'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncEngine.IoUringTestHooks.Stubs.Linux.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux' and '$(Configuration)' != 'Debug'" />
+    <Compile Include="System\Net\Sockets\MpscQueue.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\IoUringProvidedBufferRing.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketPal.IoUring.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="System\Net\Sockets\SocketAsyncContext.IoUring.Linux.cs" Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
     <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketEvent.Linux.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.SocketEvent.Linux.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IoUringShim.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.IoUringShim.cs"
+             Condition="'$(TargetPlatformIdentifier)' == 'unix' and '$(TargetOS)' == 'linux'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'wasi' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
@@ -291,6 +318,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.SendMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSockOpt.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SetSockOpt.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Shutdown.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Shutdown.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs"
