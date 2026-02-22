@@ -1,0 +1,14 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..\'))" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);net10.0</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <OutputPath>$(ArtifactsBinDir)DumpTests\$(MSBuildProjectName)\$(Configuration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <!-- Debuggees intentionally use unsealed types for type hierarchy testing -->
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
+  </PropertyGroup>
+</Project>
