@@ -749,7 +749,7 @@ int32_t SystemNative_FSync(intptr_t fd)
 #else
     fsync(fileDescriptor)
 #endif
-    < 0) && errno == EINTR);
+    ) < 0 && errno == EINTR);
     return result;
 }
 
