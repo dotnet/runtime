@@ -9,6 +9,9 @@
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
     <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <!-- Workaround for dsymutil module cache errors on Apple platforms until https://github.com/dotnet/runtime/pull/123386 -->
+    <!-- See https://github.com/dotnet/runtime/issues/123687 -->
+    <StripSymbols Condition="'$(PortableOS)' == 'osx' or '$(PortableOS)' == 'ios' or '$(PortableOS)' == 'tvos' or '$(PortableOS)' == 'maccatalyst'">false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>

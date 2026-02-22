@@ -532,6 +532,19 @@ public:
     }
 
     //
+    // Bring the base class operator= into scope.  Without this, the compiler-generated
+    // copy assignment operator hides Volatile<P>::operator= and performs a plain store,
+    // bypassing the memory barriers provided by VolatileStore.
+    //
+    using Volatile<P>::operator=;
+
+    //
+    // Copy assignment operator.  The using declaration above does not suppress the
+    // compiler-generated copy assignment, so we must define it explicitly.
+    //
+    inline VolatilePtr<T,P>& operator=(const VolatilePtr<T,P>& other) {this->Store(other.Load()); return *this;}
+
+    //
     // Cast to the pointer type
     //
     inline operator P() const

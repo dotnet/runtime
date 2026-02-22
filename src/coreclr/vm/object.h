@@ -32,27 +32,26 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
- *  +-- code:StringObject       - String objects are specialized objects for string
+ *  +-- StringObject       - String objects are specialized objects for string
  *  |                        storage/retrieval for higher performance (UCS-2 / UTF-16 data)
  *  |
- *  +-- code:Utf8StringObject       - String objects are specialized objects for string
- *  |                        storage/retrieval for higher performance (UTF-8 data)
+ *  +-- ReflectClassBaseObject    - The base object for the RuntimeType class
  *  |
- *  +-- BaseObjectWithCachedData - Object Plus one object field for caching.
- *  |       |
- *  |            +-  ReflectClassBaseObject    - The base object for the RuntimeType class
- *  |            +-  ReflectMethodObject       - The base object for the RuntimeMethodInfo class
- *  |            +-  ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  +-- ReflectMethodObject       - The base object for the RuntimeMethodInfo class
  *  |
- *  +-- code:ArrayBase          - Base portion of all arrays
+ *  +-- ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  |
+ *  +-- ArrayBase          - Base portion of all arrays
  *  |       |
- *  |       +-  I1Array    - Base type arrays
+ *  |       +-  I1Array    - Base type SZ arrays
  *  |       |   I2Array
  *  |       |   ...
  *  |       |
- *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
+ *  |       +-  PtrArray   - SZ Array of OBJECTREFs, different than base arrays because of pObjectClass
  *  |
- *  +-- code:AssemblyBaseObject - The base object for the class Assembly
+ *  +-- AssemblyBaseObject - The base object for the class Assembly
+ *  |
+ *  |   ...
  *
  *
  * PLEASE NOTE THE FOLLOWING WHEN ADDING A NEW OBJECT TYPE:
@@ -930,19 +929,13 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr(void** pinnedString) {
     return refptr;
 }
 
-// This is used to account for the remoting cache on RuntimeType,
-// RuntimeMethodInfo, and RtFieldInfo.
-class BaseObjectWithCachedData : public Object
-{
-};
-
 // This is the Class version of the Reflection object.
 //  A Class has adddition information.
 //  For a ReflectClassBaseObject the m_pData is a pointer to a FieldDesc array that
 //      contains all of the final static primitives if its defined.
 //  m_cnt = the number of elements defined in the m_pData FieldDesc array.  -1 means
 //      this hasn't yet been defined.
-class ReflectClassBaseObject : public BaseObjectWithCachedData
+class ReflectClassBaseObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1022,7 +1015,7 @@ public:
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectMethodObject : public BaseObjectWithCachedData
+class ReflectMethodObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1066,7 +1059,7 @@ public:
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectFieldObject : public BaseObjectWithCachedData
+class ReflectFieldObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1163,50 +1156,12 @@ typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
-typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
-
-
-class CultureInfoBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-private:
-    OBJECTREF _compareInfo;
-    OBJECTREF _textInfo;
-    OBJECTREF _numInfo;
-    OBJECTREF _dateTimeInfo;
-    OBJECTREF _calendar;
-    OBJECTREF _cultureData;
-    OBJECTREF _consoleFallbackCulture;
-    STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
-    STRINGREF _nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
-    STRINGREF _sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
-    CULTUREINFOBASEREF _parent;
-    CLR_BOOL _isReadOnly;
-    CLR_BOOL _isInherited;
-
-public:
-    CULTUREINFOBASEREF GetParent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _parent;
-    }// GetParent
-
-
-    STRINGREF GetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _name;
-    }// GetName
-
-}; // class CultureInfoBaseObject
 
 typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
@@ -1308,13 +1263,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_IsDead = true;
     }
-};
-
-// MarshalByRefObjectBaseObject
-// This class is the base class for MarshalByRefObject
-//
-class MarshalByRefObjectBaseObject : public Object
-{
 };
 
 // AssemblyBaseObject
@@ -1520,7 +1468,7 @@ STRINGREF AllocateString(SString sstr);
 //
 //
 //-------------------------------------------------------------
-class ComObject : public MarshalByRefObjectBaseObject
+class ComObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -2488,43 +2436,7 @@ struct cdac_data<ExceptionObject>
     static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
-// Defined in Contracts.cs
-enum ContractFailureKind
-{
-    CONTRACT_FAILURE_PRECONDITION = 0,
-    CONTRACT_FAILURE_POSTCONDITION,
-    CONTRACT_FAILURE_POSTCONDITION_ON_EXCEPTION,
-    CONTRACT_FAILURE_INVARIANT,
-    CONTRACT_FAILURE_ASSERT,
-    CONTRACT_FAILURE_ASSUME,
-};
-
-typedef DPTR(class ContractExceptionObject) PTR_ContractExceptionObject;
-class ContractExceptionObject : public ExceptionObject
-{
-    friend class CoreLibBinder;
-
-public:
-    ContractFailureKind GetContractFailureKind()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return static_cast<ContractFailureKind>(_Kind);
-    }
-
-private:
-    // keep these in sync with ndp/clr/src/bcl/system/diagnostics/contracts/contractsbcl.cs
-    STRINGREF _UserMessage;
-    STRINGREF _Condition;
-    INT32 _Kind;
-};
 #include "poppack.h"
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<ContractExceptionObject> CONTRACTEXCEPTIONREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 //===============================================================================
 // #NullableFeature
@@ -2581,7 +2493,6 @@ public:
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)

@@ -2588,6 +2588,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Volatile")) {
+		if ((!strcmp (tm, "ReadBarrier") || !strcmp (tm, "WriteBarrier")) && csignature->param_count == 0)
+			*op = MINT_MONO_MEMORY_BARRIER;
 	} else if (in_corlib &&
 			!strcmp (klass_name_space, "System.Runtime.CompilerServices") &&
 			!strcmp (klass_name, "JitHelpers") &&

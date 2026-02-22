@@ -48,7 +48,7 @@ internal static partial class Interop
         internal const string Xolehlp = "xolehlp.dll";
         internal const string Comdlg32 = "comdlg32.dll";
         internal const string Gdiplus = "gdiplus.dll";
-        internal const string Oleaut32 = "oleaut32.dll";
         internal const string Winspool = "winspool.drv";
+        internal const string Synch = "api-ms-win-core-synch-l1-2-0.dll";
     }
 }

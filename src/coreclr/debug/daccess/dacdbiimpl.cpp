@@ -5288,8 +5288,8 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
     ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
 }
 
-// Check if the given method is an IL stub or an LCD method.
-IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc)
+// Check if the given method is a DiagnosticHidden or an LCG method.
+IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5297,7 +5297,7 @@ IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsILStubOrLCGMethod(VMP
 
     if (pMD->IsDiagnosticsHidden())
     {
-        return kILStub;
+        return kDiagnosticHidden;
     }
     else if (pMD->IsLCGMethod())
     {
@@ -7261,7 +7261,7 @@ HRESULT DacDbiInterfaceImpl::AreOptimizationsDisabled(VMPTR_Module vmModule, mdM
     {
         return E_INVALIDARG;
     }
-#ifdef FEATURE_REJIT    
+#ifdef FEATURE_REJIT
     {
         CodeVersionManager * pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodTk);
@@ -7451,12 +7451,12 @@ void DacDbiInterfaceImpl::GetAsyncLocals(
     ULONG32 cAsyncVars = 0;
 
     BOOL success = DebugInfoManager::GetAsyncDebugInfo(
-        request, 
-        DebugInfoStoreNew, 
-        nullptr, 
-        &asyncInfo, 
-        &asyncSuspensionPoints, 
-        &asyncVars, 
+        request,
+        DebugInfoStoreNew,
+        nullptr,
+        &asyncInfo,
+        &asyncSuspensionPoints,
+        &asyncVars,
         &cAsyncVars);
 
     if (!success) return;

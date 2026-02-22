@@ -297,7 +297,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
 
-            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = options.GetTypeInfo<JsonMessage>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new JsonMessage { Message = "Hi" };
@@ -325,7 +325,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(fastPathContext, appendedResolver, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -339,7 +339,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(2, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -367,7 +367,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -381,7 +381,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(2, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -409,7 +409,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -423,7 +423,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(0, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -564,7 +564,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
 
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T))!;
+            JsonTypeInfo<T> typeInfo = options.GetTypeInfo<T>();
 
             string json = JsonSerializer.Serialize(value, typeInfo);
             JsonTestHelper.AssertJsonEqual(expectedJson, json);
@@ -822,7 +822,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void FastPathSerialization_EvaluatePropertyOnlyOnceWhenIgnoreNullOrDefaultIsSpecified()
         {
             JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
-            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = (JsonTypeInfo<AllocatingOnPropertyAccess>)options.GetTypeInfo(typeof(AllocatingOnPropertyAccess));
+            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = options.GetTypeInfo<AllocatingOnPropertyAccess>();
             Assert.NotNull(allocatingOnPropertyAccessInfo.SerializeHandler);
 
             var value = new AllocatingOnPropertyAccess();
