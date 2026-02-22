@@ -51,9 +51,31 @@ int ISOSDacInterface8.ExampleMethod(uint* pResult)
 - **Null pointer checks**: Validate output pointer arguments *before* the try block
   and return `E_INVALIDARG`. This matches the native DAC behavior.
 - **Exception handling**: Wrap all contract calls in try/catch. The catch converts
-  exceptions to HResult codes via `ex.HResult`.
+  exceptions to HResult codes via `ex.HResult`. When the native DAC has an explicit
+  readability check (e.g., `ptr.IsValid()` or `DACGetMethodTableFromObjectPointer`
+  returning NULL), catch `VirtualReadException` specifically and return the same
+  HResult the native DAC returns (typically `E_INVALIDARG`). Avoid catching all
+  exceptions and mapping to a single HRESULT, as this can mask unrelated bugs.
 - **Debug cross-validation**: In `#if DEBUG`, call the legacy implementation (if
   available) and assert the results match. This catches discrepancies during testing.
+
+### Legacy delegation placement
+
+Some cDAC methods create child objects (e.g., `ClrDataMethodInstance`,
+`ClrDataFrame`) that delegate certain operations to a legacy counterpart. This is
+a temporary implementation workaround to let us create the cDAC incrementally that
+should be removed before cDAC ships to customers. In these cases, the legacy call
+that obtains the counterpart **must be outside `#if DEBUG`**, because the result is
+used functionally, not just for validation.
+
+For example, `EnumMethodInstanceByAddress` passes `legacyMethod` to
+`ClrDataMethodInstance`, which delegates `GetTokenAndScope` and other calls to it.
+If the legacy enumeration only runs inside `#if DEBUG`, those delegated calls fail
+in Release builds.
+
+**Rule of thumb**: if a legacy call's result is stored and passed to another
+object, keep it outside `#if DEBUG`. Only the assertion that compares
+HResults/values belongs inside `#if DEBUG`.
 
 ### Sized-buffer protocol
 

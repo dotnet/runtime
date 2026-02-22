@@ -11,39 +11,63 @@ public unsafe class SOSDacInterface8Tests
     private const int S_OK = 0;
     private const int S_FALSE = 1;
 
+    private static readonly GCHeapBuilder.GenerationInput[] s_generations =
+    [
+        new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
+        new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
+        new() { StartSegment = 0x1C00_0000, AllocationStart = 0x1C00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
+        new() { StartSegment = 0x1D00_0000, AllocationStart = 0x1D00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
+    ];
+
+    private static readonly ulong[] s_fillPointers = [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777];
+
+    private static ISOSDacInterface8 CreateWksDac8(MockTarget.Architecture arch)
+    {
+        return new SOSDacImpl(
+            new TestPlaceholderTarget.Builder(arch)
+                .AddGCHeapWks(gc => gc
+                    .SetGenerations(s_generations)
+                    .SetFillPointers(s_fillPointers))
+                .Build(),
+            legacyObj: null);
+    }
+
+    private static ISOSDacInterface8 CreateSvrDac8(MockTarget.Architecture arch, out ulong heapAddr)
+    {
+        return new SOSDacImpl(
+            new TestPlaceholderTarget.Builder(arch)
+                .AddGCHeapSvr(gc => gc
+                    .SetGenerations(s_generations)
+                    .SetFillPointers(s_fillPointers), out heapAddr)
+                .Build(),
+            legacyObj: null);
+    }
+
+    private static ulong SignExtend(ulong value, MockTarget.Architecture arch)
+    {
+        if (arch.Is64Bit)
+            return value;
+
+        return (ulong)(long)(int)(uint)value;
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNumberGenerations_ReturnsCorrectCount(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
-        {
-            new() { StartSegment = 0xAA00_0000, AllocationStart = 0xAA00_1000, AllocContextPointer = 0xAA00_2000, AllocContextLimit = 0xAA00_3000 },
-            new() { StartSegment = 0xBB00_0000, AllocationStart = 0xBB00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xCC00_0000, AllocationStart = 0xCC00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xDD00_0000, AllocationStart = 0xDD00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        };
-
-        ulong[] fillPointers = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000];
-
-        ISOSDacInterface8 dac8 = new SOSDacImpl(
-            new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapWks(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers))
-                .Build(),
-            legacyObj: null);
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
 
         uint numGenerations;
         int hr = dac8.GetNumberGenerations(&numGenerations);
         Assert.Equal(S_OK, hr);
-        Assert.Equal(4u, numGenerations);
+        Assert.Equal((uint)s_generations.Length, numGenerations);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNumberGenerations_WithFiveGenerations(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
+        var fiveGenerations = new GCHeapBuilder.GenerationInput[]
         {
             new() { StartSegment = 0xA000_0000, AllocationStart = 0xA000_1000, AllocContextPointer = 0xA000_2000, AllocContextLimit = 0xA000_3000 },
             new() { StartSegment = 0xB000_0000, AllocationStart = 0xB000_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
@@ -52,13 +76,11 @@ public unsafe class SOSDacInterface8Tests
             new() { StartSegment = 0xE000_0000, AllocationStart = 0xE000_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
         };
 
-        ulong[] fillPointers = [0x1001, 0x2002, 0x3003, 0x4004, 0x5005, 0x6006, 0x7007];
-
         ISOSDacInterface8 dac8 = new SOSDacImpl(
             new TestPlaceholderTarget.Builder(arch)
                 .AddGCHeapWks(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers))
+                    .SetGenerations(fiveGenerations)
+                    .SetFillPointers(s_fillPointers))
                 .Build(),
             legacyObj: null);
 
@@ -72,169 +94,145 @@ public unsafe class SOSDacInterface8Tests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetGenerationTable_ReturnsCorrectData(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
-        {
-            new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
-            new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1C00_0000, AllocationStart = 0x1C00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1D00_0000, AllocationStart = 0x1D00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        };
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
 
-        ulong[] fillPointers = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000];
-
-        ISOSDacInterface8 dac8 = new SOSDacImpl(
-            new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapWks(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers))
-                .Build(),
-            legacyObj: null);
-
-        // First call with cGenerations=0 to query needed count
         uint needed;
         int hr = dac8.GetGenerationTable(0, null, &needed);
         Assert.Equal(S_FALSE, hr);
-        Assert.Equal(4u, needed);
+        Assert.Equal((uint)s_generations.Length, needed);
 
-        // Second call with sufficient buffer
-        DacpGenerationData* genData = stackalloc DacpGenerationData[4];
-        hr = dac8.GetGenerationTable(4, genData, &needed);
+        DacpGenerationData* genData = stackalloc DacpGenerationData[(int)needed];
+        hr = dac8.GetGenerationTable(needed, genData, &needed);
         Assert.Equal(S_OK, hr);
 
-        for (int i = 0; i < generations.Length; i++)
+        for (int i = 0; i < s_generations.Length; i++)
         {
-            ulong expectedStartSeg = SignExtend(generations[i].StartSegment, arch);
-            ulong expectedAllocStart = SignExtend(generations[i].AllocationStart, arch);
-            ulong expectedAllocCtxPtr = SignExtend(generations[i].AllocContextPointer, arch);
-            ulong expectedAllocCtxLim = SignExtend(generations[i].AllocContextLimit, arch);
-            Assert.Equal(expectedStartSeg, (ulong)genData[i].start_segment);
-            Assert.Equal(expectedAllocStart, (ulong)genData[i].allocation_start);
-            Assert.Equal(expectedAllocCtxPtr, (ulong)genData[i].allocContextPtr);
-            Assert.Equal(expectedAllocCtxLim, (ulong)genData[i].allocContextLimit);
+            Assert.Equal(SignExtend(s_generations[i].StartSegment, arch), (ulong)genData[i].start_segment);
+            Assert.Equal(SignExtend(s_generations[i].AllocationStart, arch), (ulong)genData[i].allocation_start);
+            Assert.Equal(SignExtend(s_generations[i].AllocContextPointer, arch), (ulong)genData[i].allocContextPtr);
+            Assert.Equal(SignExtend(s_generations[i].AllocContextLimit, arch), (ulong)genData[i].allocContextLimit);
         }
     }
 
-    private static ulong SignExtend(ulong value, MockTarget.Architecture arch)
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGenerationTable_InsufficientBuffer_ReturnsSFalseAndNeededCount(MockTarget.Architecture arch)
     {
-        if (arch.Is64Bit)
-            return value;
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
 
-        return (ulong)(long)(int)(uint)value;
+        uint needed;
+        DacpGenerationData* smallBuffer = stackalloc DacpGenerationData[2];
+        int hr = dac8.GetGenerationTable(2, smallBuffer, &needed);
+
+        Assert.Equal(S_FALSE, hr);
+        Assert.Equal((uint)s_generations.Length, needed);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetFinalizationFillPointers_ReturnsCorrectData(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
-        {
-            new() { StartSegment = 0xAA00_0000, AllocationStart = 0xAA00_1000, AllocContextPointer = 0xAA00_2000, AllocContextLimit = 0xAA00_3000 },
-            new() { StartSegment = 0xBB00_0000, AllocationStart = 0xBB00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xCC00_0000, AllocationStart = 0xCC00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0xDD00_0000, AllocationStart = 0xDD00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        };
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
 
-        ulong[] fillPointers = [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777];
-
-        ISOSDacInterface8 dac8 = new SOSDacImpl(
-            new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapWks(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers))
-                .Build(),
-            legacyObj: null);
-
-        // First call with cFillPointers=0 to query needed count
         uint needed;
         int hr = dac8.GetFinalizationFillPointers(0, null, &needed);
         Assert.Equal(S_FALSE, hr);
-        Assert.Equal(7u, needed);
+        Assert.Equal((uint)s_fillPointers.Length, needed);
 
-        // Second call with sufficient buffer
-        ClrDataAddress* ptrs = stackalloc ClrDataAddress[7];
-        hr = dac8.GetFinalizationFillPointers(7, ptrs, &needed);
+        ClrDataAddress* ptrs = stackalloc ClrDataAddress[(int)needed];
+        hr = dac8.GetFinalizationFillPointers(needed, ptrs, &needed);
         Assert.Equal(S_OK, hr);
 
-        for (int i = 0; i < fillPointers.Length; i++)
+        for (int i = 0; i < s_fillPointers.Length; i++)
         {
-            Assert.Equal(SignExtend(fillPointers[i], arch), (ulong)ptrs[i]);
+            Assert.Equal(SignExtend(s_fillPointers[i], arch), (ulong)ptrs[i]);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFinalizationFillPointers_InsufficientBuffer_ReturnsSFalseAndNeededCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
+
+        uint needed;
+        ClrDataAddress* smallBuffer = stackalloc ClrDataAddress[3];
+        int hr = dac8.GetFinalizationFillPointers(3, smallBuffer, &needed);
+
+        Assert.Equal(S_FALSE, hr);
+        Assert.Equal((uint)s_fillPointers.Length, needed);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetGenerationTableSvr_ReturnsCorrectData(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
-        {
-            new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
-            new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1C00_0000, AllocationStart = 0x1C00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1D00_0000, AllocationStart = 0x1D00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        };
-
-        ulong[] fillPointers = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000];
-
-        ISOSDacInterface8 dac8 = new SOSDacImpl(
-            new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapSvr(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers), out var heapAddr)
-                .Build(),
-            legacyObj: null);
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out ulong heapAddr);
 
         uint needed;
         int hr = dac8.GetGenerationTableSvr((ClrDataAddress)heapAddr, 0, null, &needed);
         Assert.Equal(S_FALSE, hr);
-        Assert.Equal(4u, needed);
+        Assert.Equal((uint)s_generations.Length, needed);
 
-        DacpGenerationData* genData = stackalloc DacpGenerationData[4];
-        hr = dac8.GetGenerationTableSvr((ClrDataAddress)heapAddr, 4, genData, &needed);
+        DacpGenerationData* genData = stackalloc DacpGenerationData[(int)needed];
+        hr = dac8.GetGenerationTableSvr((ClrDataAddress)heapAddr, needed, genData, &needed);
         Assert.Equal(S_OK, hr);
 
-        for (int i = 0; i < generations.Length; i++)
+        for (int i = 0; i < s_generations.Length; i++)
         {
-            Assert.Equal(SignExtend(generations[i].StartSegment, arch), (ulong)genData[i].start_segment);
-            Assert.Equal(SignExtend(generations[i].AllocationStart, arch), (ulong)genData[i].allocation_start);
-            Assert.Equal(SignExtend(generations[i].AllocContextPointer, arch), (ulong)genData[i].allocContextPtr);
-            Assert.Equal(SignExtend(generations[i].AllocContextLimit, arch), (ulong)genData[i].allocContextLimit);
+            Assert.Equal(SignExtend(s_generations[i].StartSegment, arch), (ulong)genData[i].start_segment);
+            Assert.Equal(SignExtend(s_generations[i].AllocationStart, arch), (ulong)genData[i].allocation_start);
+            Assert.Equal(SignExtend(s_generations[i].AllocContextPointer, arch), (ulong)genData[i].allocContextPtr);
+            Assert.Equal(SignExtend(s_generations[i].AllocContextLimit, arch), (ulong)genData[i].allocContextLimit);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGenerationTableSvr_InsufficientBuffer_ReturnsSFalseAndNeededCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out ulong heapAddr);
+
+        uint needed;
+        DacpGenerationData* smallBuffer = stackalloc DacpGenerationData[2];
+        int hr = dac8.GetGenerationTableSvr((ClrDataAddress)heapAddr, 2, smallBuffer, &needed);
+
+        Assert.Equal(S_FALSE, hr);
+        Assert.Equal((uint)s_generations.Length, needed);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetFinalizationFillPointersSvr_ReturnsCorrectData(MockTarget.Architecture arch)
     {
-        var generations = new GCHeapBuilder.GenerationInput[]
-        {
-            new() { StartSegment = 0x1A00_0000, AllocationStart = 0x1A00_1000, AllocContextPointer = 0x1A00_2000, AllocContextLimit = 0x1A00_3000 },
-            new() { StartSegment = 0x1B00_0000, AllocationStart = 0x1B00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1C00_0000, AllocationStart = 0x1C00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-            new() { StartSegment = 0x1D00_0000, AllocationStart = 0x1D00_1000, AllocContextPointer = 0, AllocContextLimit = 0 },
-        };
-
-        ulong[] fillPointers = [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777];
-
-        ISOSDacInterface8 dac8 = new SOSDacImpl(
-            new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapSvr(gc => gc
-                    .SetGenerations(generations)
-                    .SetFillPointers(fillPointers), out var heapAddr)
-                .Build(),
-            legacyObj: null);
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out ulong heapAddr);
 
         uint needed;
         int hr = dac8.GetFinalizationFillPointersSvr((ClrDataAddress)heapAddr, 0, null, &needed);
         Assert.Equal(S_FALSE, hr);
-        Assert.Equal(7u, needed);
+        Assert.Equal((uint)s_fillPointers.Length, needed);
 
-        ClrDataAddress* ptrs = stackalloc ClrDataAddress[7];
-        hr = dac8.GetFinalizationFillPointersSvr((ClrDataAddress)heapAddr, 7, ptrs, &needed);
+        ClrDataAddress* ptrs = stackalloc ClrDataAddress[(int)needed];
+        hr = dac8.GetFinalizationFillPointersSvr((ClrDataAddress)heapAddr, needed, ptrs, &needed);
         Assert.Equal(S_OK, hr);
 
-        for (int i = 0; i < fillPointers.Length; i++)
+        for (int i = 0; i < s_fillPointers.Length; i++)
         {
-            Assert.Equal(SignExtend(fillPointers[i], arch), (ulong)ptrs[i]);
+            Assert.Equal(SignExtend(s_fillPointers[i], arch), (ulong)ptrs[i]);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFinalizationFillPointersSvr_InsufficientBuffer_ReturnsSFalseAndNeededCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out ulong heapAddr);
+
+        uint needed;
+        ClrDataAddress* smallBuffer = stackalloc ClrDataAddress[3];
+        int hr = dac8.GetFinalizationFillPointersSvr((ClrDataAddress)heapAddr, 3, smallBuffer, &needed);
+
+        Assert.Equal(S_FALSE, hr);
+        Assert.Equal((uint)s_fillPointers.Length, needed);
     }
 }
