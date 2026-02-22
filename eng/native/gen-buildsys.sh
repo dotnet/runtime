@@ -85,6 +85,22 @@ if [[ "$host_arch" == "armel" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
+# Use platform-specific tryrun cache to speed up CMake configure (opt-out via CLR_CMAKE_SKIP_PLATFORM_CACHE=1)
+if [[ "$CLR_CMAKE_SKIP_PLATFORM_CACHE" != "1" ]]; then
+    if [[ "$target_os" == "osx" && "$host_arch" == "arm64" && -f "$scriptroot/tryrun.osx-arm64.cmake" ]]; then
+        # Extract current AppleClang major version
+        current_clang_version=$(clang --version 2>/dev/null | head -1 | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p')
+        # Extract expected version from cache file
+        cache_clang_version=$(grep -o 'CLR_CMAKE_PLATFORM_CACHE_COMPILER_VERSION "[0-9]*"' "$scriptroot/tryrun.osx-arm64.cmake" 2>/dev/null | sed 's/.*"\([0-9]*\)".*/\1/')
+        
+        if [[ -n "$current_clang_version" && -n "$cache_clang_version" && "$current_clang_version" == "$cache_clang_version" ]]; then
+            cmake_extra_defines="-C $scriptroot/tryrun.osx-arm64.cmake $cmake_extra_defines"
+        elif [[ -n "$current_clang_version" && -n "$cache_clang_version" ]]; then
+            echo "Skipping platform cache: AppleClang version mismatch (current: $current_clang_version, cache: $cache_clang_version)"
+        fi
+    fi
+fi
+
 if ! cmake_command=$(command -v cmake); then
     echo "CMake was not found in PATH."
     exit 1
