@@ -31,6 +31,13 @@ namespace System.Net
         // flag is only used on Win8 and later.
         internal static readonly bool SkipIOCPCallbackOnSuccess = Environment.OSVersion.Version >= new Version(6, 2);
 
+        // Enable buffering of response data in the Kernel. The default value is false.
+        // It should be used by an application doing synchronous I/O or by an application doing asynchronous I/O with
+        // no more than one outstanding write at a time, and can significantly improve throughput over high-latency connections.
+        // Applications that use asynchronous I/O and that may have more than one send outstanding at a time should not use this flag.
+        // Enabling this can result in higher CPU and memory usage by Http.sys.
+        internal static bool EnableKernelResponseBuffering { get; } = AppContext.TryGetSwitch("System.Net.HttpListener.EnableKernelResponseBuffering", out bool enabled) && enabled;
+
         // Mitigate potential DOS attacks by limiting the number of unknown headers we accept.  Numerous header names
         // with hash collisions will cause the server to consume excess CPU.  1000 headers limits CPU time to under
         // 0.5 seconds per request.  Respond with a 400 Bad Request.
