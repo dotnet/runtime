@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Pkcs
             set
             {
                 if (value is not null &&
-                    value != RSASignaturePadding.Pkcs1 && value != RSASignaturePadding.Pss)
+                    value != RSASignaturePadding.Pkcs1 && value.Mode != RSASignaturePaddingMode.Pss)
                 {
                     throw new ArgumentException(SR.Argument_InvalidRsaSignaturePadding, nameof(value));
                 }
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Pkcs
             RSASignaturePadding? signaturePadding)
         {
             if (signaturePadding is not null &&
-                signaturePadding != RSASignaturePadding.Pkcs1 && signaturePadding != RSASignaturePadding.Pss)
+                signaturePadding != RSASignaturePadding.Pkcs1 && signaturePadding.Mode != RSASignaturePaddingMode.Pss)
             {
                 throw new ArgumentException(SR.Argument_InvalidRsaSignaturePadding, nameof(signaturePadding));
             }

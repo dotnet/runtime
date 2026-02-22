@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         // Android supports PSS at the algorithms layer, but does not support it
         // being used in cert chains.
         public static bool PlatformSupportsPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.IsRsaPssSupported;
+        public static bool AreCustomSaltLengthsSupportedWithPss { get; } = !PlatformDetection.IsAndroid && PlatformSupport.AreCustomSaltLengthsSupportedWithPss;
 
         [Fact]
         public static void CreateChain_ECC()
@@ -489,8 +490,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [ConditionalTheory(nameof(AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData(1)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        public static void CreateChain_RSAPSS(int saltLength)
+        {
+            CreateChain_RSAPSSCore(saltLength);
+        }
+
         [ConditionalFact(nameof(PlatformSupportsPss))]
-        public static void CreateChain_RSAPSS()
+        public static void CreateChain_RSAPSS_SaltLengthIsHashLength()
+        {
+            CreateChain_RSAPSSCore(RSASignaturePadding.PssSaltLengthIsHashLength);
+        }
+
+        private static void CreateChain_RSAPSSCore(int saltLength)
         {
             using (RSA rootKey = RSA.Create())
             using (RSA intermedKey = RSA.Create())
@@ -501,7 +516,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 X509Certificate2 leafCert = null;
                 CertificateRequest request;
 
-                RSASignaturePadding padding = RSASignaturePadding.Pss;
+                RSASignaturePadding padding = RSASignaturePadding.CreatePss(saltLength);
 
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow;
                 DateTimeOffset notAfter = notBefore.AddHours(1);

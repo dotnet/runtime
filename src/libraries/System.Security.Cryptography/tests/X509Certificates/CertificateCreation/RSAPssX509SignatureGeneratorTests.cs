@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using Test.Cryptography;
 using Xunit;
 
@@ -53,6 +54,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 PublicKey publicKey2 = signatureGenerator.PublicKey;
                 Assert.Same(publicKey, publicKey2);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.AreCustomSaltLengthsSupportedWithPss))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(RSASignaturePadding.PssSaltLengthIsHashLength)]
+        [InlineData(RSASignaturePadding.PssSaltLengthMax)]
+        public static void PssPaddingSaltLengths(int saltLengthToTest)
+        {
+            using (RSA rsa = RSA.Create())
+            {
+                rsa.ImportParameters(TestData.RsaBigExponentParams);
+
+                RSASignaturePadding signaturePadding = RSASignaturePadding.CreatePss(saltLengthToTest);
+                X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, signaturePadding);
+
+                byte[] data = new byte[] { 1, 2, 3, 4, 5 };
+                byte[] signature = signatureGenerator.SignData(data, HashAlgorithmName.SHA256);
+                byte[] signatureAlgorithm = signatureGenerator.GetSignatureAlgorithmIdentifier(HashAlgorithmName.SHA256);
+
+                AsnReader asnReader = new AsnReader(signatureAlgorithm, AsnEncodingRules.DER);
+                AsnReader rootSequence = asnReader.ReadSequence();
+                Assert.Equal("1.2.840.113549.1.1.10", rootSequence.ReadObjectIdentifier()); // Make sure it's RSASSA-PSS
+                AsnReader pssStructure = rootSequence.ReadSequence();
+                ReadOnlyMemory<byte> hashAlgorithm = pssStructure.ReadEncodedValue(); // Ignore the hash algorithm OID
+                ReadOnlyMemory<byte> mgf = pssStructure.ReadEncodedValue(); // Ignore the mask generation function OID
+                Asn1Tag saltTag = new Asn1Tag(TagClass.ContextSpecific, 2, true);
+
+                if (pssStructure.HasData && pssStructure.PeekTag().HasSameClassAndValue(saltTag))
+                {
+                    AsnReader saltEntry = pssStructure.ReadSequence(saltTag);
+                    Numerics.BigInteger actualSaltLength = saltEntry.ReadInteger();
+                    int expectedSaltLength = saltLengthToTest switch
+                    {
+                        RSASignaturePadding.PssSaltLengthIsHashLength => 32,
+                        RSASignaturePadding.PssSaltLengthMax => 222,
+                        _ => saltLengthToTest
+                    };
+                    Assert.Equal(expectedSaltLength, actualSaltLength);
+                }
+
+                Assert.True(rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, signaturePadding));
             }
         }
 

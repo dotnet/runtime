@@ -294,12 +294,19 @@ namespace System.Security.Cryptography.Pkcs
                 0x01, 0x40,
             };
 
-            internal override RSASignaturePadding? SignaturePadding => RSASignaturePadding.Pss;
+            internal override RSASignaturePadding SignaturePadding { get; }
 
             public RSAPssCmsSignature() : base(null, null)
             {
+               SignaturePadding = RSASignaturePadding.Pss;
             }
 
+#if NET11_0_OR_GREATER
+            public RSAPssCmsSignature(int saltLength) : base(null, null)
+            {
+                SignaturePadding = RSASignaturePadding.CreatePss(saltLength);
+            }
+#endif
             protected override RSASignaturePadding GetSignaturePadding(
                 ReadOnlyMemory<byte>? signatureParameters,
                 string? digestAlgorithmOid,
@@ -348,13 +355,20 @@ namespace System.Security.Cryptography.Pkcs
                     certificate,
                     key,
                     silent,
-                    RSASignaturePadding.Pss,
+                    SignaturePadding,
                     out signatureValue);
 
                 if (result)
                 {
                     signatureAlgorithm = Oids.RsaPss;
 
+#if NET11_0_OR_GREATER
+                    if (SignaturePadding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength)
+                    {
+                        signatureParameters = GetSignaturePaddingForCustomPssSaltLength(certificate, hashAlgorithmName);
+                        return result;
+                    }
+#endif
                     if (hashAlgorithmName == HashAlgorithmName.SHA1)
                     {
                         signatureParameters = s_rsaPssSha1Parameters;
@@ -389,6 +403,37 @@ namespace System.Security.Cryptography.Pkcs
 
                 return result;
             }
+
+#if NET11_0_OR_GREATER
+            private byte[] GetSignaturePaddingForCustomPssSaltLength(X509Certificate2 certificate, HashAlgorithmName hashAlgorithmName)
+            {
+                string digestOid = PkcsHelpers.GetOidFromHashAlgorithm(hashAlgorithmName);
+                using RSA? publicKey = certificate.GetRSAPublicKey();
+                Debug.Assert(publicKey != null, "Expected a public key to be present for PSS parameters.");
+
+                PssParamsAsn parameters = new PssParamsAsn
+                {
+                    HashAlgorithm = new AlgorithmIdentifierAsn { Algorithm = digestOid },
+                    MaskGenAlgorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Mgf1 },
+                    SaltLength = RsaPaddingProcessor.CalculatePssSaltLength(SignaturePadding.PssSaltLength, publicKey.KeySize, hashAlgorithmName),
+                    TrailerField = 1
+                };
+
+                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifierForCrypto(digestOid);
+                }
+
+                parameters.MaskGenAlgorithm.Parameters = writer.Encode();
+                writer.Reset();
+
+                parameters.Encode(writer);
+
+                return writer.Encode();
+            }
+#endif
         }
     }
 }
