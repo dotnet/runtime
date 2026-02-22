@@ -516,51 +516,96 @@ namespace System.Collections
                 return this;
             }
 
-            Span<int> intSpan = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
-
+            Span<byte> thisSpan = new Span<byte>(_array, 0, GetByteArrayLengthFromBitLength(_bitLength));
             int toIndex = 0;
-            int ints = GetInt32ArrayLengthFromBitLength(_bitLength);
+
             if (count < _bitLength)
             {
-                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
-                (int fromIndex, int shiftCount) = Math.DivRem(count, 32);
-                int extraBits = (int)((uint)_bitLength % 32);
+                (int fromIndex, int shiftCount) = Math.DivRem(count, BitsPerByte);
                 if (shiftCount == 0)
                 {
-                    // Cannot use `(1u << extraBits) - 1u` as the mask
-                    // because for extraBits == 0, we need the mask to be 111...111, not 0.
-                    // In that case, we are shifting a uint by 32, which could be considered undefined.
-                    // The result of a shift operation is undefined ... if the right operand
-                    // is greater than or equal to the width in bits of the promoted left operand,
-                    // https://learn.microsoft.com/cpp/c-language/bitwise-shift-operators?view=vs-2017
-                    // However, the compiler protects us from undefined behaviour by constraining the
-                    // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
-                    uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                    intSpan[ints - 1] &= ReverseIfBE((int)mask);
-
-                    intSpan.Slice((int)fromIndex, ints - fromIndex).CopyTo(intSpan);
-                    toIndex = ints - fromIndex;
+                    thisSpan.Slice(fromIndex).CopyTo(thisSpan);
+                    toIndex = thisSpan.Length - fromIndex;
                 }
                 else
                 {
-                    int lastIndex = ints - 1;
-
-                    while (fromIndex < lastIndex)
+                    if (Vector512.IsHardwareAccelerated)
                     {
-                        uint right = (uint)ReverseIfBE(intSpan[fromIndex]) >> shiftCount;
-                        int left = ReverseIfBE(intSpan[++fromIndex]) << (BitsPerInt32 - shiftCount);
-                        intSpan[toIndex++] = ReverseIfBE(left | (int)right);
+                        toIndex = Apply<Vector512<byte>>(shiftCount, fromIndex, thisSpan);
+                    }
+                    else if (Vector256.IsHardwareAccelerated)
+                    {
+                        toIndex = Apply<Vector256<byte>>(shiftCount, fromIndex, thisSpan);
+                    }
+                    else if (Vector128.IsHardwareAccelerated)
+                    {
+                        toIndex = Apply<Vector128<byte>>(shiftCount, fromIndex, thisSpan);
+                    }
+                    fromIndex += toIndex;
+
+                    // 32 bits
+                    ReadOnlySpan<int> intSpanFrom = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(fromIndex));
+                    Span<int> intSpanTo = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(toIndex));
+
+                    Debug.Assert(intSpanFrom.Length <= intSpanTo.Length);
+
+                    int index32;
+                    for (index32 = 0; index32 + 1 < intSpanFrom.Length; index32++)
+                    {
+                        int lo = ReverseIfBE(intSpanFrom[index32]) >>> shiftCount;
+                        int hi = ReverseIfBE(intSpanFrom[index32 + 1]) << (BitsPerInt32 - shiftCount);
+                        intSpanTo[index32] = ReverseIfBE(hi | lo);
                     }
 
-                    uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                    mask &= (uint)ReverseIfBE(intSpan[fromIndex]);
-                    intSpan[toIndex++] = ReverseIfBE((int)(mask >> shiftCount));
+                    int size32 = index32 * sizeof(int);
+                    fromIndex += size32;
+                    toIndex += size32;
+
+                    // remaining bytes
+                    int carryCount = BitsPerByte - shiftCount;
+
+                    while (fromIndex < thisSpan.Length)
+                    {
+                        int lo = thisSpan[fromIndex] >>> shiftCount;
+                        int hi =
+                            fromIndex + 1 < thisSpan.Length
+                            ? thisSpan[fromIndex + 1] << carryCount
+                            : 0;
+
+                        thisSpan[toIndex] = (byte)(hi | lo);
+
+                        fromIndex++;
+                        toIndex++;
+                    }
                 }
             }
 
-            intSpan.Slice(toIndex, ints - toIndex).Clear();
+            thisSpan.Slice(toIndex).Clear();
             _version++;
             return this;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int Apply<TVector>(int shiftCount, int fromIndex, Span<byte> thisSpan)
+                where TVector : ISimdVector<TVector, byte>
+            {
+                ref byte p = ref MemoryMarshal.GetReference(thisSpan);
+                int carryCount = BitsPerByte - shiftCount;
+
+                int toIndex = 0;
+
+                while (fromIndex <= thisSpan.Length - (TVector.ElementCount + 1))
+                {
+                    TVector lo = TVector.LoadUnsafe(ref p, (uint)fromIndex) >>> shiftCount;
+                    TVector hi = TVector.LoadUnsafe(ref p, (uint)(fromIndex + 1)) << carryCount;
+                    TVector result = lo | hi;
+                    result.StoreUnsafe(ref p, (uint)toIndex);
+
+                    fromIndex += TVector.ElementCount;
+                    toIndex += TVector.ElementCount;
+                }
+
+                return toIndex;
+            }
         }
 
         /// <summary>
@@ -579,43 +624,117 @@ namespace System.Collections
                 return this;
             }
 
-            Span<int> intSpan = MemoryMarshal.Cast<byte, int>((Span<byte>)_array);
+            Span<byte> thisSpan = new Span<byte>(_array, 0, GetByteArrayLengthFromBitLength(_bitLength));
 
             int lengthToClear;
             if (count < _bitLength)
             {
-                int lastIndex = (int)((uint)(_bitLength - 1) / BitsPerInt32);
-
-                (lengthToClear, int shiftCount) = Math.DivRem(count, BitsPerInt32);
+                (lengthToClear, int shiftCount) = Math.DivRem(count, BitsPerByte);
 
                 if (shiftCount == 0)
                 {
-                    intSpan.Slice(0, lastIndex + 1 - lengthToClear).CopyTo(intSpan.Slice(lengthToClear));
+                    thisSpan.Slice(0, thisSpan.Length - lengthToClear).CopyTo(thisSpan.Slice(lengthToClear));
                 }
                 else
                 {
-                    int fromindex = lastIndex - lengthToClear;
+                    int toIndex = thisSpan.Length;
+                    int fromIndex = toIndex - lengthToClear;
 
-                    while (fromindex > 0)
+                    if (Vector512.IsHardwareAccelerated)
                     {
-                        int left = ReverseIfBE(intSpan[fromindex]) << shiftCount;
-                        uint right = (uint)ReverseIfBE(intSpan[--fromindex]) >> (BitsPerInt32 - shiftCount);
-                        intSpan[lastIndex] = ReverseIfBE(left | (int)right);
-                        lastIndex--;
+                        toIndex = Apply<Vector512<byte>>(shiftCount, fromIndex, thisSpan);
                     }
-                    intSpan[lastIndex] = ReverseIfBE(ReverseIfBE(intSpan[fromindex]) << shiftCount);
+                    else if (Vector256.IsHardwareAccelerated)
+                    {
+                        toIndex = Apply<Vector256<byte>>(shiftCount, fromIndex, thisSpan);
+                    }
+                    else if (Vector128.IsHardwareAccelerated)
+                    {
+                        toIndex = Apply<Vector128<byte>>(shiftCount, fromIndex, thisSpan);
+                    }
+                    fromIndex = toIndex - lengthToClear;
+
+                    // 32 bits
+                    const int indexMask = sizeof(int) - 1;
+                    ReadOnlySpan<int> intSpanFrom = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(fromIndex & indexMask, fromIndex & ~indexMask));
+                    Span<int> intSpanTo = MemoryMarshal.Cast<byte, int>(thisSpan.Slice(toIndex & indexMask, toIndex & ~indexMask));
+
+                    if (intSpanFrom.Length == 0 || intSpanTo.Length == 0)
+                    {
+                        intSpanFrom = default;
+                        intSpanTo = default;
+                    }
+                    else if (intSpanFrom.Length > intSpanTo.Length)
+                    {
+                        intSpanFrom = intSpanFrom.Slice(intSpanFrom.Length - (intSpanTo.Length + 1), intSpanTo.Length + 1);
+                    }
+                    else
+                    {
+                        intSpanTo = intSpanTo.Slice(intSpanTo.Length - (intSpanFrom.Length - 1), intSpanFrom.Length - 1);
+                    }
+                    Debug.Assert(intSpanFrom.Length == intSpanTo.Length + 1 || intSpanTo.Length == 0);
+
+                    for (int i = intSpanTo.Length - 1; i >= 0; i--)
+                    {
+                        int hi = ReverseIfBE(intSpanFrom[i + 1]) << shiftCount;
+                        int lo = ReverseIfBE(intSpanFrom[i]) >>> (BitsPerInt32 - shiftCount);
+                        intSpanTo[i] = ReverseIfBE(hi | lo);
+                    }
+
+                    int size32 = intSpanTo.Length * sizeof(int);
+                    fromIndex -= size32;
+                    toIndex -= size32;
+
+                    // remaining bytes
+                    int carryCount = BitsPerByte - shiftCount;
+
+                    while (--fromIndex >= 0)
+                    {
+                        int hi = thisSpan[fromIndex] << shiftCount;
+                        int lo =
+                            fromIndex > 0
+                            ? thisSpan[fromIndex - 1] >>> carryCount
+                            : 0;
+
+                        thisSpan[--toIndex] = (byte)(hi | lo);
+                    }
+
+                    Debug.Assert(toIndex == lengthToClear);
                 }
 
                 ClearHighExtraBits();
             }
             else
             {
-                lengthToClear = GetInt32ArrayLengthFromBitLength(_bitLength); // Clear all
+                lengthToClear = thisSpan.Length; // Clear all
             }
 
-            intSpan.Slice(0, lengthToClear).Clear();
+            thisSpan.Slice(0, lengthToClear).Clear();
+            ClearHighExtraBits();
             _version++;
             return this;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static int Apply<TVector>(int shiftCount, int fromIndex, Span<byte> thisSpan)
+                where TVector : ISimdVector<TVector, byte>
+            {
+                ref byte p = ref MemoryMarshal.GetReference(thisSpan);
+                int carryCount = BitsPerByte - shiftCount;
+
+                int toIndex = thisSpan.Length;
+
+                while (fromIndex >= TVector.ElementCount + 1)
+                {
+                    fromIndex -= TVector.ElementCount;
+                    TVector hi = TVector.LoadUnsafe(ref p, (nuint)fromIndex) << shiftCount;
+                    TVector lo = TVector.LoadUnsafe(ref p, (nuint)(fromIndex - 1)) >>> carryCount;
+                    TVector result = hi | lo;
+                    toIndex -= TVector.ElementCount;
+                    result.StoreUnsafe(ref p, (nuint)toIndex);
+                }
+
+                return toIndex;
+            }
         }
 
         /// <summary>
