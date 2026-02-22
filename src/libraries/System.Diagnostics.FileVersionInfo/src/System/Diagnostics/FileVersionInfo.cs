@@ -43,6 +43,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the comments associated with the file.
         /// </summary>
+        /// <value>The comments associated with the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? Comments
         {
             get { return _comments; }
@@ -51,6 +52,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name of the company that produced the file.
         /// </summary>
+        /// <value>The name of the company that produced the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? CompanyName
         {
             get { return _companyName; }
@@ -59,6 +61,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the build number of the file.
         /// </summary>
+        /// <value>A value representing the build number of the file or 0 (zero) if the file did not contain version information.</value>
         public int FileBuildPart
         {
             get { return _fileBuild; }
@@ -67,6 +70,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the description of the file.
         /// </summary>
+        /// <value>The description of the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? FileDescription
         {
             get { return _fileDescription; }
@@ -75,6 +79,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the major part of the version number.
         /// </summary>
+        /// <value>A value representing the major part of the version number or 0 (zero) if the file did not contain version information.</value>
         public int FileMajorPart
         {
             get { return _fileMajor; }
@@ -83,6 +88,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the minor part of the version number of the file.
         /// </summary>
+        /// <value>A value representing the minor part of the version number of the file or 0 (zero) if the file did not contain version information.</value>
         public int FileMinorPart
         {
             get { return _fileMinor; }
@@ -91,6 +97,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name of the file that this instance of <see cref="FileVersionInfo" /> describes.
         /// </summary>
+        /// <value>The name of the file described by this instance of <see cref="FileVersionInfo" />.</value>
         public string FileName
         {
             get { return _fileName; }
@@ -99,6 +106,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the file private part number.
         /// </summary>
+        /// <value>A value representing the file private part number or 0 (zero) if the file did not contain version information.</value>
         public int FilePrivatePart
         {
             get { return _filePrivate; }
@@ -107,6 +115,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the file version number.
         /// </summary>
+        /// <value>The version number of the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? FileVersion
         {
             get { return _fileVersion; }
@@ -115,24 +124,25 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the internal name of the file, if one exists.
         /// </summary>
+        /// <value>The internal name of the file. If none exists, this property will contain the original name of the file without the extension.</value>
         public string? InternalName
         {
             get { return _internalName; }
         }
 
         /// <summary>
-        /// Gets a value that specifies whether the file contains debugging information
-        /// or is compiled with debugging features enabled.
+        /// Gets a value that specifies whether the file contains debugging information or is compiled with debugging features enabled.
         /// </summary>
+        /// <value><see langword="true"/> if the file contains debugging information or is compiled with debugging features enabled; otherwise, <see langword="false"/>.</value>
         public bool IsDebug
         {
             get { return _isDebug; }
         }
 
         /// <summary>
-        /// Gets a value that specifies whether the file has been modified and is not identical to
-        /// the original shipping file of the same version number.
+        /// Gets a value that specifies whether the file has been modified and is not identical to the original shipping file of the same version number.
         /// </summary>
+        /// <value><see langword="true"/> if the file is patched; otherwise, <see langword="false"/>.</value>
         public bool IsPatched
         {
             get { return _isPatched; }
@@ -141,15 +151,16 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets a value that specifies whether the file was built using standard release procedures.
         /// </summary>
+        /// <value><see langword="true"/> if the file is a private build; <see langword="false"/> if the file was built using standard release procedures or if the file did not contain version information.</value>
         public bool IsPrivateBuild
         {
             get { return _isPrivateBuild; }
         }
 
         /// <summary>
-        /// Gets a value that specifies whether the file
-        /// is a development version, rather than a commercially released product.
+        /// Gets a value that specifies whether the file is a development version, rather than a commercially released product.
         /// </summary>
+        /// <value><see langword="true"/> if the file is prerelease; otherwise, <see langword="false"/>.</value>
         public bool IsPreRelease
         {
             get { return _isPreRelease; }
@@ -158,6 +169,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets a value that specifies whether the file is a special build.
         /// </summary>
+        /// <value><see langword="true"/> if the file is a special build; otherwise, <see langword="false"/>.</value>
         public bool IsSpecialBuild
         {
             get { return _isSpecialBuild; }
@@ -166,6 +178,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the default language string for the version info block.
         /// </summary>
+        /// <value>The description string for the Microsoft Language Identifier in the version resource or <see langword="null"/> if the file did not contain version information.</value>
         public string? Language
         {
             get { return _language; }
@@ -174,6 +187,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets all copyright notices that apply to the specified file.
         /// </summary>
+        /// <value>The copyright notices that apply to the specified file.</value>
         public string? LegalCopyright
         {
             get { return _legalCopyright; }
@@ -182,6 +196,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the trademarks and registered trademarks that apply to the file.
         /// </summary>
+        /// <value>The trademarks and registered trademarks that apply to the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? LegalTrademarks
         {
             get { return _legalTrademarks; }
@@ -190,6 +205,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name the file was created with.
         /// </summary>
+        /// <value>The name the file was created with or <see langword="null"/> if the file did not contain version information.</value>
         public string? OriginalFilename
         {
             get { return _originalFilename; }
@@ -198,6 +214,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets information about a private version of the file.
         /// </summary>
+        /// <value>Information about a private version of the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? PrivateBuild
         {
             get { return _privateBuild; }
@@ -206,6 +223,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the build number of the product this file is associated with.
         /// </summary>
+        /// <value>A value representing the build number of the product this file is associated with or 0 (zero) if the file did not contain version information.</value>
         public int ProductBuildPart
         {
             get { return _productBuild; }
@@ -214,6 +232,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the major part of the version number for the product this file is associated with.
         /// </summary>
+        /// <value>A value representing the major part of the product version number or 0 (zero) if the file did not contain version information.</value>
         public int ProductMajorPart
         {
             get { return _productMajor; }
@@ -222,6 +241,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the minor part of the version number for the product the file is associated with.
         /// </summary>
+        /// <value>A value representing the minor part of the product version number or 0 (zero) if the file did not contain version information.</value>
         public int ProductMinorPart
         {
             get { return _productMinor; }
@@ -230,6 +250,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the name of the product this file is distributed with.
         /// </summary>
+        /// <value>The name of the product this file is distributed with or <see langword="null"/> if the file did not contain version information.</value>
         public string? ProductName
         {
             get { return _productName; }
@@ -238,6 +259,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the private part number of the product this file is associated with.
         /// </summary>
+        /// <value>A value representing the private part number of the product this file is associated with or 0 (zero) if the file did not contain version information.</value>
         public int ProductPrivatePart
         {
             get { return _productPrivate; }
@@ -246,6 +268,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the version of the product this file is distributed with.
         /// </summary>
+        /// <value>The version of the product this file is distributed with or <see langword="null"/> if the file did not contain version information.</value>
         public string? ProductVersion
         {
             get { return _productVersion; }
@@ -254,6 +277,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the special build information for the file.
         /// </summary>
+        /// <value>The special build information for the file or <see langword="null"/> if the file did not contain version information.</value>
         public string? SpecialBuild
         {
             get { return _specialBuild; }
@@ -262,6 +286,8 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns a <see cref="FileVersionInfo" /> representing the version information associated with the specified file.
         /// </summary>
+        /// <param name="fileName">The fully qualified path and name of the file to retrieve the version information for.</param>
+        /// <returns>A <see cref="FileVersionInfo" /> containing information about the file. If the file did not contain version information, the <see cref="FileVersionInfo" /> contains only the name of the file requested.</returns>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
             // Check if fileName is a full path. Relative paths can cause confusion if the local file has the .dll extension,
@@ -280,9 +306,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns a partial list of properties in <see cref="FileVersionInfo" />
-        /// and their values.
+        /// Returns a partial list of properties in the <see cref="FileVersionInfo" /> and their values.
         /// </summary>
+        /// <returns>A list of the following properties in this class and their values: <see cref="FileName" />, <see cref="InternalName" />, <see cref="OriginalFilename" />, <see cref="FileVersion" />, <see cref="FileDescription" />, <see cref="ProductName" />, <see cref="ProductVersion" />, <see cref="IsDebug" />, <see cref="IsPatched" />, <see cref="IsPreRelease" />, <see cref="IsPrivateBuild" />, <see cref="IsSpecialBuild" />, <see cref="Language" />. If the file did not contain version information, this list will contain only the name of the requested file. Boolean values will be <see langword="false" />, and all other entries will be <see langword="null" />.</returns>
         public override string ToString()
         {
             // An initial capacity of 512 was chosen because it is large enough to cover
