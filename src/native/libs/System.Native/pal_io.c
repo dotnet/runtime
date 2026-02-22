@@ -745,17 +745,13 @@ int32_t SystemNative_FSync(intptr_t fd)
     int32_t result;
 #if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
     while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
-    if (result < 0)
-    {
-        // F_FULLFSYNC is not supported on all file systems and handle types (e.g., network
-        // file systems, read-only handles). Fall back to fsync per Apple's recommendation:
-        // https://developer.apple.com/documentation/xcode/reducing-disk-writes
-        // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
-        while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
-    }
-#else
-    while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
+    if (result >= 0)
+        return result;
+    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
+    // network file systems, read-only handles). Fall back to fsync.
+    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
 #endif
+    while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
     return result;
 }
 
