@@ -590,7 +590,7 @@ namespace System
                                 result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                                 // Unlike the other components, this one never allowed 0x or +, so we can parse it as straight hex.
-                                if (Number.TryParseBinaryIntegerHexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
+                                if (Number.TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, uint, Number.HexParser<uint>>(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp, out _) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                                 {
                                     result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
                                     return true;

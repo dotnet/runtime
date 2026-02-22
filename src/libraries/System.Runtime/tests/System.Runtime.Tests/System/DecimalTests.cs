@@ -2444,5 +2444,93 @@ namespace System.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            // Basic decimal parsing with trailing invalid characters
+            yield return new object[] { "123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45m, 6 };
+            yield return new object[] { "456.78xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 456.78m, 6 };
+            yield return new object[] { "0.123abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 0.123m, 5 };
+            
+            // With leading whitespace
+            yield return new object[] { "  123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45m, 8 };
+            
+            // With signs
+            yield return new object[] { "+123.45abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45m, 7 };
+            yield return new object[] { "-456.78xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, -456.78m, 7 };
+            
+            // Integer without decimal point
+            yield return new object[] { "123abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 123m, 3 };
+            
+            // With thousands separator
+            NumberFormatInfo customFormat = new NumberFormatInfo() { NumberGroupSeparator = "," };
+            yield return new object[] { "1,234abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, customFormat, 1234m, 5 };
+            
+            // Max and min values with trailing characters
+            yield return new object[] { "79228162514264337593543950335abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 79228162514264337593543950335m, 29 };
+            yield return new object[] { "-79228162514264337593543950335xyz", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, -79228162514264337593543950335m, 30 };
+            
+            // Valid number without trailing characters
+            yield return new object[] { "123.45", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null, 123.45m, 6 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, decimal expectedValue, int expectedCharsConsumed)
+        {
+            decimal result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.True(decimal.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.True(decimal.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            // Test UTF-8 overload with bytesConsumed
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(decimal.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            // For ASCII characters, bytes consumed should equal chars consumed
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_Invalid_TestData()
+        {
+            // Empty string
+            yield return new object[] { "", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null };
+            
+            // Only invalid characters (no valid number)
+            yield return new object[] { "abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null };
+            
+            // Overflow
+            yield return new object[] { "79228162514264337593543950336abc", NumberStyles.Number | NumberStyles.AllowTrailingInvalidCharacters, null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_Invalid_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters_Invalid(string value, NumberStyles style, IFormatProvider provider)
+        {
+            decimal result;
+            int charsConsumed;
+            
+            // Test string overload with charsConsumed
+            Assert.False(decimal.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(0m, result);
+            Assert.Equal(0, charsConsumed);
+            
+            // Test ReadOnlySpan<char> overload with charsConsumed
+            Assert.False(decimal.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(0m, result);
+            Assert.Equal(0, charsConsumed);
+        }
     }
 }

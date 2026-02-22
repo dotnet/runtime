@@ -437,7 +437,7 @@
     <value>Invalid handle.</value>
   </data>
   <data name="Arg_InvalidHexBinaryStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite and AllowTrailingWhite.</value>
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite, AllowTrailingWhite, and AllowTrailingInvalidCharacters.</value>
   </data>
   <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>

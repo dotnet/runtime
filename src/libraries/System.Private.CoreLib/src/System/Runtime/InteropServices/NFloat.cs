@@ -1786,6 +1786,27 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out NFloat result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out NFloat result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return NativeType.TryParse(s, style, provider, out Unsafe.As<NFloat, NativeType>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out NFloat result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return NativeType.TryParse(utf8Text, style, provider, out Unsafe.As<NFloat, NativeType>(ref result), out bytesConsumed);
+        }
+
         //
         // IParsable
         //

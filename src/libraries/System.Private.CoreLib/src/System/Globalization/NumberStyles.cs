@@ -60,6 +60,9 @@ namespace System.Globalization
         /// </summary>
         AllowBinarySpecifier = 0x00000400,
 
+        /// <summary>Indicates that the numeric string is allowed to contain otherwise invalid characters and that parsing should treat such characters as terminating the input.</summary>
+        AllowTrailingInvalidCharacters = 0x00000800,
+
         Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 
         HexNumber = AllowLeadingWhite | AllowTrailingWhite | AllowHexSpecifier,
