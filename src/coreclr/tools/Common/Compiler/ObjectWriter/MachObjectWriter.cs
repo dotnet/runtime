@@ -546,7 +546,7 @@ namespace ILCompiler.ObjectWriter
                     Name = new Utf8StringBuilder().Append("ltemp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex)).ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = 0,
+                    Descriptor = N_NO_DEAD_STRIP,
                     Type = N_SECT,
                 });
                 symbolIndex++;
