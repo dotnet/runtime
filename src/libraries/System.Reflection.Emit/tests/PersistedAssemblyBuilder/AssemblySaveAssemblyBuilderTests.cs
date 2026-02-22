@@ -76,7 +76,8 @@ namespace System.Reflection.Emit.Tests
             AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
             {
                 Flags = AssemblyNameFlags.PublicKey | AssemblyNameFlags.Retargetable,
-                Version = new Version(9, 8, 7, 6)
+                Version = new Version(9, 8, 7, 6),
+                CultureInfo = new CultureInfo("tr-TR")
             };
 
             byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
@@ -97,6 +98,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Equal(assemblyName.Name, loadedAssemblyName.Name);
             Assert.Equal(assemblyName.Version, loadedAssemblyName.Version);
+            Assert.Equal(assemblyName.CultureName, loadedAssemblyName.CultureName);
             Assert.Equal(assemblyName.ContentType, loadedAssemblyName.ContentType);
             Assert.Equal(assemblyName.Flags, loadedAssemblyName.Flags);
             Assert.Equal(expectedPublicKey, loadedAssemblyName.GetPublicKey());
