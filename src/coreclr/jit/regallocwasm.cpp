@@ -307,9 +307,6 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:
-        case GT_OR:
-        case GT_XOR:
-        case GT_AND:
             CollectReferencesForBinop(node->AsOp());
             break;
 
@@ -547,15 +544,15 @@ void WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 // Arguments:
 //    node - node that may have requested internal registers
 //
-void WasmRegAlloc::ConsumeInternalRegisters(GenTree* node DEBUGARG(const char *reason))
+void WasmRegAlloc::ConsumeInternalRegisters(GenTree* node DEBUGARG(const char* reason))
 {
     InternalRegs* internalRegs = m_codeGen->internalRegisters.GetAll(node);
 
     for (unsigned i = 0; i < internalRegs->Count(); i++)
     {
-        regNumber reg = internalRegs->GetAt(i);
+        regNumber     reg      = internalRegs->GetAt(i);
         WasmValueType wasmType = WasmRegToType(reg);
-        regNumber reg2 = ReleaseTemporaryRegister(wasmType);
+        regNumber     reg2     = ReleaseTemporaryRegister(wasmType);
         assert(reg == reg2);
 
         JITDUMP("Consumed an internal %s reg for [%06u]\n", WasmValueTypeName(wasmType), Compiler::dspTreeID(node));
