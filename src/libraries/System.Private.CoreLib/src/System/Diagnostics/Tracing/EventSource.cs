@@ -232,8 +232,8 @@ namespace System.Diagnostics.Tracing
 
         // Enabling bits
         private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
-        internal EventLevel m_level;                    // highest level enabled by any output dispatcher
-        internal EventKeywords m_matchAnyKeyword;       // the logical OR of all levels enabled by any output dispatcher (zero is a special case) meaning 'all keywords'
+        private EventLevel m_level = (EventLevel)(-1);  // highest level enabled by any output dispatcher
+        private EventKeywords m_matchAnyKeyword;        // the logical OR of all keywords enabled by any output dispatcher
 
         // Dispatching state
         internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
@@ -317,7 +317,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public bool IsEnabled(EventLevel level, EventKeywords keywords)
         {
-            return IsEnabled(level, keywords, EventChannel.None);
+            if (m_level < level)
+                return false;
+
+            if (keywords != 0 && (keywords & m_matchAnyKeyword) == 0)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -332,10 +338,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public bool IsEnabled(EventLevel level, EventKeywords keywords, EventChannel channel)
         {
-            if (!IsEnabled())
+            if (!m_eventSourceEnabled)
                 return false;
 
-            if (!IsEnabledCommon(m_eventSourceEnabled, m_level, m_matchAnyKeyword, level, keywords, channel))
+            if (!IsEnabledCommon(m_level, m_matchAnyKeyword, level, keywords, channel))
                 return false;
 
             return true;
@@ -1365,12 +1371,14 @@ namespace System.Diagnostics.Tracing
 
                     EventOpcode opcode = (EventOpcode)metadata.Descriptor.Opcode;
                     Guid* pActivityId = null;
-                    Guid activityId = Guid.Empty;
-                    Guid relActivityId = Guid.Empty;
+                    Guid activityId;
+                    Guid relActivityId;
 
                     if (opcode != EventOpcode.Info && relatedActivityId == null &&
                        ((metadata.ActivityOptions & EventActivityOptions.Disable) == 0))
                     {
+                        activityId = default;
+                        relActivityId = default;
                         if (opcode == EventOpcode.Start)
                         {
                             m_activityTracker.OnStart(m_name, metadata.Name, metadata.Descriptor.Task, ref activityId, ref relActivityId, metadata.ActivityOptions);
@@ -1540,6 +1548,7 @@ namespace System.Diagnostics.Tracing
                     }
                     catch { } // If it fails, simply give up.
                     m_eventSourceEnabled = false;
+                    m_level = (EventLevel)(-1);
                 }
                 if (m_etwProvider != null)
                 {
@@ -1555,6 +1564,7 @@ namespace System.Diagnostics.Tracing
 #endif
             }
             m_eventSourceEnabled = false;
+            m_level = (EventLevel)(-1);
             m_eventSourceDisposed = true;
         }
         /// <summary>
@@ -2383,21 +2393,18 @@ namespace System.Diagnostics.Tracing
             EventKeywords eventKeywords = unchecked((EventKeywords)((ulong)metadata.Descriptor.Keywords & (~(SessionMask.All.ToEventKeywords()))));
             EventChannel channel = unchecked((EventChannel)metadata.Descriptor.Channel);
 
-            return IsEnabledCommon(enable, currentLevel, currentMatchAnyKeyword, eventLevel, eventKeywords, channel);
+            return IsEnabledCommon(currentLevel == 0 ? (EventLevel)int.MaxValue : currentLevel, currentMatchAnyKeyword == 0 ? EventKeywords.All : currentMatchAnyKeyword, eventLevel, eventKeywords, channel);
         }
 
-        private bool IsEnabledCommon(bool enabled, EventLevel currentLevel, EventKeywords currentMatchAnyKeyword,
+        private bool IsEnabledCommon(EventLevel currentLevel, EventKeywords currentMatchAnyKeyword,
                                                           EventLevel eventLevel, EventKeywords eventKeywords, EventChannel eventChannel)
         {
-            if (!enabled)
-                return false;
-
             // does is pass the level test?
-            if ((currentLevel != 0) && (currentLevel < eventLevel))
+            if (currentLevel < eventLevel)
                 return false;
 
             // if yes, does it pass the keywords test?
-            if (currentMatchAnyKeyword != 0 && eventKeywords != 0)
+            if (currentMatchAnyKeyword != EventKeywords.All && eventKeywords != 0)
             {
                 // is there a channel with keywords that match currentMatchAnyKeyword?
                 if (eventChannel != EventChannel.None && this.m_channelData != null && this.m_channelData.Length > (int)eventChannel)
@@ -2702,26 +2709,6 @@ namespace System.Diagnostics.Tracing
                     foreach (int eventID in m_eventData.Keys)
                         EnableEventForDispatcher(commandArgs.dispatcher, commandArgs.eventProviderType, eventID, IsEnabledByDefault(eventID, commandArgs.enable, commandArgs.level, commandArgs.matchAnyKeyword));
 
-                    if (commandArgs.enable)
-                    {
-                        if (!m_eventSourceEnabled)
-                        {
-                            // EventSource turned on for the first time, simply copy the bits.
-                            m_level = commandArgs.level;
-                            m_matchAnyKeyword = commandArgs.matchAnyKeyword;
-                        }
-                        else
-                        {
-                            // Already enabled, make it the most verbose of the existing and new filter
-                            if (commandArgs.level > m_level)
-                                m_level = commandArgs.level;
-                            if (commandArgs.matchAnyKeyword == 0)
-                                m_matchAnyKeyword = 0;
-                            else if (m_matchAnyKeyword != 0)
-                                m_matchAnyKeyword = unchecked(m_matchAnyKeyword | commandArgs.matchAnyKeyword);
-                        }
-                    }
-
                     // interpret perEventSourceSessionId's sign, and adjust perEventSourceSessionId to
                     // represent 0-based positive values
                     bool bSessionEnable = (commandArgs.perEventSourceSessionId >= 0);
@@ -2762,10 +2749,12 @@ namespace System.Diagnostics.Tracing
                     if (commandArgs.enable)
                     {
                         Debug.Assert(m_eventData != null);
+                        EventLevel commandLevel = commandArgs.level == 0 ? (EventLevel)int.MaxValue : commandArgs.level;
+                        m_level = commandLevel > m_level ? commandLevel : m_level;
+                        m_matchAnyKeyword |= commandArgs.matchAnyKeyword == 0 ? EventKeywords.All : commandArgs.matchAnyKeyword;
                         m_eventSourceEnabled = true;
                     }
-
-                    if (!commandArgs.enable)
+                    else
                     {
                         // If we are disabling, maybe we can turn on 'quick checks' to filter
                         // quickly.  These are all just optimizations (since later checks will still filter)
@@ -2785,14 +2774,14 @@ namespace System.Diagnostics.Tracing
                                     break;
                                 }
                             }
-                            ref  EventMetadata eventMeta = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventID);
+                            ref EventMetadata eventMeta = ref CollectionsMarshal.GetValueRefOrNullRef(m_eventData, eventID);
                             eventMeta.EnabledForAnyListener = isEnabledForAnyListener;
                         }
 
                         // If no events are enabled, disable the global enabled bit.
                         if (!AnyEventEnabled())
                         {
-                            m_level = 0;
+                            m_level = (EventLevel)(-1);
                             m_matchAnyKeyword = 0;
                             m_eventSourceEnabled = false;
                         }
