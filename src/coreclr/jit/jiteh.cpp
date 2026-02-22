@@ -2637,9 +2637,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             GenTree* runtimeLookup;
             if (embedInfo.lookup.runtimeLookup.indirections == CORINFO_USEHELPER)
             {
+                assert(IsAot());
                 GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
-                runtimeLookup    = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                             TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+                runtimeLookup    = gtNewRuntimeLookupHelperCallNode(&embedInfo.lookup.runtimeLookup, ctxTree, nullptr);
             }
             else
             {
