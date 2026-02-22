@@ -2716,12 +2716,14 @@ namespace System.Security.Cryptography
         public bool PublicOnly { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public static bool UseMachineKeyStore { get { throw null; } set { } }
+        [System.ObsoleteAttribute("RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead.", DiagnosticId="SYSLIB0064", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] Decrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Decrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.", DiagnosticId="SYSLIB0048", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override byte[] DecryptValue(byte[] rgb) { throw null; }
         protected override void Dispose(bool disposing) { }
+        [System.ObsoleteAttribute("RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead.", DiagnosticId="SYSLIB0064", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public byte[] Encrypt(byte[] rgb, bool fOAEP) { throw null; }
         public override byte[] Encrypt(byte[] data, System.Security.Cryptography.RSAEncryptionPadding padding) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
