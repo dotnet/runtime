@@ -855,8 +855,7 @@ namespace System.Text.Json
                                 }
                                 else if (nextCharEscaped)
                                 {
-                                    int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                                    if (index == -1)
+                                    if (!JsonConstants.IsEscapableChar(currentByte))
                                     {
                                         RollBackState(rollBackState, isError: true);
                                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
@@ -992,8 +991,7 @@ namespace System.Text.Json
                     }
                     else if (nextCharEscaped)
                     {
-                        int index = JsonConstants.EscapableChars.IndexOf(currentByte);
-                        if (index == -1)
+                        if (!JsonConstants.IsEscapableChar(currentByte))
                         {
                             RollBackState(rollBackState, isError: true);
                             ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAfterEscapeWithinString, currentByte);
@@ -1306,7 +1304,7 @@ namespace System.Text.Json
             if (i < data.Length)
             {
                 nextByte = data[i];
-                if (JsonConstants.Delimiters.Contains(nextByte))
+                if (JsonConstants.IsDelimiter(nextByte))
                 {
                     return ConsumeNumberResult.Success;
                 }
@@ -1335,7 +1333,7 @@ namespace System.Text.Json
                 i = 0;
                 data = _buffer;
                 nextByte = data[i];
-                if (JsonConstants.Delimiters.Contains(nextByte))
+                if (JsonConstants.IsDelimiter(nextByte))
                 {
                     return ConsumeNumberResult.Success;
                 }
@@ -1422,7 +1420,7 @@ namespace System.Text.Json
                 _bytePositionInLine += counter;
             }
 
-            if (JsonConstants.Delimiters.Contains(nextByte))
+            if (JsonConstants.IsDelimiter(nextByte))
             {
                 return ConsumeNumberResult.Success;
             }

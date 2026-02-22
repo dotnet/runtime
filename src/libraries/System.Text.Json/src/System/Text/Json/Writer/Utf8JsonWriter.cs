@@ -1223,6 +1223,7 @@ namespace System.Text.Json
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetFlagToAddListSeparatorBeforeNextItem()
         {
             _currentDepth |= 1 << 31;

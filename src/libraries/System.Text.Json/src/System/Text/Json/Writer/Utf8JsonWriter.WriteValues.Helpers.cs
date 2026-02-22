@@ -39,6 +39,7 @@ namespace System.Text.Json
 
         private void ClearPartialStringData() => _partialStringDataLength = 0;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateWritingValue()
         {
             if (!CanWriteValue)
