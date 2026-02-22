@@ -860,6 +860,100 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task ParamsParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params object?[] args);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public async Task ParamsCollectionParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Collections.Generic;
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params IEnumerable<string> args);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task RefReadOnlyParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, ref readonly int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task ScopedRefParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task ScopedRefReadOnlyParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref readonly int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task RefReadOnlyParameterWithMoreThan6ParamsOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
+                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, ref readonly int p7);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task ScopedRefParameterWithMoreThan6ParamsOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
+                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref int p7);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+#endif
+
+        [Fact]
         public async Task MalformedFormatString()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

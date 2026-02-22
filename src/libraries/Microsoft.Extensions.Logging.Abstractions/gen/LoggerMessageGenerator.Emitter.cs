@@ -341,9 +341,17 @@ namespace {lc.Namespace}
                         _builder.Append(", ");
                     }
 
+                    if (p.IsScoped)
+                    {
+                        _builder.Append("scoped ");
+                    }
                     if (p.Qualifier != null)
                     {
                         _builder.Append($"{p.Qualifier} ");
+                    }
+                    if (p.IsParams)
+                    {
+                        _builder.Append("params ");
                     }
                     _builder.Append($"{p.Type} {p.CodeName}");
                 }
