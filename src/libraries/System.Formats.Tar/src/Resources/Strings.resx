@@ -214,4 +214,7 @@
   <data name="TarCompressionArchiveDetected" xml:space="preserve">
     <value>The file appears to be a {0} archive. TAR format expected.</value>
   </data>
+  <data name="TarEntryNameExtendedAttributeConflict" xml:space="preserve">
+    <value>The entry name specified in the extended attributes conflicts with the entry name specified in the constructor.</value>
+  </data>
 </root>

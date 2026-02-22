@@ -64,10 +64,11 @@ namespace System.Formats.Tar
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (FormatIsOctalOnly)
                 {
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, TarHeader.Octal8ByteFieldMaxValue);
                 }
 
                 _header._devMajor = value;
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaDevMajor, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -90,10 +91,11 @@ namespace System.Formats.Tar
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (FormatIsOctalOnly)
                 {
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, TarHeader.Octal8ByteFieldMaxValue);
                 }
 
                 _header._devMinor = value;
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaDevMinor, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -109,6 +111,7 @@ namespace System.Formats.Tar
             {
                 ArgumentNullException.ThrowIfNull(value);
                 _header._gName = value;
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaGName, value, FieldLengths.GName);
             }
         }
 
@@ -124,6 +127,7 @@ namespace System.Formats.Tar
             {
                 ArgumentNullException.ThrowIfNull(value);
                 _header._uName = value;
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaUName, value, FieldLengths.UName);
             }
         }
     }
