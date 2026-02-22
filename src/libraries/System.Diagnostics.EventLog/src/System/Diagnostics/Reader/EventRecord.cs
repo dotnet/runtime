@@ -24,26 +24,26 @@ namespace System.Diagnostics.Eventing.Reader
 
         public abstract string ProviderName { get; }
         public abstract Guid? ProviderId { get; }
-        public abstract string LogName { get; }
+        public abstract string? LogName { get; }
 
         public abstract int? ProcessId { get; }
         public abstract int? ThreadId { get; }
-        public abstract string MachineName { get; }
-        public abstract SecurityIdentifier UserId { get; }
+        public abstract string? MachineName { get; }
+        public abstract SecurityIdentifier? UserId { get; }
         public abstract DateTime? TimeCreated { get; }
 
         public abstract Guid? ActivityId { get; }
         public abstract Guid? RelatedActivityId { get; }
         public abstract int? Qualifiers { get; }
 
-        public abstract string FormatDescription();
-        public abstract string FormatDescription(IEnumerable<object> values);
+        public abstract string? FormatDescription();
+        public abstract string? FormatDescription(IEnumerable<object>? values);
 
-        public abstract string LevelDisplayName { get; }
+        public abstract string? LevelDisplayName { get; }
 
-        public abstract string OpcodeDisplayName { get; }
-        public abstract string TaskDisplayName { get; }
-        public abstract IEnumerable<string> KeywordsDisplayNames { get; }
+        public abstract string? OpcodeDisplayName { get; }
+        public abstract string? TaskDisplayName { get; }
+        public abstract IEnumerable<string>? KeywordsDisplayNames { get; }
 
         public abstract EventBookmark Bookmark { get; }
 
