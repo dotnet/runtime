@@ -285,7 +285,7 @@ namespace System.Buffers
             // Single-Segment Sequence
             if (startObject == endObject)
             {
-                if (!InRange(sliceEndIndex, startIndex, endIndex))
+                if (startObject != sliceEndObject || !InRange(sliceEndIndex, startIndex, endIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
                 }
@@ -362,7 +362,7 @@ namespace System.Buffers
             // Single-Segment Sequence
             if (startObject == endObject)
             {
-                if (!InRange(sliceStartIndex, startIndex, endIndex))
+                if (startObject != sliceStartObject || !InRange(sliceStartIndex, startIndex, endIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
                 }
