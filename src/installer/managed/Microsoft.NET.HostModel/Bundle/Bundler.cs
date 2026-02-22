@@ -108,13 +108,20 @@ namespace Microsoft.NET.HostModel.Bundle
                 long fileLength = file.Length;
                 file.Position = 0;
 
-                // We use DeflateStream here.
-                // It uses GZip algorithm, but with a trivial header that does not contain file info.
+#if NET
+                using (ZstandardStream compressionStream = new ZstandardStream(bundle, CompressionLevel.SmallestSize, leaveOpen: true))
+                {
+                    compressionStream.SetSourceLength(fileLength);
+                    file.CopyTo(compressionStream);
+                }
+#else
                 CompressionLevel smallestSize = (CompressionLevel)3;
-                using (DeflateStream compressionStream = new DeflateStream(bundle, Enum.IsDefined(typeof(CompressionLevel), smallestSize) ? smallestSize : CompressionLevel.Optimal, leaveOpen: true))
+                CompressionLevel compressionLevel = Enum.IsDefined(typeof(CompressionLevel), smallestSize) ? smallestSize : CompressionLevel.Optimal;
+                using (DeflateStream compressionStream = new DeflateStream(bundle, compressionLevel, leaveOpen: true))
                 {
                     file.CopyTo(compressionStream);
                 }
+#endif
 
                 long compressedSize = bundle.Position - startOffset;
                 if (compressedSize < fileLength * 0.75)
