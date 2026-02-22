@@ -56,7 +56,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(proxy.Disposed);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
