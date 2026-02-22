@@ -48,6 +48,10 @@
 #include "exinfo.h"
 #include "exkind.h"
 
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+#include "patchpointinfo.h"
+#endif
+
 //----------------------------------------------------------------------------
 //
 // IsExceptionFromManagedCode - determine if pExceptionRecord points to a managed exception
@@ -5511,8 +5515,9 @@ static uintptr_t writeBarrierAVLocations[] =
 };
 
 // Check if the passed in instruction pointer is in one of the
-// JIT helper functions.
-bool IsIPInMarkedJitHelper(PCODE uControlPc)
+// write barrier helper functions. These are leaf functions that do not
+// set up a frame, so we can unwind them with a simple LR/RA extraction.
+static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5530,27 +5535,136 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
             return true;
     }
 
-#define CHECK_RANGE(name) \
+#define CHECK_WRITE_BARRIER_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_RANGE(JIT_WriteBarrier)
-    CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier)
+    CHECK_WRITE_BARRIER_RANGE(JIT_CheckedWriteBarrier)
+    CHECK_WRITE_BARRIER_RANGE(JIT_ByRefWriteBarrier)
 #else
-    CHECK_RANGE(JIT_WriteBarrierGroup)
-    CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrierGroup)
+    CHECK_WRITE_BARRIER_RANGE(JIT_PatchedWriteBarrierGroup)
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
-    CHECK_RANGE(JIT_WriteBarrier_Debug)
+    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier_Debug)
 #endif
+
+#undef CHECK_WRITE_BARRIER_RANGE
 #endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
+}
+
+// Check if the passed in instruction pointer is in JIT_StackProbe.
+// JIT_StackProbe exists on AMD64 and ARM only.
+static bool IsIPInJITStackProbe(PCODE uControlPc)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef FEATURE_PORTABLE_HELPERS
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    if (GetEEFuncEntryPoint(JIT_StackProbe) <= uControlPc && uControlPc < GetEEFuncEntryPoint(JIT_StackProbe_End))
+        return true;
+#endif // !TARGET_X86 && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // !FEATURE_PORTABLE_HELPERS
+
+    return false;
+}
+
+// Check if the passed in instruction pointer is in one of the
+// JIT helper functions.
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (IsIPInWriteBarrierHelper(uControlPc))
+        return true;
+
+    if (IsIPInJITStackProbe(uControlPc))
+        return true;
+
+    return false;
+}
+
+// Unwind JIT_StackProbe to its caller. JIT_StackProbe has different frame layouts
+// depending on the platform:
+// - AMD64 Windows: leaf function (no frame), return address at [RSP]
+// - AMD64 Unix: RBP frame (push rbp; mov rbp, rsp), return address at [RBP+8]
+// - ARM: R7 frame (push {r7}; mov r7, sp), return address in LR (already saved by caller)
+static void UnwindJITStackProbeToCaller(CONTEXT* pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_AMD64)
+#ifdef TARGET_UNIX
+    // AMD64 Unix: JIT_StackProbe has an RBP frame (push rbp; mov rbp, rsp)
+    // Return address is at [RBP + 8], saved RBP is at [RBP]
+    TADDR rbp = GetFP(pContext);
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(rbp + 8);
+    SetIP(pContext, returnAddress);
+    SetFP(pContext, *dac_cast<PTR_PCODE>(rbp)); // restore RBP
+    SetSP(pContext, rbp + 16); // RSP after ret = RBP + 16
+#else // TARGET_WINDOWS
+    // AMD64 Windows: JIT_StackProbe is a leaf function (no frame)
+    // Return address is at [RSP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#endif // TARGET_UNIX
+#elif defined(TARGET_ARM)
+    // ARM: JIT_StackProbe has an R7 frame (push {r7}; mov r7, sp)
+    // At the point of AV, R7 contains the frame pointer.
+    // Return address is in LR (ARM calling convention, caller saved LR before call).
+    // Saved R7 is at [R7], we need to restore R7 and SP.
+    TADDR r7 = pContext->R7;
+    SetIP(pContext, pContext->Lr);
+    pContext->R7 = *dac_cast<PTR_TADDR>(r7); // restore R7
+    SetSP(pContext, r7 + 4); // SP after pop {r7} and ret
+#else
+    // JIT_StackProbe doesn't exist on other architectures
+    UNREACHABLE();
+#endif
+}
+
+// Unwind a write barrier helper to its caller. Write barriers are leaf functions
+// that do not set up a frame, so we can unwind them by simply extracting the
+// return address from LR/RA (on ARM/RISC-V) or from the stack (on x86/x64).
+//
+// Similar to NativeAOT's UnwindSimpleHelperToCaller in EHHelpers.cpp.
+static void UnwindWriteBarrierToCaller(CONTEXT* pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_AMD64)
+    // On x64, return address is at [RSP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#elif defined(TARGET_X86)
+    // On x86, return address is at [ESP], simulate a ret instruction
+    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
+    SetIP(pContext, returnAddress);
+    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
+#elif defined(TARGET_ARM64)
+    // On ARM64, return address is in LR, no stack adjustment needed for leaf
+    SetIP(pContext, pContext->Lr);
+#elif defined(TARGET_ARM)
+    // On ARM, return address is in LR
+    SetIP(pContext, pContext->Lr);
+#elif defined(TARGET_LOONGARCH64)
+    // On LoongArch64, return address is in RA
+    SetIP(pContext, pContext->Ra);
+#elif defined(TARGET_RISCV64)
+    // On RISC-V64, return address is in RA
+    SetIP(pContext, pContext->Ra);
+#elif defined(TARGET_WASM)
+    // WASM uses interpreter, write barriers don't fault
+    UNREACHABLE();
+#else
+#error "UnwindWriteBarrierToCaller not implemented for this architecture"
+#endif
 }
 
 // Returns TRUE if caller should resume execution.
@@ -5659,33 +5773,32 @@ AdjustContextForJITHelpers(
             pContext = &tempContext;
         }
 
-        Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+        if (IsIPInWriteBarrierHelper(f_IP))
+        {
+            // Write barriers are leaf functions that do not set up a frame.
+            // We can unwind them with a simple LR/RA/stack-pop extraction.
+            UnwindWriteBarrierToCaller(pContext);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // We had an AV in the writebarrier that needs to be treated
-        // as originating in managed code. At this point, the stack (growing
-        // from left->right) looks like this:
-        //
-        // ManagedFunc -> Native_WriteBarrierInVM -> AV
-        //
-        // We just performed an unwind from the write-barrier
-        // and now have the context in ManagedFunc. Since
-        // ManagedFunc called into the write-barrier, the return
-        // address in the unwound context corresponds to the
-        // instruction where the call will return.
-        //
-        // On ARM, just like we perform ControlPC adjustment
-        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
-        // we will need to perform the corresponding adjustment of IP
-        // we got from unwind above, so as to indicate that the AV
-        // happened "before" the call to the writebarrier and not at
-        // the instruction at which the control will return.
-       PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-
-       // Now we save the address back into the context so that it gets used
-       // as the faulting address.
-       SetIP(pContext, ControlPCPostAdjustment);
+            // On ARM/ARM64/LoongArch64/RISC-V, adjust IP to point to the call instruction
+            // rather than the return address, so the exception appears to originate
+            // from the managed code that called the write barrier.
+            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            SetIP(pContext, ControlPCPostAdjustment);
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        }
+        else
+        {
+            // JIT_StackProbe has a known frame layout on each platform.
+            UnwindJITStackProbeToCaller(pContext);
+
+#if defined(TARGET_ARM)
+            // On ARM, adjust IP to point to the call instruction
+            // rather than the return address.
+            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            SetIP(pContext, ControlPCPostAdjustment);
+#endif // TARGET_ARM
+        }
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -6845,39 +6958,6 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip);
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
-}
-
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    CONTEXT context;
-    ClrCaptureContext(&context);
-
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#else
-    size_t targetSSP = 0;
-#endif
-
-    // Skip all managed frames upto a native frame
-    while (ExecutionManager::IsManagedCode(GetIP(&context)))
-    {
-        Thread::VirtualUnwindCallFrame(&context);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        if (targetSSP != 0)
-        {
-            targetSSP += sizeof(size_t);
-        }
-#endif
-    }
-
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -10818,9 +10898,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Read FP callee-saved registers (xmm6-xmm15) from the stack
     // They are stored at negative offsets from TransitionBlock:
-    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
-    // xmm6 is at sp+32, TransitionBlock is at sp+296, so xmm6 is at TransitionBlock - 264
-    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
+    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
 
     m_Context.Xmm6 = pFpCalleeSaved[0];
     m_Context.Xmm7 = pFpCalleeSaved[1];
@@ -11187,5 +11267,274 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 
     Push(pThread);
 }
+
+// Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
+// This shares similar logic with UpdateContextFromTransitionBlock but also handles
+// platform-specific adjustments needed for OSR (like simulating the call stack alignment).
+//
+// Returns the adjusted SP and FP values that the OSR method should use.
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
+// Reads callee-saves from Tier0's stack via PatchpointInfo
+void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
+                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP,
+                                                           const EECodeInfo& codeInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Get PatchpointInfo for Tier0 method to locate callee-saves in Tier0's stack frame
+    EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
+    CodeHeader* codeHdr = jitMgr->GetCodeHeaderFromStartAddress(codeInfo.GetStartAddress());
+    PTR_BYTE debugInfo = codeHdr->GetDebugInfo();
+    PatchpointInfo* pPatchpointInfo = CompressDebugInfo::RestorePatchpointInfo(debugInfo);
+    _ASSERTE(pPatchpointInfo != nullptr);
+
+#if defined(TARGET_AMD64)
+
+#if defined(TARGET_WINDOWS)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+    // Read FP callee-saved registers (xmm6-xmm15) from the stack
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
+    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
+
+    pContext->Xmm6 = pFpCalleeSaved[0];
+    pContext->Xmm7 = pFpCalleeSaved[1];
+    pContext->Xmm8 = pFpCalleeSaved[2];
+    pContext->Xmm9 = pFpCalleeSaved[3];
+    pContext->Xmm10 = pFpCalleeSaved[4];
+    pContext->Xmm11 = pFpCalleeSaved[5];
+    pContext->Xmm12 = pFpCalleeSaved[6];
+    pContext->Xmm13 = pFpCalleeSaved[7];
+    pContext->Xmm14 = pFpCalleeSaved[8];
+    pContext->Xmm15 = pFpCalleeSaved[9];
+
+    // Initialize FP control/status
+    pContext->FltSave.ControlWord = 0x27F;
+    pContext->FltSave.MxCsr = 0x1F80;
+    pContext->FltSave.MxCsr_Mask = 0x1FFF;
+    pContext->MxCsr = 0x1F80;
+#else // UNIX_AMD64_ABI
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+#endif
+
+    // FP from TransitionBlock points to where Tier0 saved RBP
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
+
+    // Read integer callee-saved registers from Tier0's stack frame.
+    // On x64, callee-saves are pushed after RBP in reverse register order (high to low).
+    // If Tier0 saved the register (bit set in mask), read from Tier0's stack.
+    // If Tier0 didn't save it (bit not set), use TransitionBlock value (original caller value).
+    {
+        int calleeSaveFpOffset = pPatchpointInfo->CalleeSaveFpOffset();  // Always -8 on x64
+        UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
+        TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
+
+        // x64 pushes in reverse order: R15, R14, R13, R12, Rbx, (Rsi, Rdi on Windows)
+        // Each pushed register decrements SP by 8, so:
+        //   First push (highest reg number) is at RBP-8
+        //   Second push is at RBP-16, etc.
+        int offset = 0;
+
+        // Registers are pushed from highest to lowest register number (after RBP)
+        // RBP is not in this loop - it's handled separately
+        // Register encoding: RAX=0, RCX=1, RDX=2, RBX=3, RSP=4, RBP=5, RSI=6, RDI=7, R8-R15=8-15
+        if (calleeSaveMask & (1ULL << 15)) { pContext->R15 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R15 = pTransitionBlock->m_calleeSavedRegisters.R15; }
+        if (calleeSaveMask & (1ULL << 14)) { pContext->R14 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R14 = pTransitionBlock->m_calleeSavedRegisters.R14; }
+        if (calleeSaveMask & (1ULL << 13)) { pContext->R13 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R13 = pTransitionBlock->m_calleeSavedRegisters.R13; }
+        if (calleeSaveMask & (1ULL << 12)) { pContext->R12 = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->R12 = pTransitionBlock->m_calleeSavedRegisters.R12; }
+        if (calleeSaveMask & (1ULL << 3)) { pContext->Rbx = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rbx = pTransitionBlock->m_calleeSavedRegisters.Rbx; }
+#if defined(TARGET_WINDOWS)
+        // Windows has Rsi and Rdi as callee-saved (pushed after Rbx)
+        if (calleeSaveMask & (1ULL << 6)) { pContext->Rsi = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi; }
+        if (calleeSaveMask & (1ULL << 7)) { pContext->Rdi = *((UINT64*)(calleeSaveBase - offset)); offset += 8; }
+        else { pContext->Rdi = pTransitionBlock->m_calleeSavedRegisters.Rdi; }
+#endif
+    }
+
+    // The OSR method continues execution in Tier0's frame, so it needs Tier0's RBP.
+    // managedFrameFP is Tier0's RBP value captured at the patchpoint.
+    // Note: [managedFrameFP] contains the CALLER's saved RBP, but that's not what we need.
+    pContext->Rbp = managedFrameFP;
+
+    pContext->EFlags = 0x202; // Default flags
+
+    // SP points just past the TransitionBlock (after return address)
+    // Adjust for call simulation: OSR method expects SP as if a call just happened
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    _ASSERTE(*pCurrentSP % 16 == 0);
+    *pCurrentSP -= 8;  // Simulate the call pushing return address
+    *pCurrentFP = managedFrameFP;
+
+#elif defined(TARGET_ARM64)
+
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // FP from TransitionBlock points to where Tier0 saved [FP, LR]
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
+
+    // Read callee-saved registers x19-x28.
+    // If Tier0 saved the register (bit set in mask), read from Tier0's stack save area.
+    // If Tier0 didn't save it (bit not set), use TransitionBlock value (original caller value).
+    {
+        int calleeSaveFpOffset = pPatchpointInfo->CalleeSaveFpOffset();
+        UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
+        TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
+
+        // On ARM64, callee-saves are stored in this order (low to high addresses):
+        // 1. Float callee-saves (v8-v15) - register numbers 40-47 (VBASE + 8 to VBASE + 15)
+        // 2. Integer callee-saves (x19-x28) - register numbers 19-28
+        // 3. FP/LR - register numbers 29-30
+        //
+        // We need to skip past any saved float registers to get to the integer registers.
+        // Float registers are at bits 40-47 in the mask (VBASE=32, so v8=40, v15=47).
+        const UINT64 floatCalleeSaveMask = 0x0000FF0000000000ULL; // bits 40-47
+        int floatSaveCount = 0;
+        UINT64 floatMask = calleeSaveMask & floatCalleeSaveMask;
+        while (floatMask != 0)
+        {
+            floatSaveCount++;
+            floatMask &= (floatMask - 1); // Clear lowest set bit
+        }
+
+        // Integer registers start after float registers (each float save is 8 bytes)
+        int offset = floatSaveCount * 8;
+
+        // Registers are saved in order x19, x20, ..., x28
+        if (calleeSaveMask & (1ULL << 19)) { pContext->X19 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19; }
+        if (calleeSaveMask & (1ULL << 20)) { pContext->X20 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X20 = pTransitionBlock->m_calleeSavedRegisters.x20; }
+        if (calleeSaveMask & (1ULL << 21)) { pContext->X21 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X21 = pTransitionBlock->m_calleeSavedRegisters.x21; }
+        if (calleeSaveMask & (1ULL << 22)) { pContext->X22 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X22 = pTransitionBlock->m_calleeSavedRegisters.x22; }
+        if (calleeSaveMask & (1ULL << 23)) { pContext->X23 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X23 = pTransitionBlock->m_calleeSavedRegisters.x23; }
+        if (calleeSaveMask & (1ULL << 24)) { pContext->X24 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X24 = pTransitionBlock->m_calleeSavedRegisters.x24; }
+        if (calleeSaveMask & (1ULL << 25)) { pContext->X25 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X25 = pTransitionBlock->m_calleeSavedRegisters.x25; }
+        if (calleeSaveMask & (1ULL << 26)) { pContext->X26 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X26 = pTransitionBlock->m_calleeSavedRegisters.x26; }
+        if (calleeSaveMask & (1ULL << 27)) { pContext->X27 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X27 = pTransitionBlock->m_calleeSavedRegisters.x27; }
+        if (calleeSaveMask & (1ULL << 28)) { pContext->X28 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->X28 = pTransitionBlock->m_calleeSavedRegisters.x28; }
+    }
+
+    // Read caller's LR from Tier0's stack frame (saved at [FP+8])
+    // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
+
+    pContext->Lr = *((TADDR*)(managedFrameFP + 8));
+
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    *pCurrentFP = *((TADDR*)managedFrameFP);
+
+#elif defined(TARGET_LOONGARCH64)
+
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+
+    // Read callee-saved registers from Tier0's stack save area using FP-relative offset.
+    // If Tier0 didn't save a register, use TransitionBlock value (original caller value).
+    {
+        int calleeSaveFpOffset = pPatchpointInfo->CalleeSaveFpOffset();
+        UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
+        TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
+
+        // s0-s8 are registers 23-31 in LoongArch64
+        int offset = 0;
+        if (calleeSaveMask & (1ULL << 23)) { pContext->S0 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S0 = pTransitionBlock->m_calleeSavedRegisters.s0; }
+        if (calleeSaveMask & (1ULL << 24)) { pContext->S1 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1; }
+        if (calleeSaveMask & (1ULL << 25)) { pContext->S2 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2; }
+        if (calleeSaveMask & (1ULL << 26)) { pContext->S3 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3; }
+        if (calleeSaveMask & (1ULL << 27)) { pContext->S4 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4; }
+        if (calleeSaveMask & (1ULL << 28)) { pContext->S5 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5; }
+        if (calleeSaveMask & (1ULL << 29)) { pContext->S6 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6; }
+        if (calleeSaveMask & (1ULL << 30)) { pContext->S7 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7; }
+        if (calleeSaveMask & (1ULL << 31)) { pContext->S8 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8; }
+    }
+
+    // Read caller's RA from Tier0's stack frame (saved at [FP+8])
+    // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
+
+    pContext->Ra = *((TADDR*)(managedFrameFP + 8));
+
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    *pCurrentFP = *((TADDR*)managedFrameFP);
+
+#elif defined(TARGET_RISCV64)
+
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
+
+    // Read callee-saved registers from Tier0's stack save area using FP-relative offset.
+    // If Tier0 didn't save a register, use TransitionBlock value (original caller value).
+    {
+        int calleeSaveFpOffset = pPatchpointInfo->CalleeSaveFpOffset();
+        UINT64 calleeSaveMask = pPatchpointInfo->CalleeSaveRegisters();
+        TADDR calleeSaveBase = managedFrameFP + calleeSaveFpOffset;
+
+        // RISC-V64: s1=9, s2-s11=18-27
+        int offset = 0;
+        if (calleeSaveMask & (1ULL << 9)) { pContext->S1 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1; }
+        if (calleeSaveMask & (1ULL << 18)) { pContext->S2 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2; }
+        if (calleeSaveMask & (1ULL << 19)) { pContext->S3 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3; }
+        if (calleeSaveMask & (1ULL << 20)) { pContext->S4 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4; }
+        if (calleeSaveMask & (1ULL << 21)) { pContext->S5 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5; }
+        if (calleeSaveMask & (1ULL << 22)) { pContext->S6 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6; }
+        if (calleeSaveMask & (1ULL << 23)) { pContext->S7 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7; }
+        if (calleeSaveMask & (1ULL << 24)) { pContext->S8 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8; }
+        if (calleeSaveMask & (1ULL << 25)) { pContext->S9 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S9 = pTransitionBlock->m_calleeSavedRegisters.s9; }
+        if (calleeSaveMask & (1ULL << 26)) { pContext->S10 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S10 = pTransitionBlock->m_calleeSavedRegisters.s10; }
+        if (calleeSaveMask & (1ULL << 27)) { pContext->S11 = *((UINT64*)(calleeSaveBase + offset)); offset += 8; }
+        else { pContext->S11 = pTransitionBlock->m_calleeSavedRegisters.s11; }
+
+        // tp and gp are not callee-saved in the usual sense, copy from TransitionBlock
+        pContext->Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+        pContext->Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+    }
+
+    // Read caller's RA from Tier0's stack frame (saved at [FP+8])
+    // Note: We use managedFrameFP (Tier0's FP) for context, not callerFP
+
+    pContext->Ra = *((TADDR*)(managedFrameFP + 8));
+
+    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
+    *pCurrentFP = *((TADDR*)managedFrameFP);
+
+#endif // TARGET_AMD64 / TARGET_ARM64 / TARGET_LOONGARCH64 / TARGET_RISCV64
+}
+
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #endif // DACCESS_COMPILE

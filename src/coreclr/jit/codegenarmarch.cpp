@@ -4899,6 +4899,20 @@ void CodeGen::genPushCalleeSavedRegisters()
     m_compiler->compFrameInfo.calleeSaveSpOffset = calleeSaveSpOffset;
     m_compiler->compFrameInfo.calleeSaveSpDelta  = calleeSaveSpDelta;
     m_compiler->compFrameInfo.offsetSpToSavedFp  = offsetSpToSavedFp;
+
+    // For OSR, we need the final-SP-relative offset to where callee-saves are stored.
+    // For frame types 1/2, calleeSaveSpOffset is already correct (offset from final SP).
+    // For frame types 3/4/5, calleeSaveSpOffset is just the alignment padding within the
+    // callee-save area. We need to add (totalFrameSize - calleeSaveSpDelta) to get the
+    // offset from final SP.
+    if (frameType >= 3)
+    {
+        m_compiler->compFrameInfo.osrCalleeSaveSpOffset = totalFrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
+    }
+    else
+    {
+        m_compiler->compFrameInfo.osrCalleeSaveSpOffset = calleeSaveSpOffset;
+    }
 #endif // TARGET_ARM64
 }
 
