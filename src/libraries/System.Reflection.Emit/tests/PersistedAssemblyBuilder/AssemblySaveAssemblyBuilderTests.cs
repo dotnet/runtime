@@ -76,8 +76,7 @@ namespace System.Reflection.Emit.Tests
             AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
             {
                 Flags = AssemblyNameFlags.PublicKey | AssemblyNameFlags.Retargetable,
-                Version = new Version(9, 8, 7, 6),
-                ContentType = AssemblyContentType.WindowsRuntime
+                Version = new Version(9, 8, 7, 6)
             };
 
             byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
@@ -94,23 +93,7 @@ namespace System.Reflection.Emit.Tests
             using PEReader peReader = new PEReader(stream);
             MetadataReader metadataReader = peReader.GetMetadataReader();
             AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
-            AssemblyContentType contentType = (assemblyDefinition.Flags & AssemblyFlags.ContentTypeMask) switch
-            {
-                0 => AssemblyContentType.Default,
-                AssemblyFlags.WindowsRuntime => AssemblyContentType.WindowsRuntime,
-                _ => throw new InvalidOperationException($"Unexpected AssemblyContentType flags: {assemblyDefinition.Flags & AssemblyFlags.ContentTypeMask}"),
-            };
-            AssemblyName loadedAssemblyName = new AssemblyName(metadataReader.GetString(assemblyDefinition.Name))
-            {
-                Version = assemblyDefinition.Version,
-                Flags = (AssemblyNameFlags)assemblyDefinition.Flags,
-                ContentType = contentType,
-            };
-            loadedAssemblyName.SetPublicKey(metadataReader.GetBlobBytes(assemblyDefinition.PublicKey));
-            if (!assemblyDefinition.Culture.IsNil)
-            {
-                loadedAssemblyName.CultureName = metadataReader.GetString(assemblyDefinition.Culture);
-            }
+            AssemblyName loadedAssemblyName = assemblyDefinition.GetAssemblyNameInfo().ToAssemblyName();
 
             Assert.Equal(assemblyName.Name, loadedAssemblyName.Name);
             Assert.Equal(assemblyName.Version, loadedAssemblyName.Version);
