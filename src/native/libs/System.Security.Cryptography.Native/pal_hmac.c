@@ -7,14 +7,139 @@
 
 #include <assert.h>
 
-HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md)
+static EVP_MAC* g_evpMacHmac = NULL;
+static pthread_once_t g_evpMacHmacInit = PTHREAD_ONCE_INIT;
+
+static void EnsureMacHmac(void)
+{
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_MAC_fetch))
+    {
+        g_evpMacHmac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+        return;
+    }
+#endif
+
+    g_evpMacHmac = NULL;
+}
+
+#define HAVE_EVP_MAC (g_evpMacHmac != NULL)
+#define ENSURE_DN_MAC_CONSISTENCY(ctx) \
+    do \
+    { \
+        assert((ctx->legacy == NULL) != (ctx->mac == NULL)); \
+    } \
+    while (0)
+
+DN_MAC_CTX* CryptoNative_HmacCreate(uint8_t* key, int32_t keyLen, const EVP_MD* md)
 {
     assert(key != NULL || keyLen == 0);
     assert(keyLen >= 0);
     assert(md != NULL);
 
+    pthread_once(&g_evpMacHmacInit, EnsureMacHmac);
     ERR_clear_error();
 
+    // NOTE: We can't pass NULL as empty key since HMAC_Init_ex will interpret
+    // that as request to reuse the "existing" key.
+    uint8_t _ = 0;
+    if (keyLen == 0)
+    {
+        key = &_;
+    }
+
+#ifdef NEED_OPENSSL_3_0
+    if (HAVE_EVP_MAC)
+    {
+        assert(API_EXISTS(EVP_MAC_CTX_new));
+        assert(API_EXISTS(EVP_MAC_init));
+        assert(API_EXISTS(EVP_MD_get0_name));
+        assert(API_EXISTS(EVP_MD_is_a));
+        assert(API_EXISTS(OSSL_PARAM_construct_octet_string));
+        assert(API_EXISTS(OSSL_PARAM_construct_utf8_string));
+        assert(API_EXISTS(OSSL_PARAM_construct_end));
+
+        // HMAC-MD5 does not exist some Linux distros.
+        // Since MD5 can never be FIPS, fall back to the old implementation.
+        if (!EVP_MD_is_a(md, "MD5"))
+        {
+            EVP_MAC_CTX* evpMac = EVP_MAC_CTX_new(g_evpMacHmac);
+
+            if (evpMac == NULL)
+            {
+                return NULL;
+            }
+
+            const char* algorithm = EVP_MD_get0_name(md);
+
+            // OSSL_PARAM_construct_utf8_string wants a non-const qualified value. Rather than suppress compiler warnings
+            // which differ from compiler to compiler, we copy the string in to a temporary value.
+            char* algorithmDup = strdup(algorithm);
+
+            if (algorithmDup == NULL)
+            {
+                EVP_MAC_CTX_free(evpMac);
+                return NULL;
+            }
+
+            size_t keyLenT = Int32ToSizeT(keyLen);
+
+            OSSL_PARAM params[] =
+            {
+                OSSL_PARAM_construct_octet_string(OSSL_MAC_PARAM_KEY, (void*) key, keyLenT),
+                OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, algorithmDup, 0),
+                OSSL_PARAM_construct_end(),
+            };
+
+            if (!EVP_MAC_init(evpMac, NULL, 0, params))
+            {
+                EVP_MAC_CTX_free(evpMac);
+                free(algorithmDup);
+                return NULL;
+            }
+
+            free(algorithmDup);
+
+            DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+
+            if (dnCtx == NULL)
+            {
+                EVP_MAC_CTX_free(evpMac);
+                return NULL;
+            }
+
+            unsigned long version = OpenSSL_version_num();
+
+            // OpenSSL [3.0.0, 3.0.2] have an issue where EVP_MAC_init cannot reset the HMAC instance
+            // with its existing key. The key must always be supplied. In order to work around this,
+            // we keep a copy of the key for these OpenSSL versions.
+            // If this is on a fixed or non-applicable version of OpenSSL, the key in the context struct will be
+            // NULL. A NULL key tells the init to re-use the existing key properly. So for affected versions of
+            // OpenSSL, the key will be present. For unaffected, it will be NULL and let OpenSSL do the correct reset
+            // behavior.
+            if (version >= OPENSSL_VERSION_3_0_RTM && version <= OPENSSL_VERSION_3_0_2_RTM)
+            {
+                // OpenSSL's allocator will not allocate a zero-sized buffer. So always allocate at least one
+                // byte. keyLenT will still be zero and contains the actual length of the key.
+                uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLenT == 0 ? 1 : keyLenT);
+
+                if (keyCopy == NULL)
+                {
+                    EVP_MAC_CTX_free(evpMac);
+                    OPENSSL_free(dnCtx);
+                    return NULL;
+                }
+
+                memcpy(keyCopy, key, keyLenT);
+                dnCtx->key = keyCopy;
+                dnCtx->keyLen = keyLenT;
+            }
+
+            dnCtx->mac = evpMac;
+            return dnCtx;
+        }
+    }
+#endif
     HMAC_CTX* ctx = HMAC_CTX_new();
 
     if (ctx == NULL)
@@ -26,12 +151,6 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
         return NULL;
     }
 
-    // NOTE: We can't pass NULL as empty key since HMAC_Init_ex will interpret
-    // that as request to reuse the "existing" key.
-    uint8_t _;
-    if (keyLen == 0)
-        key = &_;
-
     int ret = HMAC_Init_ex(ctx, key, keyLen, md, NULL);
 
     if (!ret)
@@ -40,32 +159,80 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
         return NULL;
     }
 
-    return ctx;
+    DN_MAC_CTX* dnCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+
+    if (dnCtx == NULL)
+    {
+        HMAC_CTX_free(ctx);
+        return NULL;
+    }
+
+    dnCtx->legacy = ctx;
+    return dnCtx;
 }
 
-void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
+void CryptoNative_HmacDestroy(DN_MAC_CTX* ctx)
 {
     if (ctx != NULL)
     {
-        HMAC_CTX_free(ctx);
+        ENSURE_DN_MAC_CONSISTENCY(ctx);
+
+#ifdef NEED_OPENSSL_3_0
+        if (ctx->mac)
+        {
+            EVP_MAC_CTX_free(ctx->mac);
+            ctx->mac = NULL;
+        }
+
+        if (ctx->key)
+        {
+            OPENSSL_clear_free(ctx->key, ctx->keyLen);
+            ctx->key = NULL;
+            ctx->keyLen = 0;
+        }
+#endif
+        if (ctx->legacy)
+        {
+            HMAC_CTX_free(ctx->legacy);
+            ctx->legacy = NULL;
+        }
+
+        OPENSSL_free(ctx);
     }
 }
 
-int32_t CryptoNative_HmacReset(HMAC_CTX* ctx)
+int32_t CryptoNative_HmacReset(DN_MAC_CTX* ctx)
 {
     assert(ctx != NULL);
+    ENSURE_DN_MAC_CONSISTENCY(ctx);
 
     ERR_clear_error();
 
-    return HMAC_Init_ex(ctx, NULL, 0, NULL, NULL);
+#ifdef NEED_OPENSSL_3_0
+    if (HAVE_EVP_MAC && ctx->mac)
+    {
+        // See the Create method for the key and keyLen. These may be NULL and zero. Certain versions of OpenSSL
+        // require the key to re-initialize. In versions that are not affected, key is NULL and is to mean "reuse the
+        // existing key."
+        return EVP_MAC_init(ctx->mac, ctx->key, ctx->keyLen, NULL);
+    }
+#endif
+
+    if (ctx->legacy)
+    {
+        return HMAC_Init_ex(ctx->legacy, NULL, 0, NULL, NULL);
+    }
+
+    return -1;
 }
 
-int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
+int32_t CryptoNative_HmacUpdate(DN_MAC_CTX* ctx, const uint8_t* data, int32_t len)
 {
     assert(ctx != NULL);
     assert(data != NULL || len == 0);
     assert(len >= 0);
 
+    ENSURE_DN_MAC_CONSISTENCY(ctx);
     ERR_clear_error();
 
     if (len < 0)
@@ -73,16 +240,29 @@ int32_t CryptoNative_HmacUpdate(HMAC_CTX* ctx, const uint8_t* data, int32_t len)
         return 0;
     }
 
-    return HMAC_Update(ctx, data, Int32ToSizeT(len));
+#ifdef NEED_OPENSSL_3_0
+    if (HAVE_EVP_MAC && ctx->mac)
+    {
+        return EVP_MAC_update(ctx->mac, data, Int32ToSizeT(len));
+    }
+#endif
+
+    if (ctx->legacy)
+    {
+        return HMAC_Update(ctx->legacy, data, Int32ToSizeT(len));
+    }
+
+    return -1;
 }
 
-int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
+int32_t CryptoNative_HmacFinal(DN_MAC_CTX* ctx, uint8_t* md, int32_t* len)
 {
     assert(ctx != NULL);
     assert(len != NULL);
     assert(md != NULL || *len == 0);
     assert(*len >= 0);
 
+    ENSURE_DN_MAC_CONSISTENCY(ctx);
     ERR_clear_error();
 
     if (len == NULL || *len < 0)
@@ -90,17 +270,82 @@ int32_t CryptoNative_HmacFinal(HMAC_CTX* ctx, uint8_t* md, int32_t* len)
         return 0;
     }
 
-    unsigned int unsignedLen = Int32ToUint32(*len);
-    int ret = HMAC_Final(ctx, md, &unsignedLen);
-    *len = Uint32ToInt32(unsignedLen);
+    int ret = -1;
+
+#ifdef NEED_OPENSSL_3_0
+    if (HAVE_EVP_MAC && ctx->mac)
+    {
+        size_t outl = 0;
+        size_t lenT = Int32ToSizeT(*len);
+        ret = EVP_MAC_final(ctx->mac, md, &outl, lenT);
+        *len = SizeTToInt32(outl);
+        return ret;
+    }
+#endif
+
+    if (ctx->legacy)
+    {
+        unsigned int unsignedLen = Int32ToUint32(*len);
+        ret = HMAC_Final(ctx->legacy, md, &unsignedLen);
+        *len = Uint32ToInt32(unsignedLen);
+        return ret;
+    }
+
     return ret;
 }
 
-HMAC_CTX* CryptoNative_HmacCopy(const HMAC_CTX* ctx)
+DN_MAC_CTX* CryptoNative_HmacCopy(const DN_MAC_CTX* ctx)
 {
     assert(ctx != NULL);
+    ENSURE_DN_MAC_CONSISTENCY(ctx);
 
     ERR_clear_error();
+
+#ifdef NEED_OPENSSL_3_0
+    if (HAVE_EVP_MAC && ctx->mac)
+    {
+        EVP_MAC_CTX* macDup = EVP_MAC_CTX_dup(ctx->mac);
+
+        if (macDup == NULL)
+        {
+            return NULL;
+        }
+
+        DN_MAC_CTX* copyCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+
+        if (copyCtx == NULL)
+        {
+            EVP_MAC_CTX_free(macDup);
+            return NULL;
+        }
+
+        // See Create for the existence of key. This gets copied, even if the key length is zero.
+        if (ctx->key)
+        {
+            size_t keyLen = ctx->keyLen;
+            uint8_t* keyCopy = (uint8_t*)OPENSSL_malloc(keyLen == 0 ? 1 : keyLen);
+
+            if (keyCopy == NULL)
+            {
+                EVP_MAC_CTX_free(macDup);
+                OPENSSL_free(copyCtx);
+                return NULL;
+            }
+
+            memcpy(keyCopy, ctx->key, keyLen);
+            copyCtx->key = keyCopy;
+            copyCtx->keyLen = ctx->keyLen;
+        }
+
+        copyCtx->mac = macDup;
+        return copyCtx;
+    }
+#endif
+
+    if (ctx->legacy == NULL)
+    {
+        return NULL;
+    }
 
     HMAC_CTX* dup = HMAC_CTX_new();
 
@@ -114,23 +359,33 @@ HMAC_CTX* CryptoNative_HmacCopy(const HMAC_CTX* ctx)
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wcast-qual"
-    if (!HMAC_CTX_copy(dup, (HMAC_CTX*)ctx))
+    if (!HMAC_CTX_copy(dup, (HMAC_CTX*)(ctx->legacy)))
 #pragma clang diagnostic pop
     {
         HMAC_CTX_free(dup);
         return NULL;
     }
 
-    return dup;
+    DN_MAC_CTX* copyCtx = (DN_MAC_CTX*)OPENSSL_zalloc(sizeof(DN_MAC_CTX));
+
+    if (copyCtx == NULL)
+    {
+        HMAC_CTX_free(dup);
+        return NULL;
+    }
+
+    copyCtx->legacy = dup;
+    return copyCtx;
 }
 
-int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len)
+int32_t CryptoNative_HmacCurrent(const DN_MAC_CTX* ctx, uint8_t* md, int32_t* len)
 {
     assert(ctx != NULL);
     assert(len != NULL);
     assert(md != NULL || *len == 0);
     assert(*len >= 0);
 
+    ENSURE_DN_MAC_CONSISTENCY(ctx);
     ERR_clear_error();
 
     if (len == NULL || *len < 0)
@@ -138,12 +393,12 @@ int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len)
         return 0;
     }
 
-    HMAC_CTX* dup = CryptoNative_HmacCopy(ctx);
+    DN_MAC_CTX* dup = CryptoNative_HmacCopy(ctx);
 
     if (dup != NULL)
     {
         int ret = CryptoNative_HmacFinal(dup, md, len);
-        HMAC_CTX_free(dup);
+        CryptoNative_HmacDestroy(dup);
         return ret;
     }
 
