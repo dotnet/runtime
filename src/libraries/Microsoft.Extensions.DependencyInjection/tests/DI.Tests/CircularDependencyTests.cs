@@ -204,5 +204,67 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Equal(expectedMessage, exception.Message);
         }
+
+        [Fact]
+        public void FactoryCircularDependency_DetectedAtResolutionTime()
+        {
+            // This test demonstrates circular dependency through factory functions
+            // Service A has constructor dependency on Service B
+            // Service B is registered with a factory that requests Service A from IServiceProvider
+            // This creates a circular dependency: A -> B -> A
+            //
+            // Factory-based circular dependencies cannot be detected during call site construction
+            // because factories are opaque. The re-entrance detection in VisitRootCache detects
+            // these at resolution time, preventing deadlock and providing a clear error message.
+
+            var services = new ServiceCollection();
+            services.AddSingleton<FactoryCircularDependencyA>();
+            services.AddSingleton<FactoryCircularDependencyB>(sp =>
+            {
+                // Factory tries to resolve FactoryCircularDependencyA, creating a circle
+                var a = sp.GetRequiredService<FactoryCircularDependencyA>();
+                return new FactoryCircularDependencyB();
+            });
+
+            // Build succeeds - circular dependency cannot be detected until resolution
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Resolution should throw InvalidOperationException for circular dependency
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                var a = serviceProvider.GetRequiredService<FactoryCircularDependencyA>();
+            });
+
+            // Verify it's a circular dependency error with proper service type
+            Assert.Contains("circular dependency", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("FactoryCircularDependencyA", exception.Message);
+        }
+
+        [Fact]
+        public void FactoryCircularDependency_NotDetectedByValidateOnBuild()
+        {
+            // This test verifies that ValidateOnBuild does NOT detect factory-based circular
+            // dependencies because factories are opaque during call site construction.
+            // The circular dependency is only detected at actual resolution time.
+
+            var services = new ServiceCollection();
+            services.AddSingleton<FactoryCircularDependencyA>();
+            services.AddSingleton<FactoryCircularDependencyB>(sp =>
+            {
+                var a = sp.GetRequiredService<FactoryCircularDependencyA>();
+                return new FactoryCircularDependencyB();
+            });
+
+            // BuildServiceProvider with ValidateOnBuild succeeds because factories are not invoked during validation
+            var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+
+            // But resolution fails with circular dependency error
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                serviceProvider.GetRequiredService<FactoryCircularDependencyA>());
+
+            // Verify it's a circular dependency error
+            Assert.Contains("circular dependency", exception.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("FactoryCircularDependencyA", exception.Message);
+        }
     }
 }
