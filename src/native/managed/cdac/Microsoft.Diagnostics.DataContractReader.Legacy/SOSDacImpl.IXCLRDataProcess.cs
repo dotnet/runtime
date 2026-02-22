@@ -334,14 +334,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         int hr = HResults.S_FALSE;
         *handle = 0;
 
+        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
+        // EnumMethodInstanceByAddress passes the legacy method instance to ClrDataMethodInstance,
+        // which delegates some operations to it.
         ulong handleLocal = default;
-#if DEBUG
         int hrLocal = default;
         if (_legacyProcess is not null)
         {
             hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
         }
-#endif
 
         try
         {
@@ -387,9 +388,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         GCHandle gcHandle = GCHandle.FromIntPtr((IntPtr)(*handle));
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
 
+        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
+        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
         IXCLRDataMethodInstance? legacyMethod = null;
-
-#if DEBUG
         int hrLocal = default;
         if (_legacyProcess is not null)
         {
@@ -397,7 +398,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             hrLocal = _legacyProcess.EnumMethodInstanceByAddress(&legacyHandle, out legacyMethod);
             emi.LegacyHandle = legacyHandle;
         }
-#endif
 
         try
         {
@@ -413,7 +413,28 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         catch (System.Exception ex)
         {
-            hr = ex.HResult;
+            // The cDAC's IterateMethodInstances() implementation is incomplete compared
+            // to the native DAC's EnumMethodInstances::Next(). The native DAC uses a
+            // MethodIterator backed by AppDomain assembly iteration with EX_TRY/EX_CATCH
+            // error handling around each step. The cDAC re-implements this with
+            // IterateModules()/IterateMethodInstantiations()/IterateTypeParams() which
+            // call into IRuntimeTypeSystem and ILoader contracts. These contract calls
+            // (e.g. GetMethodTable, GetTypeHandle, GetMethodDescForSlot, GetModule,
+            // GetTypeDefToken) can throw when encountering method descs or type handles
+            // from assemblies/modules that the cDAC cannot fully process. This has been
+            // observed for generic method instantiations (cases 2-4 in
+            // IterateMethodInstances) in the SOS.WebApp3 integration test.
+            //
+            // Fall back to the legacy DAC result when available, otherwise propagate the error.
+            if (_legacyProcess is not null)
+            {
+                hr = hrLocal;
+                method = legacyMethod;
+            }
+            else
+            {
+                hr = ex.HResult;
+            }
         }
 
 #if DEBUG

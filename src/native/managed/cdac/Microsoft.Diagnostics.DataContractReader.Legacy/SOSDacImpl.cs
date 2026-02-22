@@ -241,10 +241,27 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            string friendlyName = loader.GetAppDomainFriendlyName();
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
             ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            if (addr == systemDomain || friendlyName == string.Empty)
+
+            string? friendlyName = null;
+            if (addr != systemDomain)
+            {
+                try
+                {
+                    friendlyName = loader.GetAppDomainFriendlyName();
+                }
+                catch (VirtualReadException)
+                {
+                    // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
+                    // ReadUtf16String throws VirtualReadException when the pointer targets
+                    // unreadable memory (e.g. the name is not yet set during early init).
+                    // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
+                    // and falls through to return an empty string. Match that behavior here.
+                }
+            }
+
+            if (friendlyName is null || friendlyName.Length == 0)
             {
                 if (pNeeded is not null)
                 {
@@ -252,14 +269,14 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 if (name is not null && count > 0)
                 {
-                    name[0] = '\0'; // Set the first character to null terminator
+                    name[0] = '\0';
                 }
             }
             else
             {
                 if (pNeeded is not null)
                 {
-                    *pNeeded = (uint)(friendlyName.Length + 1); // +1 for null terminator
+                    *pNeeded = (uint)(friendlyName.Length + 1);
                 }
 
                 if (name is not null && count > 0)
@@ -2963,6 +2980,16 @@ public sealed unsafe partial class SOSDacImpl
             }
 
         }
+        catch (VirtualReadException)
+        {
+            // The native DAC returns E_INVALIDARG when it cannot read the object's
+            // method table pointer (DACGetMethodTableFromObjectPointer returns NULL)
+            // or when the method table fails structural validation
+            // (DacValidateMethodTable returns false). Both of these cases surface as
+            // VirtualReadException in the cDAC when GetMethodTableAddress or
+            // GetTypeHandle attempt to read unreadable target memory.
+            hr = HResults.E_INVALIDARG;
+        }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
@@ -4553,6 +4580,10 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal;
             int hrLocal = _legacyImpl8.GetGenerationTable(cGenerations, pGenerationData, &pNeededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (pNeeded is not null)
+            {
+                Debug.Assert(*pNeeded == pNeededLocal);
+            }
         }
 #endif
         return hr;
@@ -4596,6 +4627,10 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal;
             int hrLocal = _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFinalizationFillPointers, &pNeededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (pNeeded is not null)
+            {
+                Debug.Assert(*pNeeded == pNeededLocal);
+            }
         }
 #endif
         return hr;
@@ -4645,6 +4680,10 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal;
             int hrLocal = _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenerationData, &pNeededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (pNeeded is not null)
+            {
+                Debug.Assert(*pNeeded == pNeededLocal);
+            }
         }
 #endif
         return hr;
@@ -4688,6 +4727,10 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal;
             int hrLocal = _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, &pNeededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (pNeeded is not null)
+            {
+                Debug.Assert(*pNeeded == pNeededLocal);
+            }
         }
 #endif
         return hr;
