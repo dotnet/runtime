@@ -669,6 +669,44 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM("FTN_ENTRY");
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    NYI_ARM("NONLOCAL_JMP");
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    NYI_ARM("PATCHPOINT");
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    NYI_ARM("PATCHPOINT_FORCED");
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)

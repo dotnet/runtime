@@ -321,6 +321,18 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(srcCount == 2);
             break;
 
+        case GT_NONLOCAL_JMP:
+            assert(dstCount == 0);
+            srcCount = BuildOperandUses(tree->gtGetOp1());
+            break;
+
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
+            // NYI on ARM32
+            srcCount = 0;
+            NYI_ARM("GT_PATCHPOINT");
+            break;
+
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:

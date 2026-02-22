@@ -250,30 +250,270 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         }
     }
 
-    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    // For OSR, we must also restore Tier0's callee saves and adjust the SP to remove the Tier0 frame.
     //
     if (m_compiler->opts.IsOSR())
     {
-        PatchpointInfo* const patchpointInfo = m_compiler->info.compPatchpointInfo;
-        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+        PatchpointInfo* const patchpointInfo     = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize     = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset     = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset = patchpointInfo->CalleeSaveSpOffset();
+        const int             calleeSaveSpDelta  = patchpointInfo->CalleeSaveSpDelta();
+        const int             tier0FrameType     = patchpointInfo->FrameType();
+        regMaskTP             tier0CalleeSaves   = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
 
-        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
-        // use a scratch reg. So just do two subtracts if necessary.
+        JITDUMP(
+            "Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/LR at offset %d, callee saves at offset %d (delta %d), frame type %d\n",
+            tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset, calleeSaveSpDelta, tier0FrameType);
+        JITDUMP("    Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+        JITDUMP("\n");
+
+        // Compute where callee-saves are stored relative to current SP.
+        // At this point, SP is at the top of Tier0's frame (lowest address).
         //
-        int spAdjust = tier0FrameSize;
-        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
+        // The meaning of calleeSaveSpOffset varies by frame type:
+        // - Frame type 1/2: calleeSaveSpOffset is already the offset from final SP to callee-saves.
+        // - Frame type 3/4/5: calleeSaveSpOffset is the alignment padding within the callee-save area.
+        //   The callee-saves are at (tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset) from
+        //   current SP.
+        //
+        int osrCalleeSaveSpOffset;
+        if (tier0FrameType >= 3)
         {
-            const int lowPart  = spAdjust & 0xFFF;
-            const int highPart = spAdjust - lowPart;
-            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
-            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
-            m_compiler->unwindAllocStack(highPart);
-            spAdjust = lowPart;
+            osrCalleeSaveSpOffset = tier0FrameSize - calleeSaveSpDelta + calleeSaveSpOffset;
+            JITDUMP("    Frame type %d: computed osrCalleeSaveSpOffset = %d - %d + %d = %d\n", tier0FrameType,
+                    tier0FrameSize, calleeSaveSpDelta, calleeSaveSpOffset, osrCalleeSaveSpOffset);
         }
-        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
-        m_compiler->unwindAllocStack(spAdjust);
+        else
+        {
+            osrCalleeSaveSpOffset = calleeSaveSpOffset;
+            JITDUMP("    Frame type %d: osrCalleeSaveSpOffset = calleeSaveSpOffset = %d\n", tier0FrameType,
+                    osrCalleeSaveSpOffset);
+        }
+
+        // Determine the strategy for restoring callee-saves and FP/LR based on their offsets.
+        // The LDP instruction can only encode offsets from -512 to +504 (signed 7-bit * 8).
+        //
+        // For frame types 1/2/3, FP/LR are at low offsets (fpLrSaveOffset) and callee-saves
+        // are at higher offsets. For frame types 4/5, FP/LR are at high offsets within the
+        // callee-save area.
+        //
+        // If callee-saves are at large offsets AND FP/LR are at small offsets (frame type 3),
+        // we need to restore FP/LR FIRST before we can pre-adjust SP enough to reach callee-saves.
+        //
+        regMaskTP regsToRestoreMask = tier0CalleeSaves & ~(RBM_FP | RBM_LR);
+        unsigned  numRegsToRestore  = genCountBits(regsToRestoreMask);
+        int       maxCalleeSaveSpOffset =
+            (regsToRestoreMask != RBM_NONE) ? osrCalleeSaveSpOffset + (int)(numRegsToRestore * REGSIZE_BYTES) : 0;
+
+        // Check if FP/LR are at a small offset but callee-saves are at a large offset.
+        // In this case, restore FP/LR first so we can freely adjust SP for callee-saves.
+        bool restoreFpLrFirst = (fpLrSaveOffset <= 504) && (maxCalleeSaveSpOffset > 504) &&
+                                (fpLrSaveOffset + 512 < maxCalleeSaveSpOffset - 504);
+
+        JITDUMP("    fpLrSaveOffset=%d, maxCalleeSaveSpOffset=%d, restoreFpLrFirst=%s\n", fpLrSaveOffset,
+                maxCalleeSaveSpOffset, restoreFpLrFirst ? "true" : "false");
+
+        int totalPreAdjust = 0;
+
+        if (restoreFpLrFirst)
+        {
+            // Restore FP/LR first since they're at a small offset
+            JITDUMP("    Restoring FP/LR first at offset %d\n", fpLrSaveOffset);
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, fpLrSaveOffset);
+
+            // Now we can freely pre-adjust SP to bring callee-saves into range.
+            // After pre-adjust, we need:
+            //   osrCalleeSaveSpOffset - preAdjust >= -512 (lowest callee-save reachable by LDP)
+            //   maxCalleeSaveSpOffset - preAdjust <= 504 (highest callee-save reachable by LDP)
+            //
+            // So: preAdjust >= maxCalleeSaveSpOffset - 504 AND preAdjust <= osrCalleeSaveSpOffset + 512
+            //
+            // For a valid 16-aligned preAdjust to exist, we need:
+            //   maxCalleeSaveSpOffset - 504 <= osrCalleeSaveSpOffset + 512
+            //   calleeSaveSpan <= 1016
+            //
+            // Since ARM64 has at most ~18 callee-saved registers (144 bytes), this is always satisfied.
+            if (regsToRestoreMask != RBM_NONE)
+            {
+                // The callee-save area spans from osrCalleeSaveSpOffset to maxCalleeSaveSpOffset.
+                // We want to pre-adjust SP so that all LDP offsets are in range [-512, 504].
+                int calleeSaveSpan = maxCalleeSaveSpOffset - osrCalleeSaveSpOffset;
+                assert(calleeSaveSpan >= 0);
+                assert(calleeSaveSpan <= 1016); // Must fit in LDP range window; always true for ARM64
+
+                if (maxCalleeSaveSpOffset > 504)
+                {
+                    // Pre-adjust SP to bring the callee-save area into LDP range.
+                    // We want maxCalleeSaveSpOffset - preAdjust <= 504, so preAdjust >= maxCalleeSaveSpOffset - 504.
+                    // We also need osrCalleeSaveSpOffset - preAdjust >= -512, so preAdjust <= osrCalleeSaveSpOffset +
+                    // 512.
+                    int minPreAdjust = maxCalleeSaveSpOffset - 504;
+                    int maxPreAdjust = osrCalleeSaveSpOffset + 512; // Allow LDP offset down to -512
+                    int preAdjust    = ((minPreAdjust + 15) & ~15);
+
+                    // Clamp to maxPreAdjust to ensure lowest offset stays within LDP range
+                    if (preAdjust > maxPreAdjust)
+                    {
+                        preAdjust = maxPreAdjust & ~15;
+                    }
+
+                    assert(preAdjust >= minPreAdjust); // Should always find valid alignment
+
+                    JITDUMP("    Pre-adjusting SP by %d to bring callee-saves into range (min=%d, max=%d)\n", preAdjust,
+                            minPreAdjust, maxPreAdjust);
+
+                    if (preAdjust > 0)
+                    {
+                        if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                        {
+                            const int lowPart  = preAdjust & 0xFFF;
+                            const int highPart = preAdjust - lowPart;
+                            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                            m_compiler->unwindAllocStack(highPart);
+                            if (lowPart > 0)
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
+                                m_compiler->unwindAllocStack(lowPart);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                            m_compiler->unwindAllocStack(preAdjust);
+                        }
+
+                        totalPreAdjust = preAdjust;
+                        osrCalleeSaveSpOffset -= preAdjust;
+                    }
+                }
+
+                genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
+            }
+
+            // Final SP adjustment (FP/LR already restored)
+            int spAdjust = tier0FrameSize - totalPreAdjust;
+            if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
+            {
+                const int lowPart  = spAdjust & 0xFFF;
+                const int highPart = spAdjust - lowPart;
+                assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                m_compiler->unwindAllocStack(highPart);
+                spAdjust = lowPart;
+            }
+            if (spAdjust > 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+                m_compiler->unwindAllocStack(spAdjust);
+            }
+        }
+        else
+        {
+            // Standard order: restore callee-saves first, then FP/LR
+            if (regsToRestoreMask != RBM_NONE)
+            {
+                // Check if we need to pre-adjust SP to bring callee-saves into LDP range
+                if (maxCalleeSaveSpOffset > 504)
+                {
+                    // Adjust SP to bring all callee-save loads within the 504 byte limit.
+                    // Ensure the resulting FP/LR offset stays within LDP's range (-512 to +504).
+                    int preAdjust    = (maxCalleeSaveSpOffset - 504 + 15) & ~15;
+                    int maxPreAdjust = fpLrSaveOffset + 512;
+                    if (preAdjust > maxPreAdjust)
+                    {
+                        preAdjust = maxPreAdjust & ~15;
+                    }
+
+                    if (preAdjust > 0)
+                    {
+                        JITDUMP("    Callee-save max offset %d exceeds 504, pre-adjusting SP by %d\n",
+                                maxCalleeSaveSpOffset, preAdjust);
+
+                        if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                        {
+                            const int lowPart  = preAdjust & 0xFFF;
+                            const int highPart = preAdjust - lowPart;
+                            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                            m_compiler->unwindAllocStack(highPart);
+                            if (lowPart > 0)
+                            {
+                                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, lowPart);
+                                m_compiler->unwindAllocStack(lowPart);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                            m_compiler->unwindAllocStack(preAdjust);
+                        }
+
+                        totalPreAdjust = preAdjust;
+                        osrCalleeSaveSpOffset -= preAdjust;
+                    }
+                }
+
+                genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, osrCalleeSaveSpOffset, 0);
+            }
+
+            // Restore FP/LR from Tier0's frame
+            int adjustedFpLrSaveOffset = fpLrSaveOffset - totalPreAdjust;
+            int spAdjust               = tier0FrameSize - totalPreAdjust;
+
+            JITDUMP("    FP/LR restore: fpLrSaveOffset=%d, totalPreAdjust=%d, adjustedFpLrSaveOffset=%d\n",
+                    fpLrSaveOffset, totalPreAdjust, adjustedFpLrSaveOffset);
+
+            if (adjustedFpLrSaveOffset >= -512 && adjustedFpLrSaveOffset <= 504)
+            {
+                // Offset fits in LDP encoding - use it directly
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, adjustedFpLrSaveOffset);
+            }
+            else if (adjustedFpLrSaveOffset > 504)
+            {
+                // Positive offset too large for LDP - adjust SP forward first
+                int preAdjust = adjustedFpLrSaveOffset;
+                if (!GetEmitter()->emitIns_valid_imm_for_add(preAdjust, EA_PTRSIZE))
+                {
+                    const int lowPart  = preAdjust & 0xFFF;
+                    const int highPart = preAdjust - lowPart;
+                    assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                    m_compiler->unwindAllocStack(highPart);
+                    preAdjust = lowPart;
+                }
+                if (preAdjust != 0)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, preAdjust);
+                    m_compiler->unwindAllocStack(preAdjust);
+                }
+                GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+                spAdjust -= adjustedFpLrSaveOffset;
+            }
+            else
+            {
+                // Negative offset - shouldn't happen with current logic, but handle it
+                assert(!"Unexpected negative FP/LR offset in OSR epilog");
+            }
+
+            // Final SP adjustment
+            if (!GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE))
+            {
+                const int lowPart  = spAdjust & 0xFFF;
+                const int highPart = spAdjust - lowPart;
+                assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                m_compiler->unwindAllocStack(highPart);
+                spAdjust = lowPart;
+            }
+            if (spAdjust > 0)
+            {
+                GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+                m_compiler->unwindAllocStack(spAdjust);
+            }
+        }
     }
 }
 
@@ -3765,6 +4005,78 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
     GetEmitter()->emitIns_R_C(INS_adr, attr, treeNode->GetRegNum(), REG_NA,
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the adr instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    regNumber targetReg = tree->gtGetOp1()->GetRegNum();
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, targetReg);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT node
+//
+// Notes:
+//    Emits a call to the patchpoint helper followed by a jump to the returned address.
+//    The helper returns OSR method address (to transition) or continuation address (to stay in Tier0).
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the patchpoint helper - result in X0
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+
+    // Jump to the returned address
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT_FORCED node
+//
+// Notes:
+//    Emits a call to the forced patchpoint helper followed by a jump to the returned OSR method address.
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the forced patchpoint helper - result in X0
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+
+    // Jump to the returned OSR method address
+    GetEmitter()->emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
 }
 
 //------------------------------------------------------------------------

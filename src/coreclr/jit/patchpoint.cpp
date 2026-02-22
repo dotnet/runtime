@@ -178,13 +178,14 @@ private:
 
         // Fill in helper block
         //
-        // call PPHelper(&ppCounter, ilOffset)
-        GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree*     ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
+        // GT_PATCHPOINT calls the helper and jumps to the returned address.
+        // The helper returns the OSR method address (to transition) or
+        // the address after the jmp instruction (to continue in Tier0).
+        GenTree* ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree* ppCounterAddr = compiler->gtNewLclVarAddrNode(ppCounterLclNum);
+        GenTree* patchpoint    = compiler->gtNewOperNode(GT_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(helperBlock, helperCall);
+        compiler->fgNewStmtAtEnd(helperBlock, patchpoint);
     }
 
     //  ppCounter = <initial value>
@@ -233,14 +234,11 @@ private:
         // Update flow
         block->SetKindAndTargetEdge(BBJ_THROW);
 
-        // Add helper call
-        //
-        // call PartialCompilationPatchpointHelper(ilOffset)
-        //
-        GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
+        // GT_PATCHPOINT_FORCED calls the helper and jumps to the returned OSR method address.
+        GenTree* ilOffsetNode     = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree* patchpointForced = compiler->gtNewOperNode(GT_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
 
-        compiler->fgNewStmtAtEnd(block, helperCall);
+        compiler->fgNewStmtAtEnd(block, patchpointForced);
     }
 };
 

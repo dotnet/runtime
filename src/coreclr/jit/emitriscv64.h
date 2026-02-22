@@ -340,6 +340,7 @@ void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber r
 void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd);
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
+void emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg);
 
 void emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regDest, regNumber regAddr, void* addr);
 
