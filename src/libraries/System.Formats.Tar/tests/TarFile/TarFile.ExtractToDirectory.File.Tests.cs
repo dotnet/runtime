@@ -368,5 +368,46 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
         }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void HardLinkExtractionRoundtrip(TarEntryFormat format)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            // Create archive file.
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, format, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            // Extract archive using ExtractToDirectory.
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            TarFile.ExtractToDirectory(archivePath, destination, overwriteFiles: false);
+
+            // Verify extracted files are hard linked
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            AssertPathsAreHardLinked(targetFile1, targetFile2);
+        }
     }
 }
