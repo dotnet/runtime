@@ -703,7 +703,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         if (!m_doElseConversion)
         {
-            // Look for a previous unconditional store to the same lclVar which is equivalent to an else case
+            // If we don't have an else case look for a previous unconditional store and treat that as the else
             Statement* last   = m_startBlock->lastStmt();
             unsigned   lclNum = m_thenOperation.node->AsLclVar()->GetLclNum();
 
