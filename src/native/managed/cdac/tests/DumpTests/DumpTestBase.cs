@@ -61,6 +61,9 @@ public abstract class DumpTestBase : IAsyncLifetime
             throw new SkipTestException($"RuntimeVersion '{RuntimeVersion}' is in SkipDumpVersions list.");
 
         string dumpPath = GetDumpPath();
+
+        if (!File.Exists(dumpPath))
+            throw new SkipTestException($"Dump file not found: {dumpPath}");
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
