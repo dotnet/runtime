@@ -313,6 +313,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ImplicitIndexerDataFlow()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task LocalDataFlow()
         {
             return RunTest(nameof(LocalDataFlow));
