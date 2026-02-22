@@ -165,5 +165,45 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in XML format.</summary>
             public const string Xml = "text/xml";
         }
+
+        /// <summary>Specifies the kind of video data in an email message attachment.</summary>
+        public static class Video
+        {
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in AV1 format.</summary>
+            public const string Av1 = "video/av1";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in H.264 format.</summary>
+            public const string H264 = "video/h264";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in H.265 format.</summary>
+            public const string H265 = "video/h265";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in Matroska format.</summary>
+            public const string Matroska = "video/x-matroska";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in MP4 format.</summary>
+            public const string Mp4 = "video/mp4";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in MPEG format.</summary>
+            public const string Mpeg = "video/mpeg";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in MPV format.</summary>
+            public const string Mpv = "video/mpv";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in Ogg format.</summary>
+            public const string Ogg = "video/ogg";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in Quicktime format.</summary>
+            public const string Quicktime = "video/quicktime";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in VP8 format.</summary>
+            public const string Vp8 = "video/vp8";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in VP9 format.</summary>
+            public const string Vp9 = "video/vp9";
+
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Video"/> data is in WebM format.</summary>
+            public const string Webm = "video/webm";
+        }
     }
 }
