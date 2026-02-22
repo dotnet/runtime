@@ -543,10 +543,10 @@ namespace ILCompiler.ObjectWriter
                 MachSection section = _sections[definition.SectionIndex];
                 _symbolTable.Add(new MachSymbol
                 {
-                    Name = new Utf8StringBuilder().Append("Ltmp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex)).ToUtf8String(),
+                    Name = new Utf8StringBuilder().Append("ltemp"u8).Append((int)(symbolIndex - _temporaryLabelsBaseIndex)).ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress + (ulong)definition.Value,
-                    Descriptor = N_NO_DEAD_STRIP,
+                    Descriptor = 0,
                     Type = N_SECT,
                 });
                 symbolIndex++;
