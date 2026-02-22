@@ -50,7 +50,6 @@ void WasmRegAlloc::dumpLsraStatsSummary(FILE* file)
 
 bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 {
-    NYI_WASM("isContainableMemoryOp");
     return false;
 }
 
