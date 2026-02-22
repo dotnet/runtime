@@ -145,8 +145,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
         }
 
-        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "")]
-        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Trimmer | Tool.NativeAot, "", CompilerGeneratedCode = true)]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+        [ExpectedWarning("IL2026", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Trimmer | Tool.NativeAot, "Trimmer/NativeAOT do not warn on compiler-generated code", CompilerGeneratedCode = true)]
         [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.Analyzer, "NativeAOT Specific warning")]
         [ExpectedWarning("IL3050", "BaseWithRequires.BaseWithRequires()", "--BaseWithRequires--", Tool.NativeAot, "NativeAOT Specific warning", CompilerGeneratedCode = true)]
         class DerivedWithoutRequires : BaseWithRequires
