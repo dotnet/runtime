@@ -49,11 +49,20 @@ namespace Mono.Linker.Steps
             var annotations = Context.Annotations;
             bool methodSatisfies = annotations.IsInRequiresUnreferencedCodeScope(method, out _);
             bool baseRequires = annotations.DoesMethodRequireUnreferencedCode(baseMethod, out _);
-            if ((baseRequires && !methodSatisfies) || (!baseRequires && annotations.DoesMethodRequireUnreferencedCode(method, out _)))
+            bool methodRequires = annotations.DoesMethodRequireUnreferencedCode(method, out _);
+            // If the base type has RUC, then adding RUC to an override should not warn
+            bool baseTypeHasRUC = baseMethod.DeclaringType is not null &&
+                annotations.TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(baseMethod.DeclaringType, out _);
+
+            // Warn if:
+            // - Base requires RUC but method doesn't satisfy it
+            // - OR method requires RUC but base doesn't, UNLESS base type has RUC
+            bool shouldWarn = (baseRequires && !methodSatisfies) || (!baseRequires && methodRequires && !baseTypeHasRUC);
+            if (shouldWarn)
             {
                 string message = MessageFormat.FormatRequiresAttributeMismatch(
                     methodSatisfies,
-                    baseMethod.DeclaringType.IsInterface,
+                    baseMethod.DeclaringType?.IsInterface == true,
                     nameof(RequiresUnreferencedCodeAttribute),
                     method.GetDisplayName(),
                     baseMethod.GetDisplayName());
