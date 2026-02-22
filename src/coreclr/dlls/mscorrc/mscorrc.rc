@@ -676,6 +676,7 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported for AssemblyLoadContext resolution."
+    IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION "A different version of the assembly '%1' is already loaded. Loaded assembly: '%2'"
 END
 
 STRINGTABLE DISCARDABLE

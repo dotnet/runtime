@@ -103,7 +103,8 @@ Exit:;
 
 HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
                                                 /* in */ bool excludeAppPaths,
-                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly)
+                                                /* [retval][out] */ BINDER_SPACE::Assembly **ppAssembly,
+                                                /* [out, optional] */ SString *pLoadedAssemblyNameForMvidMismatch)
 {
     HRESULT hr = S_OK;
 
@@ -129,7 +130,7 @@ HRESULT CustomAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }
 
-        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly);
+        hr = AssemblyBinderCommon::BindUsingPEImage(this, pAssemblyName, pPEImage, excludeAppPaths, &pCoreCLRFoundAssembly, pLoadedAssemblyNameForMvidMismatch);
         if (hr == S_OK)
         {
             _ASSERTE(pCoreCLRFoundAssembly != NULL);

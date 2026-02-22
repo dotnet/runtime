@@ -214,19 +214,35 @@ namespace BinderTracing
         if (!m_tracingEnabled)
             return;
 
+        const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
+        const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
+
         // Use the error message that would be reported in the file load exception
         StackSString errorMsg;
         if (mvidMismatch)
         {
+            PathString loadedAssemblyName;
+            if (inContextAttempt != nullptr && inContextAttempt->AssemblyHolder != nullptr)
+            {
+                inContextAttempt->AssemblyHolder->GetAssemblyName()->GetDisplayName(loadedAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
+            }
+
             StackSString format;
             format.LoadResource(IDS_EE_FILELOAD_ERROR_GENERIC);
             StackSString details;
-            details.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            if (!loadedAssemblyName.IsEmpty())
+            {
+                const SString& simpleName = m_assemblyNameObject->GetSimpleName();
+                SString versionFormat;
+                versionFormat.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_WITH_VERSION);
+                details.FormatMessage(FORMAT_MESSAGE_FROM_STRING, versionFormat.GetUnicode(), 0, 0, simpleName, loadedAssemblyName);
+            }
+            else
+            {
+                details.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            }
             errorMsg.FormatMessage(FORMAT_MESSAGE_FROM_STRING, format.GetUnicode(), 0, 0, m_assemblyName, details);
         }
-
-        const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
-        const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
 
         if (inContextAttempt != nullptr)
         {
