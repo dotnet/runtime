@@ -694,6 +694,163 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     return useType;
 }
 
+#ifdef VECTORCALL_SUPPORT
+//-----------------------------------------------------------------------------
+// isSimdCompatibleStructForVectorcall:
+//   Check if a struct field is SIMD-compatible for vectorcall HVA purposes.
+//   A struct is SIMD-compatible if its size is a valid SIMD element size
+//   (8, 16, 32, or 64 bytes).
+//
+// Arguments:
+//   fieldClsHnd - Class handle of the field struct to check
+//
+// Returns:
+//   true if the struct is SIMD-compatible for HVA purposes
+//
+bool Compiler::isSimdCompatibleStructForVectorcall(CORINFO_CLASS_HANDLE fieldClsHnd)
+{
+    if (fieldClsHnd == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    // Check for intrinsic SIMD types first (Vector64, Vector128, etc.)
+    if (isIntrinsicType(fieldClsHnd))
+    {
+        const char* namespaceName = nullptr;
+        const char* className     = getClassNameFromMetadata(fieldClsHnd, &namespaceName);
+
+        if (namespaceName != nullptr && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+        {
+            if ((className != nullptr) &&
+                (strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
+                 strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0))
+            {
+                return true;
+            }
+        }
+    }
+
+    // For non-intrinsic types, check if it's a valid SIMD-compatible size.
+    // Valid SIMD element sizes: 8, 16, 32, 64 bytes
+    unsigned size = info.compCompHnd->getClassSize(fieldClsHnd);
+
+    return (size == 8 || size == 16 || size == 32 || size == 64);
+}
+
+//-----------------------------------------------------------------------------
+// isHvaByFieldInspectionForVectorcall:
+//   Determine if a struct is an HVA (Homogeneous Vector Aggregate) by inspecting
+//   its fields. An HVA is a struct containing 2-4 fields where ALL fields are
+//   SIMD-compatible structs of the same size.
+//
+// Arguments:
+//   clsHnd - Class handle of the struct to check
+//   size   - Size of the struct in bytes
+//
+// Returns:
+//   true if the struct is a valid HVA for vectorcall
+//
+bool Compiler::isHvaByFieldInspectionForVectorcall(CORINFO_CLASS_HANDLE clsHnd, unsigned size)
+{
+    if (clsHnd == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(clsHnd);
+
+    // HVA must have 2-4 elements
+    if (fieldCount < 2 || fieldCount > 4)
+    {
+        return false;
+    }
+
+    // Check each field to verify they're all SIMD-compatible structs of the same size
+    unsigned expectedFieldSize = 0;
+
+    for (unsigned i = 0; i < fieldCount; i++)
+    {
+        CORINFO_FIELD_HANDLE fieldHnd      = info.compCompHnd->getFieldInClass(clsHnd, i);
+        CORINFO_CLASS_HANDLE fieldClassHnd = nullptr;
+        CorInfoType          fieldCorType  = info.compCompHnd->getFieldType(fieldHnd, &fieldClassHnd);
+
+        // Field must be a value type (struct)
+        if (fieldCorType != CORINFO_TYPE_VALUECLASS)
+        {
+            return false;
+        }
+
+        // Field must be a SIMD-compatible struct
+        if (!isSimdCompatibleStructForVectorcall(fieldClassHnd))
+        {
+            return false;
+        }
+
+        // Get the size of this field
+        unsigned fieldSize = info.compCompHnd->getClassSize(fieldClassHnd);
+
+        if (i == 0)
+        {
+            expectedFieldSize = fieldSize;
+        }
+        else if (fieldSize != expectedFieldSize)
+        {
+            // All fields must be the same size (homogeneous)
+            return false;
+        }
+    }
+
+    // Verify the total size matches field count * element size
+    if (size != fieldCount * expectedFieldSize)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// getVectorcallHvaType:
+//   Determine the HVA element type for vectorcall returns by inspecting fields.
+//
+// Arguments:
+//   clsHnd - Class handle of the struct to check
+//   size   - Size of the struct in bytes
+//
+// Returns:
+//   HVA element type (TYP_SIMD8/16/32/64) or TYP_UNDEF if not an HVA.
+//
+var_types Compiler::getVectorcallHvaType(CORINFO_CLASS_HANDLE clsHnd, unsigned size)
+{
+    if (!isHvaByFieldInspectionForVectorcall(clsHnd, size))
+    {
+        return TYP_UNDEF;
+    }
+
+    unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(clsHnd);
+    if (fieldCount == 0)
+    {
+        return TYP_UNDEF;
+    }
+
+    unsigned elemSize = size / fieldCount;
+    switch (elemSize)
+    {
+        case 8:
+            return TYP_SIMD8;
+        case 16:
+            return TYP_SIMD16;
+        case 32:
+            return TYP_SIMD32;
+        case 64:
+            return TYP_SIMD64;
+        default:
+            return TYP_UNDEF;
+    }
+}
+#endif // VECTORCALL_SUPPORT
+
 //-----------------------------------------------------------------------------
 // getReturnTypeForStruct:
 //     Get the type that is used to return values of the given struct type.
@@ -884,6 +1041,129 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
 
 #endif
+
+#ifdef VECTORCALL_SUPPORT
+    // For vectorcall calling convention on Windows x64/x86, SIMD types are returned:
+    // - Single vectors (8/16/32/64 bytes): returned in XMM0/YMM0/ZMM0
+    // - HVA (Homogeneous Vector Aggregate) of 2-4 vectors: returned in XMM0-XMM3 / YMM0-YMM3
+    //
+    // HVAs are structs composed of 2-4 identical SIMD types (Vector128, Vector256, etc.).
+    // They are returned directly in registers, NOT via a return buffer.
+    if ((callConv == CorInfoCallConvExtension::Vectorcall ||
+         callConv == CorInfoCallConvExtension::VectorcallMemberFunction))
+    {
+        // Check if this is a SIMD-compatible struct (no GC pointers)
+        BYTE     gcPtrs[8] = {0};
+        unsigned numGCPtrs = 0;
+        if (structSize <= sizeof(gcPtrs) * TARGET_POINTER_SIZE)
+        {
+            info.compCompHnd->getClassGClayout(clsHnd, gcPtrs);
+            for (unsigned i = 0; i < structSize / TARGET_POINTER_SIZE; i++)
+            {
+                if (gcPtrs[i] != TYPE_GC_NONE)
+                {
+                    numGCPtrs++;
+                }
+            }
+        }
+
+        if (numGCPtrs == 0)
+        {
+            // Check if this is a known intrinsic SIMD type.
+            // These types are treated as vectorcall vector types and passed/returned in XMM/YMM/ZMM:
+            // - System.Runtime.Intrinsics: Vector64<T>, Vector128<T>, Vector256<T>, Vector512<T>
+            // - System.Numerics: Vector2, Vector3, Vector4
+            // Plain user-defined structs of the same size follow the default calling convention.
+            bool isIntrinsicSimd = false;
+            if (isIntrinsicType(clsHnd))
+            {
+                const char* namespaceName = nullptr;
+                const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+                if (namespaceName != nullptr && className != nullptr)
+                {
+                    if (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+                    {
+                        isIntrinsicSimd =
+                            strncmp(className, "Vector64", 8) == 0 || strncmp(className, "Vector128", 9) == 0 ||
+                            strncmp(className, "Vector256", 9) == 0 || strncmp(className, "Vector512", 9) == 0;
+                    }
+                    else if (strcmp(namespaceName, "System.Numerics") == 0)
+                    {
+                        isIntrinsicSimd = strcmp(className, "Vector2") == 0 || strcmp(className, "Vector3") == 0 ||
+                                          strcmp(className, "Vector4") == 0;
+                    }
+                }
+            }
+
+            // For 32/64 byte structs, use field inspection to distinguish between:
+            // - Single vector (e.g., Vec256 with 8 float fields) -> single YMM/ZMM
+            // - HVA (e.g., 2 Vec128 fields) -> multiple XMM registers
+            bool isHva = false;
+            if (!isIntrinsicSimd && (structSize == 32 || structSize == 48 || structSize == 64))
+            {
+                isHva = isHvaByFieldInspectionForVectorcall(clsHnd, structSize);
+            }
+
+            // Check for single-vector returns (intrinsic SIMD types only).
+            // Per vectorcall ABI, only actual vector types (Vector64/128/256/512) are
+            // returned in XMM/YMM/ZMM. Plain structs of the same size follow the default convention.
+            // For 32/64 bytes: single-vector if intrinsic SIMD, otherwise check for HVA below.
+            if (isIntrinsicSimd)
+            {
+                // Return single-vector SIMD struct in XMM/YMM/ZMM register
+                switch (structSize)
+                {
+                    case 8:
+                        useType = TYP_SIMD8; // Vector64
+                        break;
+                    case 16:
+                        useType = TYP_SIMD16; // __m128 / Vector128
+                        break;
+                    case 32:
+                        useType = TYP_SIMD32; // __m256 / Vector256
+                        break;
+                    case 64:
+                        useType = TYP_SIMD64; // __m512 / Vector512
+                        break;
+                    default:
+                        break;
+                }
+
+                if (useType != TYP_UNKNOWN)
+                {
+                    howToReturnStruct = SPK_PrimitiveType;
+
+                    if (wbReturnStruct != nullptr)
+                    {
+                        *wbReturnStruct = howToReturnStruct;
+                    }
+
+                    return useType;
+                }
+            }
+            // Check for HVA returns (2-4 vectors)
+            // - 32 bytes: HVA of 2x16-byte vectors (verified by field inspection)
+            // - 48 bytes: HVA of 3x16-byte vectors
+            // - 64 bytes: HVA of 4x16-byte vectors, or 2x32-byte vectors
+            else if (isHva)
+            {
+                // This is an HVA - return it in multiple XMM/YMM registers
+                // Use SPK_ByValueAsHfa to indicate multi-register return
+                howToReturnStruct = SPK_ByValueAsHfa;
+                useType           = TYP_STRUCT;
+
+                if (wbReturnStruct != nullptr)
+                {
+                    *wbReturnStruct = howToReturnStruct;
+                }
+
+                return useType;
+            }
+        }
+    }
+#endif // VECTORCALL_SUPPORT
+
     if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
         !isNativePrimitiveStructType(clsHnd))
     {
@@ -1030,6 +1310,13 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
+
+#elif defined(WINDOWS_AMD64_ABI)
+
+                // For Windows x64 ABI (non-vectorcall), structs larger than 8 bytes are returned via buffer.
+                // Vectorcall HVA returns should have been handled earlier in this function.
+                howToReturnStruct = SPK_ByReference;
+                useType           = TYP_UNKNOWN;
 
 #else //  TARGET_XXX
 

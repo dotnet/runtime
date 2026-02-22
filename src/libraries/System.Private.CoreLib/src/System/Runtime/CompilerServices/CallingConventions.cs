@@ -47,6 +47,21 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
+    /// Indicates that a method should use the <see href="https://learn.microsoft.com/cpp/cpp/vectorcall">vectorcall</see> calling convention.
+    /// </summary>
+    /// <remarks>
+    /// The vectorcall calling convention is only supported on Windows x86 and x64 platforms.
+    /// It allows SIMD vector types and homogeneous vector aggregates (HVA) to be passed in registers.
+    /// </remarks>
+    public class CallConvVectorcall
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CallConvVectorcall" /> class.
+        /// </summary>
+        public CallConvVectorcall() { }
+    }
+
+    /// <summary>
     /// Indicates that the calling convention used is the member function variant.
     /// </summary>
     public class CallConvMemberFunction
