@@ -25,22 +25,31 @@ steps:
   # If running on DevDiv, NuGetAuthenticate is not really an option. It's scoped to a single feed, and we have many feeds that
   # may be added. Instead, we'll use the traditional approach (add cred to nuget.config), but use an account token.
   - ${{ else }}:
-    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      - task: PowerShell@2
-        displayName: Setup Internal Feeds
+    - ${{ if and(ne(parameters.osGroup, 'windows'), eq(variables['UseLegacyNugetAuth'], 'true')) }}:
+      - task: Bash@3
+        displayName: Setup Private Feeds Credentials
         inputs:
-          filePath: $(System.DefaultWorkingDirectory)/eng/common/SetupNugetSources.ps1
-          arguments: -ConfigFile $(System.DefaultWorkingDirectory)/NuGet.config
+          filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+          arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+        env:
+          Token: $(dn-bot-dnceng-artifact-feeds-rw)
     - ${{ else }}:
-      - template: /eng/common/templates/steps/get-federated-access-token.yml
-        parameters:
-          federatedServiceConnection: ${{ parameters.nugetFederatedServiceConnection }}
-          outputVariableName: 'dnceng-artifacts-feeds-read-access-token'
-      - task: PowerShell@2
-        displayName: Setup Internal Feeds
-        inputs:
-          filePath: $(System.DefaultWorkingDirectory)/eng/common/SetupNugetSources.ps1
-          arguments: -ConfigFile $(System.DefaultWorkingDirectory)/NuGet.config -Password $(dnceng-artifacts-feeds-read-access-token)
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - task: PowerShell@2
+          displayName: Setup Internal Feeds
+          inputs:
+            filePath: $(System.DefaultWorkingDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(System.DefaultWorkingDirectory)/NuGet.config
+      - ${{ else }}:
+        - template: /eng/common/templates/steps/get-federated-access-token.yml
+          parameters:
+            federatedServiceConnection: ${{ parameters.nugetFederatedServiceConnection }}
+            outputVariableName: 'dnceng-artifacts-feeds-read-access-token'
+        - task: PowerShell@2
+          displayName: Setup Internal Feeds
+          inputs:
+            filePath: $(System.DefaultWorkingDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(System.DefaultWorkingDirectory)/NuGet.config -Password $(dnceng-artifacts-feeds-read-access-token)
   # This is required in certain scenarios to install the ADO credential provider.
   # It installed by default in some msbuild invocations (e.g. VS msbuild), but needs to be installed for others
   # (e.g. dotnet msbuild).
