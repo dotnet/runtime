@@ -82,6 +82,7 @@
     <Compile Include="PortableExecutable\PEBuilderTests.cs" />
     <Compile Include="PortableExecutable\PEHeadersTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
+    <Compile Include="PortableExecutable\RoundTripTests.cs" />
     <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="Utilities\HashTests.cs" />
     <Compile Include="Utilities\StreamExtensionsTests.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
