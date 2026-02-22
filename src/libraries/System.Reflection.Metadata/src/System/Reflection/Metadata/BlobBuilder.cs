@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
@@ -19,6 +20,8 @@ namespace System.Reflection.Metadata
         // - BlobBuilder allows for chunk allocation customization. A custom allocator can use pooling strategy, for example.
 
         internal const int DefaultChunkSize = 256;
+
+        internal const int DefaultMaxChunkSize = 8192;
 
         // Must be at least the size of the largest primitive type we write atomically (Guid).
         internal const int MinChunkSize = 16;
@@ -46,6 +49,9 @@ namespace System.Reflection.Metadata
         // Non-head: highest bit is 1, lower 31 bits are not all 0.
         private uint _length;
 
+        // The maximum size of a chunk when writing a large amount of bytes.
+        private readonly int _maxChunkSize;
+
         private const uint IsFrozenMask = 0x80000000;
         internal bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
@@ -61,6 +67,109 @@ namespace System.Reflection.Metadata
 
             _nextOrPrevious = this;
             _buffer = new byte[Math.Max(MinChunkSize, capacity)];
+            _maxChunkSize = DefaultMaxChunkSize;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="BlobBuilder"/> that is underpinned by a preallocated byte array.
+        /// </summary>
+        /// <param name="buffer">The array that underpins the <see cref="BlobBuilder"/>.</param>
+        /// <param name="maxChunkSize">The size of chunks to split large writes into.</param>
+        /// <exception cref="ArgumentException"><paramref name="buffer"/> is less than 16 bytes long.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxChunkSize"/> is negative.</exception>
+        protected BlobBuilder(byte[] buffer, int maxChunkSize = 0)
+        {
+            if (buffer is null)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+            if (maxChunkSize == 0)
+            {
+                maxChunkSize = DefaultMaxChunkSize;
+            }
+            if (maxChunkSize < MinChunkSize)
+            {
+                Throw.ArgumentOutOfRange(nameof(maxChunkSize));
+            }
+            if (buffer.Length < MinChunkSize)
+            {
+                Throw.InvalidArgument(SR.BuilderBufferTooSmall, nameof(buffer));
+            }
+
+            _nextOrPrevious = this;
+            _buffer = buffer;
+            _maxChunkSize = maxChunkSize;
+        }
+
+        /// <summary>
+        /// The byte array underpinning the <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <remarks>
+        /// This can only be called on the head of a chain of <see cref="BlobBuilder"/> instances.
+        /// Calling the setter will reset the <see cref="Length"/> to zero.
+        /// </remarks>
+        protected internal byte[] Buffer
+        {
+            get
+            {
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+
+                return _buffer;
+            }
+            set
+            {
+                if (value is null)
+                {
+                    Throw.ArgumentNull(nameof(value));
+                }
+
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+
+                _buffer = value;
+                _length = 0;
+            }
+        }
+
+        /// <summary>
+        /// The maximum number of bytes that can be contained in the memory allocated by the <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The value is accessed while the
+        /// <see cref="BlobBuilder"/> is not the head of a chain of <see cref="BlobBuilder"/>
+        /// instances.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is set to less than
+        /// the current <see cref="Length"/>.</exception>
+        /// <seealso cref="SetCapacity"/>
+        public int Capacity
+        {
+            get
+            {
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+                return _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length;
+            }
+            set
+            {
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+                if (value < Length)
+                {
+                    Throw.ArgumentOutOfRange(nameof(value));
+                }
+                if (value != _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length)
+                {
+                    SetCapacity(value);
+                }
+            }
         }
 
         protected virtual BlobBuilder AllocateChunk(int minimalSize)
@@ -71,6 +180,37 @@ namespace System.Reflection.Metadata
         protected virtual void FreeChunk()
         {
             // nop
+        }
+
+        private static void OnLinking(BlobBuilder left, BlobBuilder right)
+        {
+            left.OnLinking(right);
+            right.OnLinking(left);
+        }
+
+        /// <summary>
+        /// Notifies when this <see cref="BlobBuilder"/> instance is linked with another one.
+        /// </summary>
+        /// <param name="other">The other <see cref="BlobBuilder"/> instance that gets linked.</param>
+        /// <remarks>
+        /// Derived types can override this method to detect when a link is being made between two different types of
+        /// <see cref="BlobBuilder"/> and take appropriate action. It is called before the underlying buffers are
+        /// linked, for both the current and the target instance.
+        /// </remarks>
+        protected virtual void OnLinking(BlobBuilder other)
+        {
+            // nop
+        }
+
+        /// <summary>
+        /// Changes the size of the byte array underpinning the <see cref="BlobBuilder"/>.
+        /// Derived types can override this method to control the allocation strategy.
+        /// </summary>
+        /// <param name="capacity">The array's new size.</param>
+        /// <seealso cref="Capacity"/>
+        protected virtual void SetCapacity(int capacity)
+        {
+            Array.Resize(ref _buffer, Math.Max(MinChunkSize, capacity));
         }
 
         public void Clear()
@@ -399,6 +539,8 @@ namespace System.Reflection.Metadata
                 return;
             }
 
+            OnLinking(this, prefix);
+
             PreviousLength += prefix.Count;
 
             // prefix is not a head anymore:
@@ -460,6 +602,8 @@ namespace System.Reflection.Metadata
                 return;
             }
 
+            OnLinking(this, suffix);
+
             bool isEmpty = Count == 0;
 
             // swap buffers of the heads:
@@ -519,6 +663,23 @@ namespace System.Reflection.Metadata
             _length += (uint)value;
         }
 
+        /// <summary>
+        /// Returns a buffer to write new data into. You must call <see cref="AddLength"/> afterwards with the
+        /// number of bytes written.
+        /// </summary>
+        /// <param name="minBytes">The minimum amount of bytes to return.</param>
+        /// <remarks>
+        /// Alongside <see cref="AddLength"/>, this method provides an API similar to <see cref="Buffers.IBufferWriter{T}"/>.
+        /// </remarks>
+        private ArraySegment<byte> GetWriteBuffer(int minBytes = 1)
+        {
+            if (FreeBytes < minBytes)
+            {
+                Expand(Math.Max(minBytes, Math.Min(Count, _maxChunkSize)));
+            }
+            return new ArraySegment<byte>(_buffer, Length, FreeBytes);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Expand(int newLength)
         {
@@ -538,6 +699,7 @@ namespace System.Reflection.Metadata
                 throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
             }
 
+            OnLinking(this, newChunk);
             var newBuffer = newChunk._buffer;
 
             if (_length == 0)
@@ -545,6 +707,8 @@ namespace System.Reflection.Metadata
                 // If the first write into an empty buffer needs more space than the buffer provides, swap the buffers.
                 newChunk._buffer = _buffer;
                 _buffer = newBuffer;
+                // Free the new chunk that now contains the old buffer.
+                newChunk.ClearAndFreeChunk();
             }
             else
             {
@@ -589,6 +753,7 @@ namespace System.Reflection.Metadata
             }
 
             int start = ReserveBytesImpl(byteCount);
+            Array.Clear(_buffer, start, byteCount);
             return new Blob(_buffer, start, byteCount);
         }
 
@@ -631,18 +796,13 @@ namespace System.Reflection.Metadata
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            int bytesToCurrent = Math.Min(FreeBytes, byteCount);
-
-            _buffer.WriteBytes(Length, value, bytesToCurrent);
-            AddLength(bytesToCurrent);
-
-            int remaining = byteCount - bytesToCurrent;
-            if (remaining > 0)
+            while (byteCount > 0)
             {
-                Expand(remaining);
-
-                _buffer.WriteBytes(0, value, remaining);
-                AddLength(remaining);
+                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                int writeSize = Math.Min(byteCount, writeBuffer.Length);
+                writeBuffer.Slice(0, writeSize).Fill(value);
+                AddLength(writeSize);
+                byteCount -= writeSize;
             }
         }
 
@@ -671,19 +831,13 @@ namespace System.Reflection.Metadata
 
         private void WriteBytesUnchecked(ReadOnlySpan<byte> buffer)
         {
-            int bytesToCurrent = Math.Min(FreeBytes, buffer.Length);
-
-            buffer.Slice(0, bytesToCurrent).CopyTo(_buffer.AsSpan(Length));
-
-            AddLength(bytesToCurrent);
-
-            ReadOnlySpan<byte> remaining = buffer.Slice(bytesToCurrent);
-            if (!remaining.IsEmpty)
+            while (!buffer.IsEmpty)
             {
-                Expand(remaining.Length);
-
-                remaining.CopyTo(_buffer);
-                AddLength(remaining.Length);
+                Span<byte> writeBuffer = GetWriteBuffer().AsSpan();
+                int writeSize = Math.Min(buffer.Length, writeBuffer.Length);
+                buffer.Slice(0, writeSize).CopyTo(writeBuffer);
+                AddLength(writeSize);
+                buffer = buffer.Slice(writeSize);
             }
         }
 
@@ -708,31 +862,22 @@ namespace System.Reflection.Metadata
                 return 0;
             }
 
-            int bytesRead = 0;
-            int bytesToCurrent = Math.Min(FreeBytes, byteCount);
+            int remaining = byteCount;
 
-            if (bytesToCurrent > 0)
+            while (remaining > 0)
             {
-                bytesRead = source.TryReadAll(_buffer, Length, bytesToCurrent);
+                ArraySegment<byte> writeBuffer = GetWriteBuffer();
+                int writeSize = Math.Min(remaining, writeBuffer.Count);
+                int bytesRead = source.TryReadAll(writeBuffer.Array!, writeBuffer.Offset, writeSize);
                 AddLength(bytesRead);
-
-                if (bytesRead != bytesToCurrent)
+                remaining -= bytesRead;
+                if (bytesRead != writeSize)
                 {
-                    return bytesRead;
+                    break;
                 }
             }
 
-            int remaining = byteCount - bytesToCurrent;
-            if (remaining > 0)
-            {
-                Expand(remaining);
-                bytesRead = source.TryReadAll(_buffer, 0, remaining);
-                AddLength(bytesRead);
-
-                bytesRead += bytesToCurrent;
-            }
-
-            return bytesRead;
+            return byteCount - remaining;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
@@ -789,7 +934,8 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
-        internal void WriteBytes(ReadOnlySpan<byte> buffer)
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteBytes(ReadOnlySpan<byte> buffer)
         {
             if (!IsHead)
             {
@@ -1027,7 +1173,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates: true, prependSize: true);
+            WriteUTF8(value.AsSpan(), allowUnpairedSurrogates: true, prependSize: true);
         }
 
         /// <summary>
@@ -1069,48 +1215,28 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
-            WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
+            WriteUTF8(value.AsSpan(), allowUnpairedSurrogates, prependSize: false);
         }
 
-        internal unsafe void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        internal unsafe void WriteUTF8(ReadOnlySpan<char> str, bool allowUnpairedSurrogates, bool prependSize)
         {
-            Debug.Assert(start >= 0);
-            Debug.Assert(length >= 0);
-            Debug.Assert(start + length <= str.Length);
-
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            fixed (char* strPtr = str)
+            if (prependSize)
             {
-                char* currentPtr = strPtr + start;
-                char* nextPtr;
+                WriteCompressedInteger(Encoding.UTF8.GetByteCount(str));
+            }
 
-                // the max size of compressed int is 4B:
-                int byteLimit = FreeBytes - (prependSize ? sizeof(uint) : 0);
-
-                int bytesToCurrent = BlobUtilities.GetUTF8ByteCount(currentPtr, length, byteLimit, out nextPtr);
-                int charsToCurrent = (int)(nextPtr - currentPtr);
-                int charsToNext = length - charsToCurrent;
-                int bytesToNext = BlobUtilities.GetUTF8ByteCount(nextPtr, charsToNext);
-
-                if (prependSize)
-                {
-                    WriteCompressedInteger(bytesToCurrent + bytesToNext);
-                }
-
-                _buffer.WriteUTF8(Length, currentPtr, charsToCurrent, bytesToCurrent, allowUnpairedSurrogates);
-                AddLength(bytesToCurrent);
-
-                if (bytesToNext > 0)
-                {
-                    Expand(bytesToNext);
-
-                    _buffer.WriteUTF8(0, nextPtr, charsToNext, bytesToNext, allowUnpairedSurrogates);
-                    AddLength(bytesToNext);
-                }
+            while (!str.IsEmpty)
+            {
+                // Request at least four bytes to guarantee writing at least one character per iteration.
+                Span<byte> writeBuffer = GetWriteBuffer(4).AsSpan();
+                BlobUtilities.WriteUtf8(str, writeBuffer, out int charsConsumed, out int bytesWritten, allowUnpairedSurrogates);
+                AddLength(bytesWritten);
+                str = str.Slice(charsConsumed);
             }
         }
 
