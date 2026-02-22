@@ -125,7 +125,13 @@ var_types ABIPassingSegment::GetRegisterType() const
 #ifdef FEATURE_SIMD
             case 16:
                 return TYP_SIMD16;
-#endif
+#ifdef TARGET_XARCH
+            case 32:
+                return TYP_SIMD32;
+            case 64:
+                return TYP_SIMD64;
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
             default:
                 assert(!"Unexpected size for floating point register");
                 return TYP_UNDEF;

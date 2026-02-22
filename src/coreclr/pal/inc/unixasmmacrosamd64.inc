@@ -259,6 +259,78 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+// Save upper 128 bits of YMM0-YMM7 and upper 256 bits of ZMM0-ZMM7.
+// Uses g_avxSupported / g_avx512Supported runtime flags.
+// ofs: base offset into extra locals area for the 384 bytes of save space.
+// Clobbers r11.
+.macro SAVE_UPPER_VECTOR_REGISTERS ofs
+
+        PREPARE_EXTERNAL_VAR g_avxSupported, r11
+        cmp             byte ptr [r11], 0
+        je              LOCAL_LABEL(SaveUpperVecDone_\@)
+
+        vextractf128    xmmword ptr [rsp + \ofs + 0x00], ymm0, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x10], ymm1, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x20], ymm2, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x30], ymm3, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x40], ymm4, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x50], ymm5, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x60], ymm6, 1
+        vextractf128    xmmword ptr [rsp + \ofs + 0x70], ymm7, 1
+
+        PREPARE_EXTERNAL_VAR g_avx512Supported, r11
+        cmp             byte ptr [r11], 0
+        je              LOCAL_LABEL(SaveUpperVecDone_\@)
+
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0x80],  zmm0, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0xA0],  zmm1, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0xC0],  zmm2, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0xE0],  zmm3, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0x100], zmm4, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0x120], zmm5, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0x140], zmm6, 1
+        vextractf64x4   ymmword ptr [rsp + \ofs + 0x160], zmm7, 1
+
+LOCAL_LABEL(SaveUpperVecDone_\@):
+
+.endm
+
+// Restore upper 128 bits of YMM0-YMM7 and upper 256 bits of ZMM0-ZMM7.
+// Must be called AFTER RESTORE_FLOAT_ARGUMENT_REGISTERS (which restores XMM lower 128 bits).
+// ofs: same base offset used in SAVE_UPPER_VECTOR_REGISTERS.
+// Clobbers r11.
+.macro RESTORE_UPPER_VECTOR_REGISTERS ofs
+
+        PREPARE_EXTERNAL_VAR g_avxSupported, r11
+        cmp             byte ptr [r11], 0
+        je              LOCAL_LABEL(RestoreUpperVecDone_\@)
+
+        vinsertf128     ymm0, ymm0, xmmword ptr [rsp + \ofs + 0x00], 1
+        vinsertf128     ymm1, ymm1, xmmword ptr [rsp + \ofs + 0x10], 1
+        vinsertf128     ymm2, ymm2, xmmword ptr [rsp + \ofs + 0x20], 1
+        vinsertf128     ymm3, ymm3, xmmword ptr [rsp + \ofs + 0x30], 1
+        vinsertf128     ymm4, ymm4, xmmword ptr [rsp + \ofs + 0x40], 1
+        vinsertf128     ymm5, ymm5, xmmword ptr [rsp + \ofs + 0x50], 1
+        vinsertf128     ymm6, ymm6, xmmword ptr [rsp + \ofs + 0x60], 1
+        vinsertf128     ymm7, ymm7, xmmword ptr [rsp + \ofs + 0x70], 1
+
+        PREPARE_EXTERNAL_VAR g_avx512Supported, r11
+        cmp             byte ptr [r11], 0
+        je              LOCAL_LABEL(RestoreUpperVecDone_\@)
+
+        vinsertf64x4    zmm0, zmm0, ymmword ptr [rsp + \ofs + 0x80],  1
+        vinsertf64x4    zmm1, zmm1, ymmword ptr [rsp + \ofs + 0xA0],  1
+        vinsertf64x4    zmm2, zmm2, ymmword ptr [rsp + \ofs + 0xC0],  1
+        vinsertf64x4    zmm3, zmm3, ymmword ptr [rsp + \ofs + 0xE0],  1
+        vinsertf64x4    zmm4, zmm4, ymmword ptr [rsp + \ofs + 0x100], 1
+        vinsertf64x4    zmm5, zmm5, ymmword ptr [rsp + \ofs + 0x120], 1
+        vinsertf64x4    zmm6, zmm6, ymmword ptr [rsp + \ofs + 0x140], 1
+        vinsertf64x4    zmm7, zmm7, ymmword ptr [rsp + \ofs + 0x160], 1
+
+LOCAL_LABEL(RestoreUpperVecDone_\@):
+
+.endm
+
 // Stack layout:
 //
 // (stack parameters)

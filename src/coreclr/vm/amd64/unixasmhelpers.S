@@ -136,14 +136,22 @@ NESTED_END OnHijackTripThread, _TEXT
 #ifdef FEATURE_TIERED_COMPILATION
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 384
+
+        SAVE_UPPER_VECTOR_REGISTERS 0x00
 
         lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
         mov     rsi, rax // stub-identifying token, see OnCallCountThresholdReachedStub
         call    C_FUNC(OnCallCountThresholdReached)
+        mov     r10, rax
 
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        TAILJMP_RAX
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_UPPER_VECTOR_REGISTERS 0x00
+
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        jmp     r10
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
