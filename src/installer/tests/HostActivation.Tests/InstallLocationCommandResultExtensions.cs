@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using FluentAssertions;
+
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
@@ -16,12 +16,12 @@ namespace HostActivation.Tests
     {
         private static bool IsRunningInWoW64(string rid) => OperatingSystem.IsWindows() && Environment.Is64BitOperatingSystem && rid.Equals("win-x86");
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
+        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion, string installLocation, string rid)
         {
             return assertion.HaveUsedDotNetRootInstallLocation(installLocation, rid, null);
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
+        public static CommandResultAssertions HaveUsedDotNetRootInstallLocation(this CommandResultAssertions assertion,
             string installLocation,
             string rid,
             string arch)
@@ -36,32 +36,32 @@ namespace HostActivation.Tests
             return assertion.HaveStdErrContaining($"Using environment variable {expectedEnvironmentVariable}=[{installLocation}] as runtime location.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static CommandResultAssertions HaveUsedRegisteredInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
             return assertion.HaveStdErrContaining($"Found registered install location '{installLocation}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static CommandResultAssertions HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
             return assertion.HaveStdErrContaining($"Using global install location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedAppLocalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static CommandResultAssertions HaveUsedAppLocalInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
             return assertion.HaveStdErrContaining($"Using app-local location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveUsedAppRelativeInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        public static CommandResultAssertions HaveUsedAppRelativeInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
             return assertion.HaveStdErrContaining($"Using app-relative location [{installLocation}]");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
+        public static CommandResultAssertions HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)
         {
             return assertion.HaveStdErrContaining($"Looking for install_location file in '{Path.Combine(installLocationPath, "install_location")}'.");
         }
 
-        public static AndConstraint<CommandResultAssertions> HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
+        public static CommandResultAssertions HaveLookedForArchitectureSpecificInstallLocation(this CommandResultAssertions assertion, string installLocationPath, string architecture)
         {
             return assertion.HaveStdErrContaining($"Looking for architecture-specific install_location file in '{Path.Combine(installLocationPath, "install_location_" + architecture.ToLowerInvariant())}'.");
         }

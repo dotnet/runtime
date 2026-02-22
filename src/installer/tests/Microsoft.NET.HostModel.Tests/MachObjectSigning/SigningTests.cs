@@ -13,7 +13,6 @@ using Microsoft.NET.HostModel.MachO;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
-using FluentAssertions;
 using System.IO.MemoryMappedFiles;
 using System.Collections;
 using System.Collections.Generic;

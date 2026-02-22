@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.AppHost;
@@ -36,8 +35,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
 
             if (OperatingSystem.IsWindows())
             {
@@ -63,8 +62,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -82,17 +81,17 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 // Note that this is an exact match - we don't expect any output from the host itself
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
-                .And.NotHaveStdErr();
+                 .HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                 .NotHaveStdErr();
 
             // Make sure tracing indicates there is no runtime config and no deps json
             Command.Create(app.AppExe)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
-                .And.HaveStdErrContaining($"Runtime config does not exist at [{app.RuntimeConfigJson}]")
-                .And.HaveStdErrContaining($"Dependencies manifest does not exist at [{app.DepsJson}]");
+                 .HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                 .HaveStdErrContaining($"Runtime config does not exist at [{app.RuntimeConfigJson}]")
+                 .HaveStdErrContaining($"Dependencies manifest does not exist at [{app.DepsJson}]");
         }
 
         [Fact]
@@ -108,8 +107,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -135,8 +134,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -158,8 +157,8 @@ namespace HostActivation.Tests
                 .DotNetRoot(app.Location)
                 .Execute()
                 .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), HostTestContext.BuildRID)
-                .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+                 .HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), HostTestContext.BuildRID)
+                 .HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
                 [Fact]
@@ -172,8 +171,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
 
             appExe = $@"\\.\{sharedTestState.App.AppExe}";
             Command.Create(appExe)
@@ -181,8 +180,8 @@ namespace HostActivation.Tests
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -225,9 +224,9 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion)
-                .And.HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
+                 .HaveStdOutContaining("Hello World")
+                 .HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion)
+                 .HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
         }
 
         public class SharedTestState : IDisposable
