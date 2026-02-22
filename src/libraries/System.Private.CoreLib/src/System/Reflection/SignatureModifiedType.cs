@@ -10,8 +10,8 @@ namespace System.Reflection
             if (baseType is SignatureModifiedType modifiedType)
             {
                 baseType = modifiedType.UnderlyingSystemType;
-                requiredCustomModifiers = [.. modifiedType.GetRequiredCustomModifiers(), .. requiredCustomModifiers];
-                optionalCustomModifiers = [.. modifiedType.GetOptionalCustomModifiers(), .. optionalCustomModifiers];
+                requiredCustomModifiers = [.. requiredCustomModifiers, .. modifiedType.GetRequiredCustomModifiers()];
+                optionalCustomModifiers = [.. optionalCustomModifiers, .. modifiedType.GetOptionalCustomModifiers()];
             }
 
             _unmodifiedType = baseType;

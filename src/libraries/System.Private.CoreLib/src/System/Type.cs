@@ -672,12 +672,7 @@ namespace System
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 
             foreach (Type paramType in parameterTypes)
-            {
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
-
-                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
-                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
-            }
 
             foreach (Type callConv in callingConventions)
                 ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
@@ -712,9 +707,12 @@ namespace System
 
             if (callConvInModOpts)
             {
-                foreach (Type callConv in callingConventions)
+                if (retTypeModOpts.Length < callingConventions.Length)
+                    throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+                for (int i = 0; i < callingConventions.Length; i++)
                 {
-                    if (!retTypeModOpts.Contains(callConv))
+                    if (retTypeModOpts[i] != callingConventions[i])
                         throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
                 }
             }

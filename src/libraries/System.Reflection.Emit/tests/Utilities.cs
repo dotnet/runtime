@@ -180,7 +180,7 @@ namespace System.Reflection.Emit.Tests
             public FunctionPointer(
                 Type baseFunctionPointerType,
                 Type[]? conventions = null,
-                Type customReturnType = null,
+                Type? customReturnType = null,
                 Type[]? customParameterTypes = null,
                 Type[]? fnPtrRequiredMods = null,
                 Type[]? fnPtrOptionalMods = null)

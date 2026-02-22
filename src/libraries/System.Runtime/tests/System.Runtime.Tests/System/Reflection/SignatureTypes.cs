@@ -500,6 +500,14 @@ namespace System.Reflection.Tests
                         [typeof(CallConvSuppressGCTransition), typeof(CallConvMemberFunction)]),
                     new Type[] { typeof(CallConvThiscall), typeof(CallConvSuppressGCTransition), typeof(CallConvMemberFunction) }
                 ];
+
+                yield return
+                [
+                    Type.MakeModifiedSignatureType(
+                        typeof(bool), [],
+                        [typeof(CallConvMemberFunction), typeof(CallConvStdcall)]),
+                    new Type[] { typeof(CallConvStdcall), typeof(CallConvMemberFunction) }
+                ];
             }
         }
 
@@ -544,7 +552,7 @@ namespace System.Reflection.Tests
 
             Assert.True(type.IsSignatureType);
             Assert.True(type.UnderlyingSystemType == typeof(int));
-            Assert.Equal([typeof(IsVolatile), typeof(IsConst)], type.GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], type.GetRequiredCustomModifiers());
             Assert.Equal([], type.GetOptionalCustomModifiers());
         }
 
@@ -577,7 +585,7 @@ namespace System.Reflection.Tests
 
             Assert.True(type.IsSignatureType);
             Assert.True(type.UnderlyingSystemType == typeof(long));
-            Assert.Equal([typeof(IsLong), typeof(IsConst), typeof(IsVolatile)], type.GetRequiredCustomModifiers());
+            Assert.Equal([typeof(IsVolatile), typeof(IsConst), typeof(IsLong)], type.GetRequiredCustomModifiers());
             Assert.Equal([], type.GetOptionalCustomModifiers());
         }
 
