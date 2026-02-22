@@ -479,12 +479,12 @@ namespace ILCompiler.ObjectWriter
                         // for DWARF .eh_frame section.
 
                         // Apple ld-prime linker needs a quirk where we restrict the addend to
-                        // signed 24-bit integer. We generate temporary label every time the
+                        // signed 20-bit integer. We generate temporary label every time the
                         // addend would overflow and adjust the addend to be relative to that label.
                         var temporaryLabelOffset = _sections[sectionIndex].TemporaryLabelOffset;
                         var temporaryLabelIndex = _sections[sectionIndex].TemporaryLabelIndex;
                         addend -= offset - temporaryLabelOffset;
-                        if ((int)addend != (((int)addend << 8) >> 8))
+                        if ((int)addend != (((int)addend << 12) >> 12))
                         {
                             addend += offset - temporaryLabelOffset;
                             _temporaryLabels.Add(new SymbolDefinition(sectionIndex, offset, 0, false));
