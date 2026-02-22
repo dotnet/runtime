@@ -705,13 +705,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
 
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }
