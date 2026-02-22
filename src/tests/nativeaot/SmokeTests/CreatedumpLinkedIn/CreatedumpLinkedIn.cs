@@ -54,10 +54,11 @@ class CreatedumpLinkedIn
             startInfo.ArgumentList.Add("--crash");
 
             // Enable mini dump generation with a known output path.
-            // DbgMiniDumpType=4 is DumpTypeFull.
+            // DbgMiniDumpType=2 (WithHeap) uses optimized filtering:
+            // writable memory + main exe + shared library ELF headers.
             startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "1";
             startInfo.Environment["DOTNET_DbgMiniDumpName"] = dumpPath;
-            startInfo.Environment["DOTNET_DbgMiniDumpType"] = "4";
+            startInfo.Environment["DOTNET_DbgMiniDumpType"] = "2";
 
             // Disable the system core_pattern so the OS doesn't also try to
             // write a core dump (which could interfere or be slow).
@@ -96,6 +97,14 @@ class CreatedumpLinkedIn
             // The child should have been killed by a signal (exit code < 0 on .NET
             // for signal-terminated processes, or 128+signal on raw wait).
             // We don't check the exact exit code since it varies.
+
+            // Verify that the linked-in createdump path was used (not an external binary).
+            if (!stderr.Contains("[createdump]"))
+            {
+                Console.WriteLine("FAIL: Child stderr does not contain '[createdump]' marker. " +
+                    "The linked-in createdump path may not have been used.");
+                return 1;
+            }
 
             // Look for the dump file. The %p in the template is replaced with the PID.
             string[] dumpFiles = Directory.GetFiles(dumpDir, "coredump.*");

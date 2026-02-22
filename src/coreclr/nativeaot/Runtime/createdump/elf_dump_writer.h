@@ -12,8 +12,9 @@
 #include "process_reader.h"
 
 // Write an ELF core dump of the given process to the specified file path.
-// All readable memory regions are included in the dump.
+// When fullDump is true, all readable memory is included.
+// When false, shared library code/rodata is excluded (debuggers load it from disk).
 // Returns true on success, false on failure.
-bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics);
+bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bool diagnostics);
 
 #endif // ELF_DUMP_WRITER_H

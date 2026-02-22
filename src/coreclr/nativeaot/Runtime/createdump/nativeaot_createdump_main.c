@@ -119,6 +119,7 @@ int nativeaot_createdump_main(int argc, const char* argv[])
 {
     const char* dumpPathTemplate = NULL;
     bool diagnostics = false;
+    bool fullDump = false;
     int crashSignal = 0;
     pid_t crashThread = 0;
     int signalCode = 0;
@@ -140,7 +141,7 @@ int nativeaot_createdump_main(int argc, const char* argv[])
         }
         else if (strcmp(argv[i], "--full") == 0)
         {
-            // Full dump is the only type supported; accept and ignore
+            fullDump = true;
         }
         else if (strcmp(argv[i], "--diag") == 0)
         {
@@ -183,7 +184,10 @@ int nativeaot_createdump_main(int argc, const char* argv[])
                  strcmp(argv[i], "--normal") == 0 ||
                  strcmp(argv[i], "--triage") == 0)
         {
-            // NativeAOT only supports full dumps; accept and ignore
+            // Without DAC, Normal/Triage can't do fine-grained filtering.
+            // These modes use heap-style filtering: all writable/anonymous
+            // memory plus the main executable, excluding shared library
+            // code/rodata (which debuggers load from disk).
         }
         else if (strcmp(argv[i], "--crashreport") == 0 ||
                  strcmp(argv[i], "--crashreportonly") == 0)
@@ -291,7 +295,7 @@ int nativeaot_createdump_main(int argc, const char* argv[])
     }
 
     // Write the ELF core dump
-    if (WriteElfCoreDump(dumpPath, &processInfo, diagnostics))
+    if (WriteElfCoreDump(dumpPath, &processInfo, fullDump, diagnostics))
     {
         fprintf(stderr, "[createdump] Dump successfully written to %s\n", dumpPath);
         exitCode = 0;

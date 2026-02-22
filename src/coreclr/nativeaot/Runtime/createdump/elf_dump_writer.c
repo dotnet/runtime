@@ -10,7 +10,10 @@
 //   Note Section: NT_PRPSINFO, NT_AUXV, NT_FILE, per-thread (NT_PRSTATUS, NT_FPREGSET, NT_SIGINFO)
 //   Memory Region Contents (4KB aligned)
 //
-// All readable memory regions are included in the dump.
+// Region filtering (heap mode): file-backed read-only regions from shared
+// libraries are excluded because debuggers can reconstruct them from the
+// original files using the NT_FILE note. This significantly reduces dump
+// size (e.g., libicudata.so alone is ~30MB).
 
 #include "elf_dump_writer.h"
 
@@ -32,10 +35,63 @@ _Static_assert(sizeof(gp_regs_t) <= sizeof(((struct elf_prstatus*)0)->pr_reg),
 #define DUMP_PAGE_SIZE 4096
 #define ALIGN_UP(val, align) (((val) + (align) - 1) & ~((align) - 1))
 
-// Returns true if a region should be included in the dump (all readable regions).
-static bool IsRegionIncluded(const MemRegion* region)
+// Determines how many bytes of a memory region to include in the dump.
+//
+// Full mode (DbgMiniDumpType=4): includes all readable memory.
+//
+// Heap mode (default, types 0-3): excludes shared library code/rodata since
+// debuggers load those from disk via NT_FILE. Includes: anonymous memory
+// (heap, stack, GC heaps), writable regions, the main executable's regions
+// (including RELRO pages with r_debug), and the first page of each shared
+// library (ELF header for identification).
+static uint64_t GetDumpSize(const MemRegion* region, const ProcessInfo* info, bool fullDump)
 {
-    return (region->permissions & PF_R) != 0;
+    uint64_t regionSize = region->endAddress - region->startAddress;
+
+    if ((region->permissions & PF_R) == 0)
+    {
+        return 0;
+    }
+
+    // In full mode, include all readable memory.
+    if (fullDump)
+    {
+        return regionSize;
+    }
+
+    // Always include the full content of writable regions.
+    if ((region->permissions & PF_W) != 0)
+    {
+        return regionSize;
+    }
+
+    // Include anonymous read-only regions (no file path) and special mappings.
+    if (region->fileName[0] == '\0' ||
+        region->fileName[0] == '[')
+    {
+        return regionSize;
+    }
+
+    // Include all regions from the main executable. These contain RELRO pages
+    // with .dynamic/.got.plt that the dynamic linker patches at startup then
+    // mprotect's read-only. GDB reads r_debug from .dynamic to discover
+    // shared libraries. The main exe is typically small (<5MB total).
+    if (info->exePath[0] != '\0' && strcmp(region->fileName, info->exePath) == 0)
+    {
+        return regionSize;
+    }
+
+    // Shared library file-backed read-only at file offset 0: include the
+    // first page. This contains the ELF header that GDB needs to identify
+    // the library and load the remaining content from disk.
+    if (region->offset == 0 && regionSize >= DUMP_PAGE_SIZE)
+    {
+        return DUMP_PAGE_SIZE;
+    }
+
+    // Other shared library read-only regions (.text, .rodata): skip.
+    // The debugger loads these from the original files via NT_FILE.
+    return 0;
 }
 
 // Note name is "CORE\0" padded to 8 bytes (5 bytes + 3 padding)
@@ -302,7 +358,7 @@ static bool WriteThreadNotes(FILE* fp, const ProcessInfo* info)
     return true;
 }
 
-static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool diagnostics)
+static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool fullDump, bool diagnostics)
 {
     uint8_t* buffer = (uint8_t*)malloc(DUMP_PAGE_SIZE);
     if (buffer == NULL)
@@ -325,13 +381,14 @@ static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool diagnosti
     {
         const MemRegion* region = &info->regions.items[i];
 
-        if (!IsRegionIncluded(region))
+        uint64_t dumpSize = GetDumpSize(region, info, fullDump);
+        if (dumpSize == 0)
         {
             continue;
         }
 
         uint64_t address = region->startAddress;
-        uint64_t remaining = region->endAddress - region->startAddress;
+        uint64_t remaining = dumpSize;
 
         while (remaining > 0)
         {
@@ -362,7 +419,7 @@ static bool WriteMemoryRegions(FILE* fp, const ProcessInfo* info, bool diagnosti
     return true;
 }
 
-bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
+bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool fullDump, bool diagnostics)
 {
     // Create the dump file with restrictive permissions (0600) since core dumps
     // may contain secrets (heap data, keys, etc.).
@@ -388,7 +445,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
     size_t loadCount = 0;
     for (size_t i = 0; i < info->regions.count; i++)
     {
-        if (IsRegionIncluded(&info->regions.items[i]))
+        if (GetDumpSize(&info->regions.items[i], info, fullDump) > 0)
         {
             loadCount++;
         }
@@ -462,7 +519,8 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
         {
             const MemRegion* region = &info->regions.items[i];
 
-            if (!IsRegionIncluded(region))
+            uint64_t dumpSize = GetDumpSize(region, info, fullDump);
+            if (dumpSize == 0)
             {
                 continue;
             }
@@ -475,7 +533,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
             loadPhdr.p_offset = currentOffset;
             loadPhdr.p_vaddr = region->startAddress;
             loadPhdr.p_paddr = 0;
-            loadPhdr.p_filesz = regionSize;
+            loadPhdr.p_filesz = dumpSize;
             loadPhdr.p_memsz = regionSize;
             loadPhdr.p_flags = region->permissions & (PF_R | PF_W | PF_X);
             loadPhdr.p_align = DUMP_PAGE_SIZE;
@@ -485,7 +543,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
                 goto cleanup;
             }
 
-            currentOffset += regionSize;
+            currentOffset += dumpSize;
         }
     }
 
@@ -514,7 +572,7 @@ bool WriteElfCoreDump(const char* dumpPath, ProcessInfo* info, bool diagnostics)
     }
 
     // Memory region contents
-    if (!WriteMemoryRegions(fp, info, diagnostics))
+    if (!WriteMemoryRegions(fp, info, fullDump, diagnostics))
     {
         goto cleanup;
     }
