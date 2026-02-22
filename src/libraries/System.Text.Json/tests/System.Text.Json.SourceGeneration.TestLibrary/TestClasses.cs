@@ -20,6 +20,41 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
         internal protected int InternalProtectedValue { get; set; } = 32;
     }
 
+    [JsonDerivedType(typeof(CrossAssemblyPolymorphicMiddle), "middle")]
+    public class CrossAssemblyPolymorphicRoot
+    {
+        public int Value { get; set; }
+    }
+
+    [JsonDerivedType(typeof(CrossAssemblyPolymorphicLeaf), "leaf")]
+    public class CrossAssemblyPolymorphicMiddle : CrossAssemblyPolymorphicRoot
+    {
+        public string Name { get; set; }
+    }
+
+    public class CrossAssemblyPolymorphicLeaf : CrossAssemblyPolymorphicMiddle
+    {
+        public bool Flag { get; set; }
+    }
+
+    [JsonDerivedType(typeof(CrossAssemblyPolymorphicStopMiddle), "middle")]
+    public class CrossAssemblyPolymorphicStopRoot
+    {
+        public int Value { get; set; }
+    }
+
+    [JsonPolymorphic]
+    [JsonDerivedType(typeof(CrossAssemblyPolymorphicStopLeaf), "leaf")]
+    public class CrossAssemblyPolymorphicStopMiddle : CrossAssemblyPolymorphicStopRoot
+    {
+        public string Name { get; set; }
+    }
+
+    public class CrossAssemblyPolymorphicStopLeaf : CrossAssemblyPolymorphicStopMiddle
+    {
+        public bool Flag { get; set; }
+    }
+
     [JsonSerializable(typeof(MyPoco))]
     public partial class NETStandardSerializerContext : JsonSerializerContext
     {

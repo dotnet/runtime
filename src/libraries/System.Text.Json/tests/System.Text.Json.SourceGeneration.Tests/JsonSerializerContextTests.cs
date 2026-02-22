@@ -786,8 +786,54 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializer.Deserialize(json, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
         }
 
+        [Fact]
+        public static void CrossAssemblyPolymorphicDerivedTypeAttributes_AreResolvedTransitively()
+        {
+            CrossAssemblyPolymorphicRoot value = new CrossAssemblyPolymorphicLeaf
+            {
+                Value = 1,
+                Name = "leaf",
+                Flag = true
+            };
+
+            string json = JsonSerializer.Serialize(value, ContextForCrossAssemblyPolymorphicTypes.Default.CrossAssemblyPolymorphicRoot);
+            Assert.Equal("""{"$type":"leaf","Flag":true,"Name":"leaf","Value":1}""", json);
+
+            CrossAssemblyPolymorphicRoot result = JsonSerializer.Deserialize(
+                json,
+                ContextForCrossAssemblyPolymorphicTypes.Default.CrossAssemblyPolymorphicRoot);
+            CrossAssemblyPolymorphicLeaf typedResult = Assert.IsType<CrossAssemblyPolymorphicLeaf>(result);
+            Assert.Equal(1, typedResult.Value);
+            Assert.Equal("leaf", typedResult.Name);
+            Assert.True(typedResult.Flag);
+        }
+
+        [Fact]
+        public static void CrossAssemblyPolymorphicDerivedTypeAttributes_StopAtJsonPolymorphicBoundary()
+        {
+            CrossAssemblyPolymorphicStopRoot value = new CrossAssemblyPolymorphicStopMiddle
+            {
+                Value = 1,
+                Name = "middle"
+            };
+
+            string json = JsonSerializer.Serialize(value, ContextForCrossAssemblyPolymorphicTypes.Default.CrossAssemblyPolymorphicStopRoot);
+            Assert.Equal("""{"$type":"middle","Name":"middle","Value":1}""", json);
+
+            Assert.Throws<NotSupportedException>(
+                () => JsonSerializer.Serialize(
+                    new CrossAssemblyPolymorphicStopLeaf { Value = 1, Name = "leaf", Flag = true },
+                    ContextForCrossAssemblyPolymorphicTypes.Default.CrossAssemblyPolymorphicStopRoot));
+        }
+
         [JsonSerializable(typeof(ClassFromOtherAssemblyWithNonPublicMembers))]
         internal partial class ContextForClassesFromAnotherAssembly : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(CrossAssemblyPolymorphicRoot))]
+        [JsonSerializable(typeof(CrossAssemblyPolymorphicStopRoot))]
+        internal partial class ContextForCrossAssemblyPolymorphicTypes : JsonSerializerContext
         {
         }
 

@@ -54,6 +54,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(TransitivePolymorphicClass))]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers))]
     [JsonSerializable(typeof(ClassWithConflictingIgnoredProperties))]
@@ -110,6 +111,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TransitivePolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
@@ -164,6 +166,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(TransitivePolymorphicClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PocoWithMixedVisibilityMembers), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
