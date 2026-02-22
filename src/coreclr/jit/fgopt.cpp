@@ -1793,6 +1793,109 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
+    else if (block->GetSwitchTargets()->GetSuccCount() == 2 && block->GetSwitchTargets()->HasDefaultCase() &&
+             !block->IsLIR() && fgNodeThreading == NodeThreading::AllTrees)
+    {
+        // If all non-default cases jump to the same target and the default jumps to a different target,
+        // replace the switch with an unsigned comparison against the max case index:
+        //   GT_SWITCH(switchVal) -> GT_JTRUE(GT_LT(switchVal, caseCount))
+
+        BBswtDesc* switchDesc = block->GetSwitchTargets();
+
+        // Only optimize if both successors are simple return blocks, so fgFoldCondToReturnBlock can
+        // further convert this into branchless codegen, e.g., "cmp; setb", instead of a jump table.
+        BasicBlock* succ0 = switchDesc->GetSucc(0)->getDestinationBlock();
+        BasicBlock* succ1 = switchDesc->GetSucc(1)->getDestinationBlock();
+
+        if (!succ0->KindIs(BBJ_RETURN) || !succ1->KindIs(BBJ_RETURN))
+        {
+            JITDUMP("Skipping conversion: one or both targets are not return blocks\n");
+            return modified;
+        }
+
+        if (!succ0->hasSingleStmt() || !succ1->hasSingleStmt())
+        {
+            JITDUMP("Skipping conversion: return blocks are not simple enough\n");
+            return modified;
+        }
+
+        FlowEdge*   defaultEdge   = switchDesc->GetDefaultCase();
+        BasicBlock* defaultDest   = defaultEdge->getDestinationBlock();
+        FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
+        BasicBlock* caseDest      = firstCaseEdge->getDestinationBlock();
+
+        // Optimize only when all non-default cases share the same target, distinct from the default target.
+        // Only the default case targets defaultDest.
+        if (defaultEdge->getDupCount() != 1)
+        {
+            return modified;
+        }
+
+        JITDUMP("\nConverting a switch (" FMT_BB ") where all non-default cases target the same block to a "
+                "conditional branch. Before:\n",
+                block->bbNum);
+        DISPNODE(switchTree);
+
+        // Use GT_LT (e.g., switchVal < caseCount), so true (in range) goes to the shared case target and false (out of
+        // range) goes to the default case.
+        switchTree->ChangeOper(GT_JTRUE);
+        GenTree* switchVal = switchTree->AsOp()->gtOp1;
+        noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
+        const unsigned caseCount = firstCaseEdge->getDupCount();
+        GenTree*       iconNode  = gtNewIconNode(caseCount, genActualType(switchVal->TypeGet()));
+        GenTree*       condNode  = gtNewOperNode(GT_LT, TYP_INT, switchVal, iconNode);
+        condNode->SetUnsigned();
+        switchTree->AsOp()->gtOp1 = condNode;
+        switchTree->AsOp()->gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
+
+        // Fix up dup counts: multiple switch cases originally pointed to the same
+        // successor, but the conditional branch has exactly one edge per target.
+        const unsigned caseDupCount = firstCaseEdge->getDupCount();
+        if (caseDupCount > 1)
+        {
+            firstCaseEdge->decrementDupCount(caseDupCount - 1);
+            caseDest->bbRefs -= (caseDupCount - 1);
+        }
+
+        block->SetCond(firstCaseEdge, defaultEdge);
+
+        // The switch-to-cond conversion preserved edge likelihoods but
+        // successor block weights may be stale (they were set during import
+        // based on the original switch topology). Recompute them so that
+        // downstream passes like block compaction see correct weights.
+        if (block->hasProfileWeight())
+        {
+            if (caseDest->hasProfileWeight())
+            {
+                weight_t oldWeight = caseDest->bbWeight;
+                caseDest->setBBProfileWeight(caseDest->computeIncomingWeight());
+                JITDUMP("Updated " FMT_BB " (caseDest) profile weight from " FMT_WT " to " FMT_WT "\n", caseDest->bbNum,
+                        oldWeight, caseDest->bbWeight);
+            }
+            if (defaultDest->hasProfileWeight())
+            {
+                weight_t oldWeight = defaultDest->bbWeight;
+                defaultDest->setBBProfileWeight(defaultDest->computeIncomingWeight());
+                JITDUMP("Updated " FMT_BB " (defaultDest) profile weight from " FMT_WT " to " FMT_WT "\n",
+                        defaultDest->bbNum, oldWeight, defaultDest->bbWeight);
+            }
+        }
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
+
+        if (fgFoldCondToReturnBlock(block))
+        {
+            JITDUMP("Folded conditional return into branchless return. After:\n");
+            DISPNODE(switchTree);
+        }
+
+        return true;
+    }
+
     return modified;
 }
 
