@@ -8528,12 +8528,27 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        unsigned size    = indir->Size();
-        unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
-        unsigned extent  = offset + size;
-        unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
+        int      lclNum = addr->AsLclVarCommon()->GetLclNum();
+        unsigned offset = addr->AsLclVarCommon()->GetLclOffs();
 
-        if ((extent <= lclSize) && (extent < UINT16_MAX))
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+        ValueSize lclSize   = varDsc->lvValueSize();
+        ValueSize indirSize = indir->ValueSize();
+
+        bool morphToLclFld = false;
+
+        if (lclSize.IsExact() && indirSize.IsExact())
+        {
+            unsigned extent = offset + indirSize.GetExact();
+            morphToLclFld   = IsValidLclAddr(lclNum, extent);
+        }
+        else
+        {
+            morphToLclFld = (indirSize == lclSize) && (offset == 0);
+        }
+
+        if (morphToLclFld)
         {
             addr->ChangeType(indir->TypeGet());
             if (indir->OperIs(GT_STOREIND))
@@ -10432,7 +10447,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     if (opts.OptimizationEnabled())
     {
-        // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
+        // Reduce local addresses: "ADD(LCL_ADDR(BASE), OFFSET)" => "LCL_ADDR(BASE+OFFSET)".
         //
         if (op1->OperIs(GT_LCL_ADDR) && op2->IsCnsIntOrI())
         {
@@ -10443,7 +10458,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
                 unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
 
                 // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
+                if (IsValidLclAddr(lclAddrNode->GetLclNum(), offset))
                 {
                     lclAddrNode->SetOper(GT_LCL_ADDR);
                     lclAddrNode->AsLclFld()->SetLclOffs(offset);
