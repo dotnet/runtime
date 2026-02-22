@@ -258,13 +258,23 @@ namespace System.Reflection.Emit
             MethodSignatureEncoder sigEncoder = signature.FunctionPointer(callConv, attribs);
             sigEncoder.Parameters(paramTypes.Length, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramsEncoder);
 
-            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
+            WriteSignatureForType(
+                retTypeEncoder.Type(),
+                returnType,
+                module,
+                returnType.GetRequiredCustomModifiers(),
+                returnType.GetOptionalCustomModifiers());
 
             foreach (Type paramType in paramTypes)
             {
                 ParameterTypeEncoder paramEncoder = paramsEncoder.AddParameter();
 
-                WriteSignatureForType(paramEncoder.Type(), paramType, module);
+                WriteSignatureForType(
+                    paramEncoder.Type(),
+                    paramType,
+                    module,
+                    paramType.GetRequiredCustomModifiers(),
+                    paramType.GetOptionalCustomModifiers());
             }
         }
 

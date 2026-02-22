@@ -177,11 +177,11 @@ namespace System.Reflection.Emit.Tests
 
             public FunctionPointer(
                 Type baseFunctionPointerType,
-                Type[] conventions = null,
+                Type[]? conventions = null,
                 Type customReturnType = null,
-                Type[] customParameterTypes = null,
-                Type[] fnPtrRequiredMods = null,
-                Type[] fnPtrOptionalMods = null)
+                Type[]? customParameterTypes = null,
+                Type[]? fnPtrRequiredMods = null,
+                Type[]? fnPtrOptionalMods = null)
                 : base(baseFunctionPointerType)
             {
                 callingConventions = conventions ?? [];
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit.Tests
             private readonly Type[] requiredModifiers;
             private readonly Type[] optionalModifiers;
 
-            public ModifiedType(Type delegatingType, Type[] requiredMods = null, Type[] optionalMods = null)
+            public ModifiedType(Type delegatingType, Type[]? requiredMods = null, Type[]? optionalMods = null)
                 : base(delegatingType)
             {
                 requiredModifiers = requiredMods ?? [];
