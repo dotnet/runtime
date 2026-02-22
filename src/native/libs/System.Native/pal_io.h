@@ -6,6 +6,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include "pal_time.h"
 #include <time.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -771,6 +772,31 @@ PALEXPORT int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
 PALEXPORT int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
+
+/*
+* Create an event port
+*/
+PALEXPORT intptr_t SystemNative_PortCreate(void);
+
+/*
+* Associate an event port with an event source
+*/
+PALEXPORT int32_t SystemNative_PortAssociate(intptr_t port, intptr_t pFileObj, char *dirPath, TimeSpec *mtime, int32_t events, intptr_t cookie);
+
+/*
+* Dissociate an event port with an event source
+*/
+PALEXPORT int32_t SystemNative_PortDissociate(intptr_t port, intptr_t pFileObj);
+
+/*
+* Wait for, and get an event from a port
+*/
+PALEXPORT int32_t SystemNative_PortGet(intptr_t port, int32_t *events, intptr_t *cookie, TimeSpec *tmo);
+
+/*
+* Send a user event to a port.
+*/
+PALEXPORT int32_t SystemNative_PortSend(intptr_t port, int32_t evflags, intptr_t cookie);
 
 /**
 * Expands all symbolic links and expands all paths to return an absolute path
