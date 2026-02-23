@@ -586,6 +586,11 @@ void WasmRegAlloc::ConsumeInternalRegisters(GenTree* node DEBUGARG(const char* r
 {
     InternalRegs* internalRegs = m_codeGen->internalRegisters.GetAll(node);
 
+    if (internalRegs == nullptr)
+    {
+        return;
+    }
+
     for (unsigned i = 0; i < internalRegs->Count(); i++)
     {
         regNumber     reg      = internalRegs->GetAt(i);

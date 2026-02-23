@@ -1214,14 +1214,14 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             GetEmitter()->emitIns(INS_i64_mul);
 
             // Save the wide result, and then overflow check it.
-            GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(treeNode), WasmRegToIndex(wideReg));
+            GetEmitter()->emitIns_I(INS_local_tee, EA_8BYTE, WasmRegToIndex(wideReg));
 
             // Can't make a Desc right now...
             // genIntCastOverflowCheck(nullptr, desc, resultReg);
 
             // If the check succeeds, the multiplication result is in range for a 32-bit int.
             // We just need to return the low 32 bits of the result.
-            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(wideReg));
+            GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
             GetEmitter()->emitIns(INS_i32_wrap_i64);
 
             break;
