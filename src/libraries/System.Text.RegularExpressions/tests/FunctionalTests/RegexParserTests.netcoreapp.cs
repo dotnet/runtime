@@ -26,7 +26,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?(?X))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?n))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
         [InlineData(@"(?(?m))", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)]
-        [InlineData(@"(?(?i)yes|no)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)] // options as test expression with branches still blocked
+        [InlineData(@"(?(?i)yes|no)", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 5)] // does not throw on .NET Framework, but that is a parser bug there
         [InlineData("(?<-", RegexOptions.None, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData("(?<-", RegexOptions.IgnorePatternWhitespace, RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData(@"^[^<>]*(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))$", RegexOptions.None, null)]
