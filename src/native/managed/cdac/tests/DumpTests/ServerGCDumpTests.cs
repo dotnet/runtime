@@ -106,7 +106,6 @@ public class ServerGCDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
-        uint maxGen = gcContract.GetMaxGeneration();
         List<TargetPointer> heaps = gcContract.GetGCHeaps().ToList();
 
         foreach (TargetPointer heap in heaps)

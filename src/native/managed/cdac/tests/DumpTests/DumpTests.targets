@@ -177,7 +177,7 @@
       <_PublishedExe>$([MSBuild]::NormalizePath('$(_PublishDir)', '$(DebuggeeName)$(ExeSuffix)'))</_PublishedExe>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained --nologo -o &quot;$(_PublishDir).&quot;"
+    <Exec Command="&quot;$(_DotNetExe)&quot; publish &quot;$(_DebuggeeCsproj)&quot; -c $(DebuggeeConfiguration) -f $(DumpRuntimeVersion) -r $(PortableTargetRid) --self-contained --nologo -o &quot;$(_PublishDir)&quot;"
           WorkingDirectory="$(_DebuggeeDir)" />
 
     <MakeDir Directories="$(_DumpDir)" />
