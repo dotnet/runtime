@@ -893,7 +893,7 @@ namespace System.Text.RegularExpressions
 
             foreach (char c in chars)
             {
-                if (c >= 128)
+                if (c >= frequency.Length)
                 {
                     return false;
                 }
