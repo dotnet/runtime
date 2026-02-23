@@ -390,6 +390,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                                                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
                                                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
                                         var lp = new LoggerParameter
