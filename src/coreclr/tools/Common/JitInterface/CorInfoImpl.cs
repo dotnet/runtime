@@ -1506,19 +1506,9 @@ namespace Internal.JitInterface
                         return false;
                     }
 
-#if READYTORUN
-                    ComputeRuntimeLookupForSharedGenericToken(
-                        Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
-                        ref *info->pResolvedTokenVirtualMethod,
-                        null,
-                        originalImpl,
-                        MethodBeingCompiled,
-                        ref info->instParamLookup);
-#else
-                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
+                    // TODO: Implement generic virtual method devirtualization runtime lookup for R2R and NativeAOT
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
                     return false;
-#endif
                 }
             }
 
