@@ -2697,7 +2697,7 @@ SWITCH_OPCODE:
                 case INTOP_CALLVIRT_TAIL:
                 case INTOP_CALLVIRT:
                 {
-                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLVIRT_TAIL);
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLVIRT_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -2722,7 +2722,7 @@ SWITCH_OPCODE:
                 case INTOP_CALLI_TAIL:
                 case INTOP_CALLI:
                 {
-                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLI_TAIL);
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLI_TAIL);
                     returnOffset = ip[1];
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
                     callArgsOffset = ip[2];
@@ -2820,7 +2820,7 @@ SWITCH_OPCODE:
                 case INTOP_CALLDELEGATE_TAIL:
                 case INTOP_CALLDELEGATE:
                 {
-                    frameNeedsTailcallUpdate = (*ip == INTOP_CALLDELEGATE_TAIL);
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALLDELEGATE_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -2829,7 +2829,7 @@ SWITCH_OPCODE:
 
                     // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
                     int32_t sizeOfArgsUpto16ByteAlignment = 0;
-                    if (*ip == INTOP_CALLDELEGATE)
+                    if (opcode == INTOP_CALLDELEGATE)
                     {
                         sizeOfArgsUpto16ByteAlignment = ip[4];
                         ip += 5;
@@ -2960,7 +2960,7 @@ SWITCH_OPCODE:
                 case INTOP_CALL_TAIL:
                 case INTOP_CALL:
                 {
-                    frameNeedsTailcallUpdate = (*ip == INTOP_CALL_TAIL);
+                    frameNeedsTailcallUpdate = (opcode == INTOP_CALL_TAIL);
                     returnOffset = ip[1];
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
@@ -3218,7 +3218,6 @@ CALL_INTERP_METHOD:
                     break;
                 case INTOP_UNBOX_ANY:
                 {
-                    int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
@@ -3260,7 +3259,6 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_UNBOX_ANY_GENERIC:
                 {
-                    int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[3];
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
@@ -3903,9 +3901,9 @@ do                                                                      \
                 case INTOP_HANDLE_CONTINUATION_GENERIC:
                 case INTOP_HANDLE_CONTINUATION:
                 {
-                    int32_t helperOffset = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
-                    int32_t ipAdjust = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
-                    int32_t suspendDataOffset = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
+                    int32_t helperOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
+                    int32_t ipAdjust = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
+                    int32_t suspendDataOffset = opcode == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[suspendDataOffset]];
 
                     // Zero out locals that need zeroing
@@ -3928,7 +3926,7 @@ do                                                                      \
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_P_PP helperFtn = NULL;
                     HELPER_FTN_P_PPIP helperFtnGeneric = NULL;
-                    if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
                     {
                         helperFtnGeneric = GetPossiblyIndirectHelper<HELPER_FTN_P_PPIP>(pMethod, ip[helperOffset], &pILTargetMethod);
                     }
@@ -3944,7 +3942,7 @@ do                                                                      \
                         // Pass argument to the target method
                         LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
                         LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, MethodTable*) = pContinuationType;
-                        if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                        if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
                         {
                             LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, int32_t) = pAsyncSuspendData->keepAliveOffset;
                             LOCAL_VAR(callArgsOffset + 3 * INTERP_STACK_SLOT_SIZE, uintptr_t) = LOCAL_VAR(ip[2], uintptr_t);
@@ -3959,7 +3957,7 @@ do                                                                      \
                     OBJECTREF chainedContinuation = pInterpreterFrame->GetContinuation();
                     pInterpreterFrame->SetContinuation(NULL);
                     OBJECTREF* pDest = LOCAL_VAR_ADDR(ip[1], OBJECTREF);
-                    if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
                     {
                         uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
                         ip += ipAdjust;
