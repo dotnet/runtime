@@ -195,7 +195,7 @@ void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
     for (;;)
     {
         DWORD dwTransientFlags = m_dwTransientFlags;
-        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | dwFlag;
+        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | (dwFlag & dwMask);
         if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwNewTransientFlags, dwTransientFlags) == dwTransientFlags)
             return;
     }
