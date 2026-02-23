@@ -134,7 +134,6 @@ namespace System.Net
                     readonly get =>BitConverter.IsLittleEndian? _payloadOffset: BinaryPrimitives.ReverseEndianness(_payloadOffset);
                     set =>_payloadOffset = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
                 }
-
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -175,7 +174,7 @@ namespace System.Net
                 public Version Version;
                 public Flags Flags
                 {
-                    readonly get =>BitConverter.IsLittleEndian? _flag: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    readonly get =>BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
                     set =>_flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
                 }
             }
