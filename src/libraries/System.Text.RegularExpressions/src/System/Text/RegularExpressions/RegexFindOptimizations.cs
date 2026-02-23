@@ -881,6 +881,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private static bool HasHighFrequencyChars(FixedDistanceSet set)
         {
+            // Negated sets typically match most characters (e.g. [^a]) making them poor quality indicators,
+            // and sets without extracted chars can't be frequency-analyzed.
             if (set.Negated || set.Chars is not { Length: > 0 } chars)
             {
                 return false;
