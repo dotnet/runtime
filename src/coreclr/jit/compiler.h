@@ -2566,6 +2566,10 @@ class Compiler
     friend class ReplaceVisitor;
     friend class FlowGraphNaturalLoop;
 
+#ifdef TARGET_WASM
+    friend class WasmRegAlloc; // For m_pLowering
+#endif
+
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;
     friend struct HWIntrinsicInfo;

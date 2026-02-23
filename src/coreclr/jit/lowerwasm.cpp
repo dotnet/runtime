@@ -254,6 +254,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+            dstAddr->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+            if (src->OperIs(GT_IND))
+                src->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+            else
+                src->gtLIRFlags |= LIR::Flags::MultiplyUsed;
         }
         else
         {
@@ -511,6 +516,14 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
+
+                    if (node->IsInvariant())
+                    {
+                        JITDUMP("Stackifier moving invariant node [%06u] after [%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
+                        m_lower->BlockRange().Remove(node);
+                        m_lower->BlockRange().InsertAfter(prev, node);
+                        break;
+                    }
 
                     JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");

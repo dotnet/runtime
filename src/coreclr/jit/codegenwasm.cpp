@@ -13,6 +13,8 @@
 static const int LINEAR_MEMORY_INDEX = 0;
 
 #ifdef TARGET_64BIT
+static const instruction INS_I_load  = INS_i64_load;
+static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_mul   = INS_i64_mul;
@@ -21,6 +23,8 @@ static const instruction INS_I_le_u  = INS_i64_le_u;
 static const instruction INS_I_ge_u  = INS_i64_ge_u;
 static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
+static const instruction INS_I_load  = INS_i32_load;
+static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_mul   = INS_i32_mul;
@@ -427,7 +431,9 @@ void CodeGen::WasmProduceReg(GenTree* node)
 //
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
-// in 'WasmProduceReg'.
+// in 'WasmProduceReg'. To do this, set the LIR::Flags::MultiplyUsed flag during
+// lowering or other pre-regalloc phases, and ensure that regalloc is updated to
+// call CollectReferences on the node(s) that need to be used multiple times.
 //
 // Arguments:
 //    operand - The operand node
@@ -2420,9 +2426,98 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation.
+//
+// Arguments:
+//    cpObjNode - the node
+//
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    NYI_WASM("genCodeForCpObj");
+    GenTree*  dstAddr       = cpObjNode->Addr();
+    GenTree*  source        = cpObjNode->Data();
+    var_types srcAddrType   = TYP_BYREF;
+
+    assert(source->isContained());
+    if (source->OperIs(GT_IND))
+    {
+        source = source->gtGetOp1();
+        assert(!source->isContained());
+        srcAddrType = source->TypeGet();
+    }
+
+    noway_assert(source->IsLocal());
+    noway_assert(dstAddr->IsLocal());
+
+    // If the destination is on the stack we don't need the write barrier.
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
+
+#ifdef DEBUG
+    assert(!dstAddr->isContained());
+
+    // This GenTree node has data about GC pointers, this means we're dealing
+    // with CpObj.
+    assert(cpObjNode->GetLayout()->HasGCPtr());
+#endif // DEBUG
+
+    genConsumeRegs(cpObjNode);
+
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
+
+    regNumber srcReg = GetMultiUseOperandReg(source);
+    regNumber dstReg = GetMultiUseOperandReg(dstAddr);
+
+    if (cpObjNode->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
+
+    emitter* emit = GetEmitter();
+
+    emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
+    emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
+
+    unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+
+    unsigned i = 0, offset = 0;
+    while (i < slots)
+    {
+        // Copy the pointer-sized non-gc-pointer slots one at a time (and GC pointer slots if the destination is stack)
+        //  using regular I-sized load/store pairs.
+        if (dstOnStack || !layout->IsGCPtr(i))
+        {
+            // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, offset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, offset);
+        }
+        else
+        {
+            // Compute the actual dest/src of the slot being copied to pass to the helper.
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
+            emit->emitIns_I(INS_i32_const, attrDstAddr, offset);
+            emit->emitIns(INS_i32_add);
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_i32_const, attrSrcAddr, offset);
+            emit->emitIns(INS_i32_add);
+            // Call the byref assign helper. On other targets this updates the dst/src regs but here it won't,
+            //  so we have to do the local.get+i32.const+i32.add dance every time.
+            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            gcPtrCount--;
+        }
+        ++i;
+        offset += TARGET_POINTER_SIZE;
+    }
+    assert(gcPtrCount == 0);
+
+    if (cpObjNode->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
+
+    WasmProduceReg(cpObjNode);
 }
 
 //------------------------------------------------------------------------

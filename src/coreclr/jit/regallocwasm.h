@@ -125,6 +125,7 @@ private:
     void      CollectReferencesForCast(GenTreeOp* castNode);
     void      CollectReferencesForBinop(GenTreeOp* binOpNode);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
+    void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);

@@ -8,6 +8,8 @@
 
 #include "regallocwasm.h"
 
+#include "lower.h" // for LowerRange()
+
 RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 {
     return new (compiler->getAllocator(CMK_LSRA)) WasmRegAlloc(compiler);
@@ -328,6 +330,9 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
         case GT_SUB:
         case GT_MUL:
             CollectReferencesForBinop(node->AsOp());
+
+        case GT_STORE_BLK:
+            CollectReferencesForBlockStore(node->AsBlk());
             break;
 
         default:
@@ -417,6 +422,21 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
 }
 
+// CollectReferencesForBlockStore: Collect virtual register references for a block store.
+//
+// Arguments:
+//    node - The GT_STORE_BLK node
+//
+void WasmRegAlloc::CollectReferencesForBlockStore(GenTreeBlk* node)
+{
+    GenTree* src = node->Data();
+    if (src->OperIs(GT_IND))
+        src = src->gtGetOp1();
+
+    ConsumeTemporaryRegForOperand(src DEBUGARG("block store source"));
+    ConsumeTemporaryRegForOperand(node->Addr() DEBUGARG("block store destination"));
+}
+
 //------------------------------------------------------------------------
 // CollectReferencesForLclVar: Collect virtual register references for a LCL_VAR.
 //
@@ -476,6 +496,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
     CurrentRange().InsertBefore(insertionPoint, lclNode);
+
+    auto tempRange = LIR::ReadOnlyRange(store, store);
+    m_compiler->m_pLowering->LowerRange(m_currentBlock, tempRange);
 }
 
 //------------------------------------------------------------------------
@@ -539,6 +562,8 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     // Note how due to the fact we're processing nodes in stack order,
     // we don't need to maintain free/busy sets, only a simple stack.
     regNumber reg = AllocateTemporaryRegister(genActualType(node));
+    // If the node already has a regnum, trying to assign it a second one is no good.
+    assert(node->GetRegNum() == REG_NA);
     node->SetRegNum(reg);
 }
 
@@ -561,6 +586,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
     }
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
+    // If this assert fails you likely called ConsumeTemporaryRegForOperand on your operands in the wrong order.
     assert(reg == operand->GetRegNum());
     CollectReference(operand);
 
@@ -605,6 +631,7 @@ void WasmRegAlloc::ResolveReferences()
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
         TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
+        // If temporaryRegs.Count != 0 that means CollectReferences failed to CollectReference one or more multiply-used nodes.
         assert(temporaryRegs.Count == 0);
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
