@@ -402,15 +402,16 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types    storeType = lclNode->TypeGet();
+    bool         isStruct  = storeType == TYP_STRUCT;
     uint16_t     offset    = lclNode->GetLclOffs();
-    ClassLayout* layout    = lclNode->GetLayout(m_compiler);
+    ClassLayout* layout    = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
     lclNode->SetOper(GT_LCL_ADDR);
     lclNode->ChangeType(TYP_I_IMPL);
     lclNode->AsLclFld()->SetLclOffs(offset);
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-    if (storeType == TYP_STRUCT)
+    if (isStruct)
     {
         store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
     }
