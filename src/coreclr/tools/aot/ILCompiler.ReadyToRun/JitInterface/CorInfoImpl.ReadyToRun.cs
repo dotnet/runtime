@@ -2659,17 +2659,27 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(entryKind.ToString());
             }
 
-            object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            if (helperArg is MethodDesc methodDesc)
+            object helperArg;
+            if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
             {
-                var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                Debug.Assert(templateMethod != null);
+                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, templateMethod);
+                helperArg = ComputeMethodWithToken(templateMethod, ref pResolvedToken, constrainedType: null, unboxing: false);
             }
-            else if (helperArg is FieldDesc fieldDesc)
+            else
             {
-                helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (helperArg is MethodDesc methodDesc)
+                {
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                    helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                }
+                else if (helperArg is FieldDesc fieldDesc)
+                {
+                    helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                }
             }
 
             var methodContext = new GenericContext(callerHandle);
