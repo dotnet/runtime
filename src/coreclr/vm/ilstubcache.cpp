@@ -363,7 +363,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
     LoaderAllocator* pAllocator,
     MethodTable* pMT,
     PCODE r2rEntryPoint,
-    DWORD stubType,
+    DWORD stubType, // DynamicMethodDesc::ILStubType
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
     BOOL isAsync,
@@ -430,10 +430,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 
     pMD->m_pszMethodName = GetStubMethodName(ilStubType);
 
-    // Copy the signature into the loader heap
-    PVOID pNewSig = pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(cbSig)));
-    memcpy(pNewSig, pSig, cbSig);
-    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pNewSig, cbSig);
+    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
 
     // Set the native code directly - no precode needed since code already exists
     pMD->SetNativeCodeInterlocked(r2rEntryPoint);

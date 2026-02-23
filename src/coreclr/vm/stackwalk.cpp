@@ -70,7 +70,6 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
                     }
                     pCurrent = pCurrent->pParent;
                 } while (pCurrent != NULL);
-                
             }
 
             pFrame = pFrame->PtrNextFrame();
@@ -507,9 +506,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 
         // Note that the address returned from the OS is different from the one we have computed
         // when unwind info is registered using RtlAddGrowableFunctionTable. Compare RUNTIME_FUNCTION content.
-        // pFunctionEntryFromOS can be NULL for async methods in R2R images where unwind info may not be
-        // registered with the OS.
-        _ASSERTE( (pFunctionEntryFromOS == NULL) || ((uImageBase == uImageBaseFromOS) && (memcmp(pFunctionEntry, pFunctionEntryFromOS, sizeof(RUNTIME_FUNCTION)) == 0)) );
+        _ASSERTE( ((uImageBase == uImageBaseFromOS) && (memcmp(pFunctionEntry, pFunctionEntryFromOS, sizeof(RUNTIME_FUNCTION)) == 0)) );
 #endif // _DEBUG && !TARGET_UNIX
     }
 
