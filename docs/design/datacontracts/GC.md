@@ -574,7 +574,7 @@ GetHandles
 List<HandleData> IGC.GetHandles(uint[] types)
 {
     List<HandleData> handles = new();
-    TargetPointer handleTableMap = _target.ReadGlobalPointer("HandleTableMap");
+    TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
     // for each handleTableMap in the linked list
     while (handleTableMap != TargetPointer.Null)
     {
@@ -589,7 +589,7 @@ List<HandleData> IGC.GetHandles(uint[] types)
             {
                 // double dereference to iterate handle tables per array element per GC heap - native equivalent = map->pBuckets[i]->pTable[j] 
                 TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);
-                TargetPointer handleTablePtr = _target.ReadPointer(table + (ulong)(j * _target.PointerSize));
+                TargetPointer handleTablePtr = target.ReadPointer(table + (ulong)(j * target.PointerSize));
                 if (handleTablePtr == TargetPointer.Null)
                     continue;
 
@@ -625,6 +625,7 @@ private void GetHandlesForSegment(TargetPointer segmentPtr, uint type, List<Hand
     // RgAllocation = byte array of block indices that are linked together to find all blocks for a given type. It is global variable "HandleBlocksPerSegment" long
     // RgUserData = byte array of block indices for extra handle info such as dependent handles. It is also "HandleBlocksPerSegment" long.
     // For example, target.Read<byte>(segmentPtr + TableSegment::RgTail offset + x); => RgTail[x];
+    Debug.Assert(type < target.ReadGlobal<uint>("HandleMaxInternalTypes"));
     byte uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgTail offset */ + type);
     if (uBlock == target.ReadGlobal<byte>("BlockInvalid"))
         return;
@@ -680,14 +681,14 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
         handleData.Secondary = 0;
     }
 
-    if (_target.ReadGlobal<byte>("FeatureCOMInterop") != 0 && IsRefCounted(type))
+    if (target.ReadGlobal<byte>("FeatureCOMInterop") != 0 && IsRefCounted(type))
     {
-        IObject obj = _target.Contracts.Object;
-        TargetPointer handle = _target.ReadPointer(handleAddress);
+        IObject obj = target.Contracts.Object;
+        TargetPointer handle = target.ReadPointer(handleAddress);
         obj.GetBuiltInComData(handle, out _, out TargetPointer ccw);
         if (ccw != TargetPointer.Null)
         {
-            IComWrappers comWrappers = _target.Contracts.ComWrappers;
+            IComWrappers comWrappers = target.Contracts.ComWrappers;
             handleData.RefCount = (uint)comWrappers.GetRefCount(ccw);
             handleData.StrongReference = handleData.StrongReference || handleData.RefCount > 0 && !comWrappers.IsHandleWeak(ccw);
         }

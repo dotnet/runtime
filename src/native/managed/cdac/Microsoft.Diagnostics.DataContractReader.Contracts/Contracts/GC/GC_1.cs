@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCHelpers;
 
@@ -35,13 +36,15 @@ internal readonly struct GC_1 : IGC
     private readonly uint _handlesPerBlock;
     private readonly byte _blockInvalid;
     private readonly TargetPointer _debugDestroyedHandleValue;
+    private readonly uint _handleMaxInternalTypes;
 
-    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue)
+    internal GC_1(Target target, uint handlesPerBlock, byte blockInvalid, TargetPointer debugDestroyedHandleValue, uint handleMaxInternalTypes)
     {
         _target = target;
         _handlesPerBlock = handlesPerBlock;
         _blockInvalid = blockInvalid;
         _debugDestroyedHandleValue = debugDestroyedHandleValue;
+        _handleMaxInternalTypes = handleMaxInternalTypes;
     }
 
     string[] IGC.GetGCIdentifiers()
@@ -319,10 +322,10 @@ internal readonly struct GC_1 : IGC
                         continue;
 
                     Data.HandleTable handleTable = _target.ProcessedData.GetOrAdd<Data.HandleTable>(handleTablePtr);
+                    if (handleTable.SegmentList == TargetPointer.Null)
+                        continue;
                     foreach (uint type in typesList)
                     {
-                        if (handleTable.SegmentList == TargetPointer.Null)
-                            continue;
                         TargetPointer segmentPtr = handleTable.SegmentList;
                         do
                         {
@@ -365,6 +368,7 @@ internal readonly struct GC_1 : IGC
 
     private void GetHandlesForSegment(Data.TableSegment tableSegment, uint type, List<HandleData> handles)
     {
+        Debug.Assert(type < _handleMaxInternalTypes);
         byte uBlock = tableSegment.RgTail[type];
         if (uBlock == _blockInvalid)
             return;
