@@ -354,7 +354,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "manifest": "manifest",
     "symbols": "pdb",
     "dotnetwasm": "dotnetwasm",
-    "webcil10": "dotnetwasm",
+    "webcil10": "assembly",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
