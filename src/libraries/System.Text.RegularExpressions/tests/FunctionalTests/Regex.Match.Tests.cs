@@ -356,6 +356,42 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+
+            // Lazy loop inside loop body where the Atomic wrapper must not suppress within-body backtracking.
+            // Each variation tests a different kind of backtracking construct inside the loop body.
+            // Notonelazy (.*?): lazy . expands past first ) to find the correct closing delimiter.
+            yield return (@"\w+(\(.*?\))?,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"\w+(<.*?>)?!", "foo<a>b>!", RegexOptions.None, 0, 9, true, "foo<a>b>!");
+            yield return (@"(\(.*?\))+;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(a.*?b)+c", "axbbc", RegexOptions.None, 0, 5, true, "axbbc");
+            // Notoneloop (.+): greedy . overshoots past the right ), must back up to find an earlier one.
+            yield return (@"\w+(\(.+\))?,", "Foo(a),(b)x,", RegexOptions.None, 0, 12, true, "Foo(a),");
+            // Setlazy ([^,]+?): lazy char class expands past first ) to find the right one.
+            yield return (@"\w+(\([^,]+?\))?,", "Foo(one()three),", RegexOptions.None, 0, 16, true, "Foo(one()three),");
+            // Setloop ([^;]+): greedy char class overshoots past the right ), must back up to earlier one.
+            yield return (@"\w+(\([^;]+\))?,", "Foo(a),b)x,", RegexOptions.None, 0, 11, true, "Foo(a),");
+            // Onelazy ()+?): lazy single-char loop must expand to consume more )'s for , to follow.
+            yield return (@"\w+(\(\)+?\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Oneloop ()+): greedy single-char loop of the delimiter char itself.
+            yield return (@"\w+(\(\)+\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Alternate: short branch matches + \) succeeds, but , fails. Longer branch includes \) in it.
+            yield return (@"\w+(\((?:a|a\)b)\))?,", "Foo(a)b),", RegexOptions.None, 0, 9, true, "Foo(a)b),");
+            // Loop (general greedy multi-char body): 2 iters of \), overshoots, backing up to 1 iter works.
+            yield return (@"\w+(\((?:\),){1,3}\))?,", "Foo(),),)),", RegexOptions.None, 0, 11, true, "Foo(),),");
+            // Lazyloop (general lazy multi-char body): 1 iter of \)a, outer \) OK but , fails. Expand to 2.
+            yield return (@"\w+(\((?:\)a){1,3}?\))?,", "Foo()a)a),", RegexOptions.None, 0, 10, true, "Foo()a)a),");
+            // Same patterns with lazy outer loops (??, +?, *?) to ensure lazy expansion is not broken.
+            yield return (@"\w+(\(.*?\))??,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"(\(.*?\))+?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            // Non-backtracking body: optimization correctly applies. These verify bodies without backtracking
+            // inside the outer loop are still correctly matched after the outer loop is made atomic.
+            yield return (@"\w+(\(abc\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(abc\))??,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w{3}\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w+!\))?,", "Foo(abc!),", RegexOptions.None, 0, 10, true, "Foo(abc!),");
+
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
@@ -2920,7 +2956,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop("Takes several seconds")]
         [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
         public async Task UseRegexConcurrently_ThreadSafe_Success(RegexEngine engine, TimeSpan timeout)

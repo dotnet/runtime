@@ -13,6 +13,8 @@
 #error NYI: WASM64
 #endif
 
+#define WASM_THREAD_SUPPORT      0       // Codegen does not support WasmThreads yet
+
 #define CPU_LOAD_STORE_ARCH      1
 #define CPU_HAS_FP_SUPPORT       1
 #define CPU_HAS_BYTE_REGS        0

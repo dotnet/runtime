@@ -213,6 +213,11 @@ check_symbol_exists(
     HAVE_STRCPY_S)
 
 check_symbol_exists(
+    strlcpy
+    string.h
+    HAVE_STRLCPY)
+
+check_symbol_exists(
     strlcat
     string.h
     HAVE_STRLCAT)

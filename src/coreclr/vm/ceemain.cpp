@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -694,6 +695,10 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#ifdef HOST_ANDROID
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+#endif // HOST_ANDROID
+
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
@@ -786,6 +791,10 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
+        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_HashMapEbr.Init();
+
         StubManager::InitializeStubManagers();
 
         // Set up the cor handle map. This map is used to load assemblies in
@@ -823,6 +832,10 @@ void EEStartupHelper()
         COMDelegate::Init();
 
         ExecutionManager::Init();
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
 
         JitHost::Init();
 
