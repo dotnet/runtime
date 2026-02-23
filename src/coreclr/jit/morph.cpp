@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
+#include <functional>
 
 //-------------------------------------------------------------
 // fgMorphInit: prepare for running the morph phases
@@ -11080,7 +11081,36 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             if (!varTypeIsFloating(tree->TypeGet()))
             {
-                fgMoveOpsLeft(tree);
+                bool skipMoveOpsLeft = false;
+
+                std::function<bool(GenTree*)> isParamOnlyAddTree;
+                isParamOnlyAddTree = [this, &isParamOnlyAddTree](GenTree* node) -> bool {
+                    if (node->OperIsLocalRead())
+                    {
+                        return lvaGetDesc(node->AsLclVarCommon())->lvIsParam;
+                    }
+
+                    if (node->OperIs(GT_ADD) && !node->gtOverflow() && varTypeIsIntegralOrI(node))
+                    {
+                        GenTreeOp* const add = node->AsOp();
+                        return isParamOnlyAddTree(add->gtGetOp1()) && isParamOnlyAddTree(add->gtGetOp2());
+                    }
+
+                    return false;
+                };
+
+                // Keep "(x + ((param-sum) + i))" shape so LICM can later see and hoist
+                // the invariant parameter-only subtree.
+                if (oper == GT_ADD && op2->OperIs(GT_ADD) && !op2->gtOverflow())
+                {
+                    GenTree* op2Left = op2->AsOp()->gtGetOp1();
+                    skipMoveOpsLeft  = isParamOnlyAddTree(op2Left);
+                }
+
+                if (!skipMoveOpsLeft)
+                {
+                    fgMoveOpsLeft(tree);
+                }
                 op1 = tree->gtOp1;
                 op2 = tree->gtOp2;
             }
@@ -11125,6 +11155,49 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
                 op2 = tree->gtOp2;
             }
+        }
+
+        std::function<bool(GenTree*)> isParamOnlyAddTree;
+        isParamOnlyAddTree = [this, &isParamOnlyAddTree](GenTree* node) -> bool {
+            if (node->OperIsLocalRead())
+            {
+                return lvaGetDesc(node->AsLclVarCommon())->lvIsParam;
+            }
+
+            if (node->OperIs(GT_ADD) && !node->gtOverflow() && varTypeIsIntegralOrI(node))
+            {
+                GenTreeOp* const add = node->AsOp();
+                return isParamOnlyAddTree(add->gtGetOp1()) && isParamOnlyAddTree(add->gtGetOp2());
+            }
+
+            return false;
+        };
+
+        // Create an explicit parameter-only subtree and keep folding trailing parameters:
+        // "((a + p1) + p2)" => "(a + (p1 + p2))"
+        // "(((a + p1) + p2) + p3)" => "(a + ((p1 + p2) + p3))"
+        while (op1->OperIs(GT_ADD) && !op1->gtOverflow())
+        {
+            GenTree* addLeft  = op1->AsOp()->gtGetOp1();
+            GenTree* addRight = op1->AsOp()->gtGetOp2();
+
+            if (!isParamOnlyAddTree(addRight) || !isParamOnlyAddTree(op2) ||
+                varTypeIsGC(addLeft) || varTypeIsGC(addRight) || varTypeIsGC(op2))
+            {
+                break;
+            }
+
+            GenTreeOp* paramAdd = op1->AsOp();
+            paramAdd->gtOp1     = addRight;
+            paramAdd->gtOp2     = op2;
+            paramAdd->SetAllEffectsFlags(paramAdd->gtOp1, paramAdd->gtOp2);
+
+            tree->gtOp1 = addLeft;
+            tree->gtOp2 = paramAdd;
+            tree->SetAllEffectsFlags(tree->gtOp1, tree->gtOp2);
+
+            op1 = tree->gtOp1;
+            op2 = tree->gtOp2;
         }
     }
 
