@@ -19,8 +19,8 @@ const URLPolyfill = class URL {
 };
 
 export function verifyEnvironment () {
-    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
-    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
+    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version.");
+    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     mono_assert(globalThis.performance && typeof globalThis.performance.now === "function", "This browser/engine doesn't support performance.now. Please use a modern version.");
     mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.subtle === "object", "This engine doesn't support crypto.subtle. Please use a modern version.");
     mono_assert(ENVIRONMENT_IS_SHELL || globalThis.crypto && typeof globalThis.crypto.getRandomValues === "function", "This engine doesn't support crypto.getRandomValues. Please use a modern version.");
@@ -28,9 +28,9 @@ export function verifyEnvironment () {
         mono_assert(typeof process.exit === "function", "This engine doesn't support process.exit. Please use a modern version.");
     }
     if (WasmEnableThreads) {
-        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
-        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
-        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
+        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS.");
+        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers.");
+        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
 }
 

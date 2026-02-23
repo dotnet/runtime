@@ -16,7 +16,7 @@ function verifyEnvironment() {
     if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
         const message = ENVIRONMENT_IS_NODE
             ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support."
-            : "This browser doesn't support fetch API. Please use a modern browser. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms";
+            : "This browser doesn't support fetch API. Please use a modern browser. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms";
         throw new Error(message);
     }
 }
