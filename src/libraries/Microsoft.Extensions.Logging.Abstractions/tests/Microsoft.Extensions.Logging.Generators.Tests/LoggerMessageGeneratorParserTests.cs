@@ -997,6 +997,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct.Id, diagnostics[0].Id);
             Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
+
+        [Fact]
+        public async Task InvalidRefLikeTypeParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System;
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, ref ReadOnlySpan<int> p1);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
 #endif
 
         [Fact]

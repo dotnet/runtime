@@ -382,14 +382,12 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
-#if ROSLYN4_4_OR_GREATER
-                                        if (paramSymbol.ScopedKind == ScopedKind.ScopedValue)
+                                        if (paramTypeSymbol.IsRefLikeType)
                                         {
                                             Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct, paramSymbol.Locations[0], paramName);
                                             keepMethod = false;
                                             break;
                                         }
-#endif
 
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
