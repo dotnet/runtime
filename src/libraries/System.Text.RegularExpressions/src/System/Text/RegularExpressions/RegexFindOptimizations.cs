@@ -879,7 +879,7 @@ namespace System.Text.RegularExpressions
         /// multi-string search via SearchValues is preferred because IndexOfAny would match too many
         /// positions. When the characters are rare, IndexOfAny is an excellent filter and is preferred.
         /// </summary>
-        private static bool HasHighFrequencyChars(in FixedDistanceSet set)
+        private static bool HasHighFrequencyChars(FixedDistanceSet set)
         {
             if (set.Negated || set.Chars is not { Length: > 0 } chars)
             {
