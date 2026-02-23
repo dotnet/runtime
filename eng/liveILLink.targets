@@ -10,7 +10,8 @@
         '$(IsAotCompatible)' == 'true' Or '$(EnableAotAnalyzer)' == 'true' Or
         '$(PublishTrimmed)' == 'true' Or
         '$(IsTrimmable)' == 'true' Or '$(EnableTrimAnalyzer)' == 'true' Or
-        '$(EnableSingleFileAnalyzer)' == 'true')">true</_RequiresLiveILLink>
+        '$(EnableSingleFileAnalyzer)' == 'true' Or
+        '$(EnableUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
@@ -42,6 +43,13 @@
 
     <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
+
+    <!-- Add the code fix provider for IDE fix suggestions -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="Analyzer"

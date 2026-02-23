@@ -145,6 +145,8 @@ namespace System
         [Conditional("DEBUG")]
         private void DebugSetLeftCtor()
         {
+            DebugAssertInCtor();
+
             _flags |= Flags.Debug_LeftConstructor;
 
             AssertInvariants();
@@ -424,7 +426,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -438,7 +439,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, dontEscape, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -456,7 +456,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateUri(baseUri, relativeUri, dontEscape);
-            DebugSetLeftCtor();
         }
 
         //
@@ -467,7 +466,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, uriKind);
-            DebugSetLeftCtor();
         }
 
         /// <summary>
@@ -480,7 +478,6 @@ namespace System
             ArgumentNullException.ThrowIfNull(uriString);
 
             CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
-            DebugSetLeftCtor();
         }
 
         //
@@ -498,7 +495,6 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(baseUri));
 
             CreateUri(baseUri, relativeUri, false);
-            DebugSetLeftCtor();
         }
 
         //
@@ -515,7 +511,6 @@ namespace System
             if (uriString!.Length != 0)
             {
                 CreateThis(uriString, false, UriKind.Absolute);
-                DebugSetLeftCtor();
                 return;
             }
 
@@ -524,7 +519,6 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
             CreateThis(uriString, false, UriKind.Relative);
-            DebugSetLeftCtor();
         }
 
         //
@@ -617,7 +611,6 @@ namespace System
                     if (!ReferenceEquals(this, resolvedRelativeUri))
                         CreateThisFromUri(resolvedRelativeUri);
 
-                    DebugSetLeftCtor();
                     return;
                 }
             }
@@ -634,7 +627,6 @@ namespace System
             _syntax = null!;
             _originalUnicodeString = null!;
             CreateThis(newUriString, dontEscape, UriKind.Absolute);
-            DebugSetLeftCtor();
         }
 
         //
@@ -649,47 +641,36 @@ namespace System
             // This parser will allow the relativeStr to be an absolute Uri with the different scheme
             // In fact this is strict violation of RFC2396
             //
-            for (int i = 0; i < relativeStr.Length; ++i)
+            int i = relativeStr.IndexOfAny(s_segmentSeparatorChars);
+
+            // Note we don't support one-letter Uri schemes (i > 1).
+            // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
+            if ((uint)i < (uint)relativeStr.Length && relativeStr[i] == ':' && i > 1)
             {
-                if (relativeStr[i] == '/' || relativeStr[i] == '\\' || relativeStr[i] == '?' || relativeStr[i] == '#')
-                {
-                    break;
-                }
-                else if (relativeStr[i] == ':')
-                {
-                    if (i < 2)
-                    {
-                        // Note we don't support one-letter Uri schemes.
-                        // Hence anything like x:sdsd is a relative path and be added to the baseUri Path
-                        break;
-                    }
+                ParsingError error = ParsingError.None;
+                UriParser? syntax = CheckSchemeSyntax(relativeStr.AsSpan(0, i), ref error);
 
-                    ParsingError error = ParsingError.None;
-                    UriParser? syntax = CheckSchemeSyntax(relativeStr.AsSpan(0, i), ref error);
-
-                    if (error == ParsingError.None)
+                if (error == ParsingError.None)
+                {
+                    if (baseUri.Syntax == syntax)
                     {
-                        if (baseUri.Syntax == syntax)
+                        //Remove the scheme for backward Uri parsers compatibility
+                        if (i + 1 < relativeStr.Length)
                         {
-                            //Remove the scheme for backward Uri parsers compatibility
-                            if (i + 1 < relativeStr.Length)
-                            {
-                                relativeStr = relativeStr.Substring(i + 1);
-                            }
-                            else
-                            {
-                                relativeStr = string.Empty;
-                            }
+                            relativeStr = relativeStr.Substring(i + 1);
                         }
                         else
                         {
-                            // This is the place where we switch the scheme.
-                            // Return relative part as the result Uri.
-                            result = relativeStr;
-                            return;
+                            relativeStr = string.Empty;
                         }
                     }
-                    break;
+                    else
+                    {
+                        // This is the place where we switch the scheme.
+                        // Return relative part as the result Uri.
+                        result = relativeStr;
+                        return;
+                    }
                 }
             }
 
@@ -1564,7 +1545,7 @@ namespace System
 
                 string remoteUrl = info.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
 
-                if (IsUncOrDosPath)
+                if (IsFile)
                 {
                     return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
                 }
@@ -3680,6 +3661,9 @@ namespace System
             return UriParser.FindOrFetchAsUnknownV1Syntax(UriHelper.SpanToLowerInvariantString(scheme));
         }
 
+        private static readonly SearchValues<char> s_userInfoEndChars =
+            SearchValues.Create(@"@?#\/");
+
         // Checks the syntax of an authority component. It may also get a userInfo if present
         // Returns an error if no/mailformed authority found
         // Does not NOT touch _info
@@ -3726,33 +3710,24 @@ namespace System
 
             if ((syntaxFlags & UriSyntaxFlags.MayHaveUserInfo) != 0)
             {
-                for (; (uint)i < (uint)str.Length; i++)
+                ReadOnlySpan<char> slice = str.Slice(i);
+                int userInfoLength = slice.IndexOfAny(s_userInfoEndChars);
+
+                // Check if the first delimiter is '@' and there's at least one character after it.
+                if ((uint)userInfoLength < (uint)slice.Length && slice[userInfoLength] == '@' && (uint)(++userInfoLength) < (uint)slice.Length)
                 {
-                    ch = str[i];
+                    ch = slice[userInfoLength];
+                    i += userInfoLength;
 
-                    if ((uint)(i + 1) >= (uint)str.Length || ch == '?' || ch == '#' || ch == '\\' || ch == '/')
+                    flags |= Flags.HasUserInfo;
+
+                    // Iri'ze userinfo
+                    if (hasUnicode)
                     {
-                        ch = str[startOffset];
-                        i = startOffset;
-                        break;
-                    }
-
-                    if (ch == '@')
-                    {
-                        flags |= Flags.HasUserInfo;
-
-                        // Iri'ze userinfo
-                        if (hasUnicode)
-                        {
-                            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                            IriHelper.EscapeUnescapeIri(ref vsb, str.Slice(startOffset, i - startOffset + 1), isQuery: false);
-                            newHost = string.Concat(newHost, vsb.AsSpan());
-                            vsb.Dispose();
-                        }
-
-                        ch = str[i + 1];
-                        i++;
-                        break;
+                        var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                        IriHelper.EscapeUnescapeIri(ref vsb, slice.Slice(0, userInfoLength), isQuery: false);
+                        newHost = string.Concat(newHost, vsb.AsSpan());
+                        vsb.Dispose();
                     }
                 }
             }
@@ -3863,7 +3838,7 @@ namespace System
             // Here we have checked the syntax up to the end of host
             // The only thing that can cause an exception is the port value
             // Spend some (duplicated) cycles on that.
-            else if (hostDelimiter == ':')
+            else if (hostDelimiter == ':' && hostLength != 0)
             {
                 if ((syntaxFlags & UriSyntaxFlags.MayHavePort) != 0)
                 {
@@ -3933,13 +3908,8 @@ namespace System
                 if ((syntaxFlags & UriSyntaxFlags.AllowAnyOtherHost) != 0)
                 {
                     flags |= Flags.BasicHostType;
-                    for (endOfHost = i; (uint)endOfHost < (uint)str.Length; endOfHost++)
-                    {
-                        if (str[endOfHost] == '/' || str[endOfHost] == '?' || str[endOfHost] == '#')
-                        {
-                            break;
-                        }
-                    }
+                    int basicHostEnd = str.Slice(i).IndexOfAny('/', '?', '#');
+                    endOfHost = basicHostEnd >= 0 ? i + basicHostEnd : str.Length;
 
                     if (hasUnicode)
                     {

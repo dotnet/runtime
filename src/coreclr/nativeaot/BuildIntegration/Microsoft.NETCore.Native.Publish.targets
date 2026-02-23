@@ -13,23 +13,49 @@
   <!--
     This target hooks into the dotnet CLI publish pipeline. That pipeline has
     a target called ComputeFilesToPublish which produces the ItemGroup
-    ResolvedFileToPublish based on the inputs of @(IntermediateAssembly)
-    and @(ResolvedAssembliesToPublish). We modify those two item groups
-    to control what gets published after NativeAOT optimizes the application.
+    ResolvedFileToPublish. We modify this item group to control what gets
+    published after NativeAOT optimizes the application.
   -->
   <Target Name="ComputeLinkedFilesToPublish"
-          BeforeTargets="ComputeResolvedFilesToPublishList"
+          AfterTargets="ComputeResolvedFilesToPublishList"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;LinkNative">
 
     <ItemGroup>
-      <_ResolvedCopyLocalPublishAssets Remove="@(_AssembliesToSkipPublish)" />
-      <_ResolvedCopyLocalPublishAssets Include="@(_LinkedResolvedAssemblies)" />
-      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)" />
-    </ItemGroup>
-
-    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(_AssembliesToSkipPublish)" />
+      <!-- dotnet CLI produces managed debug symbols, which we will replace with native symbols instead -->
+      <ResolvedFileToPublish Remove="@(_DebugSymbolsIntermediatePath)" />
+      <!-- replace apphost with binary we generated during native compilation -->
+      <ResolvedFileToPublish Include="$(NativeBinary)">
+        <RelativePath>$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="$(NativeBinary)" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
+      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
+      <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
+      <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
+      <_symbolRecursivePath Include="$(NativeOutputPath)$(TargetName)$(_symbolExt)/**/*" />
+
+      <!-- Add native symbol file if it exists. On Mac, the symbol path may be a folder-->
+      <ResolvedFileToPublish Include="$(_symbolSourcePath)"
+                             Condition="'$(NativeSymbolExt)' != '.dSYM' and Exists('$(_symbolSourcePath)')">
+        <RelativePath>$(TargetName)$(_symbolExt)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+
+      <!-- Add folder otherwise. If the symbol is a dSYM bundle, it's a folder not a file. -->
+      <ResolvedFileToPublish Include="@(_symbolRecursivePath)"
+                             Condition="'$(NativeSymbolExt)' == '.dSYM' and Exists('$(_symbolSourcePath)')">
+        <RelativePath>$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
 
@@ -40,7 +66,7 @@
     until we get a proper AOT NetCore app package.
   -->
   <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
-  <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+  <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToPostprocessOnPublish">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
     <!-- Fail with descriptive error message for common mistake. -->
@@ -71,7 +97,7 @@
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
-      Assemblies="@(_ResolvedCopyLocalPublishAssets)"
+      Assemblies="@(ResolvedFileToPublish)"
       DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)"
       DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)"
       DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
@@ -85,40 +111,7 @@
 
   </Target>
 
-  <Target Name="CopyNativeBinary" AfterTargets="Publish">
-    <!-- replace apphost with binary we generated during native compilation -->
-    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)" />
-    <Copy SourceFiles="$(NativeBinary)" DestinationFolder="$(PublishDir)" />
-  </Target>
-
-  <Target Name="_CopyAotSymbols" AfterTargets="Publish"
-          Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
-    <!-- dotnet CLI produces managed debug symbols, which we will delete and copy native symbols instead -->
-    <Delete Files="$(PublishDir)\$(TargetName).pdb" />
-
-    <PropertyGroup>
-      <_symbolExt Condition="'$(OS)' == 'Windows_NT'">$(NativeSymbolExt)</_symbolExt>
-      <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
-      <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
-      <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
-      <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <_symbolRecursivePath Include="$(NativeOutputPath)$(TargetName)$(_symbolExt)/**/*" />
-    </ItemGroup>
-
-    <!-- replace native symbol file if it exists. On Mac, the symbol path may be a folder-->
-    <Delete Files="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolTargetPath)')" />
-    <Copy SourceFiles="$(_symbolSourcePath)" DestinationFolder="$(PublishDir)"
-      Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolSourcePath)')" />
-
-    <!-- Copy folder otherwise -->
-    <RemoveDir Directories="$(_symbolTargetPath)" Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolTargetPath)')" />
-    <Copy SourceFiles="@(_symbolRecursivePath)" DestinationFolder="$(_symbolTargetPath)/%(RecursiveDir)"
-      Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')" />
-  </Target>
+  <!-- Empty target to provide back-compat for other targets that run before/after CopyNativeBinary. -->
+  <Target Name="CopyNativeBinary" AfterTargets="Publish" />
 
 </Project>

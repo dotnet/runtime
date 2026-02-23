@@ -665,6 +665,10 @@ void CallDefaultConstructor(OBJECTREF ref);
 // from native code.
 //
 
+// Use CLR_BOOL_ARG to convert a BOOL value to a CLR_BOOL for passing to
+// UnmanagedCallersOnlyCaller::InvokeThrowing when the managed parameter is bool.
+#define CLR_BOOL_ARG(x) ((CLR_BOOL)(!!(x)))
+
 // Helper class for calling managed methods marked with [UnmanagedCallersOnly].
 // This provides a more efficient alternative to MethodDescCallSite for methods
 // using the reverse P/Invoke infrastructure.

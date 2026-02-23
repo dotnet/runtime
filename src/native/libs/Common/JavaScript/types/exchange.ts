@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { check, error, info, warn, debug, fastCheck } from "../../../../corehost/browserhost/loader/logging";
-import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../../../../corehost/browserhost/loader/run";
-import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../../../../corehost/browserhost/loader/exit";
+import type { check, error, info, warn, debug, fastCheck, normalizeException } from "../loader/logging";
+import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise, abortStartup } from "../loader/run";
+import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../loader/exit";
 
-import type { initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
-import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes } from "../../../../corehost/browserhost/host/assets";
-import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
+import type { initializeCoreCLR } from "../host/host";
+import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes } from "../host/assets";
+import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
@@ -18,7 +18,7 @@ import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServ
 import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
 import type { abortInteropTimers } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/scheduling";
 
-import type { symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
+import type { installNativeSymbols, symbolicateStackTrace } from "../../../System.Native.Browser/diagnostics/symbolicate";
 import type { EmsAmbientSymbolsType } from "../types";
 
 export type RuntimeExports = {
@@ -67,6 +67,7 @@ export type LoaderExports = {
     addOnExitListener: typeof addOnExitListener,
     abortStartup: typeof abortStartup,
     quitNow: typeof quitNow,
+    normalizeException: typeof normalizeException
 }
 
 export type LoaderExportsTable = [
@@ -87,6 +88,7 @@ export type LoaderExportsTable = [
     typeof addOnExitListener,
     typeof abortStartup,
     typeof quitNow,
+    typeof normalizeException,
 ]
 
 export type BrowserHostExports = {
@@ -161,8 +163,10 @@ export type BrowserUtilsExportsTable = [
 
 export type DiagnosticsExportsTable = [
     typeof symbolicateStackTrace,
+    typeof installNativeSymbols,
 ]
 
 export type DiagnosticsExports = {
     symbolicateStackTrace: typeof symbolicateStackTrace,
+    installNativeSymbols: typeof installNativeSymbols,
 }

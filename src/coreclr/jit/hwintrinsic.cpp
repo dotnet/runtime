@@ -999,6 +999,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { NI_Illegal, NI_Illegal },                                 // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128

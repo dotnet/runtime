@@ -208,11 +208,6 @@ namespace Internal.JitInterface
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-        // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
-        // are just for internal VM / ZAP communication, not to be used by the JIT.
-        public ushort runtimeLookupFlags;
-        public void* runtimeLookupArgs;
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -250,6 +245,7 @@ namespace Internal.JitInterface
         public byte _indirectSecondOffset;
         public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
 
+        public CORINFO_CONST_LOOKUP helperEntryPoint;
     }
 
     // Result of calling embedGenericHandle
@@ -509,6 +505,17 @@ namespace Internal.JitInterface
         RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
         RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
         RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
+
+        // Wasm relocs
+        WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
+        WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
+                                               //  i32.const instruction, e.g. taking the address of a function.
+        WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
+                                               //  e.g. directly loading from or storing to a C++ global.
+        WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
+                                               //  e.g. taking the address of a C++ global.
+        WASM_TYPE_INDEX_LEB,                 // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
+        WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
     }
 
     public enum CorInfoGCType
@@ -1469,6 +1476,7 @@ namespace Internal.JitInterface
 
         // token comes from runtime async awaiting pattern
         CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
+        CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

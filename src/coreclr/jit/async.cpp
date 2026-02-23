@@ -422,17 +422,371 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     return newReturnBB;
 }
 
+//------------------------------------------------------------------------
+// DefaultValueAnalysis:
+//   Computes which tracked locals have their default (zero) value at each
+//   basic block entry. A tracked local that still has its default value at a
+//   suspension point does not need to be hoisted into the continuation.
+//
+//   The analysis has two phases:
+//     1. Per-block: compute which tracked locals are mutated (assigned a
+//        non-default value or have their address taken) in each block.
+//     2. Inter-block: forward dataflow to propagate default value information
+//        across blocks. At merge points the sets are unioned (a local is mutated
+//        if it is mutated on any incoming path).
+//
+class DefaultValueAnalysis
+{
+    Compiler*  m_compiler;
+    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
+
+    // DataFlow::ForwardAnalysis callback used in Phase 2.
+    class DataFlowCallback
+    {
+        DefaultValueAnalysis& m_analysis;
+        Compiler*             m_compiler;
+        VARSET_TP             m_preMergeIn;
+
+    public:
+        DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
+            : m_analysis(analysis)
+            , m_compiler(compiler)
+            , m_preMergeIn(VarSetOps::UninitVal())
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            // Save the current in set for change detection later.
+            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
+        {
+            // The out set of a predecessor is its in set plus the locals
+            // mutated in that block: mutatedOut = mutatedIn | mutated.
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVars[predBlock->bbNum]);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
+        {
+            // A handler can be reached from any point in the try region.
+            // A local is mutated at handler entry if it was mutated at try
+            // entry or mutated anywhere within the try region.
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+            {
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
+            }
+        }
+
+        bool EndMerge(BasicBlock* block)
+        {
+            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+    };
+
+public:
+    DefaultValueAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_mutatedVars(nullptr)
+        , m_mutatedVarsIn(nullptr)
+    {
+    }
+
+    void             Run();
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
+
+private:
+    void ComputePerBlockMutatedVars();
+    void ComputeInterBlockDefaultValues();
+
+#ifdef DEBUG
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
+};
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::Run:
+//   Run the default value analysis: compute per-block mutation sets, then
+//   propagate default value information forward through the flow graph.
+//
+void DefaultValueAnalysis::Run()
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        JITDUMP("Default value analysis disabled because of method range\n");
+        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
+        }
+
+        return;
+    }
+
+#endif
+    ComputePerBlockMutatedVars();
+    ComputeInterBlockDefaultValues();
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::GetMutatedVarsIn:
+//   Get the set of tracked locals that have been mutated to a non-default
+//   value on entry to the specified block.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   The VARSET_TP of tracked locals mutated on entry. A local NOT in this
+//   set is guaranteed to have its default value.
+//
+const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
+{
+    assert(m_mutatedVarsIn != nullptr);
+    return m_mutatedVarsIn[block->bbNum];
+}
+
+//------------------------------------------------------------------------
+// IsDefaultValue:
+//   Check if a node represents a default (zero) value.
+//
+// Parameters:
+//   node - The node to check.
+//
+// Returns:
+//   True if the node is a constant zero value (integral, floating-point, or
+//   vector).
+//
+static bool IsDefaultValue(GenTree* node)
+{
+    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
+}
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+// UpdateMutatedLocal:
+//   If the given node is a local store or LCL_ADDR, and the local is tracked,
+//   mark it as mutated in the provided set. Stores of a default (zero) value
+//   are not considered mutations.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   node     - The IR node to check.
+//   mutated  - [in/out] The set to update.
+//
+static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+{
+    if (node->OperIsLocalStore())
+    {
+        // If this is a zero initialization then we do not need to consider it
+        // mutated if we know the prolog will zero it anyway (otherwise we
+        // could be skipping this explicit zero init on resumption).
+        // We could improve this a bit by still skipping it but inserting
+        // explicit zero init on resumption, but these cases seem to be rare
+        // and that would require tracking additional information.
+        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
+            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
+                                                  /* bbIsReturn */ false))
+        {
+            return;
+        }
+    }
+    else if (node->OperIs(GT_LCL_ADDR))
+    {
+        // Fall through
+    }
+    else
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
+
+    if (varDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+        return;
+    }
+
+    // For promoted structs the parent may not be tracked but the field locals
+    // are. When the parent is mutated, all tracked fields must be marked as
+    // mutated as well.
+    if (varDsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+            if (fieldDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::ComputePerBlockMutatedVars:
+//   Phase 1: For each reachable basic block compute the set of tracked locals
+//   that are mutated to a non-default value.
+//
+//   A tracked local is considered mutated if:
+//     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
+//       not a zero constant.
+//     - It has a LCL_ADDR use (address taken that we cannot reason about).
+//
+void DefaultValueAnalysis::ComputePerBlockMutatedVars()
+{
+    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block   = dfsTree->GetPostOrder(i);
+        VARSET_TP&  mutated = m_mutatedVars[block->bbNum];
+
+        for (GenTree* node : LIR::AsRange(block))
+        {
+            UpdateMutatedLocal(m_compiler, node, mutated);
+        }
+    }
+
+    JITDUMP("Default value analysis: per-block mutated vars\n");
+    DBEXEC(m_compiler->verbose, DumpMutatedVars());
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::ComputeInterBlockDefaultValues:
+//   Phase 2: Forward dataflow to compute for each block the set of tracked
+//   locals that have been mutated to a non-default value on entry.
+//
+//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
+//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
+//
+//   At entry, only parameters and OSR locals are considered mutated.
+//
+void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
+{
+    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    // Parameters and OSR locals are considered mutated at method entry.
+    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+    {
+        unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        {
+            VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
+        }
+    }
+
+    DataFlowCallback callback(*this, m_compiler);
+    DataFlow         flow(m_compiler);
+    flow.ForwardAnalysis(callback);
+
+    JITDUMP("Default value analysis: per-block mutated vars on entry\n");
+    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::DumpMutatedVars:
+//   Debug helper to print the per-block mutated variable sets.
+//
+void DefaultValueAnalysis::DumpMutatedVars()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
+        {
+            printf("  " FMT_BB " mutated: ", block->bbNum);
+            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
+            unsigned        varIndex = 0;
+            const char*     sep      = "";
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
+                printf("%sV%02u", sep, lclNum);
+                sep = " ";
+            }
+            printf("\n");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::DumpMutatedVarsIn:
+//   Debug helper to print the per-block mutated-on-entry variable sets.
+//
+void DefaultValueAnalysis::DumpMutatedVarsIn()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
+        printf("  " FMT_BB " mutated on entry: ", block->bbNum);
+
+        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
+        {
+            printf("<none>");
+        }
+        else
+        {
+            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
+            unsigned        varIndex = 0;
+            const char*     sep      = "";
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
+                printf("%sV%02u", sep, lclNum);
+                sep = " ";
+            }
+        }
+        printf("\n");
+    }
+}
+#endif
+
 class AsyncLiveness
 {
     Compiler*              m_compiler;
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
+    DefaultValueAnalysis&  m_defaultValueAnalysis;
+    VARSET_TP              m_mutatedValues;
 
 public:
-    AsyncLiveness(Compiler* comp)
+    AsyncLiveness(Compiler* comp, DefaultValueAnalysis& defaultValueAnalysis)
         : m_compiler(comp)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
+        , m_defaultValueAnalysis(defaultValueAnalysis)
+        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
     {
     }
 
@@ -457,6 +811,7 @@ private:
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
     VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
+    VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
 }
 
 //------------------------------------------------------------------------
@@ -469,7 +824,8 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    m_updater.UpdateLife(node);
+    m_updater.UpdateLife<true>(node);
+    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
 }
 
 //------------------------------------------------------------------------
@@ -585,16 +941,18 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         //
         // A dependently promoted struct is live if any of its fields are live.
 
+        bool anyLive    = false;
+        bool anyMutated = false;
         for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
-            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex))
-            {
-                return true;
-            }
+            anyLive |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
+            anyMutated |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
         }
 
-        return false;
+        return anyLive && anyMutated;
     }
 
     if (dsc->lvIsStructField && (m_compiler->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
@@ -602,7 +960,22 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    return !dsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, dsc->lvVarIndex);
+    if (!dsc->lvTracked)
+    {
+        return true;
+    }
+
+    if (!VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, dsc->lvVarIndex))
+    {
+        return false;
+    }
+
+    if (!VarSetOps::IsMember(m_compiler, m_mutatedValues, dsc->lvVarIndex))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -725,7 +1098,9 @@ PhaseStatus AsyncTransformation::Run()
     INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
     VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
 
-    AsyncLiveness liveness(m_compiler);
+    DefaultValueAnalysis defaultValues(m_compiler);
+    defaultValues.Run();
+    AsyncLiveness liveness(m_compiler, defaultValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
