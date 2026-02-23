@@ -57,15 +57,15 @@ The contract depends on the following globals
 
 | Global name | Type | Meaning |
 | --- | --- | --- |
-| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain
-| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore
-| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise
-| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread
-| `GCThread` | TargetPointer | A pointer to the GC thread
-| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
-| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
-| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
-| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct
+| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain |
+| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore |
+| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise |
+| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread |
+| `GCThread` | TargetPointer | A pointer to the GC thread |
+| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
+| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
+| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
+| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct |
 
 The contract additionally depends on these data descriptors
 
