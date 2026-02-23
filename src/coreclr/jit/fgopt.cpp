@@ -1845,28 +1845,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         block->SetCond(firstCaseEdge, defaultEdge);
 
-        // The switch-to-cond conversion preserved edge likelihoods but
-        // successor block weights may be stale (they were set during import
-        // based on the original switch topology). Recompute them so that
-        // downstream passes like block compaction see correct weights.
-        if (block->hasProfileWeight())
-        {
-            if (caseDest->hasProfileWeight())
-            {
-                weight_t oldWeight = caseDest->bbWeight;
-                caseDest->setBBProfileWeight(caseDest->computeIncomingWeight());
-                JITDUMP("Updated " FMT_BB " (caseDest) profile weight from " FMT_WT " to " FMT_WT "\n", caseDest->bbNum,
-                        oldWeight, caseDest->bbWeight);
-            }
-            if (defaultDest->hasProfileWeight())
-            {
-                weight_t oldWeight = defaultDest->bbWeight;
-                defaultDest->setBBProfileWeight(defaultDest->computeIncomingWeight());
-                JITDUMP("Updated " FMT_BB " (defaultDest) profile weight from " FMT_WT " to " FMT_WT "\n",
-                        defaultDest->bbNum, oldWeight, defaultDest->bbWeight);
-            }
-        }
-
         JITDUMP("After:\n");
         DISPNODE(switchTree);
 
