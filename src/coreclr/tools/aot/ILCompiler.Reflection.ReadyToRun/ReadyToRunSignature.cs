@@ -1025,10 +1025,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     builder.Append("[ASYNC] ");
                 }
-                if ((flags & ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-                {
-                    builder.Append("[RESUME] ");
-                }
                 builder.Append(method);
                 return builder.ToString();
             }

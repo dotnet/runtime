@@ -1016,10 +1016,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 signaturePrefixes.Add("[ASYNC]");
             }
-            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_ResumptionStub) != 0)
-            {
-                signaturePrefixes.Add("[RESUME]");
-            }
 
             return new DecodedMethodSignature(owningType, methodHandle, methodTypeArgs, constrainedType, signaturePrefixes.ToArray());
         }
