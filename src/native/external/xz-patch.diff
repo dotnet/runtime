@@ -402,3 +402,39 @@ index 6add6a68350..0b81e9322ad 100644
  
  	// Go through all the groups in src and copy the Records into destg.
  	const index_group *srcg = (const index_group *)(src->groups.leftmost);
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8d8d9a5306f..329d8a44db9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2405,20 +2405,20 @@ xzdiff, xzgrep, xzmore, xzless, and their symlinks" ON)
+     set(xz "xz")
+     set(POSIX_SHELL "${XZ_POSIX_SHELL}")
+ 
+-    foreach(S xzdiff xzgrep xzmore xzless)
+-        configure_file("src/scripts/${S}.in" "${S}"
+-               @ONLY
+-               NEWLINE_STYLE LF
+-               FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+-                                GROUP_READ GROUP_EXECUTE
+-                                WORLD_READ WORLD_EXECUTE)
+-
+-        if(ENABLE_SCRIPTS)
++    if(ENABLE_SCRIPTS)
++        foreach(S xzdiff xzgrep xzmore xzless)
++            configure_file("src/scripts/${S}.in" "${S}"
++                   @ONLY
++                   NEWLINE_STYLE LF
++                   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
++                                    GROUP_READ GROUP_EXECUTE
++                                    WORLD_READ WORLD_EXECUTE)
++
+             install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${S}"
+                     DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                     COMPONENT scripts_Runtime)
+-        endif()
+-    endforeach()
++        endforeach()
++    endif()
+ 
+     unset(xz)
+     unset(POSIX_SHELL)
