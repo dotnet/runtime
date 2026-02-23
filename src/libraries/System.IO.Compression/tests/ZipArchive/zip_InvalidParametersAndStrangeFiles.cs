@@ -824,8 +824,7 @@ namespace System.IO.Compression.Tests
         /// 2. EmptyFileCompressedWrongSize has
         /// Deflate 0x08, _uncompressedSize 0, _compressedSize 4, compressed data: 0xBAAD0300 (just bad data)
         /// ZipArchive is not expected to make any changes to the compression method of an archive entry unless
-        /// it's been changed. If it has been changed, ZipArchive is expected to change compression method to
-        /// Stored (0x00) and ignore "bad" compressed size
+        /// it's been modified. Opening an entry stream without writing does not trigger a rewrite.
         /// </summary>
         [Theory]
         [MemberData(nameof(EmptyFiles))]
@@ -852,30 +851,43 @@ namespace System.IO.Compression.Tests
                 zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Update, leaveOpen: true);
 
                 var zipEntryStream = await OpenEntryStream(async, zip.Entries[0]);
-                // dispose after opening an entry will rewrite the archive
+                // Opening and disposing an entry stream without writing does not mark the archive as modified,
+                // so no rewrite will occur
                 await DisposeStream(async, zipEntryStream);
 
                 await DisposeZipArchive(async, zip);
 
                 fileContent = testStream.ToArray();
 
-                // compression method should change to "uncompressed" (Stored = 0x0)
-                Assert.Equal(0, fileContent[8]);
+                // compression method should remain unchanged since we didn't write anything
+                Assert.Equal(firstEntryCompressionMethod, fileContent[8]);
 
-                // extract and check the file. should stay empty.
+                testStream.Seek(0, SeekOrigin.Begin);
+                // extract and check the file
                 zip = await CreateZipArchive(async, testStream, ZipArchiveMode.Update);
 
                 ZipArchiveEntry entry = zip.GetEntry(ExpectedFileName);
+                // The entry retains its original properties since it was never modified
                 Assert.Equal(0, entry.Length);
-                Assert.Equal(0, entry.CompressedLength);
-                Stream entryStream = await OpenEntryStream(async, entry);
-                Assert.Equal(0, entryStream.Length);
-                await DisposeStream(async, entryStream);
 
+                var extractedEntryStream = await OpenEntryStream(async, entry);
+                byte[] buffer = new byte[1];
+                int bytesRead;
+                if (async)
+                {
+                    bytesRead = await extractedEntryStream.ReadAsync(buffer, 0, buffer.Length);
+                }
+                else
+                {
+                    bytesRead = extractedEntryStream.Read(buffer, 0, buffer.Length);
+                }
+
+                Assert.Equal(0, bytesRead);
+
+                await DisposeStream(async, extractedEntryStream);
                 await DisposeZipArchive(async, zip);
             }
         }
-
         /// <summary>
         /// Opens an empty file that has a 64KB EOCD comment.
         /// Adds two 64KB text entries. Verifies they can be read correctly.

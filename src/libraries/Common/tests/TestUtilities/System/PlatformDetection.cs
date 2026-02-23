@@ -139,7 +139,7 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
+        public static bool IsMultithreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
@@ -444,6 +444,8 @@ namespace System
                 return false;
             }
         }
+
+        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime;
 
         private static Version GetICUVersion()
         {

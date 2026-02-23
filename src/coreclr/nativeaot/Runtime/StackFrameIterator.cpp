@@ -40,7 +40,7 @@ EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult;
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
 EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
-EXTERN_C CODE_LOCATION RhpThrowEx2;
+EXTERN_C CODE_LOCATION RhpThrowImpl2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
 #endif // !defined(FEATURE_PORTABLE_HELPERS)
@@ -2241,7 +2241,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     }
 #endif
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowEx2) ||
+    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowImpl2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpRethrow2))
     {

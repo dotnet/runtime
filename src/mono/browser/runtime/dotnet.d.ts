@@ -137,14 +137,14 @@ interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-    runMainAndExit (): Promise<number>;
+    runMainAndExit(): Promise<number>;
     /**
      * Runs the Main() method of the application and keeps the runtime alive.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      */
-    runMain (): Promise<number>;
+    runMain(): Promise<number>;
 }
 type MonoConfig = {
     /**

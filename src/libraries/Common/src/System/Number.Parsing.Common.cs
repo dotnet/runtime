@@ -320,6 +320,9 @@ namespace System
         private static bool IsSpaceReplacingChar(uint c) => (c == '\u00a0') || (c == '\u202f');
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint NormalizeSpaceReplacingChar(uint c) => IsSpaceReplacingChar(c) ? '\u0020' : c;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe TChar* MatchNegativeSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -345,14 +348,16 @@ namespace System
                 if (TChar.CastToUInt32(*str) != '\0')
                 {
                     // We only hurt the failure case
-                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
-                    // space character we use 0x20 space character instead to mean the same.
+                    // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
+                    // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
+                    // we accept regular space (U+0020) as equivalent.
+                    // We also need to handle the reverse case where the input has NBSP and the format string has space.
                     while (true)
                     {
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
+                        if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
                         {
                             break;
                         }

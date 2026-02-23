@@ -327,7 +327,7 @@ bool Scev::Equals(Scev* left, Scev* right)
 //   ResetForLoop.
 //
 ScalarEvolutionContext::ScalarEvolutionContext(Compiler* comp)
-    : m_comp(comp)
+    : m_compiler(comp)
     , m_cache(comp->getAllocator(CMK_LoopIVOpts))
     , m_ephemeralCache(comp->getAllocator(CMK_LoopIVOpts))
 {
@@ -354,7 +354,7 @@ void ScalarEvolutionContext::ResetForLoop(FlowGraphNaturalLoop* loop)
 //
 ScevConstant* ScalarEvolutionContext::NewConstant(var_types type, int64_t value)
 {
-    ScevConstant* constant = new (m_comp, CMK_LoopIVOpts) ScevConstant(type, value);
+    ScevConstant* constant = new (m_compiler, CMK_LoopIVOpts) ScevConstant(type, value);
     return constant;
 }
 
@@ -371,8 +371,8 @@ ScevConstant* ScalarEvolutionContext::NewConstant(var_types type, int64_t value)
 //
 ScevLocal* ScalarEvolutionContext::NewLocal(unsigned lclNum, unsigned ssaNum)
 {
-    var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
-    ScevLocal* invariantLocal = new (m_comp, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
+    var_types  type           = genActualType(m_compiler->lvaGetDesc(lclNum));
+    ScevLocal* invariantLocal = new (m_compiler, CMK_LoopIVOpts) ScevLocal(type, lclNum, ssaNum);
     return invariantLocal;
 }
 
@@ -390,7 +390,7 @@ ScevLocal* ScalarEvolutionContext::NewLocal(unsigned lclNum, unsigned ssaNum)
 ScevUnop* ScalarEvolutionContext::NewExtension(ScevOper oper, var_types targetType, Scev* op)
 {
     assert(op != nullptr);
-    ScevUnop* ext = new (m_comp, CMK_LoopIVOpts) ScevUnop(oper, targetType, op);
+    ScevUnop* ext = new (m_compiler, CMK_LoopIVOpts) ScevUnop(oper, targetType, op);
     return ext;
 }
 
@@ -427,7 +427,7 @@ ScevBinop* ScalarEvolutionContext::NewBinop(ScevOper oper, Scev* op1, Scev* op2)
         }
     }
 
-    ScevBinop* binop = new (m_comp, CMK_LoopIVOpts) ScevBinop(oper, resultType, op1, op2);
+    ScevBinop* binop = new (m_compiler, CMK_LoopIVOpts) ScevBinop(oper, resultType, op1, op2);
     return binop;
 }
 
@@ -445,7 +445,7 @@ ScevBinop* ScalarEvolutionContext::NewBinop(ScevOper oper, Scev* op1, Scev* op2)
 ScevAddRec* ScalarEvolutionContext::NewAddRec(Scev* start, Scev* step)
 {
     assert((start != nullptr) && (step != nullptr));
-    ScevAddRec* addRec = new (m_comp, CMK_LoopIVOpts) ScevAddRec(start->Type, start, step DEBUGARG(m_loop));
+    ScevAddRec* addRec = new (m_compiler, CMK_LoopIVOpts) ScevAddRec(start->Type, start, step DEBUGARG(m_loop));
     return addRec;
 }
 
@@ -468,7 +468,7 @@ Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 
     if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVarCommon()->HasSsaName())
     {
-        LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+        LclVarDsc*    dsc    = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
         LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
 
         if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
@@ -534,8 +534,8 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                 return nullptr;
             }
 
-            assert(m_comp->lvaInSsa(tree->AsLclVarCommon()->GetLclNum()));
-            LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+            assert(m_compiler->lvaInSsa(tree->AsLclVarCommon()->GetLclNum()));
+            LclVarDsc*    dsc    = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
 
             if ((tree->TypeGet() != dsc->TypeGet()) || varTypeIsSmall(tree))
@@ -598,7 +598,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 
             ScevLocal* enterScev = NewLocal(enterSsa->GetLclNum(), enterSsa->GetSsaNum());
 
-            LclVarDsc*    dsc    = m_comp->lvaGetDesc(enterSsa->GetLclNum());
+            LclVarDsc*    dsc    = m_compiler->lvaGetDesc(enterSsa->GetLclNum());
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
 
             if (ssaDsc->GetDefNode() == nullptr)
@@ -798,7 +798,7 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreePhi* headerPhi,
             return nullptr;
         }
 
-        LclVarDsc*    lclDsc = m_comp->lvaGetDesc(lcl);
+        LclVarDsc*    lclDsc = m_compiler->lvaGetDesc(lcl);
         LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
         if (ssaDsc->GetDefNode() == nullptr)
         {
@@ -883,7 +883,7 @@ Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev*
         return nullptr;
     }
 
-    ArrayStack<Scev*> addOperands(m_comp->getAllocator(CMK_LoopIVOpts));
+    ArrayStack<Scev*> addOperands(m_compiler->getAllocator(CMK_LoopIVOpts));
     ExtractAddOperands(static_cast<ScevBinop*>(scev), addOperands);
 
     assert(addOperands.Height() >= 2);
@@ -1089,7 +1089,7 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev, const SimplificationAssumptio
         {
             ScevLocal* local = (ScevLocal*)scev;
             int64_t    cns;
-            if (local->GetConstantValue(m_comp, &cns))
+            if (local->GetConstantValue(m_compiler, &cns))
             {
                 return NewConstant(local->Type, cns);
             }
@@ -1300,7 +1300,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     return false;
                 }
 
-                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
+                resultVNP->SetBoth(m_compiler->vnStore->VNForNull());
             }
             else if (cns->TypeIs(TYP_BYREF))
             {
@@ -1310,23 +1310,23 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     return false;
                 }
 
-                resultVNP->SetBoth(m_comp->vnStore->VNForNull());
+                resultVNP->SetBoth(m_compiler->vnStore->VNForNull());
             }
             else
             {
                 resultVNP->SetBoth(
-                    m_comp->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value)));
+                    m_compiler->vnStore->VNForGenericCon(scev->Type, reinterpret_cast<uint8_t*>(&cns->Value)));
             }
 
             if (createIR)
             {
                 if (scev->TypeIs(TYP_LONG))
                 {
-                    *result = m_comp->gtNewLconNode(cns->Value);
+                    *result = m_compiler->gtNewLconNode(cns->Value);
                 }
                 else
                 {
-                    *result = m_comp->gtNewIconNode((ssize_t)cns->Value, scev->Type);
+                    *result = m_compiler->gtNewIconNode((ssize_t)cns->Value, scev->Type);
                 }
             }
 
@@ -1335,13 +1335,13 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
         case ScevOper::Local:
         {
             ScevLocal*    lcl    = (ScevLocal*)scev;
-            LclVarDsc*    dsc    = m_comp->lvaGetDesc(lcl->LclNum);
+            LclVarDsc*    dsc    = m_compiler->lvaGetDesc(lcl->LclNum);
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(lcl->SsaNum);
-            *resultVNP           = m_comp->vnStore->VNPNormalPair(ssaDsc->m_vnPair);
+            *resultVNP           = m_compiler->vnStore->VNPNormalPair(ssaDsc->m_vnPair);
 
             if (createIR)
             {
-                *result = m_comp->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
+                *result = m_compiler->gtNewLclvNode(((ScevLocal*)scev)->LclNum, scev->Type);
             }
 
             break;
@@ -1357,11 +1357,12 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                 return false;
             }
 
-            *resultVNP = m_comp->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
+            *resultVNP =
+                m_compiler->vnStore->VNPairForCast(opVN, TYP_LONG, ext->Type, scev->OperIs(ScevOper::ZeroExtend));
 
             if (createIR)
             {
-                *result = m_comp->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
+                *result = m_compiler->gtNewCastNode(ext->Type, op, scev->OperIs(ScevOper::ZeroExtend), TYP_LONG);
             }
 
             break;
@@ -1396,19 +1397,19 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     unreached();
             }
 
-            *resultVNP = m_comp->vnStore->VNPairForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
+            *resultVNP = m_compiler->vnStore->VNPairForFunc(binop->Type, VNFunc(oper), op1VN, op2VN);
             if (createIR)
             {
                 if (oper == GT_MUL)
                 {
                     if (op1->IsIntegralConst(-1))
                     {
-                        *result = m_comp->gtNewOperNode(GT_NEG, op2->TypeGet(), op2);
+                        *result = m_compiler->gtNewOperNode(GT_NEG, op2->TypeGet(), op2);
                         break;
                     }
                     if (op2->IsIntegralConst(-1))
                     {
-                        *result = m_comp->gtNewOperNode(GT_NEG, op1->TypeGet(), op1);
+                        *result = m_compiler->gtNewOperNode(GT_NEG, op1->TypeGet(), op1);
                         break;
                     }
                 }
@@ -1420,7 +1421,7 @@ bool ScalarEvolutionContext::Materialize(Scev* scev, bool createIR, GenTree** re
                     return false;
                 }
 #endif
-                *result = m_comp->gtNewOperNode(oper, binop->Type, op1, op2);
+                *result = m_compiler->gtNewOperNode(oper, binop->Type, op1, op2);
             }
 
             break;
@@ -1511,15 +1512,15 @@ static const char* RelopEvaluationResultString(RelopEvaluationResult result)
 //
 RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
 {
-    if (m_comp->vnStore->IsVNConstant(vn))
+    if (m_compiler->vnStore->IsVNConstant(vn))
     {
-        assert(m_comp->vnStore->TypeOfVN(vn) == TYP_INT);
-        return m_comp->vnStore->ConstantValue<int32_t>(vn) != 0 ? RelopEvaluationResult::True
-                                                                : RelopEvaluationResult::False;
+        assert(m_compiler->vnStore->TypeOfVN(vn) == TYP_INT);
+        return m_compiler->vnStore->ConstantValue<int32_t>(vn) != 0 ? RelopEvaluationResult::True
+                                                                    : RelopEvaluationResult::False;
     }
 
     // Evaluate by using dominators and RBO's logic.
-    assert(m_comp->m_domTree != nullptr);
+    assert(m_compiler->m_domTree != nullptr);
     //
     // TODO-CQ: Using assertions could be stronger given its dataflow, but it
     // is not convenient to use (optVNConstantPropOnJTrue does not actually
@@ -1549,17 +1550,17 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
         //
         RelopImplicationInfo rii;
         rii.treeNormVN   = vn;
-        rii.domCmpNormVN = m_comp->vnStore->VNLiberalNormalValue(domCmpTree->gtVNPair);
+        rii.domCmpNormVN = m_compiler->vnStore->VNLiberalNormalValue(domCmpTree->gtVNPair);
 
-        m_comp->optRelopImpliesRelop(&rii);
+        m_compiler->optRelopImpliesRelop(&rii);
 
         if (!rii.canInfer)
         {
             continue;
         }
 
-        bool trueReaches  = m_comp->optReachable(idom->GetTrueTarget(), m_loop->GetHeader(), idom);
-        bool falseReaches = m_comp->optReachable(idom->GetFalseTarget(), m_loop->GetHeader(), idom);
+        bool trueReaches  = m_compiler->optReachable(idom->GetTrueTarget(), m_loop->GetHeader(), idom);
+        bool falseReaches = m_compiler->optReachable(idom->GetFalseTarget(), m_loop->GetHeader(), idom);
 
         if (trueReaches && !falseReaches && rii.canInferFromTrue)
         {
@@ -1597,7 +1598,7 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
 bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp)
 {
     int64_t stepCns;
-    if (!lhs->Step->GetConstantValue(m_comp, &stepCns))
+    if (!lhs->Step->GetConstantValue(m_compiler, &stepCns))
     {
         // TODO-CQ: With divisibility checks we can likely handle some of
         // these.
@@ -1671,7 +1672,7 @@ bool ScalarEvolutionContext::MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, V
     ValueNumPair steppedValVNP = MaterializeVN(steppedVal);
 
     ValueNumPair rhsVNP = MaterializeVN(rhs);
-    ValueNum     relop  = m_comp->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
+    ValueNum relop = m_compiler->vnStore->VNForFunc(TYP_INT, exitOp, steppedValVNP.GetLiberal(), rhsVNP.GetLiberal());
     RelopEvaluationResult result = EvaluateRelop(relop);
     return result != RelopEvaluationResult::True;
 }
@@ -1724,13 +1725,13 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     }
 
     int64_t startCns;
-    if (addRec->Start->GetConstantValue(m_comp, &startCns) && (startCns != 0))
+    if (addRec->Start->GetConstantValue(m_compiler, &startCns) && (startCns != 0))
     {
         return true;
     }
 
     int64_t stepCns;
-    if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || (stepCns != 1))
+    if (!addRec->Step->GetConstantValue(m_compiler, &stepCns) || (stepCns != 1))
     {
         return true;
     }
@@ -1887,10 +1888,10 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     assert(lhs->OperIs(ScevOper::AddRec));
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         printf("  " FMT_LP " exits when:\n  ", m_loop->GetIndex());
-        lhs->Dump(m_comp);
+        lhs->Dump(m_compiler);
         const char* exitOpStr = "";
         switch (exitOp)
         {
@@ -1910,7 +1911,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
                 unreached();
         }
         printf(" %s ", exitOpStr);
-        rhs->Dump(m_comp);
+        rhs->Dump(m_compiler);
         printf("\n");
     }
 #endif
@@ -1985,9 +1986,9 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     // Now prove that the lower bound is indeed a lower bound.
     JITDUMP("  Need to prove ");
-    DBEXEC(VERBOSE, lowerBound->Dump(m_comp));
+    DBEXEC(VERBOSE, lowerBound->Dump(m_compiler));
     JITDUMP(" <= ");
-    DBEXEC(VERBOSE, upperBound->Dump(m_comp));
+    DBEXEC(VERBOSE, upperBound->Dump(m_compiler));
 
     VNFunc       relopFunc     = ValueNumStore::VNFuncIsSignedComparison(exitOpVNF) ? VNF_LE : VNF_LE_UN;
     ValueNumPair lowerBoundVNP = MaterializeVN(lowerBound);
@@ -2003,7 +2004,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
     }
 
     ValueNum relop =
-        m_comp->vnStore->VNForFunc(TYP_INT, relopFunc, lowerBoundVNP.GetLiberal(), upperBoundVNP.GetLiberal());
+        m_compiler->vnStore->VNForFunc(TYP_INT, relopFunc, lowerBoundVNP.GetLiberal(), upperBoundVNP.GetLiberal());
     RelopEvaluationResult result = EvaluateRelop(relop);
     JITDUMP(": %s\n", RelopEvaluationResultString(result));
 
@@ -2014,7 +2015,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     divisor = Simplify(divisor);
     int64_t divisorVal;
-    if (!divisor->GetConstantValue(m_comp, &divisorVal) || ((divisorVal != 1) && (divisorVal != -1)))
+    if (!divisor->GetConstantValue(m_compiler, &divisorVal) || ((divisorVal != 1) && (divisorVal != -1)))
     {
         // TODO-CQ: Enable. Likely need to add a division operator to SCEV.
         return nullptr;
@@ -2030,7 +2031,7 @@ Scev* ScalarEvolutionContext::ComputeExitNotTakenCount(BasicBlock* exiting)
 
     backedgeCount = Simplify(backedgeCount);
     JITDUMP("  Backedge count: ");
-    DBEXEC(VERBOSE, backedgeCount->Dump(m_comp));
+    DBEXEC(VERBOSE, backedgeCount->Dump(m_compiler));
     JITDUMP("\n");
 
     return backedgeCount;
