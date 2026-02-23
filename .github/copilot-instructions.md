@@ -25,6 +25,8 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
 - When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
+- When adding new test files, examine the directory structure of sibling tests first. Some test directories use flat files (e.g., `GCEvents.cs` alongside `GCEvents.csproj`) while others use per-test subdirectories. Match the existing convention.
+- When working with tests, look for `README.md` files along the directory hierarchy (starting from the test's directory and walking up). These contain build, run, and authoring guidance specific to that test area.
 - When adding new unit tests, avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
 - When writing tests, prefer using `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods. Fewer test methods that validate more inputs are better than many similar test methods.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
@@ -150,14 +152,57 @@ cd src/tests
 
 ### Runtime Tests
 
-**Build:**
+Subdirectories under `src/tests/` may contain `README.md` files with
+area-specific guidance (e.g., EventPipe test patterns).
+
+**Build all tests:**
 ```bash
 ./build.sh clr+libs -lc release -rc checked
 ./src/tests/build.sh checked
 ./src/tests/run.sh checked
 ```
 
+**Build a single test project** (path is relative to the repo root):
+```bash
+# Use -priority1 ("-Priority 1" on Windows) for tests with <CLRTestPriority>1</CLRTestPriority>,
+# otherwise the build silently reports "0 test projects" and builds nothing.
+src/tests/build.sh -Test tracing/eventpipe/eventsvalidation/GCEvents.csproj x64 Release -priority1
+```
+
+Other useful flags (run `src/tests/build.sh -h` for the full list):
+
+| Flag | Description |
+|------|-------------|
+| `-Test <path>` | Build one project |
+| `-Dir <path>` | Build all projects in a directory |
+| `-Tree <path>` | Build a subtree recursively |
+| `-priority1` (`-Priority 1` on Windows) | Include priority 1 tests |
+| `-GenerateLayoutOnly` | Generate Core_Root layout only |
+
+**Generate Core_Root layout** (required before running individual tests):
+```bash
+src/tests/build.sh -GenerateLayoutOnly x64 Release
+```
+
+**Run a single test:**
+```bash
+export CORE_ROOT=$(pwd)/artifacts/tests/coreclr/<os>.x64.Release/Tests/Core_Root
+cd artifacts/tests/coreclr/<os>.x64.Release/<test-path>/
+$CORE_ROOT/corerun <TestName>.dll
+# Exit code 100 = pass, any other value = fail.
+```
+
 ---
+
+## Adding new tests
+
+When creating a regression test for a bug fix:
+
+1. **Verify the test FAILS without the fix** — build and run against the unfixed code.
+2. **Verify the test PASSES with the fix** — apply the fix, rebuild, and run again.
+3. If the fix is not yet merged locally, manually apply the minimal changes from the PR/commit to verify.
+
+Do not mark a regression test task as complete until both conditions are confirmed.
 
 ## Troubleshooting
 
@@ -167,10 +212,11 @@ cd src/tests
 | "testhost" missing / FileNotFoundException | Run baseline build first (Step 2 above) |
 | Build timeout | Wait up to 40 min; only fail if no output for 5 min |
 | "Target does not exist" | Avoid specifying a target framework; the build will auto-select `$(NetCoreAppCurrent)` |
+| "0 test projects" after `build.sh -Test` | The test has `<CLRTestPriority>` > 0; add `-priority1` to the build command |
 
 **When reporting failures:** Include logs from `artifacts/log/` and console output for diagnostics.
 
-**Windows:** Use `build.cmd` instead of `build.sh`. Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
+**Windows:** Use `build.cmd` instead of `build.sh`.
 
 ---
 

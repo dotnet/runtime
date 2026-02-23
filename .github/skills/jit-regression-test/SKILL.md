@@ -1,6 +1,6 @@
 ---
 name: jit-regression-test
-description: Extract a standalone JIT regression test case from a given GitHub issue and save it under the JitBlue folder. Use this when asked to create or extract a JIT regression test from an issue.
+description: Extract a standalone JIT compiler regression test from a GitHub issue and save it under the JitBlue folder. ONLY use this for JIT compiler bugs (codegen, optimization, register allocation, etc.) — do NOT use for diagnostics, EventPipe, GC, threading, or other runtime components.
 ---
 
 # JIT Regression Test Extraction
