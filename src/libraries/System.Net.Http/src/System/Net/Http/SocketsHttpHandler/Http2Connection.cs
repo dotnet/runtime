@@ -255,8 +255,10 @@ namespace System.Net.Http
                     throw;
                 }
 
-                // TODO: Review this case!
-                throw new IOException(SR.net_http_http2_connection_not_established, e);
+                // Use _abortException if available, as it contains the real reason for the connection failure.
+                // For example, when ProcessIncomingFramesAsync detects a server-initiated disconnect and calls Abort(),
+                // _abortException will have the original IOException, while 'e' here may be an uninformative ObjectDisposedException.
+                throw new IOException(SR.net_http_http2_connection_not_established, _abortException ?? e);
             }
 
             // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
