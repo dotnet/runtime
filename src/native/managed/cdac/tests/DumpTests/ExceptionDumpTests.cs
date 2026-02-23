@@ -10,32 +10,38 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the Exception contract.
 /// Uses the ExceptionState debuggee dump, which crashes with a nested exception chain.
 /// </summary>
-public abstract class ExceptionDumpTestsBase : DumpTestBase
+public class ExceptionDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ExceptionState";
     protected override string DumpType => "full";
 
-    [ConditionalFact]
-    public void Exception_ContractIsAvailable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Exception_ContractIsAvailable(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IException exceptionContract = Target.Contracts.Exception;
         Assert.NotNull(exceptionContract);
     }
 
-    [ConditionalFact]
-    public void Exception_CrashingThreadHasLastThrownObject()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void Exception_CrashingThreadHasLastThrownObject(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         // FailFast with a message should leave an exception on the crashing thread
         Assert.NotEqual(TargetPointer.Null, crashingThread.LastThrownObjectHandle);
     }
 
-    [ConditionalFact]
-    public void Exception_CanGetExceptionDataFromFirstNestedException()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void Exception_CanGetExceptionDataFromFirstNestedException(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         IException exceptionContract = Target.Contracts.Exception;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
@@ -52,14 +58,4 @@ public abstract class ExceptionDumpTestsBase : DumpTestBase
         ExceptionData exData = exceptionContract.GetExceptionData(managedException);
         Assert.NotEqual(TargetPointer.Null, exData.Message);
     }
-}
-
-public class ExceptionDumpTests_Local : ExceptionDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class ExceptionDumpTests_Net10 : ExceptionDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

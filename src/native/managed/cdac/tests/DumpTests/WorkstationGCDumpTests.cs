@@ -13,22 +13,26 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the GCRoots debuggee dump, which pins objects and creates GC handles
 /// under the default workstation GC.
 /// </summary>
-public abstract class WorkstationGCDumpTestsBase : DumpTestBase
+public class WorkstationGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
-    [ConditionalFact]
-    public void WorkstationGC_ContractIsAvailable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_ContractIsAvailable(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         Assert.NotNull(gcContract);
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_IsWorkstationGC()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_IsWorkstationGC(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
 
         string[] gcIdentifiers = gcContract.GetGCIdentifiers();
@@ -38,61 +42,61 @@ public abstract class WorkstationGCDumpTestsBase : DumpTestBase
         Assert.Equal(1u, heapCount);
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_MaxGenerationIsReasonable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_MaxGenerationIsReasonable(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         uint maxGen = gcContract.GetMaxGeneration();
         Assert.True(maxGen >= 1 && maxGen <= 4,
             $"Expected max generation between 1 and 4, got {maxGen}");
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_StructuresAreValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_StructuresAreValid(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         bool valid = gcContract.GetGCStructuresValid();
         Assert.True(valid, "Expected GC structures to be valid in a dump taken outside of GC");
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_CanEnumerateHeaps()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_CanEnumerateHeaps(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         uint heapCount = gcContract.GetGCHeapCount();
         Assert.Equal(1u, heapCount);
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_CanGetHeapData()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_CanGetHeapData(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         GCHeapData heapData = gcContract.GetHeapData();
         Assert.NotNull(heapData.GenerationTable);
         Assert.True(heapData.GenerationTable.Count > 0, "Expected at least one generation");
     }
 
-    [ConditionalFact]
-    public void WorkstationGC_BoundsAreReasonable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_BoundsAreReasonable(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "GC contract is not available in .NET 10 dumps");
+        InitializeDumpTest(config);
         IGC gcContract = Target.Contracts.GC;
         gcContract.GetGCBounds(out TargetPointer minAddr, out TargetPointer maxAddr);
         Assert.True(minAddr < maxAddr,
             $"Expected GC min address (0x{minAddr:X}) < max address (0x{maxAddr:X})");
     }
-}
-
-public class WorkstationGCDumpTests_Local : WorkstationGCDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class WorkstationGCDumpTests_Net10 : WorkstationGCDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

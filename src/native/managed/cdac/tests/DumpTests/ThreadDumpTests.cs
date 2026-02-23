@@ -8,19 +8,20 @@ using Xunit;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Shared dump-based integration tests for the Thread contract.
+/// Dump-based integration tests for the Thread contract.
 /// Uses the BasicThreads debuggee dump, which spawns 5 named threads then crashes.
-/// Subclasses specify which runtime version's dump to test against.
 /// </summary>
-public abstract class ThreadDumpTestsBase : DumpTestBase
+public class ThreadDumpTests : DumpTestBase
 {
     private const int SpawnedThreadCount = 5;
 
     protected override string DebuggeeName => "BasicThreads";
 
-    [ConditionalFact]
-    public void ThreadStoreData_HasExpectedThreadCount()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void ThreadStoreData_HasExpectedThreadCount(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         Assert.NotNull(threadContract);
 
@@ -30,9 +31,11 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
             $"Expected at least {SpawnedThreadCount + 1} threads, got {storeData.ThreadCount}");
     }
 
-    [ConditionalFact]
-    public void EnumerateThreads_CanWalkThreadList()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void EnumerateThreads_CanWalkThreadList(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         Assert.NotNull(threadContract);
 
@@ -52,18 +55,22 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         Assert.Equal(storeData.ThreadCount, count);
     }
 
-    [ConditionalFact]
-    public void ThreadStoreData_HasFinalizerThread()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void ThreadStoreData_HasFinalizerThread(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         ThreadStoreData storeData = threadContract.GetThreadStoreData();
 
         Assert.NotEqual(TargetPointer.Null, storeData.FinalizerThread);
     }
 
-    [ConditionalFact]
-    public void ThreadStoreData_HasGCThread()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void ThreadStoreData_HasGCThread(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         ThreadStoreData storeData = threadContract.GetThreadStoreData();
 
@@ -72,9 +79,11 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         _ = storeData.GCThread;
     }
 
-    [ConditionalFact]
-    public void Threads_HaveValidIds()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Threads_HaveValidIds(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         ThreadStoreData storeData = threadContract.GetThreadStoreData();
 
@@ -89,9 +98,11 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         }
     }
 
-    [ConditionalFact]
-    public void ThreadCounts_AreNonNegative()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void ThreadCounts_AreNonNegative(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IThread threadContract = Target.Contracts.Thread;
         ThreadStoreCounts counts = threadContract.GetThreadCounts();
 
@@ -100,21 +111,4 @@ public abstract class ThreadDumpTestsBase : DumpTestBase
         Assert.True(counts.PendingThreadCount >= 0, $"PendingThreadCount should be non-negative, got {counts.PendingThreadCount}");
         Assert.True(counts.DeadThreadCount >= 0, $"DeadThreadCount should be non-negative, got {counts.DeadThreadCount}");
     }
-
-}
-
-/// <summary>
-/// Thread contract tests against a dump from the local (in-repo) runtime build.
-/// </summary>
-public class ThreadDumpTests_Local : ThreadDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-/// <summary>
-/// Thread contract tests against a dump from the .NET 10 release runtime.
-/// </summary>
-public class ThreadDumpTests_Net10 : ThreadDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

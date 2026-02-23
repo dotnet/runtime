@@ -13,22 +13,26 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the StackWalk debuggee dump, which has a deterministic call stack:
 /// Main → MethodA → MethodB → MethodC → FailFast.
 /// </summary>
-public abstract class StackWalkDumpTestsBase : DumpTestBase
+public class StackWalkDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackWalk";
     protected override string DumpType => "full";
 
-    [ConditionalFact]
-    public void StackWalk_ContractIsAvailable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void StackWalk_ContractIsAvailable(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         Assert.NotNull(stackWalk);
     }
 
-    [ConditionalFact]
-    public void StackWalk_CanWalkCrashingThread()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_CanWalkCrashingThread(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
@@ -39,10 +43,12 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
     }
 
-    [ConditionalFact]
-    public void StackWalk_HasMultipleFrames()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_HasMultipleFrames(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
@@ -57,10 +63,12 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
             $"Expected multiple stack frames from the crashing thread, got {frameList.Count}");
     }
 
-    [ConditionalFact]
-    public void StackWalk_ManagedFramesHaveValidMethodDescs()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_ManagedFramesHaveValidMethodDescs(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
@@ -82,10 +90,12 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         }
     }
 
-    [ConditionalFact]
-    public void StackWalk_FramesHaveRawContext()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_FramesHaveRawContext(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0");
+        InitializeDumpTest(config);
         IStackWalk stackWalk = Target.Contracts.StackWalk;
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
@@ -98,14 +108,4 @@ public abstract class StackWalkDumpTestsBase : DumpTestBase
         Assert.NotNull(context);
         Assert.True(context.Length > 0, "Expected non-empty raw context for stack frame");
     }
-}
-
-public class StackWalkDumpTests_Local : StackWalkDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class StackWalkDumpTests_Net10 : StackWalkDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

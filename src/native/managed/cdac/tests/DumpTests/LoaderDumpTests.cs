@@ -12,14 +12,16 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the Loader contract.
 /// Uses the MultiModule debuggee dump, which loads assemblies from multiple ALCs.
 /// </summary>
-public abstract class LoaderDumpTestsBase : DumpTestBase
+public class LoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "MultiModule";
     protected override string DumpType => "full";
 
-    [ConditionalFact]
-    public void Loader_CanGetRootAssembly()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Loader_CanGetRootAssembly(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         Assert.NotNull(loader);
 
@@ -27,10 +29,12 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, rootAssembly);
     }
 
-    [ConditionalFact]
-    public void Loader_RootAssemblyHasModule()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_RootAssemblyHasModule(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
 
@@ -39,10 +43,12 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, modulePtr);
     }
 
-    [ConditionalFact]
-    public void Loader_CanGetModulePath()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_CanGetModulePath(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
 
@@ -52,27 +58,33 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEmpty(path);
     }
 
-    [ConditionalFact]
-    public void Loader_AppDomainHasFriendlyName()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Loader_AppDomainHasFriendlyName(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         string name = loader.GetAppDomainFriendlyName();
         Assert.NotNull(name);
         Assert.NotEmpty(name);
     }
 
-    [ConditionalFact]
-    public void Loader_GlobalLoaderAllocatorIsValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Loader_GlobalLoaderAllocatorIsValid(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer globalLA = loader.GetGlobalLoaderAllocator();
         Assert.NotEqual(TargetPointer.Null, globalLA);
     }
 
-    [ConditionalFact]
-    public void Loader_RootModuleHasFileName()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_RootModuleHasFileName(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -83,10 +95,12 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.Contains("MultiModule", fileName);
     }
 
-    [ConditionalFact]
-    public void Loader_RootModuleIsNotDynamic()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_RootModuleIsNotDynamic(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -94,10 +108,12 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.False(loader.IsDynamic(moduleHandle));
     }
 
-    [ConditionalFact]
-    public void Loader_RootModuleHasLoaderAllocator()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_RootModuleHasLoaderAllocator(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -106,10 +122,12 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, la);
     }
 
-    [ConditionalFact]
-    public void Loader_RootModuleHasILBase()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void Loader_RootModuleHasILBase(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         TargetPointer rootAssembly = loader.GetRootAssembly();
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
@@ -117,14 +135,4 @@ public abstract class LoaderDumpTestsBase : DumpTestBase
         TargetPointer ilBase = loader.GetILBase(moduleHandle);
         Assert.NotEqual(TargetPointer.Null, ilBase);
     }
-}
-
-public class LoaderDumpTests_Local : LoaderDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class LoaderDumpTests_Net10 : LoaderDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

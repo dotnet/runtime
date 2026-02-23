@@ -10,20 +10,24 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the Object contract.
 /// Uses the GCRoots debuggee dump, which pins objects and creates GC handles.
 /// </summary>
-public abstract class ObjectDumpTestsBase : DumpTestBase
+public class ObjectDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "GCRoots";
 
-    [ConditionalFact]
-    public void Object_ContractIsAvailable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Object_ContractIsAvailable(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IObject objectContract = Target.Contracts.Object;
         Assert.NotNull(objectContract);
     }
 
-    [ConditionalFact]
-    public void Object_StringMethodTableHasCorrectComponentSize()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void Object_StringMethodTableHasCorrectComponentSize(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
         TargetPointer stringMT = Target.ReadPointer(stringMTGlobal);
@@ -32,14 +36,4 @@ public abstract class ObjectDumpTestsBase : DumpTestBase
         uint componentSize = rts.GetComponentSize(handle);
         Assert.Equal(2u, componentSize);
     }
-}
-
-public class ObjectDumpTests_Local : ObjectDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class ObjectDumpTests_Net10 : ObjectDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

@@ -48,6 +48,12 @@
     (Windows 11+ / Server 2022+) to allow heap dumps with an unsigned DAC.
     Requires running as Administrator. Used by CI and for first-time local setup.
 
+.PARAMETER Coverage
+    When set, collects code coverage via coverlet and generates an HTML report
+    using ReportGenerator. Requires the dotnet tools 'coverlet' and
+    'reportgenerator' to be restored (dotnet tool restore).
+    The report is written to artifacts\coverage\cdac-dump-tests\.
+
 .PARAMETER VerboseOutput
     When set, increases MSBuild and dotnet verbosity to normal (default: minimal/quiet).
 
@@ -71,6 +77,9 @@
 
 .EXAMPLE
     .\RunDumpTests.ps1 -SetSignatureCheck
+
+.EXAMPLE
+    .\RunDumpTests.ps1 -Coverage
 #>
 
 [CmdletBinding()]
@@ -89,6 +98,8 @@ param(
     [string]$DumpArchive = "",
 
     [switch]$SetSignatureCheck,
+
+    [switch]$Coverage,
 
     [switch]$VerboseOutput
 )
@@ -117,6 +128,52 @@ function Find-RepoRoot([string]$startDir) {
 $repoRoot = Find-RepoRoot $PSScriptRoot
 $dotnet = Join-Path $repoRoot ".dotnet\dotnet.exe"
 $dumpTestsProj = Join-Path $PSScriptRoot "Microsoft.Diagnostics.DataContractReader.DumpTests.csproj"
+
+# --- Coverage paths ---
+$coverageResultsDir = Join-Path $repoRoot "artifacts\TestResults\cdac-dump-tests"
+$coverageReportDir  = Join-Path $repoRoot "artifacts\coverage\cdac-dump-tests"
+
+function Build-CoverageArgs {
+    if (-not $Coverage) { return @() }
+    return @(
+        "--collect:XPlat Code Coverage",
+        "--results-directory", $coverageResultsDir
+    )
+}
+
+function New-CoverageReport {
+    if (-not $Coverage) { return }
+
+    $coverageFiles = Get-ChildItem -Path $coverageResultsDir -Recurse -Filter "coverage.cobertura.xml" -ErrorAction SilentlyContinue
+    if (-not $coverageFiles -or $coverageFiles.Count -eq 0) {
+        Write-Host "  No coverage files found. Skipping report generation." -ForegroundColor Yellow
+        return
+    }
+
+    $inputFiles = ($coverageFiles | ForEach-Object { $_.FullName }) -join ";"
+    Write-Host ""
+    Write-Host "--- Generating coverage report ---" -ForegroundColor Cyan
+
+    & $dotnet tool run reportgenerator `
+        "-reports:$inputFiles" `
+        "-targetdir:$coverageReportDir" `
+        "-reporttypes:Html;TextSummary" `
+        "-verbosity:Warning" 2>&1 | ForEach-Object { Write-Host "  $_" }
+
+    if ($LASTEXITCODE -eq 0) {
+        $summaryFile = Join-Path $coverageReportDir "Summary.txt"
+        if (Test-Path $summaryFile) {
+            Write-Host ""
+            Write-Host "--- Coverage Summary ---" -ForegroundColor Cyan
+            Get-Content $summaryFile | ForEach-Object { Write-Host "  $_" }
+        }
+        Write-Host ""
+        Write-Host "  Full report: $coverageReportDir\index.html" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  Report generation failed." -ForegroundColor Yellow
+    }
+}
 
 if (-not (Test-Path $dotnet)) {
     Write-Error "Repo dotnet not found at $dotnet. Run build.cmd first."
@@ -197,15 +254,17 @@ if ($DumpArchive) {
     $env:CDAC_DUMP_ROOT = $extractDir
     $saved = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
+    $coverageArgs = Build-CoverageArgs
+    $testArgs = @($dumpTestsProj, "--no-build", "--logger", "console;verbosity=detailed") + $coverageArgs
     if ($filterExpr) {
-        & $dotnet test $dumpTestsProj --no-build --filter $filterExpr --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
+        $testArgs += @("--filter", $filterExpr)
     }
-    else {
-        & $dotnet test $dumpTestsProj --no-build --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
-    }
+    & $dotnet test @testArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
     $testExitCode = $LASTEXITCODE
     $ErrorActionPreference = $saved
     Remove-Item Env:\CDAC_DUMP_ROOT -ErrorAction SilentlyContinue
+
+    New-CoverageReport
 
     if ($testExitCode -ne 0) {
         Write-Host ""
@@ -285,30 +344,23 @@ if ($Action -in @("test", "all")) {
     Write-Host ""
     Write-Host "--- Running tests ---" -ForegroundColor Cyan
 
-    # Build a filter for the selected versions
-    $filters = @()
-    foreach ($version in $selectedVersions) {
-        $suffix = switch ($version) {
-            "local"   { "_Local" }
-            "net10.0" { "_Net10" }
-        }
-        $filters += "FullyQualifiedName~$suffix"
-    }
-    $filterExpr = $filters -join " | "
+    $coverageArgs = Build-CoverageArgs
+    $testArgs = @($dumpTestsProj, "--no-build", "--logger", "console;verbosity=detailed") + $coverageArgs
 
     # Apply user-supplied name filter (glob-style: * maps to dotnet test's ~ operator)
     if ($Filter) {
-        # Convert glob wildcards to dotnet test FullyQualifiedName contains filter
         $namePattern = $Filter.Replace("*", "")
-        $filterExpr = "($filterExpr) & FullyQualifiedName~$namePattern"
+        $testArgs += @("--filter", "FullyQualifiedName~$namePattern")
     }
 
     # dotnet test writes failure details to stderr; suppress termination so we see full results.
     $saved = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    & $dotnet test $dumpTestsProj --no-build --filter $filterExpr --logger "console;verbosity=detailed" 2>&1 | ForEach-Object { Write-Host "  $_" }
+    & $dotnet test @testArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
     $testExitCode = $LASTEXITCODE
     $ErrorActionPreference = $saved
+
+    New-CoverageReport
 
     if ($testExitCode -ne 0) {
         Write-Host ""

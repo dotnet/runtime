@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -12,33 +14,35 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Base class for dump-based cDAC integration tests.
-/// Loads a crash dump via <see cref="IAsyncLifetime"/>, creates a
-/// <see cref="ContractDescriptorTarget"/>, and provides helpers for
-/// version-aware and OS-aware test skipping.
+/// Each test is a <c>[ConditionalTheory]</c> parameterized by <see cref="TestConfiguration"/>.
+/// Call <see cref="InitializeDumpTest"/> at the start of every test method to load
+/// the dump and evaluate skip attributes such as <see cref="SkipOnVersionAttribute"/>.
 /// </summary>
-/// <remarks>
-/// Tests that need conditional skipping should:
-/// <list type="number">
-///   <item>Use <c>[ConditionalFact]</c> instead of <c>[Fact]</c></item>
-///   <item>Call <see cref="SkipIfVersion"/> or <see cref="SkipIfTargetOS"/>
-///         at the start of the test method</item>
-/// </list>
-/// </remarks>
-public abstract class DumpTestBase : IAsyncLifetime
+public abstract class DumpTestBase : IDisposable
 {
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
     private string? _targetOS;
 
     /// <summary>
+    /// The set of runtime versions to test against.
+    /// Each entry produces a separate test invocation via <c>[MemberData]</c>.
+    /// </summary>
+    public static IEnumerable<object[]> TestConfigurations
+    {
+        get
+        {
+            yield return [new TestConfiguration("local")];
+
+            if (!IsVersionSkipped("net10.0"))
+                yield return [new TestConfiguration("net10.0")];
+        }
+    }
+
+    /// <summary>
     /// The name of the debuggee that produced the dump (e.g., "BasicThreads").
     /// </summary>
     protected abstract string DebuggeeName { get; }
-
-    /// <summary>
-    /// The runtime version identifier (e.g., "local", "net10.0").
-    /// </summary>
-    protected abstract string RuntimeVersion { get; }
 
     /// <summary>
     /// The dump type to load (e.g., "heap", "full"). Determines the subdirectory
@@ -54,24 +58,23 @@ public abstract class DumpTestBase : IAsyncLifetime
 
     /// <summary>
     /// The target operating system of the dump, resolved from the RuntimeInfo contract.
-    /// Returns <see cref="string.Empty"/> if the operating system cannot be determined.
+    /// May be empty if the contract is unavailable.
     /// </summary>
     protected string TargetOS => _targetOS ?? string.Empty;
 
     /// <summary>
-    /// Loads the dump and creates the cDAC Target before each test.
-    /// Also resolves the target OS from the RuntimeInfo contract.
+    /// Loads the dump for the given <paramref name="config"/> and evaluates skip
+    /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
-    public Task InitializeAsync()
+    protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
     {
-        if (IsVersionSkipped(RuntimeVersion))
-            throw new SkipTestException($"RuntimeVersion '{RuntimeVersion}' is in SkipDumpVersions list.");
+        EvaluateSkipAttributes(config, callerName);
 
-        if (string.Equals(DumpType, "heap", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(RuntimeVersion, "net10.0", StringComparison.OrdinalIgnoreCase))
-            throw new SkipTestException("cDAC is not supported in heap dumps for net10.0.");
+        string dumpPath = GetDumpPath(config.RuntimeVersion);
 
-        string dumpPath = GetDumpPath();
+        if (!File.Exists(dumpPath))
+            throw new SkipTestException($"Dump file not found: {dumpPath}");
+
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
@@ -91,42 +94,34 @@ public abstract class DumpTestBase : IAsyncLifetime
         }
         catch
         {
-            // Resolving the target OS is best-effort. The RuntimeInfo contract may be
-            // unavailable in older dumps or throw for unexpected reasons. Treat the OS
-            // as unknown and allow tests to continue — they can handle a missing TargetOS.
             _targetOS = null;
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task DisposeAsync()
+    public void Dispose()
     {
         _host?.Dispose();
-        return Task.CompletedTask;
+        System.GC.SuppressFinalize(this);
     }
 
     /// <summary>
-    /// Skips the current test if <see cref="RuntimeVersion"/> matches <paramref name="version"/>.
-    /// Must be used with <c>[ConditionalFact]</c> for xunit to report the test as skipped.
+    /// Checks the calling test method for <see cref="SkipOnVersionAttribute"/> and
+    /// throws <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
-    protected void SkipIfVersion(string version, string reason)
+    private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
     {
-        if (string.Equals(RuntimeVersion, version, StringComparison.OrdinalIgnoreCase))
-            throw new SkipTestException($"[{version}] {reason}");
+        MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);
+        if (method is null)
+            return;
+
+        foreach (SkipOnVersionAttribute attr in method.GetCustomAttributes<SkipOnVersionAttribute>())
+        {
+            if (string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase))
+                throw new SkipTestException($"[{config.RuntimeVersion}] {attr.Reason}");
+        }
     }
 
-    /// <summary>
-    /// Skips the current test if the dump's target OS matches <paramref name="operatingSystem"/>.
-    /// Must be used with <c>[ConditionalFact]</c> for xunit to report the test as skipped.
-    /// </summary>
-    protected void SkipIfTargetOS(string operatingSystem, string reason)
-    {
-        if (string.Equals(TargetOS, operatingSystem, StringComparison.OrdinalIgnoreCase))
-            throw new SkipTestException($"[TargetOS={TargetOS}] {reason}");
-    }
-
-    private string GetDumpPath()
+    private string GetDumpPath(string runtimeVersion)
     {
         string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
         if (string.IsNullOrEmpty(dumpRoot))
@@ -138,7 +133,7 @@ public abstract class DumpTestBase : IAsyncLifetime
             dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
         }
 
-        return Path.Combine(dumpRoot, RuntimeVersion, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
+        return Path.Combine(dumpRoot, runtimeVersion, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
     }
 
     /// <summary>
@@ -171,5 +166,4 @@ public abstract class DumpTestBase : IAsyncLifetime
 
         return null;
     }
-
 }

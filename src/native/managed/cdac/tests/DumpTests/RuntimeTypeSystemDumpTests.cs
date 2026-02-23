@@ -14,15 +14,17 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Uses the TypeHierarchy debuggee dump, which loads types with inheritance,
 /// generics, and arrays.
 /// </summary>
-public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
+public class RuntimeTypeSystemDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "TypeHierarchy";
     protected override string DumpType => "full";
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_CanGetMethodTableFromModule()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
+    public void RuntimeTypeSystem_CanGetMethodTableFromModule(TestConfiguration config)
     {
-        SkipIfVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10");
+        InitializeDumpTest(config);
         ILoader loader = Target.Contracts.Loader;
         Assert.NotNull(loader);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -34,9 +36,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.NotEqual(TargetPointer.Null, modulePtr);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableIsValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableIsValid(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         Assert.NotNull(rts);
 
@@ -48,9 +52,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_FreeObjectMethodTableIsValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_FreeObjectMethodTableIsValid(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         Assert.NotNull(rts);
 
@@ -62,9 +68,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(rts.IsFreeObjectMethodTable(handle));
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_StringMethodTableIsString()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringMethodTableIsString(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
         Assert.NotNull(rts);
 
@@ -76,9 +84,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(rts.IsString(handle));
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableHasParent()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasParent(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -90,9 +100,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(TargetPointer.Null, parent);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_StringHasObjectParent()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringHasObjectParent(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -107,9 +119,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(objectMT, parent);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasReasonableBaseSize(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -121,9 +135,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
             $"Expected System.Object base size between 1 and 1024, got {baseSize}");
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_StringHasNonZeroComponentSize()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringHasNonZeroComponentSize(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
@@ -135,9 +151,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(2u, componentSize);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableContainsNoGCPointers(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -148,9 +166,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.ContainsGCPointers(handle));
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableHasValidToken()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasValidToken(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -162,9 +182,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(0x02000000u, token & 0xFF000000u);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableHasMethods()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasMethods(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -176,9 +198,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.True(numMethods >= 4, $"Expected System.Object to have at least 4 methods, got {numMethods}");
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringIsNotGenericTypeDefinition(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
@@ -188,9 +212,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.False(rts.IsGenericTypeDefinition(handle));
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_StringCorElementTypeIsClass()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_StringCorElementTypeIsClass(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer stringMTGlobal = Target.ReadGlobalPointer("StringMethodTable");
@@ -203,9 +229,11 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
         Assert.Equal(CorElementType.Class, corType);
     }
 
-    [ConditionalFact]
-    public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeTypeSystem_ObjectMethodTableHasIntroducedMethods(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
@@ -226,14 +254,4 @@ public abstract class RuntimeTypeSystemDumpTestsBase : DumpTestBase
             Assert.Equal(0x06000000u, token & 0xFF000000u);
         }
     }
-}
-
-public class RuntimeTypeSystemDumpTests_Local : RuntimeTypeSystemDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class RuntimeTypeSystemDumpTests_Net10 : RuntimeTypeSystemDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }

@@ -11,20 +11,24 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 /// Dump-based integration tests for the RuntimeInfo contract.
 /// Uses the BasicThreads debuggee dump (any dump works for these tests).
 /// </summary>
-public abstract class RuntimeInfoDumpTestsBase : DumpTestBase
+public class RuntimeInfoDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
 
-    [ConditionalFact]
-    public void RuntimeInfo_ContractIsAvailable()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeInfo_ContractIsAvailable(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         Assert.NotNull(runtimeInfo);
     }
 
-    [ConditionalFact]
-    public void RuntimeInfo_ArchitectureIsValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeInfo_ArchitectureIsValid(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
 
@@ -32,23 +36,15 @@ public abstract class RuntimeInfoDumpTestsBase : DumpTestBase
             $"Expected a valid RuntimeInfoArchitecture enum value, got {arch}");
     }
 
-    [ConditionalFact]
-    public void RuntimeInfo_OperatingSystemIsValid()
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void RuntimeInfo_OperatingSystemIsValid(TestConfiguration config)
     {
+        InitializeDumpTest(config);
         IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
         RuntimeInfoOperatingSystem os = runtimeInfo.GetTargetOperatingSystem();
 
         Assert.True(Enum.IsDefined(os),
             $"Expected a valid RuntimeInfoOperatingSystem enum value, got {os}");
     }
-}
-
-public class RuntimeInfoDumpTests_Local : RuntimeInfoDumpTestsBase
-{
-    protected override string RuntimeVersion => "local";
-}
-
-public class RuntimeInfoDumpTests_Net10 : RuntimeInfoDumpTestsBase
-{
-    protected override string RuntimeVersion => "net10.0";
 }
