@@ -219,7 +219,7 @@ namespace System.IO
 
             // The synchronous path is emulating legacy behavior.
             // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
-            if (!Thread.IsMultithreadingSupported || serializeAsynchronously)
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
@@ -494,7 +494,7 @@ namespace System.IO
 
             // The synchronous path is emulating legacy behavior.
             // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
-            if (!Thread.IsMultithreadingSupported || serializeAsynchronously)
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }
