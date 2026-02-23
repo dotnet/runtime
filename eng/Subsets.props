@@ -484,7 +484,9 @@
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
+
+    <!-- Build ilasm as part of the clr tools subset when building just dotnet/runtime as we use it in runtime testing. Don't do so for VMR builds as we aren't shipping it yet and it pulls in prebuilts that we haven't handled for source-build. -->
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true' and '$(DotNetBuildFromVMR)' != 'true'" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
