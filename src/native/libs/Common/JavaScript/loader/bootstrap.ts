@@ -17,7 +17,7 @@ export async function validateWasmFeatures(): Promise<void> {
     dotnetAssert.check(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms");
     if (ENVIRONMENT_IS_NODE) {
         const nodeMajorVersion = parseInt(globalThisAny.process.versions.node.split(".")[0], 10);
-        dotnetAssert.check(nodeMajorVersion >= 18, `Node.js version ${globalThisAny.process.versions.node} is not supported. Please use Node.js 18 or later. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms`);
+        dotnetAssert.check(nodeMajorVersion >= 18, `Node.js version ${globalThisAny.process.versions.node} is not supported. Please use Node.js 18 or later.`);
     } else if (ENVIRONMENT_IS_SHELL) {
         if (typeof globalThisAny.version === "function" && globalThisAny.d8) {
             const v8v = globalThisAny.version();

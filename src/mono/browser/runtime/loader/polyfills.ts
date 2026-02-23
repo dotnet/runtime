@@ -41,7 +41,7 @@ export async function detect_features_and_polyfill (module: DotnetModuleInternal
         const process = await import(/*! webpackIgnore: true */"process");
         const minNodeVersion = 14;
         if (process.versions.node.split(".")[0] < minNodeVersion) {
-            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}. See also https://learn.microsoft.com/en-us/aspnet/core/blazor/supported-platforms`);
+            throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}', please use at least ${minNodeVersion}.`);
         }
     }
 
