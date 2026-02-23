@@ -354,7 +354,7 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation reloc in relocs)
             {
                 int size = Relocation.GetSize(reloc.Type);
-                if (size >= buffer.Length)
+                if (size > buffer.Length)
                 {
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
