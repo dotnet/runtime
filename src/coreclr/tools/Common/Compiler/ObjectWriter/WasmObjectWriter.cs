@@ -18,6 +18,7 @@ using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 using System.Collections.Immutable;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using ILCompiler.DependencyAnalysis.Wasm;
+using System.Runtime.CompilerServices;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -312,15 +313,19 @@ namespace ILCompiler.ObjectWriter
             foreach (int index in SectionEmitOrder)
             {
                 WasmSection section = _sections[index];
+                // TODO-WASM: handle data section relocations (this is dependent on the WebCIL structure being in place)
                 if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
                     section.Type is not WasmSectionType.Data)
                 {
-                    // TODO-WASM: handle data section relocations (this is dependent on the WebCIL structure being in place)
-                    MemoryStream stream = new MemoryStream((int)section.Stream.Length);
-                    section.Stream.Position = 0;
-                    section.Stream.CopyTo(stream);
-                    ResolveRelocations(stream, relocations);
-                    section.Stream = stream;
+                    using (Stream originalStream = section.Stream)
+                    {
+                        MemoryStream stream = new MemoryStream((int)originalStream.Length);
+                        originalStream.Position = 0;
+                        originalStream.CopyTo(stream);
+                        ResolveRelocations(stream, relocations);
+                        section.Stream = stream;
+                        // originalStream may be disposed, section.Stream now points to resolved stream
+                    }
                 }
 
                 section.Emit(outputFileStream);
@@ -345,9 +350,11 @@ namespace ILCompiler.ObjectWriter
 
         private unsafe void ResolveRelocations(MemoryStream sectionStream, List<SymbolicRelocation> relocs)
         {
+            byte[] buffer = new byte[8];
             foreach (SymbolicRelocation reloc in relocs)
             {
-                fixed (byte* pData = GetRelocDataSpan(reloc))
+                // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
+                fixed (byte* pData = ReadRelocToDataSpan(reloc, buffer))
                 {
                     switch (reloc.Type)
                     {
@@ -356,7 +363,7 @@ namespace ILCompiler.ObjectWriter
                             if (_uniqueSignatures.TryGetValue(reloc.SymbolName, out int index))
                             {
                                 Relocation.WriteValue(reloc.Type, pData, index);
-                                WriteRelocDataSpan(reloc, pData);
+                                WriteRelocFromDataSpan(reloc, pData);
                             }
                             else
                             {
@@ -367,24 +374,24 @@ namespace ILCompiler.ObjectWriter
                         }
                         default:
                             // TODO-WASM: add other cases as needed;
-                            // ignore other reloc types for now
+                            // ignoring other reloc types for now
                             break;
                     }
                 }
             }
 
-            Span<byte> GetRelocDataSpan(SymbolicRelocation reloc)
+            Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer)
             {
+                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type)); 
                 sectionStream.Position = reloc.Offset;
-                Span<byte> data = new byte[Relocation.GetSize(reloc.Type)];
-                sectionStream.ReadExactly(data);
-                return data;
+                sectionStream.ReadExactly(buffer);
+                return relocContents;
             }
 
-            void WriteRelocDataSpan(SymbolicRelocation reloc, byte* data)
+            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte *pData)
             {
                 sectionStream.Position = reloc.Offset;
-                sectionStream.Write(new Span<byte>(data, Relocation.GetSize(reloc.Type)));
+                sectionStream.Write(new Span<byte>(pData, Relocation.GetSize(reloc.Type)));
             }
         }
 
