@@ -1689,6 +1689,8 @@ void CodeGen::genCheckOverflow(GenTree* tree)
                 jumpKind = EJ_hs;
             }
         }
+#elif defined(TARGET_POWERPC64)
+	jumpKind = isUnsignedOverflow ? EJ_ne : EJ_eq; // TODO POWERPC64 vikas temp setting to EJ_ne or EJ_eq need to change accordingly
 #endif // defined(TARGET_ARMARCH)
     }
 
@@ -3972,6 +3974,9 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
                 GetEmitter()->emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
+#elif defined(TARGET_POWERPC64)
+                // We will just zero out the entire vector register. This sets it to a double/float zero value
+                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif
@@ -4011,6 +4016,9 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 GetEmitter()->emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
 #elif defined(TARGET_RISCV64)
                 GetEmitter()->emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
+#elif defined(TARGET_POWERPC64)
+                // We will just zero out the entire vector register. This sets it to a double/float zero value
+                GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif

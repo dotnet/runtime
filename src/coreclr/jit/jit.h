@@ -433,7 +433,7 @@ typedef ptrdiff_t ssize_t;
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_POWEPC64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined (TARGET_POWERPC64)
 #define MULTIREG_HAS_SECOND_GC_RET             1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x)     x

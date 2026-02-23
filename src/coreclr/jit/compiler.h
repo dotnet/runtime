@@ -12454,6 +12454,10 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 const instruction INS_BREAKPOINT = INS_ebreak;
 #endif // TARGET_RISCV64
 
+#ifdef TARGET_POWERPC64
+const instruction INS_BREAKPOINT = INS_trap;
+#endif // TARGET_POWERPC64
+
 /*****************************************************************************/
 
 extern const BYTE genTypeSizes[];

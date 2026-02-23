@@ -279,6 +279,27 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+class Ppc64leClassifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    Ppc64leClassifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+	return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+				    var_types    type,
+				    ClassLayout* structLayout,
+				    WellKnownArg wellKnownParam);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
@@ -293,6 +314,8 @@ typedef Arm32Classifier PlatformClassifier;
 typedef RiscV64Classifier PlatformClassifier;
 #elif defined(TARGET_LOONGARCH64)
 typedef LoongArch64Classifier PlatformClassifier;
+#elif defined(TARGET_POWERPC64)
+typedef Ppc64leClassifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT

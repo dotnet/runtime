@@ -78,7 +78,7 @@ enum instruction : uint32_t
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #elif defined(TARGET_POWERPC64) //TODO POWERPC64 -> Vikas 
 
-    #define INST(id, nm, ldst, e1) INS_##id,
+    #define INST(id, nm, ldst, fmt, e1 ) INS_##id,
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
@@ -558,8 +558,7 @@ enum emitAttr : unsigned
                 EA_SCALABLE      = 0x020,
                 EA_SIZE_MASK     = 0x03F,
 #elif defined(TARGET_POWERPC64)
-		// TODO POWERPC64 VIKAS
-		EA_SCALABLE      = 0x020,
+		EA_SCALABLE      = 0x020, // TODO POWERPC64
 		EA_SIZE_MASK     = 0x03F,
 #elif defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,

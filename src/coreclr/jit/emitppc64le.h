@@ -9,4 +9,125 @@
 
 //TODO POWERPC64
 
+/************************************************************************/
+/*  Private members that deal with target-dependent instr. descriptors  */
+/************************************************************************/
+
+private:
+instrDesc* emitNewInstrCallDir(int              argCnt,
+                               VARSET_VALARG_TP GCvars,
+                               regMaskTP        gcrefRegs,
+                               regMaskTP        byrefRegs,
+                               emitAttr         retSize,
+                               emitAttr         secondRetSize);
+
+instrDesc* emitNewInstrCallInd(int              argCnt,
+                               ssize_t          disp,
+                               VARSET_VALARG_TP GCvars,
+                               regMaskTP        gcrefRegs,
+                               regMaskTP        byrefRegs,
+                               emitAttr         retSize,
+                               emitAttr         secondRetSize);
+
+/************************************************************************/
+/*   enum to allow instruction optimisation to specify register order   */
+/************************************************************************/
+
+public:
+inline static bool isFloatReg(regNumber reg)
+{
+    abort();
+}
+
+inline static bool isGeneralRegister(regNumber reg)
+{
+    abort();
+} // Excludes REG_ZR
+
+
+void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+
+void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+
+enum EmitCallType
+{
+    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
+    EC_INDIR_R,    // Indirect call via register
+    EC_COUNT
+};
+
+void emitIns_Call(EmitCallType          callType,
+                  CORINFO_METHOD_HANDLE methHnd,
+                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
+                  void*            addr,
+                  ssize_t          argSize,
+                  emitAttr         retSize,
+                  emitAttr         secondRetSize,
+                  VARSET_VALARG_TP ptrVars,
+                  regMaskTP        gcrefRegs,
+                  regMaskTP        byrefRegs,
+                  const DebugInfo& di,
+                  regNumber        ireg,
+                  regNumber        xreg,
+                  unsigned         xmul,
+                  ssize_t          disp,
+                  bool             isJump,
+                  bool             noSafePoint = false);
+
+void emitIns_Mov(
+    instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
+
+
+/************************************************************************/
+/*           The public entry points to output instructions             */
+/************************************************************************/
+
+public:
+void emitIns(instruction ins);
+
+void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
+
+void emitInsSve_I(instruction ins, emitAttr attr, ssize_t imm);
+
+void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
+
+void emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE);
+
+void emitIns_R_I(instruction     ins,
+                 emitAttr        attr,
+                 regNumber       reg,
+                 ssize_t         imm,
+                 insOpts         opt  = INS_OPTS_NONE,
+                 insScalableOpts sopt = INS_SCALABLE_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
+void emitIns_R_R(instruction     ins,
+		emitAttr        attr,
+		regNumber       reg1,
+		regNumber       reg2,
+		insOpts         opt  = INS_OPTS_NONE,
+		insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R(instruction     ins,
+		emitAttr        attr,
+		regNumber       reg1,
+		regNumber       reg2,
+		insOpts         opt  = INS_OPTS_NONE,
+		insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
+{
+	emitIns_R_R(ins, attr, reg1, reg2);
+}
+
+
+void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
+
+void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
+
+
+
+
+
+
 #endif

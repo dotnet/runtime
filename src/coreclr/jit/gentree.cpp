@@ -4775,6 +4775,27 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_POWERPC64)
+        if (base)
+        {
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
+        }
+
+        if (idx)
+        {
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
+        }
+
+        if (cns != 0)
+        {
+            if (cns >= (4096 * genTypeSize(type)))
+            {
+                addrModeCostEx += 1;
+                addrModeCostSz += 4;
+            }
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -5185,6 +5206,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_POWERPC64)
+	// TODO POWERPC64
+	_ASSERTE(!"NYI POWERPC64");
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -5262,6 +5286,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
+#elif defined(TARGET_POWERPC64)
+	// TODO POWERPC64
+	_ASSERTE(!"NYI POWERPC64");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5439,6 +5466,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
+#elif defined(TARGET_POWERPC64)
+	// TODO POWERPC64
+	_ASSERTE(!"NYI POWERPC64");
 #else
 #error "Unknown TARGET"
 #endif

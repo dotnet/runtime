@@ -60,7 +60,12 @@ JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
 
 #elif defined(TARGET_POWERPC64)
-// TODO-POWERPC64 -> vikas jump instructions
+// TODO-POWERPC64 -> vikas add more jump instructions
+//       jump   reverse instruction condcode
+JMP_SMALL(jmp   , jmp   , b      )  // AL always
+JMP_SMALL(eq    , ne    , beq    )  // EQ
+JMP_SMALL(ne    , eq    , bne    )  // NE
+
 #else
   #error Unsupported or unset target architecture
 #endif // target type
