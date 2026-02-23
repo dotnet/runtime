@@ -649,7 +649,7 @@ private void GetHandlesForBlock(TargetPointer segmentPtr, byte uBlock, uint type
     for (uint k = 0; k < target.ReadGlobal<byte>("HandlesPerBlock"); k++)
     {
         uint offset = uBlock * target.ReadGlobal<byte>("HandlesPerBlock") + k;
-        TargetPointer handleAddress = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * (uint)_target.PointerSize);
+        TargetPointer handleAddress = segmentPtr + /* TableSegment::RgValue offset */ + offset * (uint)_target.PointerSize;
         TargetPointer handle = _target.ReadPointer(handleAddress);
         if (handle == TargetPointer.Null || handle == target.ReadGlobalPointer("DebugDestroyedHandleValue"))
             continue;
