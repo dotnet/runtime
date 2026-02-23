@@ -390,7 +390,7 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type)); 
                 sectionStream.Position = reloc.Offset;
-                sectionStream.ReadExactly(buffer);
+                sectionStream.ReadExactly(relocContents);
                 return relocContents;
             }
 
