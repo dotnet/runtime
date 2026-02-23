@@ -109,7 +109,7 @@ $ErrorActionPreference = "Stop"
 
 # --- Verbosity levels ---
 $msbuildVerbosity = if ($VerboseOutput) { "normal" } else { "minimal" }
-$dotnetVerbosity  = if ($VerboseOutput) { "n" } else { "q" }
+$dotnetVerbosity = if ($VerboseOutput) { "n" } else { "q" }
 
 # --- Resolve paths ---
 function Find-RepoRoot([string]$startDir) {
@@ -131,7 +131,7 @@ $dumpTestsProj = Join-Path $PSScriptRoot "Microsoft.Diagnostics.DataContractRead
 
 # --- Coverage paths ---
 $coverageResultsDir = Join-Path $repoRoot "artifacts\TestResults\cdac-dump-tests"
-$coverageReportDir  = Join-Path $repoRoot "artifacts\coverage\cdac-dump-tests"
+$coverageReportDir = Join-Path $repoRoot "artifacts\coverage\cdac-dump-tests"
 
 function Build-CoverageArgs {
     if (-not $Coverage) { return @() }
@@ -144,8 +144,8 @@ function Build-CoverageArgs {
 function New-CoverageReport {
     if (-not $Coverage) { return }
 
-    $coverageFiles = Get-ChildItem -Path $coverageResultsDir -Recurse -Filter "coverage.cobertura.xml" -ErrorAction SilentlyContinue
-    if (-not $coverageFiles -or $coverageFiles.Count -eq 0) {
+    $coverageFiles = @(Get-ChildItem -Path $coverageResultsDir -Recurse -Filter "coverage.cobertura.xml" -ErrorAction SilentlyContinue)
+    if ($coverageFiles.Count -eq 0) {
         Write-Host "  No coverage files found. Skipping report generation." -ForegroundColor Yellow
         return
     }
