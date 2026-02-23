@@ -147,6 +147,7 @@ namespace System
         public static bool IsMultithreadingSupported => (IsNotBrowser && IsNotWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
