@@ -98,6 +98,7 @@ namespace System.Text.RegularExpressions
         private static MethodInfo SpanSliceIntIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
         private static MethodInfo SpanStartsWithSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
         private static MethodInfo SpanStartsWithSpanComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        private static MethodInfo SpanSequenceEqualSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("SequenceEqual", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
         private static MethodInfo StringAsSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
         private static MethodInfo StringGetCharsMethod => field ??= typeof(string).GetMethod("get_Chars", [typeof(int)])!;
         private static MethodInfo ArrayResizeMethod => field ??= typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
@@ -2112,8 +2113,6 @@ namespace System.Text.RegularExpressions
                 BrfalseFar((node.Options & RegexOptions.ECMAScript) == 0 ? doneLabel : backreferenceEnd);
 
                 using RentedLocalBuilder matchLength = RentInt32Local();
-                using RentedLocalBuilder matchIndex = RentInt32Local();
-                using RentedLocalBuilder i = RentInt32Local();
 
                 // int matchLength = base.MatchLength(capnum);
                 Ldthis();
@@ -2135,80 +2134,48 @@ namespace System.Text.RegularExpressions
                 Ldloc(matchLength);
                 BltFar(doneLabel);
 
-                // int matchIndex = base.MatchIndex(capnum);
-                Ldthis();
-                Ldc(capnum);
-                Call(MatchIndexMethod);
-                Stloc(matchIndex);
-
-                Label condition = DefineLabel();
-                Label body = DefineLabel();
-                Label charactersMatched = DefineLabel();
-                LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
-                LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
-
-                // for (int i = 0; ...)
-                Ldc(0);
-                Stloc(i);
-                Br(condition);
-
-                MarkLabel(body);
-
-                // char backreferenceChar = inputSpan[matchIndex + i];
-                Ldloca(inputSpan);
-                Ldloc(matchIndex);
-                Ldloc(i);
-                Add();
-                Call(SpanGetItemMethod);
-                LdindU2();
-                Stloc(backreferenceCharacter);
-                if (!rtl)
-                {
-                    // char currentChar = slice[i];
-                    Ldloca(slice);
-                    Ldloc(i);
-                }
-                else
-                {
-                    // char currentChar = inputSpan[pos - matchLength + i];
-                    Ldloca(inputSpan);
-                    Ldloc(pos);
-                    Ldloc(matchLength);
-                    Sub();
-                    Ldloc(i);
-                    Add();
-                }
-                Call(SpanGetItemMethod);
-                LdindU2();
-                Stloc(currentCharacter);
-
                 if ((node.Options & RegexOptions.IgnoreCase) != 0)
                 {
-                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+                    // For case-insensitive, we need to compare character-by-character with case equivalence checks.
+                    using RentedLocalBuilder matchIndex = RentInt32Local();
+                    using RentedLocalBuilder i = RentInt32Local();
 
-                    // if (backreferenceChar != currentChar)
-                    Ldloc(backreferenceCharacter);
-                    Ldloc(currentCharacter);
-                    Ceq();
-                    BrtrueFar(charactersMatched);
+                    // int matchIndex = base.MatchIndex(capnum);
+                    Ldthis();
+                    Ldc(capnum);
+                    Call(MatchIndexMethod);
+                    Stloc(matchIndex);
 
-                    // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
-                    Ldloc(backreferenceCharacter);
-                    Ldthisfld(CultureField);
-                    Ldthisflda(CaseBehaviorField);
-                    Ldloca(caseEquivalences);
-                    Call(RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
-                    BrfalseFar(doneLabel);
+                    Label condition = DefineLabel();
+                    Label body = DefineLabel();
+                    Label charactersMatched = DefineLabel();
+                    LocalBuilder backreferenceCharacter = _ilg!.DeclareLocal(typeof(char));
+                    LocalBuilder currentCharacter = _ilg.DeclareLocal(typeof(char));
 
-                    // if (equivalences.IndexOf(slice[i]) < 0) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) < 0) when rtl
-                    Ldloc(caseEquivalences);
+                    // for (int i = 0; ...)
+                    Ldc(0);
+                    Stloc(i);
+                    Br(condition);
+
+                    MarkLabel(body);
+
+                    // char backreferenceChar = inputSpan[matchIndex + i];
+                    Ldloca(inputSpan);
+                    Ldloc(matchIndex);
+                    Ldloc(i);
+                    Add();
+                    Call(SpanGetItemMethod);
+                    LdindU2();
+                    Stloc(backreferenceCharacter);
                     if (!rtl)
                     {
+                        // char currentChar = slice[i];
                         Ldloca(slice);
                         Ldloc(i);
                     }
                     else
                     {
+                        // char currentChar = inputSpan[pos - matchLength + i];
                         Ldloca(inputSpan);
                         Ldloc(pos);
                         Ldloc(matchLength);
@@ -2218,34 +2185,83 @@ namespace System.Text.RegularExpressions
                     }
                     Call(SpanGetItemMethod);
                     LdindU2();
-                    Call(SpanIndexOfCharMethod);
-                    Ldc(0);
-                    // return false; // input didn't match.
-                    BltFar(doneLabel);
-                }
-                else
-                {
-                    // if (backreferenceCharacter != currentCharacter)
+                    Stloc(currentCharacter);
+
+                    LocalBuilder caseEquivalences = DeclareReadOnlySpanChar();
+
+                    // if (backreferenceChar == currentChar) goto charactersMatched;
                     Ldloc(backreferenceCharacter);
                     Ldloc(currentCharacter);
                     Ceq();
-                    // return false; // input didn't match.
+                    BrtrueFar(charactersMatched);
+
+                    // if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences)) goto doneLabel;
+                    Ldloc(backreferenceCharacter);
+                    Ldthisfld(CultureField);
+                    Ldthisflda(CaseBehaviorField);
+                    Ldloca(caseEquivalences);
+                    Call(RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    BrfalseFar(doneLabel);
+
+                    // if (equivalences.IndexOf(currentCharacter) < 0) goto doneLabel;
+                    Ldloc(caseEquivalences);
+                    Ldloc(currentCharacter);
+                    Call(SpanIndexOfCharMethod);
+                    Ldc(0);
+                    BltFar(doneLabel);
+
+                    MarkLabel(charactersMatched);
+
+                    // for (...; ...; i++)
+                    Ldloc(i);
+                    Ldc(1);
+                    Add();
+                    Stloc(i);
+
+                    // for (...; i < matchLength; ...)
+                    MarkLabel(condition);
+                    Ldloc(i);
+                    Ldloc(matchLength);
+                    Blt(body);
+                }
+                else
+                {
+                    // For case-sensitive, we can use SequenceEqual for efficient comparison.
+                    // if (!inputSpan.Slice(base.MatchIndex(capnum), matchLength).SequenceEqual(slice.Slice(0, matchLength))) goto doneLabel;
+                    // or for RTL:
+                    // if (!inputSpan.Slice(base.MatchIndex(capnum), matchLength).SequenceEqual(inputSpan.Slice(pos - matchLength, matchLength))) goto doneLabel;
+
+                    // inputSpan.Slice(base.MatchIndex(capnum), matchLength)
+                    Ldloca(inputSpan);
+                    Ldthis();
+                    Ldc(capnum);
+                    Call(MatchIndexMethod);
+                    Ldloc(matchLength);
+                    Call(SpanSliceIntIntMethod);
+
+                    if (!rtl)
+                    {
+                        // slice.Slice(0, matchLength)
+                        Ldloca(slice);
+                        Ldc(0);
+                        Ldloc(matchLength);
+                        Call(SpanSliceIntIntMethod);
+                    }
+                    else
+                    {
+                        // inputSpan.Slice(pos - matchLength, matchLength)
+                        Ldloca(inputSpan);
+                        Ldloc(pos);
+                        Ldloc(matchLength);
+                        Sub();
+                        Ldloc(matchLength);
+                        Call(SpanSliceIntIntMethod);
+                    }
+
+                    // .SequenceEqual(...)
+                    Call(SpanSequenceEqualSpanMethod);
                     BrfalseFar(doneLabel);
                 }
-
-                MarkLabel(charactersMatched);
-
-                // for (...; ...; i++)
-                Ldloc(i);
-                Ldc(1);
-                Add();
-                Stloc(i);
-
-                // for (...; i < matchLength; ...)
-                MarkLabel(condition);
-                Ldloc(i);
-                Ldloc(matchLength);
-                Blt(body);
 
                 // pos += matchLength; // or -= for rtl
                 Ldloc(pos);

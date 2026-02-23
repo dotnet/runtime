@@ -2,10 +2,15 @@
   <PropertyGroup>
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- No crossgen folder under Core_Root -->
+     <NativeAotIncompatible>true</NativeAotIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

@@ -287,8 +287,5 @@ namespace System.PrivateUri.Tests
             Assert.Throws<InvalidOperationException>(() => uri.GetComponents(UriComponents.PathAndQuery, format));
             Assert.Throws<InvalidOperationException>(() => uri.GetComponents(UriComponents.AbsoluteUri, format));
         }
-
-
-        private sealed class CustomUriParser : UriParser { }
     }
 }

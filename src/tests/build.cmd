@@ -26,9 +26,6 @@ set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 
-:: Default __Exclude to issues.targets
-set __Exclude=%__RepoRootDir%\src\tests\issues.targets
-
 REM __UnprocessedBuildArgs are args that we pass to msbuild (e.g. /p:TargetArchitecture=x64)
 set __commandName=%~nx0
 set "__args= %*"
@@ -44,8 +41,6 @@ set __BuildLogRootName=TestBuild
 
 set __SkipRestorePackages=0
 set __SkipManaged=
-set __SkipTestWrappers=
-set __BuildTestWrappersOnly=
 set __SkipNative=
 set __CompositeBuildMode=
 set __TestBuildMode=
@@ -104,12 +99,10 @@ if /i "%arg%" == "Rebuild"               (set __RebuildTests=1&set processedArgs
 if /i "%arg%" == "SkipRestorePackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipManaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipNative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "SkipTestWrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipGenerateLayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "BuildTestWrappersOnly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "MSBuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -126,7 +119,6 @@ if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestPro
 if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "fsanitize"             (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&set __EnableNativeSanitizers=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
@@ -161,7 +153,6 @@ if defined __TestArgParsing (
     echo.
     echo.__BuildArch=%__BuildArch%
     echo.__BuildType=%__BuildType%
-    echo.__Exclude=%__Exclude%
     echo.__RebuildTests=%__RebuildTests%
     echo.__BuildTestProject=%__BuildTestProject%
     echo.__BuildTestDir=%__BuildTestDir%
@@ -169,8 +160,6 @@ if defined __TestArgParsing (
     echo.__BuildLogRootName=%__BuildLogRootName%
     echo.__SkipRestorePackages=%__SkipRestorePackages%
     echo.__SkipManaged=%__SkipManaged%
-    echo.__SkipTestWrappers=%__SkipTestWrappers%
-    echo.__BuildTestWrappersOnly=%__BuildTestWrappersOnly%
     echo.__SkipNative=%__SkipNative%
     echo.__CompositeBuildMode=%__CompositeBuildMode%
     echo.__TestBuildMode=%__TestBuildMode%
@@ -260,7 +249,6 @@ REM ===
 REM =========================================================================================
 
 if "%__SkipNative%" == "1" goto skipnative
-if "%__BuildTestWrappersOnly%" == "1" goto skipnative
 if "%__GenerateLayoutOnly%" == "1" goto skipnative
 if "%__CopyNativeTestBinaries%" == "1" goto skipnative
 
@@ -374,12 +362,10 @@ echo -Rebuild: Clean up all test artifacts prior to building tests.
 echo -SkipRestorePackages: Skip package restore.
 echo -SkipManaged: Skip the managed tests build.
 echo -SkipNative: Skip the native tests build.
-echo -SkipTestWrappers: Skip generating test wrappers.
 echo -SkipGenerateLayout: Skip generating the Core_Root layout.
 echo.
 echo -CopyNativeOnly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo -GenerateLayoutOnly: Only generate the Core_Root layout without building managed or native test components.
-echo -BuildTestWrappersOnly: Only generate test wrappers without building managed or native test components or generating layouts.
 echo -MSBuild: Use MSBuild instead of Ninja.
 echo -Crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.
 echo -Composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).
@@ -389,7 +375,6 @@ echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
 echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
 echo.
-echo -Exclude ^<xxx^>: Specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^).
 echo     Set to "" to disable default exclusion file.
 echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.
 echo     0: Build only priority 0 cases as essential testcases (default).

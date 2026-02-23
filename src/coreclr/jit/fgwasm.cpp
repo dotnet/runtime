@@ -194,7 +194,7 @@ class Scc
 private:
 
     FgWasm*              m_fgWasm;
-    Compiler*            m_comp;
+    Compiler*            m_compiler;
     FlowGraphDfsTree*    m_dfsTree;
     BitVecTraits*        m_traits;
     BitVec               m_blocks;
@@ -217,7 +217,7 @@ public:
     //
     Scc(FgWasm* fgWasm, BasicBlock* block)
         : m_fgWasm(fgWasm)
-        , m_comp(fgWasm->Comp())
+        , m_compiler(fgWasm->Comp())
         , m_dfsTree(fgWasm->GetDfsTree())
         , m_traits(fgWasm->GetTraits())
         , m_blocks(BitVecOps::UninitVal())
@@ -299,7 +299,7 @@ public:
                         assert(m_enclosingHndIndex == block->bbHndIndex);
 
                         // But possibly different try regions
-                        m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                        m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
                 }
             }
@@ -415,7 +415,7 @@ public:
                 }
             }
 
-            WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+            WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
             for (BasicBlock* const succ : successors)
             {
                 JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -454,7 +454,7 @@ public:
 
         // Build a new postorder for the nested blocks
         //
-        BasicBlock** postOrder = new (m_comp, CMK_WasmSccTransform) BasicBlock*[nestedCount];
+        BasicBlock** postOrder = new (m_compiler, CMK_WasmSccTransform) BasicBlock*[nestedCount];
 
         auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
 
@@ -467,7 +467,7 @@ public:
 #ifdef DEBUG
         // Dump subgraph as dot
         //
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
             BitVecOps::Iter iterator(m_traits, nestedBlocks);
@@ -479,7 +479,7 @@ public:
 
                 JITDUMP(FMT_BB ";\n", block->bbNum);
 
-                WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+                WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
                 for (BasicBlock* const succ : successors)
                 {
                     JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -502,7 +502,7 @@ public:
 
         // Use that to find the nested Sccs
         //
-        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_WasmSccTransform));
+        ArrayStack<Scc*> nestedSccs(m_compiler->getAllocator(CMK_WasmSccTransform));
         m_fgWasm->WasmFindSccsCore(nestedBlocks, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
@@ -567,12 +567,13 @@ public:
 
             // Split edges, rewire flow, and add control var assignments
             //
-            const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
+            const unsigned controlVarNum =
+                m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
+            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
-            FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
             BitVecOps::Iter  iterator(m_traits, m_entries);
             unsigned int     poHeaderNumber = 0;
@@ -600,8 +601,8 @@ public:
                     {
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
-                    dispatcher = m_comp->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
-                                                         /* nearBlk */ nullptr);
+                    dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
+                                                             /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
@@ -633,15 +634,15 @@ public:
                     else
                     {
                         assert(!pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHFINALLYRET));
-                        transferBlock = m_comp->fgSplitEdge(pred, header);
+                        transferBlock = m_compiler->fgSplitEdge(pred, header);
                     }
 
-                    GenTree* const targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
+                    GenTree* const targetIndex     = m_compiler->gtNewIconNode(headerNumber);
+                    GenTree* const storeControlVar = m_compiler->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
                     if (transferBlock->IsLIR())
                     {
-                        LIR::Range range = LIR::SeqTree(m_comp, storeControlVar);
+                        LIR::Range range = LIR::SeqTree(m_compiler, storeControlVar);
 
                         if (transferBlock->isEmpty())
                         {
@@ -654,15 +655,15 @@ public:
                     }
                     else
                     {
-                        Statement* const assignStmt = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
-                        m_comp->gtSetStmtInfo(assignStmt);
-                        m_comp->fgSetStmtSeq(assignStmt);
+                        Statement* const assignStmt = m_compiler->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                        m_compiler->gtSetStmtInfo(assignStmt);
+                        m_compiler->fgSetStmtSeq(assignStmt);
                     }
 
-                    m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                    m_compiler->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
 
-                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+                FlowEdge* const dispatchToHeaderEdge = m_compiler->fgAddRefPred(header, dispatcher);
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
@@ -692,25 +693,25 @@ public:
             //
             JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
-                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
+                new (m_compiler, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+            GenTree* const controlVar = m_compiler->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_compiler->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
 
             assert(dispatcher->isEmpty());
 
             if (dispatcher->IsLIR())
             {
-                LIR::Range range = LIR::SeqTree(m_comp, switchNode);
+                LIR::Range range = LIR::SeqTree(m_compiler, switchNode);
                 LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
             }
             else
             {
-                Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+                Statement* const switchStmt = m_compiler->fgNewStmtAtEnd(dispatcher, switchNode);
 
-                m_comp->gtSetStmtInfo(switchStmt);
-                m_comp->fgSetStmtSeq(switchStmt);
+                m_compiler->gtSetStmtInfo(switchStmt);
+                m_compiler->fgSetStmtSeq(switchStmt);
             }
         }
 
@@ -1174,9 +1175,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Branch to next needs no block, unless this is a switch
+            // Branch to next needs no block, unless this is a switch or next is a throw helper.
+            // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
             {
                 continue;
             }

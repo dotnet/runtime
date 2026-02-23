@@ -13,6 +13,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="callgenericctor.cs" />
   </ItemGroup>
 </Project>

@@ -620,13 +620,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_MachLinkerArg Include="-Wl,-dead_strip" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+    <Exec Command="xcodebuild -version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>
 
     <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
-      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '(?&lt;=Xcode\s)[1-9]\d*'))</_XcodeVersion>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">

@@ -4,6 +4,7 @@
 using System;
 
 using Xunit;
+using TestLibrary;
 
 //====================  Cases of nested classes  ====================//
 class Outer1
@@ -149,6 +150,7 @@ public class Test_dev10_724989
     }
 
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

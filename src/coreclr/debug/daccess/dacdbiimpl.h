@@ -915,8 +915,8 @@ public:
                                             DebuggerREGDISPLAY * pOutDRD,
                                             BOOL fActive);
 
-    // Check if the given method is an IL stub or an LCD method.
-    DynamicMethodType IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
+    // Check if the given method is a DiagnosticHidden or an LCG method.
+    DynamicMethodType IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
 
     // Return a TargetBuffer for the raw vararg signature.
     TargetBuffer GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,

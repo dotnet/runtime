@@ -625,7 +625,7 @@ size_t DisAssembler::disCchRegRelMember(
         case DISX86::trmtaTrap:
         case DISX86::trmtaTrapCc:
 
-            var = disComp->codeGen->siStackVarName((size_t)(pdis->Addr() - disStartAddr), pdis->Cb(), reg, disp);
+            var = m_compiler->codeGen->siStackVarName((size_t)(pdis->Addr() - disStartAddr), pdis->Cb(), reg, disp);
             if (var)
             {
                 swprintf_s(wz, cchMax, W("%hs+%Xh '%hs'"), getRegName(reg), disp, var);
@@ -720,7 +720,7 @@ size_t DisAssembler::disCchRegRelMember(
         case DISARM64::TRMTA::trmtaTrap:
         case DISARM64::TRMTA::trmtaTrapCc:
 
-            var = disComp->codeGen->siStackVarName((size_t)(pdis->Addr() - disStartAddr), pdis->Cb(), reg, disp);
+            var = m_compiler->codeGen->siStackVarName((size_t)(pdis->Addr() - disStartAddr), pdis->Cb(), reg, disp);
             if (var)
             {
                 swprintf_s(wz, cchMax, W("%hs+%Xh '%hs'"), getRegName(reg), disp, var);
@@ -824,7 +824,7 @@ size_t DisAssembler::disCchRegMember(const DIS* pdis, DIS::REGA reg, _In_reads_(
     return 0;
 
 #if 0
-    const char * var = disComp->codeGen->siRegVarName(
+    const char * var = m_compiler->codeGen->siRegVarName(
                                             (size_t)(pdis->Addr() - disStartAddr),
                                             pdis->Cb(),
                                             reg);
@@ -872,7 +872,7 @@ AddrToMethodHandleMap* DisAssembler::GetAddrToMethodHandleMap()
 {
     if (disAddrToMethodHandleMap == nullptr)
     {
-        disAddrToMethodHandleMap = new (disComp->getAllocator()) AddrToMethodHandleMap(disComp->getAllocator());
+        disAddrToMethodHandleMap = new (m_compiler->getAllocator()) AddrToMethodHandleMap(m_compiler->getAllocator());
     }
     return disAddrToMethodHandleMap;
 }
@@ -884,7 +884,8 @@ AddrToMethodHandleMap* DisAssembler::GetHelperAddrToMethodHandleMap()
 {
     if (disHelperAddrToMethodHandleMap == nullptr)
     {
-        disHelperAddrToMethodHandleMap = new (disComp->getAllocator()) AddrToMethodHandleMap(disComp->getAllocator());
+        disHelperAddrToMethodHandleMap =
+            new (m_compiler->getAllocator()) AddrToMethodHandleMap(m_compiler->getAllocator());
     }
     return disHelperAddrToMethodHandleMap;
 }
@@ -896,7 +897,7 @@ AddrToAddrMap* DisAssembler::GetRelocationMap()
 {
     if (disRelocationMap == nullptr)
     {
-        disRelocationMap = new (disComp->getAllocator()) AddrToAddrMap(disComp->getAllocator());
+        disRelocationMap = new (m_compiler->getAllocator()) AddrToAddrMap(m_compiler->getAllocator());
     }
     return disRelocationMap;
 }
@@ -1401,13 +1402,13 @@ const char* DisAssembler::disGetMethodFullName(size_t addr)
     // First check the JIT helper table: they're very common.
     if (GetHelperAddrToMethodHandleMap()->Lookup(addr, &res))
     {
-        return disComp->eeGetMethodFullName(res);
+        return m_compiler->eeGetMethodFullName(res);
     }
 
     // Next check the "normal" registered call targets
     if (GetAddrToMethodHandleMap()->Lookup(addr, &res))
     {
-        return disComp->eeGetMethodFullName(res);
+        return m_compiler->eeGetMethodFullName(res);
     }
 
     return nullptr;
@@ -1423,12 +1424,12 @@ const char* DisAssembler::disGetMethodFullName(size_t addr)
 
 void DisAssembler::disSetMethod(size_t addr, CORINFO_METHOD_HANDLE methHnd)
 {
-    if (!disComp->opts.doLateDisasm)
+    if (!m_compiler->opts.doLateDisasm)
     {
         return;
     }
 
-    if (disComp->eeGetHelperNum(methHnd))
+    if (m_compiler->eeGetHelperNum(methHnd))
     {
         DISASM_DUMP("Helper function: %p => %p\n", addr, methHnd);
         GetHelperAddrToMethodHandleMap()->Set(addr, methHnd, AddrToMethodHandleMap::SetKind::Overwrite);
@@ -1450,7 +1451,7 @@ void DisAssembler::disSetMethod(size_t addr, CORINFO_METHOD_HANDLE methHnd)
 
 void DisAssembler::disRecordRelocation(size_t relocAddr, size_t targetAddr)
 {
-    if (!disComp->opts.doLateDisasm)
+    if (!m_compiler->opts.doLateDisasm)
     {
         return;
     }
@@ -1471,7 +1472,7 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
                               BYTE*  coldCodePtrRW,
                               size_t coldCodeSize)
 {
-    if (!disComp->opts.doLateDisasm)
+    if (!m_compiler->opts.doLateDisasm)
     {
         return;
     }
@@ -1482,7 +1483,7 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
 
 #ifdef DEBUG
     // Should we make it diffable?
-    disDiffable = disComp->opts.dspDiffable;
+    disDiffable = m_compiler->opts.dspDiffable;
 #else  // !DEBUG
     // NOTE: non-debug builds are always diffable!
     disDiffable = true;
@@ -1532,7 +1533,7 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
 
     disTotalCodeSize = disHotCodeSize + disColdCodeSize;
 
-    disLabels = new (disComp, CMK_DebugOnly) BYTE[disTotalCodeSize]();
+    disLabels = new (m_compiler, CMK_DebugOnly) BYTE[disTotalCodeSize]();
 
     DisasmBuffer(disAsmFile, /* printIt */ true);
 
@@ -1554,7 +1555,7 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
 
 void DisAssembler::disOpenForLateDisAsm(const char* curMethodName, const char* curClassName, PCCOR_SIGNATURE sig)
 {
-    if (!disComp->opts.doLateDisasm)
+    if (!m_compiler->opts.doLateDisasm)
     {
         return;
     }
@@ -1788,7 +1789,7 @@ void DisAssembler::DisasmBuffer(FILE* pfile, bool printit)
 void DisAssembler::disInit(Compiler* pComp)
 {
     assert(pComp);
-    disComp                        = pComp;
+    m_compiler                     = pComp;
     disHasName                     = false;
     disLabels                      = nullptr;
     disAddrToMethodHandleMap       = nullptr;
