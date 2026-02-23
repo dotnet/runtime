@@ -182,18 +182,11 @@ namespace System.Text.RegularExpressions
 #endif
                     return;
                 }
-
-                if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes &&
-                    HasHighFrequencyStartingChars(caseSensitivePrefixes))
-                {
-                    LeadingPrefixes = caseSensitivePrefixes;
-                    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
-#if SYSTEM_TEXT_REGULAREXPRESSIONS
-                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
-#endif
-                    return;
-                }
             }
+
+            // Look for case-sensitive prefixes. We don't commit to using them yet; we'll compare
+            // their value against the best FixedDistanceSet below.
+            string[]? caseSensitivePrefixes = !interpreter ? RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) : null;
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
             List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
@@ -224,6 +217,20 @@ namespace System.Text.RegularExpressions
                 // Sort the sets by "quality", such that whatever set is first is the one deemed most efficient to use.
                 // In some searches, we may use multiple sets, so we want the subsequent ones to also be the efficiency runners-up.
                 RegexPrefixAnalyzer.SortFixedDistanceSetsByQuality(fixedDistanceSets);
+
+                // If we have case-sensitive prefixes, check whether the best FixedDistanceSet is composed
+                // of high-frequency characters. If so, IndexOfAny on those characters would be a poor filter
+                // and multi-string search via SearchValues is preferred.
+                if (caseSensitivePrefixes is { Length: > 1 } &&
+                    HasHighFrequencyChars(fixedDistanceSets[0]))
+                {
+                    LeadingPrefixes = caseSensitivePrefixes;
+                    FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
+                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.Ordinal);
+#endif
+                    return;
+                }
 
                 // If there is no literal after the loop, use whatever set we got.
                 // If there is a literal after the loop, consider it to be better than a negated set and better than a set with many characters.
@@ -867,49 +874,38 @@ namespace System.Text.RegularExpressions
 #endif
 
         /// <summary>
-        /// Determines whether the starting characters of the prefixes are frequent enough in typical text
-        /// that IndexOfAny with those characters would be a poor filter. When starting characters are common,
+        /// Determines whether the characters in the best <see cref="FixedDistanceSet"/> are frequent enough in typical text
+        /// that IndexOfAny with those characters would be a poor filter. When the best set's characters are common,
         /// multi-string search via SearchValues is preferred because IndexOfAny would match too many
-        /// positions. When starting characters are rare, IndexOfAny is an excellent filter and is preferred.
+        /// positions. When the characters are rare, IndexOfAny is an excellent filter and is preferred.
         /// </summary>
-        private static bool HasHighFrequencyStartingChars(string[] prefixes)
+        private static bool HasHighFrequencyChars(in FixedDistanceSet set)
         {
+            if (set.Negated || set.Chars is not { Length: > 0 } chars)
+            {
+                return false;
+            }
+
             ReadOnlySpan<float> frequency = RegexPrefixAnalyzer.Frequency;
             float totalFrequency = 0;
-            int count = 0;
 
-            // Use two longs as a 128-bit bitset to track seen ASCII chars.
-            long seenLo = 0, seenHi = 0;
-            foreach (string prefix in prefixes)
+            foreach (char c in chars)
             {
-                char c = prefix[0];
                 if (c >= 128)
                 {
-                    // Non-ASCII starting chars have no frequency data; bail out and let
-                    // FixedDistanceSets choose a strategy, since it can examine all offsets.
                     return false;
                 }
 
-                // Skip duplicate starting chars.
-                ref long seen = ref (c < 64 ? ref seenLo : ref seenHi);
-                long mask = 1L << (c & 63);
-                if ((seen & mask) != 0)
-                {
-                    continue;
-                }
-                seen |= mask;
-
                 totalFrequency += frequency[c];
-                count++;
             }
 
-            // If the average frequency of starting chars exceeds this threshold, the characters
+            // If the average frequency of the set's chars exceeds this threshold, the characters
             // are common enough that IndexOfAny would match many positions, making SearchValues<string>
             // the better choice. Common characters like lowercase letters have frequencies above this
             // threshold, while less frequent characters like uppercase letters fall below it, so
-            // IndexOfAny with rare starting chars is already an effective filter and is preferred.
+            // IndexOfAny with rare characters is already an effective filter and is preferred.
             const float HighFrequencyThreshold = 0.6f;
-            return count > 0 && totalFrequency >= HighFrequencyThreshold * count;
+            return totalFrequency >= HighFrequencyThreshold * chars.Length;
         }
     }
 

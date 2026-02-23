@@ -172,13 +172,13 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        // High-frequency starting chars (lowercase letters, avg freq >> 0.6) → LeadingStrings
+        // Best FixedDistanceSet has high-frequency chars (avg freq >> 0.6) → LeadingStrings preferred
         [InlineData(@"abc|def|ghi", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
         [InlineData(@"agggtaaa|tttaccct", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
-        // Low-frequency starting chars (uppercase letters, avg freq < 0.6) → FixedDistanceSets
+        // Best FixedDistanceSet has low-frequency chars (avg freq < 0.6) → FixedDistanceSets preferred
         [InlineData(@"ABC|DEF|GHI", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
         [InlineData(@"Sherlock|Holmes|Watson|Irene|Adler|John|Baker", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
-        // Non-ASCII starting chars → falls through (no frequency data)
+        // Best FixedDistanceSet has non-ASCII chars → falls through (no frequency data)
         [InlineData("\u00e9lan|\u00e8re", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
         // Without Compiled (interpreter), LeadingStrings is not used
         [InlineData(@"abc|def|ghi", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight)]
