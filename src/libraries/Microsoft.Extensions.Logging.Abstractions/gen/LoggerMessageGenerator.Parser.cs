@@ -26,10 +26,8 @@ namespace Microsoft.Extensions.Logging.Generators
             // delegate so the same source file compiles against all supported Roslyn versions, while
             // avoiding the per-call overhead of PropertyInfo.GetValue boxing.
             private static readonly Func<ITypeParameterSymbol, bool>? s_getAllowsRefLikeType =
-                typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType") is { } prop
-                    ? (Func<ITypeParameterSymbol, bool>)Delegate.CreateDelegate(
-                        typeof(Func<ITypeParameterSymbol, bool>), prop.GetGetMethod()!)
-                    : null;
+                (Func<ITypeParameterSymbol, bool>?)
+                    typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType")?.GetGetMethod()!.CreateDelegate(typeof(Func<ITypeParameterSymbol, bool>));
 
             private readonly CancellationToken _cancellationToken;
             private readonly INamedTypeSymbol _loggerMessageAttribute;
