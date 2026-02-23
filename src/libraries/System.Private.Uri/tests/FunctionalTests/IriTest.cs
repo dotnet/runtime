@@ -241,13 +241,18 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Iri_UnicodePlane3_13()
         {
-            try
+            // Process the range in chunks of 0x10000 to avoid allocating large strings
+            for (int start = 0x30000; start < 0xE0000; start += 0x10000)
             {
-                EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF);
-            }
-            catch (OutOfMemoryException)
-            {
-                // Test allocates ~700K characters which can cause OOM on 32-bit platforms
+                try
+                {
+                    int end = Math.Min(start + 0x10000, 0xE0000);
+                    EscapeUnescapeTestUnicodePlane(start, end);
+                }
+                catch (OutOfMemoryException)
+                {
+                    // Individual chunks can still cause OOM on 32-bit platforms
+                }
             }
         }
 
