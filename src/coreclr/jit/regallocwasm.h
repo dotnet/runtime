@@ -86,8 +86,8 @@ class WasmRegAlloc : public RegAllocInterface
     // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
     // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
     // access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
-    LclVarDsc* m_spVarDsc = nullptr;
-    regNumber  m_fpReg    = REG_NA;
+    regNumber m_spReg = REG_NA;
+    regNumber m_fpReg = REG_NA;
 
 public:
     WasmRegAlloc(Compiler* compiler);
@@ -108,7 +108,8 @@ private:
 
     void      IdentifyCandidates();
     void      InitializeCandidate(LclVarDsc* varDsc);
-    regNumber AllocateStackPointer();
+    void      InitializeStackPointer();
+    void      AllocateStackPointer();
     void      AllocateFramePointer();
     regNumber AllocateVirtualRegister(var_types type);
     regNumber AllocateVirtualRegister(WasmValueType type);
@@ -119,6 +120,9 @@ private:
     void CollectReferencesForBlock(BasicBlock* block);
     void CollectReferencesForNode(GenTree* node);
     void CollectReferencesForDivMod(GenTreeOp* divModNode);
+    void CollectReferencesForCall(GenTreeCall* callNode);
+    void CollectReferencesForCast(GenTreeOp* castNode);
+    void CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void CollectReference(GenTree* node);
     void RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
