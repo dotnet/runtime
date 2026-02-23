@@ -393,22 +393,28 @@ void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
 //
 void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 {
+    regNumber internalReg = REG_NA;
     if (binopNode->gtOverflow())
     {
         if (binopNode->OperIs(GT_ADD) || binopNode->OperIs(GT_SUB))
         {
-            RequestInternalRegister(binopNode, binopNode->TypeGet());
+            internalReg = RequestInternalRegister(binopNode, binopNode->TypeGet());
         }
         else if (binopNode->OperIs(GT_MUL))
         {
             assert(binopNode->TypeIs(TYP_INT));
-            RequestInternalRegister(binopNode, TYP_LONG);
+            internalReg = RequestInternalRegister(binopNode, TYP_LONG);
         }
+    }
+
+    if (internalReg != REG_NA)
+    {
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
     }
 
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp2() DEBUGARG("binop overflow check"));
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
-    ConsumeInternalRegisters(binopNode DEBUGARG("binop overflow check"));
 }
 
 //------------------------------------------------------------------------
@@ -570,36 +576,14 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //    node - node whose codegen will need an internal register
 //    type - type of the internal register
 //
-void WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
+// Returns:
+//    reg number of internal register.
+//
+regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
     regNumber reg = AllocateTemporaryRegister(genActualType(type));
     m_codeGen->internalRegisters.Add(node, reg);
-}
-
-//------------------------------------------------------------------------
-// ConsumeInternalRegisters: Consume the internal registers for a node
-//
-// Arguments:
-//    node - node that may have requested internal registers
-//
-void WasmRegAlloc::ConsumeInternalRegisters(GenTree* node DEBUGARG(const char* reason))
-{
-    InternalRegs* internalRegs = m_codeGen->internalRegisters.GetAll(node);
-
-    if (internalRegs == nullptr)
-    {
-        return;
-    }
-
-    for (unsigned i = 0; i < internalRegs->Count(); i++)
-    {
-        regNumber     reg      = internalRegs->GetAt(i);
-        WasmValueType wasmType = WasmRegToType(reg);
-        regNumber     reg2     = ReleaseTemporaryRegister(wasmType);
-        assert(reg == reg2);
-
-        JITDUMP("Consumed an internal %s reg for [%06u]\n", WasmValueTypeName(wasmType), Compiler::dspTreeID(node));
-    }
+    return reg;
 }
 
 //------------------------------------------------------------------------
