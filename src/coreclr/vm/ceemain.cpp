@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -789,6 +790,10 @@ void EEStartupHelper()
         // Crsts and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
+
+        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_HashMapEbr.Init();
 
         StubManager::InitializeStubManagers();
 
