@@ -68,7 +68,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -353,10 +353,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBuildOuputPath>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'wwwroot'))</_WasmBuildOuputPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebcil>
+    </ConvertDllsToWebCil>
 
     <ItemGroup>
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
@@ -720,10 +720,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebcil>
+    </ConvertDllsToWebCil>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
