@@ -39,15 +39,16 @@ INST(br,                   "br",                   0, IF_ULEB128,       0x0C)
 INST(br_if,                "br_if",                0, IF_ULEB128,       0x0D)
 INST(br_table,             "br_table",             0, IF_ULEB128,       0x0E)
 INST(return,               "return",               0, IF_OPCODE,        0x0F)
-INST(call,                 "call",                 0, IF_ULEB128,       0x10)
+INST(call,                 "call",                 0, IF_FUNCIDX,       0x10)
 INST(call_indirect,        "call_indirect",        0, IF_CALL_INDIRECT, 0x11)
-INST(return_call,          "return_call",          0, IF_ULEB128,       0x12)
+INST(return_call,          "return_call",          0, IF_FUNCIDX,       0x12)
 INST(return_call_indirect, "return_call_indirect", 0, IF_CALL_INDIRECT, 0x13)
 
 INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 
 INST(local_get,    "local.get",    0, IF_ULEB128, 0x20)
 INST(local_set,    "local.set",    0, IF_ULEB128, 0x21)
+INST(local_tee,    "local.tee",    0, IF_ULEB128, 0x22)
 INST(i32_load,     "i32.load",     0, IF_MEMARG,  0x28)
 INST(i64_load,     "i64.load",     0, IF_MEMARG,  0x29)
 INST(f32_load,     "f32.load",     0, IF_MEMARG,  0x2A)
@@ -72,10 +73,14 @@ INST(i32_store16, "i32.store16", 0, IF_MEMARG,  0x3B)
 
 // 5.4.7 Numeric Instructions
 // Constants
-INST(i32_const,   "i32.const",   0, IF_SLEB128, 0x41)
-INST(i64_const,   "i64.const",   0, IF_SLEB128, 0x42)
-INST(f32_const,   "f32.const",   0, IF_F32,     0x43)
-INST(f64_const,   "f64.const",   0, IF_F64,     0x44)
+INST(i32_const,         "i32.const",         0, IF_SLEB128, 0x41)
+// Pseudo-instructions for relocations
+INST(i32_const_address, "i32.const_address", 0, IF_MEMADDR, 0x41)
+INST(i32_const_funcptr, "i32.const_funcptr", 0, IF_FUNCPTR, 0x41)
+// Constants, continued
+INST(i64_const,         "i64.const",         0, IF_SLEB128, 0x42)
+INST(f32_const,         "f32.const",         0, IF_F32,     0x43)
+INST(f64_const,         "f64.const",         0, IF_F64,     0x44)
 // Integer comparisons
 INST(i32_eqz,     "i32.eqz",     0, IF_OPCODE,  0x45)
 INST(i32_eq,      "i32.eq",      0, IF_OPCODE,  0x46)
@@ -222,6 +227,9 @@ INST(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0x04FC)
 INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
 INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
 INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
+
+INST(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0x0AFC)
+INST(memory_fill,         "memory.fill",         0, IF_ULEB128,       0x0BFC)
 
 // clang-format on
 

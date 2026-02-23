@@ -11,6 +11,10 @@ public interface IComWrappers : IContract
     TargetPointer GetComWrappersIdentity(TargetPointer address) => throw new NotImplementedException();
     ulong GetRefCount(TargetPointer address) => throw new NotImplementedException();
     bool IsHandleWeak(TargetPointer address) => throw new NotImplementedException();
+    TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw) => throw new NotImplementedException();
+    TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow) => throw new NotImplementedException();
+    long GetMOWReferenceCount(TargetPointer mow) => throw new NotImplementedException();
+    bool IsComWrappersRCW(TargetPointer rcw) => throw new NotImplementedException();
 }
 
 public readonly struct ComWrappers : IComWrappers

@@ -10,6 +10,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct ComWrappers_1 : IComWrappers
 {
+    private const string NativeObjectWrapperNamespace = "System.Runtime.InteropServices";
+    private const string NativeObjectWrapperName = "ComWrappers+NativeObjectWrapper";
     private readonly Target _target;
     private enum Flags
     {
@@ -39,5 +41,64 @@ internal readonly struct ComWrappers_1 : IComWrappers
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
         Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
         return (simpleWrapper.Flags & (uint)Flags.IsHandleWeak) != 0;
+    }
+
+    private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPointer vtable, out TargetPointer qiAddress)
+    {
+        qiAddress = TargetPointer.Null;
+        if (!_target.TryReadPointer(ccw, out vtable))
+            return false;
+        if (!_target.TryReadCodePointer(vtable, out TargetCodePointer qiCodePtr))
+            return false;
+        qiAddress = CodePointerUtils.AddressFromCodePointer(qiCodePtr, _target);
+        return true;
+    }
+
+    private bool IsComWrappersCCW(TargetPointer ccw)
+    {
+        if (!GetComWrappersCCWVTableQIAddress(ccw, out _, out TargetPointer qiAddress))
+            return false;
+
+        TargetPointer comWrappersVtablePtrs = _target.ReadGlobalPointer(Constants.Globals.ComWrappersVtablePtrs);
+        Data.ComWrappersVtablePtrs comWrappersVtableStruct = _target.ProcessedData.GetOrAdd<Data.ComWrappersVtablePtrs>(comWrappersVtablePtrs);
+        return comWrappersVtableStruct.ComWrappersInterfacePointers.Contains(CodePointerUtils.CodePointerFromAddress(qiAddress, _target));
+    }
+
+    public TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw)
+    {
+        if (!IsComWrappersCCW(ccw))
+            return TargetPointer.Null;
+        if (!_target.TryReadPointer(ccw & _target.ReadGlobalPointer(Constants.Globals.DispatchThisPtrMask), out TargetPointer MOWWrapper))
+            return TargetPointer.Null;
+        return MOWWrapper;
+    }
+
+    public TargetPointer GetComWrappersObjectFromMOW(TargetPointer mow)
+    {
+        TargetPointer objHandle = _target.ReadPointer(mow);
+        Data.ObjectHandle handle = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(objHandle);
+        Data.ManagedObjectWrapperHolderObject mowHolderObject = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperHolderObject>(handle.Object);
+        return mowHolderObject.WrappedObject;
+    }
+
+    public long GetMOWReferenceCount(TargetPointer mow)
+    {
+        Data.ManagedObjectWrapperLayout layout = _target.ProcessedData.GetOrAdd<Data.ManagedObjectWrapperLayout>(mow);
+        return layout.RefCount;
+    }
+
+    public bool IsComWrappersRCW(TargetPointer rcw)
+    {
+        TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(rcw);
+
+        // get system module
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer systemAssembly = loader.GetSystemAssembly();
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
+
+        // lookup by name
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(NativeObjectWrapperName, NativeObjectWrapperNamespace, moduleHandle).Address;
+        return mt == typeHandlePtr;
     }
 }

@@ -87,7 +87,7 @@ namespace System.Reflection
                 }
             }
 
-            return Helpers.CloneArray(_requiredModifiers);
+            return Helpers.CloneArray<Type>(_requiredModifiers);
         }
 
         public override Type[] GetOptionalCustomModifiers()
@@ -105,7 +105,7 @@ namespace System.Reflection
                 }
             }
 
-            return Helpers.CloneArray(_optionalModifiers);
+            return Helpers.CloneArray<Type>(_optionalModifiers);
         }
 
         public override Type UnderlyingSystemType => _unmodifiedType;
