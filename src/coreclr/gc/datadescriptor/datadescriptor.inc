@@ -117,9 +117,9 @@ CDAC_GLOBAL(InterestingMechanismBitsLength, /*uint32*/, MAX_GC_MECHANISM_BITS_CO
 CDAC_GLOBAL(GlobalMechanismsLength, /*uint32*/, MAX_GLOBAL_GC_MECHANISMS_COUNT)
 CDAC_GLOBAL(InitialHandleTableArraySize, /*uint32*/, INITIAL_HANDLE_TABLE_ARRAY_SIZE)
 #ifdef DEBUG_DestroyedHandleValue
-CDAC_GLOBAL(DebugDestroyedHandleValue, /*uint32*/, (uintptr_t)DEBUG_DestroyedHandleValue)
+CDAC_GLOBAL(DebugDestroyedHandleValue, /*uintptr_t*/, (uintptr_t)DEBUG_DestroyedHandleValue)
 #else
-CDAC_GLOBAL(DebugDestroyedHandleValue, /*uint32*/, (uintptr_t)(0))
+CDAC_GLOBAL(DebugDestroyedHandleValue, /*uintptr_t*/, (uintptr_t)(0))
 #endif
 CDAC_GLOBAL(HandleBlocksPerSegment, /*uint32*/, HANDLE_BLOCKS_PER_SEGMENT)
 CDAC_GLOBAL(HandleMaxInternalTypes, /*uint32*/, HANDLE_MAX_INTERNAL_TYPES)
