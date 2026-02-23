@@ -286,12 +286,12 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57333")]
         public void CallSiteFactoryResolvesIEnumerableOfOpenGenericServiceAfterResolvingClosedImplementation()
         {
             IServiceCollection descriptors = new ServiceCollection();
             descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<int>), typeof(FakeIntService)));
             descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)));
+            descriptors.AddSingleton<int>(10); // Register int dependency for FakeOpenGenericService<int>
 
             ServiceProvider provider = descriptors.BuildServiceProvider();
 
