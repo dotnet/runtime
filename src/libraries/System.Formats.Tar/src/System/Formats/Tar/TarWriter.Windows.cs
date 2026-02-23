@@ -3,8 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Formats.Tar
 {
@@ -21,18 +19,38 @@ namespace System.Formats.Tar
 
             FileAttributes attributes = File.GetAttributes(fullPath);
 
+            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+
+            FileSystemInfo info = isDirectory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
+
             TarEntryType entryType;
+            string? linkTarget = null;
             if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
-                entryType = TarEntryType.SymbolicLink;
+                Interop.Kernel32.WIN32_FIND_DATA findData = default;
+                using (Interop.Kernel32.FindFirstFile(fullPath, ref findData))
+                {
+                    // dwReserved0 contains the reparse tag when the file has FileAttributes.ReparsePoint.
+                }
+
+                if (findData.dwReserved0 is Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK
+                    or Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    entryType = TarEntryType.SymbolicLink;
+                    linkTarget = info.LinkTarget;
+                }
+                else
+                {
+                    throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath));
+                }
             }
-            else if ((attributes & FileAttributes.Directory) != 0)
+            else if (isDirectory)
             {
                 entryType = TarEntryType.Directory;
             }
             else if ((attributes & (FileAttributes.Normal | FileAttributes.Archive)) != 0)
             {
-                entryType = Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entryType = TarHelpers.GetRegularFileEntryTypeForFormat(Format);
             }
             else
             {
@@ -48,8 +66,6 @@ namespace System.Formats.Tar
                 _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
-            FileSystemInfo info = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
-
             entry._header._mTime = info.LastWriteTimeUtc;
             // We do not set atime and ctime by default because many external tools are unable to read GNU entries
             // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
@@ -61,7 +77,7 @@ namespace System.Formats.Tar
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
-                entry.LinkName = info.LinkTarget ?? string.Empty;
+                entry.LinkName = linkTarget ?? string.Empty;
             }
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
