@@ -61,7 +61,9 @@ namespace ILCompiler.ObjectWriter
         {
             int signatureIndex = _signatureCount;
             Utf8String mangledName = new Utf8String(signature.GetMangledName(_nodeFactory.NameMangler));
-            _uniqueSignatures[mangledName] = signatureIndex;
+            // Note that we do not expect duplicates here, since crossgen's node cache should handle this and all nodes representing
+            // identical signatures in a module should point to the same node instance
+            _uniqueSignatures.Add(mangledName, signatureIndex);
             _signatureCount++;
         }
 
@@ -293,12 +295,12 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.CombinedDataSection.Name,
         ];
 
-        private int[] _sectionEmitOrder = Array.Empty<int>();
+        private int[] _sectionEmitOrder = null;
         private int[] SectionEmitOrder
         {
             get
             {
-                if (_sectionEmitOrder.Length == 0)
+                if (_sectionEmitOrder == null)
                 {
                     _sectionEmitOrder = SectionOrder.Select(name => _sectionNameToIndex[name]).ToArray();
                 }
@@ -348,19 +350,21 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        // TODO-WASM: Currently, all Wasm relocs are resolved to 5 byte values unconditionally (the same size as the original placeholder padding), which is wasteful.
+        // We should remove the padding and shrink the resolved values to their minimal size so we don't bloat the binary size.
         private unsafe void ResolveRelocations(MemoryStream sectionStream, List<SymbolicRelocation> relocs)
         {
-            byte[] buffer = new byte[Relocation.MaxSize];
+            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             foreach (SymbolicRelocation reloc in relocs)
             {
                 int size = Relocation.GetSize(reloc.Type);
-                if (size >= buffer.Length)
+                if (size >= relocScratchBuffer.Length)
                 {
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
 
                 // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
-                fixed (byte* pData = ReadRelocToDataSpan(reloc, buffer))
+                fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer))
                 {
                     switch (reloc.Type)
                     {
