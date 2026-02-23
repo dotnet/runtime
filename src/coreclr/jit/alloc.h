@@ -30,10 +30,27 @@ struct JitMemKindTraits
     static const char* const Names[];
 
     // Returns true if the allocator should bypass the host allocator and use direct malloc/free.
-    static bool bypassHostAllocator();
+    static bool bypassHostAllocator()
+    {
+#if defined(DEBUG)
+        // When JitDirectAlloc is set, all JIT allocations requests are forwarded
+        // directly to the OS. This allows taking advantage of pageheap and other gflag
+        // knobs for ensuring that we do not have buffer overruns in the JIT.
+        return JitConfig.JitDirectAlloc() != 0;
+#else  // defined(DEBUG)
+        return false;
+#endif // !defined(DEBUG)
+    }
 
     // Returns true if the allocator should inject faults for testing purposes.
-    static bool shouldInjectFault();
+    static bool shouldInjectFault()
+    {
+#if defined(DEBUG)
+        return JitConfig.ShouldInjectFault() != 0;
+#else
+        return false;
+#endif
+    }
 
     // Allocates a block of memory from the host.
     static void* allocateHostMemory(size_t size, size_t* pActualSize);
@@ -42,10 +59,21 @@ struct JitMemKindTraits
     static void freeHostMemory(void* block, size_t size);
 
     // Fills a memory block with an uninitialized pattern (for DEBUG builds).
-    static void fillWithUninitializedPattern(void* block, size_t size);
+    static void fillWithUninitializedPattern(void* block, size_t size)
+    {
+#if defined(DEBUG)
+        memset(block, UninitializedWord<char>(nullptr), size);
+#else
+        (void)block;
+        (void)size;
+#endif
+    }
 
     // Called when allocation fails - calls NOMEM() which does not return.
-    static void outOfMemory();
+    static void DECLSPEC_NORETURN outOfMemory()
+    {
+        NOMEM();
+    }
 };
 
 // Type aliases for JIT-specific instantiations of the shared allocator templates.

@@ -485,9 +485,14 @@ set( JIT_WASM_HEADERS
     fgwasm.h
 )
 
+set ( JITSHARED_SOURCES
+    ../jitshared/histogram.cpp
+)
+
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})
 convert_to_absolute_path(JIT_HEADERS ${JIT_HEADERS})
 convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
+convert_to_absolute_path(JITSHARED_SOURCES ${JITSHARED_SOURCES})
 
 # Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
 
@@ -617,23 +622,23 @@ function(add_jit jitName)
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_HEADERS}
           ${JIT_ARCH_HEADERS}
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}
           ${JIT_DLL_MAIN_FILE}
-          $<TARGET_OBJECTS:jitshared>
       )
     else()
       add_library_clr(${jitName}
           SHARED
           ${JIT_SOURCES}
+          ${JITSHARED_SOURCES}
           ${JIT_ARCH_SOURCES}
           ${JIT_RESOURCES}
           ${JIT_DEF_FILE}
           ${JIT_DLL_MAIN_FILE}
-          $<TARGET_OBJECTS:jitshared>
       )
     endif(CLR_CMAKE_TARGET_WIN32)
 
