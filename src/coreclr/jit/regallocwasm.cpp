@@ -603,7 +603,7 @@ void WasmRegAlloc::ResolveReferences()
         regNumber physReg;
         if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
         {
-            unsigned lclNum = m_compiler->lvaGetLclNum(varDsc);
+            unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
             const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
             assert(abiInfo.HasExactlyOneRegisterSegment());
             physReg = abiInfo.Segment(0).GetRegister();
