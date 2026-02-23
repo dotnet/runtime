@@ -1041,10 +1041,10 @@ SWITCH_OPCODE:
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
                     break;
                 }
-#endif // DEBUGGING_SUPPORTED
-                case INTOP_NOP:
+                case INTOP_DEBUG_SEQ_POINT:
                     ip++;
                     break;
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
