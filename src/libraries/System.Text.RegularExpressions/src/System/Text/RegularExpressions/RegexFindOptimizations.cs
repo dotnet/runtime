@@ -170,23 +170,17 @@ namespace System.Text.RegularExpressions
 
             // We're now left-to-right only and looking for multiple prefixes and/or sets.
 
-            // If there are multiple leading strings, we can search for any of them.
-            if (!interpreter) // this works in the interpreter, but we avoid it due to additional cost during construction
+            // If there are multiple case-insensitive leading strings, we can search for any of them.
+            if (!interpreter && // this works in the interpreter, but we avoid it due to additional cost during construction
+                RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
             {
-                if (RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: true) is { Length: > 1 } caseInsensitivePrefixes)
-                {
-                    LeadingPrefixes = caseInsensitivePrefixes;
-                    FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
+                LeadingPrefixes = caseInsensitivePrefixes;
+                FindMode = FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight;
 #if SYSTEM_TEXT_REGULAREXPRESSIONS
-                    LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
+                LeadingStrings = SearchValues.Create(LeadingPrefixes, StringComparison.OrdinalIgnoreCase);
 #endif
-                    return;
-                }
+                return;
             }
-
-            // Look for case-sensitive prefixes. We don't commit to using them yet; we'll compare
-            // their value against the best FixedDistanceSet below.
-            string[]? caseSensitivePrefixes = !interpreter ? RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) : null;
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
             List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
@@ -218,11 +212,12 @@ namespace System.Text.RegularExpressions
                 // In some searches, we may use multiple sets, so we want the subsequent ones to also be the efficiency runners-up.
                 RegexPrefixAnalyzer.SortFixedDistanceSetsByQuality(fixedDistanceSets);
 
-                // If we have case-sensitive prefixes, check whether the best FixedDistanceSet is composed
-                // of high-frequency characters. If so, IndexOfAny on those characters would be a poor filter
-                // and multi-string search via SearchValues is preferred.
-                if (caseSensitivePrefixes is { Length: > 1 } &&
-                    HasHighFrequencyChars(fixedDistanceSets[0]))
+                // If the best FixedDistanceSet is composed of high-frequency characters, IndexOfAny on
+                // those characters would be a poor filter. Check for case-sensitive leading prefixes and
+                // prefer multi-string search via SearchValues if available.
+                if (!interpreter &&
+                    HasHighFrequencyChars(fixedDistanceSets[0]) &&
+                    RegexPrefixAnalyzer.FindPrefixes(root, ignoreCase: false) is { Length: > 1 } caseSensitivePrefixes)
                 {
                     LeadingPrefixes = caseSensitivePrefixes;
                     FindMode = FindNextStartingPositionMode.LeadingStrings_LeftToRight;
