@@ -1222,8 +1222,20 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             // Save the wide result, and then overflow check it.
             GetEmitter()->emitIns_I(INS_local_tee, EA_8BYTE, WasmRegToIndex(wideReg));
 
-            // Can't make a Desc right now...
-            // genIntCastOverflowCheck(nullptr, desc, resultReg);
+            if (isUnsigned)
+            {
+                // For unsigned multiply, we just need to check if the result is greater than UINT32_MAX.
+                GetEmitter()->emitIns_I(INS_i64_const, EA_8BYTE, UINT32_MAX);
+                GetEmitter()->emitIns(INS_i64_gt_u);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            else
+            {
+                GetEmitter()->emitIns(INS_i64_extend32_s);
+                GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
+                GetEmitter()->emitIns(INS_i64_ne);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
 
             // If the check succeeds, the multiplication result is in range for a 32-bit int.
             // We just need to return the low 32 bits of the result.
