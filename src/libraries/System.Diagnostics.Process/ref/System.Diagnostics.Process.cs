@@ -201,6 +201,13 @@ namespace System.Diagnostics
         public void CopyTo(System.Diagnostics.ProcessModule[] array, int index) { }
         public int IndexOf(System.Diagnostics.ProcessModule module) { throw null; }
     }
+    public sealed partial class ProcessExitStatus
+    {
+        public ProcessExitStatus(int exitCode, bool canceled, System.Runtime.InteropServices.PosixSignal? signal = null) { throw null; }
+        public bool Canceled { get { throw null; } }
+        public int ExitCode { get { throw null; } }
+        public System.Runtime.InteropServices.PosixSignal? Signal { get { throw null; } }
+    }
     public enum ProcessPriorityClass
     {
         Normal = 32,
@@ -260,6 +267,17 @@ namespace System.Diagnostics
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
+    }
+    public sealed partial class ProcessStartOptions
+    {
+        public ProcessStartOptions(string fileName) { }
+        public System.Collections.Generic.IList<string> Arguments { get { throw null; } set { } }
+        public bool CreateNewProcessGroup { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
+        public string FileName { get { throw null; } }
+        public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> InheritedHandles { get { throw null; } set { } }
+        public bool KillOnParentExit { get { throw null; } set { } }
+        public string? WorkingDirectory { get { throw null; } set { } }
     }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component

@@ -416,11 +416,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_UDIV:
         case GT_UMOD:
-            if (!LowerUnsignedDivOrMod(node->AsOp()))
-            {
-                ContainCheckDivOrMod(node->AsOp());
-            }
-            break;
+            return LowerUnsignedDivOrMod(node->AsOp());
 
         case GT_DIV:
         case GT_MOD:
@@ -2016,7 +2012,23 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     LegalizeArgPlacement(call);
+    AfterLowerArgsForCall(call);
 }
+
+#if !defined(TARGET_WASM)
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    // no-op for non-Wasm targets
+}
+
+#endif // !defined(TARGET_WASM)
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
 //------------------------------------------------------------------------
@@ -2468,6 +2480,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            assert(!dstAddr->isContained());
+            assert(!srcAddr->isContained());
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = m_compiler->gtNewIndir(TYP_STRUCT, srcAddr);
@@ -2477,11 +2491,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, m_compiler->typGetBlkLayout((unsigned)cnsSize));
             storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
-            // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
-            // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = call->IsHelperCall(m_compiler, CORINFO_HELP_MEMCPY)
-                                        ? GenTreeBlk::BlkOpKindUnroll
-                                        : GenTreeBlk::BlkOpKindUnrollMemmove;
+            // For simplicity, we use BlkOpKindUnrollMemmove even for CORINFO_HELP_MEMCPY.
+            storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
@@ -2499,7 +2510,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            // TODO: This skips lowering srcBlk and storeBlk.
+            // We've just lowered srcBlk and storeBlk here and it's now what genCodeForMemmove expects.
+            // So the next node to lower is whatever we have after the storeBlk.
             *next = storeBlk->gtNext;
             return true;
         }
@@ -6592,18 +6604,9 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
 {
-#ifdef TARGET_X86
-    if (call->gtCallCookie != nullptr)
-    {
-        NYI_X86("Morphing indirect non-virtual call with non-standard args");
-    }
-#endif
-
     // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
     // Hence we should never see this type of call in lower.
-
     noway_assert(call->gtCallCookie == nullptr);
-
     return nullptr;
 }
 
@@ -8023,7 +8026,25 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // LowerUnsignedDivOrMod: Lowers a GT_UDIV/GT_UMOD node.
 //
 // Arguments:
-//    divMod - pointer to the GT_UDIV/GT_UMOD node to be lowered
+//    divMod - the GT_UDIV/GT_UMOD node to be lowered
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
+{
+    if (!TryLowerConstIntUDivOrUMod(divMod))
+    {
+        LowerDivOrMod(divMod);
+    }
+    return divMod->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerConstIntUDivOrUMod: Lowers a GT_UDIV/GT_UMOD node with a constant divisor.
+//
+// Arguments:
+//    divMod - the GT_UDIV/GT_UMOD node to be lowered
 //
 // Return Value:
 //    Returns a boolean indicating whether the node was transformed.
@@ -8033,8 +8054,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 //    - Transform UDIV by constant >= 2^(N-1) into GE
 //    - Transform UDIV/UMOD by constant >= 3 into "magic division"
 //
-
-bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
+bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
@@ -8125,7 +8145,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
     }
 
-// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+    // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
     {
@@ -8639,10 +8659,26 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
         }
         assert(nextNode == nullptr);
     }
-    ContainCheckDivOrMod(node->AsOp());
 
+    LowerDivOrMod(node->AsOp());
     return node->gtNext;
 }
+
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
+//
+// Target-specific lowering, called **after** the possible transformation
+// into 'magic' division.
+//
+// Arguments:
+//    divMod - the node to be lowered
+//
+void Lowering::LowerDivOrMod(GenTreeOp* divMod)
+{
+    ContainCheckDivOrMod(divMod);
+}
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // TryFoldBinop: Try removing a binop node by constant folding.

@@ -11,6 +11,8 @@ Analyze the health of VMR codeflow PRs in both directions:
 
 > 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed. Approval and blocking are human-only actions.
 
+**Workflow**: Run the script → read the human-readable output + `[CODEFLOW_SUMMARY]` JSON → synthesize recommendations yourself. The script collects data; you generate the advice.
+
 ## Prerequisites
 
 - **GitHub CLI (`gh`)** — must be installed and authenticated (`gh auth login`)
@@ -69,14 +71,20 @@ Use this skill when:
 ## What the Script Does
 
 ### PR Analysis Mode (default)
-1. **Parses PR metadata** — Extracts VMR commit, subscription ID, build info from PR body
-2. **Validates snapshot** — Cross-references PR body commit against branch commit messages to detect stale metadata
-3. **Checks VMR freshness** — Compares PR's VMR snapshot against current VMR branch HEAD
-4. **Shows pending forward flow** — For behind backflow PRs, finds open forward flow PRs that would close part of the gap
-5. **Detects staleness & conflicts** — Finds Maestro "codeflow cannot continue" warnings and "Conflict detected" messages with file lists and resolve commands
-6. **Analyzes PR commits** — Categorizes as auto-updates vs manual commits
-7. **Traces fixes** (with `-TraceFix`) — Checks if a specific fix has flowed through VMR → codeflow PR
-8. **Recommends actions** — Suggests force trigger, close/reopen, merge as-is, resolve conflicts, or wait
+
+> **Design principle**: Assess current state from primary signals first, then use Maestro comments as historical context — not the other way around. Comments tell you the history, not the present.
+
+1. **PR Overview** — Basic PR info, flow direction (backflow vs forward flow)
+2. **Current State** — Independent assessment from primary signals: empty diff, force pushes, merge status. Produces a one-line verdict (NO-OP / IN PROGRESS / STALE / ACTIVE / MERGED / CLOSED) before reading any comments
+3. **Codeflow Metadata** — Extracts VMR commit, subscription ID, build info from PR body
+4. **Snapshot Validation** — Cross-references PR body commit against Version.Details.xml and branch commits to detect stale metadata
+5. **Source Freshness** — Compares PR's VMR snapshot against current VMR branch HEAD; shows pending forward flow PRs
+6. **PR Branch Analysis** — Categorizes commits as auto-updates vs manual; detects codeflow-like manual commits
+7. **Codeflow History** — Maestro comments as historical context (conflict/staleness warnings), cross-referenced against force push timestamps to determine if issues were already addressed
+8. **Traces fixes** (with `-TraceFix`) — Checks if a specific fix has flowed through VMR → codeflow PR
+9. **Emits structured summary** — `[CODEFLOW_SUMMARY]` JSON block with all key facts for the agent to reason over
+
+> **After the script runs**, you (the agent) generate recommendations. The script collects data; you synthesize the advice. See [Generating Recommendations](#generating-recommendations) below.
 
 ### Flow Health Mode (`-CheckMissing`)
 1. **Checks official build freshness** — Queries `aka.ms` shortlinks for latest published VMR build dates per channel
@@ -90,6 +98,14 @@ Use this skill when:
 
 ## Interpreting Results
 
+### Current State (assessed first, from primary signals)
+- **✅ MERGED**: PR has been merged — no action needed
+- **✖️ CLOSED**: PR was closed without merging — Maestro should create a replacement
+- **📭 NO-OP**: Empty diff — PR likely already resolved, changes landed via other paths
+- **🔄 IN PROGRESS**: Recent force push within 24h — someone is actively working on it
+- **⏳ STALE**: No activity for >3 days — may need attention
+- **✅ ACTIVE**: PR has content and recent activity
+
 ### Freshness
 - **✅ Up to date**: PR has the latest VMR snapshot
 - **⚠️ VMR is N commits ahead**: The PR is missing updates. Check if the missing commits contain the fix you need.
@@ -100,10 +116,11 @@ Use this skill when:
 - **⚠️ Mismatch**: PR body is stale — the script automatically uses the branch-derived commit for freshness checks
 - **ℹ️ Initial commit only**: PR body can't be verified yet (no "Backflow from" commit exists)
 
-### Staleness & Conflicts
+### Codeflow History (Maestro comments as context)
 - **✅ No warnings**: Maestro can freely update the PR
 - **⚠️ Staleness warning**: A forward flow merged while this backflow PR was open. Maestro blocked further updates.
 - **🔴 Conflict detected**: Maestro found merge conflicts. Shows conflicting files and `darc vmr resolve-conflict` command.
+- **ℹ️ Force push after warning**: When a force push post-dates a conflict/staleness warning, the issue may already be resolved. The script cross-references timestamps automatically.
 
 ### Manual Commits
 Manual commits on the PR branch are at risk if the PR is closed or force-triggered. The script lists them so you can decide whether to preserve them.
@@ -113,6 +130,50 @@ When using `-TraceFix`:
 - **✅ Fix is in VMR manifest**: The fix has flowed to the VMR
 - **✅ Fix is in PR snapshot**: The codeflow PR already includes this fix
 - **❌ Fix is NOT in PR snapshot**: The PR needs a codeflow update to get this fix
+
+## Generating Recommendations
+
+After the script outputs the `[CODEFLOW_SUMMARY]` JSON block, **you** synthesize recommendations. Do not parrot the JSON — reason over it.
+
+### Decision logic
+
+Check `isCodeflowPR` first — if `false`, skip all codeflow-specific advice:
+- **Not a codeflow PR** (`isCodeflowPR = false` or `flowDirection = "unknown"`): State this clearly. No darc commands, no codeflow recommendations. Treat as a normal PR.
+
+Then read `currentState`:
+
+| State | Action |
+|-------|--------|
+| `MERGED` | No action needed. Mention Maestro will create a new PR if VMR has newer content. |
+| `CLOSED` | Suggest triggering a new PR if `subscriptionId` is available. |
+| `NO-OP` | PR has no meaningful changes. Recommend closing or merging to clear state. If `subscriptionId` is available, offer force-trigger as a third option. |
+| `IN_PROGRESS` | Someone is actively working. Recommend waiting, then checking back. |
+| `STALE` | Needs attention — see warnings below for what's blocking. |
+| `ACTIVE` | PR is healthy — check freshness and warnings for nuance. |
+
+Then layer in context from `warnings`, `freshness`, and `commits`:
+
+- **Unresolved conflict** (`warnings.conflictCount > 0`, `conflictMayBeResolved = false`): Lead with "resolve conflicts" using `darc vmr resolve-conflict --subscription <id>`. Offer "close & reopen" as alternative.
+- **Conflict may be resolved** (`conflictMayBeResolved = true`): Note the force push post-dates the conflict warning. Suggest verifying, then merging.
+- **Staleness warning active** (`stalenessCount > 0`, `stalenessMayBeResolved = false`): Codeflow is blocked. Options: merge as-is, force trigger, or close & reopen.
+- **Manual commits present** (`commits.manual > 0`): Warn that force-trigger or close will lose them. If `commits.codeflowLikeManual > 0`, note the freshness gap may be partially covered.
+- **Behind on freshness** (`freshness.aheadBy > 0`): Mention the PR is missing updates. If staleness is blocking, a force trigger is needed. Otherwise, Maestro should auto-update.
+
+### Darc commands to include
+
+When recommending actions, include the relevant `darc` command with the actual `subscriptionId` from the summary. Be precise about what each command does:
+
+| Command | What it does | When to use |
+|---------|-------------|-------------|
+| `darc trigger-subscriptions --id <id>` | Normal trigger — only works if subscription isn't stale. Creates a new PR if none exists. | PR was closed, or no PR exists |
+| `darc trigger-subscriptions --id <id> --force` | Force trigger — **overwrites the existing PR branch** with fresh VMR content. Does not create a new PR. | PR exists but is stale/no-op and you want to reuse it |
+| `darc vmr resolve-conflict --subscription <id>` | Resolve conflicts locally and push to the PR branch | PR has merge conflicts |
+
+> ⚠️ **Common mistake**: Don't say "close then force-trigger" — force-trigger pushes to the *existing* PR. If you close first, use a normal trigger instead (which creates a new PR). The two paths are: (A) force-trigger to refresh the existing PR, or (B) close + normal-trigger to get a new PR.
+
+### Tone
+
+Be direct. Lead with the most important action. Use 2-4 bullet points, not long paragraphs. Include the darc command inline so the user can copy-paste.
 
 ## Darc Commands for Remediation
 
@@ -136,6 +197,29 @@ darc vmr resolve-conflict --subscription <subscription-id>
 ```
 
 Install darc via `eng\common\darc-init.ps1` in any arcade-enabled repository.
+
+### When the script reports "Maestro may be stuck"
+
+When the script shows a missing backflow PR with "Maestro may be stuck" (builds are fresh but no PR was created), follow these diagnostic steps:
+
+1. **Check the subscription** to find when it last consumed a build:
+   ```bash
+   darc get-subscriptions --target-repo <repo> --source-repo dotnet/dotnet
+   ```
+   Look at the `Last Build` field — if it's weeks old while the channel has newer builds, the subscription is stuck.
+
+2. **Compare against the latest channel build** to confirm the gap:
+   ```bash
+   darc get-latest-build --repo dotnet/dotnet --channel "<channel-name>"
+   ```
+   Channel names follow patterns like `.NET 11.0.1xx SDK`, `.NET 10.0.1xx SDK`, `.NET 11.0.1xx SDK Preview 1`.
+
+3. **Trigger the subscription manually** to unstick it:
+   ```bash
+   darc trigger-subscriptions --id <subscription-id>
+   ```
+
+4. **If triggering doesn't produce a PR within a few minutes**, the issue may be deeper — check Maestro health or open an issue on `dotnet/arcade`.
 
 ## References
 

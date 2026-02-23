@@ -315,7 +315,7 @@ GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL)            // Multi-dimensional array-element address
+GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL|DBK_NOTLIR)  // Multi-dimensional array-element address
 GTNODE(CALL             , GenTreeCall        ,0,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 
