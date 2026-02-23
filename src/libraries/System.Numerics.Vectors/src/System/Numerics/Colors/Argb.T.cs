@@ -14,7 +14,7 @@ namespace System.Numerics.Colors
     /// <typeparam name="T">The type of the color components.</typeparam>
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("ARGB({A}, {R}, {G}, {B})")]
-    public readonly struct Argb<T> : IEquatable<Argb<T>>//, IFormattable, ISpanFormattable
+    public readonly struct Argb<T> : IEquatable<Argb<T>>
         where T : struct
     {
         // big-endian order
@@ -78,7 +78,7 @@ namespace System.Numerics.Colors
         /// </param>
         public void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination);
+            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
 
             Unsafe.As<T, Argb<T>>(ref MemoryMarshal.GetReference(destination)) = this;
         }
@@ -111,7 +111,7 @@ namespace System.Numerics.Colors
         /// <see langword="true"/> if the specified <paramref name="obj"/> object is equal to this
         /// <see cref="Argb{T}"/> color; otherwise, <see langword="false"/>.
         /// </returns>
-        public override bool Equals(object? obj) => obj is Argb<T> otherColor && Equals(otherColor);
+        public override bool Equals(object? obj) => obj is Argb<T> other && Equals(other);
 
         /// <summary>
         /// Default hash function for this <see cref="Argb{T}"/> color.
@@ -132,7 +132,7 @@ namespace System.Numerics.Colors
         /// Converts this <see cref="Argb{T}"/> color to an <see cref="Rgba{T}"/> color.
         /// </summary>
         /// <returns>
-        /// An new instance of the <see cref="Rgba{T}"/> color that represents this <see cref="Argb{T}"/> color.
+        /// A new instance of the <see cref="Rgba{T}"/> color that represents this <see cref="Argb{T}"/> color.
         /// </returns>
         public Rgba<T> ToRgba() => new Rgba<T>(R, G, B, A);
     }

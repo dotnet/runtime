@@ -29,7 +29,7 @@ namespace System.Numerics.Colors.Tests
             {
                 var data = new TheoryData<byte, byte, byte, byte>();
                 foreach (var color in ByteColorsList)
-                    data.Add(color.Item1, color.Item2, color.Item3, color.Item3);
+                    data.Add(color.Item1, color.Item2, color.Item3, color.Item4);
                 return data;
             }
         }

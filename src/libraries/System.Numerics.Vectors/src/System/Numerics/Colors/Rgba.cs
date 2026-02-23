@@ -6,9 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Numerics.Colors
 {
-#pragma warning disable CS3001 // Argument type is not CLS-compliant
-#pragma warning disable CS3002 // Return type is not CLS-compliant
-
     /// <summary>
     /// Static methods for <see cref="Rgba{T}"/> color.
     /// </summary>
@@ -18,18 +15,26 @@ namespace System.Numerics.Colors
         /// Creates an <see cref="Rgba{T}"/> color from a big-endian <see langword="uint"/> representing an RGBA color.
         /// </summary>
         /// <param name="color">A big-endian <see langword="uint"/> representing an RGBA color.</param>
-        /// <returns>An new instance of the <see cref="Rgba{T}"/> color.</returns>
-        public static Rgba<byte> CreateBigEndian(uint color) => Unsafe.As<uint, Rgba<byte>>(ref color);
+        /// <returns>A new instance of the <see cref="Rgba{T}"/> color.</returns>
+        [System.CLSCompliantAttribute(false)]
+        public static Rgba<byte> CreateBigEndian(uint color)
+        {
+            if (BitConverter.IsLittleEndian)
+                color = BinaryPrimitives.ReverseEndianness(color);
+            return Unsafe.As<uint, Rgba<byte>>(ref color);
+        }
 
         /// <summary>
         /// Creates an <see cref="Rgba{T}"/> color from a little-endian <see langword="uint"/> representing an RGBA
         /// color.
         /// </summary>
         /// <param name="color">A little-endian <see langword="uint"/> representing an RGBA color.</param>
-        /// <returns>An new instance of the <see cref="Rgba{T}"/> color.</returns>
+        /// <returns>A new instance of the <see cref="Rgba{T}"/> color.</returns>
+        [System.CLSCompliantAttribute(false)]
         public static Rgba<byte> CreateLittleEndian(uint color)
         {
-            color = BinaryPrimitives.ReverseEndianness(color);
+            if (!BitConverter.IsLittleEndian)
+                color = BinaryPrimitives.ReverseEndianness(color);
             return Unsafe.As<uint, Rgba<byte>>(ref color);
         }
 
@@ -39,8 +44,12 @@ namespace System.Numerics.Colors
         /// </summary>
         /// <param name="color">The <see cref="Rgba{T}"/> color to convert.</param>
         /// <returns>A big-endian <see langword="uint"/> representing an RGBA color.</returns>
+        [System.CLSCompliantAttribute(false)]
         public static uint ToUInt32BigEndian(this Rgba<byte> color)
-            => Unsafe.As<Rgba<byte>, uint>(ref color);
+        {
+            uint bits = Unsafe.As<Rgba<byte>, uint>(ref color);
+            return BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(bits) : bits;
+        }
 
         /// <summary>
         /// Converts the specified <see cref="Rgba{T}"/> color to a little-endian <see langword="uint"/> representing
@@ -48,10 +57,11 @@ namespace System.Numerics.Colors
         /// </summary>
         /// <param name="color">The <see cref="Rgba{T}"/> color to convert.</param>
         /// <returns>A little-endian <see langword="uint"/> representing an RGBA color.</returns>
+        [System.CLSCompliantAttribute(false)]
         public static uint ToUInt32LittleEndian(this Rgba<byte> color)
-            => BinaryPrimitives.ReverseEndianness(Unsafe.As<Rgba<byte>, uint>(ref color));
+        {
+            uint bits = Unsafe.As<Rgba<byte>, uint>(ref color);
+            return BitConverter.IsLittleEndian ? bits : BinaryPrimitives.ReverseEndianness(bits);
+        }
     }
-
-#pragma warning restore CS3001 // Argument type is not CLS-compliant
-#pragma warning restore CS3002 // Return type is not CLS-compliant
 }

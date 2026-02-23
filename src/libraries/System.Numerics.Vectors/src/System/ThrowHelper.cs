@@ -13,13 +13,13 @@ namespace System
             [CallerArgumentExpression(nameof(span))] string? paramName = null)
         {
             if (span.Length != 4)
-                ThrowSpanDoesntHaveFourElementsForColor<T>(paramName);
+                ThrowSpanDoesntHaveFourElementsForColor(paramName);
         }
 
         [StackTraceHidden]
-        internal static void ThrowSpanDoesntHaveFourElementsForColor<T>(string? paramName = null)
+        internal static void ThrowSpanDoesntHaveFourElementsForColor(string? paramName = null)
         {
-            throw new ArgumentException(SR.Format(SR.Arg_SpanMustHaveElementsForColor, "4"), paramName);
+            throw new ArgumentException(SR.Format(SR.Arg_SpanMustHaveElementsForColor, 4), paramName);
         }
     }
 }

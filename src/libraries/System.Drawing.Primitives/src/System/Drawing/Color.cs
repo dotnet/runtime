@@ -443,9 +443,7 @@ namespace System.Drawing
 
         public static Color FromArgb(int argb) => FromArgb(unchecked((uint)argb));
 
-        public static Color FromArgb(Argb<byte> argb) => FromArgb(BitConverter.IsLittleEndian ?
-            Argb.ToUInt32LittleEndian(argb) :
-            Argb.ToUInt32BigEndian(argb));
+        public static Color FromArgb(Argb<byte> argb) => FromArgb(unchecked((int)Argb.ToUInt32BigEndian(argb)));
 
         public static Color FromArgb(int alpha, int red, int green, int blue)
         {
@@ -572,9 +570,7 @@ namespace System.Drawing
 
         public int ToArgb() => unchecked((int)Value);
 
-        public Argb<byte> ToArgbValue() => BitConverter.IsLittleEndian ?
-            Argb.CreateLittleEndian(unchecked((uint)Value)) :
-            Argb.CreateBigEndian(unchecked((uint)Value));
+        public Argb<byte> ToArgbValue() => Argb.CreateBigEndian(unchecked((uint)Value));
 
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 

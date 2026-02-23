@@ -14,7 +14,7 @@ namespace System.Numerics.Colors
     /// <typeparam name="T">The type of the color components.</typeparam>
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("RGBA({R}, {G}, {B}, {A})")]
-    public readonly struct Rgba<T> : IEquatable<Rgba<T>>//, IFormattable, ISpanFormattable
+    public readonly struct Rgba<T> : IEquatable<Rgba<T>>
         where T : struct
     {
         // big-endian order
@@ -78,7 +78,7 @@ namespace System.Numerics.Colors
         /// </param>
         public void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination);
+            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
 
             Unsafe.As<T, Rgba<T>>(ref MemoryMarshal.GetReference(destination)) = this;
         }
@@ -120,7 +120,7 @@ namespace System.Numerics.Colors
         public override int GetHashCode() => HashCode.Combine(R, G, B, A);
 
         /// <summary>
-        /// Returns a string representation of this <see cref="Argb{T}"/> color.
+        /// Returns a string representation of this <see cref="Rgba{T}"/> color.
         /// </summary>
         /// <returns>
         /// A string in the format "[RGBA Color: R, G, B, A]", where R, G, B, and A are the red, green, blue, and alpha
@@ -132,7 +132,7 @@ namespace System.Numerics.Colors
         /// Converts this <see cref="Rgba{T}"/> color to an <see cref="Argb{T}"/> color.
         /// </summary>
         /// <returns>
-        /// An new instance of the <see cref="Argb{T}"/> color that represents this <see cref="Rgba{T}"/> color.
+        /// A new instance of the <see cref="Argb{T}"/> color that represents this <see cref="Rgba{T}"/> color.
         /// </returns>
         public Argb<T> ToArgb() => new Argb<T>(A, R, G, B);
     }
