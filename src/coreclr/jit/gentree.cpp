@@ -13343,7 +13343,7 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
         case WellKnownArg::WasmShadowStackPointer:
             return "wasm sp";
         case WellKnownArg::WasmPortableEntryPoint:
-            return "wasm pe";
+            return "wasm pep";
         default:
             return nullptr;
     }
