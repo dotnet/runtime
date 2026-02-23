@@ -1509,7 +1509,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                     ComputeRuntimeLookupForSharedGenericToken(
                         Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
-                        ref info->resolvedTokenDevirtualizedMethod,
+                        ref *info->pResolvedTokenVirtualMethod,
                         null,
                         originalImpl,
                         MethodBeingCompiled,
