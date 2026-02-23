@@ -71,26 +71,28 @@ namespace System.Runtime.CompilerServices
             };
         }
 
+
+        /// <summary>
+        /// Gets a value that indicates whether the runtime supports multithreading, including
+        /// creating threads and using blocking synchronization primitives. This property
+        /// returns <see langword="false"/> on platforms that do not support multithreading,
+        /// such as browser and WASI.
+        /// </summary>
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
-#if FEATURE_SINGLE_THREADED
-        public static bool IsMultithreadingSupported => false;
-        [DoesNotReturn]
+        public static bool IsMultithreadingSupported { get; }
+            = AppContext.TryGetSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported", out bool isMultithreadingSupported) ? isMultithreadingSupported : true;
+
         internal static void ThrowIfMultithreadingIsNotSupported()
         {
-            throw new PlatformNotSupportedException();
-        }
-#else
-        public static bool IsMultithreadingSupported => true;
+            if (!IsMultithreadingSupported)
+            {
+                throw new PlatformNotSupportedException();
+            }
 #if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfMultithreadingIsNotSupported()
-        {
             System.Threading.Thread.AssureBlockingPossible();
+#endif
         }
-#else
-        internal static void ThrowIfMultithreadingIsNotSupported() { }
-#endif
-#endif
-
-
     }
 }

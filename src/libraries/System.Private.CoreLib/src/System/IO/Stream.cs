@@ -225,9 +225,7 @@ namespace System.IO
             }
             else
             {
-#pragma warning disable CA1416 // guarded by IsMultithreadingSupported
                 semaphore.Wait();
-#pragma warning restore CA1416 // guarded by IsMultithreadingSupported
             }
 
             // Create the task to asynchronously do a Read.  This task serves both
