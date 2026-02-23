@@ -12,5 +12,8 @@
   <ItemGroup>
     <Compile Include="JittedMethodsCountingTest.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
 </Project>

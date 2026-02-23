@@ -55,6 +55,7 @@
 #include "patchpointinfo.h"
 
 #include "exinfo.h"
+#include "exkind.h"
 #include "arraynative.inl"
 
 using std::isfinite;
@@ -371,6 +372,19 @@ HCIMPL1(void*, JIT_GetNonGCThreadStaticBaseOptimized2, UINT32 staticBlockIndex)
 }
 HCIMPLEND
 
+// *** This helper corresponds CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE.
+// Returns the address of the pThread field within thread-local storage, which serves as the storage
+// location for the DirectOnThreadLocalData.pNativeThread thread static field. Adjust the value by
+// OFFSETOF__CORINFO_Array__data, since all thread static bases are returned as relative to the start of an
+// array object.
+HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
+{
+    FCALL_CONTRACT;
+
+    return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
+}
+HCIMPLEND
+
 #include <optdefault.h>
 
 //========================================================================
@@ -557,7 +571,7 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
     }
 
     DictionaryEntry * pSlot;
-    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, FALSE, &pSlot, dictionaryIndexAndSlot, pModule);
+    result = Dictionary::PopulateEntry(pMD, pDeclaringMT, signature, &pSlot, dictionaryIndexAndSlot, pModule);
 
     if (pMT != NULL && pDeclaringMT != pMT)
     {
@@ -745,9 +759,6 @@ HCIMPL1(EnregisteredTypeHandle, JIT_GetClassFromMethodParam, MethodDesc* pMD)
 HCIMPLEND
 #include <optdefault.h>
 
-
-
-
 //========================================================================
 //
 //      EXCEPTION HELPERS
@@ -765,12 +776,8 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_Throw,  Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -782,11 +789,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -804,23 +807,15 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
-#else
-HCIMPL0(void, IL_Rethrow)
-#endif
+EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -832,12 +827,8 @@ HCIMPL0(void, IL_Rethrow)
 }
 HCIMPLEND
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_ThrowExact, Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -845,26 +836,46 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     ResetCurrentContext();
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
-    GetThread()->GetExceptionState()->SetRaisingForeignException();
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
 
-    DispatchManagedException(oref, exceptionFrame.GetContext());
+    DispatchManagedException(oref, exceptionFrame.GetContext(), NULL, ExKind::RethrowFlag);
 
     FC_CAN_TRIGGER_GC_END();
     UNREACHABLE();
 }
 HCIMPLEND
+
+#ifdef TARGET_WASM
+// WASM doesn't have assembly stubs, so provide thin wrapper entry points
+// that call the _Impl functions with NULL (which zeros the context)
+HCIMPL1(void, IL_Throw, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_Throw_Impl(obj, NULL);
+}
+HCIMPLEND
+
+HCIMPL0(void, IL_Rethrow)
+{
+    FCALL_CONTRACT;
+    IL_Rethrow_Impl(NULL);
+}
+HCIMPLEND
+
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+{
+    FCALL_CONTRACT;
+    IL_ThrowExact_Impl(obj, NULL);
+}
+HCIMPLEND
+#endif // TARGET_WASM
 
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)

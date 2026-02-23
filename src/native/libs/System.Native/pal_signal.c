@@ -129,6 +129,10 @@ static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posix
             *posixSignal = PosixSignalSIGTSTP;
             return true;
 
+        case SIGKILL:
+            *posixSignal = PosixSignalSIGKILL;
+            return true;
+
         default:
             *posixSignal = (PosixSignal)signalCode;
             return false;
@@ -168,6 +172,9 @@ int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
 
         case PosixSignalSIGTSTP:
             return SIGTSTP;
+
+        case PosixSignalSIGKILL:
+            return SIGKILL;
 
         case PosixSignalInvalid:
             break;

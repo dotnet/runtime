@@ -27,6 +27,7 @@ Param(
   [switch]$bootstrap,
   [switch]$useBoostrap,
   [switch]$clrinterpreter,
+  [ValidateSet("true","false")][string]$dynamiccodecompiled,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -59,6 +60,9 @@ function Get-Help() {
   Write-Host "                                 [Default: Builds the entire repo.]"
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  Write-Host "  -dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
+  Write-Host "                                 Also enables the interpreter when dynamic code compilation is disabled."
+  Write-Host "                                 [Default: true for most platforms, false for ios/tvos/browser/wasi]"
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -345,8 +349,22 @@ foreach ($argument in $PSBoundParameters.Keys)
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
     "clrinterpreter"         { $arguments += " /p:FeatureInterpreter=true" }
+    "dynamiccodecompiled"    {}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
+}
+
+# Default dynamiccodecompiled based on target OS if not explicitly set
+if (-not $dynamiccodecompiled) {
+  if ($os -eq "maccatalyst" -or $os -eq "ios" -or $os -eq "iossimulator" -or $os -eq "tvos" -or $os -eq "tvossimulator" -or $os -eq "browser" -or $os -eq "wasi") {
+    $dynamiccodecompiled = "false"
+  } else {
+    $dynamiccodecompiled = "true"
+  }
+}
+$arguments += " /p:FeatureDynamicCodeCompiled=$dynamiccodecompiled"
+if ($dynamiccodecompiled -eq "false") {
+  $arguments += " /p:FeatureInterpreter=true"
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {

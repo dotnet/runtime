@@ -10,6 +10,7 @@
 //      use .NET's System.Numerics.BigInteger type instead ****
 
 /* The Computer Language Benchmarks Game
+using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
  *
  * Port of the Java port that uses native GMP to use native GMP with C#
@@ -123,6 +124,7 @@ namespace BenchmarksGame
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

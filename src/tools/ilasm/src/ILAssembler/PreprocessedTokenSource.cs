@@ -15,7 +15,7 @@ namespace ILAssembler
 {
     public sealed class PreprocessedTokenSource : ITokenSource
     {
-        private readonly Stack<(ITokenSource Source, int ActiveIfDefBlocks)> _includeSourceStack = new();
+        private readonly Stack<(ITokenSource Source, int ActiveIfDefBlocks, string? IncludedFromFile, int IncludedFromLine)> _includeSourceStack = new();
         private readonly Func<string, ITokenSource> _loadIncludedDocument;
 
         private readonly Dictionary<string, string?> _definedVars = new();
@@ -23,7 +23,7 @@ namespace ILAssembler
 
         public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument)
         {
-            _includeSourceStack.Push((underlyingSource, 0));
+            _includeSourceStack.Push((underlyingSource, 0, null, 0));
             _loadIncludedDocument = loadIncludedDocument;
         }
 
@@ -36,8 +36,38 @@ namespace ILAssembler
 
         public ICharStream InputStream => CurrentTokenSource.InputStream;
 
-        // TODO: Update SourceName to output a string describing the whole "include" stack.
-        public string SourceName => CurrentTokenSource.SourceName;
+        /// <summary>
+        /// Returns the source name with include stack information for better error reporting.
+        /// For nested includes, shows the full include chain.
+        /// </summary>
+        public string SourceName
+        {
+            get
+            {
+                var current = _includeSourceStack.Peek();
+                string name = current.Source.SourceName;
+
+                // If this is the root file (no include info), just return the name
+                if (current.IncludedFromFile is null)
+                {
+                    return name;
+                }
+
+                // Build include stack description
+                var sb = new StringBuilder(name);
+                foreach (var frame in _includeSourceStack.Skip(1)) // Skip current, iterate parent frames
+                {
+                    sb.Append($" (included from '{frame.Source.SourceName}':{current.IncludedFromLine})");
+                    current = frame;
+                    if (frame.IncludedFromFile is null)
+                    {
+                        break;
+                    }
+                }
+
+                return sb.ToString();
+            }
+        }
 
         public ITokenFactory TokenFactory { get => CurrentTokenSource.TokenFactory; set => CurrentTokenSource.TokenFactory = value; }
 
@@ -81,7 +111,9 @@ namespace ILAssembler
                     return pathToken;
                 }
                 var path = StringHelpers.ParseQuotedString(pathToken.Text);
-                _includeSourceStack.Push((_loadIncludedDocument(path), 0));
+                string currentFile = CurrentTokenSource.SourceName;
+                int currentLine = nextToken.Line;
+                _includeSourceStack.Push((_loadIncludedDocument(path), 0, currentFile, currentLine));
                 return NextToken();
             }
             else if (nextToken.Type == CILLexer.PP_DEFINE)
@@ -137,8 +169,8 @@ namespace ILAssembler
                     ReportPreprocessorSyntaxError(nextToken);
                     return NextTokenWithoutNestedEof(false);
                 }
-                var (source, activeIfDef) = _includeSourceStack.Pop();
-                _includeSourceStack.Push((source, --activeIfDef));
+                var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
+                _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
                 return NextTokenWithoutNestedEof(activeIfDef != 0);
             }
             else if (nextToken.Type == CILLexer.ID && _definedVars.TryGetValue(nextToken.Text, out string? newValue) && newValue is not null)
@@ -166,8 +198,8 @@ namespace ILAssembler
             else
             {
                 _activeIfDefBlocks.Push((identifier.Text, Defined: requireDefined, IsElse: false));
-                var (source, activeIfDef) = _includeSourceStack.Pop();
-                _includeSourceStack.Push((source, ++activeIfDef));
+                var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
+                _includeSourceStack.Push((source, ++activeIfDef, includedFromFile, includedFromLine));
                 return NextToken();
             }
         }
@@ -210,8 +242,8 @@ namespace ILAssembler
                     }
 
                     _activeIfDefBlocks.Push((var, Defined: !expectedDefined, IsElse: true));
-                    var (source, activeIfDef) = _includeSourceStack.Pop();
-                    _includeSourceStack.Push((source, ++activeIfDef));
+                    var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
+                    _includeSourceStack.Push((source, ++activeIfDef, includedFromFile, includedFromLine));
 
                     return NextTokenWithoutNestedEof(errorOnEof: true);
                 }
@@ -224,8 +256,8 @@ namespace ILAssembler
             // If we're skipping an inactive else case, then we're still tracking the active ifdef block.
             if (elseCase)
             {
-                var (source, activeIfDef) = _includeSourceStack.Pop();
-                _includeSourceStack.Push((source, --activeIfDef));
+                var (source, activeIfDef, includedFromFile, includedFromLine) = _includeSourceStack.Pop();
+                _includeSourceStack.Push((source, --activeIfDef, includedFromFile, includedFromLine));
             }
             return NextTokenWithoutNestedEof(ActiveIfDefBlocksInCurrentSource != 0);
         }

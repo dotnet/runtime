@@ -586,9 +586,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall*          call          = tree->AsCall();
-            CORINFO_METHOD_HANDLE method        = NO_METHOD_HANDLE;
-            bool                  tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler, &method);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -604,13 +603,12 @@ private:
                 }
 #endif // DEBUG
 
+                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
-
-                assert(method != NO_METHOD_HANDLE);
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
@@ -1216,7 +1214,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     GenTree* tree = *pTree;
     if (tree->OperIs(GT_CALL))
     {
-        Compiler*    compiler = data->compiler;
+        Compiler*    compiler = data->m_compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
@@ -2035,12 +2033,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Note that if the root method needs GS cookie then this has already been taken care of.
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
-        setNeedsGSSecurityCookie();
-        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
-        gsCookieDummy->lvType        = TYP_INT;
-        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
-        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        bool canHaveCookie = setNeedsGSSecurityCookie();
+
+        if (canHaveCookie)
+        {
+            const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+            LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+            gsCookieDummy->lvType        = TYP_INT;
+            gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+            lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
     }
 
     //

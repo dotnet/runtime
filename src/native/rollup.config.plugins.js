@@ -164,6 +164,10 @@ function checkFileExists(file) {
 }
 
 export function onwarn(warning) {
+    if (warning.code === "CIRCULAR_DEPENDENCY" && warning.ids.findIndex(id => id.includes("marshal-to-cs") || id.includes("marshal-to-js")) !== -1) {
+        // ignore circular dependency warnings from marshal-to-cs <-> marshal-to-js
+        return;
+    }
     // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()} ${warning.code}`);
 }

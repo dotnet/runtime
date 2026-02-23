@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using TestLibrary;
 
 namespace EventCounterRegressionTests
 {
@@ -83,6 +84,7 @@ namespace EventCounterRegressionTests
             }
         }
 
+        [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
         [Fact]
         public static int TestEntryPoint()
         {

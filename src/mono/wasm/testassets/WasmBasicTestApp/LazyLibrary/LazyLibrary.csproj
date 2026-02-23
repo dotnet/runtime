@@ -4,5 +4,6 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 </Project>

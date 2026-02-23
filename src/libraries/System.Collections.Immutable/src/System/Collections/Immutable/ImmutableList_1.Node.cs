@@ -801,7 +801,12 @@ namespace System.Collections.Immutable
             /// </returns>
             internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
             {
-                Requires.Range(index >= 0, nameof(index));
+                if (index == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(index >= 0 && index < this.Count, nameof(index));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
                 Requires.Argument(index - count + 1 >= 0);
 
@@ -1233,8 +1238,14 @@ namespace System.Collections.Immutable
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-                Requires.Range(startIndex >= 0, nameof(startIndex));
-                Requires.Range(count <= this.Count, nameof(count));
+
+                if (startIndex == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
+                Requires.Range(count >= 0 && count <= this.Count, nameof(count));
                 Requires.Range(startIndex - count + 1 >= 0, nameof(startIndex));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))

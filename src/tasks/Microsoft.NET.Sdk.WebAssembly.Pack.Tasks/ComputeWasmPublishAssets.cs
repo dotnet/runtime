@@ -58,6 +58,8 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EmitSourceMap { get; set; }
 
+    public bool EmitSymbolMap { get; set; }
+
     public bool IsWebCilEnabled { get; set; }
 
     public bool FingerprintAssets { get; set; }
@@ -676,7 +678,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var candidate in resolvedFilesToPublish)
         {
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. Dictionary.TryAdd() not available in .Net framework.
-            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EnableDiagnostics, EmitSourceMap, out var reason))
+            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EnableDiagnostics, EmitSourceMap, EmitSymbolMap, out var reason))
             {
                 Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                 if (!resolvedFilesToPublishToRemove.ContainsKey(candidate.ItemSpec))

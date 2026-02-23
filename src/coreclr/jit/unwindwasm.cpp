@@ -7,8 +7,16 @@
 #endif
 
 //
-// We don't have native-code-offset-based unwind info on WASM so this the following functions are all no-ops.
+// We don't have native-code-offset-based unwind info on WASM so the following functions are all no-ops.
 //
+void Compiler::unwindBegProlog()
+{
+}
+
+void Compiler::unwindEndProlog()
+{
+}
+
 void Compiler::unwindReserve()
 {
 }

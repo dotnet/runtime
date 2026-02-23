@@ -121,6 +121,16 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        internal static void InitializeDecodableChars(Span<char> chars, int seed = 100)
+        {
+            var rnd = new Random(seed);
+            for (int i = 0; i < chars.Length; i++)
+            {
+                int index = (byte)rnd.Next(0, s_encodingMap.Length);
+                chars[i] = (char)s_encodingMap[index];
+            }
+        }
+
         internal static void InitializeUrlDecodableChars(Span<char> bytes, int seed = 100)
         {
             var rnd = new Random(seed);

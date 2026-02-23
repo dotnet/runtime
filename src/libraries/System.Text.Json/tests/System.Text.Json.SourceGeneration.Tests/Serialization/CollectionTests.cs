@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -204,6 +204,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ISet<int[]>))]
         [JsonSerializable(typeof(ISet<int>[]), TypeInfoPropertyName = "ArrayOfIntISet")]
         [JsonSerializable(typeof(ISet<int>))]
+
+#if NET
+        [JsonSerializable(typeof(IReadOnlySet<IReadOnlySet<int>>))]
+        [JsonSerializable(typeof(GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>))]
+        [JsonSerializable(typeof(GenericStructIReadOnlySetWrapper<int>))]
+        [JsonSerializable(typeof(GenericStructIReadOnlySetWrapper<int>?))]
+        [JsonSerializable(typeof(IReadOnlySet<HashSet<int>>))]
+        [JsonSerializable(typeof(HashSet<IReadOnlySet<int>>))]
+        [JsonSerializable(typeof(IReadOnlySet<int[]>))]
+        [JsonSerializable(typeof(IReadOnlySet<int>[]), TypeInfoPropertyName = "ArrayOfIntIReadOnlySet")]
+        [JsonSerializable(typeof(IReadOnlySet<int>))]
+#endif
+
         [JsonSerializable(typeof(Stack<Stack<int>>))]
         [JsonSerializable(typeof(GenericStackWrapper<StringStackWrapper>))]
         [JsonSerializable(typeof(Stack<int[]>))]
@@ -387,6 +400,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyCollectionWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyListWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper))]
+#if NET
+        [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlySetWrapper))]
+        [JsonSerializable(typeof(WrapperForIReadOnlySetOfT<string>))]
+#endif
         [JsonSerializable(typeof(Dictionary<string, int?>))]
         [JsonSerializable(typeof(Dictionary<ETestEnum, ETestEnum>))]
         [JsonSerializable(typeof(ClassWithEnumProperties))]
@@ -401,6 +418,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(GenericIListWrapperInternalConstructor<string>))]
         [JsonSerializable(typeof(GenericISetWrapperPrivateConstructor<string>))]
         [JsonSerializable(typeof(GenericISetWrapperInternalConstructor<string>))]
+
+#if NET
+        [JsonSerializable(typeof(GenericIReadOnlySetWrapperPrivateConstructor<string>))]
+        [JsonSerializable(typeof(GenericIReadOnlySetWrapperInternalConstructor<string>))]
+#endif
+
         [JsonSerializable(typeof(GenericIDictionaryWrapperPrivateConstructor<string, string>))]
         [JsonSerializable(typeof(GenericIDictionaryWrapperInternalConstructor<string, string>))]
         [JsonSerializable(typeof(StringToStringIReadOnlyDictionaryWrapperPrivateConstructor))]
@@ -643,6 +666,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ISet<int[]>))]
         [JsonSerializable(typeof(ISet<int>[]), TypeInfoPropertyName = "ArrayOfIntISet")]
         [JsonSerializable(typeof(ISet<int>))]
+
+#if NET
+        [JsonSerializable(typeof(IReadOnlySet<IReadOnlySet<int>>))]
+        [JsonSerializable(typeof(GenericIReadOnlySetWrapper<StringIReadOnlySetWrapper>))]
+        [JsonSerializable(typeof(GenericStructIReadOnlySetWrapper<int>))]
+        [JsonSerializable(typeof(GenericStructIReadOnlySetWrapper<int>?))]
+        [JsonSerializable(typeof(IReadOnlySet<HashSet<int>>))]
+        [JsonSerializable(typeof(HashSet<IReadOnlySet<int>>))]
+        [JsonSerializable(typeof(IReadOnlySet<int[]>))]
+        [JsonSerializable(typeof(IReadOnlySet<int>[]), TypeInfoPropertyName = "ArrayOfIntIReadOnlySet")]
+        [JsonSerializable(typeof(IReadOnlySet<int>))]
+#endif
+
         [JsonSerializable(typeof(Stack<Stack<int>>))]
         [JsonSerializable(typeof(GenericStackWrapper<StringStackWrapper>))]
         [JsonSerializable(typeof(Stack<int[]>))]
@@ -811,6 +847,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyCollectionWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlyListWrapper))]
         [JsonSerializable(typeof(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper))]
+#if NET
+        [JsonSerializable(typeof(SimpleTestClassWithStringIReadOnlySetWrapper))]
+        [JsonSerializable(typeof(WrapperForIReadOnlySetOfT<string>))]
+#endif
         [JsonSerializable(typeof(Dictionary<string, int?>))]
         [JsonSerializable(typeof(Dictionary<ETestEnum, ETestEnum>))]
         [JsonSerializable(typeof(ClassWithEnumProperties))]

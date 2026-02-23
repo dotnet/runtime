@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using TestLibrary;
 /*******************************************************************************/
 /* Test:    BaseFinal
 /* Purpose: 1. if finalize() is called before the objects are GCed.
@@ -20,6 +21,7 @@ namespace DefaultNamespace {
         internal static Object StObj;
 #pragma warning restore 0414
 
+        [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

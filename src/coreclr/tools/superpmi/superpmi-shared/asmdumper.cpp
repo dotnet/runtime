@@ -28,7 +28,6 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     ULONG              coldCodeSize;
     ULONG              roDataSize;
     ULONG              xcptnsCount;
-    CorJitAllocMemFlag flag;
     unsigned char*     hotCodeBlock;
     unsigned char*     coldCodeBlock;
     unsigned char*     roDataBlock;
@@ -36,7 +35,7 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     void*              orig_coldCodeBlock;
     void*              orig_roDataBlock;
 
-    cr->repAllocMem(&hotCodeSize, &coldCodeSize, &roDataSize, &xcptnsCount, &flag, &hotCodeBlock, &coldCodeBlock,
+    cr->repAllocMem(&hotCodeSize, &coldCodeSize, &roDataSize, &xcptnsCount, &hotCodeBlock, &coldCodeBlock,
                     &roDataBlock, &orig_hotCodeBlock, &orig_coldCodeBlock, &orig_roDataBlock);
 
     RelocContext rc;
@@ -47,10 +46,12 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     rc.coldCodeAddress         = (size_t)coldCodeBlock;
     rc.coldCodeSize            = coldCodeSize;
     rc.roDataAddress           = (size_t)roDataBlock;
-    rc.roDataSize              = roDataSize;
+    rc.roDataSize1             = roDataSize;
+    rc.roDataSize2             = 0;
     rc.originalHotCodeAddress  = (size_t)orig_hotCodeBlock;
     rc.originalColdCodeAddress = (size_t)orig_coldCodeBlock;
-    rc.originalRoDataAddress   = (size_t)orig_roDataBlock;
+    rc.originalRoDataAddress1  = (size_t)orig_roDataBlock;
+    rc.originalRoDataAddress2  = 0;
 
     cr->applyRelocs(&rc, hotCodeBlock, hotCodeSize, orig_hotCodeBlock);
     cr->applyRelocs(&rc, coldCodeBlock, coldCodeSize, orig_coldCodeBlock);

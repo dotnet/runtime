@@ -86,6 +86,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", TestRuntimes.Mono)]
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo_WindowsOnly()
