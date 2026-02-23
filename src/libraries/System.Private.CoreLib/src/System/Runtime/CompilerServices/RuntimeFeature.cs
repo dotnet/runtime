@@ -92,16 +92,17 @@ namespace System.Runtime.CompilerServices
 
 #if FEATURE_SINGLE_THREADED
         [DoesNotReturn]
-#endif
         internal static void ThrowIfMultithreadingIsNotSupported()
         {
-            if (!IsMultithreadingSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
+            throw new PlatformNotSupportedException();
+        }
+#else // FEATURE_SINGLE_THREADED
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
 #if FEATURE_WASM_MANAGED_THREADS
             System.Threading.Thread.AssureBlockingPossible();
-#endif
+#endif // FEATURE_WASM_MANAGED_THREADS
         }
+#endif // FEATURE_SINGLE_THREADED
     }
 }
