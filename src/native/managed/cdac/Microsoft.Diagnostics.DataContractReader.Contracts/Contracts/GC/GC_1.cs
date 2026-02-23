@@ -431,7 +431,7 @@ internal readonly struct GC_1 : IGC
             {
                 IComWrappers comWrappers = _target.Contracts.ComWrappers;
                 handleData.RefCount = (uint)comWrappers.GetRefCount(ccw);
-                handleData.StrongReference = handleData.StrongReference || handleData.RefCount > 0 && !comWrappers.IsHandleWeak(ccw);
+                handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !comWrappers.IsHandleWeak(ccw));
             }
         }
 

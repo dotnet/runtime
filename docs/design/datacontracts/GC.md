@@ -623,7 +623,7 @@ private void GetHandlesForSegment(TargetPointer segmentPtr, uint type, List<Hand
     // RgTail = array of bytes that is global variable "HandleMaxInternalTypes" long.
     // Contains tail block indices for each GC handle type.
     // RgAllocation = byte array of block indices that are linked together to find all blocks for a given type. It is global variable "HandleBlocksPerSegment" long
-    // RgUser = byte array of block indices for extra handle info such as dependent handles. It is also "HandleBlocksPerSegment" long.
+    // RgUserData = byte array of block indices for extra handle info such as dependent handles. It is also "HandleBlocksPerSegment" long.
     // For example, target.Read<byte>(segmentPtr + TableSegment::RgTail offset + x); => RgTail[x];
     byte uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgTail offset */ + type);
     if (uBlock == target.ReadGlobal<byte>("BlockInvalid"))

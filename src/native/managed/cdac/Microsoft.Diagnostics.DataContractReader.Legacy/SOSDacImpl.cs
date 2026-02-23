@@ -1373,7 +1373,7 @@ public sealed unsafe partial class SOSDacImpl
                     handles[written++] = _handles[(int)_index++];
 
                 *pNeeded = written;
-                hr = written < _handles.Length ? HResults.S_FALSE : HResults.S_OK;
+                hr = _index < _handles.Length ? HResults.S_FALSE : HResults.S_OK;
             }
             catch (System.Exception ex)
             {
