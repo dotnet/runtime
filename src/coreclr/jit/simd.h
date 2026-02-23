@@ -1978,7 +1978,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
     memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
     uint32_t firstZero = count;
 
-    constexpr uint64_t laneMask = (sizeof(TBase) == 8) ? ~0ull : ((1ull << sizeof(TBase)) - 1ull);
+    constexpr uint64_t laneMask = (1ull << sizeof(TBase)) - 1ull;
 
     // A mask is a vector of unsigned integers, where 1 indicates the lane is set, 0 is not set,
     // and all other values are undefined.
