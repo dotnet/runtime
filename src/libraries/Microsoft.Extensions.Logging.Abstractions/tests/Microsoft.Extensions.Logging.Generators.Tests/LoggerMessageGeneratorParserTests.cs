@@ -885,7 +885,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             }
 
             Assert.Single(diagnostics);
-            Assert.Equal("SYSLIB1011", diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.LoggingMethodHasAllowsRefStructConstraint.Id, diagnostics[0].Id);
         }
 
         [Theory]
