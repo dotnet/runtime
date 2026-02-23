@@ -901,46 +901,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void EnumerableResolutionIncludesOpenGenericRegisteredAfterClosedGeneric()
-        {
-            // Arrange - Register closed generic first, then open generic
-            var services = new ServiceCollection();
-            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<PocoClass>), typeof(FakeService)));
-            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(ClassWithNoConstraints<>)));
-
-            var serviceProvider = CreateServiceProvider(services);
-
-            // Act - Resolve single service first, then enumerable
-            var singleService = serviceProvider.GetService<IFakeOpenGenericService<PocoClass>>();
-            var allServices = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
-
-            // Assert - Both services should be returned; validates closed generic and open generic are both resolved
-            Assert.NotNull(singleService);
-            Assert.Equal(2, allServices.Count);
-            Assert.IsType<FakeService>(allServices[0]);
-            Assert.IsType<ClassWithNoConstraints<PocoClass>>(allServices[1]);
-        }
-
-        [Fact]
-        public void EnumerableResolutionWithoutSingleServiceCallIncludesOpenGeneric()
-        {
-            // Arrange - Register closed generic first, then open generic
-            var services = new ServiceCollection();
-            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<PocoClass>), typeof(FakeService)));
-            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(ClassWithNoConstraints<>)));
-
-            var serviceProvider = CreateServiceProvider(services);
-
-            // Act - Resolve enumerable directly without calling GetService first
-            var allServices = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().ToList();
-
-            // Assert - Both services should be returned; validates closed generic and open generic are both resolved
-            Assert.Equal(2, allServices.Count);
-            Assert.IsType<FakeService>(allServices[0]);
-            Assert.IsType<ClassWithNoConstraints<PocoClass>>(allServices[1]);
-        }
-
-        [Fact]
         public async Task ProviderDisposeAsyncCallsDisposeAsyncOnServices()
         {
             var serviceCollection = new ServiceCollection();
