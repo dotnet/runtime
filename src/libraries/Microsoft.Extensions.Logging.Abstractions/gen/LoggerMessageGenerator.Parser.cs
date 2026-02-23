@@ -375,16 +375,25 @@ namespace Microsoft.Extensions.Logging.Generators
                                             qualifier = "ref readonly";
                                         }
 
-                                        string typeName = paramTypeSymbol.ToDisplayString(
-                                            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
-                                                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
-
                                         if (paramSymbol.IsParams)
                                         {
                                             Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
                                             keepMethod = false;
                                             break;
                                         }
+
+#if ROSLYN4_4_OR_GREATER
+                                        if (paramSymbol.ScopedKind == ScopedKind.ScopedValue)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+#endif
+
+                                        string typeName = paramTypeSymbol.ToDisplayString(
+                                            SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                                                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
                                         var lp = new LoggerParameter
                                         {

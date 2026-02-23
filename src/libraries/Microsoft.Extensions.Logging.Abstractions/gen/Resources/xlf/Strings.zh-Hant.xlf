@@ -212,6 +212,16 @@
         <target state="new">Argument is using the unsupported params parameter modifier</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="new">Logging method parameter is a ref struct</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>
