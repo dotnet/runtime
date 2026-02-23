@@ -673,8 +673,7 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
     {
         byte blockIndex = target.Read<byte>(segmentPtr + /* TableSegment::RgUserData offset */ + uBlock);
         uint offset = blockIndex * target.ReadGlobal<byte>("HandlesPerBlock") + intraBlockIndex;
-        TargetPointer secondaryPtr = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * _target.PointerSize);
-        handleData.Secondary = _target.ReadPointer(secondaryPtr);
+        handleData.Secondary = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * target.PointerSize);
     }
     else
     {
