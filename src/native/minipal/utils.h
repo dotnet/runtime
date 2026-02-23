@@ -60,11 +60,9 @@
 #if defined(_MSC_VER)
 #define NOINLINE __declspec(noinline)
 #define FORCEINLINE __forceinline
-#define FORCEINLINE_ATTRIBUTE [[msvc::forceinline]]
 #else
 #define NOINLINE __attribute__((noinline))
 #define FORCEINLINE __attribute__((always_inline)) inline
-#define FORCEINLINE_ATTRIBUTE [[gnu::always_inline]]
 #endif
 
 #ifdef _MSC_VER
