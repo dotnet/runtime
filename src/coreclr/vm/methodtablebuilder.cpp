@@ -9835,20 +9835,20 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
 
                         // pItfPossiblyApprox can be in 6 situations
                         // 1. It has no instantiation
-                        // 2. It is a special marker type, AND pNewItfMT is a special marker type. Compute the exact instantiation as containing entirely a list of 
+                        // 2. It is a special marker type, AND pNewIntfMT is a special marker type. Compute the exact instantiation as containing entirely a list of
                         //    types corresponding to calling GetSpecialInstantiationType on pMT (This rule works based on the current behavior of
                         //    GetSpecialInstantiationType where it treats all interfaces the same)
-                        // 3. It is a special marker type, but pNewItfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list
-                        //  of types corresponding to calling GetSpecialInstantiationType on pNewItfMT
+                        // 3. It is a special marker type, but pNewIntfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list
+                        //    of types corresponding to calling GetSpecialInstantiationType on pNewIntfMT
                         // 4. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type found here could have been a
                         //    special marker type. This should produce a result equivalent to case 2 (the special marker type)
                         // 5. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type is NOT one which would have
-                        //    been on the exact instantiation of pNewItfMT if it were not a special marker type. In theory we could reconstruct this, but this is a
+                        //    been on the exact instantiation of pNewIntfMT if it were not a special marker type. In theory we could reconstruct this, but this is a
                         //    rare scenario, so we just fallback to the retry with exact interfaces pathway
                         // 6. It is an exact instantiation, and pNewIntfMT is NOT a special marker type, compute the result and insert either a special marker or
                         //    the exact instantiation already found.
                         //
-                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewItfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
+                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewIntfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
                         //
                         // Then determine if all of the following conditions hold true.
                         // 1. All generic arguments are the same (always true for cases 2 and 3 above)
@@ -9898,7 +9898,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         }
                         else
                         {
-                            // case 4 or 5 (We have an exact interface)
+                            // case 4, 5, or 6 (We have an exact interface)
                             bool pNewIntfMTIsSpecialMarkerType = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting() && !pMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap();
                             if (pNewIntfMTIsSpecialMarkerType)
                             {
