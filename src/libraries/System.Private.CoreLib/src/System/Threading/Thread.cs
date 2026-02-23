@@ -737,27 +737,6 @@ namespace System.Threading
             return ProcessorIdCache.GetCurrentProcessorId();
         }
 
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-#if FEATURE_SINGLE_THREADED
-        internal static bool IsMultithreadingSupported => false;
-        [DoesNotReturn]
-        internal static void ThrowIfMultithreadingIsNotSupported()
-        {
-            throw new PlatformNotSupportedException();
-        }
-#else
-        internal static bool IsMultithreadingSupported => true;
-#if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfMultithreadingIsNotSupported()
-        {
-            AssureBlockingPossible();
-        }
-#else
-        internal static void ThrowIfMultithreadingIsNotSupported() { }
-#endif
-#endif
-
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;

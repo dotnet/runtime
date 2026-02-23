@@ -66,8 +66,31 @@ namespace System.Runtime.CompilerServices
 
                 nameof(IsDynamicCodeSupported) => IsDynamicCodeSupported,
                 nameof(IsDynamicCodeCompiled) => IsDynamicCodeCompiled,
+                nameof(IsMultithreadingSupported) => IsMultithreadingSupported,
                 _ => false,
             };
         }
+
+        [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
+#if FEATURE_SINGLE_THREADED
+        public static bool IsMultithreadingSupported => false;
+        [DoesNotReturn]
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
+        public static bool IsMultithreadingSupported => true;
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            System.Threading.Thread.AssureBlockingPossible();
+        }
+#else
+        internal static void ThrowIfMultithreadingIsNotSupported() { }
+#endif
+#endif
+
+
     }
 }

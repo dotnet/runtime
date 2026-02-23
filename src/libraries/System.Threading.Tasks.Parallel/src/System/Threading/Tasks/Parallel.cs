@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 
@@ -130,15 +131,6 @@ namespace System.Threading.Tasks
     /// </remarks>
     public static partial class Parallel
     {
-
-        [SupportedOSPlatformGuard("browser")]
-        [SupportedOSPlatformGuard("wasi")]
-#if FEATURE_SINGLE_THREADED
-        internal static bool IsMultithreadingSupported => false;
-#else
-        internal static bool IsMultithreadingSupported => true;
-#endif
-
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
         internal static int s_forkJoinContextID;
 
