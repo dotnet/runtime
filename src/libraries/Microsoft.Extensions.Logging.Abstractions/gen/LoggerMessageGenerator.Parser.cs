@@ -375,6 +375,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
+                                        if (paramSymbol.IsParams)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
                                         var lp = new LoggerParameter
                                         {
                                             Name = paramName,
@@ -385,7 +392,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, _exceptionSymbol, sm.Compilation),
                                             IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm.Compilation),
                                             IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm.Compilation) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm.Compilation),
-                                            IsParams = paramSymbol.IsParams,
                                         };
 #if ROSLYN4_4_OR_GREATER
                                         lp.IsScoped = paramSymbol.ScopedKind != ScopedKind.None;
@@ -1029,7 +1035,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsException;
             public bool IsLogLevel;
             public bool IsEnumerable;
-            public bool IsParams;
 #pragma warning disable CS0649 // Field is never assigned to in builds without ROSLYN4_4_OR_GREATER
             public bool IsScoped;
 #pragma warning restore CS0649
@@ -1047,7 +1052,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 IsException = IsException,
                 IsLogLevel = IsLogLevel,
                 IsEnumerable = IsEnumerable,
-                IsParams = IsParams,
                 IsScoped = IsScoped
             };
         }
@@ -1065,7 +1069,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public required bool IsException { get; init; }
             public required bool IsLogLevel { get; init; }
             public required bool IsEnumerable { get; init; }
-            public required bool IsParams { get; init; }
             public required bool IsScoped { get; init; }
 
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
@@ -1084,7 +1087,6 @@ namespace Microsoft.Extensions.Logging.Generators
                        IsException == other.IsException &&
                        IsLogLevel == other.IsLogLevel &&
                        IsEnumerable == other.IsEnumerable &&
-                       IsParams == other.IsParams &&
                        IsScoped == other.IsScoped;
             }
 
@@ -1098,7 +1100,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 hash = HashHelpers.Combine(hash, IsException.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsLogLevel.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsEnumerable.GetHashCode());
-                hash = HashHelpers.Combine(hash, IsParams.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsScoped.GetHashCode());
                 return hash;
             }

@@ -202,6 +202,16 @@
         <target state="translated">Günlüğe kaydetme şablonunda karşılık gelen yöntem bağımsız değişkeni yok</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported params parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params parameter modifier</source>
+        <target state="new">Argument is using the unsupported params parameter modifier</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

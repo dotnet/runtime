@@ -231,7 +231,6 @@ namespace Microsoft.Extensions.Logging.Generators
                         IsException = paramSpec.IsException,
                         IsLogLevel = paramSpec.IsLogLevel,
                         IsEnumerable = paramSpec.IsEnumerable,
-                        IsParams = paramSpec.IsParams,
                         IsScoped = paramSpec.IsScoped
                     });
                 }
@@ -248,7 +247,6 @@ namespace Microsoft.Extensions.Logging.Generators
                         IsException = paramSpec.IsException,
                         IsLogLevel = paramSpec.IsLogLevel,
                         IsEnumerable = paramSpec.IsEnumerable,
-                        IsParams = paramSpec.IsParams,
                         IsScoped = paramSpec.IsScoped
                     });
                 }

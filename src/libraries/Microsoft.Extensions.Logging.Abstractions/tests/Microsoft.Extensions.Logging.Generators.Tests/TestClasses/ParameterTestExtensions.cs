@@ -16,18 +16,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "UseRefParameter {s}")]
         internal static partial void UseRefParameter(ILogger logger, ref S s);
 
-        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = "UseParamsParameter {p1} {args}")]
-        internal static partial void UseParamsParameter(ILogger logger, string p1, params object?[] args);
-
 #if ROSLYN4_8_OR_GREATER
-        [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "UseRefReadOnlyParameter {s}")]
+        [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = "UseRefReadOnlyParameter {s}")]
         internal static partial void UseRefReadOnlyParameter(ILogger logger, ref readonly S s);
 
-        [LoggerMessage(EventId = 4, Level = LogLevel.Information, Message = "UseScopedRefParameter {s}")]
+        [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "UseScopedRefParameter {s}")]
         internal static partial void UseScopedRefParameter(ILogger logger, scoped ref S s);
-
-        [LoggerMessage(EventId = 5, Level = LogLevel.Information, Message = "UseParamsCollectionParameter {p1} {args}")]
-        internal static partial void UseParamsCollectionParameter(ILogger logger, string p1, params System.Collections.Generic.IEnumerable<string> args);
 #endif
     }
 }

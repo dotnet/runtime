@@ -99,21 +99,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         [Fact]
-        public async Task TestBaseline_TestWithParamsArray_Success()
-        {
-            string testSourceCode = @"
-namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
-{
-    internal static partial class TestWithParamsArray
-    {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = ""M0 {p1} {args}"")]
-        public static partial void M0(ILogger logger, string p1, params object?[] args);
-    }
-}";
-            await VerifyAgainstBaselineUsingFile("TestWithParamsArray.generated.txt", testSourceCode);
-        }
-
-        [Fact]
         public async Task TestBaseline_TestWithDynamicLogLevel_Success()
         {
             string testSourceCode = @"
@@ -229,22 +214,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
 #if ROSLYN4_8_OR_GREATER
-        [Fact]
-        public async Task TestBaseline_TestWithParamsCollection_Success()
-        {
-            string testSourceCode = @"
-using System.Collections.Generic;
-namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
-{
-    internal static partial class TestWithParamsCollection
-    {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = ""M0 {p1} {args}"")]
-        public static partial void M0(ILogger logger, string p1, params IEnumerable<string> args);
-    }
-}";
-            await VerifyAgainstBaselineUsingFile("TestWithParamsCollection.generated.txt", testSourceCode);
-        }
-
         [Fact]
         public async Task TestBaseline_TestWithLoggerFromPrimaryConstructor_Success()
         {

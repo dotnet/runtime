@@ -860,7 +860,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task ParamsParameterOK()
+        public async Task InvalidParamsParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -869,12 +869,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, params object?[] args);
                 }");
 
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("args", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
 #if ROSLYN4_8_OR_GREATER
         [Fact]
-        public async Task ParamsCollectionParameterOK()
+        public async Task InvalidParamsCollectionParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 using System.Collections.Generic;
@@ -884,7 +886,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, params IEnumerable<string> args);
                 }");
 
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("args", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
