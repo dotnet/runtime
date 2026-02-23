@@ -172,6 +172,22 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        // High-frequency starting chars (lowercase letters, avg freq >> 0.6) → LeadingStrings
+        [InlineData(@"abc|def|ghi", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
+        [InlineData(@"agggtaaa|tttaccct", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.LeadingStrings_LeftToRight)]
+        // Low-frequency starting chars (uppercase letters, avg freq < 0.6) → FixedDistanceSets
+        [InlineData(@"ABC|DEF|GHI", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        [InlineData(@"Sherlock|Holmes|Watson|Irene|Adler|John|Baker", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        // Non-ASCII starting chars → falls through (no frequency data)
+        [InlineData("\u00e9lan|\u00e8re", (int)RegexOptions.Compiled, (int)FindNextStartingPositionMode.FixedDistanceSets_LeftToRight)]
+        // Without Compiled (interpreter), LeadingStrings is not used
+        [InlineData(@"abc|def|ghi", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight)]
+        public void LeadingStrings_FrequencyHeuristic(string pattern, int options, int expectedMode)
+        {
+            Assert.Equal((FindNextStartingPositionMode)expectedMode, ComputeOptimizations(pattern, (RegexOptions)options).FindMode);
+        }
+
+        [Theory]
         [InlineData(@".ab", 0, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ab", 1)]
         [InlineData(@".ab\w\w\wcdef\w\w\w\w\wghijklmnopq\w\w\w", 0, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ghijklmnopq", 15)]
         [InlineData(@"a[Bb]c[Dd]ef", 0, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ef", 4)]
