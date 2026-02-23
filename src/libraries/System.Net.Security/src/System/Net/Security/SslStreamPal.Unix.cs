@@ -230,11 +230,7 @@ namespace System.Net.Security
 
                 token.Status = new SecurityStatusPal(errorCode);
             }
-            catch (ArgumentException)
-            {
-                throw;
-            }
-            catch (Exception exc)
+            catch (Exception exc) when (exc is not ArgumentException)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
