@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 

@@ -1293,20 +1293,12 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
-                    if (!((ReadyToRunCompilerContext)_compilation.TypeSystemContext).TargetAllowsRuntimeCodeGeneration)
-                    {
-                        id = ReadyToRunHelper.InitClass;
-                        break;
-                    }
-                    throw new RequiresRuntimeJitException(ftnNum.ToString());
+                    id = ReadyToRunHelper.InitClass;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
-                    if (!((ReadyToRunCompilerContext)_compilation.TypeSystemContext).TargetAllowsRuntimeCodeGeneration)
-                    {
-                        id = ReadyToRunHelper.InitInstClass;
-                        break;
-                    }
-                    throw new RequiresRuntimeJitException(ftnNum.ToString());
+                    id = ReadyToRunHelper.InitInstClass;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
