@@ -86,13 +86,14 @@ public class Runtime_99391
 }
 ```
 
-## [Optional] Step 4: Create a .csproj File (Only When Needed)
+## Step 4: Create a .csproj File or add to the existing Regression_*.csproj
 
 A custom `.csproj` file is **only required** when:
 - Environment variables are needed to reproduce the bug (such as `DOTNET_JitStressModeNames`)
 - Special compilation settings are required
+Otherwise, register the test file in the existing `src/tests/JIT/Regression/Regression_*.csproj` (`Regression_ro_2.csproj` is a good default) file and skip creating a new .csproj.
 
-It should be located next to the test source file with the following name: `Runtime_<issue_number>.csproj`. Example:
+If a custom .csproj file is needed, it should be located next to the test source file with the following name: `Runtime_<issue_number>.csproj`. Example:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -112,7 +113,7 @@ It should be located next to the test source file with the following name: `Runt
 
 ## Important Notes
 
-- **No .csproj needed for simple tests**: Most tests only need the `.cs` file. The test infrastructure uses default settings that work for most cases.
+- **No .csproj needed for simple tests**: Most tests only need the `.cs` file in a separate `src/tests/JIT/Regression/JitBlue/Runtime_*/` folder and being registered in `Regression_ro_2.csproj`.
 - **Look at recent tests**: When in doubt, examine recent tests under `src/tests/JIT/Regression/JitBlue/Runtime_*` for the latest conventions.
 - **Use `[MethodImpl(MethodImplOptions.NoInlining)]`**: When you need to prevent inlining to reproduce a JIT bug.
 - **Minimize the reproduction**: Strip down the test code to the minimal case that reproduces the issue.

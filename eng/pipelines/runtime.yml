@@ -1175,7 +1175,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # Build the whole product using CoreCLR and run functional tests
+      # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1197,7 +1197,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR_Smoke
-            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
+            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1211,6 +1211,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),

@@ -293,7 +293,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CompleteWithLargeWriteThrows()
         {
             var completeDelay = TimeSpan.FromMilliseconds(10);

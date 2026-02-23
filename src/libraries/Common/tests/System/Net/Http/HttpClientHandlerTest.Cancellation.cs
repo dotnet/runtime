@@ -520,8 +520,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
 #if !NETFRAMEWORK
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41531")]
-        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
         public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
@@ -558,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                         await server.HandleRequestAsync(content: "Hello World");
                     }
                     catch (Exception) { }
-                });
+                }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 #endif
 
