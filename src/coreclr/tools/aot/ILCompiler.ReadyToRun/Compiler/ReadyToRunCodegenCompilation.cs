@@ -227,9 +227,9 @@ namespace ILCompiler
                     }
                     catch (RequiresRuntimeJitException)
                     {
-                        // The P/Invoke has features the R2R emitter can't handle
-                        // (e.g., non-blittable parameters). Leave methodIL null so
-                        // the method falls back to JIT at runtime.
+                        // The P/Invoke IL emitter will throw for known unsupported scenario.
+                        // We don't propagate the exception - this causes a fall back to JIT,
+                        // and we cache that decision in the IL cache so we don't keep trying to emit unsupported P/Invoke IL.
                     }
                 }
 
