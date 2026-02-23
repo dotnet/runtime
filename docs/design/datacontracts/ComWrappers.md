@@ -79,7 +79,7 @@ public bool IsHandleWeak(TargetPointer address)
 {
     var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
     uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & Flags.IsHandleWeak) != 0;
+    return (flags & (uint)Flags.IsHandleWeak) != 0;
 }
 
 private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPointer vtable, out TargetPointer qiAddress)
