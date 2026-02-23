@@ -4,7 +4,7 @@
 import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "../types";
 import { _ems_ } from "../ems-ambient";
 
-import { browserVirtualAppBase, ENVIRONMENT_IS_WEB, sizeOfPtr } from "../per-module";
+import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -161,7 +161,7 @@ export async function instantiateWasm(wasmPromise: Promise<Response>, imports: W
         }
         res.isStreamingOk = typeof globalThis.Response === "function" && res instanceof globalThis.Response;
         const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-        if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
+        if (_ems_.ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
             _ems_.dotnetLogger.warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
             res.isStreamingOk = false;
         }
