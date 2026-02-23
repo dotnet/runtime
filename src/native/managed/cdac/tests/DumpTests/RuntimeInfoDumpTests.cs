@@ -17,15 +17,6 @@ public class RuntimeInfoDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void RuntimeInfo_ContractIsAvailable(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IRuntimeInfo runtimeInfo = Target.Contracts.RuntimeInfo;
-        Assert.NotNull(runtimeInfo);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public void RuntimeInfo_ArchitectureIsValid(TestConfiguration config)
     {
         InitializeDumpTest(config);

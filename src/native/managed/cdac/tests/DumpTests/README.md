@@ -15,6 +15,8 @@ DumpTests.targets   MSBuild logic to build debuggees, run them, and collect dump
 RunDumpTests.ps1    Windows helper script to orchestrate dump generation + test runs
 DumpTestBase.cs     Base class: loads a dump, creates a cDAC Target, handles skipping
 ClrMdDumpHost.cs    Wraps ClrMD DataTarget for memory reads and symbol lookup
+DumpInfo.cs         Dump metadata model (dump-info.json sidecar read/write)
+TestConfiguration   Runtime version descriptor, implements IXunitSerializable
 *DumpTests.cs       Test classes organized by cDAC contract
 ```
 
@@ -26,10 +28,9 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | Debuggee | Purpose | Dump Type |
 |----------|---------|-----------|
 | BasicThreads | Thread management, thread store | Heap |
-| ExceptionState | Nested exception chains | Heap |
 | GCRoots | GC object graphs, pinned handles | Heap |
 | ServerGC | Server GC mode heap structures | Heap |
-| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Heap |
+| StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Full |
 | MultiModule | Multi-assembly metadata resolution | Full |
 | TypeHierarchy | Type inheritance, method tables | Full |
 
@@ -40,15 +41,15 @@ need full memory content (e.g., metadata-heavy scenarios) override this to `Full
 ### Test Classes
 
 Each test class targets a specific cDAC contract and specifies which debuggee dump to
-use. Tests that require full dumps override `DumpType` to `"full"`.
+use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration`.
 
 | Test Class | Contract | Debuggee |
 |------------|----------|----------|
 | ThreadDumpTests | Thread | BasicThreads |
 | RuntimeInfoDumpTests | RuntimeInfo | BasicThreads |
-| ExceptionDumpTests | Exception | ExceptionState |
 | ObjectDumpTests | Object | GCRoots |
-| ServerGCDumpTests | GCHeap | ServerGC |
+| WorkstationGCDumpTests | GC (Workstation) | GCRoots |
+| ServerGCDumpTests | GC (Server) | ServerGC |
 | StackWalkDumpTests | StackWalk | StackWalk |
 | RuntimeTypeSystemDumpTests | RuntimeTypeSystem | TypeHierarchy |
 | LoaderDumpTests | Loader | MultiModule |
@@ -56,25 +57,56 @@ use. Tests that require full dumps override `DumpType` to `"full"`.
 
 ### Runtime Versions
 
-Tests run against two runtime versions:
+Tests run against multiple runtime versions via `TestConfiguration`:
 
 - **`local`** — Framework-dependent build run with the repo's testhost (the runtime
   you just built). Used for validating current development work.
 - **`net10.0`** — Self-contained publish against the released .NET 10 runtime. Used
   for cross-version compatibility testing.
 
-Each test class has `_Local` and `_Net10` subclasses that set the `RuntimeVersion`.
+Each version produces a separate test invocation via `[MemberData(nameof(TestConfigurations))]`.
 
 > **Note:** .NET 10 did not support cDAC in heap dumps. Heap dump tests for net10.0
 > are automatically skipped. Only full dump tests (RuntimeTypeSystem, Loader,
 > EcmaMetadata) run against net10.0.
+
+### Test Skipping
+
+Tests can be conditionally skipped using attributes:
+
+- **`[SkipOnVersion("net10.0", "reason")]`** — Skip when running against a specific
+  runtime version. Evaluated before the dump is loaded.
+- **`[SkipOnOS("Unix", "reason")]`** — Skip when the dump's target OS matches.
+  Evaluated from `dump-info.json` before the dump is loaded.
+
+Multiple skip attributes can be stacked on a single method.
+
+### Dump Metadata (`dump-info.json`)
+
+Each dump has a `dump-info.json` sidecar file in the same directory, written during
+dump generation. It contains:
+
+```json
+{
+  "os": "windows",
+  "arch": "x64",
+  "runtimeVersion": "local"
+}
+```
+
+The test framework requires this file. It is used for OS skip evaluation before
+loading the dump (avoiding expensive dump loads for skipped tests). The JSON is
+written automatically by `DumpTests.targets` during local generation and by
+`RunDumpTests.ps1` when importing CI archives.
 
 ### Dump Directory Layout
 
 Dumps are written to:
 
 ```
-artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/{debuggee}.dmp
+artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/
+    {debuggee}.dmp
+    dump-info.json
 ```
 
 For example:
@@ -83,15 +115,18 @@ For example:
 artifacts/dumps/cdac/
   local/
     heap/
-      BasicThreads/BasicThreads.dmp
-      ExceptionState/ExceptionState.dmp
+      BasicThreads/
+        BasicThreads.dmp
+        dump-info.json
     full/
-      TypeHierarchy/TypeHierarchy.dmp
-      MultiModule/MultiModule.dmp
+      StackWalk/
+        StackWalk.dmp
+        dump-info.json
   net10.0/
     full/
-      TypeHierarchy/TypeHierarchy.dmp
-      MultiModule/MultiModule.dmp
+      TypeHierarchy/
+        TypeHierarchy.dmp
+        dump-info.json
 ```
 
 ## Running Locally (Windows)
@@ -132,10 +167,10 @@ Run it from the `DumpTests/` directory.
 ```
 
 > **Admin Note (Windows):** Heap dumps require the DAC (`mscordaccore.dll`), which is
-> unsigned in local builds. The script and MSBuild targets automatically set the
+> unsigned in local builds. Pass `-SetSignatureCheck` on first run to set the
 > `DisableAuxProviderSignatureCheck` registry key under
 > `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\MiniDumpSettings`.
-> This may require running as Administrator on the first invocation.
+> This requires running as Administrator.
 
 ### Using MSBuild Directly
 
@@ -160,8 +195,41 @@ without generating dumps locally:
 .\RunDumpTests.ps1 -DumpArchive C:\Downloads\CdacDumps_linux_x64.tar.gz
 ```
 
-This extracts the archive, auto-detects which runtime versions are present, and
-runs the tests with `CDAC_DUMP_ROOT` pointing to the extracted dumps.
+This extracts the archive, writes `dump-info.json` for each dump (inferring OS and
+architecture from the archive filename), auto-detects which runtime versions are
+present, and runs the tests with `CDAC_DUMP_ROOT` pointing to the extracted dumps.
+
+## Code Coverage
+
+To collect code coverage for the cDAC reader, pass `-Coverage` to `RunDumpTests.ps1`:
+
+```powershell
+.\RunDumpTests.ps1 -Coverage
+```
+
+This uses [coverlet](https://github.com/coverlet-coverage/coverlet) to instrument the
+test run and [ReportGenerator](https://github.com/danielpalme/ReportGenerator) to
+produce an HTML report.
+
+### Prerequisites
+
+Restore the required dotnet tools (one-time setup from the DumpTests directory):
+
+```powershell
+dotnet tool restore
+```
+
+This installs `coverlet` and `reportgenerator` as local tools.
+
+### Output
+
+- **Raw coverage data:** `artifacts/TestResults/cdac-dump-tests/`
+- **HTML report:** `artifacts/coverage/cdac-dump-tests/index.html`
+- **Text summary:** printed to the console after the test run
+
+Coverage is collected for the `Microsoft.Diagnostics.DataContractReader.*` assemblies
+exercised during the test run. The report shows which cDAC contract implementations
+are covered by the dump tests.
 
 ## CI Pipeline
 
@@ -189,13 +257,6 @@ The pipeline has three stages:
    Linux dump analysis on a Windows host). Tests for net10.0 are skipped via
    `SkipDumpVersions=net10.0`.
 
-### Future Plans
-
-The dump tests are planned to move to **Helix** for broader platform coverage and
-better integration with the existing test infrastructure. This would allow running
-dump generation and analysis across a wider matrix of OS/architecture combinations
-without adding load to the main CI pool.
-
 ## Adding a New Debuggee
 
 1. Create a new directory under `Debuggees/` with a `.csproj` and `Program.cs`.
@@ -211,6 +272,7 @@ without adding load to the main CI pool.
 1. Create a new test class inheriting from `DumpTestBase`.
 2. Override `DebuggeeName` to match the debuggee directory name.
 3. Override `DumpType` if the debuggee uses full dumps (`"full"`).
-4. Create `_Local` and `_Net10` subclasses that set `RuntimeVersion`.
-5. Use `[ConditionalFact]` and `SkipIfVersion()`/`SkipIfTargetOS()` for
-   conditional test skipping.
+4. Write tests as `[ConditionalTheory]` with `[MemberData(nameof(TestConfigurations))]`.
+5. Call `InitializeDumpTest(config)` as the first line of every test method.
+6. Use `[SkipOnVersion("net10.0", "reason")]` or `[SkipOnOS("Unix", "reason")]`
+   for conditional test skipping.

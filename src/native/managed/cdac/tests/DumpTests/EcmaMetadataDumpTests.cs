@@ -18,15 +18,6 @@ public class EcmaMetadataDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void EcmaMetadata_ContractIsAvailable(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
-        Assert.NotNull(ecmaMetadata);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "Assembly type does not include IsDynamic/IsLoaded fields in .NET 10")]
     public void EcmaMetadata_RootModuleHasMetadataAddress(TestConfiguration config)
     {

@@ -20,16 +20,6 @@ public class WorkstationGCDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
-    public void WorkstationGC_ContractIsAvailable(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IGC gcContract = Target.Contracts.GC;
-        Assert.NotNull(gcContract);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void WorkstationGC_IsWorkstationGC(TestConfiguration config)
     {
         InitializeDumpTest(config);

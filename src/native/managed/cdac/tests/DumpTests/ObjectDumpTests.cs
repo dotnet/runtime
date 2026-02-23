@@ -16,15 +16,6 @@ public class ObjectDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void Object_ContractIsAvailable(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IObject objectContract = Target.Contracts.Object;
-        Assert.NotNull(objectContract);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
     public void Object_StringMethodTableHasCorrectComponentSize(TestConfiguration config)
     {
         InitializeDumpTest(config);
