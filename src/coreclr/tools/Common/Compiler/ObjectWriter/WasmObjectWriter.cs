@@ -355,10 +355,11 @@ namespace ILCompiler.ObjectWriter
         private unsafe void ResolveRelocations(MemoryStream sectionStream, List<SymbolicRelocation> relocs)
         {
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+
             foreach (SymbolicRelocation reloc in relocs)
             {
                 int size = Relocation.GetSize(reloc.Type);
-                if (size >= relocScratchBuffer.Length)
+                if (size > relocScratchBuffer.Length)
                 {
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
