@@ -147,10 +147,11 @@ public unsafe class ThreadTests
         Assert.NotNull(contract);
         Target.TypeInfo threadType = target.GetTypeInfo(DataType.Thread);
         TargetPointer expectedFrameAddr = addr + (ulong)threadType.Fields[nameof(Data.Thread.Frame)].Offset;
+        TargetPointer outStackBase, outStackLimit, outFrameAddress;
 
-        StackLimitData data = contract.GetStackLimitData(addr);
-        Assert.Equal(stackBase, data.StackBase);
-        Assert.Equal(stackLimit, data.StackLimit);
-        Assert.Equal(expectedFrameAddr, data.FrameAddress);
+        contract.GetStackLimitData(addr, out outStackBase, out outStackLimit, out outFrameAddress);
+        Assert.Equal(stackBase, outStackBase);
+        Assert.Equal(stackLimit, outStackLimit);
+        Assert.Equal(expectedFrameAddr, outFrameAddress);
     }
 }

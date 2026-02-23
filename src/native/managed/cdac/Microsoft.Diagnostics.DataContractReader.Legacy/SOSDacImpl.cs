@@ -2974,23 +2974,24 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
     {
-        if (threadPtr == 0 || (lower == null && upper == null && fp == null))
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (threadPtr == 0 || (lower == null && upper == null && fp == null))
+                throw new ArgumentException();
+
             Contracts.IThread contract = _target.Contracts.Thread;
-            Contracts.StackLimitData stackLimitData = contract.GetStackLimitData(threadPtr.ToTargetPointer(_target));
+            TargetPointer stackBase, stackLimit, frameAddress;
+            contract.GetStackLimitData(threadPtr.ToTargetPointer(_target), out stackBase, out stackLimit, out frameAddress);
 
             if (lower != null)
-                *lower = stackLimitData.StackBase.ToClrDataAddress(_target);
+                *lower = stackBase.ToClrDataAddress(_target);
 
             if (upper != null)
-                *upper = stackLimitData.StackLimit.ToClrDataAddress(_target);
+                *upper = stackLimit.ToClrDataAddress(_target);
 
             if (fp != null)
-                *fp = stackLimitData.FrameAddress.ToClrDataAddress(_target);
+                *fp = frameAddress.ToClrDataAddress(_target);
         }
         catch (global::System.Exception ex)
         {
