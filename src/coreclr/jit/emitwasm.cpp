@@ -167,7 +167,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
             // TODO-WASM: Generate actual list of types and generate reloc
             // This is here to exercise the new JIT-EE API
-            CorInfoWasmType                 types[] = {CORINFO_WASM_TYPE_VOID, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32};
+            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32};
             CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
                 codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 3);
 

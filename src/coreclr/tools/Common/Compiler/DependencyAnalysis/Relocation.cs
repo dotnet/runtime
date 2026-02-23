@@ -655,6 +655,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public static readonly int MaxSize = 8;
+        // Note: Please update the above field if the max size
+        // changes when adding a new case to this method.
         public static int GetSize(RelocType relocType)
         {
             return relocType switch

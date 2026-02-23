@@ -350,9 +350,15 @@ namespace ILCompiler.ObjectWriter
 
         private unsafe void ResolveRelocations(MemoryStream sectionStream, List<SymbolicRelocation> relocs)
         {
-            byte[] buffer = new byte[8];
+            byte[] buffer = new byte[Relocation.MaxSize];
             foreach (SymbolicRelocation reloc in relocs)
             {
+                int size = Relocation.GetSize(reloc.Type);
+                if (size >= buffer.Length)
+                {
+                    throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
+                }
+
                 // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
                 fixed (byte* pData = ReadRelocToDataSpan(reloc, buffer))
                 {
