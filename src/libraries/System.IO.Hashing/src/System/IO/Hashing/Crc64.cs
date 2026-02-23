@@ -26,7 +26,7 @@ namespace System.IO.Hashing
     ///     compatible with the cyclic redundancy check described in ISO 3309.
     ///   </para>
     /// </remarks>
-    public sealed partial class Crc64 : NonCryptographicHashAlgorithm
+    public sealed class Crc64 : NonCryptographicHashAlgorithm
     {
         private const int Size = sizeof(ulong);
 

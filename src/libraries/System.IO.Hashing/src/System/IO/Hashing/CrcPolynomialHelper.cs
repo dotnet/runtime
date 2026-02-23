@@ -7,9 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.IO.Hashing
 {
-    /// <summary>
-    /// Provides GF(2) polynomial arithmetic for computing CRC folding constants.
-    /// </summary>
     internal static class CrcPolynomialHelper
     {
         internal static ulong ComputeFoldingConstantCrc32(ulong fullPoly, int power)
@@ -24,12 +21,6 @@ namespace System.IO.Hashing
             return ComputeFoldingConstant(poly, power);
         }
 
-        /// <summary>
-        /// Computes x^<paramref name="power"/> mod <paramref name="poly"/> in GF(2).
-        /// </summary>
-        /// <param name="poly">The polynomial (with leading bit) to reduce by.</param>
-        /// <param name="power">The power of x.</param>
-        /// <returns>The remainder, which has fewer bits than <paramref name="poly"/>.</returns>
         private static ulong ComputeFoldingConstant(UInt640 poly, int power)
         {
             int polyDeg = poly.Degree;
@@ -60,12 +51,6 @@ namespace System.IO.Hashing
             return ComputeBarrettConstant(poly, 128);
         }
 
-        /// <summary>
-        /// Computes floor(x^<paramref name="power"/> / <paramref name="poly"/>) in GF(2).
-        /// </summary>
-        /// <param name="poly">The polynomial (with leading bit) to divide by.</param>
-        /// <param name="power">The power of x.</param>
-        /// <returns>The quotient.</returns>
         private static ulong ComputeBarrettConstant(UInt640 poly, int power)
         {
             int polyDeg = poly.Degree;
@@ -90,27 +75,6 @@ namespace System.IO.Hashing
             return quotient.ToUInt64();
         }
 
-        /// <summary>
-        /// Reverses the lowest <paramref name="width"/> bits of <paramref name="value"/>.
-        /// </summary>
-        internal static ulong ReverseBits(ulong value, int width)
-        {
-            ulong result = 0;
-
-            for (int i = 0; i < width; i++)
-            {
-                if ((value & (1UL << i)) != 0)
-                {
-                    result |= 1UL << (width - 1 - i);
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// A 640-bit unsigned integer for GF(2) polynomial arithmetic.
-        /// </summary>
         [InlineArray(Length)]
         private struct UInt640
         {
@@ -183,7 +147,10 @@ namespace System.IO.Hashing
                 }
             }
 
-            internal readonly ulong ToUInt64() => this[0];
+            internal readonly ulong ToUInt64()
+            {
+                return this[0];
+            }
         }
     }
 }

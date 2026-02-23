@@ -292,7 +292,8 @@ namespace System.IO.Hashing
             // Rather than go through Crc32ParameterSet.Crc32 to end up in the optimized Update method here,
             // just call the Update method directly.
             // ITU-T V.42 / IEEE 802.3 uses a final XOR of 0xFFFFFFFF, so accelerate that as ~.
-            return ~Crc32ParameterSet.Crc32.Update(Crc32ParameterSet.Crc32.InitialValue, source);
+            Crc32ParameterSet parameterSet = Crc32ParameterSet.Crc32;
+            return ~parameterSet.Update(parameterSet.InitialValue, source);
         }
 
         /// <summary>Computes the CRC-32 hash of the provided data, using specified parameters.</summary>

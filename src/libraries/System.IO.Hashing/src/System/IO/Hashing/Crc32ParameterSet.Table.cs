@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-#if NET
-using System.Runtime.Intrinsics;
-#endif
 
 namespace System.IO.Hashing
 {

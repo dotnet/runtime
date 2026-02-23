@@ -276,8 +276,7 @@ namespace System.IO.Hashing
                 x1 = CarrylessMultiplyLower(x1, Vector128.CreateScalar(_mu));
                 x1 = ShiftRightBytesInVector(x1, 4) & bitmask;
 
-                ulong polyFull = 1UL << 32 | Polynomial;
-                x1 = CarrylessMultiplyLower(x1, Vector128.CreateScalar(polyFull));
+                x1 = CarrylessMultiplyLower(x1, Vector128.CreateScalar<ulong>(Polynomial));
                 x1 ^= temp;
 
                 bytesConsumed = source.Length - length;
