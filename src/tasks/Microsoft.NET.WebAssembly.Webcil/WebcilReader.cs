@@ -357,7 +357,7 @@ public sealed partial class WebcilReader : IDisposable
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
-        WebcilSectionHeader secheader;
+        WebcilSectionHeader secHeader;
         var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
         var buffer = new byte[sizeof(WebcilSectionHeader)];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
@@ -369,24 +369,23 @@ public sealed partial class WebcilReader : IDisposable
             }
             fixed (byte* p = buffer)
             {
-                secheader = (*(WebcilSectionHeader*)p);
+                secHeader = (*(WebcilSectionHeader*)p);
             }
             if (!BitConverter.IsLittleEndian)
             {
                 // Name is a byte array, no endian swap needed
-                secheader.VirtualSize = BinaryPrimitives.ReverseEndianness(secheader.VirtualSize);
-                secheader.VirtualAddress = BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress);
-                secheader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData);
-                secheader.PointerToRawData = BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData);
-                // Remaining fields are specified as zero in Webcil v1.0;
-                // zero them out so we don't mis-interpret garbage on big-endian.
-                secheader.PointerToRelocations = 0;
-                secheader.PointerToLinenumbers = 0;
-                secheader.NumberOfRelocations = 0;
-                secheader.NumberOfLinenumbers = 0;
-                secheader.Characteristics = 0;
+                secHeader.VirtualSize = BinaryPrimitives.ReverseEndianness(secHeader.VirtualSize);
+                secHeader.VirtualAddress = BinaryPrimitives.ReverseEndianness(secHeader.VirtualAddress);
+                secHeader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(secHeader.SizeOfRawData);
+                secHeader.PointerToRawData = BinaryPrimitives.ReverseEndianness(secHeader.PointerToRawData);
             }
-            sections.Add(secheader);
+            // Remaining fields are specified as zero in Webcil v1.0;
+            secHeader.PointerToRelocations = 0;
+            secHeader.PointerToLinenumbers = 0;
+            secHeader.NumberOfRelocations = 0;
+            secHeader.NumberOfLinenumbers = 0;
+            secHeader.Characteristics = 0;
+            sections.Add(secHeader);
         }
         return sections.MoveToImmutable();
     }

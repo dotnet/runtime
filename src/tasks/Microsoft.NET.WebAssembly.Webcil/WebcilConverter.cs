@@ -212,14 +212,14 @@ public class WebcilConverter
                 sectionHeader.VirtualAddress = BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress);
                 sectionHeader.SizeOfRawData = BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData);
                 sectionHeader.PointerToRawData = BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData);
-                // Remaining fields are zero, no swap needed
-                sectionHeader.PointerToRelocations = 0;
-                sectionHeader.PointerToLinenumbers = 0;
-                sectionHeader.NumberOfRelocations = 0;
-                sectionHeader.NumberOfLinenumbers = 0;
-                sectionHeader.Characteristics = 0;
             }
         }
+        // Remaining fields are zero, no swap needed
+        sectionHeader.PointerToRelocations = 0;
+        sectionHeader.PointerToLinenumbers = 0;
+        sectionHeader.NumberOfRelocations = 0;
+        sectionHeader.NumberOfLinenumbers = 0;
+        sectionHeader.Characteristics = 0;
         WriteStructure(s, sectionHeader);
     }
 
