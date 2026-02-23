@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -137,6 +138,12 @@ public class GenericVirtualMethodTests
         ValidateCaller("GenericInterfaceBase_GenericStructDerived_NoInlining_String_String", new GenericInterfaceBaseCaller<string>(new GenericInterfaceBase_GenericStructDerived_NoInlining<string, string>()));
     }
 
+    [Fact]
+    public static void RuntimeLookupDelegate()
+    {
+        RuntimeLookupDelegateGenericVirtual.Test<string>();
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void ValidateCaller(string scenarioName, IBaseMethodCaller caller)
     {
@@ -196,6 +203,45 @@ public class GenericVirtualMethodTests
     {
         Console.WriteLine("Validating {0}...", testcase);
         Assert.Equal(expected, actual);
+    }
+}
+
+internal class RuntimeLookupDelegateGenericVirtual
+{
+    internal static readonly List<object> s_list = new();
+
+    internal static void Test<T>()
+    {
+        var test = new Base();
+        test.Foo<List<T>>();
+
+        var test2 = new Derived();
+        Delegate m1 = test2.Foo<List<T>>();
+        Delegate m2 = test2.Foo<List<List<T>>>;
+        Assert.Equal(m1, m2);
+    }
+}
+
+internal class Base
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<U>>>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<List<U>>>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class Derived : Base
+{
+    public override Delegate Foo<U1>()
+    {
+        return Foo<List<U1>>;
     }
 }
 
