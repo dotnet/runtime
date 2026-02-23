@@ -144,9 +144,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void KernelResponseBufferingEnabled_WriteAsynchronouslyInParts_SetsFlagAndSucceeds()
+        public async Task KernelResponseBufferingEnabled_WriteAsynchronouslyInParts_SetsFlagAndSucceeds()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 AppContext.SetSwitch("System.Net.HttpListener.EnableKernelResponseBuffering", true);
 
@@ -181,13 +181,13 @@ namespace System.Net.Tests
                         Assert.Equal(expectedResponse, clientString);
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void KernelResponseBufferingEnabled_WriteSynchronouslyInParts_SetsFlagAndSucceeds()
+        public async Task KernelResponseBufferingEnabled_WriteSynchronouslyInParts_SetsFlagAndSucceeds()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 AppContext.SetSwitch("System.Net.HttpListener.EnableKernelResponseBuffering", true);
                 using (var listenerFactory = new HttpListenerFactory())
@@ -221,7 +221,7 @@ namespace System.Net.Tests
                         Assert.Equal(expectedResponse, clientString);
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private static void AssertBufferDataFlagIsSet(Stream outputStream)

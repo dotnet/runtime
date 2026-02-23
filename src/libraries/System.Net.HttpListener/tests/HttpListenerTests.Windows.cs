@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -22,9 +23,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EnableKernelResponseBuffering_Enabled()
+        public async Task EnableKernelResponseBuffering_Enabled()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 AppContext.SetSwitch("System.Net.HttpListener.EnableKernelResponseBuffering", true);
 
@@ -33,13 +34,13 @@ namespace System.Net.Tests
                     listener.Start();
                     Assert.True(GetEnableKernelResponseBufferingValue());
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EnableKernelResponseBuffering_ImmutableAfterStart()
+        public async Task EnableKernelResponseBuffering_ImmutableAfterStart()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 AppContext.SetSwitch("System.Net.HttpListener.EnableKernelResponseBuffering", false);
 
@@ -53,7 +54,7 @@ namespace System.Net.Tests
                     // Assert internal value wasn't updated, despite updating the AppContext switch.
                     Assert.False(GetEnableKernelResponseBufferingValue());
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private bool GetEnableKernelResponseBufferingValue()
