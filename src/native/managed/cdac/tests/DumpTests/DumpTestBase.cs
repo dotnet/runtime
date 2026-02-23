@@ -22,7 +22,6 @@ public abstract class DumpTestBase : IDisposable
 {
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
-    private string? _targetOS;
 
     /// <summary>
     /// The set of runtime versions to test against.
@@ -32,7 +31,8 @@ public abstract class DumpTestBase : IDisposable
     {
         get
         {
-            yield return [new TestConfiguration("local")];
+            if (!IsVersionSkipped("local"))
+                yield return [new TestConfiguration("local")];
 
             if (!IsVersionSkipped("net10.0"))
                 yield return [new TestConfiguration("net10.0")];
@@ -57,23 +57,17 @@ public abstract class DumpTestBase : IDisposable
     protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
 
     /// <summary>
-    /// The target operating system of the dump, resolved from the RuntimeInfo contract.
-    /// May be empty if the contract is unavailable.
-    /// </summary>
-    protected string TargetOS => _targetOS ?? string.Empty;
-
-    /// <summary>
     /// Loads the dump for the given <paramref name="config"/> and evaluates skip
     /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
     protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
     {
-        EvaluateSkipAttributes(config, callerName);
+        EvaluateVersionSkipAttributes(config, callerName);
 
         string dumpPath = GetDumpPath(config.RuntimeVersion);
 
-        if (!File.Exists(dumpPath))
-            throw new SkipTestException($"Dump file not found: {dumpPath}");
+        Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
+
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -88,14 +82,6 @@ public abstract class DumpTestBase : IDisposable
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
 
-        try
-        {
-            _targetOS = _target!.Contracts.RuntimeInfo.GetTargetOperatingSystem().ToString();
-        }
-        catch
-        {
-            _targetOS = null;
-        }
     }
 
     public void Dispose()
@@ -108,8 +94,14 @@ public abstract class DumpTestBase : IDisposable
     /// Checks the calling test method for <see cref="SkipOnVersionAttribute"/> and
     /// throws <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
-    private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
+    private void EvaluateVersionSkipAttributes(TestConfiguration config, string callerName)
     {
+        if (config.RuntimeVersion is "net10.0" && DumpType == "heap")
+        {
+            // Skip heap dumps on net10.0 for now, as they are currently generated with an older cDAC version that doesn't populate all fields
+            throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
+        }
+
         MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);
         if (method is null)
             return;
