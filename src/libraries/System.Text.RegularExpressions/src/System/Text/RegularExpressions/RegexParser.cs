@@ -1000,8 +1000,8 @@ namespace System.Text.RegularExpressions
                         --_pos;
 
                         nodeType = RegexNodeKind.Group;
-                        // Disallow options as the test expression of a conditional (when no test has been added yet),
-                        // but allow them in the yes/no branches.
+                        // While parsing the test of a conditional (ExpressionConditional with no children yet),
+                        // disallow inline options; allow them once the test has been parsed and in the yes/no branches.
                         if (_group!.Kind != RegexNodeKind.ExpressionConditional || _group.ChildCount() > 0)
                         {
                             ScanOptions();
