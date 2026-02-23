@@ -1802,23 +1802,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         BBswtDesc* switchDesc = block->GetSwitchTargets();
 
-        // Only optimize if both successors are simple return blocks, so fgFoldCondToReturnBlock can
-        // further convert this into branchless codegen, e.g., "cmp; setb", instead of a jump table.
-        BasicBlock* succ0 = switchDesc->GetSucc(0)->getDestinationBlock();
-        BasicBlock* succ1 = switchDesc->GetSucc(1)->getDestinationBlock();
-
-        if (!succ0->KindIs(BBJ_RETURN) || !succ1->KindIs(BBJ_RETURN))
-        {
-            JITDUMP("Skipping conversion: one or both targets are not return blocks\n");
-            return modified;
-        }
-
-        if (!succ0->hasSingleStmt() || !succ1->hasSingleStmt())
-        {
-            JITDUMP("Skipping conversion: return blocks are not simple enough\n");
-            return modified;
-        }
-
         FlowEdge*   defaultEdge   = switchDesc->GetDefaultCase();
         BasicBlock* defaultDest   = defaultEdge->getDestinationBlock();
         FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
