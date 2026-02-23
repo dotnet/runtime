@@ -243,44 +243,27 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int srcLength) => GetEncodedLength(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<byte> dest, ref byte encodingMap)
             {
                 uint t0 = oneByte[0];
 
                 uint i = t0 << 8;
 
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-                ushort result;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    result = (ushort)(i0 | (i1 << 8));
-                }
-                else
-                {
-                    result = (ushort)((i0 << 8) | i1);
-                }
-
-                Unsafe.WriteUnaligned(dest, result);
+                dest[1] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+                dest[0] = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<byte> dest, ref byte encodingMap)
             {
                 uint t0 = twoBytes[0];
                 uint t1 = twoBytes[1];
 
                 uint i = (t0 << 16) | (t1 << 8);
 
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-                dest[0] = i0;
-                dest[1] = i1;
-                dest[2] = i2;
+                dest[2] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                dest[1] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                dest[0] = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
             }
 
 #if NET
@@ -305,7 +288,7 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap) =>
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<byte> destination, ref byte encodingMap) =>
                 default(Base64EncoderByte).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
         }
 
@@ -333,11 +316,11 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap) =>
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ref byte encodingMap) =>
                 Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, ref encodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap) =>
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ref byte encodingMap) =>
                 Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, ref encodingMap);
 
 #if NET
@@ -361,7 +344,7 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap) =>
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<ushort> destination, ref byte encodingMap) =>
                 default(Base64EncoderChar).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
         }
     }
