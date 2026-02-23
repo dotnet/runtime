@@ -1025,7 +1025,7 @@ CDAC_TYPE_END(ComCallWrapper)
 
 CDAC_TYPE_BEGIN(SimpleComCallWrapper)
 CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
-CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
 CDAC_TYPE_END(SimpleComCallWrapper)
 #endif // FEATURE_COMINTEROP
