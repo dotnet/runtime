@@ -15,7 +15,6 @@ DumpTests.targets   MSBuild logic to build debuggees, run them, and collect dump
 RunDumpTests.ps1    Windows helper script to orchestrate dump generation + test runs
 DumpTestBase.cs     Base class: loads a dump, creates a cDAC Target, handles skipping
 ClrMdDumpHost.cs    Wraps ClrMD DataTarget for memory reads and symbol lookup
-DumpInfo.cs         Dump metadata model (dump-info.json sidecar read/write)
 TestConfiguration   Runtime version descriptor, implements IXunitSerializable
 *DumpTests.cs       Test classes organized by cDAC contract
 ```
@@ -47,7 +46,6 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 |------------|----------|----------|
 | ThreadDumpTests | Thread | BasicThreads |
 | RuntimeInfoDumpTests | RuntimeInfo | BasicThreads |
-| ObjectDumpTests | Object | GCRoots |
 | WorkstationGCDumpTests | GC (Workstation) | GCRoots |
 | ServerGCDumpTests | GC (Server) | ServerGC |
 | StackWalkDumpTests | StackWalk | StackWalk |
@@ -76,37 +74,15 @@ Tests can be conditionally skipped using attributes:
 
 - **`[SkipOnVersion("net10.0", "reason")]`** — Skip when running against a specific
   runtime version. Evaluated before the dump is loaded.
-- **`[SkipOnOS("Unix", "reason")]`** — Skip when the dump's target OS matches.
-  Evaluated from `dump-info.json` before the dump is loaded.
 
 Multiple skip attributes can be stacked on a single method.
-
-### Dump Metadata (`dump-info.json`)
-
-Each dump has a `dump-info.json` sidecar file in the same directory, written during
-dump generation. It contains:
-
-```json
-{
-  "os": "windows",
-  "arch": "x64",
-  "runtimeVersion": "local"
-}
-```
-
-The test framework requires this file. It is used for OS skip evaluation before
-loading the dump (avoiding expensive dump loads for skipped tests). The JSON is
-written automatically by `DumpTests.targets` during local generation and by
-`RunDumpTests.ps1` when importing CI archives.
 
 ### Dump Directory Layout
 
 Dumps are written to:
 
 ```
-artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/
-    {debuggee}.dmp
-    dump-info.json
+artifacts/dumps/cdac/{version}/{dumptype}/{debuggee}/{debuggee}.dmp
 ```
 
 For example:
@@ -115,18 +91,12 @@ For example:
 artifacts/dumps/cdac/
   local/
     heap/
-      BasicThreads/
-        BasicThreads.dmp
-        dump-info.json
+      BasicThreads/BasicThreads.dmp
     full/
-      StackWalk/
-        StackWalk.dmp
-        dump-info.json
+      StackWalk/StackWalk.dmp
   net10.0/
     full/
-      TypeHierarchy/
-        TypeHierarchy.dmp
-        dump-info.json
+      TypeHierarchy/TypeHierarchy.dmp
 ```
 
 ## Running Locally (Windows)
@@ -195,9 +165,8 @@ without generating dumps locally:
 .\RunDumpTests.ps1 -DumpArchive C:\Downloads\CdacDumps_linux_x64.tar.gz
 ```
 
-This extracts the archive, writes `dump-info.json` for each dump (inferring OS and
-architecture from the archive filename), auto-detects which runtime versions are
-present, and runs the tests with `CDAC_DUMP_ROOT` pointing to the extracted dumps.
+This extracts the archive, auto-detects which runtime versions are present, and
+runs the tests with `CDAC_DUMP_ROOT` pointing to the extracted dumps.
 
 ## Code Coverage
 
@@ -274,5 +243,4 @@ The pipeline has three stages:
 3. Override `DumpType` if the debuggee uses full dumps (`"full"`).
 4. Write tests as `[ConditionalTheory]` with `[MemberData(nameof(TestConfigurations))]`.
 5. Call `InitializeDumpTest(config)` as the first line of every test method.
-6. Use `[SkipOnVersion("net10.0", "reason")]` or `[SkipOnOS("Unix", "reason")]`
-   for conditional test skipping.
+6. Use `[SkipOnVersion("net10.0", "reason")]` for conditional test skipping.
