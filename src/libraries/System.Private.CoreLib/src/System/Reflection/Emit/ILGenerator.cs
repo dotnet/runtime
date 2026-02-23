@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
 
         /// <summary>
         /// Puts a <see cref="OpCodes.Calli"/> instruction onto the Microsoft intermediate language (MSIL) stream,
-        /// specifying the type of the function pointer to indirectly call.
+        /// specifying the type of the function pointer to call indirectly.
         /// </summary>
         /// <param name="functionPointerType">
         /// The type of the function pointer to indirectly call.

@@ -1107,12 +1107,12 @@ namespace System.Reflection.Emit
             if (type.IsFunctionPointer)
             {
                 Type ret = type.GetFunctionPointerReturnType();
-                if ((ret is TypeBuilderImpl tb && Equals(tb.Module)) || IsConstructedFromTypeBuilder(ret))
+                if ((ret is TypeBuilderImpl retTb && Equals(retTb.Module)) || IsConstructedFromTypeBuilder(ret))
                     return true;
 
                 foreach (Type paramType in type.GetFunctionPointerParameterTypes())
                 {
-                    if ((paramType is TypeBuilderImpl _tb && Equals(_tb.Module)) || IsConstructedFromTypeBuilder(paramType))
+                    if ((paramType is TypeBuilderImpl paramTb && Equals(paramTb.Module)) || IsConstructedFromTypeBuilder(paramType))
                         return true;
                 }
             }

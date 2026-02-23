@@ -691,9 +691,9 @@ namespace System
 
                 foreach (Type modopt in retTypeModOpts)
                 {
-                    string? typeName = modopt?.FullName;
+                    string? typeName = modopt.FullName;
 
-                    if (typeName != null && typeName.StartsWith("System.Runtime.CompilerServices.CallConv", StringComparison.Ordinal))
+                    if (typeName != null && typeName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
                     {
                         if (callConvsFinished)
                             throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
@@ -701,18 +701,24 @@ namespace System
                         callConvInModOpts = true;
 
                         if (builtInCallConv && IsBuiltInCallingConvention(typeName))
-                            throw new ArgumentException(SR.Format(SR.FunctionPointer_InvalidCallingConventionEncoding, typeName), nameof(returnType));
+                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
 
                         if (callConvIndex >= callingConventions.Length || modopt != callingConventions[callConvIndex])
                             throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
 
                         callConvIndex++;
                     }
-                    else
+                    else if (callConvInModOpts)
                     {
+                        if (callConvIndex != callingConventions.Length)
+                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
                         callConvsFinished = true;
                     }
                 }
+
+                if (callConvInModOpts && !callConvsFinished && callConvIndex != callingConventions.Length)
+                    throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
             }
 
             if (!callConvInModOpts && isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
@@ -898,5 +904,7 @@ namespace System
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors;
+
+        internal const string CallingConventionTypePrefix = "System.Runtime.CompilerServices.CallConv";
     }
 }
