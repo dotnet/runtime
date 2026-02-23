@@ -4,6 +4,11 @@
 // Reduced from 73.3 KiB to 0.7 KiB in 00:00:52
 // Debug: Outputs 0
 // Release: Outputs 1
+
+using System;
+using System.Runtime.CompilerServices;
+using Xunit;
+
 public class C0
 {
     public ulong F3;
@@ -34,11 +39,13 @@ public struct S0
     public byte F0;
 }
 
-public class Program
+public class Runtime_124510
 {
     public static S0 s_1;
     public static C2 s_2 = new C2(new C0(8013948595597981922UL), new C1());
-    public static void Main()
+
+    [Fact]
+    public static void TestEntryPoint()
     {
         var vr1 = s_2.F1.F3;
         if (((uint)(vr1 & 3080599622U) <= (ushort)(s_2.F2.F8 % 1)))
