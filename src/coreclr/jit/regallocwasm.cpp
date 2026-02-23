@@ -601,10 +601,9 @@ void WasmRegAlloc::ResolveReferences()
 
     auto allocPhysReg = [&](regNumber virtReg, LclVarDsc* varDsc) {
         regNumber physReg;
-        if ((varDsc != nullptr) && varDsc->lvIsRegArg)
+        if ((varDsc != nullptr) && varDsc->lvIsRegArg && !varDsc->lvIsStructField)
         {
-            // If this is a struct passed as its field, find the parent local to get the correct ABI info.
-            unsigned lclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : m_compiler->lvaGetLclNum(varDsc);
+            unsigned lclNum = m_compiler->lvaGetLclNum(varDsc);
             const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
             assert(abiInfo.HasExactlyOneRegisterSegment());
             physReg = abiInfo.Segment(0).GetRegister();
