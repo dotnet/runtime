@@ -907,6 +907,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?(?=cat)(?i)CAT|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
                 yield return (@"(cat)?(?(1)(?i)dog|pig)", "catDOG", RegexOptions.None, 0, 6, true, "catDOG");
                 yield return (@"(cat)?(?(1)(?i)dog|pig)", "pig", RegexOptions.None, 0, 3, true, "pig");
+                yield return (@"(?((?i)cat)CAT|dog)", "CAT", RegexOptions.None, 0, 3, true, "CAT");
                 yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
 
                 yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
