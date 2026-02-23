@@ -714,7 +714,9 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
                 {
                     GenTree* val = tree->AsLclVar()->Data();
 
-                    if ((val->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                    bool noSideEffects       = (val->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0;
+                    bool condDependsOnLclVar = m_compiler->gtHasRef(m_cond, lclNum);
+                    if (noSideEffects && !condDependsOnLclVar)
                     {
                         m_doElseConversion    = true;
                         m_elseOperation.block = m_startBlock;
