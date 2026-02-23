@@ -244,15 +244,7 @@ namespace System.PrivateUri.Tests
             // Process the range in chunks of 0x10000 to avoid allocating large strings
             for (int start = 0x30000; start < 0xE0000; start += 0x10000)
             {
-                try
-                {
-                    int end = Math.Min(start + 0x10000, 0xE0000);
-                    EscapeUnescapeTestUnicodePlane(start, end);
-                }
-                catch (OutOfMemoryException)
-                {
-                    // Individual chunks can still cause OOM on 32-bit platforms
-                }
+                EscapeUnescapeTestUnicodePlane(start, start + 0x10000);
             }
         }
 
