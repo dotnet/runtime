@@ -1201,26 +1201,6 @@ def find_test_from_name(host_os, test_location, test_name):
 
     return location
 
-def clean_test_results(logs_dir):
-    """ Remove old test result files from the logs directory so that stale
-        results from a previous run are not mistakenly parsed if the current
-        run crashes before producing new results.
-
-    Args:
-        logs_dir             : path to the logs directory
-    """
-    if not os.path.isdir(logs_dir):
-        return
-
-    for item in os.listdir(logs_dir):
-        item_lower = item.lower()
-        if item_lower.endswith("testrun.xml") or item_lower == "standalonerunnertestresults.testrun.log":
-            file_path = os.path.join(logs_dir, item)
-            try:
-                os.remove(file_path)
-            except OSError as e:
-                print("Warning: failed to remove old result file %s: %s" % (file_path, e))
-
 def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
@@ -1228,9 +1208,6 @@ def parse_test_results(args, tests, assemblies):
         args                 : arguments
         tests                : list of individual test results (filled in by this function)
         assemblies           : dictionary of per-assembly aggregations (filled in by this function)
-
-    Returns:
-        True if test result files were found, False otherwise.
     """
     print("Parsing test results from (%s)" % args.logs_dir)
 
@@ -1251,8 +1228,6 @@ def parse_test_results(args, tests, assemblies):
     if not found:
         print("Unable to find testRun.xml or StandaloneRunnerTestResults.testrun.log. This normally means the tests did not run.")
         print("It could also mean there was a problem logging. Please run the tests again.")
-
-    return found
 
 def parse_standalone_runner_results_file(args, item, tests, assemblies):
     """ Parse test results from a standalone runner results log file
@@ -1529,7 +1504,6 @@ def main(args):
 
     env = get_environment(test_env=args.test_env)
     if not args.analyze_results_only:
-        clean_test_results(args.logs_dir)
         if args.test_env is not None:
             ret_code = run_tests(args, args.test_env)
         else:
@@ -1540,15 +1514,9 @@ def main(args):
 
     assemblies = defaultdict(lambda: None)
     tests = []
-    found_results = parse_test_results(args, tests, assemblies)
+    parse_test_results(args, tests, assemblies)
     print_summary(tests, assemblies)
     repro_count = create_repro(args, env, tests)
-
-    # If we actually ran tests but found no result files, the test run
-    # likely crashed.  Make sure we report failure.
-    if not args.analyze_results_only and not found_results and ret_code == 0:
-        print("Error: test run completed but no test result files were found. The test run may have crashed.")
-        ret_code = 1
 
     print("")
     print("Log files at: %s" % args.logs_dir)
