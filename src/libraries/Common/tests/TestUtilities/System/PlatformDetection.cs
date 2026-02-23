@@ -139,9 +139,13 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsMultithreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
-        public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
+
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
+        // this is compiled with 11.0.0-preview.1.26104.118\ref
+        // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
+        // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
+        public static bool IsMultithreadingSupported => (IsNotBrowser && IsNotWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;
