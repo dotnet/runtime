@@ -146,6 +146,7 @@ namespace System
         // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
         public static bool IsMultithreadingSupported => (IsNotBrowser && IsNotWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
         public static bool IsBinaryFormatterSupported => s_isBinaryFormatterSupported.Value;

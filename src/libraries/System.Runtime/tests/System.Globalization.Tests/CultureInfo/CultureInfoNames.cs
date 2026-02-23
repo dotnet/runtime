@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
         // Browser uses JS to get the NativeName that is missing in ICU (in the singlethreaded runtime only)
         private static bool SupportFullIcuResources =>
-            !PlatformDetection.IsWasi && !PlatformDetection.IsAndroid && PlatformDetection.IsIcuGlobalization && !PlatformDetection.IsMultithreadingSupported;
+            !PlatformDetection.IsWasi && !PlatformDetection.IsAndroid && PlatformDetection.IsIcuGlobalization && !PlatformDetection.IsWasmThreadingSupported;
         
         public static IEnumerable<object[]> SupportedCultures_TestData()
         {

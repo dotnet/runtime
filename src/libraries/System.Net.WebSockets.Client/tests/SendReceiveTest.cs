@@ -446,7 +446,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var receiveBuffer = new byte[1];
                 t = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer), ctsDefault.Token);
                 // this is not synchronously possible when the WS client is on another WebWorker
-                if (!PlatformDetection.IsMultithreadingSupported)
+                if (!PlatformDetection.IsWasmThreadingSupported)
                 {
                     Assert.Equal(TaskStatus.RanToCompletion, t.Status);
                 }
