@@ -86,7 +86,13 @@ namespace System.IO.Hashing
             ];
 
             public Ieee8023ParameterSet()
-                : base(0x04c11db7, 0xffffffff, 0xffffffff)
+                : base(
+#if NET
+                    System.Runtime.Intrinsics.Arm.Crc32.IsSupported ? 8 : 1,
+#endif
+                    0x04c11db7,
+                    0xffffffff,
+                    0xffffffff)
             {
             }
 
@@ -189,7 +195,11 @@ namespace System.IO.Hashing
         private sealed class Crc32CParameterSet : ReflectedCrc32
         {
             public Crc32CParameterSet()
-                : base(0x1edc6f41, 0xffffffff, 0xffffffff)
+                : base(
+                    System.Runtime.Intrinsics.X86.Sse42.IsSupported || System.Runtime.Intrinsics.Arm.Crc32.IsSupported ? 8 : 1,
+                    0x1edc6f41,
+                    0xffffffff,
+                    0xffffffff)
             {
             }
 

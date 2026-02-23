@@ -3,6 +3,7 @@
 
 #if NET
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -14,11 +15,19 @@ namespace System.IO.Hashing
     {
         private partial class ReflectedCrc32
         {
+            private readonly int _shouldVectorizeScale = 1;
             private Vector128<ulong> _k1k2;
             private Vector128<ulong> _k3k4;
             private ulong _k4;
             private ulong _k6;
             private Vector128<ulong> _polyMu;
+
+            protected ReflectedCrc32(int shouldVectorizeScale, uint polynomial, uint initialValue, uint finalXorValue)
+                : this(polynomial, initialValue, finalXorValue)
+            {
+                Debug.Assert(shouldVectorizeScale > 0);
+                _shouldVectorizeScale = shouldVectorizeScale;
+            }
 
             partial void InitializeVectorized(ref bool canVectorize)
             {
@@ -61,7 +70,7 @@ namespace System.IO.Hashing
 
             partial void UpdateVectorized(ref uint crc, ReadOnlySpan<byte> source, ref int bytesConsumed)
             {
-                if (!_canVectorize || source.Length < Vector128<byte>.Count)
+                if (!_canVectorize || source.Length < _shouldVectorizeScale * Vector128<byte>.Count)
                 {
                     return;
                 }
