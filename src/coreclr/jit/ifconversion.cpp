@@ -710,12 +710,17 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
             {
                 GenTree* tree = stmt->GetRootNode();
-                if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == lclNum))
+                if (tree->OperIs(GT_STORE_LCL_VAR))
                 {
-                    m_doElseConversion    = true;
-                    m_elseOperation.block = m_startBlock;
-                    m_elseOperation.stmt  = stmt;
-                    m_elseOperation.node  = tree;
+                    GenTree* val = tree->AsLclVar()->Data();
+
+                    if ((val->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                    {
+                        m_doElseConversion    = true;
+                        m_elseOperation.block = m_startBlock;
+                        m_elseOperation.stmt  = stmt;
+                        m_elseOperation.node  = tree;
+                    }
 
                     break;
                 }
