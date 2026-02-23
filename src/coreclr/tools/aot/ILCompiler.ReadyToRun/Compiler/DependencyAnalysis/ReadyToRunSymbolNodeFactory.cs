@@ -755,8 +755,10 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 builder.EmitByte((byte)ReadyToRunFixupKind.ResumptionStubEntryPoint);
-                builder.EmitUInt((uint)factory.RuntimeFunctionsTable.GetIndex(_resumptionStub));
             }
+
+            // Emit a relocation to the resumption stub code; at link time this becomes the RVA.
+            builder.EmitReloc(_resumptionStub, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: factory.Target.CodeDelta);
 
             return builder.ToObjectData();
         }

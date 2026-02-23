@@ -1173,13 +1173,6 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
-PCODE ReadyToRunInfo::GetEntryPointByRuntimeFunctionIndex(DWORD index) const
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(index < m_nRuntimeFunctions);
-    return dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[index].BeginAddress;
-}
-
 void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 {
     STANDARD_VM_CONTRACT;

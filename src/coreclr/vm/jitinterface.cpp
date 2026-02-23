@@ -14306,8 +14306,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
 
-            DWORD runtimeFunctionIndex = CorSigUncompressData(pBlob);
-            PCODE stubEntryPoint = pR2RInfo->GetEntryPointByRuntimeFunctionIndex(runtimeFunctionIndex);
+            DWORD stubRVA = *((DWORD *)pBlob);
+            PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
 
             pR2RInfo->RegisterResumptionStub(stubEntryPoint);
 

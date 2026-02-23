@@ -170,7 +170,6 @@ public:
     PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
-    PCODE GetEntryPointByRuntimeFunctionIndex(DWORD index) const;
     void RegisterResumptionStub(PCODE stubEntryPoint);
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
