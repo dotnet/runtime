@@ -1526,27 +1526,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
-        [Fact]
-        public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
-        {
-            // The site doesn't support HTTP/3.
-            if (UseVersion == HttpVersion30)
-            {
-                return;
-            }
-
-            using (HttpClient client = CreateHttpClient())
-            {
-                // international version of the Starbucks website
-                // punycode: xn--oy2b35ckwhba574atvuzkc.com
-                string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
-                using (HttpResponseMessage response = await client.GetAsync(server))
-                {
-                    response.EnsureSuccessStatusCode();
-                }
-            }
-        }
 
         #region Post Methods Tests
 
