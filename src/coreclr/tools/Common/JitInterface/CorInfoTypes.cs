@@ -208,13 +208,6 @@ namespace Internal.JitInterface
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-        // The 'runtimeLookupFlags', 'runtimeLookupArgs' and 'runtimeLookupDevirtualized' fields
-        // are just for internal VM / ZAP communication, not to be used by the JIT.
-        public ushort runtimeLookupFlags;
-        public void* runtimeLookupArgs;
-        private byte _runtimeLookupDevirtualized;
-        public bool runtimeLookupDevirtualized { get { return _runtimeLookupDevirtualized != 0; } set { _runtimeLookupDevirtualized = value ? (byte)1 : (byte)0; } }
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -252,6 +245,7 @@ namespace Internal.JitInterface
         public byte _indirectSecondOffset;
         public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
 
+        public CORINFO_CONST_LOOKUP helperEntryPoint;
     }
 
     // Result of calling embedGenericHandle

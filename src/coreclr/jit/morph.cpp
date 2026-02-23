@@ -1840,8 +1840,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
         PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+
+        // TODO-WASM: pass proper portable entry point as the last argument for managed calls
+        GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
+        PushBack(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
     }
-    // TODO-WASM: pass the portable entry point as the last argument for managed calls
+
 #endif // defined(TARGET_WASM)
 
     ClassifierInfo info;
@@ -5586,27 +5590,17 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 {
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
-    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
-
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
         pRuntimeLookup->testForNull)
     {
-#ifdef FEATURE_READYTORUN
-        if (pRuntimeLookup->indirections == CORINFO_USENULL)
-        {
-            return gtNewIconNode(0, TYP_I_IMPL);
-        }
-
-        if (IsAot())
-        {
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pLookup->lookupKind, result);
-        }
-#endif
-        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, result, compileTimeHandle);
+        return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
+                                                getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
+                                                compileTimeHandle);
     }
+
+    GenTree* result = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
     ArrayStack<GenTree*> stmts(getAllocator(CMK_ArrayStack));
 
@@ -14389,7 +14383,7 @@ GenTree* Compiler::fgInitThisClass()
             // base of the class that owns the method being compiled". If we're in this method, it means we're not
             // inlining and there's no ambiguity.
             return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
-                                             &kind, ctxTree);
+                                             ctxTree);
         }
 #endif
 

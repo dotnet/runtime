@@ -522,6 +522,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_PHYSREG:
+            genCodeForPhysReg(treeNode->AsPhysReg());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -603,6 +607,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // No-op for single-threaded wasm.
             assert(!WASM_THREAD_SUPPORT);
             JITDUMP("Ignoring GT_MEMORYBARRIER; single-threaded codegen\n");
+            break;
+
+        case GT_INTRINSIC:
+            genIntrinsic(treeNode->AsIntrinsic());
             break;
 
         default:
@@ -1583,6 +1591,135 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 }
 
 //------------------------------------------------------------------------
+// PackIntrinsicAndType: Pack a intrinsic and var_types into a uint32_t
+//
+// Arguments:
+//    ni - a NamedIntrinsic to pack
+//    type - a var_types to pack
+//
+// Return Value:
+//    intrinsic and type packed into an integer that can be used as a switch value/case
+//
+static constexpr uint32_t PackIntrinsicAndType(NamedIntrinsic ni, var_types type)
+{
+    if ((type == TYP_BYREF) || (type == TYP_REF))
+    {
+        type = TYP_I_IMPL;
+    }
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    return ((uint32_t)ni << shift1) | ((uint32_t)type);
+}
+
+//---------------------------------------------------------------------
+// genIntrinsic - generate code for a given intrinsic
+//
+// Arguments
+//    treeNode - the GT_INTRINSIC node
+//
+// Return value:
+//    None
+//
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    // Handle intrinsics that can be implemented by target-specific instructions
+    instruction ins = INS_invalid;
+
+    switch (PackIntrinsicAndType(treeNode->gtIntrinsicName, treeNode->TypeGet()))
+    {
+        case PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
+            ins = INS_f32_abs;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Abs, TYP_DOUBLE):
+            ins = INS_f64_abs;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_FLOAT):
+            ins = INS_f32_ceil;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_DOUBLE):
+            ins = INS_f64_ceil;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Floor, TYP_FLOAT):
+            ins = INS_f32_floor;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Floor, TYP_DOUBLE):
+            ins = INS_f64_floor;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Max, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_FLOAT):
+            ins = INS_f32_max;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Max, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_DOUBLE):
+            ins = INS_f64_max;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Min, TYP_FLOAT):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_FLOAT):
+            ins = INS_f32_min;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Min, TYP_DOUBLE):
+        case PackIntrinsicAndType(NI_System_Math_MinNative, TYP_DOUBLE):
+            ins = INS_f64_min;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Round, TYP_FLOAT):
+            ins = INS_f32_nearest;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Round, TYP_DOUBLE):
+            ins = INS_f64_nearest;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_FLOAT):
+            ins = INS_f32_sqrt;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_DOUBLE):
+            ins = INS_f64_sqrt;
+            break;
+
+        case PackIntrinsicAndType(NI_System_Math_Truncate, TYP_FLOAT):
+            ins = INS_f32_trunc;
+            break;
+        case PackIntrinsicAndType(NI_System_Math_Truncate, TYP_DOUBLE):
+            ins = INS_f64_trunc;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+            ins = INS_i32_clz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+            ins = INS_i64_clz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+            ins = INS_i32_ctz;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+            ins = INS_i64_ctz;
+            break;
+
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+            ins = INS_i32_popcnt;
+            break;
+        case PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+            ins = INS_i64_popcnt;
+            break;
+
+        default:
+            assert(!"genIntrinsic: Unsupported intrinsic");
+            unreached();
+    }
+
+    GetEmitter()->emitIns(ins);
+
+    WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
@@ -1679,6 +1816,19 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), WasmRegToIndex(targetReg));
     genUpdateLifeStore(tree, targetReg, varDsc);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPhysReg: Produce code for a PHYSREG node.
+//
+// Arguments:
+//    tree - the GT_PHYSREG node
+//
+void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
+{
+    assert(genIsValidReg(tree->gtSrcReg));
+    GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(tree), WasmRegToIndex(tree->gtSrcReg));
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

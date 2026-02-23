@@ -72,7 +72,7 @@ LIR::Range& WasmRegAlloc::CurrentRange()
 //
 void WasmRegAlloc::IdentifyCandidates()
 {
-    m_spVarDsc = m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg);
+    InitializeStackPointer();
 
     bool anyFrameLocals = false;
     for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
@@ -114,27 +114,43 @@ void WasmRegAlloc::InitializeCandidate(LclVarDsc* varDsc)
 }
 
 //------------------------------------------------------------------------
-// AllocateStackPointer: Allocate a virtual register for the SP.
+// InitializeStackPointer: Initialize the stack pointer local.
 //
-regNumber WasmRegAlloc::AllocateStackPointer()
+// The stack pointer (as referenced in IR) presents a bit of a problem for
+// the allocator. We don't have precise liveness for it due to the various
+// implicit uses, so it can't be a complete candidate. At the same time, we
+// don't want to needlessly spill it to the stack even in debug code.
+// We solve these problems by neutering the SP local descriptor to represent
+// an unreferenced local and rewriting all references to it into PHYS_REGs.
+//
+// It is a fudge, but this way we don't need to introduce any new contracts
+// between RA and codegen beyond "SetStackPointerReg".
+//
+void WasmRegAlloc::InitializeStackPointer()
 {
-    if (m_spVarDsc->lvIsRegCandidate())
-    {
-        assert(genIsValidReg(m_spVarDsc->GetRegNum())); // Already allocated.
-    }
-    else
-    {
-        // For allocation purposes it is convenient to consider the SP always enregistered. Some references to it
-        // (e. g. through the frame pointer) are implicit, so we need to track it regardless. This way, the tracking
-        // is uniform for candidate and non-candidate cases.
-        assert(!genIsValidReg(m_spVarDsc->GetRegNum()));
-        m_spVarDsc->SetRegNum(AllocateVirtualRegister(TYP_I_IMPL));
-    }
-    return m_spVarDsc->GetRegNum();
+    LclVarDsc* spVarDsc = m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg);
+    assert(spVarDsc->lvRefCnt() != 0); // TODO-WASM-RA-CQ: precise usage tracking for SP.
+
+    // We don't neuter the live sets and such since that's currently not needed.
+    spVarDsc->lvImplicitlyReferenced = false;
+    spVarDsc->setLvRefCnt(0);
+
+    AllocateStackPointer();
 }
 
 //------------------------------------------------------------------------
-// AllocateStackPointer: Allocate a virtual register for the FP.
+// AllocateStackPointer: Allocate a virtual register for the SP.
+//
+void WasmRegAlloc::AllocateStackPointer()
+{
+    if (m_spReg == REG_NA)
+    {
+        m_spReg = AllocateVirtualRegister(TYP_I_IMPL);
+    }
+}
+
+//------------------------------------------------------------------------
+// AllocateFramePointer: Allocate a virtual register for the FP.
 //
 void WasmRegAlloc::AllocateFramePointer()
 {
@@ -149,7 +165,7 @@ void WasmRegAlloc::AllocateFramePointer()
     }
     else
     {
-        m_fpReg = m_spVarDsc->GetRegNum();
+        m_fpReg = m_spReg;
     }
 }
 
@@ -259,6 +275,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_LCL_VAR:
+            CollectReferencesForLclVar(node->AsLclVar());
+            break;
+
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         {
@@ -344,6 +364,24 @@ void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForLclVar: Collect virtual register references for a LCL_VAR.
+//
+// Rewrites SP references into PHYS_REGs.
+//
+// Arguments:
+//    lclVar - The LCL_VAR node
+//
+void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
+{
+    if (lclVar->GetLclNum() == m_compiler->lvaWasmSpArg)
+    {
+        lclVar->ChangeOper(GT_PHYSREG);
+        lclVar->AsPhysReg()->gtSrcReg = m_spReg;
+        CollectReference(lclVar);
+    }
+}
+
+//------------------------------------------------------------------------
 // RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
 //
 // This is needed to obey WASM stack ordering constraints: as in IR, the
@@ -362,20 +400,23 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
-    uint16_t offset = lclNode->GetLclOffs();
+
+    var_types    storeType = lclNode->TypeGet();
+    uint16_t     offset    = lclNode->GetLclOffs();
+    ClassLayout* layout    = lclNode->GetLayout(m_compiler);
     lclNode->SetOper(GT_LCL_ADDR);
     lclNode->ChangeType(TYP_I_IMPL);
     lclNode->AsLclFld()->SetLclOffs(offset);
 
     GenTree*     store;
     GenTreeFlags indFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-    if (lclNode->TypeIs(TYP_STRUCT))
+    if (storeType == TYP_STRUCT)
     {
-        store = m_compiler->gtNewStoreBlkNode(lclNode->GetLayout(m_compiler), lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreBlkNode(layout, lclNode, value, indFlags);
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(lclNode->TypeGet(), lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
@@ -534,7 +575,7 @@ void WasmRegAlloc::ResolveReferences()
                 indexBase              = max(indexBase, argIndex + 1);
 
                 LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                if (argVarDsc->GetRegNum() == argReg)
+                if ((argVarDsc->GetRegNum() == argReg) || (m_spReg == argReg))
                 {
                     assert(abiInfo.HasExactlyOneRegisterSegment());
                     virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -599,14 +640,14 @@ void WasmRegAlloc::ResolveReferences()
     };
 
     // Allocate all our virtual registers to physical ones.
-    regNumber spVirtReg = m_spVarDsc->GetRegNum();
-    if (genIsValidReg(spVirtReg))
+    regNumber spVirtReg = m_spReg;
+    if (spVirtReg != REG_NA)
     {
-        m_spVarDsc->SetRegNum(allocPhysReg(spVirtReg, m_spVarDsc));
+        m_spReg = allocPhysReg(spVirtReg, m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg));
     }
     if (m_fpReg != REG_NA)
     {
-        m_fpReg = (spVirtReg == m_fpReg) ? m_spVarDsc->GetRegNum() : allocPhysReg(m_fpReg, nullptr);
+        m_fpReg = (spVirtReg == m_fpReg) ? m_spReg : allocPhysReg(m_fpReg, nullptr);
     }
 
     for (unsigned varIndex = 0; varIndex < m_compiler->lvaTrackedCount; varIndex++)
@@ -639,8 +680,16 @@ void WasmRegAlloc::ResolveReferences()
     {
         for (size_t i = 0; i < refsCount; i++)
         {
+            GenTree* node = refs->Nodes[i];
+            if (node->OperIs(GT_PHYSREG))
+            {
+                assert(node->AsPhysReg()->gtSrcReg == spVirtReg);
+                node->AsPhysReg()->gtSrcReg = m_spReg;
+                assert(!genIsValidReg(node->GetRegNum())); // Currently we do not need to multi-use any PHYSREGs.
+                continue;
+            }
+
             regNumber physReg;
-            GenTree*  node = refs->Nodes[i];
             if (node->OperIs(GT_STORE_LCL_VAR))
             {
                 physReg = m_compiler->lvaGetDesc(node->AsLclVarCommon())->GetRegNum();
@@ -689,21 +738,16 @@ void WasmRegAlloc::ResolveReferences()
 //
 void WasmRegAlloc::PublishAllocationResults()
 {
-    regNumber spReg = m_spVarDsc->GetRegNum();
-    if (genIsValidReg(spReg))
+    if (m_spReg != REG_NA)
     {
-        m_codeGen->SetStackPointerReg(spReg);
-
-        // Revert the RA-local "enregistering" of SP if needed.
-        if (!m_spVarDsc->lvIsRegCandidate())
-        {
-            m_spVarDsc->SetRegNum(REG_STK);
-        }
+        m_codeGen->SetStackPointerReg(m_spReg);
+        JITDUMP("Allocated SP into %s\n", getRegName(m_spReg));
     }
     if (m_fpReg != REG_NA)
     {
         m_codeGen->SetFramePointerReg(m_fpReg);
         m_codeGen->setFramePointerUsed(true);
+        JITDUMP("Allocated FP into %s\n", getRegName(m_fpReg));
     }
     else
     {
