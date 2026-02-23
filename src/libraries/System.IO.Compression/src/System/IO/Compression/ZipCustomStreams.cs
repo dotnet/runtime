@@ -712,4 +712,182 @@ namespace System.IO.Compression
             await base.DisposeAsync().ConfigureAwait(false);
         }
     }
+
+    internal sealed class CrcValidatingReadStream : Stream
+    {
+        private readonly Stream _baseStream;
+        private uint _runningCrc;
+        private readonly uint _expectedCrc;
+        private long _totalBytesRead;
+        private readonly long _expectedLength;
+        private bool _isDisposed;
+        private bool _crcValidated;
+        private bool _crcAbandoned;
+
+        public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
+        {
+            _baseStream = baseStream;
+            _expectedCrc = expectedCrc;
+            _expectedLength = expectedLength;
+        }
+
+        public override bool CanRead => !_isDisposed && _baseStream.CanRead;
+        public override bool CanSeek => !_isDisposed && _baseStream.CanSeek;
+        public override bool CanWrite => false;
+
+        public override long Length => _baseStream.Length;
+
+        public override long Position
+        {
+            get => _baseStream.Position;
+            set
+            {
+                ThrowIfDisposed();
+                ThrowIfCantSeek();
+
+                _crcAbandoned = true;
+                _baseStream.Position = value;
+            }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            int bytesRead = _baseStream.Read(buffer, offset, count);
+            ProcessBytesRead(buffer.AsSpan(offset, bytesRead));
+
+            return bytesRead;
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = _baseStream.Read(buffer);
+            ProcessBytesRead(buffer.Slice(0, bytesRead));
+
+            return bytesRead;
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            int bytesRead = await _baseStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+            ProcessBytesRead(buffer.AsSpan(offset, bytesRead));
+
+            return bytesRead;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            ProcessBytesRead(buffer.Span.Slice(0, bytesRead));
+
+            return bytesRead;
+        }
+
+        private void ProcessBytesRead(ReadOnlySpan<byte> data)
+        {
+            if (data.Length > 0 && !_crcAbandoned)
+            {
+                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, data);
+                _totalBytesRead += data.Length;
+
+                if (_totalBytesRead >= _expectedLength)
+                {
+                    ValidateCrc();
+                }
+            }
+        }
+
+        private void ValidateCrc()
+        {
+            if (_crcValidated)
+                return;
+
+            _crcValidated = true;
+
+            if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
+            {
+                throw new InvalidDataException(SR.CrcMismatch);
+            }
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override void Flush()
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantSeek();
+
+            _crcAbandoned = true;
+
+            return _baseStream.Seek(offset, origin);
+        }
+
+        public override void SetLength(long value)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+        }
+
+        private void ThrowIfCantSeek()
+        {
+            if (!CanSeek)
+                throw new NotSupportedException(SR.SeekingNotSupported);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_isDisposed)
+            {
+                _baseStream.Dispose();
+                _isDisposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                await _baseStream.DisposeAsync().ConfigureAwait(false);
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 }
