@@ -2499,7 +2499,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             var_types   targetType = node->GetSimdBaseType();
             GenTree*    regOp      = node->Op(1);
             GenTree*    rmOp       = node->Op(2);
-            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
 
             emitAttr attr = emitTypeSize(targetType);
             emitter* emit = GetEmitter();
