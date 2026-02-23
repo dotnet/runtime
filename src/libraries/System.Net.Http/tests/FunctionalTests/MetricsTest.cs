@@ -887,30 +887,6 @@ namespace System.Net.Http.Functional.Tests
             VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
         }
 
-        class NetEventListener : EventListener
-        {
-            ITestOutputHelper _output;
-
-            public NetEventListener(ITestOutputHelper output)
-            {
-                _output = output;
-
-                foreach (var source in EventSource.GetSources().Where(s => s.Name.Contains("System.Net.Http")))
-                    EnableEvents(source, EventLevel.Verbose);
-
-                EventWritten += (_, eventArgs) => WriteEventData(eventArgs);
-            }
-
-            void WriteEventData(EventWrittenEventArgs eventArgs)
-            {
-                var messageParts = eventArgs.PayloadNames
-                    .Zip(eventArgs.Payload)
-                    .Select((nameAndPayload) => $@"{nameAndPayload.First}: ""{nameAndPayload.Second}""");
-
-                _output.WriteLine(string.Join(", ", messageParts));
-            }
-        }
-
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public Task TimeInQueue_RecordedForNewConnectionsOnly()
         {
@@ -918,7 +894,8 @@ namespace System.Net.Http.Functional.Tests
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using var eventListener = new NetEventListener(_output);
+                using var httpEventListener = new TestUtilities.TestEventListener(
+                    _output, "System.Net.Http", "Private.InternalDiagnostics.System.Net.Http");
 
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
@@ -927,16 +904,12 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                    _output.WriteLine("===============================================================================");
-                    _output.WriteLine($"Sending request {i + 1}");
-                    _output.WriteLine("===============================================================================");
+                    _output.WriteLine($"========== Sending request {i + 1} ==========");
 
                     using HttpResponseMessage response = await SendAsync(client, request);
                 }
 
-                _output.WriteLine("===============================================================================");
-                _output.WriteLine("Finished processing requests");
-                _output.WriteLine("===============================================================================");
+                _output.WriteLine("========== Finished processing requests ==========");
 
                 var measurements = timeInQueueRecorder.GetMeasurements();
                 for (var i = 0; i < measurements.Count; i++)
