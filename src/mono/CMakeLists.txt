@@ -496,6 +496,16 @@ else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
+# Default stack size: 2MB for 64-bit, 1MB for 32-bit.
+# Use large (8MB) stack size for s390x/ppc64le due to limited tail call optimization support.
+if(TARGET_S390X OR TARGET_POWERPC64)
+  set(MONO_DEFAULT_STACKSIZE 8388608)
+elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+  set(MONO_DEFAULT_STACKSIZE 1048576)
+else()
+  set(MONO_DEFAULT_STACKSIZE 2097152)
+endif()
+
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
 if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)

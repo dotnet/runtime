@@ -48,6 +48,30 @@
 
 static pthread_mutex_t memory_barrier_process_wide_mutex = PTHREAD_MUTEX_INITIALIZER;
 static void *memory_barrier_process_wide_helper_page;
+static gsize default_stacksize = 0;
+
+static gsize
+get_default_stacksize (void)
+{
+	gsize stacksize = 0;
+
+	if (default_stacksize != 0)
+		return default_stacksize;
+
+	const char *value = getenv ("DOTNET_Thread_DefaultStackSize");
+	if (value) {
+		errno = 0;
+		stacksize = (gsize)strtoull (value, NULL, 16);
+		if (errno != 0)
+			stacksize = 0;
+	}
+
+	if (stacksize == 0)
+		stacksize = MONO_DEFAULT_STACKSIZE;
+
+	default_stacksize = stacksize;
+	return default_stacksize;
+}
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
@@ -72,10 +96,10 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		if (RUNNING_ON_VALGRIND)
 			set_stack_size = 1 << 20;
 		else
-			set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
-#else
-		set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
+		{
+			set_stack_size = get_default_stacksize ();
+		}
 	}
 
 #ifdef PTHREAD_STACK_MIN
