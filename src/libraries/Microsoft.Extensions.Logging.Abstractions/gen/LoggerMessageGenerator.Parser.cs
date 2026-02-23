@@ -366,7 +366,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                             break;
                                         }
+#if ROSLYN4_8_OR_GREATER
+                                        else if (paramSymbol.RefKind == RefKind.RefReadOnlyParameter)
+#else
                                         else if (paramSymbol.RefKind == (RefKind)4) // RefKind.RefReadOnlyParameter, added in Roslyn 4.8
+#endif
                                         {
                                             qualifier = "ref readonly";
                                         }
