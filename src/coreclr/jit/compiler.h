@@ -6601,13 +6601,11 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                           CORINFO_LOOKUP*         pLookup,
-                           GenTreeFlags            handleFlags,
-                           void*                   compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                  CORINFO_LOOKUP*         pLookup,
-                                  void*                   compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
+                           GenTreeFlags    handleFlags,
+                           void*           compileTimeHandle);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
+                                  void*           compileTimeHandle);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);

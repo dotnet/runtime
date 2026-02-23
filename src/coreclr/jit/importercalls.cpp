@@ -9017,22 +9017,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             compileTimeHandle = instantiatingStub;
         }
 
-        CORINFO_RESOLVED_TOKEN* lookupToken =
-            (pDerivedResolvedToken->tokenScope != nullptr) ? pDerivedResolvedToken : pResolvedToken;
-
-        if ((lookupToken == nullptr) && dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
-        {
-            JITDUMP("Cannot perform runtime instantiation lookup without a resolved token, sorry.\n");
-            return;
-        }
-
-        GenTree* instParam =
-            getLookupTree(lookupToken, &dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
+        GenTree* instParam = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
 
         if (instParam == nullptr)
         {
             // If we're inlining, impLookupToTree can return nullptr after recording a fatal observation.
-            JITDUMP("Failed to materialize instantiation argument for devirtualized call, sorry.\n");
+            JITDUMP("Failed to produce the lookup for devirtualized call, sorry.\n");
             return;
         }
 
