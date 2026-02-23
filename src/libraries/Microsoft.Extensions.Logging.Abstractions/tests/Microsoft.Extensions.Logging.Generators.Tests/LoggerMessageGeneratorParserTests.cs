@@ -986,11 +986,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public async Task InvalidScopedValueParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                using System;
                 partial class C
                 {
+                    ref struct MyRefStruct { }
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
-                    static partial void M(ILogger logger, scoped ReadOnlySpan<int> p1);
+                    static partial void M(ILogger logger, scoped MyRefStruct p1);
                 }");
 
             Assert.Single(diagnostics);
@@ -1004,11 +1004,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         public async Task InvalidRefLikeTypeParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                using System;
                 partial class C
                 {
+                    ref struct MyRefStruct { }
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
-                    static partial void M(ILogger logger, ref ReadOnlySpan<int> p1);
+                    static partial void M(ILogger logger, ref MyRefStruct p1);
                 }");
 
             Assert.Single(diagnostics);
