@@ -998,6 +998,8 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
+#endif
+
         [Fact]
         public async Task InvalidRefLikeTypeParameter()
         {
@@ -1013,7 +1015,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct.Id, diagnostics[0].Id);
             Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
-#endif
 
         [Fact]
         public async Task MalformedFormatString()
