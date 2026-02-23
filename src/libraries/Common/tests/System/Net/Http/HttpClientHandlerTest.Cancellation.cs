@@ -142,16 +142,13 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+// There's no LoadIntoBufferAsync(CancellationToken) overload on Framework.
+// So no way to pass and propagate cancellation when buffering response content.
+#if !NETFRAMEWORK
         [Theory]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHttpHandler does not observe cancellation during buffered response body reads
-                return;
-            }
-
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
@@ -201,6 +198,7 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
+#endif
 
         [Theory]
         [MemberData(nameof(ThreeBools))]
