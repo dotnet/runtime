@@ -11,16 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Antlr4BuildTasks" Version="$(Antlr4BuildTasksVersion)">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Antlr4 Include="CIL.g4">
-      <Package>ILAssembler</Package>
-    </Antlr4>
-  </ItemGroup>
 </Project>

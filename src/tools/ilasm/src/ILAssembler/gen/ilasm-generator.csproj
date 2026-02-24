@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CS3021</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunAnalyzers>false</RunAnalyzers>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4BuildTasks" Version="$(Antlr4BuildTasksVersion)">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="$(Antlr4RuntimeStandardVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Antlr4 Include="CIL.g4">
+      <Listener>false</Listener>
+      <GAtn>false</GAtn>
+      <Package>ILAssembler</Package>
+      <AntOutDir>$(ProjectDir)</AntOutDir>
+    </Antlr4>
+  </ItemGroup>
+</Project>
