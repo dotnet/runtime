@@ -202,7 +202,7 @@ LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
     : m_loops(loops)
 {
     Compiler* comp = loops->GetDfsTree()->GetCompiler();
-    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalDefinitionsMap* [loops->NumLoops()] {};
+    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalDefinitionsMap*[loops->NumLoops()]{};
     BitVecTraits poTraits = loops->GetDfsTree()->PostOrderTraits();
     m_visitedBlocks       = BitVecOps::MakeEmpty(&poTraits);
 }
@@ -2122,6 +2122,7 @@ private:
                 {
                     unsigned exactSize      = accessSize.GetExact();
                     unsigned exactFieldSize = fieldSize.GetExact();
+                }
 
                 if (!accessSize.IsNull() && m_compiler->IsWideAccess(fieldLclNum, 0, accessSize))
                 {
