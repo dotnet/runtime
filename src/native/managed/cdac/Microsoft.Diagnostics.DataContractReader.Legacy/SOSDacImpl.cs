@@ -1324,14 +1324,14 @@ public sealed unsafe partial class SOSDacImpl
         private readonly ISOSHandleEnum? _legacyHandleEnum;
         private uint _index;
 
-        public SOSHandleEnum(Target target, uint[] types, ISOSHandleEnum? legacyHandleEnum)
+        public SOSHandleEnum(Target target, HandleType[] types, ISOSHandleEnum? legacyHandleEnum)
         {
             _target = target;
             _legacyHandleEnum = legacyHandleEnum;
             _handles = GetHandles(types);
         }
 
-        private SOSHandleData[] GetHandles(uint[] types)
+        private SOSHandleData[] GetHandles(HandleType[] types)
         {
             IGC gc = _target.Contracts.GC;
             List<HandleData> handles = gc.GetHandles(types);
@@ -1445,7 +1445,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IGC gc = _target.Contracts.GC;
-            uint[] supportedHandleTypes = gc.GetSupportedHandleTypes();
+            HandleType[] supportedHandleTypes = gc.GetSupportedHandleTypes();
             ISOSHandleEnum? legacyHandleEnum = null;
 #if DEBUG
             if (_legacyImpl is not null)
@@ -1478,7 +1478,9 @@ public sealed unsafe partial class SOSDacImpl
                 Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             }
 #endif
-            ppHandleEnum = new SOSHandleEnum(_target, types, legacyHandleEnum);
+            IGC gc = _target.Contracts.GC;
+            HandleType[] handleTypes = gc.GetHandleTypes(types);
+            ppHandleEnum = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
         }
         catch (System.Exception ex)
         {

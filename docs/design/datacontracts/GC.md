@@ -614,7 +614,7 @@ List<HandleData> IGC.GetHandles(uint[] types)
 
 uint[] IGC.GetSupportedHandleTypes()
 {
-    // currently supported types: HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT, HNDTYPE_WEAK_INTERIOR_POINTER, HNDTYPE_REFCOUNTED (conditional on at least one of global variables "FeatureCOMInterop", "FeatureComWrappers", and "FeatureObjCMarshal"), and HNDTYPE_CROSSREFERENCE (conditional on global variable "FeatureJavaMarshal")
+    // currently supported types: WeakShort, WeakLong, Strong, Pinned, Dependent, WeakInteriorPointer, RefCounted (conditional on at least one of global variables "FeatureCOMInterop", "FeatureComWrappers", and "FeatureObjCMarshal"), and CrossReference (conditional on global variable "FeatureJavaMarshal")
 }
 
 private void GetHandlesForSegment(TargetPointer segmentPtr, uint type, List<HandleData> handles)
@@ -658,9 +658,9 @@ private void GetHandlesForBlock(TargetPointer segmentPtr, byte uBlock, uint type
     }
 }
 
-private static bool IsStrongReference(uint type) => // HNDTYPE_STRONG || HNDTYPE_PINNED;
-private static bool HasSecondary(uint type) => // HNDTYPE_DEPENDENT || HNDTYPE_WEAK_INTERIOR_POINTER || HNDTYPE_CROSSREFERENCE;
-private static bool IsRefCounted(uint type) => // HNDTYPE_REFCOUNTED;
+private static bool IsStrongReference(uint type) => // Strong || Pinned;
+private static bool HasSecondary(uint type) => // Dependent || WeakInteriorPointer || CrossReference;
+private static bool IsRefCounted(uint type) => // RefCounted;
 
 private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, uint intraBlockIndex, TargetPointer segmentPtr, uint type)
 {

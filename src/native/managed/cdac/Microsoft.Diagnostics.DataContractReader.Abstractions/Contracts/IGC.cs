@@ -19,6 +19,18 @@ public static class GCIdentifiers
     public const string DynamicHeapCount = "dynamic_heap";
 }
 
+public enum HandleType
+{
+    WeakShort = 0,
+    WeakLong = 1,
+    Strong = 2,
+    Pinned = 3,
+    RefCounted = 5,
+    Dependent = 6,
+    WeakInteriorPointer = 10,
+    CrossReference = 11,
+}
+
 public record struct HandleData(
     TargetPointer Handle,
     TargetPointer Secondary,
@@ -111,8 +123,9 @@ public interface IGC : IContract
     GCOomData GetOomData() => throw new NotImplementedException();
     // server variant
     GCOomData GetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
-    List<HandleData> GetHandles(uint[] types) => throw new NotImplementedException();
-    uint[] GetSupportedHandleTypes() => throw new NotImplementedException();
+    List<HandleData> GetHandles(HandleType[] types) => throw new NotImplementedException();
+    HandleType[] GetSupportedHandleTypes() => throw new NotImplementedException();
+    HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC
