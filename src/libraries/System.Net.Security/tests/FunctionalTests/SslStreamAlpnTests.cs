@@ -177,7 +177,7 @@ namespace System.Net.Security.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(ClientSupportsAlpn))]
+        [ConditionalTheory(typeof(SslStreamAlpnTestBase), nameof(ClientSupportsAlpn))]
         [MemberData(nameof(Http2Servers))]
         public async Task SslStream_Http2_Alpn_Success(Uri server)
         {

@@ -232,7 +232,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [ConditionalFact(typeof(BaseGetSetTimes<T>), nameof(HighTemporalResolution))] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             T item = GetExistingItem();
@@ -264,7 +264,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(LowTemporalResolution))]
+        [ConditionalFact(typeof(BaseGetSetTimes<T>), nameof(LowTemporalResolution))]
         public void TimesIncludeMillisecondPart_LowTempRes()
         {
             T item = GetExistingItem();

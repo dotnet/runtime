@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Tests
         public static byte[] MinimalKey { get; } =
             PlatformKeySizeRequirements?.MinSize is int min ? new byte[min] : Array.Empty<byte>();
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_AllAtOnce()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_Chunks()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_Reused()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_GetCurrentHash_ByteArray()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Allocated_Hash_Destination()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -236,7 +236,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Clone_Independent_Unobserved()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Clone_UseAfterReset()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Clone_Independent_Observed()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Clone_Independent_Disposed()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -324,7 +324,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_VerifyCurrentHash_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -345,7 +345,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_VerifyHashAndReset_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -367,7 +367,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_VerifyCurrentHash_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -391,7 +391,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_VerifyHashAndReset_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -416,7 +416,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void Create_CustomizationStringNullIsEmpty()
         {
             int OutputLength = 32;
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(macWithEmptyCustomizationString, macWithNullCustomizationString);
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetHashAndReset_PerformsReset_Span()
         {
             const int OutputLength = 32;
@@ -463,7 +463,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetHashAndReset_PerformsReset_Array()
         {
             const int OutputLength = 32;
@@ -488,7 +488,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetCurrentHash_Minimal_Bytes()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -499,7 +499,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetCurrentHash_Minimal_Span()
         {
             using (TKmac kmac = TKmacTrait.Create(new ReadOnlySpan<byte>(MinimalKey), customizationString: default(ReadOnlySpan<byte>)))
@@ -512,7 +512,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetCurrentHash_ExistingStatePreserved_Span()
         {
             const int OutputLength = 32;
@@ -541,7 +541,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetCurrentHash_ExistingStatePreserved_Bytes()
         {
             int OutputLength = 32;
@@ -569,7 +569,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetHashAndReset_Minimal_Bytes()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -580,7 +580,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetHashAndReset_Minimal_Span()
         {
             using (TKmac kmac = TKmacTrait.Create(new ReadOnlySpan<byte>(MinimalKey), customizationString: default(ReadOnlySpan<byte>)))
@@ -593,7 +593,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void GetHashAndReset_ResetWithEmpty()
         {
             const int OutputLength = 64;
@@ -630,7 +630,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task OneShot_HashData_CustomizationStringNullIsEmpty()
         {
             const int OutputLength = 32;
@@ -653,7 +653,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(expected, mac);
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_ByteArray()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -668,7 +668,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_ByteArray_SpanInput()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -683,7 +683,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_JustRight()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -700,7 +700,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_LargerWithOffset()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -722,7 +722,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapExact()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -737,7 +737,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageBefore()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -752,7 +752,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_SpanBuffer_OverlapPartial_MessageAfter()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -767,7 +767,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_Stream_ByteArray()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -796,7 +796,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_OneShot_HashData_Stream_Destination()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -810,7 +810,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_OneShot_HashData_StreamAsync_ByteArray()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -841,7 +841,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_OneShot_HashData_StreamAsync_Destination()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -861,7 +861,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_ByteArray_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -876,7 +876,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_Span_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -891,7 +891,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_ByteArray_Stream_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -909,7 +909,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_Span_Stream_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -927,7 +927,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_VerifyAsync_ByteArray_Stream_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -946,7 +946,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_VerifyAsync_Memory_Stream_Valid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -965,7 +965,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_ByteArray_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -983,7 +983,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_Span_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -1001,7 +1001,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_ByteArray_Stream_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -1022,7 +1022,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void KnownAnswerTests_Verify_Span_Stream_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -1043,7 +1043,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_VerifyAsync_ByteArray_Stream_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -1065,7 +1065,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task KnownAnswerTests_VerifyAsync_Memory_Stream_Invalid()
         {
             foreach (KmacTestVector testVector in TestVectors)
@@ -1087,7 +1087,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void Clone_DifferentInstance()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -1097,7 +1097,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_OneShot_HashData_OutputLengthNegative()
         {
             byte[] source = new byte[1];
@@ -1143,7 +1143,7 @@ namespace System.Security.Cryptography.Tests
                     default(CancellationToken)));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_OneShot_HashData_StreamNotReadable()
         {
             byte[] buffer = new byte[1];
@@ -1201,7 +1201,7 @@ namespace System.Security.Cryptography.Tests
                     default(CancellationToken)));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task ArgValidation_OneShot_HashDataAsync_Cancelled()
         {
             byte[] buffer = new byte[1];
@@ -1233,7 +1233,7 @@ namespace System.Security.Cryptography.Tests
                     cancelledToken));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_OneShot_HashData_SourceNull()
         {
             byte[] customizationString = [];
@@ -1292,7 +1292,7 @@ namespace System.Security.Cryptography.Tests
                     default(CancellationToken)));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_OneShot_HashData_KeyNull()
         {
             byte[] source = new byte[8];
@@ -1318,7 +1318,7 @@ namespace System.Security.Cryptography.Tests
                     default(CancellationToken)));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Verify_KeyNull()
         {
             AssertExtensions.Throws<ArgumentNullException>(
@@ -1334,7 +1334,7 @@ namespace System.Security.Cryptography.Tests
                 () => TKmacTrait.VerifyAsync((byte[])null, (Stream)null, (byte[])null, (byte[])null, default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Verify_SourceNull()
         {
             byte[] hash = new byte[1];
@@ -1352,7 +1352,7 @@ namespace System.Security.Cryptography.Tests
                 () => TKmacTrait.VerifyAsync(MinimalKey, (Stream)null, hash, (byte[])null, default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Verify_HashNull()
         {
             byte[] source = Array.Empty<byte>();
@@ -1370,7 +1370,7 @@ namespace System.Security.Cryptography.Tests
                 () => TKmacTrait.VerifyAsync(MinimalKey, Stream.Null, (byte[])null, (byte[])null, default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Verify_HashEmpty()
         {
             byte[] source = Array.Empty<byte>();
@@ -1407,7 +1407,7 @@ namespace System.Security.Cryptography.Tests
                 () => TKmacTrait.VerifyAsync(MinimalKey, Stream.Null, Array.Empty<byte>(), (byte[])null, default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Verify_StreamUnreadable()
         {
             byte[] hash = new byte[1];
@@ -1439,7 +1439,7 @@ namespace System.Security.Cryptography.Tests
                 default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task ArgValidation_Verify_Cancelled()
         {
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
@@ -1462,7 +1462,7 @@ namespace System.Security.Cryptography.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await memoryVerify);
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_GetCurrentHash_OutputLengthNegative()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -1473,7 +1473,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_GetHashAndReset_OutputLengthNegative()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -1484,7 +1484,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_AppendData_DataNull()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: null))
@@ -1495,7 +1495,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_VerifyHashAndReset_NullHash()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -1506,7 +1506,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_VerifyHashAndReset_EmptyHash()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -1521,7 +1521,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_VerifyCurrentHash_NullHash()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -1532,7 +1532,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_VerifyCurrentHash_EmptyHash()
         {
             using (TKmac kmac = TKmacTrait.Create(MinimalKey, customizationString: Array.Empty<byte>()))
@@ -1547,7 +1547,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void ArgValidation_Allocated_UseAfterDispose()
         {
             byte[] buffer = new byte[1];
@@ -1568,7 +1568,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => TKmacTrait.VerifyCurrentHash(kmac, new ReadOnlySpan<byte>(buffer)));
         }
 
-        [ConditionalFact(nameof(IsNotSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsNotSupported))]
         public void NotSupported_ThrowsPlatformNotSupportedException()
         {
             byte[] source = new byte[1];
@@ -1689,7 +1689,7 @@ namespace System.Security.Cryptography.Tests
                     default));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void CryptographicException_Allocated_KeySize()
         {
             if (PlatformKeySizeRequirements?.MinSize - 1 is int smallKey and > 0)
@@ -1711,7 +1711,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task CryptographicException_OneShot_KeySize()
         {
             if (PlatformKeySizeRequirements?.MinSize - 1 is int smallKeySize and > 0)
@@ -1725,7 +1725,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void CryptographicException_Instance_CustomizationStringSize()
         {
             if (PlatformMaxCustomizationStringSize + 1 is int tooBigCustomizationString)
@@ -1740,7 +1740,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public void CryptographicException_Instance_OutputSize()
         {
             if (PlatformMaxOutputSize + 1 is int tooBigOutputSize)
@@ -1765,7 +1765,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task CryptographicException_OneShot_CustomizationStringSize()
         {
             if (PlatformMaxCustomizationStringSize + 1 is int tooBigCustomizationString)
@@ -1775,7 +1775,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(KmacTestDriver<TKmacTrait, TKmac>), nameof(IsSupported))]
         public async Task CryptographicException_OneShot_OutputSize()
         {
             if (PlatformMaxOutputSize + 1 is int tooBigOutputSize)

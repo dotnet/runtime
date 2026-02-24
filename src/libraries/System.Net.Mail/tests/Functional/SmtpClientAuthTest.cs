@@ -38,7 +38,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal("NTLM", Server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact(typeof(SmtpClientAuthTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>), nameof(IsNtlmInstalled))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public async Task TestGssapiAuthentication()
         {
