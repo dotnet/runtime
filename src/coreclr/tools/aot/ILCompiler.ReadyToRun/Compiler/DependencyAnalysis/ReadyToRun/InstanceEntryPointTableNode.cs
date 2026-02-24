@@ -105,8 +105,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods(null, CompiledMethodCategory.Instantiated))
             {
-                // Resumption stubs are now discovered via READYTORUN_FIXUP_ResumptionStubEntryPoint fixups
-                // on their parent async variant methods, so they no longer need entries in this hash table.
+                // Resumption stubs are discovered via READYTORUN_FIXUP_ResumptionStubEntryPoint fixups
+                // on their parent async variant methods, so they do not need entries in the InstanceEntryPointTable.
                 if (method.Method is AsyncResumptionStub)
                     continue;
 
