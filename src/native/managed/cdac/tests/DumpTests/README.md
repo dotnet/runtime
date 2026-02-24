@@ -31,7 +31,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | ServerGC | Server GC mode heap structures | Heap |
 | StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Full |
 | MultiModule | Multi-assembly metadata resolution | Full |
-| TypeHierarchy | Type inheritance, method tables | Full |
+| TypeHierarchy | Type inheritance, method tables | Heap |
 | PInvokeStub | P/Invoke with SetLastError ILStub | Full |
 | VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
 
