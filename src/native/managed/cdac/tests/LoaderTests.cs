@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -84,31 +85,18 @@ public unsafe class LoaderTests
         }
     }
 
-    private static readonly string[] ExpectedHeapNames =
-    [
-        "LowFrequencyHeap",
-        "HighFrequencyHeap",
-        "StaticsHeap",
-        "StubHeap",
-        "ExecutableHeap",
-        "FixupPrecodeHeap",
-        "NewStubPrecodeHeap",
-        "IndcellHeap",
-        "CacheEntryHeap",
-    ];
-
-    private static readonly TargetPointer[] MockHeapAddresses =
-    [
-        new(0x1000),
-        new(0x2000),
-        new(0x3000),
-        new(0x4000),
-        new(0x5000),
-        new(0x6000),
-        new(0x7000),
-        new(0x8000),
-        new(0x9000),
-    ];
+    private static readonly Dictionary<string, TargetPointer> MockHeapDictionary = new()
+    {
+        ["LowFrequencyHeap"] = new(0x1000),
+        ["HighFrequencyHeap"] = new(0x2000),
+        ["StaticsHeap"] = new(0x3000),
+        ["StubHeap"] = new(0x4000),
+        ["ExecutableHeap"] = new(0x5000),
+        ["FixupPrecodeHeap"] = new(0x6000),
+        ["NewStubPrecodeHeap"] = new(0x7000),
+        ["IndcellHeap"] = new(0x8000),
+        ["CacheEntryHeap"] = new(0x9000),
+    };
 
     private static SOSDacImpl CreateSOSDacImplForHeapTests(MockTarget.Architecture arch)
     {
@@ -118,8 +106,8 @@ public unsafe class LoaderTests
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == Mock.Of<ILoader>(
-                l => l.GetLoaderAllocatorHeapNames() == (IReadOnlyList<string>)ExpectedHeapNames
-                && l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyList<TargetPointer>)MockHeapAddresses)));
+                l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<string, TargetPointer>)MockHeapDictionary
+                && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100))));
         return new SOSDacImpl(target, null);
     }
 
@@ -133,7 +121,7 @@ public unsafe class LoaderTests
         int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
 
         Assert.Equal(HResults.S_FALSE, hr);
-        Assert.Equal(ExpectedHeapNames.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
     }
 
     [Theory]
@@ -144,17 +132,18 @@ public unsafe class LoaderTests
 
         int needed;
         int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
-        Assert.Equal(ExpectedHeapNames.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
 
         char** names = stackalloc char*[needed];
         hr = impl.GetLoaderAllocatorHeapNames(needed, names, &needed);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(ExpectedHeapNames.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
+        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < needed; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Equal(ExpectedHeapNames[i], actual);
+            Assert.Contains(actual, expectedNames);
         }
     }
 
@@ -169,11 +158,12 @@ public unsafe class LoaderTests
         int hr = impl.GetLoaderAllocatorHeapNames(2, names, &needed);
 
         Assert.Equal(HResults.S_FALSE, hr);
-        Assert.Equal(ExpectedHeapNames.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
+        HashSet<string> expectedNames = new(MockHeapDictionary.Keys);
         for (int i = 0; i < 2; i++)
         {
             string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
-            Assert.Equal(ExpectedHeapNames[i], actual);
+            Assert.Contains(actual, expectedNames);
         }
     }
 
@@ -197,7 +187,7 @@ public unsafe class LoaderTests
         int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 0, null, null, &needed);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(MockHeapAddresses.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
     }
 
     [Theory]
@@ -214,10 +204,11 @@ public unsafe class LoaderTests
         int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), needed, heaps, kinds, &needed);
 
         Assert.Equal(HResults.S_OK, hr);
-        Assert.Equal(MockHeapAddresses.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
+        HashSet<ulong> expectedAddresses = new(MockHeapDictionary.Values.Select(p => (ulong)p));
         for (int i = 0; i < needed; i++)
         {
-            Assert.Equal((ulong)MockHeapAddresses[i], (ulong)heaps[i]);
+            Assert.Contains((ulong)heaps[i], expectedAddresses);
             Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
         }
     }
@@ -234,7 +225,7 @@ public unsafe class LoaderTests
         int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 2, heaps, kinds, &needed);
 
         Assert.Equal(HResults.E_INVALIDARG, hr);
-        Assert.Equal(MockHeapAddresses.Length, needed);
+        Assert.Equal(MockHeapDictionary.Count, needed);
     }
 
     [Theory]

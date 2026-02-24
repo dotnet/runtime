@@ -4265,11 +4265,13 @@ public sealed unsafe partial class SOSDacImpl
             return _loaderAllocatorHeapNamePtrs;
 
         Contracts.ILoader contract = _target.Contracts.Loader;
-        IReadOnlyList<string> names = contract.GetLoaderAllocatorHeapNames();
-        nint[] ptrs = new nint[names.Count];
-        for (int i = 0; i < names.Count; i++)
+        TargetPointer globalLoaderAllocator = contract.GetGlobalLoaderAllocator();
+        IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(globalLoaderAllocator);
+        nint[] ptrs = new nint[heaps.Count];
+        int i = 0;
+        foreach (string name in heaps.Keys)
         {
-            ptrs[i] = Marshal.StringToHGlobalAnsi(names[i]);
+            ptrs[i++] = Marshal.StringToHGlobalAnsi(name);
         }
         _loaderAllocatorHeapNamePtrs = ptrs;
         return ptrs;
@@ -4318,7 +4320,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            IReadOnlyList<TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
+            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
             int loaderHeapCount = heaps.Count;
 
             if (pNeeded != null)
@@ -4332,10 +4334,12 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    for (int i = 0; i < loaderHeapCount; i++)
+                    int i = 0;
+                    foreach (TargetPointer heap in heaps.Values)
                     {
-                        pLoaderHeaps[i] = heaps[i].ToClrDataAddress(_target);
+                        pLoaderHeaps[i] = heap.ToClrDataAddress(_target);
                         pKinds[i] = 0; // LoaderHeapKindNormal
+                        i++;
                     }
                 }
             }

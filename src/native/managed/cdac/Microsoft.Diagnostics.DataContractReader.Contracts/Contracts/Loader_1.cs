@@ -553,65 +553,40 @@ internal readonly struct Loader_1 : ILoader
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 
-    IReadOnlyList<string> ILoader.GetLoaderAllocatorHeapNames()
+    IReadOnlyDictionary<string, TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
     {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
         Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-        List<string> names =
-        [
-            "LowFrequencyHeap",
-            "HighFrequencyHeap",
-            "StaticsHeap",
-            "StubHeap",
-            "ExecutableHeap",
-            "FixupPrecodeHeap",
-            "NewStubPrecodeHeap",
-        ];
+        Dictionary<string, TargetPointer> heaps = new()
+        {
+            ["LowFrequencyHeap"] = loaderAllocator.LowFrequencyHeap,
+            ["HighFrequencyHeap"] = loaderAllocator.HighFrequencyHeap,
+            ["StaticsHeap"] = loaderAllocator.StaticsHeap,
+            ["StubHeap"] = loaderAllocator.StubHeap,
+            ["ExecutableHeap"] = loaderAllocator.ExecutableHeap,
+            ["FixupPrecodeHeap"] = loaderAllocator.FixupPrecodeHeap ?? TargetPointer.Null,
+            ["NewStubPrecodeHeap"] = loaderAllocator.NewStubPrecodeHeap ?? TargetPointer.Null,
+        };
 
         if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)))
-            names.Add("DynamicHelpersStubHeap");
-
-        names.Add("IndcellHeap");
-
-        if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
-            names.Add("CacheEntryHeap");
-
-        return names;
-    }
-
-    IReadOnlyList<TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
-    {
-        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
-
-        List<TargetPointer> heaps =
-        [
-            loaderAllocator.LowFrequencyHeap,
-            loaderAllocator.HighFrequencyHeap,
-            loaderAllocator.StaticsHeap,
-            loaderAllocator.StubHeap,
-            loaderAllocator.ExecutableHeap,
-            loaderAllocator.FixupPrecodeHeap ?? TargetPointer.Null,
-            loaderAllocator.NewStubPrecodeHeap ?? TargetPointer.Null,
-        ];
-
-        if (loaderAllocator.DynamicHelpersStubHeap is not null)
-            heaps.Add(loaderAllocator.DynamicHelpersStubHeap.Value);
+            heaps["DynamicHelpersStubHeap"] = loaderAllocator.DynamicHelpersStubHeap ?? TargetPointer.Null;
 
         if (loaderAllocator.VirtualCallStubManager != TargetPointer.Null)
         {
             Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
-            heaps.Add(vcsMgr.IndcellHeap);
+            heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
 
-            if (vcsMgr.CacheEntryHeap is not null)
-                heaps.Add(vcsMgr.CacheEntryHeap.Value);
+            if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
+                heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap ?? TargetPointer.Null;
         }
         else
         {
-            // No VirtualCallStubManager - fill remaining slots with null
-            IReadOnlyList<string> names = ((ILoader)this).GetLoaderAllocatorHeapNames();
-            while (heaps.Count < names.Count)
-                heaps.Add(TargetPointer.Null);
+            heaps["IndcellHeap"] = TargetPointer.Null;
+
+            if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
+                heaps["CacheEntryHeap"] = TargetPointer.Null;
         }
 
         return heaps;
