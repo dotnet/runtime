@@ -1211,7 +1211,6 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         DynamicMethodDesc::StubAsyncResume,
         (PCCOR_SIGNATURE)s_resumptionStubSig,
         sizeof(s_resumptionStubSig),
-        FALSE,
         &amTracker);
 
     amTracker.SuppressRelease();

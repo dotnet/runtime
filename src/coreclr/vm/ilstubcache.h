@@ -87,7 +87,6 @@ public:
         DWORD stubType,         // DynamicMethodDesc::ILStubType
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
-        BOOL isAsync,
         AllocMemTracker* pamTracker);
 
     MethodTable * GetStubMethodTable()

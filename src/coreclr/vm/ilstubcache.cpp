@@ -367,7 +367,6 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
     DWORD stubType, // DynamicMethodDesc::ILStubType
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
-    BOOL isAsync,
     AllocMemTracker* pamTracker)
 {
     CONTRACT(MethodDesc*)
@@ -394,7 +393,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
             mcDynamic,              // classification
             TRUE,                   // fNonVtableSlot - Dynamic methods don't have vtable slots
             TRUE,                   // fNativeCodeSlot - we will set the native code pointer directly to the R2R entry point
-            isAsync,                // HasAsyncMethodData
+            FALSE,                  // HasAsyncMethodData
             pMT,
             pamTracker);
 
@@ -402,12 +401,6 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
 
         pMD->SetMemberDef(0);
         pMD->SetSlot(MethodTable::NO_SLOT);
-
-        if (isAsync)
-        {
-            pMD->SetHasAsyncMethodData();
-            pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
-        }
 
         // Determine static vs instance from the signature calling convention
         SigPointer sigPtr(pSig, cbSig);
