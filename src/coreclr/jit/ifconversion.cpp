@@ -719,22 +719,24 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             if (!lclVarUsedInCondOrStore)
             {
                 Statement* last = m_startBlock->lastStmt();
-
                 for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
                 {
                     GenTree* tree = stmt->GetRootNode();
                     if (tree->OperIs(GT_STORE_LCL_VAR))
                     {
-                        GenTree* storeValue = tree->AsLclVar()->Data();
-                        if ((storeValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                        GenTreeLclVar* prevStore = tree->AsLclVar();
+                        if (prevStore->GetLclNum() == storeLclNum)
                         {
-                            m_doElseConversion    = true;
-                            m_elseOperation.block = m_startBlock;
-                            m_elseOperation.stmt  = stmt;
-                            m_elseOperation.node  = tree;
-                        }
+                            if ((prevStore->Data()->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                            {
+                                m_doElseConversion    = true;
+                                m_elseOperation.block = m_startBlock;
+                                m_elseOperation.stmt  = stmt;
+                                m_elseOperation.node  = tree;
+                            }
 
-                        break;
+                            break;
+                        }
                     }
                 }
             }
