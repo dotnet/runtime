@@ -363,6 +363,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
     LoaderAllocator* pAllocator,
     MethodTable* pMT,
     PCODE r2rEntryPoint,
+    ILStubHashBlob* pHashBlob,
     DWORD stubType, // DynamicMethodDesc::ILStubType
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
@@ -379,70 +380,94 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
-
-    DynamicMethodDesc::ILStubType ilStubType = (DynamicMethodDesc::ILStubType)stubType;
-
-    LoaderHeap* pCreationHeap = pAllocator->GetHighFrequencyHeap();
-
-    MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(
-        pCreationHeap,
-        1,                      // count
-        mcDynamic,              // classification
-        TRUE,                   // fNonVtableSlot - Dynamic methods don't have vtable slots
-        TRUE,                   // fNativeCodeSlot - we will set the native code pointer directly to the R2R entry point
-        isAsync,                // HasAsyncMethodData
-        pMT,
-        pamTracker);
-
-    DynamicMethodDesc* pMD = (DynamicMethodDesc*)pChunk->GetFirstMethodDesc();
-
-    pMD->SetMemberDef(0);
-    pMD->SetSlot(MethodTable::NO_SLOT);
-
-    if (isAsync)
+    DynamicMethodDesc* pMD = NULL;
+    MethodDesc* cachedMD = LookupStubMethodDesc(pHashBlob);
+    if (cachedMD == NULL)
     {
-        pMD->SetHasAsyncMethodData();
-        pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
-    }
+        DynamicMethodDesc::ILStubType ilStubType = (DynamicMethodDesc::ILStubType)stubType;
 
-    // Determine static vs instance from the signature calling convention
-    SigPointer sigPtr(pSig, cbSig);
-    uint32_t callConvInfo;
-    IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
+        LoaderHeap* pCreationHeap = pAllocator->GetHighFrequencyHeap();
 
-    if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
-    {
-        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
-                             DynamicMethodDesc::FlagIsILStub);
-    }
-    else
-    {
-        pMD->SetStatic();
-        pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
-                             DynamicMethodDesc::FlagStatic |
-                             DynamicMethodDesc::FlagIsILStub);
-    }
+        MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(
+            pCreationHeap,
+            1,                      // count
+            mcDynamic,              // classification
+            TRUE,                   // fNonVtableSlot - Dynamic methods don't have vtable slots
+            TRUE,                   // fNativeCodeSlot - we will set the native code pointer directly to the R2R entry point
+            isAsync,                // HasAsyncMethodData
+            pMT,
+            pamTracker);
 
-    pMD->SetILStubType(ilStubType);
+        pMD = (DynamicMethodDesc*)pChunk->GetFirstMethodDesc();
 
-    // No resolver needed - code already exists in R2R image
-    pMD->m_pResolver = nullptr;
+        pMD->SetMemberDef(0);
+        pMD->SetSlot(MethodTable::NO_SLOT);
 
-    pMD->m_pszMethodName = GetStubMethodName(ilStubType);
+        if (isAsync)
+        {
+            pMD->SetHasAsyncMethodData();
+            pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
+        }
 
-    pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
+        // Determine static vs instance from the signature calling convention
+        SigPointer sigPtr(pSig, cbSig);
+        uint32_t callConvInfo;
+        IfFailThrow(sigPtr.GetCallingConvInfo(&callConvInfo));
 
-    // Set the native code directly - no precode needed since code already exists
-    pMD->SetNativeCodeInterlocked(r2rEntryPoint);
+        if (callConvInfo & CORINFO_CALLCONV_HASTHIS)
+        {
+            pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                                DynamicMethodDesc::FlagIsILStub);
+        }
+        else
+        {
+            pMD->SetStatic();
+            pMD->InitializeFlags(DynamicMethodDesc::FlagPublic |
+                                DynamicMethodDesc::FlagStatic |
+                                DynamicMethodDesc::FlagIsILStub);
+        }
+
+        pMD->SetILStubType(ilStubType);
+
+        // No resolver needed - code already exists in R2R image
+        pMD->m_pResolver = nullptr;
+
+        pMD->m_pszMethodName = GetStubMethodName(ilStubType);
+
+        pMD->SetStoredMethodSig((PCCOR_SIGNATURE)pSig, cbSig);
+
+        // Set the native code directly - no precode needed since code already exists
+        pMD->SetNativeCodeInterlocked(r2rEntryPoint);
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
-    pMD->m_pszDebugClassName = "ILStubClass";
-    pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
-    pMD->m_pDebugMethodTable = pMT;
+        pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
+        pMD->m_pszDebugClassName = "ILStubClass";
+        pMD->m_pszDebugMethodSignature = FormatSig(pMD, pCreationHeap, pamTracker);
+        pMD->m_pDebugMethodTable = pMT;
 #endif // _DEBUG
 
-    RETURN pMD;
+        // Make sure we agree on one in case of a race. Discard our MethodDesc if another thread already created an equivalent one.
+        cachedMD = InsertStubMethodDesc(pMD, pHashBlob);
+    }
+    _ASSERTE(cachedMD != NULL);
+#ifdef _DEBUG
+    LPCSTR pszResult;
+    if (pMD == NULL)
+    {
+        pszResult = "[hit cache]";
+    }
+    else if (cachedMD != pMD)
+    {
+        pszResult = "[hit cache][wasted new MethodDesc due to race]";
+    }
+    else // pMD != NULL && cachedMD == pMD
+    {
+        pszResult = "[cache miss]";
+    }
+    LOG((LF_STUBS, LL_INFO1000, "ILSTUBCACHE: ILStubCache::CreateR2RBackedILStub %s StubMD: %p blob: %p\n", pszResult, pMD, pHashBlob));
+#endif
+
+    RETURN cachedMD;
 }
 
 //

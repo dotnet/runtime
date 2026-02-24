@@ -1173,12 +1173,18 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+struct AsyncResumptionStubHashBlob : public ILStubHashBlobBase
+{
+    PCODE pEntryPoint;
+};
+
 void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 {
     STANDARD_VM_CONTRACT;
 
     AllocMemTracker amTracker;
-    MethodTable* pStubMT = m_pModule->GetILStubCache()->GetOrCreateStubMethodTable(m_pModule);
+    ILStubCache *pStubCache = m_pModule->GetILStubCache();
+    MethodTable* pStubMT = pStubCache->GetOrCreateStubMethodTable(m_pModule);
 
     // Resumption stub signature: object(object, ref byte)
     // This matches BuildResumptionStubSignature in jitinterface.cpp
@@ -1191,10 +1197,17 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         ELEMENT_TYPE_U1
     };
 
-    MethodDesc* pStubMD = ILStubCache::CreateR2RBackedILStub(
+    AsyncResumptionStubHashBlob hashBlob;
+    memset(&hashBlob, 0, sizeof(hashBlob));
+    hashBlob.pEntryPoint = stubEntryPoint;
+    hashBlob.m_cbSizeOfBlob = sizeof(hashBlob);
+    ILStubHashBlob *pHashBlob = (ILStubHashBlob*)&hashBlob;
+
+    MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
         m_pModule->GetLoaderAllocator(),
         pStubMT,
         stubEntryPoint,
+        pHashBlob,
         DynamicMethodDesc::StubAsyncResume,
         (PCCOR_SIGNATURE)s_resumptionStubSig,
         sizeof(s_resumptionStubSig),

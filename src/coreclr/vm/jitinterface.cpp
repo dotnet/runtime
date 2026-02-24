@@ -14159,7 +14159,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
                 ~EnableTypeLoadHolder()
                 {
-                    if (GetThreadNULLOk() != 0 && _previousForbidTypeLoad != -1)
+                    if (GetThreadNULLOk() != 0 && _previousForbidTypeLoad != (ULONG)-1)
                     {
                         _ASSERTE(GetThreadNULLOk()->m_ulForbidTypeLoad == 0);
                         GetThreadNULLOk()->m_ulForbidTypeLoad = _previousForbidTypeLoad;

@@ -79,10 +79,11 @@ public:
     // Creates a DynamicMethodDesc that wraps pre-compiled R2R stub code.
     // Unlike regular IL stubs, this does not create a resolver or precode - it points
     // directly to the R2R native code.
-    static MethodDesc* CreateR2RBackedILStub(
+    MethodDesc* CreateR2RBackedILStub(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
         PCODE r2rEntryPoint,
+        ILStubHashBlob* pHashBlob,
         DWORD stubType,         // DynamicMethodDesc::ILStubType
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
