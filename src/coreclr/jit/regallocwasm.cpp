@@ -568,7 +568,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 }
 
 //------------------------------------------------------------------------
-// RequestInternalRegisterForNode: request an internal register for a node with specific type.
+// RequestInternalRegister: request an internal register for a node with specific type.
 //
 // To be later assigned a physical register.
 //

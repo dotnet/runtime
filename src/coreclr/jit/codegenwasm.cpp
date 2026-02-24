@@ -1129,6 +1129,8 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
     assert(treeNode->gtOverflow());
     assert(varTypeIsIntegral(treeNode->TypeGet()));
 
+    // TODO-WASM-CQ: consider using helper calls for all these cases
+
     genConsumeOperands(treeNode);
 
     const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
@@ -1147,11 +1149,12 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
 
             // Add and save the sum
             GetEmitter()->emitIns(is64BitOp ? INS_i64_add : INS_i32_add);
-            GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
             GetEmitter()->emitIns(INS_if);
             {
@@ -1159,6 +1162,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
@@ -1176,11 +1180,12 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
 
             // Subtract and save the difference
             GetEmitter()->emitIns(is64BitOp ? INS_i64_sub : INS_i32_sub);
-            GetEmitter()->emitIns_I(INS_local_tee, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
             // See if operands had a different sign. XOR leaves a negative result if they had different signs.
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
             GetEmitter()->emitIns(INS_if);
             {
@@ -1189,6 +1194,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
                 GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
                 GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
                 genJumpToThrowHlpBlk(SCK_OVERFLOW);
             }
