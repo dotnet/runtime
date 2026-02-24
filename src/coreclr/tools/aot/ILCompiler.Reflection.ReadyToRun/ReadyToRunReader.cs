@@ -1175,6 +1175,14 @@ namespace ILCompiler.Reflection.ReadyToRun
             int runtimeFunctionSize = CalculateRuntimeFunctionSize();
             int runtimeFunctionsOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
 
+            Dictionary<uint, int> stubRvaToMethodIndexMap = new Dictionary<uint, int>(nRuntimeFunctions);
+            for (int i = 0; i < nRuntimeFunctions; i++)
+            {
+                int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
+                uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                stubRvaToMethodIndexMap[beginAddress] = i;
+            }
+
             foreach (ReadyToRunMethod method in Methods.ToList())
             {
                 if (method.Fixups is null)
@@ -1192,28 +1200,20 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                     // Signature format: [0x38] [4-byte RVA of resumption stub code]
                     uint stubRVA = BitConverter.ToUInt32(Image, sigOffset + 1);
-
-                    for (int i = 0; i < nRuntimeFunctions; i++)
+                    if (stubRvaToMethodIndexMap.TryGetValue(stubRVA, out int index))
                     {
-                        int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
-                        uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
-                        if (beginAddress == stubRVA)
-                        {
-                            isEntryPoint[i] = true;
-
-                            ReadyToRunMethod stubMethod = new ReadyToRunMethod(
-                                this,
-                                method.ComponentReader,
-                                method.MethodHandle,
-                                i,
-                                owningType: null,
-                                constrainedType: null,
-                                instanceArgs: method.InstanceArgs,
-                                signaturePrefixes: ["[RESUME]"],
-                                fixupOffset: null);
-                            _instanceMethods.Add(new InstanceMethod(0, stubMethod));
-                            break;
-                        }
+                        isEntryPoint[index] = true;
+                        ReadyToRunMethod stubMethod = new ReadyToRunMethod(
+                            this,
+                            method.ComponentReader,
+                            method.MethodHandle,
+                            index,
+                            owningType: null,
+                            constrainedType: null,
+                            instanceArgs: method.InstanceArgs,
+                            signaturePrefixes: ["[RESUME]"],
+                            fixupOffset: null);
+                        _instanceMethods.Add(new InstanceMethod(0, stubMethod));
                     }
                 }
             }
