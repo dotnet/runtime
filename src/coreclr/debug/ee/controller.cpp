@@ -5400,9 +5400,7 @@ void InterpreterStepHelper::AddInterpreterPatch(const int32_t* pIP)
 }
 
 InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
-    bool stepIn,
-    MethodDesc** ppCallTarget,
-    const BYTE** ppSkipIP)
+    bool stepIn)
 {
     CONTRACTL
     {
@@ -5410,11 +5408,6 @@ InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    _ASSERTE(ppCallTarget != NULL);
-    _ASSERTE(ppSkipIP != NULL);
-    *ppCallTarget = NULL;
-    *ppSkipIP = NULL;
 
     if (m_pJitInfo == NULL)
     {
@@ -5449,33 +5442,25 @@ InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
             LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_CALL\n"));
 
             const int32_t* skipIP = interpWalker.GetSkipIP();
-            *ppSkipIP = (const BYTE*)skipIP;
 
             if (stepIn)
             {
-                MethodDesc* pCallTarget = interpWalker.GetCallTarget();
-                if (pCallTarget != NULL)
+                // For all call types (direct and indirect), use the JMC backstop.
+                // The interpreter's INTOP_DEBUG_METHOD_ENTER fires for all interpreted
+                // methods (not just JMC), so the backstop reliably catches entry into
+                // any interpreted target. We also place a step-over patch as fallback
+                // in case the call target doesn't trigger MethodEnter.
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Step-in call, using MethodEnter backstop\n"));
+                if (skipIP != NULL)
                 {
-                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Direct call target found: %p\n", pCallTarget));
-                    *ppCallTarget = pCallTarget;
-                    return SSR_NeedStepIn;
+                    AddInterpreterPatch(skipIP);
                 }
                 else
                 {
-                    // Indirect call - cannot determine target statically
-                    // We can only set up the step-over patch as fallback
-                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Indirect call, setting step-over patch as fallback\n"));
-                    if (skipIP != NULL)
-                    {
-                        AddInterpreterPatch(skipIP);
-                    }
-                    else
-                    {
-                        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Indirect call with no skip IP!\n"));
-                        return SSR_Failed;
-                    }
-                    return SSR_NeedStepIn; // Caller should enable JMC backstop
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Call with no skip IP!\n"));
+                    return SSR_Failed;
                 }
+                return SSR_NeedStepIn; // Caller enables JMC backstop
             }
             else
             {
@@ -6314,10 +6299,8 @@ bool DebuggerStepper::TrapInterpreterCodeStep(ControllerStackInfo *info, bool in
     LOG((LF_CORDB,LL_INFO10000,"DS::TICS: In interpreter code at %p (in=%d)\n", currentPC, in));
 
     InterpreterStepHelper helper(this, info, ji);
-    MethodDesc* pCallTarget = NULL;
-    const BYTE* pSkipIP = NULL;
 
-    InterpreterStepHelper::StepSetupResult result = helper.SetupStep(in, &pCallTarget, &pSkipIP);
+    InterpreterStepHelper::StepSetupResult result = helper.SetupStep(in);
 
     switch (result)
     {
@@ -6326,35 +6309,12 @@ bool DebuggerStepper::TrapInterpreterCodeStep(ControllerStackInfo *info, bool in
             return true;
 
         case InterpreterStepHelper::SSR_NeedStepIn:
-            // Handle step-in for calls
-            if (pCallTarget != NULL)
-            {
-                LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-in to %p\n", pCallTarget));
-
-                // Get call target address for TrapStepInHelper
-                PCODE targetAddr = pCallTarget->GetCodeForInterpreterOrJitted();
-                if (targetAddr == (PCODE)NULL)
-                {
-                    targetAddr = pCallTarget->GetMethodEntryPoint();
-                    LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Using entry point (prestub) %p\n", targetAddr));
-                }
-
-                if (targetAddr != (PCODE)NULL && 
-                    TrapStepInHelper(info, (const BYTE*)targetAddr, pSkipIP, false, false))
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                // Indirect call - enable JMC backstop
-                // TODO: This will not work correctly if the indirect call target is resolved JIT/R2R compiled code.
-                // https://github.com/dotnet/runtime/issues/124547
-                LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Indirect call, enabling MethodEnter backstop\n"));
-                EnableJMCBackStop(info->m_activeFrame.md);
-                return true;
-            }
-            break;
+            // All call types use JMC backstop — step-over patch already placed by SetupStep
+            // TODO: This will not work correctly if the call target is JIT/R2R compiled code.
+            // https://github.com/dotnet/runtime/issues/124547
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-in call, enabling MethodEnter backstop\n"));
+            EnableJMCBackStop(info->m_activeFrame.md);
+            return true;
 
         case InterpreterStepHelper::SSR_NeedStepOut:
             // Return/throw - let caller invoke TrapStepOut

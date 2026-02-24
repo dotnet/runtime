@@ -1888,9 +1888,11 @@ private:
 //   - For stepping we primarily use control flow prediction + breakpoints:
 //     we analyze the current bytecode instruction and place breakpoint patches
 //     at all possible next instruction locations.
-//   - For indirect call instructions (INTOP_CALLVIRT, INTOP_CALLI,
-//     INTOP_CALLDELEGATE) whose target can't be resolved statically we rely on
-//     JMC method-enter backstops rather than predicting the target.
+//   - For step-in on calls (both direct and indirect) we rely on JMC
+//     method-enter backstops. The interpreter's INTOP_DEBUG_METHOD_ENTER fires
+//     for all interpreted methods (not just JMC), so this reliably catches
+//     entry into any interpreted target. A step-over patch is also placed as
+//     fallback in case the target doesn't trigger MethodEnter.
 //
 class InterpreterStepHelper
 {
@@ -1910,10 +1912,7 @@ public:
 
     // Analyze instruction at current IP and set up breakpoints for stepping.
     // Returns result indicating how caller should proceed.
-    // For step-in on calls, ppCallTarget is set if target can be determined.
-    StepSetupResult SetupStep(bool stepIn, 
-                               MethodDesc** ppCallTarget,
-                               const BYTE** ppSkipIP);
+    StepSetupResult SetupStep(bool stepIn);
 
     // Get the walk type of the current instruction (for logging/debugging)
     WALK_TYPE GetWalkType() const { return m_walkType; }
