@@ -1197,6 +1197,7 @@ CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+CDAC_GLOBAL_CONTRACT(BuiltInCOM, 1)
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)

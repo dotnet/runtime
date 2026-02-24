@@ -7,10 +7,6 @@ This contract is for getting information related to COM wrappers.
 ``` csharp
 // Get the address of the external COM object
 TargetPointer GetComWrappersIdentity(TargetPointer rcw);
-// Get the refcount for a COM call wrapper.
-public ulong GetRefCount(TargetPointer ccw);
-// Check whether the COM wrappers handle is weak.
-public bool IsHandleWeak(TargetPointer ccw);
 // Given a ccw pointer, return the managed object wrapper
 public TargetPointer GetManagedObjectWrapperFromCCW(TargetPointer ccw);
 // Given a managed object wrapper, return the comwrappers pointer
@@ -26,10 +22,7 @@ public bool IsComWrappersRCW(TargetPointer rcw);
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
-| `ComCallWrapper` | `SimpleWrapper` | Address of the associated `SimpleComCallWrapper` |
-| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value |
-| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties |
+| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object ||
 | `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
 | `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
 | `ComWrappersVtablePtrs` | `Size` | Size of vtable pointers array |
@@ -37,7 +30,6 @@ Data descriptors used:
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| `ComRefcountMask` | `long` | Mask applied to `SimpleComCallWrapper.RefCount` to produce the visible refcount |
 | `ComWrappersVtablePtrs` | TargetPointer | Pointer to struct containing ComWrappers-related function pointers |
 | `DispatchThisPtrMask` | TargetPointer | Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper |
 
@@ -65,21 +57,6 @@ private enum Flags
 public TargetPointer GetComWrappersIdentity(TargetPointer address)
 {
     return _target.ReadPointer(address + /* NativeObjectWrapperObject::ExternalComObject offset */);
-}
-
-public ulong GetRefCount(TargetPointer address)
-{
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    ulong refCount = _target.Read<ulong>(ccw + /* SimpleComCallWrapper::RefCount offset */);
-    long refCountMask = _target.ReadGlobal<long>("ComRefcountMask");
-    return refCount & (ulong)refCountMask;
-}
-
-public bool IsHandleWeak(TargetPointer address)
-{
-    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
-    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)Flags.IsHandleWeak) != 0;
 }
 
 private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPointer vtable, out TargetPointer qiAddress)
