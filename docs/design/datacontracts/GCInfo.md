@@ -79,6 +79,7 @@ The fat header is used for methods that cannot be encoded using the compact slim
 | GenericsInstContextStackSlot | `GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE` | Normalized stack slot for generics context | `HeaderFlags & GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK != 0` |
 | StackBaseRegister | `STACK_BASE_REGISTER_ENCBASE` | Normalized stack base register number | If HeaderFlags has GC_INFO_HAS_STACK_BASE_REGISTER |
 | SizeOfEditAndContinuePreservedArea | `SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE` | Size of EnC preserved area | If HeaderFlags has `GC_INFO_HAS_EDIT_AND_CONTINUE_INFO` |
+| SizeOfEditAndContinueFixedStackFrame | `SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE` | Size of EnC fixed stack frame | If HeaderFlags has `GC_INFO_HAS_EDIT_AND_CONTINUE_INFO` and platform is ARM64 |
 | ReversePInvokeFrameSlot | `REVERSE_PINVOKE_FRAME_ENCBASE` | Normalized reverse P/Invoke frame slot | If GC_INFO_REVERSE_PINVOKE_FRAME |
 | SizeOfStackOutgoingAndScratchArea | `SIZE_OF_STACK_AREA_ENCBASE` | Size of stack parameter area | Platform dependent |
 | NumSafePoints | `NUM_SAFE_POINTS_ENCBASE` | Number of safe points/callsites | #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED |
@@ -181,6 +182,7 @@ Slots use delta encoding where consecutive entries encode only the difference fr
 | `STACK_BASE_REGISTER_ENCBASE` | 2 | Base bits for stack base register number |
 | `SIZE_OF_STACK_AREA_ENCBASE` | 3 | Base bits for stack parameter area size |
 | `SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE` | 4 | Base bits for Edit and Continue preserved area size |
+| `SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE` | 4 | Base bits for Edit and Continue fixed stack frame size (ARM64 only) |
 | `REVERSE_PINVOKE_FRAME_ENCBASE` | 6 | Base bits for reverse P/Invoke frame slot |
 | `NUM_REGISTERS_ENCBASE` | 3 | Base bits for number of register slots |
 | `NUM_STACK_SLOTS_ENCBASE` | 2 | Base bits for number of stack slots |

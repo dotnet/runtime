@@ -30,6 +30,7 @@ internal interface IGCInfoTraits
     static abstract int STACK_BASE_REGISTER_ENCBASE { get; }
     static abstract int SIZE_OF_STACK_AREA_ENCBASE { get; }
     static abstract int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE { get; }
+    static abstract int SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE { get; }
     static abstract int REVERSE_PINVOKE_FRAME_ENCBASE { get; }
     static abstract int NUM_REGISTERS_ENCBASE { get; }
     static abstract int NUM_STACK_SLOTS_ENCBASE { get; }

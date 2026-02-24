@@ -86,7 +86,7 @@ public abstract class ContractRegistry
     /// Gets an instance of the GCInfo contract for the target.
     /// </summary>
     public virtual IGCInfo GCInfo => GetContract<IGCInfo>();
-    /// </summary>
+    /// <summary>
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
     public virtual INotifications Notifications => GetContract<INotifications>();

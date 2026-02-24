@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
@@ -119,6 +120,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private int _pspSymStackSlot;
     private int _genericsInstContextStackSlot;
     private uint _sizeOfEnCPreservedArea;
+    private uint _sizeOfEnCFixedStackFrame;
     private int _reversePInvokeFrameStackSlot;
     private uint _fixedStackParameterScratchArea;
 
@@ -361,6 +363,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         _pspSymStackSlot = TTraits.NO_PSP_SYM;
         _genericsInstContextStackSlot = TTraits.NO_GENERICS_INST_CONTEXT;
         _sizeOfEnCPreservedArea = TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+        _sizeOfEnCFixedStackFrame = 0;
         _reversePInvokeFrameStackSlot = TTraits.NO_REVERSE_PINVOKE_FRAME;
 
         if (TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA)
@@ -437,9 +440,22 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             TTraits.DenormalizeStackBaseRegister(_reader.DecodeVarLengthUnsigned(TTraits.STACK_BASE_REGISTER_ENCBASE, ref _bitOffset)) :
             TTraits.NO_STACK_BASE_REGISTER;
 
-        _sizeOfEnCPreservedArea = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_EDIT_AND_CONTINUE_INFO) ?
-            _reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref _bitOffset) :
-            TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+        if (_headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_EDIT_AND_CONTINUE_INFO))
+        {
+            _sizeOfEnCPreservedArea = _reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, ref _bitOffset);
+
+            // Arm64 has an additional field for EnC fixed stack frame size
+            // This is controlled by target architecture rather than on the traits because it impacts the interpreter
+            if (_arch == RuntimeInfoArchitecture.Arm64)
+            {
+                _sizeOfEnCFixedStackFrame = _reader.DecodeVarLengthUnsigned(TTraits.SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, ref _bitOffset);
+            }
+        }
+        else
+        {
+            _sizeOfEnCPreservedArea = TTraits.NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+            _sizeOfEnCFixedStackFrame = 0;
+        }
         yield return DecodePoints.EditAndContinue;
 
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
@@ -486,8 +502,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private static uint CeilOfLog2(ulong value)
     {
-        uint result = (uint)Math.Ceiling(Math.Log2(value));
-        return result;
+        Debug.Assert(value > 0);
+        value = (value << 1) - 1;
+        return (uint)(63 - BitOperations.LeadingZeroCount(value));
     }
 
     #endregion

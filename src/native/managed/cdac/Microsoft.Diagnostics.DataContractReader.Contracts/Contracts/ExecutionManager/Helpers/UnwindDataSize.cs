@@ -52,7 +52,7 @@ internal static class UnwindDataSize
                     epilogScopes = xdata1 & 0xffff;
                 }
 
-                if ((xdata0 & (1 << 21)) != 0)
+                if ((xdata0 & (1 << 21)) == 0)
                     size += 4 * epilogScopes;
 
                 size += 4 * unwindWords;
@@ -81,7 +81,7 @@ internal static class UnwindDataSize
                     unwindWords = (xdata1 >> 16) & 0xff;
                 }
 
-                if ((xdata0 & (1 << 21)) != 0)
+                if ((xdata0 & (1 << 21)) == 0)
                     size += 4 * epilogScopes;
 
                 size += 4 * unwindWords;

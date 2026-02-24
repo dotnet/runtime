@@ -653,6 +653,8 @@ public sealed unsafe partial class SOSDacImpl
                 data->GCInfo = 0;
                 data->MethodStart = 0;
                 data->MethodSize = 0;
+                data->HotRegionSize = 0;
+                data->ColdRegionSize = 0;
                 data->ColdRegionStart = 0;
             }
             else

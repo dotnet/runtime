@@ -23,6 +23,7 @@ internal class AMD64GCInfoTraits : IGCInfoTraits
     public static int STACK_BASE_REGISTER_ENCBASE => 3;
     public static int SIZE_OF_STACK_AREA_ENCBASE => 3;
     public static int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE => 4;
+    public static int SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE => 0;
     public static int REVERSE_PINVOKE_FRAME_ENCBASE => 6;
     public static int NUM_REGISTERS_ENCBASE => 2;
     public static int NUM_STACK_SLOTS_ENCBASE => 2;
