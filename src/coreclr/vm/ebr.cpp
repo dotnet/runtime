@@ -67,10 +67,10 @@ struct EbrTlsDestructor final
 static thread_local EbrTlsDestructor t_ebrTlsDestructor;
 
 // Global EBR collector for HashMap's async mode.
-// If you want to add another usage for Ebr in the future, please consider
-// the tradeoffs between creating multiple collectors or treating this as
-// a single shared global collector.
 EbrCollector g_HashMapEbr;
+
+// Global EBR collector for EEHashTable bucket reclamation.
+EbrCollector g_EEHashEbr;
 
 // ============================================
 // EbrCollector implementation

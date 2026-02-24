@@ -6,6 +6,17 @@
 #ifndef _EE_HASH_INL
 #define _EE_HASH_INL
 
+#include "ebr.h"
+
+#ifndef DACCESS_COMPILE
+// Static helper for EBR deferred deletion of obsolete EEHash bucket arrays.
+static void DeleteObsoleteEEHashBuckets(void* p)
+{
+    LIMITED_METHOD_CONTRACT;
+    FreeEEHashBuckets((EEHashEntry_t**)p);
+}
+#endif // DACCESS_COMPILE
+
 #ifdef _DEBUG_IMPL
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
 BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::OwnLock()
@@ -56,7 +67,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Destroy()
             }
         }
 
-        delete[] (m_pVolatileBucketTable->m_pBuckets-1);
+        FreeEEHashBuckets(m_pVolatileBucketTable->m_pBuckets);
 
 		m_pVolatileBucketTable = NULL;
     }
@@ -76,15 +87,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
 
     //_ASSERTE (OwnLock());
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
-    // of table. You can only get rid of it once nobody is using it. That's a problem because
-    // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
-    // we know that nobody is using the old copy of the table anymore.
-    // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
-    GCX_COOP_NO_THREAD_BROKEN();
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -101,7 +104,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
             }
         }
 
-        delete[] (m_pVolatileBucketTable->m_pBuckets-1);
+        FreeEEHashBuckets(m_pVolatileBucketTable->m_pBuckets);
         m_pVolatileBucketTable->m_pBuckets = NULL;
     }
 
@@ -125,15 +128,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::EmptyHashTable()
 
     _ASSERTE (OwnLock());
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
-    // of table. You can only get rid of it once nobody is using it. That's a problem because
-    // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
-    // we know that nobody is using the old copy of the table anymore.
-    // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
-    GCX_COOP_NO_THREAD_BROKEN();
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -175,27 +170,11 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::Init(DWORD dwNumBucke
 
     m_pVolatileBucketTable = &m_BucketTable[0];
 
-    DWORD dwNumBucketsPlusOne;
-
-    // Prefast overflow sanity check the addition
-    if (!ClrSafeInt<DWORD>::addition(dwNumBuckets, 1, dwNumBucketsPlusOne))
-        return FALSE;
-
-    S_SIZE_T safeSize(sizeof(EEHashEntry_t *));
-    safeSize *= dwNumBucketsPlusOne;
-    if (safeSize.IsOverflow())
-        ThrowHR(COR_E_OVERFLOW);
-    SIZE_T cbAlloc = safeSize.Value();
-
-    m_pVolatileBucketTable->m_pBuckets = (EEHashEntry_t **) new (nothrow) BYTE[cbAlloc];
+    m_pVolatileBucketTable->m_pBuckets = AllocateEEHashBuckets(dwNumBuckets);
 
     if (m_pVolatileBucketTable->m_pBuckets == NULL)
         return FALSE;
 
-    memset(m_pVolatileBucketTable->m_pBuckets, 0, cbAlloc);
-
-    // The first slot links to the next list.
-    m_pVolatileBucketTable->m_pBuckets++;
     m_pVolatileBucketTable->m_dwNumBuckets = dwNumBuckets;
 #ifdef TARGET_64BIT
     m_pVolatileBucketTable->m_dwNumBucketsMul = dwNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNumBuckets);
@@ -238,15 +217,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
-    // of table. You can only get rid of it once nobody is using it. That's a problem because
-    // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
-    // we know that nobody is using the old copy of the table anymore.
-    // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
-    GCX_COOP_NO_THREAD_BROKEN();
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -292,15 +263,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
 
     _ASSERTE (OwnLock());
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
-    // of table. You can only get rid of it once nobody is using it. That's a problem because
-    // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
-    // we know that nobody is using the old copy of the table anymore.
-    // BROKEN: This is called sometimes from the CorMap hash before the EE is started up
-    GCX_COOP_NO_THREAD_BROKEN();
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -345,8 +308,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    Thread *pThread = GetThreadNULLOk();
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread != NULL);
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -494,9 +456,6 @@ FORCEINLINE BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValueS
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-#ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
-        MODE_COOPERATIVE;
-#endif
     }
     CONTRACTL_END
 
@@ -520,9 +479,6 @@ FORCEINLINE BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValueS
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-#ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
-        MODE_COOPERATIVE;
-#endif
     }
     CONTRACTL_END
 
@@ -566,16 +522,11 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     }
     CONTRACTL_END
 
-    // Transition to COOP mode. This is need because EEHashTable is lock free and it can be read
-    // from multiple threads without taking locks. On rehash, you want to get rid of the old copy
-    // of table. You can only get rid of it once nobody is using it. That's a problem because
-    // there is no lock to tell when the last reader stopped using the old copy of the table.
-    // The solution to this problem is to access the table in cooperative mode, and to get rid of
-    // the old copy of the table when we are suspended for GC. When we are suspended for GC,
-    // we know that nobody is using the old copy of the table anymore.
+    // EBR protects against use-after-free of old bucket arrays during GrowHashTable.
+    // Before EE starts there is only one thread, so EBR is not needed.
     //
 #ifndef DACCESS_COMPILE
-   GCX_COOP_NO_THREAD_BROKEN();
+   EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 #endif
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
@@ -627,11 +578,10 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
     {
         WRAPPER(THROWS);
         WRAPPER(GC_NOTRIGGER);
-#ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
-        MODE_COOPERATIVE;
-#endif
     }
     CONTRACTL_END
+
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
@@ -688,14 +638,12 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     CONTRACTL_END
 
 #if defined(_DEBUG)
-    Thread * pThread = GetThreadNULLOk();
-    _ASSERTE(!g_fEEStarted || (pThread == NULL) || (pThread->PreemptiveGCDisabled()));
+    _ASSERTE(!g_fEEStarted || g_EEHashEbr.InCriticalRegion());
 #endif
 
     // Make the new bucket table 4 times bigger
     //
     DWORD dwNewNumBuckets;
-    DWORD dwNewNumBucketsPlusOne;
     {
         S_UINT32 safeSize(m_pVolatileBucketTable->m_dwNumBuckets);
 
@@ -705,43 +653,35 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
             return FALSE;
 
         dwNewNumBuckets = safeSize.Value();
-
-        safeSize += 1;  // Allocate one extra
-
-        if (safeSize.IsOverflow())
-            return FALSE;
-
-        dwNewNumBucketsPlusOne = safeSize.Value();
     }
 
     // On resizes, we still have an array of old pointers we need to worry about.
     // We can't free these old pointers, for we may hit a race condition where we're
-    // resizing and reading from the array at the same time. We need to keep track of these
-    // old arrays of pointers, so we're going to use the last item in the array to "link"
-    // to previous arrays, so that they may be freed at the end.
+    // resizing and reading from the array at the same time. Old bucket arrays are
+    // deferred for deletion via EBR (or deleted immediately before EE starts).
     //
 
-    SIZE_T cbAlloc;
-    {
-        S_SIZE_T safeSize(sizeof(EEHashEntry_t *));
-
-        safeSize *= dwNewNumBucketsPlusOne;
-
-        if (safeSize.IsOverflow())
-            return FALSE;
-
-        cbAlloc = safeSize.Value();
-    }
-
-    EEHashEntry_t **pNewBuckets = (EEHashEntry_t **) new (nothrow) BYTE[cbAlloc];
+    EEHashEntry_t **pNewBuckets = AllocateEEHashBuckets(dwNewNumBuckets);
 
     if (pNewBuckets == NULL)
         return FALSE;
 
-    memset(pNewBuckets, 0, cbAlloc);
+    EEHashEntry_t **pOldBuckets = m_pVolatileBucketTable->m_pBuckets;
 
-    // The first slot is linked to next list.
-    pNewBuckets++;
+    // Queue old bucket array for EBR deferred deletion before moving entries.
+    // We are in an EBR critical region (entered by caller), so the old array
+    // won't be freed until we (and all other readers) exit.
+    if (g_fEEStarted)
+    {
+        if (!g_EEHashEbr.QueueForDeletion(
+            pOldBuckets,
+            DeleteObsoleteEEHashBuckets,
+            (m_pVolatileBucketTable->m_dwNumBuckets + 1) * sizeof(EEHashEntry_t*)))
+        {
+            FreeEEHashBuckets(pNewBuckets);
+            return FALSE;
+        }
+    }
 
     // Run through the old table and transfer all the entries
 
@@ -789,18 +729,17 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     pNewBucketTable->m_dwNumBucketsMul = dwNewNumBuckets == 0 ? 0 : GetFastModMultiplier(dwNewNumBuckets);
 #endif
 
-    // Add old table to the to free list. Note that the SyncClean thing will only
-    // delete the buckets at a safe point
-    //
-    SyncClean::AddEEHashTable (m_pVolatileBucketTable->m_pBuckets);
-
-    // Note that the SyncClean:AddEEHashTable performs at least one Interlock operation
-    // So we do not need to use an Interlocked operation to write m_pVolatileBucketTable
-    // Swap the double buffer, this is an atomic operation (the assignment)
-    //
-    m_pVolatileBucketTable = pNewBucketTable;
+    // Publish the new bucket table to readers. The release semantics of
+    // VolatileStore ensure all prior writes are visible before this store.
+    m_pVolatileBucketTable.Store(pNewBucketTable);
 
     InterlockedExchange( (LONG *) &m_bGrowing, 0);
+
+    // Before EE starts we're single-threaded; delete old buckets immediately.
+    if (!g_fEEStarted)
+    {
+        FreeEEHashBuckets(pOldBuckets);
+    }
 
     return TRUE;
 }
@@ -849,8 +788,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
 
     _ASSERTE_IMPL(OwnLock());
 
-    Thread *pThread = GetThreadNULLOk();
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(pThread != NULL);
+    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
 
     _ASSERTE(pIter->m_pTable == (void *) this);
 

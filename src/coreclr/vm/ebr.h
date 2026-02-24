@@ -120,6 +120,9 @@ private:
 // Global EBR collector for HashMap's async mode.
 extern EbrCollector g_HashMapEbr;
 
+// Global EBR collector for EEHashTable bucket reclamation.
+extern EbrCollector g_EEHashEbr;
+
 // RAII holder for EBR critical regions, analogous to GCX_COOP pattern.
 // When fEnable is false, the holder is a no-op.
 class EbrCriticalRegionHolder final

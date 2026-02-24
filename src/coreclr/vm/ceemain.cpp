@@ -795,6 +795,9 @@ void EEStartupHelper()
         // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
         g_HashMapEbr.Init();
 
+        // Initialize EBR for EEHashTable bucket reclamation.
+        g_EEHashEbr.Init();
+
         StubManager::InitializeStubManagers();
 
         // Set up the cor handle map. This map is used to load assemblies in
