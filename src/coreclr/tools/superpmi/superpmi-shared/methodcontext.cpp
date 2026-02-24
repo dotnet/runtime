@@ -3245,10 +3245,9 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue         = returnValue;
     result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
-    result.isInstantiatingStub = info->isInstantiatingStub;
     result.exactContext        = CastHandle(info->exactContext);
     result.detail              = (DWORD)info->detail;
-    result.needsMethodContext  = info->needsMethodContext;
+    result.instParamLookup     = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(&info->instParamLookup);
 
     if (returnValue)
     {
@@ -3273,15 +3272,14 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, needsMethodContext-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}, instParamLookup{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
-        result.isInstantiatingStub ? "true" : "false",
-        result.needsMethodContext ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
-        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???");
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???",
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(result.instParamLookup).c_str());
 }
 
 bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
@@ -3301,10 +3299,9 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
-    info->isInstantiatingStub = result.isInstantiatingStub;
-    info->needsMethodContext  = result.needsMethodContext;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
+    info->instParamLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instParamLookup);
     if (result.returnValue)
     {
         info->resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedMethod, ResolveToken);

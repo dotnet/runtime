@@ -5536,7 +5536,6 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 // getLookupTree: get a lookup tree
 //
 // Arguments:
-//    pResolvedToken - resolved token of the call
 //    pLookup - the lookup to get the tree for
 //    handleFlags - flags to set on the result node
 //    compileTimeHandle - compile-time handle corresponding to the lookup
@@ -5544,10 +5543,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 // Return Value:
 //    A node representing the lookup tree
 //
-GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                 CORINFO_LOOKUP*         pLookup,
-                                 GenTreeFlags            handleFlags,
-                                 void*                   compileTimeHandle)
+GenTree* Compiler::getLookupTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -5570,26 +5566,21 @@ GenTree* Compiler::getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
 
-    return getRuntimeLookupTree(pResolvedToken, pLookup, compileTimeHandle);
+    return getRuntimeLookupTree(pLookup, compileTimeHandle);
 }
 
 //------------------------------------------------------------------------
 // getRuntimeLookupTree: get a tree for a runtime lookup
 //
 // Arguments:
-//    pResolvedToken - resolved token of the call
 //    pLookup - the lookup to get the tree for
 //    compileTimeHandle - compile-time handle corresponding to the lookup
 //
 // Return Value:
 //    A node representing the runtime lookup tree
 //
-GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        CORINFO_LOOKUP*         pLookup,
-                                        void*                   compileTimeHandle)
+GenTree* Compiler::getRuntimeLookupTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
 {
-    assert(!compIsForInlining());
-
     CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
 
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
@@ -5710,8 +5701,8 @@ GenTree* Compiler::getTokenHandleTree(CORINFO_RESOLVED_TOKEN* pResolvedToken, bo
     //
     info.compCompHnd->embedGenericHandle(pResolvedToken, parent, info.compMethodHnd, &embedInfo);
 
-    GenTree* result = getLookupTree(pResolvedToken, &embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token),
-                                    embedInfo.compileTimeHandle);
+    GenTree* result =
+        getLookupTree(&embedInfo.lookup, gtTokenToIconFlags(pResolvedToken->token), embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)

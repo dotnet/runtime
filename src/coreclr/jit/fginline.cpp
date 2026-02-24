@@ -603,16 +603,17 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
-                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                unsigned               methodFlags            = 0;
-                const bool             isLateDevirtualization = true;
-                const bool             explicitTailCall       = call->IsTailPrefixedCall();
+                CORINFO_METHOD_HANDLE   method                 = call->gtLateDevirtualizationInfo->methodHnd;
+                CORINFO_CONTEXT_HANDLE  context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*          inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
+                CORINFO_RESOLVED_TOKEN* pResolvedToken         = &call->gtLateDevirtualizationInfo->resolvedToken;
+                unsigned                methodFlags            = 0;
+                const bool              isLateDevirtualization = true;
+                const bool              explicitTailCall       = call->IsTailPrefixedCall();
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
-                m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
+                m_compiler->impDevirtualizeCall(call, pResolvedToken, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
                 if (!call->IsDevirtualizationCandidate(m_compiler))

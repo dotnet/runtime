@@ -1289,6 +1289,7 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->inlinersContext                      = compInlineContext;
+            info->resolvedToken                        = *pResolvedToken;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -7531,6 +7532,29 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 }
 
 //------------------------------------------------------------------------
+// impDevirtualizedCallHasConstInstParam: check if the instantiation argument
+// is a compile-time lookup.
+//
+// Arguments:
+//   dvInfo - Devirtualization information returned by resolveVirtualMethod.
+//
+// Returns:
+//   true if instParamLookup describes a valid constant handle/address lookup.
+//
+bool Compiler::impDevirtualizedCallHasConstInstParam(const CORINFO_DEVIRTUALIZATION_INFO& dvInfo)
+{
+    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
+    {
+        return false;
+    }
+
+    return ((dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
+             dvInfo.instParamLookup.constLookup.handle != nullptr) ||
+            (dvInfo.instParamLookup.constLookup.accessType == IAT_PVALUE &&
+             dvInfo.instParamLookup.constLookup.addr != nullptr));
+}
+
+//------------------------------------------------------------------------
 // considerGuardedDevirtualization: see if we can profitably guess at the
 //    class involved in an interface or virtual call.
 //
@@ -7649,6 +7673,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 CORINFO_CONTEXT_HANDLE exactContext     = dvInfo.exactContext;
                 CORINFO_METHOD_HANDLE  exactMethod      = dvInfo.devirtualizedMethod;
                 uint32_t               exactMethodAttrs = info.compCompHnd->getMethodAttribs(exactMethod);
+                const bool             exactNeedsMethodContext =
+                    ((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
 
                 // NOTE: This is currently used only with NativeAOT. In theory, we could also check if we
                 // have static PGO data to decide which class to guess first. Presumably, this is a rare case.
@@ -7663,8 +7689,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.needsMethodContext,
-                                                    dvInfo.isInstantiatingStub, baseMethod, originalContext);
+                                                    clsAttrs, likelyHood, exactNeedsMethodContext,
+                                                    impDevirtualizedCallHasConstInstParam(dvInfo), baseMethod,
+                                                    originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7736,8 +7763,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext      = dvInfo.exactContext;
             likelyMethod       = dvInfo.devirtualizedMethod;
-            needsMethodContext = dvInfo.needsMethodContext;
-            instantiatingStub  = dvInfo.isInstantiatingStub;
+            needsMethodContext = ((size_t)likelyContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
+            instantiatingStub  = impDevirtualizedCallHasConstInstParam(dvInfo);
         }
         else
         {
@@ -8767,25 +8794,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
-    const char* callKind       = isInterface ? "interface" : "virtual";
-    const char* objClassNote   = "[?]";
-    const char* objClassName   = "?objClass";
-    const char* baseClassName  = "?baseClass";
-    const char* baseMethodName = "?baseMethod";
+    const char* callKind           = isInterface ? "interface" : "virtual";
+    const char* objClassNote       = "[?]";
+    const char* objClassName       = "?objClass";
+    const char* baseMethodFullName = "?baseMethod";
 
     if (verbose || doPrint)
     {
-        objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
-        objClassName   = eeGetClassName(objClass);
-        baseClassName  = eeGetClassName(baseClass);
-        baseMethodName = eeGetMethodName(baseMethod);
+        objClassNote       = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
+        objClassName       = eeGetClassName(objClass);
+        baseMethodFullName = eeGetMethodFullName(baseMethod);
 
         if (verbose)
         {
             printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
                    "    class for 'this' is %s%s (attrib %08x)\n"
-                   "    base method is %s::%s\n",
-                   callKind, objClassName, objClassNote, objClassAttribs, baseClassName, baseMethodName);
+                   "    base method is %s\n",
+                   callKind, objClassName, objClassNote, objClassAttribs, baseMethodFullName);
         }
     }
 #endif // defined(DEBUG)
@@ -8834,10 +8859,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     info.compCompHnd->resolveVirtualMethod(&dvInfo);
 
-    CORINFO_METHOD_HANDLE   derivedMethod         = dvInfo.devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE  exactContext          = dvInfo.exactContext;
-    CORINFO_CLASS_HANDLE    derivedClass          = NO_CLASS_HANDLE;
-    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken = &dvInfo.resolvedTokenDevirtualizedMethod;
+    CORINFO_METHOD_HANDLE   derivedMethod          = dvInfo.devirtualizedMethod;
+    CORINFO_CONTEXT_HANDLE  exactContext           = dvInfo.exactContext;
+    CORINFO_CLASS_HANDLE    derivedClass           = NO_CLASS_HANDLE;
+    CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken  = &dvInfo.resolvedTokenDevirtualizedMethod;
+    const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
+    const bool              needsCompileTimeLookup = impDevirtualizedCallHasConstInstParam(dvInfo);
+    const bool              needsInstParam         = needsRuntimeLookup || needsCompileTimeLookup;
+    const bool              isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
 
     if (derivedMethod != nullptr)
     {
@@ -8845,7 +8874,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.needsMethodContext);
+            assert(!needsInstParam);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
@@ -8853,7 +8882,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             // Generic virtual method devirt also returns a generic method.
             //
-            assert(call->IsGenericVirtual(this) || dvInfo.needsMethodContext);
+            assert(call->IsGenericVirtual(this) || isArrayInterfaceDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8864,54 +8893,39 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     bool  canDevirtualize      = false;
 
 #if defined(DEBUG)
-    const char* derivedClassName  = "?derivedClass";
-    const char* derivedMethodName = "?derivedMethod";
-    const char* note              = "inexact or not final";
-    const char* instArg           = "";
+    const char* derivedMethodFullName = "?derivedMethod";
+    const char* note                  = "inexact or not final";
+    const char* instArg               = "";
 #endif
 
     CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
 
-    if (dvInfo.isInstantiatingStub)
+    if (derivedMethod != nullptr && needsInstParam)
     {
-        // We should only end up with generic methods that needs a method context (eg. array interface, GVM).
-        //
-        assert(dvInfo.needsMethodContext);
-
-        // We don't expect NAOT to end up here, since it has Array<T>
-        // and normal devirtualization.
-        //
-        assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
-        // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
-        //
-        assert(!IsAot());
-
-        // We don't expect there to be an existing inst param arg.
-        //
-        CallArg* const instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-        if (instParam != nullptr)
+        if (needsCompileTimeLookup)
         {
-            assert(!"unexpected inst param in virtual/interface call");
-            return;
+            // We should only end up with generic methods that need a method context (eg. array interface, GVM).
+            //
+            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+
+            // If we don't know the array type exactly we may have the wrong interface type here.
+            // Bail out.
+            //
+            if (isArrayInterfaceDevirt && !isExact)
+            {
+                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+                return;
+            }
+
+            // We don't expect R2R/NAOT to end up here for array interface devirtualization.
+            // For NAOT, it has Array<T> and normal devirtualization.
+            // For R2R, we don't (yet) support array interface devirtualization.
+            assert(call->IsGenericVirtual(this) || !IsAot());
+
+            instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
 
-        // If we don't know the array type exactly we may have the wrong interface type here.
-        // Bail out.
-        //
-        if (!isExact)
-        {
-            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-            return;
-        }
-
-        // We want to inline the instantiating stub. Fetch the relevant info.
-        //
-        CORINFO_CLASS_HANDLE ignored = NO_CLASS_HANDLE;
-        derivedMethod = info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignored);
-        assert(ignored == NO_CLASS_HANDLE);
-        assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
+        assert(!needsCompileTimeLookup || (instantiatingStub != NO_METHOD_HANDLE));
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
@@ -8942,18 +8956,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
-        if (dvInfo.isInstantiatingStub)
+        if (needsInstParam)
         {
-            instArg = " [instantiating stub]";
+            instArg = needsCompileTimeLookup ? eeGetMethodFullName(instantiatingStub) : "runtime lookup";
         }
 
         if (verbose || doPrint)
         {
-            derivedMethodName = eeGetMethodName(derivedMethod);
-            derivedClassName  = eeGetClassName(derivedClass);
+            derivedMethodFullName = eeGetMethodFullName(derivedMethod);
             if (verbose)
             {
-                printf("    devirt to %s::%s -- %s%s\n", derivedClassName, derivedMethodName, note, instArg);
+                printf("    devirt to %s -- %s%s%s\n", derivedMethodFullName, note,
+                       needsInstParam ? ", instantiating stub: " : "", instArg);
                 gtDispTree(call);
             }
         }
@@ -8992,23 +9006,35 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // Insert the instantiation argument when necessary.
+    if (needsInstParam)
+    {
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
+
+        CORINFO_METHOD_HANDLE compileTimeHandle = derivedMethod;
+        if (needsCompileTimeLookup)
+        {
+            compileTimeHandle = instantiatingStub;
+        }
+
+        GenTree* instParam = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);
+
+        if (instParam == nullptr)
+        {
+            // If we're inlining, impLookupToTree can return nullptr after recording a fatal observation.
+            JITDUMP("Failed to produce the lookup for devirtualized call, sorry.\n");
+            return;
+        }
+
+        call->gtArgs.InsertInstParam(this, instParam);
+    }
+
     // All checks done. Time to transform the call.
     //
     assert(canDevirtualize);
     Metrics.DevirtualizedCall++;
 
     JITDUMP("    %s; can devirtualize\n", note);
-
-    if (dvInfo.isInstantiatingStub)
-    {
-        // Pass the instantiating stub method desc as the inst param arg.
-        //
-        // Note different embedding would be needed for NAOT/R2R,
-        // but we have ruled those out above.
-        //
-        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
-        call->gtArgs.InsertInstParam(this, instParam);
-    }
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
@@ -9039,8 +9065,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (doPrint)
     {
-        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
-               baseMethodName, derivedClassName, derivedMethodName, note);
+        printf("Devirtualized %s call to %s; now direct call to %s [%s]%s%s\n", callKind, baseMethodFullName,
+               derivedMethodFullName, note, needsInstParam ? ", instantiating stub: " : "", instArg);
     }
 
     // If we successfully devirtualized based on an exact or final class,
