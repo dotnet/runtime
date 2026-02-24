@@ -22,7 +22,11 @@ When starting call counting for a method (see CallCountingManager::SetCodeEntryP
 - For tiered methods that don't have a precode (virtual and interface methods when slot backpatching is enabled), the method's
   own temporary entry point (precode) is redirected to the call counting stub, and vtable slots are reset to point to the
   temporary entry point. This ensures calls flow through precode -> call counting stub -> native code, and the call counting
-  stub can be safely deleted since vtable slots don't point to it directly.
+  stub can be safely deleted since vtable slots don't point to it directly. GetMethodEntryPoint() is kept at the native code
+  entry point (not the temporary entry point) so that DoBackpatch() can still record new vtable slots after the precode
+  reverts to prestub. During call counting, there is a bounded window where new vtable slots may not be recorded because the
+  precode target is the call counting stub rather than the prestub. These slots are corrected once call counting stubs are
+  deleted and the precode reverts to prestub.
 - For methods with a precode, the method's code entry point is set to the call counting stub directly.
 
 When the call count threshold is reached (see CallCountingManager::OnCallCountThresholdReached):

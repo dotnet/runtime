@@ -722,13 +722,21 @@ bool CallCountingManager::SetCodeEntryPoint(
         //
         // Ensure vtable slots point to the temporary entry point (precode) so calls flow through
         // precode → call counting stub → native code. Vtable slots may have been backpatched to native code
-        // during the initial publish or tiering delay.
+        // during the initial publish or tiering delay. BackpatchToResetEntryPointSlots() also sets
+        // GetMethodEntryPoint() to the temporary entry point, which we override below.
         //
         // There is a benign race window between resetting vtable slots and setting the precode target: a thread
         // may briefly see vtable slots pointing to the precode while the precode still points to its previous
         // target (prestub or native code). This results in at most one uncounted call, which is acceptable since
         // call counting is a heuristic.
-        methodDesc->ResetCodeEntryPoint();
+        methodDesc->BackpatchToResetEntryPointSlots();
+
+        // Keep GetMethodEntryPoint() set to the native code entry point rather than the temporary entry point.
+        // DoBackpatch() (prestub.cpp) skips slot recording when GetMethodEntryPoint() == GetTemporaryEntryPoint(),
+        // interpreting it as "method not yet published". By keeping GetMethodEntryPoint() at native code, we
+        // ensure that after the precode reverts to prestub (when call counting stubs are deleted), new vtable
+        // slots discovered by DoBackpatch() will be properly recorded for future backpatching.
+        methodDesc->SetMethodEntryPoint(codeEntryPoint);
         Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
         precode->SetTargetInterlocked(callCountingCodeEntryPoint, FALSE);
     }

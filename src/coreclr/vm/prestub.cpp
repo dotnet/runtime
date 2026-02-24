@@ -106,10 +106,15 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bo
         //     MethodDesc::BackpatchEntryPointSlots()
 
         // Backpatching the temporary entry point:
-        //     The temporary entry point is never backpatched for methods versionable with vtable slot backpatch. New vtable
-        //     slots inheriting the method will initially point to the temporary entry point and it must point to the prestub
-        //     and come here for backpatching such that the new vtable slot can be discovered and recorded for future
-        //     backpatching.
+        //     The temporary entry point is not directly backpatched for methods versionable with vtable slot backpatch.
+        //     New vtable slots inheriting the method will initially point to the temporary entry point. During call
+        //     counting, the temporary entry point's precode target may be temporarily redirected to a call counting
+        //     stub, but it must revert to the prestub when call counting stubs are deleted. This ensures new vtable
+        //     slots will come here for backpatching so they can be discovered and recorded for future backpatching.
+        //
+        //     To enable slot recording after the precode reverts to prestub, GetMethodEntryPoint() must be set to the
+        //     native code entry point (not the temporary entry point) during call counting. This prevents the
+        //     pExpected == pTarget check above from short-circuiting slot recording.
 
         _ASSERTE(!HasNonVtableSlot());
     }
