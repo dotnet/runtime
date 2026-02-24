@@ -398,7 +398,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
     {
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
@@ -406,7 +406,7 @@ public class ExecutionManagerTests
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
 
-        JitManagerInfo info = em.GetJitManagerInfo();
+        JitManagerInfo info = em.GetEEJitManagerInfo();
         Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
         Assert.Equal(TargetPointer.Null, info.HeapListAddress);
@@ -414,7 +414,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
+    public void GetEEJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
     {
         TargetPointer expectedHeapList = new(0x0099_aa00);
 
@@ -424,7 +424,7 @@ public class ExecutionManagerTests
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
 
-        JitManagerInfo info = em.GetJitManagerInfo();
+        JitManagerInfo info = em.GetEEJitManagerInfo();
         Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
         Assert.Equal(expectedHeapList, info.HeapListAddress);

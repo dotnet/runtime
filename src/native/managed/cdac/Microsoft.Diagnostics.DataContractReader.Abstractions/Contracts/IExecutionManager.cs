@@ -32,7 +32,7 @@ public interface IExecutionManager : IContract
     // **Currently GetGCInfo only supports X86**
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    JitManagerInfo GetJitManagerInfo() => throw new NotImplementedException();
+    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

@@ -270,7 +270,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
-    JitManagerInfo IExecutionManager.GetJitManagerInfo()
+    JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     {
         TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
         TargetPointer eeJitManagerAddr = _target.ReadPointer(eeJitManagerPtr);
