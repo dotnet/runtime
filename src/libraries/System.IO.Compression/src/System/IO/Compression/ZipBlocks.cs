@@ -116,6 +116,43 @@ namespace System.IO.Compression
                 stream.Write(trailingExtraFieldData);
             }
         }
+
+        public static void WriteAllBlocksExcludingTag(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream, ushort excludeTag)
+        {
+            if (fields != null)
+            {
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    if (field.Tag != excludeTag)
+                    {
+                        field.WriteBlock(stream);
+                    }
+                }
+            }
+
+            if (!trailingExtraFieldData.IsEmpty)
+            {
+                stream.Write(trailingExtraFieldData);
+            }
+        }
+
+        public static int TotalSizeExcludingTag(List<ZipGenericExtraField>? fields, int trailingDataLength, ushort excludeTag)
+        {
+            int size = trailingDataLength;
+
+            if (fields != null)
+            {
+                foreach (ZipGenericExtraField field in fields)
+                {
+                    if (field.Tag != excludeTag)
+                    {
+                        size += field.Size + ZipGenericExtraField.FieldLengths.Tag + ZipGenericExtraField.FieldLengths.Size;
+                    }
+                }
+            }
+
+            return size;
+        }
     }
 
     internal sealed partial class Zip64ExtraField
@@ -613,14 +650,9 @@ namespace System.IO.Compression
             }
         }
 
-        private static bool TrySkipBlockCore(Stream stream, Span<byte> blockBytes, int bytesRead, long currPosition)
+        private static bool TrySkipBlockCore(Stream stream, Span<byte> blockBytes, int bytesRead)
         {
             if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
-            {
-                return false;
-            }
-
-            if (stream.Length < currPosition + FieldLocations.FilenameLength)
             {
                 return false;
             }
@@ -652,7 +684,11 @@ namespace System.IO.Compression
                 return false;
             }
 
-            stream.Seek(filenameLength + extraFieldLength, SeekOrigin.Current);
+            // Calculate absolute position of compressed data and seek there
+            // Using SeekOrigin.Begin ensures we end up at the correct position
+            // regardless of any edge cases during header parsing
+            long dataStart = stream.Position + filenameLength + extraFieldLength;
+            stream.Seek(dataStart, SeekOrigin.Begin);
 
             return true;
         }
@@ -661,16 +697,131 @@ namespace System.IO.Compression
         public static bool TrySkipBlock(Stream stream)
         {
             Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
-            long currPosition = stream.Position;
             int bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
-            if (!TrySkipBlockCore(stream, blockBytes, bytesRead, currPosition))
+            if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
             {
                 return false;
             }
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
+
     }
+    internal struct WinZipAesExtraField
+    {
+        public const ushort HeaderId = 0x9901;
+        private const int DataSize = 7; // Vendor version (2) + Vendor ID (2) + AES strength (1) + Compression method (2)
+        private ushort _vendorVersion = 2;
+        private byte _aesStrength;
+        private ushort _compressionMethod;
+
+        public WinZipAesExtraField(ushort VendorVersion, byte AesStrength, ushort CompressionMethod)
+        {
+            this.VendorVersion = VendorVersion;
+            this.AesStrength = AesStrength;
+            this.CompressionMethod = CompressionMethod;
+        }
+
+        public ushort VendorVersion { get => _vendorVersion; set => _vendorVersion = value; }
+        public byte AesStrength { get => _aesStrength; set => _aesStrength = value; } // 1=128bit, 2=192bit, 3=256bit
+        public ushort CompressionMethod { get => _compressionMethod; set => _compressionMethod = value; } // Original compression method
+
+        public static int TotalSize => 11; // 2 (header) + 2 (size) + 7 (data)
+
+        /// <summary>
+        /// Tries to find and parse the WinZip AES extra field (0x9901) from a list of generic extra fields.
+        /// </summary>
+        /// <param name="extraFields">The list of extra fields to search.</param>
+        /// <param name="aesExtraField">When this method returns true, contains the parsed AES extra field.</param>
+        /// <returns>true if the AES extra field was found and parsed; otherwise, false.</returns>
+        public static bool TryGetFromExtraFields(List<ZipGenericExtraField>? extraFields, out WinZipAesExtraField aesExtraField)
+        {
+            aesExtraField = default;
+
+            if (extraFields == null)
+                return false;
+
+            foreach (ZipGenericExtraField field in extraFields)
+            {
+                if (field.Tag == HeaderId && field.Size >= DataSize)
+                {
+                    byte[] data = field.Data;
+                    aesExtraField = new WinZipAesExtraField(
+                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2)),
+                        AesStrength: data[4],
+                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(5, 2))
+                    );
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to find and parse the WinZip AES extra field (0x9901) from raw extra field data bytes.
+        /// This is used when ExtraFields are not saved (Read mode) but we still need to parse the AES field.
+        /// </summary>
+        /// <param name="extraFieldData">The raw extra field data bytes.</param>
+        /// <param name="aesExtraField">When this method returns true, contains the parsed AES extra field.</param>
+        /// <returns>true if the AES extra field was found and parsed; otherwise, false.</returns>
+        public static bool TryGetFromRawExtraFieldData(ReadOnlySpan<byte> extraFieldData, out WinZipAesExtraField aesExtraField)
+        {
+            aesExtraField = default;
+            int offset = 0;
+
+            while (offset + 4 <= extraFieldData.Length) // Need at least 4 bytes for header ID and size
+            {
+                ushort headerId = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset, 2));
+                ushort fieldSize = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset + 2, 2));
+
+                if (offset + 4 + fieldSize > extraFieldData.Length)
+                    break; // Not enough data for this field
+
+                if (headerId == HeaderId && fieldSize >= DataSize)
+                {
+                    ReadOnlySpan<byte> data = extraFieldData.Slice(offset + 4, fieldSize);
+                    aesExtraField = new WinZipAesExtraField(
+                        VendorVersion: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2)),
+                        AesStrength: data[4],
+                        CompressionMethod: BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(5, 2))
+                    );
+                    return true;
+                }
+
+                offset += 4 + fieldSize;
+            }
+
+            return false;
+        }
+
+        public void WriteBlock(Stream stream)
+        {
+            Span<byte> buffer = new byte[TotalSize];
+            WriteBlockCore(buffer);
+            stream.Write(buffer);
+        }
+
+        public async Task WriteBlockAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            byte[] buffer = new byte[TotalSize];
+            WriteBlockCore(buffer);
+            await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        private void WriteBlockCore(Span<byte> buffer)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(0), HeaderId);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), 7); // DataSize
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), VendorVersion);
+            buffer[6] = (byte)'A';
+            buffer[7] = (byte)'E';
+            buffer[8] = AesStrength;
+
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer[9..], CompressionMethod);
+        }
+    }
+
 
     internal sealed partial class ZipCentralDirectoryFileHeader
     {
@@ -704,6 +855,14 @@ namespace System.IO.Compression
         public byte[] FileComment = [];
         public List<ZipGenericExtraField>? ExtraFields;
         public byte[]? TrailingExtraFieldData;
+
+        /// <summary>
+        /// The WinZip AES extra field (0x9901) if present in the central directory.
+        /// This is always parsed (regardless of saveExtraFieldsAndComments) so that
+        /// ZipArchiveEntry can determine the real compression method for AES-encrypted entries
+        /// without needing to read the local file header.
+        /// </summary>
+        public WinZipAesExtraField? AesExtraField;
 
         private static bool TryReadBlockInitialize(ReadOnlySpan<byte> buffer, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header, out int bytesRead, out uint compressedSizeSmall, out uint uncompressedSizeSmall, out ushort diskNumberStartSmall, out uint relativeOffsetOfLocalHeaderSmall)
         {
@@ -755,6 +914,14 @@ namespace System.IO.Compression
             bool diskNumberStartInZip64 = diskNumberStartSmall == ZipHelper.Mask16Bit;
 
             ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
+
+            // Always parse AES extra field (0x9901) from the central directory if present.
+            // This is needed so ZipArchiveEntry can determine the real compression method
+            // for AES-encrypted entries without requiring Open() to be called.
+            if (WinZipAesExtraField.TryGetFromRawExtraFieldData(zipExtraFields, out WinZipAesExtraField aesField))
+            {
+                header.AesExtraField = aesField;
+            }
 
             if (saveExtraFieldsAndComments)
             {

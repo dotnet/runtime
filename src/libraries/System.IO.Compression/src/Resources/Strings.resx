@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -307,5 +308,44 @@
   </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="InvalidWinZipSize" xml:space="preserve">
+    <value>Stream size is too small for WinZip standard</value>
+  </data>
+  <data name="InvalidPassword" xml:space="preserve">
+    <value>Invalid password</value>
+  </data>
+  <data name="WinZipAuthCodeMismatch" xml:space="preserve">
+    <value>Authentication code mismatch for WinZip encrypted entry.</value>
+  </data>
+  <data name="EntryNotEncrypted" xml:space="preserve">
+    <value>Entry is not encrypted.</value>
+  </data>
+  <data name="PasswordRequired" xml:space="preserve">
+    <value>A password is required for encrypted entries.</value>
+  </data>
+  <data name="EmptyPassword" xml:space="preserve">
+    <value>Empty password was provided for encrypting this entry</value>
+  </data>
+  <data name="InvalidAesStrength" xml:space="preserve">
+    <value>Invalid AES strength value.</value>
+  </data>
+  <data name="TruncatedZipCryptoHeader" xml:space="preserve">
+    <value>Truncated ZipCrypto header.</value>
+  </data>
+  <data name="CrcMismatch" xml:space="preserve">
+    <value>CRC mismatch.</value>
+  </data>
+  <data name="EncryptionNotSpecified" xml:space="preserve">
+    <value>Encryption type is not specified</value>
+  </data>
+  <data name="EncryptionReadMode" xml:space="preserve">
+    <value>Encryption Method should not be specified in Read Mode</value>
+  </data>
+  <data name="EncryptionUpdateMode" xml:space="preserve">
+    <value>Encryption Method should not be specified in Update Mode</value>
+  </data>
+  <data name="WinZipEncryptionNotSupportedOnBrowser" xml:space="preserve">
+    <value>WinZip encryption is not supported on browser</value>
   </data>
 </root>

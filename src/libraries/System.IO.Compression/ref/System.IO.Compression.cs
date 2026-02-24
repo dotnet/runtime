@@ -54,6 +54,14 @@ namespace System.IO.Compression
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
+    public enum EncryptionMethod
+    {
+        None = 0,
+        ZipCrypto = 1,
+        Aes128 = 2,
+        Aes192 = 3,
+        Aes256 = 4,
+    }
     public partial class GZipStream : System.IO.Stream
     {
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
@@ -127,9 +135,17 @@ namespace System.IO.Compression
         public string Name { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
-        public System.IO.Stream Open(FileAccess access) { throw null; }
-        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, string password) { throw null; }
+        public System.IO.Stream Open(System.IO.FileAccess access, string password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
+        public System.IO.Stream Open(string password) { throw null; }
+        public System.IO.Stream Open(string password, System.IO.Compression.EncryptionMethod encryptionMethod) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, string password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.IO.FileAccess access, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string password, System.IO.Compression.EncryptionMethod encryptionMethod, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }
     }
     public enum ZipArchiveMode
