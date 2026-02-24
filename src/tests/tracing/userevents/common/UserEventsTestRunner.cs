@@ -131,7 +131,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[record-trace][stderr][{DateTime.UtcNow:O}] {args.Data}");
+                    Console.WriteLine($"[record-trace][stderr][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             recordTraceProcess.BeginErrorReadLine();
@@ -189,7 +189,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[tracee][stderr][{DateTime.UtcNow:O}] {args.Data}");
+                    Console.WriteLine($"[tracee][stderr][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             traceeProcess.BeginErrorReadLine();
