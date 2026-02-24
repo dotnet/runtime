@@ -211,15 +211,15 @@ extends:
             condition: false
 
       # Browser Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/browser-wasm-coreclr-build-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # TEMPORARY: commented out for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
+      # Template browser-wasm-coreclr-build-tests.yml does not support condition parameter.
+      # - template: /eng/pipelines/common/templates/browser-wasm-coreclr-build-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       #
       # Build CoreCLR and Libraries with Libraries tests
@@ -854,72 +854,63 @@ extends:
 
       #
       # WebAssembly legs
+      # TEMPORARY: commented out for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
+      # These templates do not support the condition parameter and silently ignore it.
       #
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnChrome
-            - WasmTestOnFirefox
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     scenarios:
+      #       - WasmTestOnChrome
+      #       - WasmTestOnFirefox
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnChrome
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     scenarios:
+      #       - WasmTestOnChrome
 
       # WebAssembly CoreCLR
-      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: true
-          # TODO consider shouldContinueOnError: true
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          scenarios:
-            - WasmTestOnChrome
+      # - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     shouldRunSmokeOnly: true
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     scenarios:
+      #       - WasmTestOnChrome
 
       # EAT Library tests - only run on linux
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-          nameSuffix: _EAT
-          buildAOTOnHelix: false
-          runAOT: false
-          shouldRunSmokeOnly: false
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
+      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     nameSuffix: _EAT
+      #     buildAOTOnHelix: false
+      #     runAOT: false
+      #     shouldRunSmokeOnly: false
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
 
       # AOT Library tests
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          nameSuffix: _Smoke_AOT
-          runAOT: true
-          buildAOTOnHelix: false
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     nameSuffix: _Smoke_AOT
+      #     runAOT: true
+      #     buildAOTOnHelix: false
+      #     shouldRunSmokeOnly: true
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -947,25 +938,25 @@ extends:
           publishWBT: false
 
       # Browser Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # TEMPORARY: commented out for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
+      # Template browser-wasm-build-tests.yml does not support condition parameter.
+      # - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #       - browser_wasm_win
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm runtime tests
-      - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
-        parameters:
-          # TEMPORARY: disabled for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
-          condition: false
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      # TEMPORARY: commented out for userevents diagnostic investigation (https://github.com/dotnet/runtime/issues/123442)
+      # Template wasm-runtime-tests.yml does not support condition parameter.
+      # - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - browser_wasm
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # WASI/WASM
 

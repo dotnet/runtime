@@ -123,7 +123,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stdout][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             recordTraceProcess.BeginOutputReadLine();
@@ -131,7 +131,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[record-trace] {args.Data}");
+                    Console.Error.WriteLine($"[record-trace][stderr][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             recordTraceProcess.BeginErrorReadLine();
@@ -181,7 +181,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stdout][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             traceeProcess.BeginOutputReadLine();
@@ -189,7 +189,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[tracee] {args.Data}");
+                    Console.Error.WriteLine($"[tracee][stderr][{DateTime.UtcNow:O}] {args.Data}");
                 }
             };
             traceeProcess.BeginErrorReadLine();
@@ -205,7 +205,7 @@ namespace Tracing.UserEvents.Tests.Common
             if (!recordTraceProcess.HasExited)
             {
                 // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
-                Console.WriteLine($"Stopping record-trace with SIGINT.");
+                Console.WriteLine($"[{DateTime.UtcNow:O}] Stopping record-trace with SIGINT.");
                 Kill(recordTraceProcess.Id, SIGINT);
                 Console.WriteLine($"Waiting for record-trace to exit...");
                 if (!recordTraceProcess.WaitForExit(recordTraceExitTimeout))
