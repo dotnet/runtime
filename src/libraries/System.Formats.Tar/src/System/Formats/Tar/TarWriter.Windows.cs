@@ -28,11 +28,9 @@ namespace System.Formats.Tar
             if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
                 Interop.Kernel32.WIN32_FIND_DATA findData = default;
-                using (Interop.Kernel32.FindFirstFile(fullPath, ref findData))
-                {
-                    // dwReserved0 contains the reparse tag when the file has FileAttributes.ReparsePoint.
-                }
+                Interop.Kernel32.GetFindData(fullPath, isDirectory, ignoreAccessDenied: false, ref findData);
 
+                // dwReserved0 contains the reparse tag when the file has FileAttributes.ReparsePoint.
                 if (findData.dwReserved0 is Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK
                     or Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                 {
