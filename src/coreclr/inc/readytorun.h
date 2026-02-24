@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -52,6 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
+// R2R Version 18.2 adds InitClass and InitInstClass helpers
 
 struct READYTORUN_CORE_HEADER
 {
@@ -471,6 +472,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_AllocContinuation = 0x113,
     READYTORUN_HELPER_AllocContinuationClass = 0x114,
     READYTORUN_HELPER_AllocContinuationMethod = 0x115,
+
+    READYTORUN_HELPER_InitClass                 = 0x116,
+    READYTORUN_HELPER_InitInstClass             = 0x117,
 };
 
 #include "readytoruninstructionset.h"
