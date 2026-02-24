@@ -570,8 +570,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Local and tree to substitute seem suitable.
     // Search the next statement(s) for the one and only use.
     //
-    unsigned lookahead = 1;
-    INDEBUG(lookahead = max(1u, (unsigned)JitConfig.JitForwardSubLookahead()));
+    unsigned lookahead = max(1u, (unsigned)JitConfig.JitForwardSubLookahead());
 
     ForwardSubVisitor fsv(this, lclNum);
     Statement*        useStmt             = nullptr;
