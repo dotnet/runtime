@@ -2975,6 +2975,10 @@ public sealed unsafe partial class SOSDacImpl
         if (buffer is null && pNeeded is null)
             return HResults.E_POINTER;
 
+#if DEBUG
+        int originalRegName = regName;
+#endif
+
         int hr = HResults.S_OK;
         try
         {
@@ -3024,7 +3028,7 @@ public sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (char* ptr = bufferLocal)
             {
-                hrLocal = _legacyImpl.GetRegisterName(regName, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetRegisterName(originalRegName, count, ptr, &neededLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK || hr == HResults.S_FALSE)
@@ -3086,6 +3090,7 @@ public sealed unsafe partial class SOSDacImpl
         "S8", "S9", "S10", "S11",
         "T3", "T4", "T5", "T6",
     ];
+
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
