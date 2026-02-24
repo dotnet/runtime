@@ -498,7 +498,10 @@ endif()
 
 # Default stack size: 2MB for 64-bit, 1MB for 32-bit.
 # Use large (8MB) stack size for s390x/ppc64le due to limited tail call optimization support.
-if(TARGET_S390X OR TARGET_POWERPC64)
+# On Windows, use 0 to defer to the OS/PE header default.
+if(TARGET_WIN32)
+  set(MONO_DEFAULT_STACKSIZE 0)
+elseif(TARGET_S390X OR TARGET_POWERPC64)
   set(MONO_DEFAULT_STACKSIZE 8388608)
 elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
   set(MONO_DEFAULT_STACKSIZE 1048576)
