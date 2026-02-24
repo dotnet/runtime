@@ -189,7 +189,7 @@ export interface t_Cwraps {
     SystemInteropJS_LoadLazyAssembly(args: JSMarshalerArguments): void;
     SystemInteropJS_CallJSExport(method: JSExportHandle, args: JSMarshalerArguments): void;
 
-    BrowserHost_ExecuteAssembly(assemblyPath: string, argc: number, argv: number): number;
+    BrowserHost_ExecuteAssembly(assemblyPath: CharPtr, argc: number, argv: number): number;
 
     wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
