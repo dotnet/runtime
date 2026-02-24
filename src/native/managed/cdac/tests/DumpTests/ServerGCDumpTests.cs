@@ -134,7 +134,7 @@ public class ServerGCDumpTests : DumpTestBase
         var strongHandles = gcContract.GetHandles([HandleType.Strong]);
         Assert.True(strongHandles.Count >= 1, "Expected at least 1 strong handle");
         Assert.All(strongHandles, handle => Assert.NotEqual(TargetPointer.Null, handle.Handle));
-        Assert.All(strongHandles, handle => Assert.NotEqual(0u, handle.StrongReference));
+        Assert.All(strongHandles, handle => Assert.True(handle.StrongReference));
 
         var weakShortHandles = gcContract.GetHandles([HandleType.WeakShort]);
         Assert.True(weakShortHandles.Count >= 1, "Expected at least 1 weak-short handle");
