@@ -3,7 +3,9 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Moq;
 using Xunit;
 
@@ -79,5 +81,91 @@ public unsafe class LoaderTests
             string actual = contract.GetFileName(handle);
             Assert.Equal(string.Empty, actual);
         }
+    }
+
+    private static readonly string[] ExpectedHeapNames =
+    [
+        "LowFrequencyHeap",
+        "HighFrequencyHeap",
+        "StaticsHeap",
+        "StubHeap",
+        "ExecutableHeap",
+        "FixupPrecodeHeap",
+        "NewStubPrecodeHeap",
+        "IndcellHeap",
+        "CacheEntryHeap",
+    ];
+
+    private static SOSDacImpl CreateSOSDacImplForHeapNamesTest(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        return new SOSDacImpl(target, null);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeapNames_GetCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+
+        int needed;
+        int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
+
+        Assert.Equal(HResults.S_FALSE, hr);
+        Assert.Equal(ExpectedHeapNames.Length, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeapNames_GetNames(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+
+        int needed;
+        int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
+        Assert.Equal(ExpectedHeapNames.Length, needed);
+
+        char** names = stackalloc char*[needed];
+        hr = impl.GetLoaderAllocatorHeapNames(needed, names, &needed);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(ExpectedHeapNames.Length, needed);
+        for (int i = 0; i < needed; i++)
+        {
+            string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
+            Assert.Equal(ExpectedHeapNames[i], actual);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeapNames_InsufficientBuffer(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+
+        int needed;
+        char** names = stackalloc char*[2];
+        int hr = impl.GetLoaderAllocatorHeapNames(2, names, &needed);
+
+        Assert.Equal(HResults.S_FALSE, hr);
+        Assert.Equal(ExpectedHeapNames.Length, needed);
+        for (int i = 0; i < 2; i++)
+        {
+            string actual = Marshal.PtrToStringAnsi((nint)names[i])!;
+            Assert.Equal(ExpectedHeapNames[i], actual);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeapNames_NullPNeeded(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+
+        int hr = impl.GetLoaderAllocatorHeapNames(0, null, null);
+        Assert.Equal(HResults.S_FALSE, hr);
     }
 }
