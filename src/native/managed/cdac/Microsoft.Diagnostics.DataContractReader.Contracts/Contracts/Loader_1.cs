@@ -556,6 +556,7 @@ internal readonly struct Loader_1 : ILoader
     IReadOnlyList<string> ILoader.GetLoaderAllocatorHeapNames()
     {
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
         List<string> names =
         [
@@ -573,16 +574,8 @@ internal readonly struct Loader_1 : ILoader
 
         names.Add("IndcellHeap");
 
-        try
-        {
-            Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
-            if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
-                names.Add("CacheEntryHeap");
-        }
-        catch (InvalidOperationException)
-        {
-            // VirtualCallStubManager type not available
-        }
+        if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
+            names.Add("CacheEntryHeap");
 
         return names;
     }
@@ -607,21 +600,11 @@ internal readonly struct Loader_1 : ILoader
 
         if (loaderAllocator.VirtualCallStubManager != TargetPointer.Null)
         {
-            try
-            {
-                Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
-                heaps.Add(vcsMgr.IndcellHeap);
+            Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
+            heaps.Add(vcsMgr.IndcellHeap);
 
-                if (vcsMgr.CacheEntryHeap is not null)
-                    heaps.Add(vcsMgr.CacheEntryHeap.Value);
-            }
-            catch (InvalidOperationException)
-            {
-                // VirtualCallStubManager type not available - fill with nulls
-                IReadOnlyList<string> names = ((ILoader)this).GetLoaderAllocatorHeapNames();
-                while (heaps.Count < names.Count)
-                    heaps.Add(TargetPointer.Null);
-            }
+            if (vcsMgr.CacheEntryHeap is not null)
+                heaps.Add(vcsMgr.CacheEntryHeap.Value);
         }
         else
         {
