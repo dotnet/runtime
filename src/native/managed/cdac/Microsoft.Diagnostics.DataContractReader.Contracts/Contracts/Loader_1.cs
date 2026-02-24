@@ -552,4 +552,85 @@ internal readonly struct Loader_1 : ILoader
         ISHash shashContract = _target.Contracts.SHash;
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
+
+    IReadOnlyList<string> ILoader.GetLoaderAllocatorHeapNames()
+    {
+        Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+
+        List<string> names =
+        [
+            "LowFrequencyHeap",
+            "HighFrequencyHeap",
+            "StaticsHeap",
+            "StubHeap",
+            "ExecutableHeap",
+            "FixupPrecodeHeap",
+            "NewStubPrecodeHeap",
+        ];
+
+        if (laType.Fields.ContainsKey(nameof(Data.LoaderAllocator.DynamicHelpersStubHeap)))
+            names.Add("DynamicHelpersStubHeap");
+
+        names.Add("IndcellHeap");
+
+        try
+        {
+            Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
+            if (vcsType.Fields.ContainsKey(nameof(Data.VirtualCallStubManager.CacheEntryHeap)))
+                names.Add("CacheEntryHeap");
+        }
+        catch (InvalidOperationException)
+        {
+            // VirtualCallStubManager type not available
+        }
+
+        return names;
+    }
+
+    IReadOnlyList<TargetPointer> ILoader.GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+
+        List<TargetPointer> heaps =
+        [
+            loaderAllocator.LowFrequencyHeap,
+            loaderAllocator.HighFrequencyHeap,
+            loaderAllocator.StaticsHeap,
+            loaderAllocator.StubHeap,
+            loaderAllocator.ExecutableHeap,
+            loaderAllocator.FixupPrecodeHeap ?? TargetPointer.Null,
+            loaderAllocator.NewStubPrecodeHeap ?? TargetPointer.Null,
+        ];
+
+        if (loaderAllocator.DynamicHelpersStubHeap is not null)
+            heaps.Add(loaderAllocator.DynamicHelpersStubHeap.Value);
+
+        if (loaderAllocator.VirtualCallStubManager != TargetPointer.Null)
+        {
+            try
+            {
+                Data.VirtualCallStubManager vcsMgr = _target.ProcessedData.GetOrAdd<Data.VirtualCallStubManager>(loaderAllocator.VirtualCallStubManager);
+                heaps.Add(vcsMgr.IndcellHeap);
+
+                if (vcsMgr.CacheEntryHeap is not null)
+                    heaps.Add(vcsMgr.CacheEntryHeap.Value);
+            }
+            catch (InvalidOperationException)
+            {
+                // VirtualCallStubManager type not available - fill with nulls
+                IReadOnlyList<string> names = ((ILoader)this).GetLoaderAllocatorHeapNames();
+                while (heaps.Count < names.Count)
+                    heaps.Add(TargetPointer.Null);
+            }
+        }
+        else
+        {
+            // No VirtualCallStubManager - fill remaining slots with null
+            IReadOnlyList<string> names = ((ILoader)this).GetLoaderAllocatorHeapNames();
+            while (heaps.Count < names.Count)
+                heaps.Add(TargetPointer.Null);
+        }
+
+        return heaps;
+    }
 }

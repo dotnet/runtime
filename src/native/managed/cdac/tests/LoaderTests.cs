@@ -96,12 +96,29 @@ public unsafe class LoaderTests
         "CacheEntryHeap",
     ];
 
-    private static SOSDacImpl CreateSOSDacImplForHeapNamesTest(MockTarget.Architecture arch)
+    private static readonly TargetPointer[] MockHeapAddresses =
+    [
+        new(0x1000),
+        new(0x2000),
+        new(0x3000),
+        new(0x4000),
+        new(0x5000),
+        new(0x6000),
+        new(0x7000),
+        new(0x8000),
+        new(0x9000),
+    ];
+
+    private static SOSDacImpl CreateSOSDacImplForHeapTests(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
         MockLoader loader = new(builder);
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == Mock.Of<ILoader>(
+                l => l.GetLoaderAllocatorHeapNames() == (IReadOnlyList<string>)ExpectedHeapNames
+                && l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyList<TargetPointer>)MockHeapAddresses)));
         return new SOSDacImpl(target, null);
     }
 
@@ -109,7 +126,7 @@ public unsafe class LoaderTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetLoaderAllocatorHeapNames_GetCount(MockTarget.Architecture arch)
     {
-        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
 
         int needed;
         int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
@@ -122,7 +139,7 @@ public unsafe class LoaderTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetLoaderAllocatorHeapNames_GetNames(MockTarget.Architecture arch)
     {
-        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
 
         int needed;
         int hr = impl.GetLoaderAllocatorHeapNames(0, null, &needed);
@@ -144,7 +161,7 @@ public unsafe class LoaderTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetLoaderAllocatorHeapNames_InsufficientBuffer(MockTarget.Architecture arch)
     {
-        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
 
         int needed;
         char** names = stackalloc char*[2];
@@ -163,9 +180,70 @@ public unsafe class LoaderTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetLoaderAllocatorHeapNames_NullPNeeded(MockTarget.Architecture arch)
     {
-        ISOSDacInterface13 impl = CreateSOSDacImplForHeapNamesTest(arch);
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
 
         int hr = impl.GetLoaderAllocatorHeapNames(0, null, null);
         Assert.Equal(HResults.S_FALSE, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeaps_GetCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
+
+        int needed;
+        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 0, null, null, &needed);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(MockHeapAddresses.Length, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeaps_GetHeaps(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
+
+        int needed;
+        impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 0, null, null, &needed);
+
+        ClrDataAddress* heaps = stackalloc ClrDataAddress[needed];
+        int* kinds = stackalloc int[needed];
+        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), needed, heaps, kinds, &needed);
+
+        Assert.Equal(HResults.S_OK, hr);
+        Assert.Equal(MockHeapAddresses.Length, needed);
+        for (int i = 0; i < needed; i++)
+        {
+            Assert.Equal((ulong)MockHeapAddresses[i], (ulong)heaps[i]);
+            Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeaps_InsufficientBuffer(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
+
+        ClrDataAddress* heaps = stackalloc ClrDataAddress[2];
+        int* kinds = stackalloc int[2];
+        int needed;
+        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 2, heaps, kinds, &needed);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
+        Assert.Equal(MockHeapAddresses.Length, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetLoaderAllocatorHeaps_NullAddress(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
+
+        int hr = impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0), 0, null, null, null);
+
+        Assert.Equal(HResults.E_INVALIDARG, hr);
     }
 }
