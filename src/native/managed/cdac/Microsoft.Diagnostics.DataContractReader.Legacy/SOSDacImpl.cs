@@ -2631,7 +2631,7 @@ public sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                System.Text.StringBuilder classNameBuilder = new();
+                StringBuilder classNameBuilder = new();
                 try
                 {
                     TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
