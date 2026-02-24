@@ -690,6 +690,13 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         }
     }
 
+    if (m_compiler->gtTreeMayHaveInvalidByrefs(m_compiler, m_thenOperation.node) ||
+        (m_doElseConversion && m_compiler->gtTreeMayHaveInvalidByrefs(m_compiler, m_elseOperation.node)))
+    {
+        JITDUMP("Skipping if-conversion that may have invalid byrefs in the then or else block\n");
+        return false;
+    }
+
     // Get the select node inputs.
     var_types selectType;
     GenTree*  selectTrueInput;
