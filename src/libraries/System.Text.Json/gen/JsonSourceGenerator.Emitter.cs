@@ -769,6 +769,12 @@ namespace System.Text.Json.SourceGeneration
                     if (property.CanUseUnsafeAccessors)
                     {
                         string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
+
+                        if (typeGenerationSpec.TypeRef.IsValueType)
+                        {
+                            return $"static obj => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj))";
+                        }
+
                         return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
                     }
 
