@@ -2160,6 +2160,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         {
             PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
             pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from last interpreted frame under InterpreterFrame %p to native frame (IP=%p, SP=%p)\n", pInterpreterFrame, GetControlPC(m_crawl.pRD), GetRegdisplaySP(m_crawl.pRD)));
         }
 #endif // FEATURE_INTERPRETER
 
@@ -2217,9 +2218,11 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         {
             pInlinedFrame = m_crawl.pFrame;
 #ifdef FEATURE_INTERPRETER
-            PTR_Frame pNextFrame = pInlinedFrame->PtrNextFrame();
-            if ((pNextFrame != FRAME_TOP) && (pNextFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            if (((InlinedCallFrame*)pInlinedFrame)->IsInInterpreter())
             {
+                PTR_Frame pNextFrame = pInlinedFrame->PtrNextFrame();
+                _ASSERTE((pNextFrame != FRAME_TOP) && (pNextFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame));
+                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from InlinedCallFrame to InterpreterFrame %p\n", m_crawl.pFrame));
                 m_crawl.GotoNextFrame();
                 goto Cleanup;
             }
