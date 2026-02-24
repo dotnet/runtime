@@ -2969,6 +2969,12 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = Child(i);
 
+                // Unwrap capture groups so their contents can be processed directly.
+                while (child.Kind is RegexNodeKind.Capture)
+                {
+                    child = child.Child(0);
+                }
+
                 if (child.Kind is RegexNodeKind.One)
                 {
                     // We only want to include ASCII characters, and only if they don't participate in case conversion
@@ -3005,6 +3011,17 @@ namespace System.Text.RegularExpressions
                     }
 
                     vsb.Append((char)(twoChars[0] | 0x20), child.Kind is RegexNodeKind.Set ? 1 : child.M);
+                }
+                else if (child.Kind is RegexNodeKind.Concatenate)
+                {
+                    // This can occur after unwrapping a Capture whose child is a Concatenate.
+                    // Recurse to extract any case-insensitive string from the inner concatenation.
+                    if (!child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes))
+                    {
+                        break;
+                    }
+
+                    vsb.Append(innerStr);
                 }
                 else if (child.Kind is RegexNodeKind.Empty)
                 {
