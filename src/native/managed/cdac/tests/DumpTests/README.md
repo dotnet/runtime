@@ -31,7 +31,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | ServerGC | Server GC mode heap structures | Heap |
 | StackWalk | Deterministic call stack (Main→A→B→C→FailFast) | Full |
 | MultiModule | Multi-assembly metadata resolution | Full |
-| TypeHierarchy | Type inheritance, method tables | Full |
+| TypeHierarchy | Type inheritance, method tables | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
