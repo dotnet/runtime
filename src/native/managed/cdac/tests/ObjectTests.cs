@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Moq;
 using Xunit;
 
@@ -151,6 +152,72 @@ public unsafe class ObjectTests
                     Assert.Equal(TargetPointer.Null.Value, rcw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);
                 }
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_FreeObject(MockTarget.Architecture arch)
+    {
+        TargetPointer TestObjectAddress = default;
+        ObjectContractHelper(arch,
+            (objectBuilder) =>
+            {
+                TestObjectAddress = objectBuilder.AddObject(objectBuilder.RTSBuilder.FreeObjectMethodTableAddress);
+            },
+            (target) =>
+            {
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                char[] buffer = new char[256];
+                uint needed;
+                int hr;
+                fixed (char* ptr = buffer)
+                {
+                    hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), (uint)buffer.Length, ptr, &needed);
+                }
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal((uint)"Free".Length + 1, needed);
+                Assert.Equal("Free", new string(buffer, 0, (int)needed - 1));
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_ZeroAddress(MockTarget.Architecture arch)
+    {
+        ObjectContractHelper(arch,
+            (objectBuilder) => { },
+            (target) =>
+            {
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                char[] buffer = new char[256];
+                uint needed;
+                int hr;
+                fixed (char* ptr = buffer)
+                {
+                    hr = sosDac.GetObjectClassName(default, (uint)buffer.Length, ptr, &needed);
+                }
+                Assert.NotEqual(HResults.S_OK, hr);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_NullBufferReturnsNeededSize(MockTarget.Architecture arch)
+    {
+        TargetPointer TestObjectAddress = default;
+        ObjectContractHelper(arch,
+            (objectBuilder) =>
+            {
+                TestObjectAddress = objectBuilder.AddObject(objectBuilder.RTSBuilder.FreeObjectMethodTableAddress);
+            },
+            (target) =>
+            {
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                uint needed;
+                int hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), 0, null, &needed);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal((uint)"Free".Length + 1, needed);
             });
     }
 }
