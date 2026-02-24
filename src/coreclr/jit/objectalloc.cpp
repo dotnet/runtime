@@ -3001,9 +3001,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 // Returns:
 //   true if cloning will proceed for this pseudo
 //
-bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits,
-                                              BitVec&       escapingNodes,
-                                              unsigned      pseudoIndex)
+bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits, BitVec& escapingNodes, unsigned pseudoIndex)
 {
     CloneInfo* info = nullptr;
 
@@ -3083,8 +3081,7 @@ bool ObjectAllocator::AnalyzePseudoForCloning(BitVecTraits* bitVecTraits,
         }
         JITDUMP("\n");
     }
-    JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local,
-            m_compiler->eeGetClassName(info->m_type));
+    JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local, m_compiler->eeGetClassName(info->m_type));
     JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
 
     m_compiler->Metrics.EnumeratorGDVProvisionalNoEscape++;
