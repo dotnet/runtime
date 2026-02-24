@@ -125,7 +125,7 @@ public unsafe class ThreadTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadAllocData(MockTarget.Architecture arch)
+    public void GetThreadAllocContext(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
@@ -140,14 +140,14 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        ThreadAllocData data = contract.GetThreadAllocData(addr);
+        ThreadAllocData data = contract.GetThreadAllocContext(addr);
         Assert.Equal(allocBytes, data.AllocBytes);
         Assert.Equal(allocBytesLoh, data.AllocBytesLoh);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetThreadAllocData_ZeroValues(MockTarget.Architecture arch)
+    public void GetThreadAllocContext_ZeroValues(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
@@ -159,7 +159,7 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        ThreadAllocData data = contract.GetThreadAllocData(addr);
+        ThreadAllocData data = contract.GetThreadAllocContext(addr);
         Assert.Equal(0, data.AllocBytes);
         Assert.Equal(0, data.AllocBytesLoh);
     }

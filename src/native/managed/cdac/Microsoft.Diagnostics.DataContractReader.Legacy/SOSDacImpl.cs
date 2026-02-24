@@ -3000,17 +3000,16 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
     {
-        if (thread == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
-            if (data is null)
+            if (thread == 0)
                 throw new ArgumentException();
+            if (data is null)
+                throw new NullReferenceException();
 
             Contracts.IThread contract = _target.Contracts.Thread;
-            Contracts.ThreadAllocData allocData = contract.GetThreadAllocData(thread.ToTargetPointer(_target));
+            Contracts.ThreadAllocData allocData = contract.GetThreadAllocContext(thread.ToTargetPointer(_target));
             data->allocBytes = (ClrDataAddress)(ulong)allocData.AllocBytes;
             data->allocBytesLoh = (ClrDataAddress)(ulong)allocData.AllocBytesLoh;
         }
