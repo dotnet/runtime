@@ -6899,6 +6899,16 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             return false;
 #endif // FEATURE_HW_INTRINSICS
 
+#ifdef TARGET_ARM64
+        case GT_BFX:
+            if (operand == this->AsOp()->gtOp1)
+            {
+                *pUse = &this->AsOp()->gtOp1;
+                return true;
+            }
+            return false;
+#endif
+
         // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
