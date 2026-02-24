@@ -4615,7 +4615,30 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         BlockRange().Remove(op2);
 
         GenCondition cmpCondition = GenCondition::FromRelop(cmp);
-        GenTreeCC*   setcc        = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+
+        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
+        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
+        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
+        // Rewrite the condition to use Z/N where possible, or bail out.
+        if (cmp->IsUnsigned() && op2->IsIntegralConst(0) && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        {
+            if (cmp->OperIs(GT_GT))
+            {
+                // x > 0U  <=> x != 0
+                cmpCondition = GenCondition::NE;
+            }
+            else if (cmp->OperIs(GT_LE))
+            {
+                // x <= 0U <=> x == 0
+                cmpCondition = GenCondition::EQ;
+            }
+            else
+            {
+                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
+                return cmp;
+            }
+        }
+        GenTreeCC* setcc = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
         BlockRange().InsertAfter(op1, setcc);
 
         use.ReplaceWith(setcc);
