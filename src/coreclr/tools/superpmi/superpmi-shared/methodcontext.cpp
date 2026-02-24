@@ -3409,14 +3409,7 @@ void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
     DWORDLONG key = CastHandle(ftn);
     DLD       value;
     value.A = CastHandle(result);
-    if (variantIsThunk != nullptr)
-    {
-        value.B = (DWORD)*variantIsThunk ? 1 : 0;
-    }
-    else
-    {
-        value.B = 0;
-    }
+    value.B = (DWORD)*variantIsThunk ? 1 : 0;
     GetAsyncOtherVariant->Add(key, value);
     DEBUG_REC(dmpGetAsyncOtherVariant(key, value));
 }
@@ -3432,11 +3425,7 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAsyncOtherVariant(CORINFO_METHOD_HAND
 
     DLD value = LookupByKeyOrMiss(GetAsyncOtherVariant, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetAsyncOtherVariant(key, value));
-
-    if (variantIsThunk != nullptr)
-    {
-        *variantIsThunk = (value.B == 1);
-    }
+    *variantIsThunk = (value.B != 0);
     return (CORINFO_METHOD_HANDLE)(value.A);
 }
 
