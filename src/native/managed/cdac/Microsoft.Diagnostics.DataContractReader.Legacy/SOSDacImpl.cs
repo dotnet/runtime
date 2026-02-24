@@ -2616,11 +2616,11 @@ public sealed unsafe partial class SOSDacImpl
             if (obj == 0)
                 throw new ArgumentException();
 
-            Contracts.IObject @object = _target.Contracts.Object;
+            Contracts.IObject objectContract = _target.Contracts.Object;
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loader = _target.Contracts.Loader;
 
-            TargetPointer mt = @object.GetMethodTableAddress(obj.ToTargetPointer(_target));
+            TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
             Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
 
             TargetPointer modulePointer = rts.GetModule(typeHandle);
