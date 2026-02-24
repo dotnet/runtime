@@ -52,20 +52,17 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 ];
 
 export const mono_wasm_imports = [
-    // mini-wasm.c
-    SystemJS_ScheduleTimer,
-
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
     mono_wasm_debugger_log,
     mono_wasm_add_dbg_command_received,
     mono_wasm_fire_debugger_agent_message_with_data,
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
-    // mono-threads-wasm.c
+
     SystemJS_ScheduleBackgroundJob,
-    SystemJS_ScheduleFinalization,
     SystemJS_ScheduleDiagnosticServerJob,
     SystemJS_ScheduleFinalization,
+    SystemJS_ScheduleTimer,
 
     SystemJS_RejectMainPromise,
     SystemJS_ResolveMainPromise,
