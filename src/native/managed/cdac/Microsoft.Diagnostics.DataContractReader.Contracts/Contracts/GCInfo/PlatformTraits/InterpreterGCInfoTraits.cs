@@ -5,26 +5,26 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
-internal class ARM64GCInfoTraits : IGCInfoTraits
+internal class InterpreterGCInfoTraits : IGCInfoTraits
 {
-    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 0x29u;
-    public static uint DenormalizeCodeLength(uint len) => len << 2;
-    public static uint NormalizeCodeLength(uint len) => len >> 2;
-    public static uint DenormalizeCodeOffset(uint offset) => offset << 2;
-    public static uint NormalizeCodeOffset(uint offset) => offset >> 2;
-    public static int DenormalizeStackSlot(int x) => x << 3;
-    public static uint DenormalizeSizeOfStackArea(uint size) => size << 3;
+    public static uint DenormalizeStackBaseRegister(uint reg) => reg;
+    public static uint DenormalizeCodeLength(uint len) => len;
+    public static uint NormalizeCodeLength(uint len) => len;
+    public static uint DenormalizeCodeOffset(uint offset) => offset;
+    public static uint NormalizeCodeOffset(uint offset) => offset;
+    public static int DenormalizeStackSlot(int x) => x;
+    public static uint DenormalizeSizeOfStackArea(uint size) => size;
 
     public static int GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE => 6;
 
     public static int GS_COOKIE_STACK_SLOT_ENCBASE => 6;
     public static int CODE_LENGTH_ENCBASE => 8;
 
-    public static int STACK_BASE_REGISTER_ENCBASE => 2;
+    public static int STACK_BASE_REGISTER_ENCBASE => 3;
     public static int SIZE_OF_STACK_AREA_ENCBASE => 3;
     public static int SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE => 4;
     public static int REVERSE_PINVOKE_FRAME_ENCBASE => 6;
-    public static int NUM_REGISTERS_ENCBASE => 3;
+    public static int NUM_REGISTERS_ENCBASE => 2;
     public static int NUM_STACK_SLOTS_ENCBASE => 2;
     public static int NUM_UNTRACKED_SLOTS_ENCBASE => 1;
     public static int NORM_PROLOG_SIZE_ENCBASE => 5;
@@ -35,8 +35,8 @@ internal class ARM64GCInfoTraits : IGCInfoTraits
     public static int REGISTER_DELTA_ENCBASE => 2;
     public static int STACK_SLOT_ENCBASE => 6;
     public static int STACK_SLOT_DELTA_ENCBASE => 4;
-    public static int NUM_SAFE_POINTS_ENCBASE => 3;
+    public static int NUM_SAFE_POINTS_ENCBASE => 2;
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
-    public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+    public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => false;
 }

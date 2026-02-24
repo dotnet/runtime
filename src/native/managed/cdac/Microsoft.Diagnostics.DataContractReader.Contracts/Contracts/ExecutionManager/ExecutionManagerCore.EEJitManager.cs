@@ -57,7 +57,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             IGCInfo gcInfo = Target.Contracts.GCInfo;
             GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
-            IGCInfoHandle gcInfoHandle = gcInfo.DecodeGCInfo(pGcInfo, gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
             hotSize = gcInfo.GetCodeLength(gcInfoHandle);
             Debug.Assert(hotSize > 0);
         }

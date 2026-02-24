@@ -9,8 +9,11 @@ public interface IGCInfoHandle { }
 ```
 
 ```csharp
-// Decodes GCInfo with a given address and version
-IGCInfoHandle DecodeGCInfo(TargetPointer gcInfoAddress, uint gcVersion);
+// Decodes GCInfo using the platform-specific encoding for the target architecture
+IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion);
+
+// Decodes GCInfo using the interpreter encoding, regardless of target architecture
+IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion);
 
 /* Methods to query information from the GCInfo */
 
@@ -198,8 +201,8 @@ Slots use delta encoding where consecutive entries encode only the difference fr
 | Operation | Normalization (Encode) | Denormalization (Decode) |
 | --- | --- | --- |
 | **Stack Base Register** | `reg ^ 0x29` | `reg ^ 0x29` |
-| **Code Length** | `length << 2` | `length >> 2` |
-| **Code Offset** | `offset << 2` | `offset >> 2` |
+| **Code Length** | `length >> 2` | `length << 2` |
+| **Code Offset** | `offset >> 2` | `offset << 2` |
 | **Stack Slot** | `offset >> 3` | `offset << 3` |
 | **Stack Area Size** | `size >> 3` | `size << 3` |
 
@@ -238,6 +241,47 @@ Slots use delta encoding where consecutive entries encode only the difference fr
 | **Stack Slot** | `offset >> 2` | `offset << 2` |
 | **Stack Area Size** | `size >> 2` | `size << 2` |
 
+#### Interpreter (WASM / FEATURE_INTERPRETER)
+
+The interpreter uses a platform-independent encoding where all normalization and denormalization functions are identity (no transformation). This encoding is used for WASM targets (where `TargetGcInfoEncoding` is `InterpreterGcInfoEncoding`) and on any architecture when `FEATURE_INTERPRETER` is enabled.
+
+| Encoding Base | Value | Purpose |
+| --- | --- | --- |
+| `GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE` | 6 | Base bits for generics instantiation context stack slot |
+| `GS_COOKIE_STACK_SLOT_ENCBASE` | 6 | Base bits for GS cookie stack slot |
+| `CODE_LENGTH_ENCBASE` | 8 | Base bits for encoding method code length |
+| `STACK_BASE_REGISTER_ENCBASE` | 3 | Base bits for stack base register number |
+| `SIZE_OF_STACK_AREA_ENCBASE` | 3 | Base bits for stack parameter area size |
+| `SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE` | 4 | Base bits for Edit and Continue preserved area size |
+| `REVERSE_PINVOKE_FRAME_ENCBASE` | 6 | Base bits for reverse P/Invoke frame slot |
+| `NUM_REGISTERS_ENCBASE` | 2 | Base bits for number of register slots |
+| `NUM_STACK_SLOTS_ENCBASE` | 2 | Base bits for number of stack slots |
+| `NUM_UNTRACKED_SLOTS_ENCBASE` | 1 | Base bits for number of untracked slots |
+| `NORM_PROLOG_SIZE_ENCBASE` | 5 | Base bits for normalized prolog size |
+| `NORM_EPILOG_SIZE_ENCBASE` | 3 | Base bits for normalized epilog size |
+| `INTERRUPTIBLE_RANGE_DELTA1_ENCBASE` | 6 | Base bits for first interruptible range delta |
+| `INTERRUPTIBLE_RANGE_DELTA2_ENCBASE` | 6 | Base bits for second interruptible range delta |
+| `REGISTER_ENCBASE` | 3 | Base bits for register slot encoding |
+| `REGISTER_DELTA_ENCBASE` | 2 | Base bits for register slot delta encoding |
+| `STACK_SLOT_ENCBASE` | 6 | Base bits for stack slot encoding |
+| `STACK_SLOT_DELTA_ENCBASE` | 4 | Base bits for stack slot delta encoding |
+| `NUM_SAFE_POINTS_ENCBASE` | 2 | Base bits for number of safe points |
+| `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | 1 | Base bits for number of interruptible ranges |
+
+##### Interpreter Normalization/Denormalization Rules
+
+All normalization and denormalization operations are identity functions (no transformation):
+
+| Operation | Normalization (Encode) | Denormalization (Decode) |
+| --- | --- | --- |
+| **Stack Base Register** | No change | No change |
+| **Code Length** | No change | No change |
+| **Code Offset** | No change | No change |
+| **Stack Slot** | No change | No change |
+| **Stack Area Size** | No change | No change |
+
+The interpreter does not have a fixed stack parameter scratch area (`HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false`).
+
 ### Encoding Scheme
 
 GCInfo uses a variable-length encoding scheme to efficiently store numeric values. The encoding is designed to use fewer bits for smaller, more common values.
@@ -269,10 +313,16 @@ Signed values use the same encoding as unsigned, but with sign considerations:
 The GCInfo contract implementation follows this process:
 
 ```csharp
-IGCInfoHandle DecodeGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
 {
     // Create a new decoder instance for the specified platform traits
     return new GcInfoDecoder<PlatformTraits>(target, gcInfoAddress, gcVersion);
+}
+
+IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+{
+    // Create a new decoder instance using the interpreter encoding
+    return new GcInfoDecoder<InterpreterGCInfoTraits>(target, gcInfoAddress, gcVersion);
 }
 
 uint GetCodeLength(IGCInfoHandle handle)

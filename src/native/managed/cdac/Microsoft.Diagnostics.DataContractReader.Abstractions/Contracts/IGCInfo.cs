@@ -11,7 +11,8 @@ public interface IGCInfo : IContract
 {
     static string IContract.Name { get; } = nameof(GCInfo);
 
-    IGCInfoHandle DecodeGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
+    IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
+    IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
     uint GetCodeLength(IGCInfoHandle handle) => throw new NotImplementedException();
 }
 

@@ -307,6 +307,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             Debug.Assert(rangeStartOffset >= prevEndOffset);
 
             lastInterruptibleRangeStopOffsetNormalized = rangeStopOffsetNormalized;
+            prevEndOffset = rangeStopOffset;
 
             _interruptibleRanges.Add(new(rangeStartOffset, rangeStopOffset));
         }

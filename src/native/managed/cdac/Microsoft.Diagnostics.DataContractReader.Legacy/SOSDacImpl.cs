@@ -666,7 +666,7 @@ public sealed unsafe partial class SOSDacImpl
 
                 data->MethodStart = eman.GetStartAddress(cbh).Value;
 
-                IGCInfoHandle gcInfoHandle = gcInfo.DecodeGCInfo(pGcInfo, gcVersion);
+                IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
                 data->MethodSize = gcInfo.GetCodeLength(gcInfoHandle);
 
                 eman.GetMethodRegionInfo(cbh, out uint hotRegionSize, out TargetPointer coldRegionStart, out uint coldRegionSize);

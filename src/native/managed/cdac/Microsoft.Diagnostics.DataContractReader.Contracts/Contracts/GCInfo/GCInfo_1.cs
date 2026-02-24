@@ -15,8 +15,11 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         _target = target;
     }
 
-    IGCInfoHandle IGCInfo.DecodeGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+    IGCInfoHandle IGCInfo.DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
         => new GcInfoDecoder<TTraits>(_target, gcInfoAddress, gcVersion);
+
+    IGCInfoHandle IGCInfo.DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion)
+        => new GcInfoDecoder<InterpreterGCInfoTraits>(_target, gcInfoAddress, gcVersion);
 
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
     {

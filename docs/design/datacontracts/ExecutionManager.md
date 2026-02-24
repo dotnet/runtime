@@ -103,8 +103,6 @@ Data descriptors used:
 | `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
 | `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
-| `UnwindInfo` | `CountOfUnwindCodes` | Number of unwind codes in the unwind info. Only exists on some platforms |
-| `UnwindInfo` | `UnwindCodeOffset` | Offset of UnwindCodeOffset in the UnwindInfo data struct. Only exists on some platforms |
 | `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 
 Global variables used:
