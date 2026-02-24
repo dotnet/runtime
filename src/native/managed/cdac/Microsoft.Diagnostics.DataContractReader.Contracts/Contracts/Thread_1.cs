@@ -94,7 +94,7 @@ internal readonly struct Thread_1 : IThread
         stackLimit = thread.CachedStackLimit;
         frameAddress = threadPointer + (ulong)type.Fields[nameof(Data.Thread.Frame)].Offset;
     }
-    
+
     // happens inside critical section
     TargetPointer IThread.IdToThread(uint id)
     {
