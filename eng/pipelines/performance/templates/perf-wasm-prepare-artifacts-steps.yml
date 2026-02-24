@@ -1,7 +1,7 @@
 parameters:
   configForBuild: 'Release'
-  runtimeFlavor: 'Mono'
   artifactName: 'BrowserWasm'
+  runtimeFlavor: 'mono'
 
 steps:
   - script: >-
@@ -15,7 +15,7 @@ steps:
     displayName: "Install workload using artifacts"
 
   # Mono needs full SDK + nugets; CoreCLR only needs the runtime pack
-  - ${{ if eq(parameters.runtimeFlavor, 'Mono') }}:
+  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
     - script: >-
         mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
         cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
@@ -25,11 +25,13 @@ steps:
         cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
       displayName: "Prepare artifacts staging directory (Mono)"
 
-  - ${{ if eq(parameters.runtimeFlavor, 'CoreCLR') }}:
+  - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
     - script: >-
-        mkdir -p $(Build.SourcesDirectory)/artifacts/staging &&
+        mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
         cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-none $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging
+        cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
       displayName: "Prepare artifacts staging directory (CoreCLR)"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
