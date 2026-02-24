@@ -9,6 +9,19 @@ namespace System
 {
     public partial class Object
     {
+        [UnmanagedCallersOnly]
+        private static unsafe void GetToString(object* pObj, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = pObj->ToString();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
         // Returns a Type object which represent this object instance.
         [Intrinsic]
         public unsafe Type GetType()

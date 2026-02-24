@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -112,6 +113,19 @@ namespace System
 
             _stackTrace = null;
             _stackTraceString = null;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void InternalPreserveStackTrace(Exception* pException, Exception* pOutException)
+        {
+            try
+            {
+                pException->InternalPreserveStackTrace();
+            }
+            catch (Exception ex)
+            {
+                *pOutException = ex;
+            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -255,6 +269,47 @@ namespace System
             }
 
             return true;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new System.Runtime.CompilerServices.RuntimeWrappedException(*pThrownObject);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateTypeInitializationException(char* pTypeName, Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                string? typeName = pTypeName is not null ? new string(pTypeName) : null;
+                Exception? innerException = pInnerException is not null ? *pInnerException : null;
+                *pResult = new TypeInitializationException(typeName, innerException);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateFirstChanceExceptionEventArgs(Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = new FirstChanceExceptionEventArgs(*pInnerException);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
 #if FEATURE_COMINTEROP

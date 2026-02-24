@@ -237,21 +237,22 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     if (throwable == NULL)
         return NULL;
 
-    // Return value.
-    STRINGREF pString = NULL;
-
-    GCPROTECT_BEGIN(throwable);
+    struct
+    {
+       OBJECTREF throwable;
+       STRINGREF pString;
+    } gc;
+    gc.throwable = throwable;
+    gc.pString = NULL;
+    GCPROTECT_BEGIN(gc);
 
     // Call Object.ToString(). Note that exceptions do not have to inherit from System.Exception
-    MethodDescCallSite toString(METHOD__OBJECT__TO_STRING, &throwable);
-
-    // Make the call.
-    ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-    pString = toString.Call_RetSTRINGREF(arg);
+    UnmanagedCallersOnlyCaller getToString(METHOD__OBJECT__GET_TO_STRING);
+    getToString.InvokeThrowing(&gc.throwable, &gc.pString);
 
     GCPROTECT_END();
 
-    return pString;
+    return gc.pString;
 }
 
 HRESULT GetExceptionHResult(OBJECTREF throwable)
@@ -385,12 +386,9 @@ void ExceptionPreserveStackTrace(   // No return.
     {
         LOG((LF_EH, LL_INFO1000, "ExceptionPreserveStackTrace called\n"));
 
-        // Call Exception.InternalPreserveStackTrace() ...
-        MethodDescCallSite preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE, &throwable);
-
-        // Make the call.
-        ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-        preserveStackTrace.Call(arg);
+        // Call Exception.InternalPreserveStackTrace()
+        UnmanagedCallersOnlyCaller preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE);
+        preserveStackTrace.InvokeThrowing(&throwable);
     }
 
     GCPROTECT_END();
@@ -433,19 +431,12 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
         if (pFD_WrappedException == NULL)
             pFD_WrappedException = CoreLibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
 
-        OBJECTREF orWrapper = AllocateObject(CoreLibBinder::GetException(kRuntimeWrappedException));
+        OBJECTREF orWrapper = NULL;
 
         GCPROTECT_BEGIN(orWrapper);
 
-        MethodDescCallSite ctor(METHOD__RUNTIME_WRAPPED_EXCEPTION__OBJ_CTOR, &orWrapper);
-
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(orWrapper),
-            ObjToArgSlot(*ppThrowable)
-        };
-
-        ctor.Call(args);
+        UnmanagedCallersOnlyCaller createWrapper(METHOD__EXCEPTION__CREATE_RUNTIME_WRAPPED_EXCEPTION);
+        createWrapper.InvokeThrowing(ppThrowable, &orWrapper);
 
         *ppThrowable = orWrapper;
 
@@ -535,10 +526,6 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         isAlreadyCreating(pThread->IsCreatingTypeInitException());
 
     EX_TRY {
-        // This will contain the type of exception we want to create. Read comment below
-        // on why we'd want to create an exception other than TypeInitException
-        MethodTable *pMT;
-        BinderMethodID methodID;
 
         // If we are already in the midst of creating a TypeInitializationException object,
         // and we get here, it means there was an exception thrown while initializing the
@@ -549,8 +536,6 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // in the code that follows.
         if (!isAlreadyCreating.GetValue()) {
             pThread->SetIsCreatingTypeInitException();
-            pMT = CoreLibBinder::GetException(kTypeInitializationException);
-            methodID = METHOD__TYPE_INIT_EXCEPTION__STR_EX_CTOR;
         }
         else {
             // If we ever hit one of these asserts, then it is bad
@@ -562,28 +547,22 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
             goto ErrExit;
         }
 
-        // Allocate the exception object
-        *pThrowable = AllocateObject(pMT);
-
-        MethodDescCallSite ctor(methodID, pThrowable);
-
         // Since the inner exception object in the .ctor is of type Exception, make sure
         // that the object we're passed in derives from Exception. If not, pass NULL.
-        BOOL isException = FALSE;
-        if (pInnerException != NULL)
-            isException = IsException((*pInnerException)->GetMethodTable());
+        {
+            BOOL isException = FALSE;
+            if (pInnerException != NULL)
+                isException = IsException((*pInnerException)->GetMethodTable());
 
-        _ASSERTE(isException);      // What pathway can give us non-compliant exceptions?
+            OBJECTREF innerEx = isException ? *pInnerException : NULL;
 
-        STRINGREF sType = StringObject::NewString(pTypeThatFailed);
+            GCPROTECT_BEGIN(innerEx);
 
-        // If the inner object derives from exception, set it as the third argument.
-        ARG_SLOT args[] = { ObjToArgSlot(*pThrowable),
-                            ObjToArgSlot(sType),
-                            ObjToArgSlot(isException ? *pInnerException : NULL) };
+            UnmanagedCallersOnlyCaller createTypeInitEx(METHOD__EXCEPTION__CREATE_TYPE_INIT_EXCEPTION);
+            createTypeInitEx.InvokeThrowing(pTypeThatFailed, &innerEx, pThrowable);
 
-        // Call the .ctor
-        ctor.Call(args);
+            GCPROTECT_END();
+        }
 
         // On success, set the init exception.
         *pInitException = *pThrowable;
@@ -2196,23 +2175,18 @@ STRINGREF GetResourceStringFromManaged(STRINGREF key)
     }
     CONTRACTL_END;
 
-    struct xx {
+    struct
+    {
         STRINGREF key;
         STRINGREF ret;
     } gc;
-
     gc.key = key;
     gc.ret = NULL;
-
     GCPROTECT_BEGIN(gc);
 
-    MethodDescCallSite getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
-
     // Call Environment::GetResourceStringLocal(String name).  Returns String value (or maybe null)
-    // Don't need to GCPROTECT pArgs, since it's not used after the function call.
-
-    ARG_SLOT pArgs[1] = { ObjToArgSlot(gc.key) };
-    gc.ret = getResourceStringLocal.Call_RetSTRINGREF(pArgs);
+    UnmanagedCallersOnlyCaller getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
+    getResourceStringLocal.InvokeThrowing(&gc.key, &gc.ret);
 
     GCPROTECT_END();
 
@@ -9597,44 +9571,20 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
     }
     CONTRACTL_END;
 
-    MethodTable *pMTEventArgs = NULL;
-    BinderMethodID idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
-
     EX_TRY
     {
         switch(notificationType)
         {
             case FirstChanceExceptionHandler:
-                pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
-                idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
+            {
+                // FirstChance notification takes only a single argument: the exception object.
+                UnmanagedCallersOnlyCaller createEventArgs(METHOD__EXCEPTION__CREATE_FIRSTCHANCE_EVENTARGS);
+                createEventArgs.InvokeThrowing(pThrowable, pOutEventArgs);
                 break;
+            }
             default:
                 _ASSERTE(!"Invalid Exception Notification Handler!");
                 break;
-        }
-
-        // Allocate the instance of the eventargs corresponding to the notification
-        *pOutEventArgs = AllocateObject(pMTEventArgs);
-
-        // Prepare to invoke the .ctor
-        MethodDescCallSite ctor(idEventArgsCtor, pOutEventArgs);
-
-        // Setup the arguments to be passed to the notification specific EventArgs .ctor
-        if (notificationType == FirstChanceExceptionHandler)
-        {
-            // FirstChance notification takes only a single argument: the exception object.
-            ARG_SLOT args[] =
-            {
-                ObjToArgSlot(*pOutEventArgs),
-                ObjToArgSlot(*pThrowable),
-            };
-
-            ctor.Call(args);
-        }
-        else
-        {
-            // Since we have already asserted above, just set the args to NULL.
-            *pOutEventArgs = NULL;
         }
     }
     EX_CATCH
