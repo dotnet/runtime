@@ -1,0 +1,11 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)..\'))" />
+
+  <!-- Target invoked by GenerateAllDumps (from DumpTests.targets) on each debuggee csproj
+       to extract the DumpTypes property. Returns the project name with DumpTypes metadata. -->
+  <Target Name="GetDumpTypes" Returns="@(_DumpTypeOutput)">
+    <ItemGroup>
+      <_DumpTypeOutput Include="$(MSBuildProjectName)" DumpTypes="$(DumpTypes)" />
+    </ItemGroup>
+  </Target>
+</Project>
