@@ -1041,6 +1041,24 @@ SWITCH_OPCODE:
                     LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: No bypass after callback at IP %p - staying on breakpoint\n", ip));
                     break;
                 }
+                case INTOP_DEBUG_METHOD_ENTER:
+                {
+                    if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
+                    {
+                        // ip[1] holds the native offset of the first INTOP_DEBUG_SEQ_POINT,
+                        // or -1 if none. This is patched by the compiler during code emission.
+                        const int32_t *callbackIp = ip;
+                        int32_t seqPointOffset = ip[1];
+                        if (seqPointOffset >= 0)
+                        {
+                            callbackIp = pFrame->startIp->GetByteCodes() + seqPointOffset;
+                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT);
+                        }
+                        g_pDebugInterface->OnMethodEnter((void*)callbackIp);
+                    }
+                    ip += 2;
+                    break;
+                }
                 case INTOP_DEBUG_SEQ_POINT:
                     ip++;
                     break;
@@ -3047,14 +3065,6 @@ CALL_INTERP_METHOD:
                     _ASSERTE(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
-
-#ifdef DEBUGGING_SUPPORTED
-                    // Notify debugger of method entry for step-in support for indirect calls.
-                    if (CORDebuggerAttached() && g_pDebugInterface != NULL && g_pDebugInterface->IsMethodEnterEnabled())
-                    {
-                        g_pDebugInterface->OnMethodEnter((void*)ip);
-                    }
-#endif // DEBUGGING_SUPPORTED
 
                     if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
                     {

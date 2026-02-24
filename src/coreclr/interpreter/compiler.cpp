@@ -843,6 +843,21 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
     *ip++ = opcode;
 
+
+    if (opcode == INTOP_DEBUG_METHOD_ENTER)
+    {
+        // Save pointer to the operand slot (startIp[1]) so we can patch it
+        // with the first seq point's native offset once it's emitted.
+        m_pDebugMethodEnterSeqPointSlot = startIp + 1;
+    }
+    else if ((opcode == INTOP_DEBUG_SEQ_POINT) && (m_pDebugMethodEnterSeqPointSlot != nullptr))
+    {
+        // Patch the INTOP_DEBUG_METHOD_ENTER with the native offset of the first emitted sequence point,
+        // so that the debugger can recognize it as the method entry point.
+        *m_pDebugMethodEnterSeqPointSlot = ins->nativeOffset;
+        m_pDebugMethodEnterSeqPointSlot = nullptr;
+    }
+
     // Set to true if the instruction was completely reverted.
     bool isReverted = false;
 
@@ -7758,6 +7773,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         AddIns(INTOP_HALT);
 #endif
+
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        InterpInst *methodEnter = AddIns(INTOP_DEBUG_METHOD_ENTER);
+        methodEnter->data[0] = -1; // placeholder, patched during emit when first seq point is found
+    }
 
     // We need to always generate this opcode because even if we have no IL locals, we may have
     //  global vars which contain managed pointers or interior pointers
