@@ -8877,7 +8877,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
 
-            const bool requiresRuntimeLookup = pDevirtMD->IsWrapperStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
+            const bool requiresRuntimeLookup = TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
             if (requiresRuntimeLookup)
             {
                 if (info->pResolvedTokenVirtualMethod == nullptr)
