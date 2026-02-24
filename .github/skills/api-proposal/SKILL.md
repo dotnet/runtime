@@ -98,14 +98,16 @@ The skill contains baked-in examples and guidelines (see [references/proposal-ex
 
 #### Prototype Validation (all steps required)
 
-**Step 1: Build the `src/` project**
+> **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](/.github/copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
 
-```bash
-cd src/libraries/<LibraryName>/src
-dotnet build
-```
+**Step 1: Build and test**
 
-This catches compilation errors and runs ApiCompat binary compatibility checks automatically.
+Build the src and test projects, then run all tests for the target library using the workflow described in `copilot-instructions.md`. All tests must pass with zero failures.
+
+Building the test project separately is critical for detecting **source breaking changes** that ApiCompat won't catch:
+- New overloads/extension methods causing wrong method binding in existing code
+- New generic overloads causing overload resolution ambiguity
+- Pay attention to compilation **warnings**, not just errors
 
 **Step 2: Check TFM compatibility**
 
@@ -128,33 +130,6 @@ This:
 - Produces the **exact public API diff** to use in the proposal
 - Validates that only intended APIs were added (no accidental public surface leakage)
 - The `ref/` folder changes **must be committed** as part of the prototype
-
-**Step 4: Build the test project**
-
-```bash
-cd src/libraries/<LibraryName>/tests
-dotnet build
-```
-
-This is critical for detecting **source breaking changes** that ApiCompat won't catch:
-- New overloads/extension methods causing wrong method binding in existing code
-- New generic overloads causing overload resolution ambiguity
-- Pay attention to compilation **warnings**, not just errors
-
-**Step 5: Run the tests**
-
-```bash
-cd src/libraries/<LibraryName>
-dotnet build /t:test ./tests/<TestProject>.csproj
-```
-
-All tests must pass with zero failures.
-
-**Step 6: System.Private.CoreLib** (if applicable)
-
-```bash
-./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked
-```
 
 **The flow is**: vague input → working prototype → extract exact API surface from ref source → write the proposal. The prototype comes BEFORE the exact API proposal.
 
