@@ -16,6 +16,7 @@ internal static class UnwindDataSize
             case RuntimeInfoArchitecture.X86:
                 return sizeof(uint);
             case RuntimeInfoArchitecture.X64:
+            {
                 // see https://learn.microsoft.com/cpp/build/exception-handling-x64
                 int sizeOfUnwindCode = 2; // from spec
                 int unwindCodeOffset = 4; // from spec
@@ -25,8 +26,10 @@ internal static class UnwindDataSize
                     (countOfUnwindCodes * sizeOfUnwindCode) +
                     sizeof(uint) /* personality routine is always present */,
                     sizeof(uint));
+            }
             case RuntimeInfoArchitecture.Arm:
             case RuntimeInfoArchitecture.Arm64:
+            {
                 TargetPointer xdata = unwindInfo;
                 uint xdata0 = target.Read<uint>(xdata);
                 uint size = 4; // initial header
@@ -58,11 +61,16 @@ internal static class UnwindDataSize
                 size += 4 * unwindWords;
                 size += 4;
                 return size;
+            }
 
             case RuntimeInfoArchitecture.LoongArch64:
             case RuntimeInfoArchitecture.RiscV64:
-                xdata = unwindInfo;
-                xdata0 = target.Read<uint>(xdata);
+            {
+                TargetPointer xdata = unwindInfo;
+                uint xdata0 = target.Read<uint>(xdata);
+                uint size;
+                uint unwindWords;
+                uint epilogScopes;
 
                 // If both Epilog Count and Code Word is not zero
                 // Info of Epilog and Unwind scopes are given by 1 word header
@@ -88,6 +96,7 @@ internal static class UnwindDataSize
 
                 size += 4; // exception handler RVA
                 return size;
+            }
             default:
                 throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}");
         }

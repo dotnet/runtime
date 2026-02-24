@@ -40,7 +40,6 @@ struct CodeBlockHandle
     // the flag byte which modifies how DebugInfo is parsed.
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte);
     // Gets the GCInfo associated with the code block and its version
-    // **Currently GetGCInfo only supports X86**
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
@@ -121,6 +120,9 @@ Contracts used:
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
+| `GCInfo` |
+| `PrecodeStubs` |
+| `RuntimeInfo` |
 
 The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method. This relies the [range section lookup](#rangesectionmap).
 
@@ -229,104 +231,42 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 }
 ```
 
-The EE JitManager `GetMethodRegionInfo` sums up the lengths of each runtime function in a given method, attempting to find the runtime function length in several ways depending on the data availale on the platform.
+The EE JitManager `GetMethodRegionInfo` determines the method's hot size by decoding the GC info associated with the code block to retrieve the code length. Cold regions are not supported for JIT-compiled code.
 
 ```csharp
-public override void GetMethodRegionInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
 {
-    hotSize = 0;
+    // Cold regions are not supported for JITted code
     coldStart = TargetPointer.Null;
     coldSize = 0;
 
-    TargetPointer start = // look up jittedCodeAddress in nibble map for rangeSection - see NibbleMap below
-    if (start == TargetPointer.Null)
-        return false;
-
-    TargetNUInt relativeOffset = jittedCodeAddress - start;
-    int codeHeaderOffset = Target.PointerSize;
-    TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
-
-    // Check if address is in a stub code block
-    if (codeHeaderIndirect < Target.ReadGlobal<byte>("StubCodeBlockLast"))
-        return false;
-
-    TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-    uint numUnwindInfos = Target.ReadPointer(codeHeaderAddress + /* RealCodeHeader::NumUnwindInfos offset */);
-
-    if (numUnwindInfos == 0)
-    {
-        return;
-    }
-    TypeInfo type = target.GetTypeInfo(DataType.RuntimeFunction);
-    TypeInfo unwindType = target.GetTypeInfo(DataType.RuntimeFunction);
-
-    // Sum up the lengths of all the runtime functions to get the hot size
-    for (uint i = 0; i < numUnwindInfos; i++)
-    {
-        TargetPointer addr = runtimeFunctions + (index * type.Size!.Value);
-        if (/* function has end address */)
-            hotSize += target.Read<uint>(addr + /* RuntimeFunction::EndAddress offset */) - target.Read<uint>(addr + /* RuntimeFunction::BeginAddress offset */)
-
-        Data.UnwindInfo unwindInfo = _target.ProcessedData.GetOrAdd<Data.UnwindInfo>(function.UnwindData);
-        TargetPointer unwindAddr = target.Read<uint>(addr + /* RuntimeFunction::UnwindData offset */);
-
-        if (/* unwind datatype has function length */)
-            hotSize += target.Read<uint>(unwindAddr + /* UnwindInfo::FunctionLength offset */)
-
-        // First 18 bits are function length / (pointer size / 2).
-        // See UnwindFragmentInfo::Finalize
-        uint funcLengthInHeader = target.Read<uint>(unwindAddr + /* UnwindInfo::Header offset */) & ((1 << 18) - 1);
-        hotSize += (uint)(funcLengthInHeader * (_target.PointerSize / 2));
-    }
-    return hotSize;
+    IGCInfo gcInfo = Target.Contracts.GCInfo;
+    GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+    IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+    hotSize = gcInfo.GetCodeLength(gcInfoHandle);
 }
 ```
 
-The R2R JitManager `GetMethodRegionInfo` has different behavior depending on whether the method was found in the hot cold map. If it was found, we find the bounds of the hot and cold regions by finding the start indices of the next hot and cold regions. If it is not in the map, we simply add the lengths of the runtime functions as shown above.
+The R2R JitManager `GetMethodRegionInfo` also uses the GC info to retrieve the total code length, then adjusts for hot/cold splitting. If the method is found in the hot/cold map, the cold region size is computed from the cold runtime function bounds and subtracted from the total to get the hot size.
+
 ```csharp
-public override void GetMethodRegionInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
 {
-    hotSize = 0;
     coldSize = 0;
     coldStart = TargetPointer.Null;
 
-    info = default;
+    IGCInfo gcInfo = Target.Contracts.GCInfo;
+    GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+    IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+    hotSize = gcInfo.GetCodeLength(gcInfoHandle);
 
-    TargetPointer r2rModule = Target.ReadPointer(/* range section address + RangeSection::R2RModule offset */);
-    TargetPointer r2rInfo = Target.ReadPointer(r2rModule + /* Module::ReadyToRunInfo offset */);
-
-    // Check if address is in a thunk
-    if (/* jittedCodeAddress is in ReadyToRunInfo::DelayLoadMethodCallThunks */)
-        return false;
-
-    // Find the relative address that we are looking for
-    TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
-    TargetPointer imageBase = Target.ReadPointer(/* range section address + RangeSection::RangeBegin offset */);
-    TargetPointer relativeAddr = addr - imageBase;
-
-    TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
-    int index = // Iterate through runtimeFunctions and find index of function with relativeAddress
-
-    // look up hot and cold start and end indices in hot/cold map (hotIdx, coldStartIdx, coldEndIdx)
+    // Look up hot/cold map in the R2R module
     if (/* found in hot/cold map */)
     {
-        hotSize = /* runtime function length at index hotIdx */ ;
-        // Sum up the lengths of all the runtime functions to get the cold size
-        for (uint i = coldStartIdx; i <= coldEndIdx; i++)
-        {
-            coldSize += // add up lengths of runtime functions at index i as shown above in the EEJitManager
-        }
-        coldStart = imageBase + /* start address of runtime function at index coldStartIdx */;
-    }
-    else
-    {
-        // No hot/cold splitting for this method, sum up the hot size only
-        uint hotStartIdx = // iterate through until you reach a valid MethodDesc signifying beginning of hot area
-        uint hotEndIdx = // iterate through until you reach a valid MethodDesc signifying beginning of next hot area
-        for (uint i = hotStartIdx; i <= hotEndIdx; i++)
-        {
-            hotSize += // add up lengths of runtime functions at index i as shown above in the EEJitManager
-        }
+        // Compute cold region bounds from cold runtime function start/end indices
+        coldStart = imageBase + coldStartFunc.BeginAddress;
+        coldSize = coldEndOffset - coldBeginOffset;
+        hotSize -= coldSize;
     }
 }
 
