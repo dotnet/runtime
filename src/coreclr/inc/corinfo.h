@@ -1487,7 +1487,6 @@ enum CorInfoTokenKind
 
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-    CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -2288,6 +2287,12 @@ public:
         CORINFO_METHOD_HANDLE ftn,
         CORINFO_METHOD_HANDLE* methodArg,
         CORINFO_CLASS_HANDLE* classArg
+        ) = 0;
+
+    // Get the other variant of an async method, if possible.
+    virtual CORINFO_METHOD_HANDLE getAsyncOtherVariant(
+        CORINFO_METHOD_HANDLE ftn,
+        bool*                 variantIsThunk
         ) = 0;
 
     // Given T, return the type of the default Comparer<T>.

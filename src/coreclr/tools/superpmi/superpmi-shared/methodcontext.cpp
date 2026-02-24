@@ -3397,6 +3397,49 @@ CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HAND
     return (CORINFO_METHOD_HANDLE)(value.result);
 }
 
+void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
+                                       bool*                 variantIsThunk,
+                                       CORINFO_METHOD_HANDLE result)
+{
+    if (GetAsyncOtherVariant == nullptr)
+    {
+        GetAsyncOtherVariant = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = CastHandle(ftn);
+    DLD       value;
+    value.A = CastHandle(result);
+    if (variantIsThunk != nullptr)
+    {
+        value.B = (DWORD)*variantIsThunk ? 1 : 0;
+    }
+    else
+    {
+        value.B = 0;
+    }
+    GetAsyncOtherVariant->Add(key, value);
+    DEBUG_REC(dmpGetAsyncOtherVariant(key, value));
+}
+
+void MethodContext::dmpGetAsyncOtherVariant(DWORDLONG key, DLD value)
+{
+    printf("GetAsyncOtherVariant ftn-%016" PRIX64 ", result-%016" PRIX64 ", variantIsThunk-%u", key, value.A, value.B);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
+{
+    DWORDLONG key = CastHandle(ftn);
+
+    DLD value = LookupByKeyOrMiss(GetAsyncOtherVariant, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetAsyncOtherVariant(key, value));
+
+    if (variantIsThunk != nullptr)
+    {
+        *variantIsThunk = (value.B == 1);
+    }
+    return (CORINFO_METHOD_HANDLE)(value.A);
+}
+
 void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultComparerClass == nullptr)

@@ -459,6 +459,10 @@ public:
                                                   CORINFO_METHOD_HANDLE* methodHandle,
                                                   CORINFO_CLASS_HANDLE* classHandle);
 
+    void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk, CORINFO_METHOD_HANDLE result);
+    void dmpGetAsyncOtherVariant(DWORDLONG key, DLD value);
+    CORINFO_METHOD_HANDLE repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
+
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls);
@@ -1217,6 +1221,7 @@ enum mcPackets
     Packet_GetContinuationType = 234,
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
+    Packet_GetAsyncOtherVariant = 237,
 };
 
 void SetDebugDumpVariables();

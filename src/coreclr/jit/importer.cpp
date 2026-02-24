@@ -8556,7 +8556,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
                 if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
@@ -8595,8 +8595,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
-                              combine(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN),
-                                      CORINFO_CALLINFO_CALLVIRT),
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
                               &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -8729,7 +8728,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 _impResolveToken(CORINFO_TOKENKIND_NewObj);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_ALLOWINSTPARAM, &callInfo);
 
                 mflags = callInfo.methodFlags;
 
@@ -8982,16 +8981,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isAwait)
                     {
-                        _impResolveToken(opcode == CEE_CALLVIRT ? CORINFO_TOKENKIND_AwaitVirtual
-                                                                : CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod != nullptr)
-                        {
-                            // There is a runtime async variant that is implicitly awaitable, just call that.
-                            // skip the await pattern to the last token.
-                            codeAddr   = codeAddrAfterMatch;
-                            opcodeOffs = awaitOffset;
-                        }
-                        else
+                        _impResolveToken(CORINFO_TOKENKIND_Await);
+                        if (resolvedToken.hMethod == nullptr)
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -9009,12 +9000,39 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         _impResolveToken(CORINFO_TOKENKIND_Method);
                     }
 
-                    eeGetCallInfo(&resolvedToken,
-                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  // this is how impImportCall invokes getCallInfo
-                                  combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
-                                  &callInfo);
+                    CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS;
+                    if (opcode == CEE_CALLVIRT)
+                    {
+                        flags |= CORINFO_CALLINFO_CALLVIRT;
+                    }
+
+                    eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags, &callInfo);
+
+                    if (isAwait && (callInfo.kind == CORINFO_CALL))
+                    {
+                        assert(callInfo.sig.isAsyncCall());
+                        bool isSyncCallThunk;
+                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+                        if (!isSyncCallThunk)
+                        {
+                            // Otherwise the async variant that we got is a thunk.
+                            // Switch back to the non-async task-returning call. There is no reason to go through the thunk.
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            isAwait = false;
+
+                            JITDUMP("Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
+                            eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags, &callInfo);
+                        }
+                    }
+
+                    if (isAwait)
+                    {
+                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we prefer
+                        // to directly call it. Skip the await pattern to the last token.
+                        codeAddr   = codeAddrAfterMatch;
+                        opcodeOffs = awaitOffset;
+                    }
                 }
                 else
                 {

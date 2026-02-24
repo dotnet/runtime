@@ -6741,9 +6741,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
 {
-    CorInfoTokenKind tokenKind =
-        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
-    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
+    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
     return m_resolvedAsyncCallToken.hMethod != NULL;
 }
 

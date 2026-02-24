@@ -1081,38 +1081,11 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             break;
 
         case CORINFO_TOKENKIND_Await:
-        case CORINFO_TOKENKIND_AwaitVirtual:
             {
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
-                bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
-                if (allowAsyncVariant)
-                {
-                    bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
-                    if (!isDirect)
-                    {
-                        DWORD attrs = pMD->GetAttrs();
-                        if (pMD->GetMethodTable()->IsInterface())
-                        {
-                            isDirect = !IsMdVirtual(attrs);
-                        }
-                        else
-                        {
-                            isDirect = !IsMdVirtual(attrs) || IsMdFinal(attrs) || pMD->GetMethodTable()->IsSealed();
-                        }
-                    }
-
-                    if (isDirect && !pMD->IsAsyncThunkMethod())
-                    {
-                        // Async variant would be a thunk. Do not resolve direct calls
-                        // to async thunks. That just creates and JITs unnecessary
-                        // thunks, and the thunks are harder for the JIT to optimize.
-                        allowAsyncVariant = false;
-                    }
-                }
-
-                pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             }
             break;
 
@@ -8989,6 +8962,29 @@ CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
             *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
         }
     }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* variantIsThunk)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+    MethodDesc* pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+    *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 
     EE_TO_JIT_TRANSITION();
 
