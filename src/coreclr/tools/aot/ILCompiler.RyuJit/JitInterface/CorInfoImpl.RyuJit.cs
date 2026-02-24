@@ -55,6 +55,14 @@ namespace Internal.JitInterface
             return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
+        {
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
+        }
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;

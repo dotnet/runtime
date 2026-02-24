@@ -699,8 +699,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
-            _asyncResumptionStub = null;
 #endif
+            _asyncResumptionStub = null;
 
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -3860,26 +3860,6 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException(nameof(getTailCallHelpers));
 #else
             return false;
-#endif
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
-#pragma warning restore CA1822 // Mark members as static
-        {
-#if READYTORUN
-            var resumptionStub = new AsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
-
-            // CompiledMethodNode instead of MethodEntrypoint for the pointer to the code instead of a fixup
-            var compiledStubNode = _compilation.NodeFactory.CompiledMethodNode(resumptionStub);
-            entryPoint = (void*)ObjectToHandle(compiledStubNode);
-            AddResumptionStubFixup(compiledStubNode);
-            return ObjectToHandle(resumptionStub);
-#else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
-
-            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
-            return ObjectToHandle(_asyncResumptionStub);
 #endif
         }
 

@@ -476,6 +476,7 @@ namespace Internal.JitInterface
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
+        private MethodDesc _asyncResumptionStub;
 
         public bool HasColdCode { get; private set; }
 
@@ -494,6 +495,18 @@ namespace Internal.JitInterface
         private void AddResumptionStubFixup(MethodWithGCInfo compiledStubNode)
         {
             _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.ResumptionStubEntryPoint(compiledStubNode));
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
+        {
+            if (_asyncResumptionStub is null)
+            {
+                _asyncResumptionStub = new AsyncResumptionStub(MethodBeingCompiled, MethodBeingCompiled.OwningType);
+                AddResumptionStubFixup(_compilation.NodeFactory.CompiledMethodNode(_asyncResumptionStub));
+            }
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.CompiledMethodNode(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
         }
 
         private static mdToken FindGenericMethodArgTypeSpec(EcmaModule module)
