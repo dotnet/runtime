@@ -116,6 +116,13 @@
              Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
   </Target>
 
+  <!-- Build all debuggees without running them (for Helix payload preparation).
+       Uses dotnet build (via Exec) to ensure implicit NuGet restore, matching
+       the pattern in _GenerateLocalDump. Invoke explicitly: dotnet msbuild /t:BuildDebuggeesOnly -->
+  <Target Name="BuildDebuggeesOnly">
+    <Exec Command="&quot;$(_DotNetExe)&quot; build &quot;%(DebuggeeCsproj.Identity)&quot; -c $(DebuggeeConfiguration) -f $(NetCoreAppCurrent) --nologo" />
+  </Target>
+
   <Target Name="_GenerateDumpsForDebuggee">
     <!-- Expand DumpTypes (e.g. "Heap;Full") into individual _DumpTypeItem entries -->
     <ItemGroup>
