@@ -1497,6 +1497,14 @@ namespace Internal.JitInterface
 
             if (isGenericVirtual)
             {
+                if (IsCanonicalSubtypeInstantiation(originalImpl.OwningType.Instantiation))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
                 bool requiresRuntimeLookup = IsCanonicalSubtypeInstantiation(originalImpl.Instantiation);
                 if (requiresRuntimeLookup)
                 {
@@ -1506,9 +1514,19 @@ namespace Internal.JitInterface
                         return false;
                     }
 
-                    // TODO: Implement generic virtual method devirtualization runtime lookup for R2R and NativeAOT
+#if READYTORUN
+                    ComputeRuntimeLookupForSharedGenericToken(
+                        Internal.ReadyToRunConstants.DictionaryEntryKind.DevirtualizedMethodDescSlot,
+                        ref *info->pResolvedTokenVirtualMethod,
+                        null,
+                        originalImpl,
+                        MethodBeingCompiled,
+                        ref info->instParamLookup);
+#else
+                    // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
                     return false;
+#endif
                 }
             }
 

@@ -8869,6 +8869,14 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
+            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
+            {
+                // If we end up with a shared MethodTable that is not exact,
+                // we can't devirtualize since it's not possible to compute the instantiation argument as a runtime lookup.
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
             const bool requiresRuntimeLookup = pDevirtMD->IsWrapperStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
             if (requiresRuntimeLookup)
             {
