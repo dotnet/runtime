@@ -1,0 +1,287 @@
+---
+name: api-proposal
+description: Create prototype backed API proposals for dotnet/runtime. Use when asked to draft an API proposal or to refine a vague API idea into a complete proposal.
+---
+
+# API Proposal Skill
+
+Create complete, terse, and empirically grounded API proposals for dotnet/runtime. The output should have a high chance of passing the [API review process](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md).
+
+> 🚨 **NEVER** submit a proposal without a working prototype. The prototype is the evidence that the API works. Proposals without prototypes are speculative.
+
+> 🚨 **NEVER** use `gh pr review --approve` or `--request-changes`. Only `--comment` is allowed.
+
+## When to Use This Skill
+
+Use this skill when:
+- Asked to propose a new API for dotnet/runtime
+- Given a vague API idea or incomplete sketch that needs to be turned into a complete proposal
+- Given an existing underdeveloped `api-suggestion` issue to refine
+- Asked to prototype an API and draft a proposal
+- Asked to "write an API proposal", "draft an api-suggestion", or "improve this proposal"
+
+## Core Principles
+
+1. **TERSENESS**: Proposals are reviewed live by humans during API review meetings who often lack prior context. Long text is counterproductive unless warranted by design complexity. Focus on WHAT problem and HOW to solve it.
+
+2. **Empirically grounded**: Build and test a working prototype BEFORE writing the proposal. The prototype validates the design, surfaces edge cases, and produces the exact API surface via ref source generation.
+
+3. **Claims backed by evidence**: Every motivating claim must have at least one concrete scenario. "This is useful" without showing *who* needs it and *how* they'd use it is the #1 reason proposals get sent back.
+
+4. **Context-driven depth**: The amount of supporting text should be proportional to how much **new information** the proposal introduces — not just API surface size. A small API introducing a novel concept needs more justification than a large API adding async counterparts to existing sync methods.
+
+## Modular Phases
+
+This skill has 6 phases. Each can run independently (e.g., "just draft the proposal from my existing prototype"). When running the full pipeline, execute in order.
+
+---
+
+### Phase 0: Gather Input & Assess Context
+
+1. **Accept input** in any form: issue URL, text description, API sketch, or vague idea.
+
+2. **If the input is an existing GitHub issue**, read it in full and identify:
+   - What sections are missing or underdeveloped
+   - Whether the proposed API surface is concrete or still vague
+   - Any reviewer feedback in comments (especially if `api-needs-work` label is present)
+
+3. **Identify the target**: namespace, area label, affected types, target library under `src/libraries/`.
+
+4. **Assess novelty**: Is this a well-understood pattern extension (async variant, new overload, casing option) or something introducing a novel concept? This determines the depth of the proposal.
+
+5. **Evaluate existing workarounds**: Before proceeding, research what users can do TODAY without this API.
+   - Present the workaround(s) to the user for evaluation
+   - Explain trade-offs: performance penalty? excessive boilerplate? bad practices?
+   - **This is a checkpoint**: If a workaround is acceptable, the user may decide to shelve the proposal
+   - Only proceed to prototyping if workarounds are genuinely insufficient
+
+6. **Search for prior proposals** on the same topic:
+   - Search dotnet/runtime issues for related `api-suggestion` / `api-approved` / `api-needs-work` issues
+   - If duplicates exist, surface them — don't block work, but note them for linking later
+   - There is usually a reason why existing proposals haven't been approved; understand it
+
+7. Ask clarifying questions if the proposal is too vague to prototype.
+
+---
+
+### Phase 1: Research
+
+The skill contains baked-in examples and guidelines (see [references/proposal-examples.md](references/proposal-examples.md) and [references/api-proposal-checklist.md](references/api-proposal-checklist.md)). The agent does NOT need to search for `api-approved` issues at runtime.
+
+**What the agent DOES at runtime:**
+
+1. **Read the Framework Design Guidelines digest** at `docs/coding-guidelines/framework-design-guidelines-digest.md`. Validate that proposed names follow the conventions.
+
+2. **Read existing APIs in the target namespace** to ensure consistency:
+   - Naming patterns (e.g., `TryX` pattern, `XAsync` pattern, overload shapes)
+   - Type hierarchies and interface implementations
+   - Parameter ordering conventions
+
+3. **Read the reference documentation for updating ref source** at `docs/coding-guidelines/updating-ref-source.md`.
+
+---
+
+### Phase 2: Prototype
+
+> **If the user already has a prototype**, ask for the published branch link and skip to Phase 3.
+
+1. Create a working branch: `api-proposal/<short-name>`
+
+2. Implement the API surface with:
+   - Complete triple-slash XML documentation on all public members
+   - Proper `#if` guards for TFM-specific APIs
+
+3. Write comprehensive tests:
+   - Use `[Theory]` with `[InlineData]`/`[MemberData]` where applicable
+   - Cover edge cases, null inputs, boundary conditions
+   - Test any interaction with existing APIs
+
+#### Prototype Validation (all steps required)
+
+**Step 1: Build the `src/` project**
+
+```bash
+cd src/libraries/<LibraryName>/src
+dotnet build
+```
+
+This catches compilation errors and runs ApiCompat binary compatibility checks automatically.
+
+**Step 2: Check TFM compatibility**
+
+Inspect the library's `.csproj` for `TargetFrameworks`. If it ships netstandard2.0 or net462 artifacts:
+- Verify the prototype compiles for ALL target frameworks, not just `$(NetCoreAppCurrent)`
+- Ensure .NET Core APIs form a **superset** of netstandard/netfx APIs
+- Use `#if` guards where types like `DateOnly`, `IParsable<T>` restrict parts of the surface to .NET Core
+- Failure to maintain superset relationship risks breaking changes on upgrade/type-forward
+
+**Step 3: Generate reference assembly source**
+
+```bash
+cd src/libraries/<LibraryName>/src
+dotnet msbuild /t:GenerateReferenceAssemblySource
+```
+
+For System.Runtime, use `dotnet build --no-incremental /t:GenerateReferenceAssemblySource`.
+
+This:
+- Produces the **exact public API diff** to use in the proposal
+- Validates that only intended APIs were added (no accidental public surface leakage)
+- The `ref/` folder changes **must be committed** as part of the prototype
+
+**Step 4: Build the test project**
+
+```bash
+cd src/libraries/<LibraryName>/tests
+dotnet build
+```
+
+This is critical for detecting **source breaking changes** that ApiCompat won't catch:
+- New overloads/extension methods causing wrong method binding in existing code
+- New generic overloads causing overload resolution ambiguity
+- Pay attention to compilation **warnings**, not just errors
+
+**Step 5: Run the tests**
+
+```bash
+cd src/libraries/<LibraryName>
+dotnet build /t:test ./tests/<TestProject>.csproj
+```
+
+All tests must pass with zero failures.
+
+**Step 6: System.Private.CoreLib** (if applicable)
+
+```bash
+./build.sh clr.corelib+clr.nativecorelib+libs.pretest -rc checked
+```
+
+**The flow is**: vague input → working prototype → extract exact API surface from ref source → write the proposal. The prototype comes BEFORE the exact API proposal.
+
+---
+
+### Phase 3: Review (encapsulates code-review skill) — BLOCKING
+
+1. Invoke the **code-review** skill against the prototype diff.
+
+2. **All errors and warnings must be fixed** before proceeding to the draft phase.
+
+3. If the API change could affect performance (hot paths, allocations, new collection types), suggest running the **performance-benchmark** skill.
+
+4. Re-run tests after any review-driven changes to confirm nothing regressed.
+
+---
+
+### Phase 4: Draft Proposal
+
+**Core principle: TERSENESS.** Focus on WHAT problem and HOW to solve it. Do not generate long text unless the design complexity warrants it.
+
+Write the proposal matching the spirit of the [issue template](https://github.com/dotnet/runtime/blob/main/.github/ISSUE_TEMPLATE/02_api_proposal.yml). Skip inapplicable fields rather than filling them with "N/A".
+
+#### Proposal Structure
+
+**1. Background and motivation**
+
+- WHAT concrete user problem are we solving? Show scenario(s).
+- Are there existing workarounds? Why are they insufficient (perf, boilerplate, bad practices)?
+- Reference prior art in other ecosystems where relevant.
+
+**2. API Proposal**
+
+The exact API surface, extracted from the `GenerateReferenceAssemblySource` output:
+
+- **New self-contained types**: Clean declaration format (no diff markers). Example:
+
+```csharp
+namespace System.Collections.Generic;
+
+public class PriorityQueue<TElement, TPriority>
+{
+    public PriorityQueue();
+    public PriorityQueue(IComparer<TPriority>? comparer);
+    public int Count { get; }
+    public void Enqueue(TElement element, TPriority priority);
+    public TElement Dequeue();
+    // ...
+}
+```
+
+- **Additions to existing types**: Markdown `diff` blocks showing only relevant context (sibling overloads, not every member):
+
+```diff
+namespace System.Text.Json;
+
+public partial class JsonNamingPolicy
+{
+     public static JsonNamingPolicy CamelCase { get; }
++    public static JsonNamingPolicy SnakeLowerCase { get; }
++    public static JsonNamingPolicy SnakeUpperCase { get; }
+}
+```
+
+Rules:
+- **No implementation code.** Ever.
+- **No extensive XML docs.** Comments only as brief clarifications for the review board.
+- Naming must follow the [Framework Design Guidelines](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/framework-design-guidelines-digest.md).
+
+**3. API Usage**
+
+Realistic, compilable code examples demonstrating the primary scenarios. Number and depth should match the novelty of the API, not just its size. A simple new overload may need one example; a new collection type may need several showing different use patterns.
+
+**4. Design Decisions** (nontrivial only)
+
+For any decision where reasonable alternatives exist, briefly explain the reasoning. Omit for self-evident decisions. List format works well:
+
+- "Uses a quaternary heap instead of binary for better cache locality"
+- "Does not implement `IEnumerable` because elements cannot be efficiently enumerated in priority order"
+
+**5. Alternative Designs**
+
+The agent has the burden of proof when claiming no viable alternatives exist. Show that alternatives were genuinely considered and explain why the proposed design is preferred.
+
+**6. Risks**
+
+The agent has the burden of proof when claiming absence of risks. Evaluate:
+- Binary breaking changes (caught by ApiCompat)
+- Source breaking changes (overload resolution, method binding)
+- Performance implications
+- TFM compatibility
+
+**7. Open Questions** (if any)
+
+List unresolved design questions with tentative answers. Surfacing uncertainty is a feature, not a weakness. Example from PriorityQueue:
+- "Should we use `KeyValuePair` instead of tuples?
+
+**8. Scope considerations** (if applicable)
+
+If the proposal could naturally extend to neighboring APIs (e.g., "should this also apply to `ToHashSet`?"), flag it as an open question.
+
+**9. Related issues**
+
+Link any related/duplicate proposals found during Phase 0 research.
+
+**10. Prototype**
+
+Link to the published branch with the working implementation.
+
+#### After Drafting
+
+Present the complete draft to the user for review. Iterate based on feedback before publishing.
+
+---
+
+### Phase 5: Publish
+
+1. Commit prototype changes and push branch to the user's fork (default) or ask for an alternative remote.
+
+2. **If the input was an existing issue**, offer the user a choice:
+   - **Post as comment** on the existing issue (for the user to manually edit the OP)
+   - **Create a new issue** via `gh issue create`
+
+3. **If the input was NOT an existing issue**, offer to file via:
+   ```bash
+   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body "<proposal>"
+   ```
+   No area label — repo automation handles that.
+
+4. Include the prototype branch link and related issue links in the body.
