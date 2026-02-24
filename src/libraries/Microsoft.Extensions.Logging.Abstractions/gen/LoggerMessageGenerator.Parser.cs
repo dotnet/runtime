@@ -389,6 +389,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
+#if ROSLYN4_4_OR_GREATER
+                                        if (paramSymbol.ScopedKind != ScopedKind.None)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+#endif
+
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
                                                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
@@ -404,9 +413,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                             IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, _logLevelSymbol, sm.Compilation),
                                             IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, _enumerableSymbol, sm.Compilation) && !IsBaseOrIdentity(paramTypeSymbol, _stringSymbol, sm.Compilation),
                                         };
-#if ROSLYN4_4_OR_GREATER
-                                        lp.IsScoped = paramSymbol.ScopedKind != ScopedKind.None;
-#endif
 
                                         foundLogger |= lp.IsLogger;
                                         foundException |= lp.IsException;
@@ -1046,9 +1052,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public bool IsException;
             public bool IsLogLevel;
             public bool IsEnumerable;
-#pragma warning disable CS0649 // Field is never assigned to in builds without ROSLYN4_4_OR_GREATER
-            public bool IsScoped;
-#pragma warning restore CS0649
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
@@ -1062,8 +1065,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 IsLogger = IsLogger,
                 IsException = IsException,
                 IsLogLevel = IsLogLevel,
-                IsEnumerable = IsEnumerable,
-                IsScoped = IsScoped
+                IsEnumerable = IsEnumerable
             };
         }
 
@@ -1080,7 +1082,6 @@ namespace Microsoft.Extensions.Logging.Generators
             public required bool IsException { get; init; }
             public required bool IsLogLevel { get; init; }
             public required bool IsEnumerable { get; init; }
-            public required bool IsScoped { get; init; }
 
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
@@ -1097,8 +1098,7 @@ namespace Microsoft.Extensions.Logging.Generators
                        IsLogger == other.IsLogger &&
                        IsException == other.IsException &&
                        IsLogLevel == other.IsLogLevel &&
-                       IsEnumerable == other.IsEnumerable &&
-                       IsScoped == other.IsScoped;
+                       IsEnumerable == other.IsEnumerable;
             }
 
             public override int GetHashCode()
@@ -1111,7 +1111,6 @@ namespace Microsoft.Extensions.Logging.Generators
                 hash = HashHelpers.Combine(hash, IsException.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsLogLevel.GetHashCode());
                 hash = HashHelpers.Combine(hash, IsEnumerable.GetHashCode());
-                hash = HashHelpers.Combine(hash, IsScoped.GetHashCode());
                 return hash;
             }
         }

@@ -280,21 +280,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 }";
             await VerifyAgainstBaselineUsingFile("TestWithRefReadOnlyParam.generated.txt", testSourceCode);
         }
-
-        [Fact]
-        public async Task TestBaseline_TestWithScopedRefParam_Success()
-        {
-            string testSourceCode = @"
-namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
-{
-    internal static partial class TestWithScopedRefParam
-    {
-        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
-        public static partial void M(ILogger logger, scoped ref int p1);
-    }
-}";
-            await VerifyAgainstBaselineUsingFile("TestWithScopedRefParam.generated.txt", testSourceCode);
-        }
 #endif
 
         [Fact]

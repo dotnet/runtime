@@ -246,10 +246,10 @@
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="InvalidLoggingMethodParameterParamsMessage" xml:space="preserve">
-    <value>Argument '{0}' is using the unsupported params parameter modifier</value>
+    <value>Argument '{0}' is using the unsupported params or scoped parameter modifier</value>
   </data>
   <data name="InvalidLoggingMethodParameterParamsTitle" xml:space="preserve">
-    <value>Argument is using the unsupported params parameter modifier</value>
+    <value>Argument is using the unsupported params or scoped parameter modifier</value>
   </data>
   <data name="InvalidLoggingMethodParameterRefStructMessage" xml:space="preserve">
     <value>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</value>

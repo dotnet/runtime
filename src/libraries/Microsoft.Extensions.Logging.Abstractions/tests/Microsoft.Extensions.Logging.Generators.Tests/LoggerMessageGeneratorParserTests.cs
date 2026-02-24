@@ -905,7 +905,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task ScopedRefParameterOK()
+        public async Task InvalidScopedRefParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -914,11 +914,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, scoped ref int p1);
                 }");
 
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
-        public async Task ScopedRefReadOnlyParameterOK()
+        public async Task InvalidScopedRefReadOnlyParameter()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -927,7 +929,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, scoped ref readonly int p1);
                 }");
 
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
@@ -944,7 +948,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task ScopedRefParameterWithMoreThan6ParamsOK()
+        public async Task InvalidScopedRefParameterWithMoreThan6Params()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -953,11 +957,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref int p7);
                 }");
 
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p7", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
-        public async Task ScopedRefReferenceTypeWithMoreThan6ParamsOK()
+        public async Task InvalidScopedRefReferenceTypeWithMoreThan6Params()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -966,20 +972,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref string p7);
                 }");
 
-            Assert.Empty(diagnostics);
-        }
-
-        [Fact]
-        public async Task ScopedRefReadOnlyReferenceTypeWithMoreThan6ParamsOK()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                partial class C
-                {
-                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
-                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref readonly string p7);
-                }");
-
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p7", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]

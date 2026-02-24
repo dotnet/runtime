@@ -341,10 +341,6 @@ namespace {lc.Namespace}
                         _builder.Append(", ");
                     }
 
-                    if (p.IsScoped)
-                    {
-                        _builder.Append("scoped ");
-                    }
                     if (p.Qualifier != null)
                     {
                         _builder.Append($"{p.Qualifier} ");
