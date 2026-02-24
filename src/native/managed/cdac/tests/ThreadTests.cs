@@ -122,11 +122,15 @@ public unsafe class ThreadTests
 
         Assert.Equal(expectedCount, count);
     }
-  
+
     [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]  
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetThreadAllocContext(MockTarget.Architecture arch)
     {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
         long allocBytes = 1024;
         long allocBytesLoh = 4096;
 
@@ -159,7 +163,7 @@ public unsafe class ThreadTests
         Assert.Equal(0, data.AllocBytes);
         Assert.Equal(0, data.AllocBytesLoh);
     }
-  
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetStackLimits(MockTarget.Architecture arch)
