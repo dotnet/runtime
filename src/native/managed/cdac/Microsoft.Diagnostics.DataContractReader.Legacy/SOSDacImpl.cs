@@ -4256,29 +4256,22 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    // Must match the order and names in LoaderAllocatorLoaderHeapNames in request.cpp
-    private static readonly string[] s_loaderAllocatorHeapNames =
-    [
-        "LowFrequencyHeap",
-        "HighFrequencyHeap",
-        "StaticsHeap",
-        "StubHeap",
-        "ExecutableHeap",
-        "FixupPrecodeHeap",
-        "NewStubPrecodeHeap",
-        "IndcellHeap",
-        "CacheEntryHeap",
-    ];
 
-    private static readonly nint[] s_loaderAllocatorHeapNamePtrs = InitializeHeapNamePtrs();
+    private nint[]? _loaderAllocatorHeapNamePtrs;
 
-    private static nint[] InitializeHeapNamePtrs()
+    private nint[] GetOrInitializeHeapNamePtrs()
     {
-        nint[] ptrs = new nint[s_loaderAllocatorHeapNames.Length];
-        for (int i = 0; i < s_loaderAllocatorHeapNames.Length; i++)
+        if (_loaderAllocatorHeapNamePtrs is not null)
+            return _loaderAllocatorHeapNamePtrs;
+
+        Contracts.ILoader contract = _target.Contracts.Loader;
+        IReadOnlyList<string> names = contract.GetLoaderAllocatorHeapNames();
+        nint[] ptrs = new nint[names.Count];
+        for (int i = 0; i < names.Count; i++)
         {
-            ptrs[i] = Marshal.StringToHGlobalAnsi(s_loaderAllocatorHeapNames[i]);
+            ptrs[i] = Marshal.StringToHGlobalAnsi(names[i]);
         }
+        _loaderAllocatorHeapNamePtrs = ptrs;
         return ptrs;
     }
 
@@ -4287,14 +4280,15 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            int loaderHeapCount = s_loaderAllocatorHeapNamePtrs.Length;
+            nint[] heapNamePtrs = GetOrInitializeHeapNamePtrs();
+            int loaderHeapCount = heapNamePtrs.Length;
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
 
             if (ppNames != null)
             {
                 for (int i = 0; i < Math.Min(count, loaderHeapCount); i++)
-                    ppNames[i] = (char*)s_loaderAllocatorHeapNamePtrs[i];
+                    ppNames[i] = (char*)heapNamePtrs[i];
             }
 
             if (count < loaderHeapCount)
@@ -4316,7 +4310,51 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (loaderAllocator == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            IReadOnlyList<TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
+            int loaderHeapCount = heaps.Count;
+
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (pLoaderHeaps != null)
+            {
+                if (count < loaderHeapCount)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+                else
+                {
+                    for (int i = 0; i < loaderHeapCount; i++)
+                    {
+                        pLoaderHeaps[i] = heaps[i].ToClrDataAddress(_target);
+                        pKinds[i] = 0; // LoaderHeapKindNormal
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            int hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, 0, null, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
