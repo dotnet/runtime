@@ -4309,7 +4309,7 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl13 is not null)
         {
             int pNeededLocal;
-            int hrLocal = _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
+            _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
             Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
         }
 #endif
