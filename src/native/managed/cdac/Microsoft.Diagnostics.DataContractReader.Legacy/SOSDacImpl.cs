@@ -2972,12 +2972,12 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
     {
-        if (buffer is null && pNeeded is null)
-            return HResults.E_POINTER;
-
         int hr = HResults.S_OK;
         try
         {
+            if (buffer is null && pNeeded is null)
+                throw new NullReferenceException();
+
             string[] regs = _target.Contracts.RuntimeInfo.GetTargetArchitecture() switch
             {
                 RuntimeInfoArchitecture.X64 => s_amd64Registers,
