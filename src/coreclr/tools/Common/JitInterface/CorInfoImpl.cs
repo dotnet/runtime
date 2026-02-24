@@ -1560,7 +1560,23 @@ namespace Internal.JitInterface
 
         private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
         {
-            throw new NotImplementedException();
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsAsyncVariant())
+            {
+                method = method.GetTargetOfAsyncVariant();
+            }
+            else if (method.Signature.ReturnsTaskOrValueTask())
+            {
+                method = method.GetAsyncVariant();
+            }
+            else
+            {
+                variantIsThunk = false;
+                return null;
+            }
+
+            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            return ObjectToHandle(method);
         }
 
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
