@@ -672,6 +672,7 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
 CDAC_TYPE_FIELD(EEJitManager, /*bool*/, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
+CDAC_TYPE_FIELD(EEJitManager, /*pointer*/, AllCodeHeaps, cdac_data<EEJitManager>::AllCodeHeaps)
 CDAC_TYPE_END(EEJitManager)
 
 CDAC_TYPE_BEGIN(RealCodeHeader)
@@ -1153,6 +1154,7 @@ CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerPtr)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 

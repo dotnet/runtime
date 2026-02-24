@@ -396,6 +396,40 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(codeRangeStart), actualBaseAddress);
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetJitManagerInfo_ReturnsManagerAddress(int version, MockTarget.Architecture arch)
+    {
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        JitManagerInfo info = em.GetJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(TargetPointer.Null, info.HeapListAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetJitManagerInfo_WithCodeHeaps(int version, MockTarget.Architecture arch)
+    {
+        TargetPointer expectedHeapList = new(0x0099_aa00);
+
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange, allCodeHeaps: expectedHeapList);
+        var target = CreateTarget(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        JitManagerInfo info = em.GetJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(expectedHeapList, info.HeapListAddress);
+    }
+
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;

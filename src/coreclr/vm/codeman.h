@@ -2005,6 +2005,8 @@ protected:
     Crst m_CodeHeapLock;
     ULONG m_iteratorCount;
     bool m_storeRichDebugInfo;
+
+    friend struct ::cdac_data<EEJitManager>;
 };
 
 //-----------------------------------------------------------------------------
@@ -2263,6 +2265,7 @@ template<>
 struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+    static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
 };
 
 
@@ -2580,6 +2583,7 @@ template<>
 struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
+    static constexpr void* const EEJitManagerPtr = (void*)&ExecutionManager::m_pEEJitManager;
 };
 #endif
 
