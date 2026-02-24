@@ -2569,6 +2569,14 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     EE_TO_JIT_TRANSITION();
 }
 
+CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    LIMITED_METHOD_CONTRACT;
+    // Only needed for a Wasm Jit.
+    UNREACHABLE();
+    return CORINFO_WASM_TYPE_VOID;
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -3019,7 +3027,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
-    pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
     CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
     pResult->signature = NULL;
@@ -6115,7 +6122,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_LOOKUP_KIND *           pGenericLookupKind,
         CorInfoHelpFunc                 id,
         CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_CONST_LOOKUP *          pLookup

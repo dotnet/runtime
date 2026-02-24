@@ -2225,7 +2225,6 @@ CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPt
 }
 
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup,
@@ -2237,7 +2236,6 @@ void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
     GetReadyToRunHelper_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper);
-    key.GenericLookupKind = SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(pGenericLookupKind);
     key.id                = (DWORD)id;
     key.callerHandle      = CastHandle(callerHandle);
     GetReadyToRunHelper_TOKENout value;
@@ -2250,15 +2248,13 @@ void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 
 void MethodContext::dmpGetReadyToRunHelper(GetReadyToRunHelper_TOKENin key, GetReadyToRunHelper_TOKENout value)
 {
-    printf("GetReadyToRunHelper key: tk{%s} kind{%s} id-%u",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
-           SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(key.GenericLookupKind).c_str(), key.id);
+    printf("GetReadyToRunHelper key: tk{%s} id-%u",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(), key.id);
     printf(", value: lk{ %s } %u", SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.Lookup).c_str(),
            value.result);
 }
 
 bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
@@ -2268,7 +2264,6 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
     GetReadyToRunHelper_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken     = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper);
-    key.GenericLookupKind = SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(pGenericLookupKind);
     key.id                = (DWORD)id;
     key.callerHandle      = CastHandle(callerHandle);
 
@@ -6447,6 +6442,26 @@ void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     }
 }
 
+void MethodContext::recGetWasmLowering(CORINFO_CLASS_HANDLE structHnd, CorInfoWasmType value)
+{
+    if (GetWasmLowering == nullptr)
+        GetWasmLowering = new LightWeightMap<DWORDLONG, DWORD>();
+    DWORDLONG key = CastHandle(structHnd);
+    GetWasmLowering->Add(key, (DWORD) value);
+    DEBUG_REC(dmpGetWasmLowering(key, value));
+}
+void MethodContext::dmpGetWasmLowering(DWORDLONG key, DWORD value)
+{
+    printf("GetWasmLowering key structHnd-%016" PRIX64 ", value %d ", key, value);
+}
+CorInfoWasmType MethodContext::repGetWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+    DWORD value = LookupByKeyOrMiss(GetWasmLowering, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetWasmLowering(key, value));
+    return (CorInfoWasmType) value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, CorInfoReloc result)
 {
     if (GetRelocTypeHint == nullptr)
@@ -7358,6 +7373,12 @@ void MethodContext::dmpGetWasmTypeSymbol(const Agnostic_GetWasmTypeSymbol& key, 
 
 CORINFO_WASM_TYPE_SYMBOL_HANDLE MethodContext::repGetWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
 {
+    if (GetWasmTypeSymbol == nullptr)
+    {
+        // Fake up a result so we can cross-replay onto wasm
+        return (CORINFO_WASM_TYPE_SYMBOL_HANDLE)0xbadcab;
+    }
+
     AssertMapExistsNoMessage(GetWasmTypeSymbol);
 
     Agnostic_GetWasmTypeSymbol key;

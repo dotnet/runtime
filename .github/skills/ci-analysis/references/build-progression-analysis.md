@@ -18,18 +18,13 @@ On large PRs, the user is usually iterating toward a solution. The recent builds
 
 ### Step 1: List builds for the PR
 
-`gh pr checks` only shows checks for the current HEAD SHA. To see the full build history, use AzDO MCP or CLI:
+`gh pr checks` only shows checks for the current HEAD SHA. To see the full build history, use AzDO or CLI:
 
-**With AzDO MCP (preferred):**
-```
-azure-devops-pipelines_get_builds with:
-  project: "public"
-  branchName: "refs/pull/{PR}/merge"
-  top: 20
-  queryOrder: "QueueTimeDescending"
-```
+**With AzDO (preferred):**
 
-The response includes `triggerInfo` with `pr.sourceSha` — the PR's HEAD commit for each build.
+Query AzDO for builds on `refs/pull/{PR}/merge` branch, sorted by queue time descending, top 20, in the `public` project. The response includes `triggerInfo` with `pr.sourceSha` — the PR's HEAD commit for each build.
+
+> 💡 Key parameters: `branchName: "refs/pull/{PR}/merge"`, `queryOrder: "QueueTimeDescending"`, `top: 20`, project `public` (for dnceng-public org).
 
 **Without MCP (fallback):**
 ```powershell
@@ -40,7 +35,7 @@ az pipelines runs list --branch "refs/pull/{PR}/merge" --top 20 --org $org -p $p
 
 ### Step 2: Map builds to the PR's head commit
 
-Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. Extract it from the `azure-devops-pipelines_get_builds` response or the `az` JSON output.
+Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when the build was triggered. Extract it from the build response or CLI output.
 
 > ⚠️ **`sourceVersion` is the merge commit**, not the PR's head commit. Use `triggerInfo.'pr.sourceSha'` instead.
 
@@ -52,13 +47,13 @@ Each build's `triggerInfo` contains `pr.sourceSha` — the PR's HEAD commit when
 
 For the current/latest build, the merge ref (`refs/pull/{PR}/merge`) is available via the GitHub API. The merge commit's first parent is the target branch HEAD at the time GitHub computed the merge:
 
+Look up the merge commit's parents — the first parent is the target branch HEAD. Use the GitHub API or MCP (`get_commit` with the `sourceVersion` SHA) to get the commit details. The `sourceVersion` from the AzDO build is the merge commit SHA (not `pr.sourceSha`). Example:
+
 ```
-gh api repos/{OWNER}/{REPO}/git/commits/{sourceVersion} --jq '.parents[0].sha'
+gh api repos/{owner}/{repo}/git/commits/{sourceVersion} --jq '.parents[0].sha'
 ```
 
-Or with GitHub MCP: `get_commit` with the `sourceVersion` SHA — the first parent in the response is the target branch HEAD.
-
-Where `sourceVersion` is the merge commit SHA from the AzDO build (not `pr.sourceSha`). This is simpler than parsing checkout logs.
+This is simpler than parsing checkout logs.
 
 > ⚠️ **This only works for the latest build.** GitHub recomputes `refs/pull/{PR}/merge` on each push, so the merge commit changes. For historical builds in a progression analysis, the merge ref no longer reflects what was built — use the checkout log method below.
 
@@ -66,19 +61,14 @@ Where `sourceVersion` is the merge commit SHA from the AzDO build (not `pr.sourc
 
 The AzDO build API doesn't expose the target branch SHA. Extract it from the checkout task log.
 
-**With AzDO MCP (preferred):**
-```
-azure-devops-pipelines_get_build_log_by_id with:
-  project: "public"
-  buildId: {BUILD_ID}
-  logId: 5
-  startLine: 500
-```
+**With AzDO (preferred):**
 
-Search the output for the merge line:
+Fetch the checkout task log for the build — typically **log ID 5**, starting around **line 500+** (skip the early git-fetch output). Search the output for the merge line:
 ```
 HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}
 ```
+
+> 💡 `logId: 5` is the first checkout task in most dotnet pipelines. If it doesn't contain the merge line, check the build timeline for "Checkout" tasks to find the correct log ID.
 
 **Without MCP (fallback):**
 ```powershell
@@ -183,6 +173,8 @@ Report what the progression shows:
 - Which builds passed and which failed
 - What commits were added between the last passing and first failing build
 - Whether the failing commits were added in response to review feedback (check review threads)
+
+> 💡 **Stop when you have the progression table and the pass→fail transition identified.** The table + transition commits + error category is enough for the user to act. Don't investigate further (e.g., comparing individual commits, checking passing builds, exploring main branch history) unless the user asks.
 
 **Do not** make fix recommendations based solely on build progression. The progression narrows the investigation — it doesn't determine the right fix. The human may have context about why changes were made, what constraints exist, or what the reviewer intended.
 

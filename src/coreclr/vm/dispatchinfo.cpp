@@ -1555,8 +1555,8 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         {
             // If the method is culture aware, then set the specified culture on the thread.
             GetCultureInfoForLCID(lcid, &pObjs->CultureInfo);
-            pObjs->OldCultureInfo = Thread::GetCulture(FALSE);
-            Thread::SetCulture(&pObjs->CultureInfo, FALSE);
+            pObjs->OldCultureInfo = GetCurrentCulture(FALSE);
+            SetCurrentCulture(&pObjs->CultureInfo, FALSE);
         }
 
         // If the method has custom marshalers then we will need to call
@@ -2284,7 +2284,7 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
 
         // If the culture was changed then restore it to the old culture.
         if (Objs.OldCultureInfo != NULL)
-            Thread::SetCulture(&Objs.OldCultureInfo, FALSE);
+            SetCurrentCulture(&Objs.OldCultureInfo, FALSE);
     }
     GCPROTECT_END();
     GCPROTECT_END();

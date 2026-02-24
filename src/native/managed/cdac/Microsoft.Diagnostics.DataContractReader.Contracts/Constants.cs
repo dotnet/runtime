@@ -32,6 +32,8 @@ public static class Constants
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
+        public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
+        public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
@@ -68,8 +70,6 @@ public static class Constants
         public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
-
-        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);

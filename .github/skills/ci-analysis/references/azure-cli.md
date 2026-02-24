@@ -1,6 +1,6 @@
 # Deep Investigation with Azure CLI
 
-The AzDO MCP tools (`azure-devops-pipelines_*`) handle most pipeline queries directly. This reference covers the Azure CLI fallback for cases where MCP tools are unavailable or the endpoint isn't exposed (e.g., downloading artifacts, inspecting pipeline definitions).
+The AzDO MCP tools handle most pipeline queries directly. This reference covers the Azure CLI fallback for cases where MCP tools are unavailable or the endpoint isn't exposed (e.g., downloading artifacts, inspecting pipeline definitions).
 
 When the CI script and GitHub APIs aren't enough (e.g., investigating internal pipeline definitions or downloading build artifacts), use the Azure CLI with the `azure-devops` extension.
 
@@ -80,10 +80,11 @@ All dotnet repos that use arcade put their pipeline definitions under `eng/pipel
 az pipelines show --id 1330 --org $org -p $project --query "{yamlPath:process.yamlFilename, repo:repository.name}" -o table
 
 # Fetch the YAML from the repo (example: dotnet/runtime's runtime-official pipeline)
-#   github-mcp-server-get_file_contents owner:dotnet repo:runtime path:eng/pipelines/runtime-official.yml
+#   Read the pipeline YAML from the repo to understand build stages and conditions
+#   e.g., eng/pipelines/runtime-official.yml in dotnet/runtime
 
 # For VMR unified builds, the YAML is in dotnet/dotnet:
-#   github-mcp-server-get_file_contents owner:dotnet repo:dotnet path:eng/pipelines/unified-build.yml
+#   eng/pipelines/unified-build.yml
 
 # Templates are usually in eng/pipelines/common/ or eng/pipelines/templates/
 ```
