@@ -878,7 +878,9 @@ namespace System.Text.RegularExpressions
         {
             // Negated sets typically match most characters (e.g. [^a]) making them poor quality indicators,
             // and sets without extracted chars can't be frequency-analyzed.
-            if (set.Negated || set.Chars is not { Length: > 0 } chars)
+            // Single-char sets use IndexOf which has much higher throughput than multi-string search,
+            // so we never consider them "high frequency" regardless of which character it is.
+            if (set.Negated || set.Chars is not { Length: > 1 } chars)
             {
                 return false;
             }
