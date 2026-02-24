@@ -1188,7 +1188,7 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
     // Resumption stub signature: object(object, ref byte)
     // This matches BuildResumptionStubSignature in jitinterface.cpp
     static const BYTE s_resumptionStubSig[] = {
-        IMAGE_CEE_CS_CALLCONV_DEFAULT,  // calling convention
+        IMAGE_CEE_CS_CALLCONV_DEFAULT,   // regular calling convention - continuations are explicitly passed and returned
         2,                               // 2 arguments
         ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
         ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
@@ -1208,7 +1208,7 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
     amTracker.SuppressRelease();
 
     // Register the stub's entry point so GC can find it during stack walks.
-    // SetMethodDescForEntryPointInNativeImage handles the race — if another thread
+    // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
     // already registered a MethodDesc for this entry point, ours is simply discarded.
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
 }
@@ -1339,12 +1339,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         g_pDebugInterface->JITComplete(pConfig->GetCodeVersion(), pEntryPoint);
     }
 
+done:
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, R2RGetEntryPoint))
     {
         ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
     }
 
-done:
     return pEntryPoint;
 }
 
