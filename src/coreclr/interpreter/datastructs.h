@@ -244,6 +244,7 @@ struct TSList
     static TSList* Pop(TSList *head)
     {
         TSList *next = head->pNext;
+        head->~TSList();
         return next;
     }
 };
