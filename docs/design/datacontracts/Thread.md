@@ -46,6 +46,7 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
+void GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
 TargetPointer IdToThread(uint id);
 TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOffset, int indexType);
 ```
@@ -55,16 +56,16 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, int indexOff
 The contract depends on the following globals
 
 | Global name | Type | Meaning |
-| --- | --- |
-| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain
-| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore
-| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise
-| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread
-| `GCThread` | TargetPointer | A pointer to the GC thread
-| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects
-| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array
-| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array
-| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct
+| --- | --- | --- |
+| `AppDomain` | TargetPointer | A pointer to the address of the one AppDomain |
+| `ThreadStore` | TargetPointer | A pointer to the address of the ThreadStore |
+| `FeatureEHFunclets` | TargetPointer | 1 if EH funclets are enabled, 0 otherwise |
+| `FinalizerThread` | TargetPointer | A pointer to the finalizer thread |
+| `GCThread` | TargetPointer | A pointer to the GC thread |
+| `ThinLockThreadIdDispenser` | TargetPointer | Dispenser of thinlock IDs for locking objects |
+| `NumberOfTlsOffsetsNotUsedInNoncollectibleArray` | byte | Number of unused slots in noncollectible TLS array |
+| `PtrArrayOffsetToDataArray` | TargetPointer | Offset from PtrArray class address to start of enclosed data array |
+| `SizeOfGenericModeBlock` | uint32 | Size of GenericModeBlock struct |
 
 The contract additionally depends on these data descriptors
 
@@ -94,6 +95,8 @@ The contract additionally depends on these data descriptors
 | `Thread` | `State` | Thread state flags |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `CachedStackBase` | Pointer to the base of the stack |
+| `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
 | `Thread` | `TEB` | Thread Environment Block pointer |
 | `Thread` | `LastThrownObject` | Handle to last thrown exception object |
 | `Thread` | `LinkNext` | Pointer to get next thread |
@@ -186,6 +189,13 @@ ThreadData GetThreadData(TargetPointer address)
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
+}
+
+void IThread.GetStackLimitData(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress)
+{
+    stackBase = target.ReadPointer(threadPointer + /* Thread::CachedStackBase offset */);
+    stackLimit = target.ReadPointer(threadPointer + /* Thread::CachedStackLimit offset */);
+    frameAddress = threadPointer + /* Thread::Frame offset */;
 }
 
 TargetPointer IThread.IdToThread(uint id)
@@ -292,7 +302,7 @@ byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     Span<byte> span = new byte[_target.ReadGlobal<uint>("SizeOfGenericModeBlock")];
     if (readFrom == TargetPointer.Null)
         return Array.Empty<byte>();
-    
+
     _target.ReadBuffer(readFrom, span);
     return span.ToArray();
 }

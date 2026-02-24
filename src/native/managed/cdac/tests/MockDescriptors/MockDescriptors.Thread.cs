@@ -207,5 +207,14 @@ internal partial class MockDescriptors
             _previousThread = thread.Address;
             return thread.Address;
         }
+
+        internal void SetStackLimits(TargetPointer threadAddress, TargetPointer stackBase, TargetPointer stackLimit)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackBase)].Offset), stackBase);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackLimit)].Offset), stackLimit);
+        }
     }
 }
