@@ -85,7 +85,7 @@ The skill contains baked-in examples and guidelines (see [references/proposal-ex
 
 > **If the user already has a prototype**, ask for the published branch link and skip to Phase 3.
 
-1. Create a working branch: `api-proposal/<short-name>`
+1. Create a new branch: `api-proposal/<short-name>`. The prototype must be pushed as a **single commit** on this branch.
 
 2. Implement the API surface with:
    - Complete triple-slash XML documentation on all public members
@@ -183,8 +183,8 @@ Write the proposal matching the spirit of the [issue template](https://github.co
 **1. Background and motivation**
 
 - WHAT concrete user problem are we solving? Show scenario(s).
-- Are there existing workarounds? Why are they insufficient (perf, boilerplate, bad practices)?
 - Reference prior art in other ecosystems where relevant.
+- **Do NOT re-litigate workarounds here.** By the time the proposal is being drafted, the user has already evaluated workarounds in Phase 0 and accepted that none are viable. The proposal should focus on the problem and the proposed solution.
 
 **2. API Proposal**
 
@@ -262,7 +262,7 @@ Link any related/duplicate proposals found during Phase 0 research.
 
 **10. Prototype**
 
-Link to the published branch with the working implementation.
+Link to the prototype commit (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
 
 #### After Drafting
 
@@ -272,16 +272,40 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 ### Phase 5: Publish
 
-1. Commit prototype changes and push branch to the user's fork (default) or ask for an alternative remote.
+#### Step 1: Push and capture commit URL
 
-2. **If the input was an existing issue**, offer the user a choice:
-   - **Post as comment** on the existing issue (for the user to manually edit the OP)
-   - **Create a new issue** via `gh issue create`
+Commit prototype changes and push the branch to the user's fork (default) or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
 
-3. **If the input was NOT an existing issue**, offer to file via:
+#### Step 2: Non-interactive mode (Copilot Coding Agent)
+
+If the agent cannot prompt the user for input (e.g., running as Copilot Coding Agent), automatically post the API proposal as a comment on the associated pull request:
+
+```bash
+gh pr comment <pr-number> --body "<proposal text with prototype commit link>"
+```
+
+Skip the interactive options below.
+
+#### Step 3: Interactive mode — offer publishing options
+
+Present the user with the following options. Which options appear depends on context:
+
+1. **Post as comment on existing issue/PR** — Only offer this when the user explicitly referenced an issue or PR in their original prompt.
    ```bash
-   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body "<proposal>"
+   gh issue comment <number> --body "<proposal text with prototype commit link>"
+   # or
+   gh pr comment <number> --body "<proposal text with prototype commit link>"
+   ```
+
+2. **Create a new issue** — Always offer this option.
+   ```bash
+   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body "<proposal text with prototype commit link>"
    ```
    No area label — repo automation handles that.
 
-4. Include the prototype branch link and related issue links in the body.
+3. **Create a new draft PR with proposal in OP** — Always offer this option.
+   ```bash
+   gh pr create --draft --title "[API Proposal]: <title>" --body "<proposal text with prototype commit link>"
+   ```
+
+Include related issue links in the body for all options.
