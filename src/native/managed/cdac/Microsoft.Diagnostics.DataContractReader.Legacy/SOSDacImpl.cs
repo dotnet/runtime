@@ -2975,10 +2975,6 @@ public sealed unsafe partial class SOSDacImpl
         if (buffer is null && pNeeded is null)
             return HResults.E_POINTER;
 
-#if DEBUG
-        int originalRegName = regName;
-#endif
-
         int hr = HResults.S_OK;
         try
         {
@@ -2995,13 +2991,12 @@ public sealed unsafe partial class SOSDacImpl
 
             // Caller frame registers are encoded as "-(reg+1)".
             bool callerFrame = regName < 0;
-            if (callerFrame)
-                regName = -regName - 1;
+            int regIndex = callerFrame ? -regName - 1 : regName;
 
-            if ((uint)regName >= (uint)regs.Length)
+            if ((uint)regIndex >= (uint)regs.Length)
                 return unchecked((int)0x8000FFFF); // E_UNEXPECTED
 
-            string name = callerFrame ? $"caller.{regs[regName]}" : regs[regName];
+            string name = callerFrame ? $"caller.{regs[regIndex]}" : regs[regIndex];
 
             uint needed = (uint)(name.Length + 1);
             if (pNeeded is not null)
@@ -3028,7 +3023,7 @@ public sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (char* ptr = bufferLocal)
             {
-                hrLocal = _legacyImpl.GetRegisterName(originalRegName, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetRegisterName(regName, count, ptr, &neededLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK || hr == HResults.S_FALSE)
