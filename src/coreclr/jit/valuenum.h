@@ -508,6 +508,8 @@ public:
     // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
     void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
+    ValueNum VNIgnoreIntToLongCast(ValueNum vn);
+
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);

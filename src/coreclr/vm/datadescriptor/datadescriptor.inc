@@ -464,6 +464,10 @@ CDAC_TYPE_BEGIN(NativeCodeSlot)
 CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
 CDAC_TYPE_END(NativeCodeSlot)
 
+CDAC_TYPE_BEGIN(AsyncMethodData)
+CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_END(AsyncMethodData)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
@@ -1151,7 +1155,6 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
-CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
