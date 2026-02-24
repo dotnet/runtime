@@ -248,7 +248,7 @@ export function marshal_task_to_js (arg: JSMarshalerArgument, _?: MarshalerType,
 }
 
 export function begin_marshal_task_to_js (arg: JSMarshalerArgument, _?: MarshalerType, res_converter?: MarshalerToJs): Promise<any> | null {
-    // this path is used when Task is returned from JSExport/call_entry_point
+    // this path is used when Task is returned from JSExport
     const holder = create_task_holder(res_converter);
     const js_handle = mono_wasm_get_js_handle(holder);
     if (BuildConfiguration === "Debug") {
@@ -260,7 +260,7 @@ export function begin_marshal_task_to_js (arg: JSMarshalerArgument, _?: Marshale
 }
 
 export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converter: MarshalerToJs | undefined, eagerPromise: Promise<any> | null) {
-    // this path is used when Task is returned from JSExport/call_entry_point
+    // this path is used when Task is returned from JSExport
     const res = get_arg(args, 1);
     const type = get_arg_type(res);
 

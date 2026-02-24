@@ -372,30 +372,20 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 	return result;
 }
 
-// TODO https://github.com/dotnet/runtime/issues/98366
-EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
-{
-	assert (klass);
-	MonoMethod* result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_method_from_name (klass, name, arguments);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 MonoMethod*
 mono_wasm_get_method_matching (MonoImage *image, uint32_t token, MonoClass *klass, const char* name, int param_count)
 {
 	MonoMethod *result = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoMethod *method = mono_get_method (image, token, klass);
-	MonoMethodSignature *sig = mono_method_signature (method);
-	// Lookp by token but verify the name and param count in case assembly was trimmed
-	if (mono_signature_get_param_count (sig) == param_count) {
-		const char *method_name = mono_method_get_name (method);
-		if (!strcmp (method_name, name)) {
-			result = method;
+	if (method) {
+		MonoMethodSignature *sig = mono_method_signature (method);
+		// Lookp by token but verify the name and param count in case assembly was trimmed
+		if (mono_signature_get_param_count (sig) == param_count) {
+			const char *method_name = mono_method_get_name (method);
+			if (!strcmp (method_name, name)) {
+				result = method;
+			}
 		}
 	}
 	// If the token lookup failed, try to find the method by name and param count

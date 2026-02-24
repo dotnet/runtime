@@ -9,7 +9,9 @@ import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { postCancelThreads, terminateAllThreads } from "./pthreads";
-import { call_entry_point } from "./managed-exports";
+import { stringToUTF8Ptr, utf16ToString } from "./strings";
+import { VoidPtr } from "./types/emscripten";
+import { PromiseAndController } from "./types/internal";
 
 /**
  * Possible signatures are described here  https://learn.microsoft.com/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -59,19 +61,60 @@ export async function mono_run_main (main_assembly_name?: string, args?: string[
         await mono_wasm_wait_for_debugger();
     }
 
+    mainPromiseCont = loaderHelpers.createPromiseController<number>();
     try {
-        Module.runtimeKeepalivePush();
+        const mainAssemblyNamePtr = stringToUTF8Ptr(main_assembly_name) as any;
 
-        // one more timer loop before we return, so that any remaining queued calls could run
-        await new Promise(resolve => globalThis.setTimeout(resolve, 0));
+        args ??= [];
 
-        return await call_entry_point(main_assembly_name, args, runtimeHelpers.waitForDebugger == 1);
-    } finally {
-        Module.runtimeKeepalivePop();// after await promise !
+        const sp = Module.stackSave();
+        const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
+        const ptrs: VoidPtr[] = [];
+        try {
+
+            Module.HEAPU32[(argsvPtr >>> 2)] = mainAssemblyNamePtr;
+            for (let i = 0; i < args.length; i++) {
+                const ptr = stringToUTF8Ptr(args[i]) as any;
+                ptrs.push(ptr);
+                Module.HEAPU32[(argsvPtr >>> 2) + i + 1] = ptr;
+            }
+            const EXITSTATUS = cwraps.BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length + 1, argsvPtr);
+            for (const ptr of ptrs) {
+                Module._free(ptr);
+            }
+
+            if (EXITSTATUS !== 0x0BADF00D) {
+                const reason = new Error("Failed to execute assembly");
+                loaderHelpers.mono_exit(-1, reason);
+                throw reason;
+            }
+            return mainPromiseCont.promise;
+        } finally {
+            Module.stackRestore(sp);
+        }
+    } catch (error: any) {
+        // do not propagate ExitStatus exception
+        if (!error || typeof error.status !== "number") {
+            loaderHelpers.mono_exit(1, error);
+            throw error;
+        }
+        return error.status;
     }
 }
 
+let mainPromiseCont: PromiseAndController<number> = undefined as any;
 
+export function SystemJS_ResolveMainPromise (exitCode: number): void {
+    mainPromiseCont.promise_control.resolve(exitCode);
+}
+
+export function SystemJS_RejectMainPromise (messagePtr: number, messageLength: number, stackTracePtr: number, stackTraceLength: number): void {
+    const message = utf16ToString(messagePtr, messagePtr + messageLength * 2);
+    const stackTrace = utf16ToString(stackTracePtr, stackTracePtr + stackTraceLength * 2);
+    const error = new Error(message);
+    error.stack = stackTrace;
+    mainPromiseCont.promise_control.reject(error);
+}
 
 export function nativeExit (code: number) {
     if (runtimeHelpers.runtimeReady) {

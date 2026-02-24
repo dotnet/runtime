@@ -103,12 +103,6 @@ G_EXTERN_C int mono_wasm_get_debug_level (void);
 
 #ifdef HOST_BROWSER
 
-//JS functions imported that we use
-#ifdef DISABLE_THREADS
-void mono_wasm_execute_timer (void);
-void SystemJS_ScheduleTimer (void *timerHandler, int shortestDueTimeMs);
-#endif // DISABLE_THREADS
-
 void mono_wasm_print_stack_trace (void);
 #endif // HOST_BROWSER
 

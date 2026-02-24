@@ -32,14 +32,5 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.JavaScriptNative, EntryPoint = "SystemInteropJS_CancelPromise")]
         public static partial void CancelPromise(nint gcHandle);
-
-        [LibraryImport(Libraries.JavaScriptNative, EntryPoint = "SystemInteropJS_BindAssemblyExports")]
-        public static partial void BindAssemblyExports(IntPtr assemblyNamePtr);
-        [LibraryImport(Libraries.JavaScriptNative, EntryPoint = "SystemInteropJS_GetAssemblyExport")]
-        public static partial void GetAssemblyExport(IntPtr assemblyNamePtr, IntPtr namespacePtr, IntPtr classnamePtr, IntPtr methodNamePtr, int signatureHash, IntPtr* methodHandlePtr);
-
-        // TODO-WASM: delete once we switch to CoreCLR only
-        [LibraryImport(Libraries.JavaScriptNative, EntryPoint = "SystemInteropJS_AssemblyGetEntryPoint")]
-        public static partial void AssemblyGetEntryPoint(IntPtr assemblyNamePtr, int auto_insert_breakpoint, void** monoMethodPtrPtr);
     }
 }

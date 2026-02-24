@@ -85,11 +85,7 @@ namespace System.Threading
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
-#if MONO
-            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged<void>)&BackgroundJobHandler);
-#else
             SystemJS_ScheduleBackgroundJob();
-#endif
         }
 
         internal static void NotifyWorkItemProgress()
@@ -124,15 +120,13 @@ namespace System.Threading
 
 
 #if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
+        [LibraryImport(Interop.Libraries.SystemBrowserNative)]
 #else
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static unsafe partial void SystemJS_ScheduleBackgroundJob();
 #endif
+        private static unsafe partial void SystemJS_ScheduleBackgroundJob();
 
         [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteBackgroundJobCallback")]
-        // this callback will arrive on the bound thread, called from mono_background_exec
         private static void BackgroundJobHandler()
         {
             try

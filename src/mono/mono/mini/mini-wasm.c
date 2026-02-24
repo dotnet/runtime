@@ -451,10 +451,6 @@ G_BEGIN_DECLS
 
 //JS functions imported that we use
 #ifdef DISABLE_THREADS
-EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
-EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
-extern void SystemJS_ScheduleTimerImpl (int shortestDueTimeMs);
 #else
 extern void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
@@ -601,35 +597,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
-#ifdef DISABLE_THREADS
-
-// this points to System.Threading.TimerQueue.TimerHandler C# method
-static void *timer_handler;
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_execute_timer (void)
-{
-	// callback could be null if timer was never used by the application, but only by prevent_timer_throttling_tick()
-	if (timer_handler==NULL) {
-		return;
-	}
-
-	background_job_cb cb = timer_handler;
-	MONO_ENTER_GC_UNSAFE;
-	cb ();
-	MONO_EXIT_GC_UNSAFE;
-}
-
-void
-SystemJS_ScheduleTimer (void *timerHandler, int shortestDueTimeMs)
-{
-	// NOTE: here the `timerHandler` callback is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
-
-	g_assert (timerHandler);
-	timer_handler = timerHandler;
-    SystemJS_ScheduleTimerImpl (shortestDueTimeMs);
-}
-#endif
 #endif
 
 void
@@ -637,8 +604,6 @@ mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
 #ifdef DISABLE_THREADS
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", SystemJS_ScheduleTimer);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", SystemJS_ScheduleBackgroundJob);
 #else
 	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", SystemJS_ScheduleSynchronizationContext);
 #endif /* DISABLE_THREADS */

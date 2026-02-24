@@ -5,9 +5,12 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
 import { Module, loaderHelpers } from "./globals";
-import { forceThreadMemoryViewRefresh } from "./memory";
 
 let spread_timers_maximum = 0;
+let lastScheduledTimerId: number | undefined = undefined;
+let lastScheduledThreadPoolId: number | undefined = undefined;
+let lastScheduledFinalizationId: number | undefined = undefined;
+let lastScheduledDiagnosticServerId: number | undefined = undefined;
 
 export function prevent_timer_throttling (): void {
     if (WasmEnableThreads) return;
@@ -23,68 +26,125 @@ export function prevent_timer_throttling (): void {
     const light_throttling_frequency = 1000;
     for (let schedule = next_reach_time; schedule < desired_reach_time; schedule += light_throttling_frequency) {
         const delay = schedule - now;
-        globalThis.setTimeout(prevent_timer_throttling_tick, delay);
+        globalThis.setTimeout(runBackgroundTimers, delay);
     }
     spread_timers_maximum = desired_reach_time;
 }
 
-function prevent_timer_throttling_tick () {
+export function runBackgroundTimers (): void {
     if (WasmEnableThreads) return;
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    try {
-        cwraps.mono_wasm_execute_timer();
-    } catch (ex) {
-        loaderHelpers.mono_exit(1, ex);
-    }
-    mono_background_exec_until_done();
+
+    cwraps.SystemJS_ExecuteTimerCallback();
+    cwraps.SystemJS_ExecuteBackgroundJobCallback();
+    cwraps.SystemJS_ExecuteFinalizationCallback();
+    cwraps.SystemJS_ExecuteDiagnosticServerCallback();
 }
 
-function mono_background_exec_until_done () {
+export function SystemJS_ScheduleTimer (shortestDueTimeMs: number): void {
     if (WasmEnableThreads) return;
-    lastScheduledBackground = undefined;
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    try {
-        cwraps.mono_background_exec();
-    } catch (ex) {
-        loaderHelpers.mono_exit(1, ex);
+
+    if (lastScheduledTimerId) {
+        globalThis.clearTimeout(lastScheduledTimerId);
+        Module.runtimeKeepalivePop();
+        lastScheduledTimerId = undefined;
+    }
+    lastScheduledTimerId = Module.safeSetTimeout(SystemJS_ScheduleTimerTick, shortestDueTimeMs);
+
+    function SystemJS_ScheduleTimerTick (): void {
+        try {
+            lastScheduledTimerId = undefined;
+            cwraps.SystemJS_ExecuteTimerCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                loaderHelpers.mono_exit(1, error);
+                throw error;
+            }
+        }
     }
 }
 
-let lastScheduledBackground: any = undefined;
-export function SystemJS_ScheduleBackgroundJobImpl (): void {
-    if (WasmEnableThreads) return;
-    if (!lastScheduledBackground) {
-        lastScheduledBackground = Module.safeSetTimeout(mono_background_exec_until_done, 0);
-    }
-}
-
-let lastScheduledTimeoutId: any = undefined;
-export function SystemJS_ScheduleTimerImpl (shortestDueTimeMs: number): void {
-    if (WasmEnableThreads) return;
-    if (lastScheduledTimeoutId) {
-        globalThis.clearTimeout(lastScheduledTimeoutId);
-        lastScheduledTimeoutId = undefined;
-    }
-    lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
-}
-
-function mono_wasm_schedule_timer_tick () {
+export function SystemJS_ScheduleBackgroundJob (): void {
     if (WasmEnableThreads) return;
     Module.maybeExit();
-    forceThreadMemoryViewRefresh();
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
-    lastScheduledTimeoutId = undefined;
-    try {
-        cwraps.mono_wasm_execute_timer();
-    } catch (ex) {
-        loaderHelpers.mono_exit(1, ex);
+    if (lastScheduledThreadPoolId) {
+        return;
+    }
+    lastScheduledThreadPoolId = Module.safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
+
+    function SystemJS_ScheduleBackgroundJobTick (): void {
+        try {
+            lastScheduledThreadPoolId = undefined;
+            cwraps.SystemJS_ExecuteBackgroundJobCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                loaderHelpers.mono_exit(1, error);
+                throw error;
+            }
+        }
+    }
+}
+
+export function SystemJS_ScheduleFinalization (): void {
+    if (WasmEnableThreads) return;
+    Module.maybeExit();
+    if (!loaderHelpers.is_runtime_running()) {
+        return;
+    }
+
+    if (lastScheduledFinalizationId) {
+        return;
+    }
+    lastScheduledFinalizationId = Module.safeSetTimeout(SystemJS_ScheduleFinalizationTick, 0);
+
+    function SystemJS_ScheduleFinalizationTick (): void {
+        try {
+            lastScheduledFinalizationId = undefined;
+            cwraps.SystemJS_ExecuteFinalizationCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                loaderHelpers.mono_exit(1, error);
+                throw error;
+            }
+        }
+    }
+}
+
+export function SystemJS_ScheduleDiagnosticServerJob (): void {
+    if (WasmEnableThreads) return;
+    Module.maybeExit();
+    if (!loaderHelpers.is_runtime_running()) {
+        return;
+    }
+
+    if (lastScheduledDiagnosticServerId) {
+        return;
+    }
+    lastScheduledDiagnosticServerId = Module.safeSetTimeout(SystemJS_ScheduleDiagnosticServerTick, 0);
+
+    function SystemJS_ScheduleDiagnosticServerTick (): void {
+        try {
+            lastScheduledDiagnosticServerId = undefined;
+            cwraps.SystemJS_ExecuteDiagnosticServerCallback();
+        } catch (error: any) {
+            // do not propagate ExitStatus exception
+            if (!error || typeof error.status !== "number") {
+                loaderHelpers.mono_exit(1, error);
+                throw error;
+            }
+        }
     }
 }

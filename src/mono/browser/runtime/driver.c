@@ -37,8 +37,6 @@
 
 #include "gc-common.h"
 
-void bindings_initialize_internals ();
-
 char *monoeg_g_getenv(const char *variable);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 char *mono_method_get_full_name (MonoMethod *method);
@@ -191,13 +189,11 @@ mono_wasm_load_runtime (int debug_level, int propertyCount, const char **propert
 	monovm_initialize (propertyCount, propertyKeys, propertyValues);
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
-
-	bindings_initialize_internals();
 }
 
 int initialize_runtime()
 {
-    if (runtime_initialized == 1)
+	if (runtime_initialized == 1)
 		return 0;
 
 	const char *appctx_keys[2];
@@ -215,32 +211,6 @@ int initialize_runtime()
 	return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
-{
-	PVOLATILE(MonoObject) temp_exc = NULL;
-
-	void *invoke_args[1] = { args };
-
-	MONO_ENTER_GC_UNSAFE;
-	mono_runtime_invoke (method, NULL, args ? invoke_args : NULL, (MonoObject **)&temp_exc);
-
-	// this failure is unlikely because it would be runtime error, not application exception.
-	// the application exception is passed inside JSMarshalerArguments `args`
-	// so, if that happens, we should abort the runtime
-	if (temp_exc) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
-		if (exc2) {
-			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_jsexport unexpected double fault", 1, NULL);
-		} else {
-			mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
-		}
-		abort ();
-	}
-	MONO_EXIT_GC_UNSAFE;
-}
-
 #ifndef DISABLE_THREADS
 
 extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
@@ -253,48 +223,9 @@ mono_wasm_print_thread_dump (void)
 	mono_print_thread_dump (NULL);
 }
 
-// this is running on the target thread
-static void
-mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
-{
-	mono_wasm_invoke_jsexport (method, args);
-	if (args) {
-		MonoBoolean *is_receiver_should_free = (MonoBoolean *)(((char *) args) + 20/*JSMarshalerArgumentOffsets.ReceiverShouldFree*/);
-		if(*is_receiver_should_free != 0){
-			free (args);
-		}
-	}
-}
-
-// async
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
-{
-	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
-}
-
-
 typedef void (*js_interop_event)(void* args);
 typedef void (*sync_context_pump)(void);
-extern js_interop_event before_sync_js_import;
-extern js_interop_event after_sync_js_import;
 extern sync_context_pump synchronization_context_pump_handler;
-
-// this is running on the target thread
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport_sync (MonoMethod *method, void* args)
-{
-	before_sync_js_import (args);
-	mono_wasm_invoke_jsexport (method, args);
-	after_sync_js_import (args);
-}
-
-// sync
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
-{
-	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
-}
 
 EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)
 {
@@ -576,4 +507,63 @@ mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
 	end:
 	MONO_EXIT_GC_UNSAFE;
 	return result;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+BrowserHost_ExecuteAssembly (const char *assemblyPath, int argc, const char **argv) {
+	if (!assemblyPath)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: assemblyPath is NULL\n");
+		return -1;
+	}
+
+	// Load the assembly from bundled resources.
+	MonoImageOpenStatus status;
+	MonoAssemblyName *aname = mono_assembly_name_new (assemblyPath);
+	if (!aname)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: "
+				 "mono_assembly_name_new failed for '%s'\n", assemblyPath);
+		return -1;
+	}
+
+	MonoAssembly *assembly = mono_assembly_load (aname, NULL, &status);
+	mono_assembly_name_free (aname);
+	if (!assembly)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: "
+				 "failed to load assembly '%s' (status=%d)\n",
+				 assemblyPath, (int)status);
+		return -1;
+	}
+
+	MonoImage *image = mono_assembly_get_image (assembly);
+	uint32_t entry_token = mono_image_get_entry_point (image);
+	if (!entry_token)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: "
+				 "no entry point in assembly '%s'\n", assemblyPath);
+		return -1;
+	}
+
+	mono_domain_ensure_entry_assembly (root_domain, assembly);
+	MonoMethod *method = mono_get_method (image, entry_token, NULL);
+	if (!method)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: "
+				 "mono_get_method failed for entry token 0x%08x\n", entry_token);
+		return -1;
+	}
+
+	MonoObject *exc = NULL;
+	int exit_code = mono_runtime_run_main (method, argc, (char **)argv, &exc);
+
+	if (exc)
+	{
+		fprintf (stderr, "BrowserHost_ExecuteAssembly: "
+				 "unhandled exception in assembly '%s'\n", assemblyPath);
+		exit_code = 1;
+	}
+
+	return exit_code;
 }

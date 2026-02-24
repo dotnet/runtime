@@ -994,6 +994,11 @@ ep_rt_thread_create (
 	return false;
 }
 
+#ifdef HOST_BROWSER
+void mono_schedule_ds_job (ds_job_cb cb, void* data);
+void SystemJS_ExecuteDiagnosticServerCallback (void);
+#endif
+
 static
 bool
 ep_rt_queue_job (

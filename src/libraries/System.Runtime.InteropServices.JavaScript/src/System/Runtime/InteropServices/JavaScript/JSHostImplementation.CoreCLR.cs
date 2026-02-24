@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.ExceptionServices;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -23,14 +24,22 @@ namespace System.Runtime.InteropServices.JavaScript
             Type? generatedInitializerType = assembly.GetType("System.Runtime.InteropServices.JavaScript.__GeneratedInitializer", throwOnError: true);
             if (generatedInitializerType == null)
             {
-                throw new ArithmeticException($"BindAssemblyExports: __GeneratedInitializer type not found in assembly '{assemblyName}'");
+                throw new ArgumentException($"BindAssemblyExports: __GeneratedInitializer type not found in assembly '{assemblyName}'");
             }
             MethodInfo? registerMethod = generatedInitializerType.GetMethod("__Register_", BindingFlags.NonPublic | BindingFlags.Static, binder: null, Type.EmptyTypes, modifiers: null);
             if (registerMethod == null)
             {
-                throw new ArithmeticException($"BindAssemblyExports: __Register_ method not found in type '{generatedInitializerType.FullName}' in assembly '{assemblyName}'");
+                throw new ArgumentException($"BindAssemblyExports: __Register_ method not found in type '{generatedInitializerType.FullName}' in assembly '{assemblyName}'");
             }
-            registerMethod.Invoke(null, null);
+            try
+            {
+                registerMethod.Invoke(null, null);
+            }
+            catch (TargetInvocationException ex)
+            {
+                // Unwrap the exception thrown from the invoked method and rethrow it to preserve the original stack trace.
+                ExceptionDispatchInfo.Capture(ex.InnerException ?? ex).Throw();
+            }
             return Task.CompletedTask;
         }
 

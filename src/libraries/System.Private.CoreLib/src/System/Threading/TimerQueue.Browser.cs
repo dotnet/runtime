@@ -32,15 +32,13 @@ namespace System.Threading
 
         // This replaces the current pending setTimeout with shorter one
 #if MONO
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void MainThreadScheduleTimer(void* callback, int shortestDueTimeMs);
+        [LibraryImport(Interop.Libraries.SystemBrowserNative)]
 #else
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 #endif
+        private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 
         [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteTimerCallback")]
-        // this callback will arrive on the main thread, called from mono_wasm_execute_timer
         private static void TimerHandler()
         {
             try
@@ -92,11 +90,7 @@ namespace System.Threading
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one, it is expensive callback
-#if MONO
-                MainThreadScheduleTimer((void*)(delegate* unmanaged<void>)&TimerHandler, shortestWait);
-#else
                 SystemJS_ScheduleTimer(shortestWait);
-#endif
             }
         }
 

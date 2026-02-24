@@ -62,12 +62,20 @@ namespace System.Runtime.CompilerServices
             SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
         }
 
+#if MONO
+        [LibraryImport(Interop.Libraries.SystemBrowserNative)]
+#else
         [LibraryImport(RuntimeHelpers.QCall)]
+#endif
         private static unsafe partial void SystemJS_RejectMainPromise(
             [MarshalAs(UnmanagedType.LPWStr)] string pMessage, int messageLength,
             [MarshalAs(UnmanagedType.LPWStr)] string pStackTrace, int stackTraceLength);
 
+#if MONO
+        [LibraryImport(Interop.Libraries.SystemBrowserNative)]
+#else
         [LibraryImport(RuntimeHelpers.QCall)]
+#endif
         private static partial void SystemJS_ResolveMainPromise(int exitCode);
     }
 }
