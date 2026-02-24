@@ -1154,6 +1154,8 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
             GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+
+            // TODO-WASM-CQ: consider branchless alternative here (and for sub)
             GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
             GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
             GetEmitter()->emitIns(INS_if);
@@ -1216,9 +1218,11 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             assert(WasmRegToType(wideReg) == WasmValueType::I64);
 
             // 32 bit multiply... check by doing a 64 bit multiply and then range-checking the result
-            // (I suppose we could do this transformation in morph too).
-            const bool isUnsigned = varTypeIsUnsigned(treeNode->TypeGet());
+            const bool isUnsigned = treeNode->IsUnsigned();
             // Both operands are on the stack as I32. Drop the second, extend the first, then extend the second.
+            //
+            // TODO-WASM-CQ: consider tansforming this to a (u)long multiply plus a checked cast, either in morph or
+            // lower.
             GetEmitter()->emitIns(INS_drop);
             GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
             GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
