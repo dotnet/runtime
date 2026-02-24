@@ -2879,7 +2879,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Contracts.ModuleFlags flags = contract.GetFlags(handle);
                 if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
-                    throw Marshal.GetExceptionForHR(HResults.E_NOTIMPL)!;
+                    throw new NotImplementedException();
             }
 
             OutputBufferHelpers.CopyStringToBuffer(fileName, count, pNeeded, path);
