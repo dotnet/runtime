@@ -876,11 +876,16 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private static bool HasHighFrequencyChars(FixedDistanceSet set)
         {
-            // Negated sets typically match most characters (e.g. [^a]) making them poor quality indicators,
-            // and sets without extracted chars can't be frequency-analyzed.
+            // Negated sets match most characters (e.g. [^a]), so they are inherently high frequency.
+            if (set.Negated)
+            {
+                return true;
+            }
+
+            // Sets without extracted chars can't be frequency-analyzed.
             // Single-char sets use IndexOf which has much higher throughput than multi-string search,
             // so we never consider them "high frequency" regardless of which character it is.
-            if (set.Negated || set.Chars is not { Length: > 1 } chars)
+            if (set.Chars is not { Length: > 1 } chars)
             {
                 return false;
             }
