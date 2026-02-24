@@ -63,10 +63,12 @@ struct RelocContext
     size_t coldCodeAddress;
     size_t coldCodeSize;
     size_t roDataAddress;
-    size_t roDataSize;
+    size_t roDataSize1;
+    size_t roDataSize2;
     size_t originalHotCodeAddress;
     size_t originalColdCodeAddress;
-    size_t originalRoDataAddress;
+    size_t originalRoDataAddress1;
+    size_t originalRoDataAddress2;
 };
 
 class CompileResult
