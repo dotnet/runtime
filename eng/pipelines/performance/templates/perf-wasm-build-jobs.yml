@@ -32,5 +32,4 @@ jobs:
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
             configForBuild: Release
-            runtimeFlavor: CoreCLR
             artifactName: BrowserWasmCoreCLR
