@@ -52,6 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
+// R2R Version 18.2 adds InitClass and InitInstClass helpers
 
 struct READYTORUN_CORE_HEADER
 {
