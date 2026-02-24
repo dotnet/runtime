@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.ObjectWriter;
-using Internal.JitInterface;
-using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
