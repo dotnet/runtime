@@ -91,7 +91,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    consecutiveRegsInUseThisLocation = 0;
+    consecutiveRegsInUseThisLocation = RBM_NONE;
     regNumber consecutiveReg         = firstRegAssigned;
     for (int i = 0; i < firstRefPosition->regCount; i++)
     {
