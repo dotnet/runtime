@@ -2616,43 +2616,36 @@ public sealed unsafe partial class SOSDacImpl
             if (obj == 0)
                 throw new ArgumentException();
 
-            Contracts.IObject objectContract = _target.Contracts.Object;
-            Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.IObject @object = _target.Contracts.Object;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.ILoader loader = _target.Contracts.Loader;
 
-            TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
-            Contracts.TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+            TargetPointer mt = @object.GetMethodTableAddress(obj.ToTargetPointer(_target));
+            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
 
-            if (typeSystemContract.IsFreeObjectMethodTable(typeHandle))
+            TargetPointer modulePointer = rts.GetModule(typeHandle);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+            if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
             {
-                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "Free");
+                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
             }
             else
             {
-                TargetPointer modulePointer = typeSystemContract.GetModule(typeHandle);
-                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
-                if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
+                System.Text.StringBuilder classNameBuilder = new();
+                try
                 {
-                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
+                    TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
                 }
-                else
+                catch
                 {
-                    System.Text.StringBuilder classNameBuilder = new();
-                    try
+                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                    if (fallbackName != null)
                     {
-                        TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                        classNameBuilder.Clear();
+                        classNameBuilder.Append(fallbackName);
                     }
-                    catch
-                    {
-                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
-                        if (fallbackName != null)
-                        {
-                            classNameBuilder.Clear();
-                            classNameBuilder.Append(fallbackName);
-                        }
-                    }
-                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
                 }
+                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
             }
         }
         catch (System.Exception ex)
