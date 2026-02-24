@@ -1904,8 +1904,7 @@ public sealed unsafe partial class SOSDacImpl
                     *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
                     break;
                 default:
-                    hr = HResults.E_INVALIDARG;
-                    break;
+                    throw new ArgumentException();
             }
         }
         catch (System.Exception ex)
@@ -2880,7 +2879,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Contracts.ModuleFlags flags = contract.GetFlags(handle);
                 if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
-                    hr = HResults.E_NOTIMPL;
+                    throw Marshal.GetExceptionForHR(HResults.E_NOTIMPL)!;
             }
 
             OutputBufferHelpers.CopyStringToBuffer(fileName, count, pNeeded, path);
@@ -3280,16 +3279,12 @@ public sealed unsafe partial class SOSDacImpl
                     elements = loader.EnumerateModuleLookupMap(lookupTables.TypeRefToMethodTable);
                     break;
                 default:
-                    hr = HResults.E_INVALIDARG;
-                    break;
+                    throw new ArgumentException();
             }
-            if (hr == HResults.S_OK)
+            foreach ((TargetPointer element, uint index) in elements)
             {
-                foreach ((TargetPointer element, uint index) in elements)
-                {
-                    // Call the callback with each element
-                    pCallback(index, element.ToClrDataAddress(_target).Value, token);
-                }
+                // Call the callback with each element
+                pCallback(index, element.ToClrDataAddress(_target).Value, token);
             }
         }
         catch (System.Exception ex)
