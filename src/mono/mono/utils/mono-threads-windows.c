@@ -447,7 +447,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return CreateThread (NULL, MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
+	return CreateThread (NULL, MONO_DEFAULT_STACKSIZE, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
 }
 
 gboolean
