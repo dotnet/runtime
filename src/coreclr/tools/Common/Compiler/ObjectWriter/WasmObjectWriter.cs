@@ -18,7 +18,6 @@ using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
 using System.Collections.Immutable;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using ILCompiler.DependencyAnalysis.Wasm;
-using System.Runtime.CompilerServices;
 
 namespace ILCompiler.ObjectWriter
 {

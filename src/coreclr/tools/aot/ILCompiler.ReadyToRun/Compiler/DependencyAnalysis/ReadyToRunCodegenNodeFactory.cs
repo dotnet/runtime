@@ -20,7 +20,6 @@ using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 using ILCompiler.ReadyToRun.TypeSystem;
-using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
 {
