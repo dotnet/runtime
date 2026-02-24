@@ -222,6 +222,38 @@ void OptIfConversionDsc::IfConvertFindFlow()
 //   If everything is valid, then set foundOperation to the store and return true.
 //   Otherwise return false.
 //
+//-----------------------------------------------------------------------------
+// ContainsGCType:  Check if any node in the tree is GC-typed (TYP_BYREF or TYP_REF).
+//
+// We must not speculatively hoist trees containing GC-tracked references since
+// those may be invalid and lead to GC crashes when unconditionally evaluated.
+// Since byref constructions don't have side-effect flags, we need to scan
+// the entire tree for any GC-typed node.
+//
+// Arguments:
+//   tree -- The tree to check.
+//
+// Returns:
+//   True if any node in the tree has a GC type, else false.
+//
+static bool ContainsGCType(GenTree* tree)
+{
+    if (varTypeIsGC(tree))
+    {
+        return true;
+    }
+
+    for (GenTree* operand : tree->Operands())
+    {
+        if (ContainsGCType(operand))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation)
 {
     bool found = false;
@@ -244,10 +276,8 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
-                    // Ensure the local has integer type but not a GC type.
-                    // We must not speculatively hoist GC-tracked references (byrefs/refs)
-                    // as those may be invalid and lead to GC crashes.
-                    if (!varTypeIsIntegralOrI(tree) || varTypeIsGC(tree))
+                    // Ensure the local has integer type.
+                    if (!varTypeIsIntegralOrI(tree))
                     {
                         return false;
                     }
@@ -261,6 +291,14 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     }
 #endif
                     GenTree* op1 = tree->AsLclVar()->Data();
+
+                    // We must not speculatively hoist trees containing GC-tracked
+                    // references (byrefs/refs) as those may be invalid and lead to
+                    // GC crashes when unconditionally evaluated.
+                    if (ContainsGCType(op1))
+                    {
+                        return false;
+                    }
 
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
@@ -307,10 +345,8 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
-                    // Ensure the operation has integer type but not a GC type.
-                    // We must not speculatively hoist GC-tracked references (byrefs/refs)
-                    // as those may be invalid and lead to GC crashes.
-                    if (!varTypeIsIntegralOrI(tree) || varTypeIsGC(tree))
+                    // Ensure the operation has integer type.
+                    if (!varTypeIsIntegralOrI(tree))
                     {
                         return false;
                     }
@@ -323,6 +359,14 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 #endif
+
+                    // We must not speculatively hoist trees containing GC-tracked
+                    // references (byrefs/refs) as those may be invalid and lead to
+                    // GC crashes when unconditionally evaluated.
+                    if (ContainsGCType(retVal))
+                    {
+                        return false;
+                    }
 
                     // Ensure it won't cause any additional side effects.
                     if ((retVal->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
