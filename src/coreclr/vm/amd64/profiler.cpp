@@ -331,7 +331,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     {
         TypeHandle argTypeHandle;
         m_argIterator.GetArgType(&argTypeHandle);
-        if (!argTypeHandle.IsNull() && argTypeHandle.AsMethodTable()->IsNativeHalfType())
+        if (argTypeHandle.IsNativeHalfType())
             isFloatArg = true;
     }
 #endif // TARGET_XARCH
@@ -512,7 +512,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
     bool isFloatReturn = (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t);
 #ifdef TARGET_XARCH
-    if (!isFloatReturn && ELEMENT_TYPE_VALUETYPE == t && !thReturnType.IsNull() && thReturnType.AsMethodTable()->IsNativeHalfType())
+    if (!isFloatReturn && ELEMENT_TYPE_VALUETYPE == t && thReturnType.IsNativeHalfType())
         isFloatReturn = true;
 #endif // TARGET_XARCH
 

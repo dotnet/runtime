@@ -518,7 +518,7 @@ struct HWIntrinsicInfo
     HWIntrinsicFlag flags; // 4-bytes
     NamedIntrinsic  id;    // 2-bytes
 #if defined(TARGET_XARCH)
-    uint16_t ins[11]; // 10 * 2-bytes
+    uint16_t ins[11]; // 11 * 2-bytes
 #else
     uint16_t ins[10]; // 10 * 2-bytes
 #endif

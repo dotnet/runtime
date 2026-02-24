@@ -423,7 +423,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 {
                     TypeHandle th;
                     m_argIt.GetArgType(&th);
-                    if (!th.IsNull() && th.AsMethodTable()->IsNativeHalfType())
+                    if (th.IsNativeHalfType())
                         regMapType = ELEMENT_TYPE_R4;
                 }
 #endif // TARGET_AMD64 || TARGET_X86

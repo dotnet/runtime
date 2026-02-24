@@ -881,7 +881,7 @@ public:
             if ((m_argType == ELEMENT_TYPE_R4) || (m_argType == ELEMENT_TYPE_R8)
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
                 // System.Half is passed in floating point registers like a float
-                || (m_argType == ELEMENT_TYPE_VALUETYPE && !m_argTypeHandle.IsNull() && m_argTypeHandle.AsMethodTable()->IsNativeHalfType())
+                || (m_argType == ELEMENT_TYPE_VALUETYPE && m_argTypeHandle.IsNativeHalfType())
 #endif // TARGET_XARCH
             )
             {
@@ -2042,7 +2042,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
             // System.Half is returned in xmm0 like a float
-            if (thValueType.AsMethodTable()->IsNativeHalfType())
+            if (thValueType.IsNativeHalfType())
             {
                 flags |= sizeof(float) << RETURN_FP_SIZE_SHIFT;
                 break;

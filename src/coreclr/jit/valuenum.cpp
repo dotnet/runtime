@@ -437,6 +437,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_handleMap(nullptr)
     , m_embeddedToCompileTimeHandleMap(alloc)
     , m_fieldAddressToFieldSeqMap(alloc)
+    , m_halfCnsMap(nullptr)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -1865,10 +1866,9 @@ ValueNum ValueNumStore::VNForLongCon(INT64 cnsVal)
     return VnForConst(cnsVal, GetLongCnsMap(), TYP_LONG);
 }
 
-// todo-half: we need to make this work properly
-ValueNum ValueNumStore::VNForHalfCon(float cnsVal)
+ValueNum ValueNumStore::VNForHalfCon(float16_t cnsVal)
 {
-    return VnForConst(cnsVal, GetFloatCnsMap(), TYP_HALF);
+    return VnForConst(cnsVal, GetHalfCnsMap(), TYP_HALF);
 }
 
 ValueNum ValueNumStore::VNForFloatCon(float cnsVal)
@@ -2107,7 +2107,7 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_ULONG:
             return VNForLongCon(0);
         case TYP_HALF:
-            return VNForHalfCon(0.0f);
+            return VNForHalfCon(static_cast<float16_t>(0));
         case TYP_FLOAT:
             return VNForFloatCon(0.0f);
         case TYP_DOUBLE:

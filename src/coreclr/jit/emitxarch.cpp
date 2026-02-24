@@ -3076,7 +3076,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         }
         // Now the byte in the 22 position should be either of the below:
         //                          1. An escape byte 0F (For isa before AVX10.2)
-        //                          2. A map number from 0 to 7 (For AVX10.2 and above)
+        //                          2. A map number from 0 to 7 (For AVX10.1 and above)
         leadingBytes = check;
         assert((leadingBytes == 0x0F) || ((m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
                                            (m_compiler->compIsaSupportedDebugOnly(InstructionSet_APX))) &&

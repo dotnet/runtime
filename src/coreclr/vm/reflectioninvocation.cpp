@@ -558,7 +558,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
             CorElementType regMapType = argit.GetArgType();
 #if defined(TARGET_AMD64) || defined(TARGET_X86) 
             // System.Half is passed in floating point registers like a float
-            if (regMapType == ELEMENT_TYPE_VALUETYPE && !th.IsNull() && th.AsMethodTable()->IsNativeHalfType())
+            if (regMapType == ELEMENT_TYPE_VALUETYPE && th.IsNativeHalfType())
                 regMapType = ELEMENT_TYPE_R4;
 #endif // TARGET_XARCH
             FillInRegTypeMap(ofs, regMapType, (BYTE *)&callDescrData.dwRegTypeMap);
