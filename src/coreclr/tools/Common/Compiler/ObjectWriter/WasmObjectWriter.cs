@@ -80,7 +80,7 @@ namespace ILCompiler.ObjectWriter
             SectionWriter writer = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
 
             WasmFuncType signature = Internal.JitInterface.WasmLowering.GetSignature(desc);
-            Utf8String key = signature.GetMangledName();
+            Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_uniqueSignatures.TryGetValue(key, out int signatureIndex))
             {
                 throw new InvalidOperationException($"Signature index of {key} not found for function: {desc.GetName()}");
@@ -386,7 +386,7 @@ namespace ILCompiler.ObjectWriter
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
-                            break;
+                            throw new NotSupportedException($"Relocation type {reloc.Type} not yet implemented");
                     }
                 }
             }

@@ -256,17 +256,18 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             return _returns.CompareTo(other._returns);
         }
 
-        public void AppendMangledName(Internal.Text.Utf8StringBuilder sb)
+        public void AppendMangledName(NameMangler nameMangler, Internal.Text.Utf8StringBuilder sb)
         {
+            sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__wasmtype_"u8);
             _returns.AppendMangledName(sb, isReturn: true);
             _params.AppendMangledName(sb);
         }
 
-        public Internal.Text.Utf8String GetMangledName()
+        public Internal.Text.Utf8String GetMangledName(NameMangler mangler)
         {
             Internal.Text.Utf8StringBuilder sb = new();
-            AppendMangledName(sb);
+            AppendMangledName(mangler, sb);
             return sb.ToUtf8String();
         }
     }

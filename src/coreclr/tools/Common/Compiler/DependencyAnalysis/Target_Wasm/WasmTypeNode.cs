@@ -62,8 +62,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public void AppendMangledName(NameMangler nameMangler, Internal.Text.Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            _type.AppendMangledName(sb);
+            _type.AppendMangledName(nameMangler, sb);
         }
 
         public int Offset => 0;
