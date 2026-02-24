@@ -4256,8 +4256,65 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+    // Must match the order and names in LoaderAllocatorLoaderHeapNames in request.cpp
+    private static readonly string[] s_loaderAllocatorHeapNames =
+    [
+        "LowFrequencyHeap",
+        "HighFrequencyHeap",
+        "StaticsHeap",
+        "StubHeap",
+        "ExecutableHeap",
+        "FixupPrecodeHeap",
+        "NewStubPrecodeHeap",
+        "IndcellHeap",
+        "CacheEntryHeap",
+    ];
+
+    private static readonly nint[] s_loaderAllocatorHeapNamePtrs = InitializeHeapNamePtrs();
+
+    private static nint[] InitializeHeapNamePtrs()
+    {
+        nint[] ptrs = new nint[s_loaderAllocatorHeapNames.Length];
+        for (int i = 0; i < s_loaderAllocatorHeapNames.Length; i++)
+        {
+            ptrs[i] = Marshal.StringToHGlobalAnsi(s_loaderAllocatorHeapNames[i]);
+        }
+        return ptrs;
+    }
+
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            int loaderHeapCount = s_loaderAllocatorHeapNamePtrs.Length;
+            if (pNeeded != null)
+                *pNeeded = loaderHeapCount;
+
+            if (ppNames != null)
+            {
+                for (int i = 0; i < Math.Min(count, loaderHeapCount); i++)
+                    ppNames[i] = (char*)s_loaderAllocatorHeapNamePtrs[i];
+            }
+
+            if (count < loaderHeapCount)
+                hr = HResults.S_FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int pNeededLocal;
+            int hrLocal = _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
+            Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
