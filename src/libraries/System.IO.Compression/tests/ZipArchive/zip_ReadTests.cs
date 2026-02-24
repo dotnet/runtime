@@ -907,6 +907,7 @@ namespace System.IO.Compression.Tests
             Stream readStream = await OpenEntryStream(async, readArchive.Entries[0]);
 
             readStream.Seek(1, SeekOrigin.End);
+            Assert.Equal(14, readStream.Position);
 
             byte[] buffer = new byte[1024];
             int bytesRead = async
@@ -914,6 +915,7 @@ namespace System.IO.Compression.Tests
                 : readStream.Read(buffer, 0, buffer.Length);
 
             Assert.Equal(0, bytesRead);
+            Assert.Equal(14, readStream.Position);
 
             await DisposeStream(async, readStream);
         }
