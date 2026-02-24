@@ -457,6 +457,10 @@ InterpThreadContext::InterpThreadContext()
 {
     pStackStart = pStackPointer = (int8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_SIZE, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
+#ifdef DEBUGGING_SUPPORTED
+    m_bypassAddress = NULL;
+    m_bypassOpcode = 0;
+#endif // DEBUGGING_SUPPORTED
 }
 
 InterpThreadContext::~InterpThreadContext()
@@ -1028,11 +1032,11 @@ SWITCH_OPCODE:
 
                     int32_t bypassOpcode = 0;
                     
-                    // After debugger callback, check if bypass was set on this frame
-                    if (pFrame->HasBypass(ip, &bypassOpcode))
+                    // After debugger callback, check if bypass was set on the thread context
+                    if (pThreadContext->HasBypass(ip, &bypassOpcode))
                     {
                         LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Post-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
-                        pFrame->ClearBypass();
+                        pThreadContext->ClearBypass();
                         opcode = bypassOpcode;
                         goto SWITCH_OPCODE;
                     }

@@ -78,15 +78,15 @@ bool InterpreterExecutionControl::UnapplyPatch(DebuggerControllerPatch* patch)
     return true;
 }
 
-void InterpreterExecutionControl::BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx)
+void InterpreterExecutionControl::BypassPatch(DebuggerControllerPatch* patch, Thread* pThread)
 {
     _ASSERTE(patch != NULL);
-    _ASSERTE(filterCtx != NULL);
+    _ASSERTE(pThread != NULL);
 
-    InterpMethodContextFrame *pFrame = (InterpMethodContextFrame *)GetSP(filterCtx);
-    _ASSERTE(pFrame != NULL);
+    InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
+    _ASSERTE(pThreadContext != NULL);
 
-    pFrame->SetBypass((const int32_t*)patch->address, (int32_t)patch->opcode);
+    pThreadContext->SetBypass((const int32_t*)patch->address, (int32_t)patch->opcode);
 
     LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::BypassPatch at %p, opcode 0x%x\n",
         patch->address, patch->opcode));

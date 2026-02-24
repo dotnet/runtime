@@ -23,7 +23,7 @@ public:
 
     virtual bool ApplyPatch(DebuggerControllerPatch* patch) = 0;
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) = 0;
-    virtual void BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx) = 0;
+    virtual void BypassPatch(DebuggerControllerPatch* patch, Thread* pThread) = 0;
 };
 
 // Interpreter execution control using bytecode patching
@@ -38,10 +38,10 @@ public:
     // Remove a breakpoint patch and restore original instruction
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) override;
 
-    // Set bypass on the InterpMethodContextFrame so the interpreter executes
+    // Set bypass on the InterpThreadContext so the interpreter executes
     // the original opcode instead of re-hitting the breakpoint.
     // The bypass is cleared when the breakpoint is hit and the original opcode is executed.
-    virtual void BypassPatch(DebuggerControllerPatch* patch, CONTEXT* filterCtx) override;
+    virtual void BypassPatch(DebuggerControllerPatch* patch, Thread* pThread) override;
 
 private:
     InterpreterExecutionControl() = default;

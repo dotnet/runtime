@@ -36,13 +36,6 @@ struct InterpMethodContextFrame
     const int32_t *ip; // This ip is updated only when execution can leave the frame
     PTR_InterpMethodContextFrame pNext;
 
-#ifdef DEBUGGING_SUPPORTED
-    // Breakpoint bypass state. When the debugger wants the interpreter to skip
-    // a breakpoint and execute the original opcode, it sets these fields.
-    const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
-    int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
-#endif // DEBUGGING_SUPPORTED
-
 #ifndef DACCESS_COMPILE
     void ReInit(InterpMethodContextFrame *pParent, InterpByteCodeStart* startIp, int8_t *pRetVal, int8_t *pStack)
     {
@@ -51,14 +44,31 @@ struct InterpMethodContextFrame
         this->pRetVal = pRetVal;
         this->pStack = pStack;
         this->ip = NULL;
-#ifdef DEBUGGING_SUPPORTED
-        this->m_bypassAddress = NULL;
-        this->m_bypassOpcode = 0;
-#endif // DEBUGGING_SUPPORTED
     }
+#endif // DACCESS_COMPILE
+};
 
-    // Breakpoint bypass accessors
+struct InterpThreadContext
+{
+    PTR_INT8 pStackStart;
+    PTR_INT8 pStackEnd;
+
+    // This stack pointer is the highest stack memory that can be used by the current frame. This does not
+    // change throughout the execution of a frame and it is essentially the upper limit of the execution
+    // stack pointer. It is needed when re-entering interp, to know from which address we can start using
+    // stack, and also needed for the GC to be able to scan the stack.
+    PTR_INT8 pStackPointer;
+
+    FrameDataAllocator frameDataAllocator;
+
 #ifdef DEBUGGING_SUPPORTED
+    // Breakpoint bypass state. When the debugger wants the interpreter to skip
+    // a breakpoint and execute the original opcode, it sets these fields.
+    // Stored on thread context rather than frame context to avoid bloating
+    // the hot InterpMethodContextFrame struct with debug-only fields.
+    const int32_t *m_bypassAddress;   // Address of breakpoint to bypass (NULL = no bypass)
+    int32_t        m_bypassOpcode;    // Original opcode to execute instead of INTOP_BREAKPOINT
+
     void SetBypass(const int32_t* address, int32_t opcode)
     {
         _ASSERTE(m_bypassAddress == NULL);
@@ -83,21 +93,6 @@ struct InterpMethodContextFrame
         return false;
     }
 #endif // DEBUGGING_SUPPORTED
-#endif // DACCESS_COMPILE
-};
-
-struct InterpThreadContext
-{
-    PTR_INT8 pStackStart;
-    PTR_INT8 pStackEnd;
-
-    // This stack pointer is the highest stack memory that can be used by the current frame. This does not
-    // change throughout the execution of a frame and it is essentially the upper limit of the execution
-    // stack pointer. It is needed when re-entering interp, to know from which address we can start using
-    // stack, and also needed for the GC to be able to scan the stack.
-    PTR_INT8 pStackPointer;
-
-    FrameDataAllocator frameDataAllocator;
 
     InterpThreadContext();
     ~InterpThreadContext();

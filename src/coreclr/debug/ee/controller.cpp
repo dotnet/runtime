@@ -2842,10 +2842,7 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
             IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
             _ASSERTE(pExecControl != NULL);
 
-            CONTEXT *filterCtx = GetManagedStoppedCtx(thread);
-            _ASSERTE(filterCtx != NULL);
-
-            pExecControl->BypassPatch(patch, filterCtx);
+            pExecControl->BypassPatch(patch, thread);
             LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - bypass via ExecutionControl with opcode 0x%x\n", PC, patch->opcode));
             return NULL;
         }
