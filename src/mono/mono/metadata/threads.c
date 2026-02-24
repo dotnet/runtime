@@ -1449,7 +1449,7 @@ mono_threads_get_default_stacksize (void)
 	{
 		unsigned long stacksize = 0;
 
-		const char *value = getenv ("DOTNET_Thread_DefaultStackSize");
+		const char *value = g_getenv ("DOTNET_Thread_DefaultStackSize");
 		if (value) {
 			errno = 0;
 			stacksize = strtoul (value, NULL, 16);
