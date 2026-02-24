@@ -577,9 +577,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTreeFlags      intermediateFlags   = GTF_EMPTY;
     ExceptionSetFlags intermediateExcepts = ExceptionSetFlags::None;
 
-    for (Statement* candidateStmt = stmt->GetNextStmt();
-         candidateStmt != nullptr && lookahead > 0;
-         candidateStmt = candidateStmt->GetNextStmt(), lookahead--)
+    for (Statement* candidateStmt = stmt->GetNextStmt(); candidateStmt != nullptr && lookahead > 0;
+         candidateStmt            = candidateStmt->GetNextStmt(), lookahead--)
     {
         // Quick scan through the linked locals list to see if there is a last use.
         bool found = false;
@@ -628,8 +627,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         // Check for store interference between the intermediate statement
         // and the locals read by the forward sub tree.
-        if (((ev.GetFlags() & GTF_ASG) != 0) &&
-            fgForwardSubHasStoreInterference(stmt, candidateStmt, nullptr))
+        if (((ev.GetFlags() & GTF_ASG) != 0) && fgForwardSubHasStoreInterference(stmt, candidateStmt, nullptr))
         {
             JITDUMP(" cannot reorder with interfering store in intermediate statement\n");
             return false;

@@ -149,7 +149,8 @@ CONFIG_INTEGER(JitNoForceFallback, "JitNoForceFallback", 0) // Set to non-zero t
                                                             // Overrides DOTNET_JitForceFallback and JIT stress
                                                             // flags.
 CONFIG_INTEGER(JitNoForwardSub, "JitNoForwardSub", 0)       // Disables forward sub
-RELEASE_CONFIG_INTEGER(JitForwardSubLookahead, "JitForwardSubLookahead", 10)  // Max stmts to search ahead for forward sub use
+RELEASE_CONFIG_INTEGER(JitForwardSubLookahead, "JitForwardSubLookahead", 10) // Max stmts to search ahead for forward
+                                                                             // sub use
 CONFIG_INTEGER(JitNoHoist, "JitNoHoist", 0)
 CONFIG_INTEGER(JitNoMemoryBarriers, "JitNoMemoryBarriers", 0)   // If 1, don't generate memory barriers
 CONFIG_INTEGER(JitNoStructPromotion, "JitNoStructPromotion", 0) // Disables struct promotion 1 - for all, 2 - for
