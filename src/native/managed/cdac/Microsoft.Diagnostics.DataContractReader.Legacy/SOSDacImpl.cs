@@ -4210,7 +4210,49 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface12
     int ISOSDacInterface12.GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit)
-        => _legacyImpl12 is not null ? _legacyImpl12.GetGlobalAllocationContext(allocPtr, allocLimit) : HResults.E_NOTIMPL;
+    {
+        if (allocPtr == null || allocLimit == null)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+#if DEBUG
+        ClrDataAddress allocPtrOrig = *allocPtr;
+        ClrDataAddress allocLimitOrig = *allocLimit;
+#endif
+        try
+        {
+            TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
+            Target.TypeInfo eeAllocContextType = _target.GetTypeInfo(DataType.EEAllocContext);
+            ulong gcAllocContextAddress = globalAllocContextAddress + (ulong)eeAllocContextType.Fields["GCAllocationContext"].Offset;
+
+            Target.TypeInfo gcAllocContextType = _target.GetTypeInfo(DataType.GCAllocContext);
+            TargetPointer pointer = _target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Pointer"].Offset);
+            TargetPointer limit = _target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Limit"].Offset);
+
+            *allocPtr = pointer.ToClrDataAddress(_target);
+            *allocLimit = limit.ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl12 is not null)
+        {
+            ClrDataAddress allocPtrLocal = allocPtrOrig;
+            ClrDataAddress allocLimitLocal = allocLimitOrig;
+            int hrLocal = _legacyImpl12.GetGlobalAllocationContext(&allocPtrLocal, &allocLimitLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*allocPtr == allocPtrLocal);
+                Debug.Assert(*allocLimit == allocLimitLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13

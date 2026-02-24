@@ -87,4 +87,28 @@ public class WorkstationGCDumpTests : DumpTestBase
         Assert.True(minAddr < maxAddr,
             $"Expected GC min address (0x{minAddr:X}) < max address (0x{maxAddr:X})");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public void WorkstationGC_GlobalAllocationContextIsReadable(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        TargetPointer globalAllocContextAddress = Target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
+        Assert.NotEqual(TargetPointer.Null, globalAllocContextAddress);
+
+        Target.TypeInfo eeAllocContextType = Target.GetTypeInfo(DataType.EEAllocContext);
+        ulong gcAllocContextAddress = globalAllocContextAddress + (ulong)eeAllocContextType.Fields["GCAllocationContext"].Offset;
+
+        Target.TypeInfo gcAllocContextType = Target.GetTypeInfo(DataType.GCAllocContext);
+        TargetPointer pointer = Target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Pointer"].Offset);
+        TargetPointer limit = Target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Limit"].Offset);
+
+        if (pointer != TargetPointer.Null)
+        {
+            Assert.NotEqual(TargetPointer.Null, limit);
+            Assert.True(pointer <= limit,
+                $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
+        }
+    }
 }
