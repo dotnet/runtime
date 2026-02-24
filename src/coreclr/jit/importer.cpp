@@ -9006,7 +9006,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         flags |= CORINFO_CALLINFO_CALLVIRT;
                     }
 
-                    eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags, &callInfo);
+                    eeGetCallInfo(&resolvedToken,
+                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
+                                  &callInfo);
 
                     if (isAwait && (callInfo.kind == CORINFO_CALL))
                     {
@@ -9016,20 +9018,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (!isSyncCallThunk)
                         {
                             // Otherwise the async variant that we got is a thunk.
-                            // Switch back to the non-async task-returning call. There is no reason to go through the thunk.
+                            // Switch back to the non-async task-returning call. There is no reason to go through the
+                            // thunk.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                             prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
                             isAwait = false;
 
-                            JITDUMP("Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
-                            eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags, &callInfo);
+                            JITDUMP(
+                                "Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
+                            eeGetCallInfo(&resolvedToken,
+                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                                          flags, &callInfo);
                         }
                     }
 
                     if (isAwait)
                     {
-                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we prefer
-                        // to directly call it. Skip the await pattern to the last token.
+                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we
+                        // prefer to directly call it. Skip the await pattern to the last token.
                         codeAddr   = codeAddrAfterMatch;
                         opcodeOffs = awaitOffset;
                     }
