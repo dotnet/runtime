@@ -703,28 +703,39 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         if (!m_doElseConversion)
         {
-            // If we don't have an else case look for a previous unconditional store and treat that as the else
-            Statement* last   = m_startBlock->lastStmt();
-            unsigned   lclNum = m_thenOperation.node->AsLclVar()->GetLclNum();
+            // If we don't have an else case look for previous unconditional store and treat that as the else.
+            // Abort if the condition or store depend on lclVar:
+            //
+            // short lclVar = (short)arg1;
+            // if (lclVar > 3) {                 // Used in condition!
+            //     lclVar = (short)(lclVar + 3); // Used in store!
+            // }
 
-            for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
+            GenTreeLclVar* store       = m_thenOperation.node->AsLclVar();
+            unsigned       storeLclNum = store->GetLclNum();
+
+            bool lclVarUsedInCondOrStore =
+                m_compiler->gtHasRef(m_cond, storeLclNum) || m_compiler->gtHasRef(store->Data(), storeLclNum);
+            if (!lclVarUsedInCondOrStore)
             {
-                GenTree* tree = stmt->GetRootNode();
-                if (tree->OperIs(GT_STORE_LCL_VAR))
+                Statement* last = m_startBlock->lastStmt();
+
+                for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
                 {
-                    GenTree* val = tree->AsLclVar()->Data();
-
-                    bool noSideEffects       = (val->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0;
-                    bool condDependsOnLclVar = m_compiler->gtHasRef(m_cond, lclNum);
-                    if (noSideEffects && !condDependsOnLclVar)
+                    GenTree* tree = stmt->GetRootNode();
+                    if (tree->OperIs(GT_STORE_LCL_VAR))
                     {
-                        m_doElseConversion    = true;
-                        m_elseOperation.block = m_startBlock;
-                        m_elseOperation.stmt  = stmt;
-                        m_elseOperation.node  = tree;
-                    }
+                        GenTree* storeValue = tree->AsLclVar()->Data();
+                        if ((storeValue->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                        {
+                            m_doElseConversion    = true;
+                            m_elseOperation.block = m_startBlock;
+                            m_elseOperation.stmt  = stmt;
+                            m_elseOperation.node  = tree;
+                        }
 
-                    break;
+                        break;
+                    }
                 }
             }
         }
