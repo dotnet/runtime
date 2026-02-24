@@ -83,7 +83,6 @@ public:
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
         PCODE r2rEntryPoint,
-        ILStubHashBlob* pHashBlob,
         DWORD stubType,         // DynamicMethodDesc::ILStubType
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,

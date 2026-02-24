@@ -1173,14 +1173,13 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
-struct AsyncResumptionStubHashBlob : public ILStubHashBlobBase
-{
-    PCODE pEntryPoint;
-};
-
 void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 {
     STANDARD_VM_CONTRACT;
+
+    // Use the entry point hashtable to check if another thread already registered a MethodDesc
+    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+        return;
 
     AllocMemTracker amTracker;
     ILStubCache *pStubCache = m_pModule->GetILStubCache();
@@ -1197,17 +1196,10 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
         ELEMENT_TYPE_U1
     };
 
-    AsyncResumptionStubHashBlob hashBlob;
-    memset(&hashBlob, 0, sizeof(hashBlob));
-    hashBlob.pEntryPoint = stubEntryPoint;
-    hashBlob.m_cbSizeOfBlob = sizeof(hashBlob);
-    ILStubHashBlob *pHashBlob = (ILStubHashBlob*)&hashBlob;
-
     MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
         m_pModule->GetLoaderAllocator(),
         pStubMT,
         stubEntryPoint,
-        pHashBlob,
         DynamicMethodDesc::StubAsyncResume,
         (PCCOR_SIGNATURE)s_resumptionStubSig,
         sizeof(s_resumptionStubSig),
@@ -1215,7 +1207,9 @@ void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
 
     amTracker.SuppressRelease();
 
-    // Register the stub's entry point so GC can find it during stack walks
+    // Register the stub's entry point so GC can find it during stack walks.
+    // SetMethodDescForEntryPointInNativeImage handles the race — if another thread
+    // already registered a MethodDesc for this entry point, ours is simply discarded.
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD);
 }
 
