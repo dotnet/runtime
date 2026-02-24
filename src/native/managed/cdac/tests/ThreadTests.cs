@@ -140,9 +140,9 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        ThreadAllocData data = contract.GetThreadAllocContext(addr);
-        Assert.Equal(allocBytes, data.AllocBytes);
-        Assert.Equal(allocBytesLoh, data.AllocBytesLoh);
+        contract.GetThreadAllocContext(addr, out long resultAllocBytes, out long resultAllocBytesLoh);
+        Assert.Equal(allocBytes, resultAllocBytes);
+        Assert.Equal(allocBytesLoh, resultAllocBytesLoh);
     }
 
     [Theory]
@@ -159,9 +159,9 @@ public unsafe class ThreadTests
         IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        ThreadAllocData data = contract.GetThreadAllocContext(addr);
-        Assert.Equal(0, data.AllocBytes);
-        Assert.Equal(0, data.AllocBytesLoh);
+        contract.GetThreadAllocContext(addr, out long allocBytes, out long allocBytesLoh);
+        Assert.Equal(0, allocBytes);
+        Assert.Equal(0, allocBytesLoh);
     }
 
     [Theory]

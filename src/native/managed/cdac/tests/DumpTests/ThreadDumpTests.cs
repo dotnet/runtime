@@ -123,9 +123,9 @@ public class ThreadDumpTests : DumpTestBase
         TargetPointer currentThread = storeData.FirstThread;
         while (currentThread != TargetPointer.Null)
         {
-            ThreadAllocData allocData = threadContract.GetThreadAllocContext(currentThread);
-            Assert.True(allocData.AllocBytes >= 0, $"AllocBytes should be non-negative, got {allocData.AllocBytes}");
-            Assert.True(allocData.AllocBytesLoh >= 0, $"AllocBytesLoh should be non-negative, got {allocData.AllocBytesLoh}");
+            threadContract.GetThreadAllocContext(currentThread, out long allocBytes, out long allocBytesLoh);
+            Assert.True(allocBytes >= 0, $"AllocBytes should be non-negative, got {allocBytes}");
+            Assert.True(allocBytesLoh >= 0, $"AllocBytesLoh should be non-negative, got {allocBytesLoh}");
 
             ThreadData threadData = threadContract.GetThreadData(currentThread);
             currentThread = threadData.NextThread;

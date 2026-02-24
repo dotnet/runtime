@@ -3050,9 +3050,9 @@ public sealed unsafe partial class SOSDacImpl
                 throw new NullReferenceException();
 
             Contracts.IThread contract = _target.Contracts.Thread;
-            Contracts.ThreadAllocData allocData = contract.GetThreadAllocContext(thread.ToTargetPointer(_target));
-            data->allocBytes = (ClrDataAddress)(ulong)allocData.AllocBytes;
-            data->allocBytesLoh = (ClrDataAddress)(ulong)allocData.AllocBytesLoh;
+            contract.GetThreadAllocContext(thread.ToTargetPointer(_target), out long allocBytes, out long allocBytesLoh);
+            data->allocBytes = (ClrDataAddress)(ulong)allocBytes;
+            data->allocBytesLoh = (ClrDataAddress)(ulong)allocBytesLoh;
         }
         catch (global::System.Exception ex)
         {
