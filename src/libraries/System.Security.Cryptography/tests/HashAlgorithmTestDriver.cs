@@ -16,6 +16,19 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool IsSupported => THashTrait.IsSupported;
         public static bool IsNotSupported => !IsSupported;
+
+        private static void CheckIsSupported()
+        {
+            if (!IsSupported)
+                throw new SkipTestException(nameof(IsSupported));
+        }
+
+        private static void CheckIsNotSupported()
+        {
+            if (!IsNotSupported)
+                throw new SkipTestException(nameof(IsNotSupported));
+        }
+
         protected HashAlgorithm Create() => THashTrait.Create();
         protected abstract bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
         protected abstract byte[] HashData(byte[] source);
@@ -235,35 +248,40 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_ByteArray_Null()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((byte[])null));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void CryptographicOperations_HashData_ByteArray_Null()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>("source",
                 () => CryptographicOperations.HashData(HashAlgorithm, (byte[])null));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_BufferTooSmall()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>("destination", () => HashData(Span<byte>.Empty, default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void CryptographicOperations_HashData_BufferTooSmall()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>("destination",
                 () => CryptographicOperations.HashData(HashAlgorithm, Span<byte>.Empty, default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void VerifyObjectDisposedException()
         {
+            CheckIsSupported();
             HashAlgorithm hash = Create();
             hash.Dispose();
             Assert.Throws<ObjectDisposedException>(() => hash.Hash);
@@ -274,9 +292,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void VerifyHashNotYetFinalized()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 hash.TransformBlock(Array.Empty<byte>(), 0, 0, null, 0);
@@ -284,9 +303,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_ComputeHash()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash((byte[])null));
@@ -294,9 +314,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_TransformBlock()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => hash.TransformBlock(null, 0, 0, null, 0));
@@ -306,9 +327,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_TransformFinalBlock()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => hash.TransformFinalBlock(null, 0, 0));
@@ -547,9 +569,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsNotSupported))]
+        [ConditionalFact]
         public async Task HashData_NotSupported()
         {
+            CheckIsNotSupported();
             byte[] buffer = new byte[THashTrait.HashSizeInBytes];
             Assert.Throws<PlatformNotSupportedException>(() => HashData(Array.Empty<byte>()));
             Assert.Throws<PlatformNotSupportedException>(() => HashData(ReadOnlySpan<byte>.Empty));
@@ -564,9 +587,10 @@ namespace System.Security.Cryptography.Tests
                 await HashDataAsync(Stream.Null, buffer, default(CancellationToken)));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsNotSupported))]
+        [ConditionalFact]
         public async Task CryptographicOperations_HashData_NotSupported()
         {
+            CheckIsNotSupported();
             byte[] buffer = new byte[THashTrait.HashSizeInBytes];
             Assert.Throws<PlatformNotSupportedException>(
                 () => CryptographicOperations.HashData(HashAlgorithm, Array.Empty<byte>()));
@@ -587,44 +611,50 @@ namespace System.Security.Cryptography.Tests
                 await CryptographicOperations.HashDataAsync(HashAlgorithm, Stream.Null, buffer, default(CancellationToken)));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsNotSupported))]
+        [ConditionalFact]
         public void Create_NotSupported()
         {
+            CheckIsNotSupported();
             Assert.Throws<PlatformNotSupportedException>(() => Create());
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_Null_Stream_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((Stream)null));
             AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((Stream)null, Span<byte>.Empty));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_ShortDestination_Stream_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>("destination", () => HashData(Stream.Null, Span<byte>.Empty));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_Null_Stream_CryptographicOperations_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>("source",
                 () => CryptographicOperations.HashData(HashAlgorithm, (Stream)null));
             AssertExtensions.Throws<ArgumentNullException>("source",
                 () => CryptographicOperations.HashData(HashAlgorithm, (Stream)null, Span<byte>.Empty));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashData_ShortDestination_Stream_CryptographicOperations_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>("destination",
                 () => CryptographicOperations.HashData(HashAlgorithm, Stream.Null, Span<byte>.Empty));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Null_Stream_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>(
                 "source",
                 () => HashDataAsync((Stream)null, cancellationToken: default));
@@ -634,9 +664,10 @@ namespace System.Security.Cryptography.Tests
                 () => HashDataAsync((Stream)null, Memory<byte>.Empty, cancellationToken: default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Null_Stream_CryptographicOperations_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentNullException>(
                 "source",
                 () => CryptographicOperations.HashDataAsync(HashAlgorithm, (Stream)null, cancellationToken: default));
@@ -646,17 +677,19 @@ namespace System.Security.Cryptography.Tests
                 () => CryptographicOperations.HashDataAsync(HashAlgorithm, (Stream)null, Memory<byte>.Empty, cancellationToken: default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_ShortDestination_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>(
                 "destination",
                 () => HashDataAsync(Stream.Null, Memory<byte>.Empty, cancellationToken: default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Buffer_CancelledToken()
         {
+            CheckIsSupported();
             Memory<byte> buffer = new byte[512 / 8];
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
             ValueTask<int> waitable = HashDataAsync(Stream.Null, buffer, cancelledToken);
@@ -664,25 +697,28 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, buffer.Span);
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Allocating_CancelledToken()
         {
+            CheckIsSupported();
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
             ValueTask<byte[]> waitable = HashDataAsync(Stream.Null, cancelledToken);
             Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_ShortDestination_CryptographicOperations_Throws()
         {
+            CheckIsSupported();
             AssertExtensions.Throws<ArgumentException>(
                 "destination",
                 () => CryptographicOperations.HashDataAsync(HashAlgorithm, Stream.Null, Memory<byte>.Empty, cancellationToken: default));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Buffer_CryptographicOperations_CancelledToken()
         {
+            CheckIsSupported();
             Memory<byte> buffer = new byte[512 / 8];
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
             ValueTask<int> waitable = CryptographicOperations.HashDataAsync(HashAlgorithm, Stream.Null, buffer, cancelledToken);
@@ -690,17 +726,19 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0, buffer.Span);
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void HashDataAsync_Allocating_CryptographicOperations_CancelledToken()
         {
+            CheckIsSupported();
             CancellationToken cancelledToken = new CancellationToken(canceled: true);
             ValueTask<byte[]> waitable = CryptographicOperations.HashDataAsync(HashAlgorithm, Stream.Null, cancelledToken);
             Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_Null()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("buffer", () => hash.ComputeHash((byte[])null));
@@ -709,36 +747,40 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_NegativeOffset()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => hash.ComputeHash(Array.Empty<byte>(), -1, 0));
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_NegativeCount()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 0, -1));
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_TooBigOffset()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => hash.ComputeHash(Array.Empty<byte>(), 1, 0));
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void InvalidInput_TooBigCount()
         {
+            CheckIsSupported();
             byte[] nonEmpty = new byte[53];
 
             using (HashAlgorithm hash = Create())
@@ -750,9 +792,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void BoundaryCondition_Count0()
         {
+            CheckIsSupported();
             byte[] nonEmpty = new byte[53];
 
             using (HashAlgorithm hash = Create())
@@ -776,9 +819,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void OffsetAndCountRespected()
         {
+            CheckIsSupported();
             byte[] dataA = { 1, 1, 2, 3, 5, 8 };
             byte[] dataB = { 0, 1, 1, 2, 3, 5, 8, 13 };
 
@@ -793,9 +837,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void ComputeHash_TryComputeHash_HashSetExplicitlyByBoth()
         {
+            CheckIsSupported();
             using (HashAlgorithm hash = Create())
             {
                 byte[] input = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
@@ -812,18 +857,20 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void Dispose_TryComputeHash_ThrowsException()
         {
+            CheckIsSupported();
             HashAlgorithm hash = Create();
             hash.Dispose();
             Assert.Throws<ObjectDisposedException>(() => hash.ComputeHash(new byte[1]));
             Assert.Throws<ObjectDisposedException>(() => hash.TryComputeHash(new byte[1], new byte[1], out int bytesWritten));
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void Initialize_TransformBlock()
         {
+            CheckIsSupported();
             byte[] hashInput = new byte[] { 1, 2, 3, 4, 5 };
             byte[] expectedDigest;
 
@@ -843,9 +890,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void Initialize_TransformBlock_Unused()
         {
+            CheckIsSupported();
             byte[] hashInput = new byte[] { 1, 2, 3, 4, 5 };
             byte[] expectedDigest;
 
@@ -864,9 +912,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void Initialize_DoubleInitialize_Works()
         {
+            CheckIsSupported();
             byte[] hashInput = new byte[] { 1, 2, 3, 4, 5 };
             byte[] expectedDigest;
 
@@ -888,9 +937,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void CryptographicOperations_HashData_ArgValidation_HashAlgorithm()
         {
+            CheckIsSupported();
             CheckArguments<ArgumentNullException>(new HashAlgorithmName(null));
             CheckArguments<ArgumentException>(new HashAlgorithmName(""));
 
@@ -918,9 +968,10 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(typeof(HashAlgorithmTestDriver<THashTrait>), nameof(IsSupported))]
+        [ConditionalFact]
         public void CryptographicOperations_HashData_ArgValidation_UnreadableStream()
         {
+            CheckIsSupported();
             Assert.Throws<ArgumentException>("source", () =>
                 CryptographicOperations.HashData(HashAlgorithm, UntouchableStream.Instance));
             Assert.Throws<ArgumentException>("source", () =>

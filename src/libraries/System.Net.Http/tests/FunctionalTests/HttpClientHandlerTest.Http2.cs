@@ -687,7 +687,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsAlpn))]
+        [ConditionalTheory(typeof(HttpClientHandlerTest_Http2), nameof(SupportsAlpn))]
         [InlineData(false)] // server disconnects without sending SETTINGS
         [InlineData(true)]  // server sends GOAWAY instead of SETTINGS
         public async Task ServerDisconnectDuringSetup_PropagatesMeaningfulException(bool sendGoAway)
