@@ -101,10 +101,11 @@ internal readonly struct Object_1 : IObject
         return address + dataOffset;
     }
 
-    public bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw)
+    public bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
     {
         rcw = TargetPointer.Null;
         ccw = TargetPointer.Null;
+        ccf = TargetPointer.Null;
 
         Data.SyncBlock? syncBlock = GetSyncBlock(address);
         if (syncBlock == null)
@@ -116,7 +117,8 @@ internal readonly struct Object_1 : IObject
 
         rcw = interopInfo.RCW;
         ccw = interopInfo.CCW;
-        return rcw != TargetPointer.Null || ccw != TargetPointer.Null;
+        ccf = interopInfo.CCF;
+        return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
     }
 
     private Data.SyncBlock? GetSyncBlock(TargetPointer address)

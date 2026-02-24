@@ -127,6 +127,7 @@ public unsafe class ObjectTests
 
         TargetPointer expectedRCW = 0xaaaa;
         TargetPointer expectedCCW = 0xbbbb;
+        TargetPointer expectedCCF = 0xcccc;
 
         ObjectContractHelper(arch,
             (objectBuilder) =>
@@ -140,16 +141,18 @@ public unsafe class ObjectTests
                 Contracts.IObject contract = target.Contracts.Object;
                 Assert.NotNull(contract);
                 {
-                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
                     Assert.True(res);
                     Assert.Equal(expectedRCW.Value, rcw.Value);
                     Assert.Equal(expectedCCW.Value, ccw.Value);
+                    Assert.Equal(expectedCCF.Value, ccf.Value);
                 }
                 {
-                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
                     Assert.False(res);
                     Assert.Equal(TargetPointer.Null.Value, rcw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);
+                    Assert.Equal(TargetPointer.Null.Value, ccf.Value);
                 }
             });
     }

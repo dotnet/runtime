@@ -90,6 +90,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    /// <summary>
+    /// Gets an instance of the SyncBlock contract for the target.
+    /// </summary>
+    public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 }

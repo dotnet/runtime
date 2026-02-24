@@ -10,8 +10,12 @@ internal sealed class Object : IData<Object>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Object);
 
+        Address = address;
         MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointer(address + (ulong)type.Fields["m_pMethTab"].Offset));
+        Data = address + (ulong)type.Size!; // Data starts immediately after the Object header, which is the size of the Object type.
     }
 
+    public TargetPointer Address { get; init; }
     public MethodTable MethodTable { get; init; }
+    public TargetPointer Data { get; init; }
 }
