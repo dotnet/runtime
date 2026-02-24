@@ -157,6 +157,8 @@ Data descriptors used:
 | `OomHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
+| `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
+| `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated on UOH by this context |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |

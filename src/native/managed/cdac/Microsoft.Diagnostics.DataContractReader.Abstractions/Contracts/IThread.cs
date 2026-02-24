@@ -41,6 +41,10 @@ public record struct ThreadData(
     TargetPointer LastThrownObjectHandle,
     TargetPointer NextThread);
 
+public record struct ThreadAllocData(
+    long AllocBytes,
+    long AllocBytesLoh);
+
 public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
@@ -48,6 +52,7 @@ public interface IThread : IContract
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
+    ThreadAllocData GetThreadAllocData(TargetPointer thread) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();

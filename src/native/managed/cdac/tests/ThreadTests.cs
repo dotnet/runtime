@@ -122,4 +122,45 @@ public unsafe class ThreadTests
 
         Assert.Equal(expectedCount, count);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadAllocData(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        long allocBytes = 1024;
+        long allocBytesLoh = 4096;
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234), allocBytes, allocBytesLoh);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        ThreadAllocData data = contract.GetThreadAllocData(addr);
+        Assert.Equal(allocBytes, data.AllocBytes);
+        Assert.Equal(allocBytesLoh, data.AllocBytesLoh);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadAllocData_ZeroValues(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        ThreadAllocData data = contract.GetThreadAllocData(addr);
+        Assert.Equal(0, data.AllocBytes);
+        Assert.Equal(0, data.AllocBytesLoh);
+    }
 }

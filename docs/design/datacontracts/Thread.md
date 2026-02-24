@@ -76,6 +76,8 @@ The contract additionally depends on these data descriptors
 | `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | Pointer to Watson unhandled buckets on non-Unix |
 | `GCAllocContext` | `Pointer` | GC allocation pointer |
 | `GCAllocContext` | `Limit` | Allocation limit pointer |
+| `GCAllocContext` | `AllocBytes` | Number of bytes allocated on SOH by this context |
+| `GCAllocContext` | `AllocBytesLoh` | Number of bytes allocated on UOH by this context |
 | `IdDispenser` | `HighestId` | Highest possible small thread ID |
 | `IdDispenser` | `IdToThread` | Array mapping small thread IDs to thread pointers |
 | `InflightTLSData` | `Next` | Pointer to next in-flight TLS data entry |

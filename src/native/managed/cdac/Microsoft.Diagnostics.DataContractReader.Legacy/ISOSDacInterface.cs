@@ -108,6 +108,12 @@ public struct DacpThreadData
     public ClrDataAddress nextThread;
 }
 
+public struct DacpAllocData
+{
+    public ClrDataAddress allocBytes;
+    public ClrDataAddress allocBytesLoh;
+}
+
 public struct DacpModuleData
 {
     public enum TransientFlags : uint
@@ -629,7 +635,7 @@ public unsafe partial interface ISOSDacInterface
     int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
 
     [PreserveSig]
-    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
+    int GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data);
     [PreserveSig]
     int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
 

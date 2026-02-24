@@ -76,6 +76,15 @@ internal readonly struct Thread_1 : IThread
             GetThreadFromLink(thread.LinkNext));
     }
 
+    ThreadAllocData IThread.GetThreadAllocData(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+
+        return new ThreadAllocData(
+            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytes ?? 0,
+            thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.AllocBytesLoh ?? 0);
+    }
+
     // happens inside critical section
     TargetPointer IThread.IdToThread(uint id)
     {
