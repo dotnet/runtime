@@ -2973,7 +2973,48 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
-        => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (threadPtr == 0 || (lower == null && upper == null && fp == null))
+                throw new ArgumentException();
+
+            Contracts.IThread contract = _target.Contracts.Thread;
+            TargetPointer stackBase, stackLimit, frameAddress;
+            contract.GetStackLimitData(threadPtr.ToTargetPointer(_target), out stackBase, out stackLimit, out frameAddress);
+
+            if (lower != null)
+                *lower = stackBase.ToClrDataAddress(_target);
+
+            if (upper != null)
+                *upper = stackLimit.ToClrDataAddress(_target);
+
+            if (fp != null)
+                *fp = frameAddress.ToClrDataAddress(_target);
+        }
+        catch (global::System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress lowerLocal, upperLocal, fpLocal;
+            int hrLocal = _legacyImpl.GetStackLimits(threadPtr, &lowerLocal, &upperLocal, &fpLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(lower == null || *lower == lowerLocal, $"cDAC: {*lower:x}, DAC: {lowerLocal:x}");
+                Debug.Assert(upper == null || *upper == upperLocal, $"cDAC: {*upper:x}, DAC: {upperLocal:x}");
+                Debug.Assert(fp == null || *fp == fpLocal, $"cDAC: {*fp:x}, DAC: {fpLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
 
