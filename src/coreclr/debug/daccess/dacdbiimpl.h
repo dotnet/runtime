@@ -368,7 +368,7 @@ private:
         TADDR funcIp,
         OUT VMPTR_MethodDesc *ppMD);
 
-    HRESULT IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult);
+    BOOL IsExceptionObject(MethodTable* pMT);
 
     // Get the approximate and exact type handles for a type
     void GetTypeHandles(VMPTR_TypeHandle  vmThExact,
@@ -774,7 +774,7 @@ public:
     // Get the CONTEXT of the current frame at which the stackwalker is stopped.
     HRESULT GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext);
 
-    HRESULT GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext);
+    void GetStackWalkCurrentContext(StackFrameIterator * pIter, DT_CONTEXT * pContext);
 
     // Set the stackwalker to the specified CONTEXT.
     HRESULT SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, DT_CONTEXT * pContext);
@@ -800,6 +800,9 @@ public:
 
     // Return the stack parameter size of the given method.
     HRESULT GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal);
+
+    // Return the stack parameter size of the given method.
+    ULONG32 GetStackParameterSize(EECodeInfo * pCodeInfo);
 
     // Return the FramePointer of the current frame at which the stackwalker is stopped.
     HRESULT GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal);
@@ -943,9 +946,6 @@ private:
     // Fill in the information about the parent frame.
     void InitParentFrameInfo(CrawlFrame * pCF,
                              DebuggerIPCE_JITFuncData * pJITFuncData);
-
-    // Return the stack parameter size of the given method.
-    HRESULT GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal);
 
     typedef enum
     {

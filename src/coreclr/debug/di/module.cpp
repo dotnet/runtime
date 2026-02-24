@@ -50,7 +50,7 @@ CordbModule::CordbModule(
 
     // Fill out properties via DAC.
     ModuleInfo modInfo;
-    pProcess->GetDAC()->GetModuleData(vmModule, &modInfo); // throws
+    IfFailThrow(pProcess->GetDAC()->GetModuleData(vmModule, &modInfo)); // throws
 
     m_PEBuffer.Init(modInfo.pPEBaseAddress, modInfo.nPESize);
 
@@ -62,7 +62,7 @@ CordbModule::CordbModule(
     {
         DomainAssemblyInfo dfInfo;
 
-        pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
+        IfFailThrow(pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo)); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
@@ -117,10 +117,10 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+    IfFailThrow(GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
         m_pAppDomain->GetADToken(),
         DbgAssertModuleDeletedCallback,
-        this);
+        this));
 }
 #endif // _DEBUG
 
@@ -223,7 +223,7 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 
     TargetBuffer bufferPdb;
     IDacDbiInterface::SymbolFormat symFormat;
-    GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat);
+    IfFailThrow(GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat));
     if (bufferPdb.IsEmpty())
     {
         // No in-memory PDB. Common case.
@@ -499,7 +499,7 @@ void CordbModule::RefreshMetaData()
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
         TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr);
+        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
         if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
@@ -527,7 +527,7 @@ void CordbModule::RefreshMetaData()
     if(!m_fForceMetaDataSerialize) // case 1 and 2
     {
         LOG((LF_CORDB,LL_INFO10000, "CM::RM !m_fForceMetaDataSerialize case\n"));
-        GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData); // throws
+        IfFailThrow(GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData)); // throws
     }
     else if (GetProcess()->GetShim() == NULL) // case 3 won't work on a dump so don't try
     {
@@ -797,10 +797,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(!m_vmPEFile.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
-        if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+        bool _mdFileInfoResult;
+        IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                          dwImageTimeStamp,
                                                                          dwImageSize,
-                                                                         &filePath))
+                                                                         &filePath,
+                                                                         &_mdFileInfoResult));
+        if (!_mdFileInfoResult)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't get metadata info for file \"%s\"\n", pszFullPathName));
             return CORDBG_E_MISSING_METADATA;
@@ -1184,10 +1187,13 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
-            if (this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+            bool _mdFileInfoResult;
+            IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                              dwImageTimeStamp,
                                                                              dwImageSize,
-                                                                             &filePath))
+                                                                             &filePath,
+                                                                             &_mdFileInfoResult));
+            if (_mdFileInfoResult)
             {
                 _ASSERTE(filePath.IsSet());
                 hr = CopyOutString(filePath, cchName, pcchName, szName);
@@ -1275,7 +1281,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
             // Tempting to use the metadata-scope name, but that's a regression from Whidbey. For manifest modules,
             // the metadata scope name is not initialized with the string the user supplied to create the
             // dynamic assembly. So we call into the runtime to use CLR heuristics to get a more accurate name.
-            m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer);
+            IfFailThrow(m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer));
             _ASSERTE(buffer.IsSet());
             szTempName = buffer;
             // Note that we considered returning S_FALSE for fabricated names like this, but that's a breaking
@@ -1308,7 +1314,8 @@ const WCHAR * CordbModule::GetModulePath()
     if (!m_strModulePath.IsSet())
     {
         IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-        pDac->GetModulePath(m_vmModule, &m_strModulePath); // throws
+        BOOL fNonEmpty;
+        IfFailThrow(pDac->GetModulePath(m_vmModule, &m_strModulePath, &fNonEmpty)); // throws
         _ASSERTE(m_strModulePath.IsSet());
     }
 
@@ -1909,7 +1916,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
 
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->ResolveTypeReference(&inData, &outData);
+            IfFailThrow(pProcess->GetDAC()->ResolveTypeReference(&inData, &outData));
         }
 
         CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainAssembly);
@@ -2377,7 +2384,8 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
     if (!m_vmDomainAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef);
+        VMPTR_DomainAssembly vmDomainAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef, &vmDomainAssembly));
 
         // now find the ICorDebugAssembly corresponding to it
         if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
@@ -2583,10 +2591,10 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fAllowJitOpts;
         BOOL fEnableEnC;
 
-        pProcess->GetDAC()->GetCompilerFlags (
+        IfFailThrow(pProcess->GetDAC()->GetCompilerFlags (
             GetRuntimeDomainAssembly(),
             &fAllowJitOpts,
-            &fEnableEnC);
+            &fEnableEnC));
 
         if (fEnableEnC)
         {
@@ -5103,7 +5111,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL);
+        IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL));
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,
@@ -5158,11 +5166,11 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
                                                                   GetAddress(),
                                                                   m_fCodeAvailable,
                                                                   &m_nativeVarData,
-                                                                  &m_sequencePoints);
+                                                                  &m_sequencePoints));
     }
 
 } // CordbNativeCode::LoadNativeInfo

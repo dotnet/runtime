@@ -571,7 +571,7 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
         *ppReJitedILCode = NULL;
 
         VMPTR_ILCodeVersionNode vmILCodeVersionNode = VMPTR_ILCodeVersionNode::NullPtr();
-        GetProcess()->GetDAC()->GetActiveRejitILCodeVersionNode(GetModule()->m_vmModule, m_MDToken, &vmILCodeVersionNode);
+        IfFailThrow(GetProcess()->GetDAC()->GetActiveRejitILCodeVersionNode(GetModule()->m_vmModule, m_MDToken, &vmILCodeVersionNode));
         if (!vmILCodeVersionNode.IsNull())
         {
             RSSmartPtr<CordbReJitILCode> pILCode;
@@ -788,10 +788,10 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
                 // and we also fallback on creating an empty ILCode object.
                 // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
                 ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainAssembly(),
+                    IfFailThrow(pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeDomainAssembly(),
                                                             m_MDToken,
                                                             &codeInfo,
-                                                            &localVarSigToken);
+                                                            &localVarSigToken));
                 );
 
                 currentEnCVersion = m_pModule->LookupFunctionLatestVersion(m_MDToken)->m_dwEnCVersionNumber;
@@ -933,7 +933,7 @@ HRESULT CordbFunction::InitNativeCodeInfo()
             // All we actually need is the start address and method desc which are cheap to get relative
             // to some of the other members. So far this doesn't appear to be a perf hotspot, but if it
             // shows up in some scenario it wouldn't be too hard to improve it
-            pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainAssembly(), m_MDToken, &codeInfo);
+            IfFailThrow(pProcess->GetDAC()->GetNativeCodeInfo(m_pModule->GetRuntimeDomainAssembly(), m_MDToken, &codeInfo));
         }
 
         // populate the m_nativeCode pointer with the code info we found
