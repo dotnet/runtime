@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /Users/adeel/projects/runtime5/src/tools/ilasm/src/ILAssembler/gen/CIL.g4 by ANTLR 4.13.1
+// Generated from CIL.g4 by ANTLR 4.13.1
 
 // Unreachable code detected
 #pragma warning disable 0162
