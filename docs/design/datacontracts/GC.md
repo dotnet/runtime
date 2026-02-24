@@ -107,6 +107,9 @@ public readonly struct GCOomData
     // Gets data about a managed OOM occurance
     GCOomData GetOomData();
     GCOomData GetOomData(TargetPointer heapAddress);
+
+    // Gets the global allocation context pointer and limit
+    void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
 ```
 
 ## Version 1
@@ -157,6 +160,7 @@ Data descriptors used:
 | `OomHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
+| `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
@@ -195,6 +199,7 @@ Global variables used:
 | `DynamicAdaptationMode | int | GC | GC heap dynamic adaptation mode. Only available when `GCIdentifiers` contains `dynamic_heap`. |
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
+| `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
 
 Contracts used:
 | Contract Name |
@@ -546,5 +551,15 @@ private List<TargetNUInt> ReadGCHeapDataArray(TargetPointer arrayStart, uint len
     for (uint i = 0; i < length; i++)
         arr.Add(target.ReadNUInt(arrayStart + (i * target.PointerSize)));
     return arr;
+}
+```
+
+GetGlobalAllocationContext
+```csharp
+void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
+{
+    TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
+    allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
+    allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
 }
 ```

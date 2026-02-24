@@ -93,16 +93,9 @@ public class WorkstationGCDumpTests : DumpTestBase
     public void WorkstationGC_GlobalAllocationContextIsReadable(TestConfiguration config)
     {
         InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
 
-        TargetPointer globalAllocContextAddress = Target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
-        Assert.NotEqual(TargetPointer.Null, globalAllocContextAddress);
-
-        Target.TypeInfo eeAllocContextType = Target.GetTypeInfo(DataType.EEAllocContext);
-        ulong gcAllocContextAddress = globalAllocContextAddress + (ulong)eeAllocContextType.Fields["GCAllocationContext"].Offset;
-
-        Target.TypeInfo gcAllocContextType = Target.GetTypeInfo(DataType.GCAllocContext);
-        TargetPointer pointer = Target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Pointer"].Offset);
-        TargetPointer limit = Target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Limit"].Offset);
+        gcContract.GetGlobalAllocationContext(out TargetPointer pointer, out TargetPointer limit);
 
         if (pointer != TargetPointer.Null)
         {

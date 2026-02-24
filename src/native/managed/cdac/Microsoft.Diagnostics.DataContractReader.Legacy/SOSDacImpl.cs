@@ -4221,14 +4221,8 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         try
         {
-            TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
-            Target.TypeInfo eeAllocContextType = _target.GetTypeInfo(DataType.EEAllocContext);
-            ulong gcAllocContextAddress = globalAllocContextAddress + (ulong)eeAllocContextType.Fields["GCAllocationContext"].Offset;
-
-            Target.TypeInfo gcAllocContextType = _target.GetTypeInfo(DataType.GCAllocContext);
-            TargetPointer pointer = _target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Pointer"].Offset);
-            TargetPointer limit = _target.ReadPointer(gcAllocContextAddress + (ulong)gcAllocContextType.Fields["Limit"].Offset);
-
+            Contracts.IGC gcContract = _target.Contracts.GC;
+            gcContract.GetGlobalAllocationContext(out TargetPointer pointer, out TargetPointer limit);
             *allocPtr = pointer.ToClrDataAddress(_target);
             *allocLimit = limit.ToClrDataAddress(_target);
         }
