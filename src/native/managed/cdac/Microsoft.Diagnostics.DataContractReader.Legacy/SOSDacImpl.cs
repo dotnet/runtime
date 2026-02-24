@@ -4215,10 +4215,6 @@ public sealed unsafe partial class SOSDacImpl
             return HResults.E_INVALIDARG;
 
         int hr = HResults.S_OK;
-#if DEBUG
-        ClrDataAddress allocPtrOrig = *allocPtr;
-        ClrDataAddress allocLimitOrig = *allocLimit;
-#endif
         try
         {
             Contracts.IGC gcContract = _target.Contracts.GC;
@@ -4234,8 +4230,8 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl12 is not null)
         {
-            ClrDataAddress allocPtrLocal = allocPtrOrig;
-            ClrDataAddress allocLimitLocal = allocLimitOrig;
+            ClrDataAddress allocPtrLocal = default;
+            ClrDataAddress allocLimitLocal = default;
             int hrLocal = _legacyImpl12.GetGlobalAllocationContext(&allocPtrLocal, &allocLimitLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
