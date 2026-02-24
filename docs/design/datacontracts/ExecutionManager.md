@@ -104,7 +104,7 @@ Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
-| `EEJitManagerAddress` | TargetPointer | Pointer to the EEJitManager instance |
+| `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
