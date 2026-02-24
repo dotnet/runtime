@@ -210,10 +210,17 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         try
         {
             TargetCodePointer pCode = address.ToTargetCodePointer(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+            IEnumerable<OffsetMapping>? mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint codeOffset).ToList();
+                out uint codeOffset);
+
+            // null means no debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (mapEnumerable is null)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
@@ -297,10 +304,17 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         {
             TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
             TargetPointer codeStart = pCode.ToAddress(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+            IEnumerable<OffsetMapping>? mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint _).ToList();
+                out uint _);
+
+            // null means no debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (mapEnumerable is null)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             if (maps is not null)
             {

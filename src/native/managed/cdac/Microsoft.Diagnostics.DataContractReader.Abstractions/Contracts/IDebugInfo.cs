@@ -37,7 +37,12 @@ public readonly struct OffsetMapping
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
-    IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+    /// Returns <see langword="null"/> when no debug info exists for the method (e.g. ILStubs),
+    /// as opposed to an empty sequence when debug info exists but contains no bounds entries.
+    /// </summary>
+    IEnumerable<OffsetMapping>? GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct DebugInfo : IDebugInfo
