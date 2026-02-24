@@ -244,8 +244,10 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
-                    // Ensure the local has integer type.
-                    if (!varTypeIsIntegralOrI(tree))
+                    // Ensure the local has integer type but not a GC type.
+                    // We must not speculatively hoist GC-tracked references (byrefs/refs)
+                    // as those may be invalid and lead to GC crashes.
+                    if (!varTypeIsIntegralOrI(tree) || varTypeIsGC(tree))
                     {
                         return false;
                     }
@@ -305,8 +307,10 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
-                    // Ensure the operation has integer type.
-                    if (!varTypeIsIntegralOrI(tree))
+                    // Ensure the operation has integer type but not a GC type.
+                    // We must not speculatively hoist GC-tracked references (byrefs/refs)
+                    // as those may be invalid and lead to GC crashes.
+                    if (!varTypeIsIntegralOrI(tree) || varTypeIsGC(tree))
                     {
                         return false;
                     }
