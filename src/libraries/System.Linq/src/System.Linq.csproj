@@ -29,6 +29,7 @@
     <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Linq\Except.cs" />
     <Compile Include="System\Linq\First.cs" />
+    <Compile Include="System\Linq\FullJoin.cs" />
     <Compile Include="System\Linq\Grouping.cs" />
     <Compile Include="System\Linq\Grouping.SpeedOpt.cs" />
     <Compile Include="System\Linq\GroupJoin.cs" />

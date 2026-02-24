@@ -33,6 +33,7 @@
     <Compile Include="LastTests.cs" />
     <Compile Include="ShuffleTests.cs" />
     <Compile Include="RightJoinTests.cs" />
+    <Compile Include="FullJoinTests.cs" />
     <Compile Include="LongCountTests.cs" />
     <Compile Include="MaxTests.cs" />
     <Compile Include="MinTests.cs" />

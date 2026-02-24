@@ -34,6 +34,7 @@
     <Compile Include="FirstTests.cs" />
     <Compile Include="GroupByTests.cs" />
     <Compile Include="GroupJoinTests.cs" />
+    <Compile Include="FullJoinTests.cs" />
     <Compile Include="IndexTests.cs" />
     <Compile Include="InfiniteSequenceTests.cs" />
     <Compile Include="IntersectTests.cs" />
