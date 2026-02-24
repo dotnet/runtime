@@ -71,8 +71,6 @@ public static class Constants
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
-        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
-
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
 
