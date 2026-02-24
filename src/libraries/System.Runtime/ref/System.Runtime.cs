@@ -8,35 +8,36 @@ namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleMinusOneIsInvalid() : base (default(nint)) { }
+        protected CriticalHandleMinusOneIsInvalid() : base (default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleZeroOrMinusOneIsInvalid() : base (default(nint)) { }
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base (default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeFileHandle() : base (default(bool)) { }
-        public SafeFileHandle(nint preexistingHandle, bool ownsHandle) : base (default(bool)) { }
+        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
+        public override bool IsInvalid { get { throw null; } }
         public bool IsAsync { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base (default(nint), default(bool)) { }
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base (default(nint), default(bool)) { }
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
         public SafeWaitHandle() : base (default(bool)) { }
-        public SafeWaitHandle(nint existingHandle, bool ownsHandle) : base (default(bool)) { }
+        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -52,22 +53,174 @@ namespace System
         public AccessViolationException(string? message, System.Exception? innerException) { }
     }
     public delegate void Action();
-    public delegate void Action<in T>(T obj);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16);
-    public delegate void Action<in T1, in T2>(T1 arg1, T2 arg2);
-    public delegate void Action<in T1, in T2, in T3>(T1 arg1, T2 arg2, T3 arg3);
-    public delegate void Action<in T1, in T2, in T3, in T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
+    public delegate void Action<in T>(T obj)
+        where T : allows ref struct;
+
+    public delegate void Action<in T1, in T2>(T1 arg1, T2 arg2)
+        where T1 : allows ref struct
+        where T2 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3>(T1 arg1, T2 arg2, T3 arg3)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where T16 : allows ref struct;
+
     public static partial class Activator
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
@@ -88,7 +241,7 @@ namespace System
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) { throw null; }
-        public static T CreateInstance<T>() { throw null; }
+        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() where T : allows ref struct { throw null; }
     }
     public partial class AggregateException : System.Exception
     {
@@ -290,8 +443,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { }
-        public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { }
+        public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
+        public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {
@@ -302,9 +455,9 @@ namespace System
         public ArgumentNullException(string? paramName) { }
         public ArgumentNullException(string? message, System.Exception? innerException) { }
         public ArgumentNullException(string? paramName, string? message) { }
-        public static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { }
+        public static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] void* argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { }
+        public unsafe static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] void* argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentOutOfRangeException : System.ArgumentException
     {
@@ -426,7 +579,7 @@ namespace System
         public static int LastIndexOf<T>(T[] array, T value) { throw null; }
         public static int LastIndexOf<T>(T[] array, T value, int startIndex) { throw null; }
         public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count) { throw null; }
-        public static void Resize<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T[]? array, int newSize) { }
+        public static void Resize<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T[]? array, int newSize) { throw null; }
         public static void Reverse(System.Array array) { }
         public static void Reverse(System.Array array, int index, int length) { }
         public static void Reverse<T>(T[] array) { }
@@ -456,15 +609,15 @@ namespace System
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, System.Collections.Generic.IComparer<TKey>? comparer) { }
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length) { }
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length, System.Collections.Generic.IComparer<TKey>? comparer) { }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         void System.Collections.IList.Clear() { }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
         public static bool TrueForAll<T>(T[] array, System.Predicate<T> match) { throw null; }
     }
@@ -644,7 +797,6 @@ namespace System
         public static byte[] GetBytes(short value) { throw null; }
         public static byte[] GetBytes(int value) { throw null; }
         public static byte[] GetBytes(long value) { throw null; }
-        public static byte[] GetBytes(System.Numerics.BFloat16 value) { throw null; }
         public static byte[] GetBytes(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(System.UInt128 value) { throw null; }
@@ -654,6 +806,7 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+        public static byte[] GetBytes(System.Numerics.BFloat16 value) { throw null; }
         public static short HalfToInt16Bits(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
@@ -711,7 +864,6 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, short value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, int value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, long value) { throw null; }
-        public static bool TryWriteBytes(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         public static bool TryWriteBytes(System.Span<byte> destination, float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, System.UInt128 value) { throw null; }
@@ -721,6 +873,7 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, ulong value) { throw null; }
+        public static bool TryWriteBytes(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.BFloat16 UInt16BitsToBFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -743,25 +896,25 @@ namespace System
         public System.TypeCode GetTypeCode() { throw null; }
         public static bool Parse(System.ReadOnlySpan<char> value) { throw null; }
         public static bool Parse(string value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
-        static bool System.IParsable<bool>.Parse(string s, System.IFormatProvider provider) { throw null; }
-        static bool System.IParsable<bool>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string s, System.IFormatProvider provider, out bool result) { throw null; }
-        static bool System.ISpanParsable<bool>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider) { throw null; }
-        static bool System.ISpanParsable<bool>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider provider, out bool result) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<bool>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out bool result) { throw null; }
+        static bool System.ISpanParsable<bool>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<bool>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out bool result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
@@ -822,21 +975,21 @@ namespace System
         public static byte RotateLeft(byte value, int rotateAmount) { throw null; }
         public static byte RotateRight(byte value, int rotateAmount) { throw null; }
         public static int Sign(byte value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) { throw null; }
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetByteCount() { throw null; }
@@ -995,30 +1148,30 @@ namespace System
         public static bool IsWhiteSpace(char c) { throw null; }
         public static bool IsWhiteSpace(string s, int index) { throw null; }
         public static char Parse(string s) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider formatProvider) { throw null; }
-        static char System.IParsable<char>.Parse(string s, System.IFormatProvider provider) { throw null; }
-        static bool System.IParsable<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string s, System.IFormatProvider provider, out char result) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        static char System.ISpanParsable<char>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider) { throw null; }
-        static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider provider, out char result) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        static char System.IUtf8SpanParsable<char>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
-        static bool System.IUtf8SpanParsable<char>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, out char result) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        static char System.IParsable<char>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out char result) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static char System.ISpanParsable<char>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static char System.IUtf8SpanParsable<char>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<char>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator checked +(char left, char right) { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
@@ -1075,16 +1228,16 @@ namespace System
         static char System.Numerics.INumberBase<char>.MinMagnitude(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MinMagnitudeNumber(char x, char y) { throw null; }
         static char System.Numerics.INumberBase<char>.MultiplyAddEstimate(char left, char right, char addend) { throw null; }
-        static char System.Numerics.INumberBase<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
-        static char System.Numerics.INumberBase<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
+        static char System.Numerics.INumberBase<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        static char System.Numerics.INumberBase<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromChecked<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromSaturating<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertFromTruncating<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertToChecked<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertToSaturating<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static bool System.Numerics.INumberBase<char>.TryConvertToTruncating<TOther>(char value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out char result) { throw null; }
-        static bool System.Numerics.INumberBase<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out char result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
+        static bool System.Numerics.INumberBase<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) { throw null; }
         static char System.Numerics.IShiftOperators<char, int, char>.operator >>(char value, int shiftAmount) { throw null; }
         static char System.Numerics.IShiftOperators<char, int, char>.operator >>>(char value, int shiftAmount) { throw null; }
@@ -1120,7 +1273,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>(T x, T y);
+    public delegate int Comparison<in T>(T x, T y) where T : allows ref struct;
     public abstract partial class ContextBoundObject : System.MarshalByRefObject
     {
         protected ContextBoundObject() { }
@@ -1153,8 +1306,8 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
         public static byte[] FromHexString(System.ReadOnlySpan<byte> utf8Source) { throw null; }
-        public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<byte> utf8Source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
+        public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<byte> utf8Source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
         public static byte[] FromHexString(string s) { throw null; }
         public static System.Buffers.OperationStatus FromHexString(string source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten) { throw null; }
@@ -1603,7 +1756,7 @@ namespace System
         public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
-    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input) where TInput : allows ref struct where TOutput : allows ref struct;
     public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>, System.IUtf8SpanFormattable
     {
         private readonly int _dummyPrimitive;
@@ -1768,21 +1921,21 @@ namespace System
         public static System.DateTime SpecifyKind(System.DateTime value, System.DateTimeKind kind) { throw null; }
         public System.TimeSpan Subtract(System.DateTime value) { throw null; }
         public System.DateTime Subtract(System.TimeSpan value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToBinary() { throw null; }
         public long ToFileTime() { throw null; }
@@ -1898,8 +2051,8 @@ namespace System
         public static System.DateTimeOffset ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string[] formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
         public System.TimeSpan Subtract(System.DateTimeOffset value) { throw null; }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToFileTime() { throw null; }
         public System.DateTimeOffset ToLocalTime() { throw null; }
@@ -1942,21 +2095,21 @@ namespace System
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.TypeCode GetTypeCode() { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
     }
@@ -2003,8 +2156,8 @@ namespace System
         public static int Compare(decimal d1, decimal d2) { throw null; }
         public int CompareTo(decimal value) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public static TInteger ConvertToIntegerNative<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static TInteger ConvertToInteger<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static decimal CopySign(decimal value, decimal sign) { throw null; }
         public static decimal CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static decimal CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
@@ -2091,21 +2244,21 @@ namespace System
         public static decimal Round(decimal d, System.MidpointRounding mode) { throw null; }
         public static int Sign(decimal d) { throw null; }
         public static decimal Subtract(decimal d1, decimal d2) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         int System.Numerics.IFloatingPoint<decimal>.GetExponentByteCount() { throw null; }
         int System.Numerics.IFloatingPoint<decimal>.GetExponentShortestBitLength() { throw null; }
         int System.Numerics.IFloatingPoint<decimal>.GetSignificandBitLength() { throw null; }
@@ -2136,7 +2289,7 @@ namespace System
         static bool System.Numerics.INumberBase<decimal>.TryConvertToTruncating<TOther>(decimal value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MaxNumber(decimal x, decimal y) { throw null; }
         static decimal System.Numerics.INumber<decimal>.MinNumber(decimal x, decimal y) { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static byte ToByte(decimal value) { throw null; }
         public static double ToDouble(decimal d) { throw null; }
@@ -2184,7 +2337,7 @@ namespace System
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("b")]
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
-        public static System.Delegate? Combine([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
+        public static System.Delegate? Combine(params System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
         protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
@@ -2216,9 +2369,6 @@ namespace System
         protected virtual System.Delegate? RemoveImpl(System.Delegate d) { throw null; }
         public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
         {
-            private TDelegate _current;
-            private object _dummy;
-            private int _dummyPrimitive;
             public TDelegate Current { get { throw null; } }
             [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
             public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() { throw null; }
@@ -2243,7 +2393,7 @@ namespace System
         public const double MinValue = -1.7976931348623157E+308;
         public const double NaN = 0.0 / 0.0;
         public const double NegativeInfinity = -1.0 / 0.0;
-        public const double NegativeZero = -0;
+        public const double NegativeZero = -0.0;
         public const double Pi = 3.141592653589793;
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
@@ -2373,21 +2523,21 @@ namespace System
         public static double Sinh(double x) { throw null; }
         public static double SinPi(double x) { throw null; }
         public static double Sqrt(double x) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static double System.Numerics.IAdditionOperators<double, double, double>.operator +(double left, double right) { throw null; }
         static double System.Numerics.IBitwiseOperators<double, double, double>.operator &(double left, double right) { throw null; }
         static double System.Numerics.IBitwiseOperators<double, double, double>.operator |(double left, double right) { throw null; }
@@ -2467,18 +2617,18 @@ namespace System
         public override int GetHashCode() { throw null; }
         public static string? GetName(System.Type enumType, object value) { throw null; }
         public static string[] GetNames(System.Type enumType) { throw null; }
-        public static string[] GetNames<TEnum>() where TEnum : struct { throw null; }
-        public static string? GetName<TEnum>(TEnum value) where TEnum : struct { throw null; }
+        public static string[] GetNames<TEnum>() where TEnum : struct, System.Enum { throw null; }
+        public static string? GetName<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Type GetUnderlyingType(System.Type enumType) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.")]
         public static System.Array GetValues(System.Type enumType) { throw null; }
         public static System.Array GetValuesAsUnderlyingType(System.Type enumType) { throw null; }
-        public static System.Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct { throw null; }
-        public static TEnum[] GetValues<TEnum>() where TEnum : struct { throw null; }
+        public static System.Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, System.Enum { throw null; }
+        public static TEnum[] GetValues<TEnum>() where TEnum : struct, System.Enum { throw null; }
         public bool HasFlag(System.Enum flag) { throw null; }
         public static bool IsDefined(System.Type enumType, object value) { throw null; }
-        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct { throw null; }
+        public static bool IsDefined<TEnum>(TEnum value) where TEnum : struct, System.Enum { throw null; }
         public static object Parse(System.Type enumType, System.ReadOnlySpan<char> value) { throw null; }
         public static object Parse(System.Type enumType, System.ReadOnlySpan<char> value, bool ignoreCase) { throw null; }
         public static object Parse(System.Type enumType, string value) { throw null; }
@@ -2487,22 +2637,22 @@ namespace System
         public static TEnum Parse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase) where TEnum : struct { throw null; }
         public static TEnum Parse<TEnum>(string value) where TEnum : struct { throw null; }
         public static TEnum Parse<TEnum>(string value, bool ignoreCase) where TEnum : struct { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static object ToObject(System.Type enumType, byte value) { throw null; }
         public static object ToObject(System.Type enumType, short value) { throw null; }
         public static object ToObject(System.Type enumType, int value) { throw null; }
@@ -2535,10 +2685,10 @@ namespace System
     public static partial class Environment
     {
         public static string CommandLine { get { throw null; } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static System.Environment.ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static int CurrentManagedThreadId { get { throw null; } }
@@ -2564,12 +2714,12 @@ namespace System
         public static System.Version Version { get { throw null; } }
         public static long WorkingSet { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Exit(int exitCode) { }
+        public static void Exit(int exitCode) { throw null; }
         public static string ExpandEnvironmentVariables(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void FailFast(string? message) { }
+        public static void FailFast(string? message) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void FailFast(string? message, System.Exception? exception) { }
+        public static void FailFast(string? message, System.Exception? exception) { throw null; }
         public static string[] GetCommandLineArgs() { throw null; }
         public static string? GetEnvironmentVariable(string variable) { throw null; }
         public static string? GetEnvironmentVariable(string variable, System.EnvironmentVariableTarget target) { throw null; }
@@ -2656,8 +2806,8 @@ namespace System
         public EventArgs() { }
     }
     public delegate void EventHandler(object? sender, System.EventArgs e);
-    public delegate void EventHandler<in TEventArgs>(object? sender, TEventArgs e);
-    public delegate void EventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e);
+    public delegate void EventHandler<in TEventArgs>(object? sender, TEventArgs e) where TEventArgs : allows ref struct;
+    public delegate void EventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e) where TSender : allows ref struct where TEventArgs : allows ref struct;
     public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
@@ -2723,27 +2873,197 @@ namespace System
         public abstract object? GetArgument(int index);
         public abstract object?[] GetArguments();
         public static string Invariant(System.FormattableString formattable) { throw null; }
-        string System.IFormattable.ToString(string ignored, System.IFormatProvider formatProvider) { throw null; }
+        string System.IFormattable.ToString(string? ignored, System.IFormatProvider? formatProvider) { throw null; }
         public override string ToString() { throw null; }
         public abstract string ToString(System.IFormatProvider? formatProvider);
     }
-    public delegate TResult Func<out TResult>();
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16);
-    public delegate TResult Func<in T, out TResult>(T arg);
-    public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
-    public delegate TResult Func<in T1, in T2, in T3, out TResult>(T1 arg1, T2 arg2, T3 arg3);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8);
+    public delegate TResult Func<out TResult>()
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T, out TResult>(T arg)
+        where T : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, out TResult>(T1 arg1, T2 arg2, T3 arg3)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where T16 : allows ref struct
+        where TResult : allows ref struct;
+
     public static partial class GC
     {
         public static int MaxGeneration { get { throw null; } }
@@ -2874,8 +3194,8 @@ namespace System
         public static System.Guid Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Guid ParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] System.ReadOnlySpan<char> format) { throw null; }
         public static System.Guid ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] string format) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("GuidFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public byte[] ToByteArray() { throw null; }
         public byte[] ToByteArray(bool bigEndian) { throw null; }
         public override string ToString() { throw null; }
@@ -3174,7 +3494,7 @@ namespace System
     {
         int CompareTo(object? obj);
     }
-    public partial interface IComparable<in T>
+    public partial interface IComparable<in T> where T : allows ref struct
     {
         int CompareTo(T? other);
     }
@@ -3207,7 +3527,7 @@ namespace System
     {
         void Dispose();
     }
-    public partial interface IEquatable<T>
+    public partial interface IEquatable<T> where T : allows ref struct
     {
         bool Equals(T? other);
     }
@@ -3491,21 +3811,21 @@ namespace System
         public static short RotateLeft(short value, int rotateAmount) { throw null; }
         public static short RotateRight(short value, int rotateAmount) { throw null; }
         public static int Sign(short value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static short System.Numerics.IAdditionOperators<short, short, short>.operator +(short left, short right) { throw null; }
         static short System.Numerics.IAdditionOperators<short, short, short>.operator checked +(short left, short right) { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetByteCount() { throw null; }
@@ -3632,21 +3952,21 @@ namespace System
         public static int RotateLeft(int value, int rotateAmount) { throw null; }
         public static int RotateRight(int value, int rotateAmount) { throw null; }
         public static int Sign(int value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static int System.Numerics.IAdditionOperators<int, int, int>.operator +(int left, int right) { throw null; }
         static int System.Numerics.IAdditionOperators<int, int, int>.operator checked +(int left, int right) { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetByteCount() { throw null; }
@@ -3737,7 +4057,7 @@ namespace System
         static long System.Numerics.INumberBase<System.Int64>.Zero { get { throw null; } }
         static long System.Numerics.ISignedNumber<System.Int64>.NegativeOne { get { throw null; } }
         public static long Abs(long value) { throw null; }
-        public static System.Int128 BigMul(long left, long right) { throw null; }
+        public static Int128 BigMul(long left, long right) { throw null; }
         public static long Clamp(long value, long min, long max) { throw null; }
         public int CompareTo(long value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -3773,21 +4093,21 @@ namespace System
         public static long RotateLeft(long value, int rotateAmount) { throw null; }
         public static long RotateRight(long value, int rotateAmount) { throw null; }
         public static int Sign(long value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static long System.Numerics.IAdditionOperators<long, long, long>.operator +(long left, long right) { throw null; }
         static long System.Numerics.IAdditionOperators<long, long, long>.operator checked +(long left, long right) { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetByteCount() { throw null; }
@@ -3865,7 +4185,7 @@ namespace System
     }
     public readonly partial struct IntPtr : System.IComparable, System.IComparable<nint>, System.IEquatable<nint>, System.IFormattable, System.IParsable<nint>, System.ISpanFormattable, System.ISpanParsable<nint>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<nint>, System.Numerics.IAdditionOperators<nint, nint, nint>, System.Numerics.IAdditiveIdentity<nint, nint>, System.Numerics.IBinaryInteger<nint>, System.Numerics.IBinaryNumber<nint>, System.Numerics.IBitwiseOperators<nint, nint, nint>, System.Numerics.IComparisonOperators<nint, nint, bool>, System.Numerics.IDecrementOperators<nint>, System.Numerics.IDivisionOperators<nint, nint, nint>, System.Numerics.IEqualityOperators<nint, nint, bool>, System.Numerics.IIncrementOperators<nint>, System.Numerics.IMinMaxValue<nint>, System.Numerics.IModulusOperators<nint, nint, nint>, System.Numerics.IMultiplicativeIdentity<nint, nint>, System.Numerics.IMultiplyOperators<nint, nint, nint>, System.Numerics.INumber<nint>, System.Numerics.INumberBase<nint>, System.Numerics.IShiftOperators<nint, int, nint>, System.Numerics.ISignedNumber<nint>, System.Numerics.ISubtractionOperators<nint, nint, nint>, System.Numerics.IUnaryNegationOperators<nint, nint>, System.Numerics.IUnaryPlusOperators<nint, nint>, System.Runtime.Serialization.ISerializable
     {
-        private readonly nint _dummyPrimitive;
+        private readonly unsafe void* _dummyPrimitive;
         public static readonly nint Zero;
         public IntPtr(int value) { throw null; }
         public IntPtr(long value) { throw null; }
@@ -4082,7 +4402,7 @@ namespace System
         static abstract TSelf Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
-    public partial class Lazy<T>
+    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
         public Lazy() { }
         public Lazy(bool isThreadSafe) { }
@@ -4095,7 +4415,7 @@ namespace System
         public T Value { get { throw null; } }
         public override string? ToString() { throw null; }
     }
-    public partial class Lazy<T, TMetadata> : System.Lazy<T>
+    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T, TMetadata> : System.Lazy<T>
     {
         public Lazy(System.Func<T> valueFactory, TMetadata metadata) { }
         public Lazy(System.Func<T> valueFactory, TMetadata metadata, bool isThreadSafe) { }
@@ -4385,7 +4705,7 @@ namespace System
         ToNegativeInfinity = 3,
         ToPositiveInfinity = 4,
     }
-    public partial class MissingFieldException : System.MissingMemberException, System.Runtime.Serialization.ISerializable
+    public partial class MissingFieldException : System.MissingMemberException
     {
         public MissingFieldException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -4459,7 +4779,7 @@ namespace System
     {
         public MTAThreadAttribute() { }
     }
-    public abstract partial class MulticastDelegate : System.Delegate, System.Runtime.Serialization.ISerializable
+    public abstract partial class MulticastDelegate : System.Delegate
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
@@ -4527,7 +4847,7 @@ namespace System
         public static int Compare<T>(T? n1, T? n2) where T : struct { throw null; }
         public static bool Equals<T>(T? n1, T? n2) where T : struct { throw null; }
         public static System.Type? GetUnderlyingType(System.Type nullableType) { throw null; }
-        public static ref readonly T GetValueRefOrDefaultRef<T>([System.Runtime.CompilerServices.RequiresLocationAttribute] ref T? nullable) where T : struct { throw null; }
+        public static ref readonly T GetValueRefOrDefaultRef<T>(ref readonly T? nullable) where T : struct { throw null; }
     }
     public partial struct Nullable<T> where T : struct
     {
@@ -4561,7 +4881,7 @@ namespace System
         ~Object() { }
         public virtual int GetHashCode() { throw null; }
         public System.Type GetType() { throw null; }
-        protected internal object MemberwiseClone() { throw null; }
+        protected object MemberwiseClone() { throw null; }
         public static bool ReferenceEquals(object? objA, object? objB) { throw null; }
         public virtual string? ToString() { throw null; }
     }
@@ -4578,8 +4898,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) { }
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) { }
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) => throw null;
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) => throw null;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
@@ -4689,7 +5009,7 @@ namespace System
         public PlatformNotSupportedException(string? message) { }
         public PlatformNotSupportedException(string? message, System.Exception? inner) { }
     }
-    public delegate bool Predicate<in T>(T obj);
+    public delegate bool Predicate<in T>(T obj) where T : allows ref struct;
     public partial class Progress<T> : System.IProgress<T>
     {
         public Progress() { }
@@ -4704,7 +5024,7 @@ namespace System
         public Random(int Seed) { }
         public static System.Random Shared { get { throw null; } }
         public string GetHexString(int stringLength, bool lowercase = false) { throw null; }
-        public void GetHexString(System.Span<char> destination, bool lowercase = false) { }
+        public void GetHexString(System.Span<char> destination, bool lowercase = false) { throw null; }
         public T[] GetItems<T>(System.ReadOnlySpan<T> choices, int length) { throw null; }
         public void GetItems<T>(System.ReadOnlySpan<T> choices, System.Span<T> destination) { }
         public T[] GetItems<T>(T[] choices, int length) { throw null; }
@@ -4779,14 +5099,14 @@ namespace System
         private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
-        public ReadOnlySpan([System.Runtime.CompilerServices.RequiresLocationAttribute] ref T reference) { throw null; }
+        public ReadOnlySpan(ref readonly T reference) { throw null; }
         public ReadOnlySpan(T[]? array) { throw null; }
         public ReadOnlySpan(T[]? array, int start, int length) { throw null; }
         public static System.ReadOnlySpan<T> Empty { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
-        public static System.ReadOnlySpan<T> CastUp<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : class?, T? { throw null; }
+        public static System.ReadOnlySpan<T> CastUp<TDerived>(System.ReadOnlySpan<TDerived> items) where TDerived : class?, T { throw null; }
         public void CopyTo(System.Span<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on ReadOnlySpan will always throw an exception. Use the equality operator instead.")]
@@ -4811,11 +5131,11 @@ namespace System
             private object _dummy;
             private int _dummyPrimitive;
             public ref readonly T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
             T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
-            public bool MoveNext() { throw null; }
-            void System.Collections.IEnumerator.Reset() { }
-            void System.IDisposable.Dispose() { }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     public partial class ResolveEventArgs : System.EventArgs
@@ -4834,43 +5154,43 @@ namespace System
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public nint Value { get { throw null; } }
+        public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeFieldHandle handle) { throw null; }
-        public static System.RuntimeFieldHandle FromIntPtr(nint value) { throw null; }
+        public static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
-        public static nint ToIntPtr(System.RuntimeFieldHandle value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeFieldHandle value) { throw null; }
     }
     public partial struct RuntimeMethodHandle : System.IEquatable<System.RuntimeMethodHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public nint Value { get { throw null; } }
+        public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeMethodHandle handle) { throw null; }
-        public static System.RuntimeMethodHandle FromIntPtr(nint value) { throw null; }
-        public nint GetFunctionPointer() { throw null; }
+        public static System.RuntimeMethodHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public System.IntPtr GetFunctionPointer() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
-        public static nint ToIntPtr(System.RuntimeMethodHandle value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeMethodHandle value) { throw null; }
     }
     public partial struct RuntimeTypeHandle : System.IEquatable<System.RuntimeTypeHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public nint Value { get { throw null; } }
+        public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeTypeHandle handle) { throw null; }
-        public static System.RuntimeTypeHandle FromIntPtr(nint value) { throw null; }
+        public static System.RuntimeTypeHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.ModuleHandle GetModuleHandle() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -4880,7 +5200,7 @@ namespace System
         public static bool operator ==(System.RuntimeTypeHandle left, object? right) { throw null; }
         public static bool operator !=(object? left, System.RuntimeTypeHandle right) { throw null; }
         public static bool operator !=(System.RuntimeTypeHandle left, object? right) { throw null; }
-        public static nint ToIntPtr(System.RuntimeTypeHandle value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeTypeHandle value) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct SByte : System.IComparable, System.IComparable<sbyte>, System.IConvertible, System.IEquatable<sbyte>, System.IFormattable, System.IParsable<sbyte>, System.ISpanFormattable, System.ISpanParsable<sbyte>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<sbyte>, System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>, System.Numerics.IAdditiveIdentity<sbyte, sbyte>, System.Numerics.IBinaryInteger<sbyte>, System.Numerics.IBinaryNumber<sbyte>, System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>, System.Numerics.IComparisonOperators<sbyte, sbyte, bool>, System.Numerics.IDecrementOperators<sbyte>, System.Numerics.IDivisionOperators<sbyte, sbyte, sbyte>, System.Numerics.IEqualityOperators<sbyte, sbyte, bool>, System.Numerics.IIncrementOperators<sbyte>, System.Numerics.IMinMaxValue<sbyte>, System.Numerics.IModulusOperators<sbyte, sbyte, sbyte>, System.Numerics.IMultiplicativeIdentity<sbyte, sbyte>, System.Numerics.IMultiplyOperators<sbyte, sbyte, sbyte>, System.Numerics.INumber<sbyte>, System.Numerics.INumberBase<sbyte>, System.Numerics.IShiftOperators<sbyte, int, sbyte>, System.Numerics.ISignedNumber<sbyte>, System.Numerics.ISubtractionOperators<sbyte, sbyte, sbyte>, System.Numerics.IUnaryNegationOperators<sbyte, sbyte>, System.Numerics.IUnaryPlusOperators<sbyte, sbyte>
@@ -4933,21 +5253,21 @@ namespace System
         public static sbyte RotateLeft(sbyte value, int rotateAmount) { throw null; }
         public static sbyte RotateRight(sbyte value, int rotateAmount) { throw null; }
         public static int Sign(sbyte value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator checked +(sbyte left, sbyte right) { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetByteCount() { throw null; }
@@ -5038,7 +5358,7 @@ namespace System
         public const float MinValue = -3.4028235E+38f;
         public const float NaN = 0.0f / 0.0f;
         public const float NegativeInfinity = -1.0f / 0.0f;
-        public const float NegativeZero = -0f;
+        public const float NegativeZero = -0.0f;
         public const float Pi = 3.1415927f;
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
@@ -5168,21 +5488,21 @@ namespace System
         public static float Sinh(float x) { throw null; }
         public static float SinPi(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static float System.Numerics.IAdditionOperators<float, float, float>.operator +(float left, float right) { throw null; }
         static float System.Numerics.IBitwiseOperators<float, float, float>.operator &(float left, float right) { throw null; }
         static float System.Numerics.IBitwiseOperators<float, float, float>.operator |(float left, float right) { throw null; }
@@ -5275,11 +5595,11 @@ namespace System
             private object _dummy;
             private int _dummyPrimitive;
             public ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
             T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
-            public bool MoveNext() { throw null; }
-            void System.Collections.IEnumerator.Reset() { }
-            void System.IDisposable.Dispose() { }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     public sealed partial class StackOverflowException : System.SystemException
@@ -5333,22 +5653,22 @@ namespace System
         public static string Concat(object? arg0, object? arg1) { throw null; }
         public static string Concat(object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Concat(params object?[] args) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2, System.ReadOnlySpan<char> str3) { throw null; }
-        public static string Concat([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
-        public static string Concat([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> values) { throw null; }
         public static string Concat(string? str0, string? str1) { throw null; }
         public static string Concat(string? str0, string? str1, string? str2) { throw null; }
         public static string Concat(string? str0, string? str1, string? str2, string? str3) { throw null; }
         public static string Concat(params string?[] values) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<string?> values) { throw null; }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(char value) { throw null; }
         public bool Contains(char value, System.StringComparison comparisonType) { throw null; }
-        public bool Contains(string value) { throw null; }
-        public bool Contains(string value, System.StringComparison comparisonType) { throw null; }
         public bool Contains(System.Text.Rune value) { throw null; }
         public bool Contains(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public bool Contains(string value) { throw null; }
+        public bool Contains(string value, System.StringComparison comparisonType) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
         public static string Copy(string str) { throw null; }
@@ -5356,14 +5676,14 @@ namespace System
         public void CopyTo(System.Span<char> destination) { }
         public static string Create(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "provider", "initialBuffer"})] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
-        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
+        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) where TState : allows ref struct { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(char value, System.StringComparison comparisonType) { throw null; }
+        public bool EndsWith(System.Text.Rune value) { throw null; }
+        public bool EndsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public bool EndsWith(string value) { throw null; }
         public bool EndsWith(string value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public bool EndsWith(string value, System.StringComparison comparisonType) { throw null; }
-        public bool EndsWith(System.Text.Rune value) { throw null; }
-        public bool EndsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public System.Text.StringRuneEnumerator EnumerateRunes() { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value) { throw null; }
@@ -5374,14 +5694,14 @@ namespace System
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public static string Format<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public static string Format<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
@@ -5396,9 +5716,9 @@ namespace System
         public int IndexOf(char value) { throw null; }
         public int IndexOf(char value, int startIndex) { throw null; }
         public int IndexOf(char value, int startIndex, int count) { throw null; }
-        public int IndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
-        public int IndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(char value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(string value) { throw null; }
         public int IndexOf(string value, int startIndex) { throw null; }
         public int IndexOf(string value, int startIndex, int count) { throw null; }
@@ -5408,9 +5728,9 @@ namespace System
         public int IndexOf(System.Text.Rune value) { throw null; }
         public int IndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int IndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
-        public int IndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
-        public int IndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5422,24 +5742,24 @@ namespace System
         public static bool IsNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static bool IsNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static string Join(char separator, params object?[] values) { throw null; }
-        public static string Join(char separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> values) { throw null; }
-        public static string Join(char separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> value) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(char separator, params string?[] value) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(char separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join(string? separator, System.Collections.Generic.IEnumerable<string?> values) { throw null; }
         public static string Join(string? separator, params object?[] values) { throw null; }
-        public static string Join(string? separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> values) { throw null; }
-        public static string Join(string? separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> value) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(string? separator, params string?[] value) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(string? separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public static string Join<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public int LastIndexOf(char value) { throw null; }
         public int LastIndexOf(char value, int startIndex) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count) { throw null; }
-        public int LastIndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
-        public int LastIndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(char value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value) { throw null; }
         public int LastIndexOf(string value, int startIndex) { throw null; }
         public int LastIndexOf(string value, int startIndex, int count) { throw null; }
@@ -5449,9 +5769,9 @@ namespace System
         public int LastIndexOf(System.Text.Rune value) { throw null; }
         public int LastIndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int LastIndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
-        public int LastIndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
-        public int LastIndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5467,55 +5787,55 @@ namespace System
         public string Remove(int startIndex) { throw null; }
         public string Remove(int startIndex, int count) { throw null; }
         public string Replace(char oldChar, char newChar) { throw null; }
+        public string Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
         public string Replace(string oldValue, string? newValue) { throw null; }
         public string Replace(string oldValue, string? newValue, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public string Replace(string oldValue, string? newValue, System.StringComparison comparisonType) { throw null; }
-        public string Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
         public string ReplaceLineEndings() { throw null; }
         public string ReplaceLineEndings(string replacementText) { throw null; }
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(System.Text.Rune separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
+        public string[] Split(System.Text.Rune separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }
+        public string[] Split(params System.ReadOnlySpan<char> separator) { throw null; }
         public string[] Split(char[]? separator, int count) { throw null; }
         public string[] Split(char[]? separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(char[]? separator, System.StringSplitOptions options) { throw null; }
-        public string[] Split([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> separator) { throw null; }
         public string[] Split(string? separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(string? separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(string[]? separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(string[]? separator, System.StringSplitOptions options) { throw null; }
-        public string[] Split(System.Text.Rune separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
-        public string[] Split(System.Text.Rune separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public bool StartsWith(char value) { throw null; }
         public bool StartsWith(char value, System.StringComparison comparisonType) { throw null; }
+        public bool StartsWith(System.Text.Rune value) { throw null; }
+        public bool StartsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public bool StartsWith(string value) { throw null; }
         public bool StartsWith(string value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
         public bool StartsWith(string value, System.StringComparison comparisonType) { throw null; }
-        public bool StartsWith(System.Text.Rune value) { throw null; }
-        public bool StartsWith(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
         public string Substring(int startIndex) { throw null; }
         public string Substring(int startIndex, int length) { throw null; }
         System.Collections.Generic.IEnumerator<char> System.Collections.Generic.IEnumerable<char>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
-        static string System.IParsable<string>.Parse(string s, System.IFormatProvider provider) { throw null; }
-        static bool System.IParsable<string>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string s, System.IFormatProvider provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
-        static string System.ISpanParsable<string>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider provider) { throw null; }
-        static bool System.ISpanParsable<string>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
+        static string System.IParsable<string>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<string>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
+        static string System.ISpanParsable<string>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        static bool System.ISpanParsable<string>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out string result) { throw null; }
         public char[] ToCharArray() { throw null; }
         public char[] ToCharArray(int startIndex, int length) { throw null; }
         public string ToLower() { throw null; }
@@ -5528,19 +5848,16 @@ namespace System
         public string ToUpperInvariant() { throw null; }
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
-        public string Trim(params char[]? trimChars) { throw null; }
-        public string Trim([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> trimChars) { throw null; }
         public string Trim(System.Text.Rune trimRune) { throw null; }
+        public string Trim(params char[]? trimChars) { throw null; }
         public string TrimEnd() { throw null; }
         public string TrimEnd(char trimChar) { throw null; }
-        public string TrimEnd(params char[]? trimChars) { throw null; }
-        public string TrimEnd([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimEnd(System.Text.Rune trimRune) { throw null; }
+        public string TrimEnd(params char[]? trimChars) { throw null; }
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
-        public string TrimStart(params char[]? trimChars) { throw null; }
-        public string TrimStart([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimStart(System.Text.Rune trimRune) { throw null; }
+        public string TrimStart(params char[]? trimChars) { throw null; }
         public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
@@ -5575,13 +5892,13 @@ namespace System
     }
     public static partial class StringNormalizationExtensions
     {
-        public static int GetNormalizedLength(this System.ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
-        public static bool IsNormalized(this System.ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static bool IsNormalized(this string strInput) { throw null; }
         public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput) { throw null; }
+        public static bool TryNormalize(this ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
-        public static bool TryNormalize(this System.ReadOnlySpan<char> source, System.Span<char> destination, out int charsWritten, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
+        public static int GetNormalizedLength(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
@@ -5886,7 +6203,7 @@ namespace System
         public bool IsDaylightSavingTime(System.DateTime dateTime) { throw null; }
         public bool IsDaylightSavingTime(System.DateTimeOffset dateTimeOffset) { throw null; }
         public bool IsInvalidTime(System.DateTime dateTime) { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
@@ -5908,7 +6225,7 @@ namespace System
             public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
             public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.TimeZoneInfo.AdjustmentRule? other) { throw null; }
             public override int GetHashCode() { throw null; }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
         public readonly partial struct TransitionTime : System.IEquatable<System.TimeZoneInfo.TransitionTime>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
@@ -5927,7 +6244,7 @@ namespace System
             public override int GetHashCode() { throw null; }
             public static bool operator ==(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
             public static bool operator !=(System.TimeZoneInfo.TransitionTime t1, System.TimeZoneInfo.TransitionTime t2) { throw null; }
-            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+            void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
@@ -6046,10 +6363,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6061,10 +6378,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6077,10 +6394,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3, T4> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6094,10 +6411,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3, T4, T5> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6112,10 +6429,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3, T4, T5, T6> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6131,10 +6448,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3, T4, T5, T6, T7> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple
@@ -6151,10 +6468,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.Runtime.CompilerServices.ITuple where TRest : notnull
@@ -6172,10 +6489,10 @@ namespace System
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
         public override string ToString() { throw null; }
     }
     public abstract partial class Type : System.Reflection.MemberInfo, System.Reflection.IReflect
@@ -6507,7 +6824,7 @@ namespace System
         public static System.TypedReference MakeTypedReference(object target, System.Reflection.FieldInfo[] flds) { throw null; }
         public static void SetTypedReference(System.TypedReference target, object? value) { }
         public static System.RuntimeTypeHandle TargetTypeToken(System.TypedReference value) { throw null; }
-        public static object? ToObject(System.TypedReference value) { throw null; }
+        public static object ToObject(System.TypedReference value) { throw null; }
     }
     public sealed partial class TypeInitializationException : System.SystemException
     {
@@ -6777,21 +7094,21 @@ namespace System
         public static ushort RotateLeft(ushort value, int rotateAmount) { throw null; }
         public static ushort RotateRight(ushort value, int rotateAmount) { throw null; }
         public static int Sign(ushort value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetByteCount() { throw null; }
@@ -6918,21 +7235,21 @@ namespace System
         public static uint RotateLeft(uint value, int rotateAmount) { throw null; }
         public static uint RotateRight(uint value, int rotateAmount) { throw null; }
         public static int Sign(uint value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator +(uint left, uint right) { throw null; }
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator checked +(uint left, uint right) { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetByteCount() { throw null; }
@@ -7059,21 +7376,21 @@ namespace System
         public static ulong RotateLeft(ulong value, int rotateAmount) { throw null; }
         public static ulong RotateRight(ulong value, int rotateAmount) { throw null; }
         public static int Sign(ulong value) { throw null; }
-        bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
-        byte System.IConvertible.ToByte(System.IFormatProvider provider) { throw null; }
-        char System.IConvertible.ToChar(System.IFormatProvider provider) { throw null; }
-        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider provider) { throw null; }
-        decimal System.IConvertible.ToDecimal(System.IFormatProvider provider) { throw null; }
-        double System.IConvertible.ToDouble(System.IFormatProvider provider) { throw null; }
-        short System.IConvertible.ToInt16(System.IFormatProvider provider) { throw null; }
-        int System.IConvertible.ToInt32(System.IFormatProvider provider) { throw null; }
-        long System.IConvertible.ToInt64(System.IFormatProvider provider) { throw null; }
-        sbyte System.IConvertible.ToSByte(System.IFormatProvider provider) { throw null; }
-        float System.IConvertible.ToSingle(System.IFormatProvider provider) { throw null; }
-        object System.IConvertible.ToType(System.Type type, System.IFormatProvider provider) { throw null; }
-        ushort System.IConvertible.ToUInt16(System.IFormatProvider provider) { throw null; }
-        uint System.IConvertible.ToUInt32(System.IFormatProvider provider) { throw null; }
-        ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
+        bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
+        byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
+        char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
+        System.DateTime System.IConvertible.ToDateTime(System.IFormatProvider? provider) { throw null; }
+        decimal System.IConvertible.ToDecimal(System.IFormatProvider? provider) { throw null; }
+        double System.IConvertible.ToDouble(System.IFormatProvider? provider) { throw null; }
+        short System.IConvertible.ToInt16(System.IFormatProvider? provider) { throw null; }
+        int System.IConvertible.ToInt32(System.IFormatProvider? provider) { throw null; }
+        long System.IConvertible.ToInt64(System.IFormatProvider? provider) { throw null; }
+        sbyte System.IConvertible.ToSByte(System.IFormatProvider? provider) { throw null; }
+        float System.IConvertible.ToSingle(System.IFormatProvider? provider) { throw null; }
+        object System.IConvertible.ToType(System.Type type, System.IFormatProvider? provider) { throw null; }
+        ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
+        uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
+        ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetByteCount() { throw null; }
@@ -7158,7 +7475,7 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct UIntPtr : System.IComparable, System.IComparable<nuint>, System.IEquatable<nuint>, System.IFormattable, System.IParsable<nuint>, System.ISpanFormattable, System.ISpanParsable<nuint>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<nuint>, System.Numerics.IAdditionOperators<nuint, nuint, nuint>, System.Numerics.IAdditiveIdentity<nuint, nuint>, System.Numerics.IBinaryInteger<nuint>, System.Numerics.IBinaryNumber<nuint>, System.Numerics.IBitwiseOperators<nuint, nuint, nuint>, System.Numerics.IComparisonOperators<nuint, nuint, bool>, System.Numerics.IDecrementOperators<nuint>, System.Numerics.IDivisionOperators<nuint, nuint, nuint>, System.Numerics.IEqualityOperators<nuint, nuint, bool>, System.Numerics.IIncrementOperators<nuint>, System.Numerics.IMinMaxValue<nuint>, System.Numerics.IModulusOperators<nuint, nuint, nuint>, System.Numerics.IMultiplicativeIdentity<nuint, nuint>, System.Numerics.IMultiplyOperators<nuint, nuint, nuint>, System.Numerics.INumber<nuint>, System.Numerics.INumberBase<nuint>, System.Numerics.IShiftOperators<nuint, int, nuint>, System.Numerics.ISubtractionOperators<nuint, nuint, nuint>, System.Numerics.IUnaryNegationOperators<nuint, nuint>, System.Numerics.IUnaryPlusOperators<nuint, nuint>, System.Numerics.IUnsignedNumber<nuint>, System.Runtime.Serialization.ISerializable
     {
-        private readonly nuint _dummyPrimitive;
+        private readonly unsafe void* _dummyPrimitive;
         public static readonly nuint Zero;
         public UIntPtr(uint value) { throw null; }
         public UIntPtr(ulong value) { throw null; }
@@ -7332,10 +7649,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.ValueTuple other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple<T1>>, System.IEquatable<System.ValueTuple<T1>>, System.Runtime.CompilerServices.ITuple
@@ -7348,10 +7665,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.ValueTuple<T1> other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2)>, System.IEquatable<(T1, T2)>, System.Runtime.CompilerServices.ITuple
@@ -7365,10 +7682,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2, T3> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3)>, System.IEquatable<(T1, T2, T3)>, System.Runtime.CompilerServices.ITuple
@@ -7383,10 +7700,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2, T3) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2, T3, T4> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3, T4)>, System.IEquatable<(T1, T2, T3, T4)>, System.Runtime.CompilerServices.ITuple
@@ -7402,10 +7719,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2, T3, T4) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2, T3, T4, T5> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3, T4, T5)>, System.IEquatable<(T1, T2, T3, T4, T5)>, System.Runtime.CompilerServices.ITuple
@@ -7422,10 +7739,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2, T3, T4, T5) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2, T3, T4, T5, T6> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3, T4, T5, T6)>, System.IEquatable<(T1, T2, T3, T4, T5, T6)>, System.Runtime.CompilerServices.ITuple
@@ -7443,10 +7760,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2, T3, T4, T5, T6) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct ValueTuple<T1, T2, T3, T4, T5, T6, T7> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3, T4, T5, T6, T7)>, System.IEquatable<(T1, T2, T3, T4, T5, T6, T7)>, System.Runtime.CompilerServices.ITuple
@@ -7465,13 +7782,13 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals((T1, T2, T3, T4, T5, T6, T7) other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial struct ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<(T1, T2, T3, T4, T5, T6, T7, TRest)>, System.IEquatable<(T1, T2, T3, T4, T5, T6, T7, TRest)>, System.Runtime.CompilerServices.ITuple where TRest : struct
+    public partial struct ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, System.IEquatable<System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>>, System.Runtime.CompilerServices.ITuple where TRest : struct
     {
         public T1 Item1;
         public T2 Item2;
@@ -7484,14 +7801,14 @@ namespace System
         public ValueTuple(T1 item1, T2 item2, T3 item3, T4 item4, T5 item5, T6 item6, T7 item7, TRest rest) { throw null; }
         object? System.Runtime.CompilerServices.ITuple.this[int index] { get { throw null; } }
         int System.Runtime.CompilerServices.ITuple.Length { get { throw null; } }
-        public int CompareTo((T1, T2, T3, T4, T5, T6, T7, TRest) other) { throw null; }
+        public int CompareTo(System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals((T1, T2, T3, T4, T5, T6, T7, TRest) other) { throw null; }
+        public bool Equals(System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest> other) { throw null; }
         public override int GetHashCode() { throw null; }
-        int System.Collections.IStructuralComparable.CompareTo(object other, System.Collections.IComparer comparer) { throw null; }
-        bool System.Collections.IStructuralEquatable.Equals(object other, System.Collections.IEqualityComparer comparer) { throw null; }
+        int System.Collections.IStructuralComparable.CompareTo(object? other, System.Collections.IComparer comparer) { throw null; }
+        bool System.Collections.IStructuralEquatable.Equals(object? other, System.Collections.IEqualityComparer comparer) { throw null; }
         int System.Collections.IStructuralEquatable.GetHashCode(System.Collections.IEqualityComparer comparer) { throw null; }
-        int System.IComparable.CompareTo(object other) { throw null; }
+        int System.IComparable.CompareTo(object? other) { throw null; }
         public override string ToString() { throw null; }
     }
     public abstract partial class ValueType
@@ -7529,11 +7846,11 @@ namespace System
         public static System.Version Parse(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public static System.Version Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Version Parse(string input) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider formatProvider) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
-        static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, int fieldCount, out int bytesWritten) { throw null; }
@@ -7624,11 +7941,11 @@ namespace System.Buffers
         NeedMoreData = 2,
         InvalidData = 3,
     }
-    public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg);
+    public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg) where TArg : allows ref struct;
     public static partial class SearchValues
     {
-        public static System.Buffers.SearchValues<byte> Create([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<byte> values) { throw null; }
-        public static System.Buffers.SearchValues<char> Create([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<byte> Create(params System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.SearchValues<char> Create(params System.ReadOnlySpan<char> values) { throw null; }
         public static System.Buffers.SearchValues<string> Create(System.ReadOnlySpan<string> values, System.StringComparison comparisonType) { throw null; }
     }
     public partial class SearchValues<T> where T : System.IEquatable<T>?
@@ -7636,7 +7953,7 @@ namespace System.Buffers
         internal SearchValues() { }
         public bool Contains(T value) { throw null; }
     }
-    public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg);
+    public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg) where TArg : allows ref struct;
 }
 namespace System.Buffers.Text
 {
@@ -7739,13 +8056,11 @@ namespace System.CodeDom.Compiler
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
-        public override void Write(System.Text.Rune value) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
-        public override System.Threading.Tasks.Task WriteAsync(System.Text.Rune value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteLine() { }
         public override void WriteLine(bool value) { }
@@ -7761,8 +8076,7 @@ namespace System.CodeDom.Compiler
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
-        public override void WriteLine(System.Text.Rune value) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
@@ -7770,7 +8084,6 @@ namespace System.CodeDom.Compiler
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
-        public override System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void WriteLineNoTabs(string? s) { }
         public System.Threading.Tasks.Task WriteLineNoTabsAsync(string? s) { throw null; }
@@ -7853,7 +8166,6 @@ namespace System.Collections
         public object? Value { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void Deconstruct(out object key, out object? value) { throw null; }
-        public override string ToString() { throw null; }
     }
     public partial class Hashtable : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ICloneable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
@@ -7947,7 +8259,9 @@ namespace System.Collections
     }
     public partial interface IEnumerator
     {
+#nullable disable // explicitly leaving Current as "oblivious" to avoid spurious warnings in foreach over non-generic enumerables
         object Current { get; }
+#nullable restore
         bool MoveNext();
         void Reset();
     }
@@ -7986,17 +8300,17 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public partial interface IAlternateEqualityComparer<in TAlternate, T>
+    public partial interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct where T : allows ref struct
     {
-        T Create(TAlternate alternate);
         bool Equals(TAlternate alternate, T other);
         int GetHashCode(TAlternate alternate);
+        T Create(TAlternate alternate);
     }
-    public partial interface IAsyncEnumerable<out T>
+    public partial interface IAsyncEnumerable<out T> where T : allows ref struct
     {
         System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
-    public partial interface IAsyncEnumerator<out T> : System.IAsyncDisposable
+    public partial interface IAsyncEnumerator<out T> : System.IAsyncDisposable where T : allows ref struct
     {
         T Current { get; }
         System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
@@ -8011,7 +8325,7 @@ namespace System.Collections.Generic
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
     }
-    public partial interface IComparer<in T>
+    public partial interface IComparer<in T> where T : allows ref struct
     {
         int Compare(T? x, T? y);
     }
@@ -8025,15 +8339,15 @@ namespace System.Collections.Generic
         bool Remove(TKey key);
         bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
-    public partial interface IEnumerable<out T> : System.Collections.IEnumerable
+    public partial interface IEnumerable<out T> : System.Collections.IEnumerable where T : allows ref struct
     {
         new System.Collections.Generic.IEnumerator<T> GetEnumerator();
     }
-    public partial interface IEnumerator<out T> : System.Collections.IEnumerator, System.IDisposable
+    public partial interface IEnumerator<out T> : System.Collections.IEnumerator, System.IDisposable where T : allows ref struct
     {
         new T Current { get; }
     }
-    public partial interface IEqualityComparer<in T>
+    public partial interface IEqualityComparer<in T> where T : allows ref struct
     {
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
@@ -8102,6 +8416,7 @@ namespace System.Collections.Generic
     {
         private readonly TKey key;
         private readonly TValue value;
+        private readonly int _dummyPrimitive;
         public KeyValuePair(TKey key, TValue value) { throw null; }
         public TKey Key { get { throw null; } }
         public TValue Value { get { throw null; } }
@@ -8140,18 +8455,18 @@ namespace System.Collections.ObjectModel
         protected virtual void SetItem(int index, T item) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        int System.Collections.IList.Add(object? value) { throw null; }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
     }
     public static partial class ReadOnlyCollection
     {
-        public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<T> values) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<T> values) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>(params System.ReadOnlySpan<T> values) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>(params System.ReadOnlySpan<T> values) { throw null; }
     }
-    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
     public partial class ReadOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
@@ -8177,12 +8492,12 @@ namespace System.Collections.ObjectModel
         void System.Collections.Generic.IList<T>.RemoveAt(int index) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        int System.Collections.IList.Add(object value) { throw null; }
+        int System.Collections.IList.Add(object? value) { throw null; }
         void System.Collections.IList.Clear() { }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
+        bool System.Collections.IList.Contains(object? value) { throw null; }
+        int System.Collections.IList.IndexOf(object? value) { throw null; }
+        void System.Collections.IList.Insert(int index, object? value) { }
+        void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
     public partial class ReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
@@ -8217,7 +8532,7 @@ namespace System.Collections.ObjectModel
         void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
         bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object key) { throw null; }
         System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
@@ -8257,7 +8572,7 @@ namespace System.Collections.ObjectModel
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
-    [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateSet")]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateSet")]
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
@@ -8381,10 +8696,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) { }
+        public static void Fail(string? message) => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) { }
+        public static void Fail(string? message, string? detailMessage) => throw null;
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8638,8 +8953,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
     [System.Runtime.CompilerServices.CompilerLoweringPreserveAttribute]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -8689,8 +9004,8 @@ namespace System.Diagnostics.CodeAnalysis
         public DynamicDependencyAttribute(string memberSignature, string typeName, string assemblyName) { }
         public DynamicDependencyAttribute(string memberSignature, System.Type type) { }
         public string? AssemblyName { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This property is no longer supported.")]
+        [System.Obsolete("This property is no longer supported.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public string? Condition { get { throw null; } set { } }
         public string? MemberSignature { get { throw null; } }
         public System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes MemberTypes { get { throw null; } }
@@ -8778,7 +9093,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
-        public bool ExcludeStatics { get { throw null; } set { } }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -8786,7 +9101,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
-        public bool ExcludeStatics { get { throw null; } set { } }
+        public bool ExcludeStatics { get; set; }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
@@ -9001,7 +9316,7 @@ namespace System.Globalization
         public int LastIndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
         public int LastIndexOf(string source, string value, int startIndex, int count) { throw null; }
         public int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         public override string ToString() { throw null; }
     }
     [System.FlagsAttribute]
@@ -9639,14 +9954,14 @@ namespace System.Globalization
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Globalization.TextInfo ReadOnly(System.Globalization.TextInfo textInfo) { throw null; }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         public char ToLower(char c) { throw null; }
         public string ToLower(string str) { throw null; }
-        public System.Text.Rune ToLower(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }
         public string ToTitleCase(string str) { throw null; }
         public char ToUpper(char c) { throw null; }
         public string ToUpper(string str) { throw null; }
+        public System.Text.Rune ToLower(System.Text.Rune value) { throw null; }
         public System.Text.Rune ToUpper(System.Text.Rune value) { throw null; }
     }
     public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
@@ -10235,16 +10550,16 @@ namespace System.IO
         public FileStream(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.IO.FileAccess access, int bufferSize, bool isAsync) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) instead.")]
-        public FileStream(nint handle, System.IO.FileAccess access) { }
+        public FileStream(System.IntPtr handle, System.IO.FileAccess access) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(nint handle, System.IO.FileAccess access, bool ownsHandle) { }
+        public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(nint handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize) { }
+        public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This constructor has been deprecated. Use FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) and optionally make a new SafeFileHandle with ownsHandle=false if needed instead.")]
-        public FileStream(nint handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize, bool isAsync) { }
+        public FileStream(System.IntPtr handle, System.IO.FileAccess access, bool ownsHandle, int bufferSize, bool isAsync) { }
         public FileStream(string path, System.IO.FileMode mode) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access) { }
         public FileStream(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { }
@@ -10256,7 +10571,7 @@ namespace System.IO
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
         [System.ObsoleteAttribute("FileStream.Handle has been deprecated. Use FileStream's SafeFileHandle property instead.")]
-        public virtual nint Handle { get { throw null; } }
+        public virtual System.IntPtr Handle { get { throw null; } }
         public virtual bool IsAsync { get { throw null; } }
         public override long Length { get { throw null; } }
         public virtual string Name { get { throw null; } }
@@ -10385,9 +10700,13 @@ namespace System.IO
         public virtual int Capacity { get { throw null; } set { } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override int EndRead(System.IAsyncResult asyncResult) { throw null; }
+        public override void EndWrite(System.IAsyncResult asyncResult) { }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual byte[] GetBuffer() { throw null; }
@@ -10417,11 +10736,11 @@ namespace System.IO
         public static readonly char VolumeSeparatorChar;
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("path")]
         public static string? ChangeExtension(string? path, string? extension) { throw null; }
-        public static string Combine([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string> paths) { throw null; }
         public static string Combine(string path1, string path2) { throw null; }
         public static string Combine(string path1, string path2, string path3) { throw null; }
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
+        public static string Combine(params System.ReadOnlySpan<string> paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
@@ -10455,11 +10774,11 @@ namespace System.IO
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.ReadOnlySpan<char> path4) { throw null; }
-        public static string Join([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> paths) { throw null; }
         public static string Join(string? path1, string? path2) { throw null; }
         public static string Join(string? path1, string? path2, string? path3) { throw null; }
         public static string Join(string? path1, string? path2, string? path3, string? path4) { throw null; }
         public static string Join(params string?[] paths) { throw null; }
+        public static string Join(params System.ReadOnlySpan<string?> paths) { throw null; }
         public static System.ReadOnlySpan<char> TrimEndingDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static string TrimEndingDirectorySeparator(string path) { throw null; }
         public static bool TryJoin(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.Span<char> destination, out int charsWritten) { throw null; }
@@ -10626,7 +10945,7 @@ namespace System.IO
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -10637,7 +10956,7 @@ namespace System.IO
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
@@ -10741,6 +11060,7 @@ namespace System.IO
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(char value) { }
+        public virtual void Write(System.Text.Rune value) { }
         public virtual void Write(char[]? buffer) { }
         public virtual void Write(char[] buffer, int index, int count) { }
         public virtual void Write(decimal value) { }
@@ -10755,24 +11075,24 @@ namespace System.IO
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
-        public virtual void Write(System.Text.Rune value) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void Write(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
         public System.Threading.Tasks.Task WriteAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public virtual System.Threading.Tasks.Task WriteAsync(System.Text.Rune value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteLine() { }
         public virtual void WriteLine(bool value) { }
         public virtual void WriteLine(char value) { }
+        public virtual void WriteLine(System.Text.Rune value) { }
         public virtual void WriteLine(char[]? buffer) { }
         public virtual void WriteLine(char[] buffer, int index, int count) { }
         public virtual void WriteLine(decimal value) { }
@@ -10787,23 +11107,22 @@ namespace System.IO
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> arg) { }
-        public virtual void WriteLine(System.Text.Rune value) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void WriteLine(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
+        public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public System.Threading.Tasks.Task WriteLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     [System.FlagsAttribute]
     public enum UnixFileMode
@@ -10898,7 +11217,6 @@ namespace System.IO.Enumeration
         protected virtual bool ContinueOnError(int error) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        ~FileSystemEnumerator() { }
         public bool MoveNext() { throw null; }
         protected virtual void OnDirectoryFinished(System.ReadOnlySpan<char> directory) { }
         public void Reset() { }
@@ -10950,7 +11268,7 @@ namespace System.Numerics
         public static System.Numerics.BFloat16 One { get { throw null; } }
         public static System.Numerics.BFloat16 Pi { get { throw null; } }
         public static System.Numerics.BFloat16 PositiveInfinity { get { throw null; } }
-        static System.Numerics.BFloat16 System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16,System.Numerics.BFloat16>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BFloat16 System.Numerics.IAdditiveIdentity<System.Numerics.BFloat16, System.Numerics.BFloat16>.AdditiveIdentity { get { throw null; } }
         static System.Numerics.BFloat16 System.Numerics.IBinaryNumber<System.Numerics.BFloat16>.AllBitsSet { get { throw null; } }
         static int System.Numerics.INumberBase<System.Numerics.BFloat16>.Radix { get { throw null; } }
         public static System.Numerics.BFloat16 Tau { get { throw null; } }
@@ -11028,76 +11346,76 @@ namespace System.Numerics
         public static System.Numerics.BFloat16 MinMagnitudeNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
         public static System.Numerics.BFloat16 MinNumber(System.Numerics.BFloat16 x, System.Numerics.BFloat16 y) { throw null; }
         public static System.Numerics.BFloat16 operator +(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static explicit operator checked byte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked char (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked short (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked int (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked long (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked System.Int128 (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator checked nint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked nint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked sbyte (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked sbyte(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ushort (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked ushort(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked uint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked uint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ulong (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked ulong(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.UInt128 (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked System.UInt128(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked nuint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator checked nuint(System.Numerics.BFloat16 value) { throw null; }
         public static System.Numerics.BFloat16 operator --(System.Numerics.BFloat16 value) { throw null; }
         public static System.Numerics.BFloat16 operator /(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator ==(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (char value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (decimal value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (double value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (System.Half value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (System.Int128 value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (short value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (int value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (long value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (nint value) { throw null; }
-        public static explicit operator byte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator char (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator decimal (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator double (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator System.Half (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator System.Int128 (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator short (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator int (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator long (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator nint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(char value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(decimal value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(double value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Half value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.Int128 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(short value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(int value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(long value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(nint value) { throw null; }
+        public static explicit operator byte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator char(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator decimal(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator double(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Half(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Int128(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator short(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator int(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator long(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator nint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator float (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator sbyte(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator float(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UInt128 (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.UInt128(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator ushort(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator uint(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator ulong(System.Numerics.BFloat16 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator nuint (System.Numerics.BFloat16 value) { throw null; }
-        public static explicit operator System.Numerics.BFloat16 (float value) { throw null; }
+        public static explicit operator nuint(System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (System.UInt128 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (ushort value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (uint value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (ulong value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Numerics.BFloat16 (nuint value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16(nuint value) { throw null; }
         public static bool operator >(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator >=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
-        public static implicit operator System.Numerics.BFloat16 (byte value) { throw null; }
+        public static implicit operator System.Numerics.BFloat16(byte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Numerics.BFloat16 (sbyte value) { throw null; }
+        public static implicit operator System.Numerics.BFloat16(sbyte value) { throw null; }
         public static System.Numerics.BFloat16 operator ++(System.Numerics.BFloat16 value) { throw null; }
         public static bool operator !=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
         public static bool operator <(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
@@ -11250,7 +11568,7 @@ namespace System.Numerics
     public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator +(TSelf left, TOther right);
-        static TResult operator checked +(TSelf left, TOther right) { throw null; }
+        static virtual TResult operator checked +(TSelf left, TOther right) { throw null; }
     }
     public partial interface IAdditiveIdentity<TSelf, TResult> where TSelf : System.Numerics.IAdditiveIdentity<TSelf, TResult>?
     {
@@ -11259,24 +11577,24 @@ namespace System.Numerics
     public partial interface IBinaryFloatingPointIeee754<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IExponentialFunctions<TSelf>, System.Numerics.IFloatingPoint<TSelf>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IFloatingPointIeee754<TSelf>, System.Numerics.IHyperbolicFunctions<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.ILogarithmicFunctions<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IPowerFunctions<TSelf>, System.Numerics.IRootFunctions<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.ITrigonometricFunctions<TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryFloatingPointIeee754<TSelf>?
     {
     }
-    public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>?
+    public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>?
     {
-        static TSelf Divide(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
-        static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) { throw null; }
-        static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
+        static virtual TSelf Divide(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) { throw null; }
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
+        static virtual TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
-        static TSelf LeadingZeroCount(TSelf value) { throw null; }
+        static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
         static abstract TSelf PopCount(TSelf value);
-        static TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
-        static TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
-        static TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
-        static TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
-        static TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
-        static TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
-        static TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
-        static TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
+        static virtual TSelf ReadBigEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) { throw null; }
+        static virtual TSelf ReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned) { throw null; }
+        static virtual TSelf RotateLeft(TSelf value, int rotateAmount) { throw null; }
+        static virtual TSelf RotateRight(TSelf value, int rotateAmount) { throw null; }
         static abstract TSelf TrailingZeroCount(TSelf value);
         static abstract bool TryReadBigEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
         static abstract bool TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out TSelf value);
@@ -11289,9 +11607,9 @@ namespace System.Numerics
         int WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
         int WriteLittleEndian(System.Span<byte> destination) { throw null; }
     }
-    public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>?
+    public partial interface IBinaryNumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryNumber<TSelf>?
     {
-        static TSelf AllBitsSet { get { throw null; } }
+        static virtual TSelf AllBitsSet { get { throw null; } }
         static abstract bool IsPow2(TSelf value);
         static abstract TSelf Log2(TSelf value);
     }
@@ -11311,12 +11629,12 @@ namespace System.Numerics
     }
     public partial interface IDecrementOperators<TSelf> where TSelf : System.Numerics.IDecrementOperators<TSelf>?
     {
-        static TSelf operator checked --(TSelf value) { throw null; }
+        static virtual TSelf operator checked --(TSelf value) { throw null; }
         static abstract TSelf operator --(TSelf value);
     }
     public partial interface IDivisionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IDivisionOperators<TSelf, TOther, TResult>?
     {
-        static TResult operator checked /(TSelf left, TOther right) { throw null; }
+        static virtual TResult operator checked /(TSelf left, TOther right) { throw null; }
         static abstract TResult operator /(TSelf left, TOther right);
     }
     public partial interface IEqualityOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IEqualityOperators<TSelf, TOther, TResult>?
@@ -11328,10 +11646,10 @@ namespace System.Numerics
     {
         static abstract TSelf Exp(TSelf x);
         static abstract TSelf Exp10(TSelf x);
-        static TSelf Exp10M1(TSelf x) { throw null; }
+        static virtual TSelf Exp10M1(TSelf x) { throw null; }
         static abstract TSelf Exp2(TSelf x);
-        static TSelf Exp2M1(TSelf x) { throw null; }
-        static TSelf ExpM1(TSelf x) { throw null; }
+        static virtual TSelf Exp2M1(TSelf x) { throw null; }
+        static virtual TSelf ExpM1(TSelf x) { throw null; }
     }
     public partial interface IFloatingPointConstants<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPointConstants<TSelf>?
     {
@@ -11353,26 +11671,26 @@ namespace System.Numerics
         static abstract TSelf FusedMultiplyAdd(TSelf left, TSelf right, TSelf addend);
         static abstract TSelf Ieee754Remainder(TSelf left, TSelf right);
         static abstract int ILogB(TSelf x);
-        static TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) { throw null; }
-        static TSelf ReciprocalEstimate(TSelf x) { throw null; }
-        static TSelf ReciprocalSqrtEstimate(TSelf x) { throw null; }
+        static virtual TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) { throw null; }
+        static virtual TSelf ReciprocalEstimate(TSelf x) { throw null; }
+        static virtual TSelf ReciprocalSqrtEstimate(TSelf x) { throw null; }
         static abstract TSelf ScaleB(TSelf x, int n);
     }
-    public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>?
+    public partial interface IFloatingPoint<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISignedNumber<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IFloatingPoint<TSelf>?
     {
-        static TSelf Ceiling(TSelf x) { throw null; }
-        static TInteger ConvertToIntegerNative<TInteger>(TSelf value) { throw null; }
-        static TInteger ConvertToInteger<TInteger>(TSelf value) { throw null; }
-        static TSelf Floor(TSelf x) { throw null; }
+        static virtual TSelf Ceiling(TSelf x) { throw null; }
+        static virtual TInteger ConvertToInteger<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        static virtual TInteger ConvertToIntegerNative<TInteger>(TSelf value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        static virtual TSelf Floor(TSelf x) { throw null; }
         int GetExponentByteCount();
         int GetExponentShortestBitLength();
         int GetSignificandBitLength();
         int GetSignificandByteCount();
-        static TSelf Round(TSelf x) { throw null; }
-        static TSelf Round(TSelf x, int digits) { throw null; }
+        static virtual TSelf Round(TSelf x) { throw null; }
+        static virtual TSelf Round(TSelf x, int digits) { throw null; }
         static abstract TSelf Round(TSelf x, int digits, System.MidpointRounding mode);
-        static TSelf Round(TSelf x, System.MidpointRounding mode) { throw null; }
-        static TSelf Truncate(TSelf x) { throw null; }
+        static virtual TSelf Round(TSelf x, System.MidpointRounding mode) { throw null; }
+        static virtual TSelf Truncate(TSelf x) { throw null; }
         bool TryWriteExponentBigEndian(System.Span<byte> destination, out int bytesWritten);
         bool TryWriteExponentLittleEndian(System.Span<byte> destination, out int bytesWritten);
         bool TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten);
@@ -11401,7 +11719,7 @@ namespace System.Numerics
     }
     public partial interface IIncrementOperators<TSelf> where TSelf : System.Numerics.IIncrementOperators<TSelf>?
     {
-        static TSelf operator checked ++(TSelf value) { throw null; }
+        static virtual TSelf operator checked ++(TSelf value) { throw null; }
         static abstract TSelf operator ++(TSelf value);
     }
     public partial interface ILogarithmicFunctions<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.ILogarithmicFunctions<TSelf>?
@@ -11409,10 +11727,10 @@ namespace System.Numerics
         static abstract TSelf Log(TSelf x);
         static abstract TSelf Log(TSelf x, TSelf newBase);
         static abstract TSelf Log10(TSelf x);
-        static TSelf Log10P1(TSelf x) { throw null; }
+        static virtual TSelf Log10P1(TSelf x) { throw null; }
         static abstract TSelf Log2(TSelf x);
-        static TSelf Log2P1(TSelf x) { throw null; }
-        static TSelf LogP1(TSelf x) { throw null; }
+        static virtual TSelf Log2P1(TSelf x) { throw null; }
+        static virtual TSelf LogP1(TSelf x) { throw null; }
     }
     public partial interface IMinMaxValue<TSelf> where TSelf : System.Numerics.IMinMaxValue<TSelf>?
     {
@@ -11429,7 +11747,7 @@ namespace System.Numerics
     }
     public partial interface IMultiplyOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IMultiplyOperators<TSelf, TOther, TResult>?
     {
-        static TResult operator checked *(TSelf left, TOther right) { throw null; }
+        static virtual TResult operator checked *(TSelf left, TOther right) { throw null; }
         static abstract TResult operator *(TSelf left, TOther right);
     }
     public partial interface INumberBase<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumberBase<TSelf>?
@@ -11438,9 +11756,18 @@ namespace System.Numerics
         static abstract int Radix { get; }
         static abstract TSelf Zero { get; }
         static abstract TSelf Abs(TSelf value);
-        static TSelf CreateChecked<TOther>(TOther value) { throw null; }
-        static TSelf CreateSaturating<TOther>(TOther value) { throw null; }
-        static TSelf CreateTruncating<TOther>(TOther value) { throw null; }
+        static virtual TSelf CreateChecked<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
+        static virtual TSelf CreateSaturating<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
+        static virtual TSelf CreateTruncating<TOther>(TOther value)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+#nullable restore
         static abstract bool IsCanonical(TSelf value);
         static abstract bool IsComplexNumber(TSelf value);
         static abstract bool IsEvenInteger(TSelf value);
@@ -11462,41 +11789,59 @@ namespace System.Numerics
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
-        static TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend) { throw null; }
-        static TSelf Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        static virtual TSelf MultiplyAddEstimate(TSelf left, TSelf right, TSelf addend) { throw null; }
+        static virtual TSelf Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
         static abstract TSelf Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider);
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        static TSelf System.IUtf8SpanParsable<TSelf>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
-        static bool System.IUtf8SpanParsable<TSelf>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result) { throw null; }
-        static abstract bool TryConvertFromChecked<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
-        static abstract bool TryConvertFromSaturating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
-        static abstract bool TryConvertFromTruncating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
-        static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result);
-        static abstract bool TryConvertToSaturating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result);
-        static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result);
-        static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result) { throw null; }
-        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
-        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static TSelf System.IUtf8SpanParsable<TSelf>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<TSelf>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result) { throw null; }
+        protected static abstract bool TryConvertFromChecked<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToChecked<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TOther result)
+#nullable disable
+            where TOther : System.Numerics.INumberBase<TOther>;
+#nullable restore
+        static virtual bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result) { throw null; }
+        static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result);
+        static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TSelf result);
     }
-    public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>?
+    public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>?
     {
-        static TSelf Clamp(TSelf value, TSelf min, TSelf max) { throw null; }
-        static TSelf ClampNative(TSelf value, TSelf min, TSelf max) { throw null; }
-        static TSelf CopySign(TSelf value, TSelf sign) { throw null; }
-        static TSelf Max(TSelf x, TSelf y) { throw null; }
-        static TSelf MaxNative(TSelf x, TSelf y) { throw null; }
-        static TSelf MaxNumber(TSelf x, TSelf y) { throw null; }
-        static TSelf Min(TSelf x, TSelf y) { throw null; }
-        static TSelf MinNative(TSelf x, TSelf y) { throw null; }
-        static TSelf MinNumber(TSelf x, TSelf y) { throw null; }
-        static int Sign(TSelf value) { throw null; }
+        static virtual TSelf Clamp(TSelf value, TSelf min, TSelf max) { throw null; }
+        static virtual TSelf ClampNative(TSelf value, TSelf min, TSelf max) { throw null; }
+        static virtual TSelf CopySign(TSelf value, TSelf sign) { throw null; }
+        static virtual TSelf Max(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MaxNative(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MaxNumber(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf Min(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MinNative(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MinNumber(TSelf x, TSelf y) { throw null; }
+        static virtual int Sign(TSelf value) { throw null; }
     }
-    public partial interface IPowerFunctions<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IPowerFunctions<TSelf>?
+    public partial interface IPowerFunctions<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IPowerFunctions<TSelf>?
     {
         static abstract TSelf Pow(TSelf x, TSelf y);
     }
-    public partial interface IRootFunctions<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>?
+    public partial interface IRootFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IRootFunctions<TSelf>?
     {
         static abstract TSelf Cbrt(TSelf x);
         static abstract TSelf Hypot(TSelf x, TSelf y);
@@ -11509,16 +11854,16 @@ namespace System.Numerics
         static abstract TResult operator >>(TSelf value, TOther shiftAmount);
         static abstract TResult operator >>>(TSelf value, TOther shiftAmount);
     }
-    public partial interface ISignedNumber<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.ISignedNumber<TSelf>?
+    public partial interface ISignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ISignedNumber<TSelf>?
     {
         static abstract TSelf NegativeOne { get; }
     }
     public partial interface ISubtractionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.ISubtractionOperators<TSelf, TOther, TResult>?
     {
-        static TResult operator checked -(TSelf left, TOther right) { throw null; }
+        static virtual TResult operator checked -(TSelf left, TOther right) { throw null; }
         static abstract TResult operator -(TSelf left, TOther right);
     }
-    public partial interface ITrigonometricFunctions<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.ITrigonometricFunctions<TSelf>?
+    public partial interface ITrigonometricFunctions<TSelf> : System.Numerics.IFloatingPointConstants<TSelf>, System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.ITrigonometricFunctions<TSelf>?
     {
         static abstract TSelf Acos(TSelf x);
         static abstract TSelf AcosPi(TSelf x);
@@ -11528,8 +11873,8 @@ namespace System.Numerics
         static abstract TSelf AtanPi(TSelf x);
         static abstract TSelf Cos(TSelf x);
         static abstract TSelf CosPi(TSelf x);
-        static TSelf DegreesToRadians(TSelf degrees) { throw null; }
-        static TSelf RadiansToDegrees(TSelf radians) { throw null; }
+        static virtual TSelf DegreesToRadians(TSelf degrees) { throw null; }
+        static virtual TSelf RadiansToDegrees(TSelf radians) { throw null; }
         static abstract TSelf Sin(TSelf x);
         static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
         static abstract (TSelf SinPi, TSelf CosPi) SinCosPi(TSelf x);
@@ -11539,14 +11884,14 @@ namespace System.Numerics
     }
     public partial interface IUnaryNegationOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryNegationOperators<TSelf, TResult>?
     {
-        static TResult operator checked -(TSelf value) { throw null; }
+        static virtual TResult operator checked -(TSelf value) { throw null; }
         static abstract TResult operator -(TSelf value);
     }
     public partial interface IUnaryPlusOperators<TSelf, TResult> where TSelf : System.Numerics.IUnaryPlusOperators<TSelf, TResult>?
     {
         static abstract TResult operator +(TSelf value);
     }
-    public partial interface IUnsignedNumber<TSelf> : System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>?
+    public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>?
     {
     }
     public readonly partial struct TotalOrderIeee754Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.Generic.IEqualityComparer<T>, System.IEquatable<System.Numerics.TotalOrderIeee754Comparer<T>> where T : System.Numerics.IFloatingPointIeee754<T>?
@@ -11658,7 +12003,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
-        [System.ObsoleteAttribute("LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.", DiagnosticId="SYSLIB0056", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.", DiagnosticId = "SYSLIB0056", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile, byte[]? hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded module depends on might be removed")]
         public System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule) { throw null; }
@@ -11940,10 +12285,12 @@ namespace System.Reflection
         public virtual System.Reflection.ConstructorInfo Constructor { get { throw null; } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeTypedArgument> ConstructorArguments { get { throw null; } }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeNamedArgument> NamedArguments { get { throw null; } }
+        public override bool Equals(object? obj) { throw null; }
         public static System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributes(System.Reflection.Assembly target) { throw null; }
         public static System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributes(System.Reflection.MemberInfo target) { throw null; }
         public static System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributes(System.Reflection.Module target) { throw null; }
         public static System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributes(System.Reflection.ParameterInfo target) { throw null; }
+        public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
     public static partial class CustomAttributeExtensions
@@ -12556,7 +12903,10 @@ namespace System.Reflection
         Reserved4 = 32768,
         ReservedMask = 61440,
     }
-    public partial class ParameterInfo : System.Reflection.ICustomAttributeProvider, System.Runtime.Serialization.IObjectReference
+    public partial class ParameterInfo : System.Reflection.ICustomAttributeProvider
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
+        , System.Runtime.Serialization.IObjectReference
+#pragma warning restore SYSLIB0050
     {
         protected System.Reflection.ParameterAttributes AttrsImpl;
         protected System.Type? ClassImpl;
@@ -12742,7 +13092,7 @@ namespace System.Reflection
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongNameKeyPair(string keyPairContainer) { }
         public byte[] PublicKey { get { throw null; } }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class TargetException : System.ApplicationException
@@ -12830,7 +13180,6 @@ namespace System.Reflection
         public override string? Namespace { get { throw null; } }
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
-        public override int GetArrayRank() { throw null; }
         protected override System.Reflection.TypeAttributes GetAttributeFlagsImpl() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         protected override System.Reflection.ConstructorInfo? GetConstructorImpl(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
@@ -12955,7 +13304,6 @@ namespace System.Resources
     }
     public partial class ResourceManager
     {
-        protected string BaseNameField;
         public static readonly int HeaderVersionNumber;
         public static readonly int MagicNumber;
         protected System.Reflection.Assembly? MainAssembly;
@@ -12994,7 +13342,6 @@ namespace System.Resources
     }
     public partial class ResourceSet : System.Collections.IEnumerable, System.IDisposable
     {
-        protected System.Resources.IResourceReader? Reader;
         protected ResourceSet() { }
         public ResourceSet(System.IO.Stream stream) { }
         public ResourceSet(System.Resources.IResourceReader reader) { }
@@ -13046,6 +13393,7 @@ namespace System.Runtime
     }
     public partial struct DependentHandle : System.IDisposable
     {
+        private object _dummy;
         private int _dummyPrimitive;
         public DependentHandle(object? target, object? dependent) { throw null; }
         public object? Dependent { readonly get { throw null; } set { } }
@@ -13104,22 +13452,6 @@ namespace System.Runtime.CompilerServices
     {
         public AccessedThroughPropertyAttribute(string propertyName) { }
         public string PropertyName { get { throw null; } }
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public static partial class AsyncHelpers
-    {
-        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { }
-        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { }
-        public static void Await(System.Threading.Tasks.Task task) { }
-        public static void Await(System.Threading.Tasks.ValueTask task) { }
-        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion { }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
-        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
-        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
-        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
-        public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
-        public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }
-        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion { }
     }
     public partial struct AsyncIteratorMethodBuilder
     {
@@ -13273,6 +13605,11 @@ namespace System.Runtime.CompilerServices
     {
         NoStringInterning = 8,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    public sealed class CompilerLoweringPreserveAttribute : System.Attribute
+    {
+        public CompilerLoweringPreserveAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Module)]
     public partial class CompilationRelaxationsAttribute : System.Attribute
     {
@@ -13287,7 +13624,7 @@ namespace System.Runtime.CompilerServices
         public const string RequiredMembers = "RequiredMembers";
         public CompilerFeatureRequiredAttribute(string featureName) { }
         public string FeatureName { get { throw null; } }
-        public bool IsOptional { get { throw null; } set { } }
+        public bool IsOptional { get { throw null; } init { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
@@ -13299,20 +13636,15 @@ namespace System.Runtime.CompilerServices
     {
         public CompilerGlobalScopeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
-    public sealed partial class CompilerLoweringPreserveAttribute : System.Attribute
-    {
-        public CompilerLoweringPreserveAttribute() { }
-    }
-    public sealed partial class ConditionalWeakTable<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : class where TValue : class?
+    public sealed partial class ConditionalWeakTable<TKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : class where TValue : class?
     {
         public ConditionalWeakTable() { }
         public void Add(TKey key, TValue value) { }
         public void AddOrUpdate(TKey key, TValue value) { }
         public void Clear() { }
-        public TValue GetOrAdd(TKey key, System.Func<TKey, TValue> valueFactory) { throw null; }
         public TValue GetOrAdd(TKey key, TValue value) { throw null; }
-        public TValue GetOrAdd<TArg>(TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) { throw null; }
+        public TValue GetOrAdd(TKey key, System.Func<TKey, TValue> valueFactory) { throw null; }
+        public TValue GetOrAdd<TArg>(TKey key, System.Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TArg : allows ref struct { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public TValue GetOrCreateValue(TKey key) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -13333,6 +13665,7 @@ namespace System.Runtime.CompilerServices
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
     }
     public readonly partial struct ConfiguredCancelableAsyncEnumerable<T>
+        where T : allows ref struct
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13442,10 +13775,9 @@ namespace System.Runtime.CompilerServices
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount) { throw null; }
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
         public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
-        public System.ReadOnlySpan<char> Text { get { throw null; } }
         public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
-        public void AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(scoped System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
         public void AppendFormatted(string? value) { }
         public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
         public void AppendFormatted<T>(T value) { }
@@ -13454,6 +13786,7 @@ namespace System.Runtime.CompilerServices
         public void AppendFormatted<T>(T value, string? format) { }
         public void AppendLiteral(string value) { }
         public void Clear() { }
+        public System.ReadOnlySpan<char> Text { get { throw null; } }
         public override string ToString() { throw null; }
         public string ToStringAndClear() { throw null; }
     }
@@ -13490,8 +13823,8 @@ namespace System.Runtime.CompilerServices
     {
         public ExtensionAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Delegate, Inherited = false)]
     public sealed partial class ExtensionMarkerAttribute : System.Attribute
     {
         public ExtensionMarkerAttribute(string name) { }
@@ -13527,78 +13860,78 @@ namespace System.Runtime.CompilerServices
     {
         public IndexerNameAttribute(string indexerName) { }
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(10)]
-    public partial struct InlineArray10<T>
+    [System.Runtime.CompilerServices.InlineArray(2)]
+    public struct InlineArray2<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(11)]
-    public partial struct InlineArray11<T>
+    [System.Runtime.CompilerServices.InlineArray(3)]
+    public struct InlineArray3<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(12)]
-    public partial struct InlineArray12<T>
+    [System.Runtime.CompilerServices.InlineArray(4)]
+    public struct InlineArray4<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(13)]
-    public partial struct InlineArray13<T>
+    [System.Runtime.CompilerServices.InlineArray(5)]
+    public struct InlineArray5<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(14)]
-    public partial struct InlineArray14<T>
+    [System.Runtime.CompilerServices.InlineArray(6)]
+    public struct InlineArray6<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(15)]
-    public partial struct InlineArray15<T>
+    [System.Runtime.CompilerServices.InlineArray(7)]
+    public struct InlineArray7<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(16)]
-    public partial struct InlineArray16<T>
+    [System.Runtime.CompilerServices.InlineArray(8)]
+    public struct InlineArray8<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(2)]
-    public partial struct InlineArray2<T>
+    [System.Runtime.CompilerServices.InlineArray(9)]
+    public struct InlineArray9<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(3)]
-    public partial struct InlineArray3<T>
+    [System.Runtime.CompilerServices.InlineArray(10)]
+    public struct InlineArray10<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(4)]
-    public partial struct InlineArray4<T>
+    [System.Runtime.CompilerServices.InlineArray(11)]
+    public struct InlineArray11<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(5)]
-    public partial struct InlineArray5<T>
+    [System.Runtime.CompilerServices.InlineArray(12)]
+    public struct InlineArray12<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(6)]
-    public partial struct InlineArray6<T>
+    [System.Runtime.CompilerServices.InlineArray(13)]
+    public struct InlineArray13<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(7)]
-    public partial struct InlineArray7<T>
+    [System.Runtime.CompilerServices.InlineArray(14)]
+    public struct InlineArray14<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(8)]
-    public partial struct InlineArray8<T>
+    [System.Runtime.CompilerServices.InlineArray(15)]
+    public struct InlineArray15<T>
     {
         private T t;
     }
-    [System.Runtime.CompilerServices.InlineArrayAttribute(9)]
-    public partial struct InlineArray9<T>
+    [System.Runtime.CompilerServices.InlineArray(16)]
+    public struct InlineArray16<T>
     {
         private T t;
     }
@@ -13706,8 +14039,8 @@ namespace System.Runtime.CompilerServices
         PreserveSig = 128,
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
-        InternalCall = 4096,
         Async = 8192,
+        InternalCall = 4096,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class ModuleInitializerAttribute : System.Attribute
@@ -13831,8 +14164,8 @@ namespace System.Runtime.CompilerServices
     {
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
-        public static nint AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
-        public static nint AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
+        public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
         public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -13845,7 +14178,7 @@ namespace System.Runtime.CompilerServices
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
         public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
-        public static bool IsReferenceOrContainsReferences<T>() { throw null; }
+        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct { throw null; }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegions() { }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -13864,6 +14197,22 @@ namespace System.Runtime.CompilerServices
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
+    }
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public static partial class AsyncHelpers
+    {
+        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
+        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
+        public static void Await(System.Threading.Tasks.Task task) { throw null; }
+        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
+        public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
+        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
+        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
+        public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
+        public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
@@ -13966,38 +14315,38 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class Unsafe
     {
-        public static ref T AddByteOffset<T>(ref T source, nint byteOffset) { throw null; }
+        public static ref T AddByteOffset<T>(ref T source, System.IntPtr byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* Add<T>(void* source, int elementOffset) { throw null; }
-        public static ref T Add<T>(ref T source, int elementOffset) { throw null; }
-        public static ref T Add<T>(ref T source, nint elementOffset) { throw null; }
+        public unsafe static void* Add<T>(void* source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Add<T>(ref T source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Add<T>(ref T source, System.IntPtr elementOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T Add<T>(ref T source, nuint elementOffset) { throw null; }
-        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T left, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T right) { throw null; }
+        public static ref T Add<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
+        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* AsPointer<T>([System.Runtime.CompilerServices.RequiresLocationAttribute] ref T value) { throw null; }
+        public unsafe static void* AsPointer<T>(ref readonly T value) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>([System.Runtime.CompilerServices.RequiresLocationAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] ref T source) { throw null; }
+        public unsafe static ref T AsRef<T>(void* source) where T : allows ref struct { throw null; }
+        public static ref T AsRef<T>(scoped ref readonly T source) where T : allows ref struct { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
-        public static T? As<T>(object? o) where T : class { throw null; }
-        public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
-        public static TTo BitCast<TFrom, TTo>(TFrom source) { throw null; }
-        public static nint ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T origin, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T target) { throw null; }
+        public static T? As<T>(object? o) where T : class? { throw null; }
+        public static ref TTo As<TFrom, TTo>(ref TFrom source) where TFrom : allows ref struct where TTo : allows ref struct { throw null; }
+        public static TTo BitCast<TFrom, TTo>(TFrom source) where TFrom : allows ref struct where TTo : allows ref struct { throw null; }
+        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void CopyBlock(ref byte destination, [System.Runtime.CompilerServices.RequiresLocationAttribute] ref byte source, uint byteCount) { }
+        public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void CopyBlock(void* destination, void* source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
-        public static void CopyBlockUnaligned(ref byte destination, [System.Runtime.CompilerServices.RequiresLocationAttribute] ref byte source, uint byteCount) { }
+        public static void CopyBlockUnaligned(ref byte destination, ref readonly byte source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void CopyBlockUnaligned(void* destination, void* source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Copy<T>(void* destination, [System.Runtime.CompilerServices.RequiresLocationAttribute] ref T source) { }
+        public unsafe static void Copy<T>(void* destination, ref readonly T source) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Copy<T>(ref T destination, void* source) { }
+        public unsafe static void Copy<T>(ref T destination, void* source) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
         public static void InitBlock(ref byte startAddress, byte value, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
@@ -14006,34 +14355,34 @@ namespace System.Runtime.CompilerServices
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
-        public static bool IsAddressGreaterThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T left, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T right) { throw null; }
-        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T left, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T right) { throw null; }
-        public static bool IsAddressLessThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T left, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T right) { throw null; }
-        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T left, [System.Diagnostics.CodeAnalysis.AllowNullAttribute, System.Runtime.CompilerServices.RequiresLocationAttribute] ref T right) { throw null; }
-        public static bool IsNullRef<T>([System.Runtime.CompilerServices.RequiresLocationAttribute] ref T source) { throw null; }
-        public static ref T NullRef<T>() { throw null; }
-        public static T ReadUnaligned<T>([System.Runtime.CompilerServices.RequiresLocationAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] ref byte source) { throw null; }
+        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressGreaterThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressLessThanOrEqualTo<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsNullRef<T>(ref readonly T source) where T : allows ref struct { throw null; }
+        public static ref T NullRef<T>() where T : allows ref struct { throw null; }
+        public static T ReadUnaligned<T>(scoped ref readonly byte source) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
+        public unsafe static T ReadUnaligned<T>(void* source) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static T Read<T>(void* source) { throw null; }
-        public static int SizeOf<T>() { throw null; }
-        public static void SkipInit<T>(out T value) { throw null; }
-        public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset) { throw null; }
+        public unsafe static T Read<T>(void* source) where T : allows ref struct { throw null; }
+        public static int SizeOf<T>() where T : allows ref struct { throw null; }
+        public static void SkipInit<T>(out T value) where T : allows ref struct { throw null; }
+        public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* Subtract<T>(void* source, int elementOffset) { throw null; }
-        public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
-        public static ref T Subtract<T>(ref T source, nint elementOffset) { throw null; }
+        public unsafe static void* Subtract<T>(void* source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Subtract<T>(ref T source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T Subtract<T>(ref T source, nuint elementOffset) { throw null; }
+        public static ref T Subtract<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
         public static ref T Unbox<T>(object box) where T : struct { throw null; }
-        public static void WriteUnaligned<T>(ref byte destination, T value) { }
+        public static void WriteUnaligned<T>(ref byte destination, T value) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
+        public unsafe static void WriteUnaligned<T>(void* destination, T value) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Write<T>(void* destination, T value) { }
+        public unsafe static void Write<T>(void* destination, T value) where T : allows ref struct { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class UnsafeAccessorAttribute : System.Attribute
@@ -14138,14 +14487,14 @@ namespace System.Runtime.ExceptionServices
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         public static System.Exception SetRemoteStackTrace(System.Exception source, string stackTrace) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { }
+        public static void Throw(System.Exception source) => throw null;
     }
     public static partial class ExceptionHandling
     {
+        public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
-        public static void SetUnhandledExceptionHandler(System.Func<System.Exception, bool> handler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -14189,8 +14538,8 @@ namespace System.Runtime.InteropServices
     }
     public abstract partial class CriticalHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
-        protected nint handle;
-        protected CriticalHandle(nint invalidHandleValue) { }
+        protected System.IntPtr handle;
+        protected CriticalHandle(System.IntPtr invalidHandleValue) { }
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
         public void Close() { }
@@ -14198,11 +14547,12 @@ namespace System.Runtime.InteropServices
         protected virtual void Dispose(bool disposing) { }
         ~CriticalHandle() { }
         protected abstract bool ReleaseHandle();
-        protected void SetHandle(nint handle) { }
+        protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
+
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct, Inherited=false)]
-    public sealed partial class ExtendedLayoutAttribute : System.Attribute
+    public sealed class ExtendedLayoutAttribute : System.Attribute
     {
         public ExtendedLayoutAttribute(System.Runtime.InteropServices.ExtendedLayoutKind layoutKind) { }
     }
@@ -14234,26 +14584,48 @@ namespace System.Runtime.InteropServices
         private int _dummyPrimitive;
         public readonly bool IsAllocated { get { throw null; } }
         public object? Target { readonly get { throw null; } set { } }
-        public readonly nint AddrOfPinnedObject() { throw null; }
+        public readonly System.IntPtr AddrOfPinnedObject() { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public readonly bool Equals(System.Runtime.InteropServices.GCHandle other) { throw null; }
         public void Free() { }
-        public static System.Runtime.InteropServices.GCHandle FromIntPtr(nint value) { throw null; }
+        public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.GCHandle (nint value) { throw null; }
-        public static explicit operator nint (System.Runtime.InteropServices.GCHandle value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.GCHandle (System.IntPtr value) { throw null; }
+        public static explicit operator System.IntPtr (System.Runtime.InteropServices.GCHandle value) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static nint ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
     }
-    public static partial class GCHandleExtensions
+    public partial struct GCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.GCHandle<T>> where T : class?
+    {
+        private int _dummyPrimitive;
+        public void Dispose() { }
+        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public readonly bool Equals(System.Runtime.InteropServices.GCHandle<T> other) { throw null; }
+        public static System.Runtime.InteropServices.GCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public GCHandle(T target) { }
+        public readonly bool IsAllocated { get { throw null; } }
+        public readonly T Target { get { throw null; } set { } }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle<T> value) { throw null; }
+    }
+    public static class GCHandleExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        public unsafe static T* GetAddressOfArrayData<T>(this System.Runtime.InteropServices.PinnedGCHandle<T[]> handle) { throw null; }
+        public static unsafe T* GetAddressOfArrayData<T>(
+#nullable disable
+            this System.Runtime.InteropServices.PinnedGCHandle<T[]> handle)
+#nullable restore
+            { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static char* GetAddressOfStringData(this System.Runtime.InteropServices.PinnedGCHandle<string> handle) { throw null; }
+#nullable disable
+        public static unsafe char* GetAddressOfStringData(
+#nullable disable
+            this System.Runtime.InteropServices.PinnedGCHandle<string> handle)
+#nullable restore
+            { throw null; }
     }
     public enum GCHandleType
     {
@@ -14261,19 +14633,6 @@ namespace System.Runtime.InteropServices
         WeakTrackResurrection = 1,
         Normal = 2,
         Pinned = 3,
-    }
-    public partial struct GCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.GCHandle<T>> where T : class?
-    {
-        private int _dummyPrimitive;
-        public GCHandle(T target) { throw null; }
-        public readonly bool IsAllocated { get { throw null; } }
-        public readonly T Target { get { throw null; } set { } }
-        public void Dispose() { }
-        public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public readonly bool Equals(System.Runtime.InteropServices.GCHandle<T> other) { throw null; }
-        public static System.Runtime.InteropServices.GCHandle<T> FromIntPtr(nint value) { throw null; }
-        public override readonly int GetHashCode() { throw null; }
-        public static nint ToIntPtr(System.Runtime.InteropServices.GCHandle<T> value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class InAttribute : System.Attribute
@@ -14302,8 +14661,8 @@ namespace System.Runtime.InteropServices
         public unsafe static System.ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static System.ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
-        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>([System.Runtime.CompilerServices.RequiresLocationAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] ref T reference, int length) { throw null; }
-        public static System.Span<T> CreateSpan<T>([System.Runtime.CompilerServices.ScopedRefAttribute] ref T reference, int length) { throw null; }
+        public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
+        public static System.Span<T> CreateSpan<T>(scoped ref T reference, int length) { throw null; }
         public static ref byte GetArrayDataReference(System.Array array) { throw null; }
         public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
         public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
@@ -14342,17 +14701,17 @@ namespace System.Runtime.InteropServices
     public partial struct PinnedGCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.PinnedGCHandle<T>> where T : class?
     {
         private int _dummyPrimitive;
-        public PinnedGCHandle(T target) { throw null; }
-        public readonly bool IsAllocated { get { throw null; } }
-        public readonly T Target { get { throw null; } set { } }
         public void Dispose() { }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly bool Equals(System.Runtime.InteropServices.PinnedGCHandle<T> other) { throw null; }
-        public static System.Runtime.InteropServices.PinnedGCHandle<T> FromIntPtr(nint value) { throw null; }
+        public static System.Runtime.InteropServices.PinnedGCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe readonly void* GetAddressOfObjectData() { throw null; }
+        public readonly unsafe void* GetAddressOfObjectData() { throw null; }
         public override readonly int GetHashCode() { throw null; }
-        public static nint ToIntPtr(System.Runtime.InteropServices.PinnedGCHandle<T> value) { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
+        public PinnedGCHandle(T target) { }
+        public T Target { readonly get { throw null; } set { } }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.PinnedGCHandle<T> value) { throw null; }
     }
     public static partial class RuntimeInformation
     {
@@ -14392,19 +14751,19 @@ namespace System.Runtime.InteropServices
     }
     public abstract partial class SafeHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
-        protected nint handle;
-        protected SafeHandle(nint invalidHandleValue, bool ownsHandle) { }
+        protected System.IntPtr handle;
+        protected SafeHandle(System.IntPtr invalidHandleValue, bool ownsHandle) { }
         public bool IsClosed { get { throw null; } }
         public abstract bool IsInvalid { get; }
         public void Close() { }
         public void DangerousAddRef(ref bool success) { }
-        public nint DangerousGetHandle() { throw null; }
+        public System.IntPtr DangerousGetHandle() { throw null; }
         public void DangerousRelease() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~SafeHandle() { }
         protected abstract bool ReleaseHandle();
-        protected internal void SetHandle(nint handle) { }
+        protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
@@ -14476,19 +14835,19 @@ namespace System.Runtime.InteropServices
         HString = 47,
         LPUTF8Str = 48,
     }
-    public partial struct WeakGCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.WeakGCHandle<T>> where T : class
+    public partial struct WeakGCHandle<T> : System.IDisposable, System.IEquatable<System.Runtime.InteropServices.WeakGCHandle<T>> where T : class?
     {
         private int _dummyPrimitive;
-        public WeakGCHandle(T target, bool trackResurrection = false) { throw null; }
-        public readonly bool IsAllocated { get { throw null; } }
         public void Dispose() { }
         public override readonly bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public readonly bool Equals(System.Runtime.InteropServices.WeakGCHandle<T> other) { throw null; }
-        public static System.Runtime.InteropServices.WeakGCHandle<T> FromIntPtr(nint value) { throw null; }
+        public static System.Runtime.InteropServices.WeakGCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
         public override readonly int GetHashCode() { throw null; }
+        public readonly bool IsAllocated { get { throw null; } }
         public readonly void SetTarget(T target) { }
-        public static nint ToIntPtr(System.Runtime.InteropServices.WeakGCHandle<T> value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.WeakGCHandle<T> value) { throw null; }
         public readonly bool TryGetTarget([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? target) { throw null; }
+        public WeakGCHandle(T target, bool trackResurrection = false) { }
     }
 }
 namespace System.Runtime.InteropServices.Marshalling
@@ -14533,11 +14892,10 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedOut))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
-    public static partial class ReadOnlySpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : struct
+    public static unsafe partial class ReadOnlySpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public ref partial struct ManagedToUnmanagedIn
         {
-            private unsafe TUnmanagedElement* _allocatedMemory;
             private object _dummy;
             private int _dummyPrimitive;
             public static int BufferSize { get { throw null; } }
@@ -14551,8 +14909,6 @@ namespace System.Runtime.InteropServices.Marshalling
         }
         public partial struct ManagedToUnmanagedOut
         {
-            private unsafe TUnmanagedElement* _unmanagedArray;
-            private T[] _managedValues;
             private object _dummy;
             private int _dummyPrimitive;
             public void Free() { }
@@ -14571,12 +14927,11 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn, typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedIn))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut, typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedOut))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedRef, typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedRef))]
-    public static partial class SafeHandleMarshaller<T> where T : System.Runtime.InteropServices.SafeHandle
+    public static partial class SafeHandleMarshaller<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : System.Runtime.InteropServices.SafeHandle
     {
         public partial struct ManagedToUnmanagedIn
         {
             private T _handle;
-            private object _dummy;
             private int _dummyPrimitive;
             public void Free() { }
             public void FromManaged(T handle) { }
@@ -14585,7 +14940,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public partial struct ManagedToUnmanagedOut
         {
             private T _newHandle;
-            private object _dummy;
             private int _dummyPrimitive;
             public ManagedToUnmanagedOut() { throw null; }
             public void Free() { }
@@ -14595,9 +14949,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public partial struct ManagedToUnmanagedRef
         {
             private T _handle;
-            private T _newHandle;
-            private T _handleToReturn;
-            private object _dummy;
             private int _dummyPrimitive;
             public ManagedToUnmanagedRef() { throw null; }
             public void Free() { }
@@ -14612,7 +14963,7 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn, typeof(System.Runtime.InteropServices.Marshalling.SpanMarshaller<,>.ManagedToUnmanagedIn))]
-    public static partial class SpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : struct
+    public static partial class SpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
         public unsafe static System.Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public unsafe static TUnmanagedElement* AllocateContainerForUnmanagedElements(System.Span<T> managed, out int numElements) { throw null; }
@@ -14623,7 +14974,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public unsafe static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         public ref partial struct ManagedToUnmanagedIn
         {
-            private unsafe TUnmanagedElement* _allocatedMemory;
             private object _dummy;
             private int _dummyPrimitive;
             public static int BufferSize { get { throw null; } }
@@ -14660,9 +15010,9 @@ namespace System.Runtime.InteropServices.Swift
         public unsafe SwiftSelf(void* value) { throw null; }
         public unsafe void* Value { get { throw null; } }
     }
-    public readonly partial struct SwiftSelf<T> where T : struct
+    public readonly partial struct SwiftSelf<T> where T: unmanaged
     {
-        private readonly T _Value_k__BackingField;
+        private readonly T _dummyPrimitive;
         public SwiftSelf(T value) { throw null; }
         public T Value { get { throw null; } }
     }
@@ -15671,12 +16021,12 @@ namespace System.Text
         public static bool operator !=(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator <(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator <=(System.Text.Rune left, System.Text.Rune right) { throw null; }
-        int System.IComparable.CompareTo(object obj) { throw null; }
-        string System.IFormattable.ToString(string format, System.IFormatProvider formatProvider) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
-        static System.Text.Rune System.IUtf8SpanParsable<System.Text.Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider) { throw null; }
-        static bool System.IUtf8SpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider provider, out System.Text.Rune result) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Text.Rune System.IUtf8SpanParsable<System.Text.Rune>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<System.Text.Rune>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Text.Rune result) { throw null; }
         public static System.Text.Rune ToLower(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToLowerInvariant(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }
@@ -15694,43 +16044,41 @@ namespace System.Text
     public readonly partial struct RunePosition : System.IEquatable<System.Text.RunePosition>
     {
         private readonly int _dummyPrimitive;
-        public RunePosition(System.Text.Rune rune, int startIndex, int length, bool wasReplaced) { throw null; }
-        public int Length { get { throw null; } }
-        public System.Text.Rune Rune { get { throw null; } }
-        public int StartIndex { get { throw null; } }
-        public bool WasReplaced { get { throw null; } }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public void Deconstruct(out System.Text.Rune rune, out int startIndex) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public void Deconstruct(out System.Text.Rune rune, out int startIndex, out int length) { throw null; }
         public static System.Text.RunePosition.Utf16Enumerator EnumerateUtf16(System.ReadOnlySpan<char> span) { throw null; }
         public static System.Text.RunePosition.Utf8Enumerator EnumerateUtf8(System.ReadOnlySpan<byte> span) { throw null; }
-        public override bool Equals(object? obj) { throw null; }
+        public System.Text.Rune Rune { get { throw null; } }
+        public int StartIndex { get { throw null; } }
+        public int Length { get { throw null; } }
+        public bool WasReplaced { get { throw null; } }
+        public RunePosition(Rune rune, int startIndex, int length, bool wasReplaced) { throw null; }
         public bool Equals(System.Text.RunePosition other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.Text.Rune rune, out int startIndex) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.Text.Rune rune, out int startIndex, out int length) { throw null; }
         public static bool operator ==(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
         public static bool operator !=(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
         public ref partial struct Utf16Enumerator : System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
         {
-            private object _dummy;
-            private int _dummyPrimitive;
-            public readonly System.Text.RunePosition Current { get { throw null; } }
-            object System.Collections.IEnumerator.Current { get { throw null; } }
+            private readonly int _dummyPrimitive;
+            public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf16Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
-            public void Reset() { }
+            public void Reset() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
             void System.Collections.IEnumerator.Reset() { }
             void System.IDisposable.Dispose() { }
         }
-        public ref partial struct Utf8Enumerator : System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
+        public ref partial struct Utf8Enumerator: System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
         {
-            private object _dummy;
-            private int _dummyPrimitive;
-            public readonly System.Text.RunePosition Current { get { throw null; } }
-            object System.Collections.IEnumerator.Current { get { throw null; } }
+            private readonly int _dummyPrimitive;
+            public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf8Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
-            public void Reset() { }
+            public void Reset() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
             void System.Collections.IEnumerator.Reset() { }
             void System.IDisposable.Dispose() { }
         }
@@ -15751,6 +16099,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(bool value) { throw null; }
         public System.Text.StringBuilder Append(byte value) { throw null; }
         public System.Text.StringBuilder Append(char value) { throw null; }
+        public System.Text.StringBuilder Append(System.Text.Rune value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe System.Text.StringBuilder Append(char* value, int valueCount) { throw null; }
         public System.Text.StringBuilder Append(char value, int repeatCount) { throw null; }
@@ -15770,7 +16119,6 @@ namespace System.Text
         public System.Text.StringBuilder Append(float value) { throw null; }
         public System.Text.StringBuilder Append(string? value) { throw null; }
         public System.Text.StringBuilder Append(string? value, int startIndex, int count) { throw null; }
-        public System.Text.StringBuilder Append(System.Text.Rune value) { throw null; }
         public System.Text.StringBuilder Append(System.Text.StringBuilder? value) { throw null; }
         public System.Text.StringBuilder Append(System.Text.StringBuilder? value, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
@@ -15784,25 +16132,25 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(char separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(char separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(string? separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<object?> values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(string? separator, [System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params string?[] values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
@@ -15813,14 +16161,15 @@ namespace System.Text
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
-        public System.Text.StringBuilderRuneEnumerator EnumerateRunes() { throw null; }
         public bool Equals(System.ReadOnlySpan<char> span) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Text.StringBuilder? sb) { throw null; }
         public System.Text.StringBuilder.ChunkEnumerator GetChunks() { throw null; }
-        public System.Text.Rune GetRuneAt(int index) { throw null; }
+        public System.Text.StringBuilderRuneEnumerator EnumerateRunes() { throw null; }
+        public Rune GetRuneAt(int index) { throw null; }
         public System.Text.StringBuilder Insert(int index, bool value) { throw null; }
         public System.Text.StringBuilder Insert(int index, byte value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
+        public System.Text.StringBuilder Insert(int index, System.Text.Rune value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[]? value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[]? value, int startIndex, int charCount) { throw null; }
         public System.Text.StringBuilder Insert(int index, decimal value) { throw null; }
@@ -15835,7 +16184,6 @@ namespace System.Text
         public System.Text.StringBuilder Insert(int index, float value) { throw null; }
         public System.Text.StringBuilder Insert(int index, string? value) { throw null; }
         public System.Text.StringBuilder Insert(int index, string? value, int count) { throw null; }
-        public System.Text.StringBuilder Insert(int index, System.Text.Rune value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Insert(int index, ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -15845,16 +16193,16 @@ namespace System.Text
         public System.Text.StringBuilder Remove(int startIndex, int length) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar) { throw null; }
         public System.Text.StringBuilder Replace(char oldChar, char newChar, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
+        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(System.ReadOnlySpan<char> oldValue, System.ReadOnlySpan<char> newValue) { throw null; }
         public System.Text.StringBuilder Replace(System.ReadOnlySpan<char> oldValue, System.ReadOnlySpan<char> newValue, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue) { throw null; }
         public System.Text.StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count) { throw null; }
-        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune) { throw null; }
-        public System.Text.StringBuilder Replace(System.Text.Rune oldRune, System.Text.Rune newRune, int startIndex, int count) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
-        public bool TryGetRuneAt(int index, out System.Text.Rune value) { throw null; }
+        public bool TryGetRuneAt(int index, out Rune value) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public partial struct AppendInterpolatedStringHandler
@@ -15888,14 +16236,14 @@ namespace System.Text
     {
         private object _dummy;
         private int _dummyPrimitive;
-        public readonly System.Text.Rune Current { get { throw null; } }
-        readonly object? System.Collections.IEnumerator.Current { get { throw null; } }
-        public readonly System.Text.StringBuilderRuneEnumerator GetEnumerator() { throw null; }
+        public System.Text.Rune Current { get { throw null; } }
+        object? System.Collections.IEnumerator.Current { get { throw null; } }
+        public System.Text.StringBuilderRuneEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
-        readonly System.Collections.Generic.IEnumerator<System.Text.Rune> System.Collections.Generic.IEnumerable<System.Text.Rune>.GetEnumerator() { throw null; }
-        readonly System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        System.Collections.Generic.IEnumerator<System.Text.Rune> System.Collections.Generic.IEnumerable<System.Text.Rune>.GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         void System.Collections.IEnumerator.Reset() { }
-        readonly void System.IDisposable.Dispose() { }
+        void System.IDisposable.Dispose() { }
     }
     public partial struct StringRuneEnumerator : System.Collections.Generic.IEnumerable<System.Text.Rune>, System.Collections.Generic.IEnumerator<System.Text.Rune>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
     {
@@ -15924,15 +16272,15 @@ namespace System.Text.Unicode
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref partial struct TryWriteInterpolatedStringHandler
         {
-            private object _dummy;
-            private int _dummyPrimitive;
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
             public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<byte> destination, out bool shouldAppend) { throw null; }
             public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<byte> destination, System.IFormatProvider? provider, out bool shouldAppend) { throw null; }
             public bool AppendFormatted(object? value, int alignment = 0, string? format = null) { throw null; }
-            public bool AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<byte> utf8Value) { throw null; }
-            public bool AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<byte> utf8Value, int alignment = 0, string? format = null) { throw null; }
-            public bool AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> value) { throw null; }
-            public bool AppendFormatted([System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<byte> utf8Value) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<byte> utf8Value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<char> value) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { throw null; }
             public bool AppendFormatted(string? value) { throw null; }
             public bool AppendFormatted(string? value, int alignment = 0, string? format = null) { throw null; }
             public bool AppendFormatted<T>(T value) { throw null; }
@@ -15995,9 +16343,9 @@ namespace System.Threading
         public void CancelAfter(int millisecondsDelay) { }
         public void CancelAfter(System.TimeSpan delay) { }
         public System.Threading.Tasks.Task CancelAsync() { throw null; }
-        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.CancellationToken> tokens) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.ReadOnlySpan<System.Threading.CancellationToken> tokens) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -16141,6 +16489,7 @@ namespace System.Threading.Tasks
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
         public bool IsCompletedSuccessfully { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(true, nameof(System.Exception))]
         public bool IsFaulted { get { throw null; } }
         public System.Threading.Tasks.TaskStatus Status { get { throw null; } }
         System.Threading.WaitHandle System.IAsyncResult.AsyncWaitHandle { get { throw null; } }
@@ -16202,7 +16551,7 @@ namespace System.Threading.Tasks
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static void WaitAll([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
+        public static void WaitAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -16224,34 +16573,34 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider) { throw null; }
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
-        public static System.Threading.Tasks.Task WhenAll([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Threading.Tasks.Task WhenAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
-        public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
-        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Threading.Tasks.Task task1, System.Threading.Tasks.Task task2) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
-        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
-        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
-        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>([System.Runtime.CompilerServices.ParamCollectionAttribute, System.Runtime.CompilerServices.ScopedRefAttribute] System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
     public static partial class TaskAsyncEnumerableExtensions
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) where T : allows ref struct { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) where T : allows ref struct { throw null; }
     }
     public partial class TaskCanceledException : System.OperationCanceledException
     {
@@ -16561,6 +16910,7 @@ namespace System.Threading.Tasks
         public bool Observed { get { throw null; } }
         public void SetObserved() { }
     }
+    [System.Runtime.CompilerServices.AsyncMethodBuilderAttribute(typeof(System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder))]
     public readonly partial struct ValueTask : System.IEquatable<System.Threading.Tasks.ValueTask>
     {
         private readonly object _dummy;
@@ -16587,6 +16937,7 @@ namespace System.Threading.Tasks
         public static bool operator !=(System.Threading.Tasks.ValueTask left, System.Threading.Tasks.ValueTask right) { throw null; }
         public System.Threading.Tasks.ValueTask Preserve() { throw null; }
     }
+    [System.Runtime.CompilerServices.AsyncMethodBuilderAttribute(typeof(System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<>))]
     public readonly partial struct ValueTask<TResult> : System.IEquatable<System.Threading.Tasks.ValueTask<TResult>>
     {
         private readonly TResult _result;
@@ -16631,7 +16982,7 @@ namespace System.Threading.Tasks.Sources
         private TResult _result;
         private object _dummy;
         private int _dummyPrimitive;
-        public bool RunContinuationsAsynchronously { get { throw null; } set { } }
+        public bool RunContinuationsAsynchronously { readonly get { throw null; } set { } }
         public short Version { get { throw null; } }
         public TResult GetResult(short token) { throw null; }
         public System.Threading.Tasks.Sources.ValueTaskSourceStatus GetStatus(short token) { throw null; }
@@ -16806,8 +17157,8 @@ namespace System
         public static bool operator !=(System.Uri? uri1, System.Uri? uri2) { throw null; }
         [System.ObsoleteAttribute("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse() { }
-        string System.IFormattable.ToString(string format, System.IFormatProvider formatProvider) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider provider) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
         public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string? uriString, in System.UriCreationOptions creationOptions, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
