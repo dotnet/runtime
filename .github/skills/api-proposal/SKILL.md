@@ -225,7 +225,7 @@ The agent has the burden of proof when claiming absence of risks. Evaluate:
 **7. Open Questions** (if any)
 
 List unresolved design questions with tentative answers. Surfacing uncertainty is a feature, not a weakness. Example from PriorityQueue:
-- "Should we use `KeyValuePair` instead of tuples?
+- "Should we use `KeyValuePair` instead of tuples?"
 
 **8. Scope considerations** (if applicable)
 
