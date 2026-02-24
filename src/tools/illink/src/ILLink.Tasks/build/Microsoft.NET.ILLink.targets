@@ -139,7 +139,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     -->
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
   <Target Name="_RunILLink"
-          DependsOnTargets="_ComputeManagedAssemblyToLink;PrepareForILLink"
+          DependsOnTargets="_ComputeLinkedResolvedFileToPublishCandidate"
           Inputs="$(MSBuildAllProjects);@(ManagedAssemblyToLink);@(TrimmerRootDescriptor);@(ReferencePath)"
           Outputs="$(_LinkSemaphore)">
     <NETSdkInformation ResourceName="ILLinkRunning" />
@@ -336,6 +336,18 @@ Copyright (c) .NET Foundation. All rights reserved.
       <__PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(ManagedAssemblyToLink->'%(RelativeDir)%(Filename).pdb')" />
       <_PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(__PDBToLink)" />
     </ItemGroup>
+
+  </Target>
+
+  <!--
+    ============================================================
+                     _ComputeLinkedResolvedFileToPublishCandidate
+
+    Compute the candidate set of output files from ILLink, using
+    the per-assembly metadata set by PrepareForILLink.
+    ============================================================
+    -->
+  <Target Name="_ComputeLinkedResolvedFileToPublishCandidate" DependsOnTargets="PrepareForILLink">
 
     <ItemGroup>
       <_LinkedResolvedFileToPublishCandidate Include="@(ManagedAssemblyToLink->'$(IntermediateLinkDir)%(Filename)%(Extension)')" />
