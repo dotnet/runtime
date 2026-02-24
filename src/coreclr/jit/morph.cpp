@@ -8524,27 +8524,11 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        int      lclNum = addr->AsLclVarCommon()->GetLclNum();
-        unsigned offset = addr->AsLclVarCommon()->GetLclOffs();
-
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-
-        ValueSize lclSize   = varDsc->lvValueSize();
+        int       lclNum    = addr->AsLclVarCommon()->GetLclNum();
+        unsigned  offset    = addr->AsLclVarCommon()->GetLclOffs();
         ValueSize indirSize = indir->ValueSize();
 
-        bool morphToLclFld = false;
-
-        if (lclSize.IsExact() && indirSize.IsExact())
-        {
-            unsigned extent = offset + indirSize.GetExact();
-            morphToLclFld   = IsValidLclAddr(lclNum, extent);
-        }
-        else
-        {
-            morphToLclFld = (indirSize == lclSize) && (offset == 0);
-        }
-
-        if (morphToLclFld)
+        if (!IsWideAccess(lclNum, offset, indirSize))
         {
             addr->ChangeType(indir->TypeGet());
             if (indir->OperIs(GT_STOREIND))
@@ -10449,15 +10433,19 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         {
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
-            if (FitsIn<uint16_t>(offsetNode->IconValue()))
-            {
-                unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+            ssize_t              consVal     = offsetNode->IconValue();
 
-                // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (IsValidLclAddr(lclAddrNode->GetLclNum(), offset))
+            if (FitsIn<uint16_t>(consVal))
+            {
+                ClrSafeInt<uint16_t> newOffset =
+                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
+
+                // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.  We check the bounds of a
+                // 1-byte access at the address, offset by the constant, to determine if this is a valid address.
+                if (!newOffset.IsOverflow() && !IsWideAccess(lclAddrNode->GetLclNum(), newOffset.Value(), ValueSize(1)))
                 {
                     lclAddrNode->SetOper(GT_LCL_ADDR);
-                    lclAddrNode->AsLclFld()->SetLclOffs(offset);
+                    lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
                     assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
                     lclAddrNode->SetVNsFromNode(add);

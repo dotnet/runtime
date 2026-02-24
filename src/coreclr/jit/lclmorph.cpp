@@ -1595,36 +1595,10 @@ private:
         unsigned   lclNum    = val.LclNum();
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
+        ValueSize  lclSize   = m_compiler->lvaLclValueSize(lclNum);
         ValueSize  indirSize = node->AsIndir()->ValueSize();
-        bool       isWide;
 
-        if (indirSize.IsNull() || !m_compiler->IsValidLclAddr(lclNum, offset))
-        {
-            // If we can't figure out the indirection size then treat it as a wide indirection.
-            // Additionally, treat indirections with large offsets as wide: local field nodes
-            // and the emitter do not support them.
-            isWide = true;
-        }
-        else if (indirSize.IsExact())
-        {
-            ClrSafeInt<unsigned> endOffset = ClrSafeInt<unsigned>(offset) + ClrSafeInt<unsigned>(indirSize.GetExact());
-
-            if (endOffset.IsOverflow())
-            {
-                isWide = true;
-            }
-            else
-            {
-                ValueSize lclSize = m_compiler->lvaLclValueSize(lclNum);
-                isWide            = !lclSize.IsExact() || (endOffset.Value() > lclSize.GetExact());
-            }
-        }
-        else
-        {
-            isWide = true;
-        }
-
-        if (isWide)
+        if (indirSize.IsNull() || m_compiler->IsWideAccess(lclNum, offset, indirSize))
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
             if (m_lclAddrAssertions != nullptr)
@@ -2143,28 +2117,13 @@ private:
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
                 ValueSize  fieldSize   = fieldVarDsc->lvValueSize();
 
-                // First check details related to exact sizes.
-                if (fieldSize.IsExact() && accessSize.IsExact())
+                // Span's Length is never negative unconditionally
+                if (isSpanLength && (accessSize.GetExact() == genTypeSize(TYP_INT)))
                 {
                     unsigned exactSize      = accessSize.GetExact();
                     unsigned exactFieldSize = fieldSize.GetExact();
 
-                    // Span's Length is never negative unconditionally
-                    if (isSpanLength && (exactSize == genTypeSize(TYP_INT)))
-                    {
-                        fieldVarDsc->SetIsNeverNegative(true);
-                    }
-
-                    // Retargeting the indirection to reference the promoted field would make it "wide", exposing
-                    // the whole parent struct (with all of its fields).
-                    if (exactSize > exactFieldSize)
-                    {
-                        return BAD_VAR_NUM;
-                    }
-                }
-                // Otherwise we're dealing with symbolic sizes. If the accessSize != fieldSize, then this is
-                // a narrow/wide access to the field.
-                else if (fieldSize != accessSize)
+                if (!accessSize.IsNull() && m_compiler->IsWideAccess(fieldLclNum, 0, accessSize))
                 {
                     return BAD_VAR_NUM;
                 }
