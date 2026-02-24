@@ -405,7 +405,7 @@ internal readonly struct GC_1 : IGC
     private void GetHandlesForSegment(Data.TableSegment tableSegment, HandleType type, List<HandleData> handles)
     {
         Debug.Assert(GetInternalHandleType(type) < _handleMaxInternalTypes);
-        byte uBlock = tableSegment.RgTail[GetInternalHandleType(type)];
+        byte uBlock = tableSegment.RgTail[(int)GetInternalHandleType(type)];
         if (uBlock == _blockInvalid)
             return;
         uBlock = tableSegment.RgAllocation[uBlock];

@@ -13,6 +13,7 @@ internal readonly struct ComWrappers_1 : IComWrappers
     private const string NativeObjectWrapperNamespace = "System.Runtime.InteropServices";
     private const string NativeObjectWrapperName = "ComWrappers+NativeObjectWrapper";
     private readonly Target _target;
+
     public ComWrappers_1(Target target)
     {
         _target = target;
@@ -23,6 +24,7 @@ internal readonly struct ComWrappers_1 : IComWrappers
         Data.NativeObjectWrapperObject wrapper = _target.ProcessedData.GetOrAdd<Data.NativeObjectWrapperObject>(address);
         return wrapper.ExternalComObject;
     }
+
     private bool GetComWrappersCCWVTableQIAddress(TargetPointer ccw, out TargetPointer vtable, out TargetPointer qiAddress)
     {
         qiAddress = TargetPointer.Null;

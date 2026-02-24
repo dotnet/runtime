@@ -22,7 +22,7 @@ public bool IsComWrappersRCW(TargetPointer rcw);
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object ||
+| `NativeObjectWrapperObject` | `ExternalComObject` | Address of the external COM object |
 | `ManagedObjectWrapperHolderObject` | `WrappedObject` | Address of the wrapped object |
 | `ManagedObjectWrapperLayout` | `RefCount` | Reference count of the managed object wrapper |
 | `ComWrappersVtablePtrs` | `Size` | Size of vtable pointers array |
