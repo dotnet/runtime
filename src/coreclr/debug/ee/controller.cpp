@@ -5396,7 +5396,7 @@ void InterpreterStepHelper::AddInterpreterPatch(const int32_t* pIP)
         m_pInfo->m_activeFrame.fp,
         NULL);
 
-    LOG((LF_CORDB, LL_INFO10000, "ISH::AIP: Added interpreter patch at %p (offset 0x%x)\n", pIP, offset));
+    LOG((LF_CORDB, LL_INFO10000, "ISH::AIP: Added interpreter patch at %p (offset 0x%zx)\n", pIP, offset));
 }
 
 InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
