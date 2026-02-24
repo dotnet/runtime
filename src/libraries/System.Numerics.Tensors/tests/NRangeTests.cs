@@ -121,14 +121,26 @@ namespace System.Buffers.Tests
             Assert.NotEqual(NativeRange1.GetHashCode(), NativeRange2.GetHashCode());
         }
 
-        [Fact]
-        public static void ToStringTest()
+        [Theory]
+        [InlineData(10, false, 20, false, "10..20")]
+        [InlineData(10, false, 20, true, "10..^20")]
+        [InlineData(0, true, 0, true, "^0..^0")]
+        [InlineData(5, true, 10, false, "^5..10")]
+        [InlineData(int.MaxValue, false, int.MaxValue, true, "2147483647..^2147483647")]
+        public static void ToStringTest(long startValue, bool startFromEnd, long endValue, bool endFromEnd, string expected)
         {
-            NRange NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: false));
-            Assert.Equal(10.ToString() + ".." + 20.ToString(), NativeRange1.ToString());
+            NRange range = new NRange(new NIndex((nint)startValue, startFromEnd), new NIndex((nint)endValue, endFromEnd));
+            Assert.Equal(expected, range.ToString());
+        }
 
-            NativeRange1 = new NRange(new NIndex(10, fromEnd: false), new NIndex(20, fromEnd: true));
-            Assert.Equal(10.ToString() + "..^" + 20.ToString(), NativeRange1.ToString());
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(1L + uint.MaxValue, false, 1L + uint.MaxValue, true, "4294967296..^4294967296")]
+        [InlineData(long.MaxValue, false, long.MaxValue, true, "9223372036854775807..^9223372036854775807")]
+        [InlineData(1L + uint.MaxValue, true, long.MaxValue, false, "^4294967296..9223372036854775807")]
+        public static void ToStringTest_64bit(long startValue, bool startFromEnd, long endValue, bool endFromEnd, string expected)
+        {
+            NRange range = new NRange(new NIndex((nint)startValue, startFromEnd), new NIndex((nint)endValue, endFromEnd));
+            Assert.Equal(expected, range.ToString());
         }
 
         [Fact]

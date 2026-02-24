@@ -72,7 +72,6 @@ extern "C" {
     int32_t SystemNative_ConvertErrorPalToPlatform (int32_t);
     int32_t SystemNative_ConvertErrorPlatformToPal (int32_t);
     int32_t SystemNative_CopyFile (void *, void *, int64_t);
-    void * SystemNative_Dup (void *);
     int32_t SystemNative_FAllocate (void *, int64_t, int64_t);
     int32_t SystemNative_FChMod (void *, int32_t);
     int32_t SystemNative_FChflags (void *, uint32_t);
@@ -82,6 +81,7 @@ extern "C" {
     int32_t SystemNative_FTruncate (void *, int64_t);
     int32_t SystemNative_FUTimens (void *, void *);
     int32_t SystemNative_FcntlSetFD (void *, int32_t);
+    int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeLibrary (void *);
     int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
@@ -90,7 +90,6 @@ extern "C" {
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    uint32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
     int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
@@ -220,7 +219,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ConvertErrorPalToPlatform) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal) // System.Console, System.IO.Compression.ZipFile, System.IO.MemoryMappedFiles, System.Net.Primitives, System.Private.CoreLib
     DllImportEntry(SystemNative_CopyFile) // System.Private.CoreLib
-    DllImportEntry(SystemNative_Dup) // System.Console
     DllImportEntry(SystemNative_FAllocate) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChMod) // System.Private.CoreLib
     DllImportEntry(SystemNative_FChflags) // System.Private.CoreLib
@@ -230,6 +228,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FTruncate) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_FUTimens) // System.Private.CoreLib
     DllImportEntry(SystemNative_FcntlSetFD) // System.IO.MemoryMappedFiles
+    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives
@@ -238,7 +237,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
@@ -329,7 +327,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 98},
+    {"libSystem.Native", s_libSystem_Native, 97},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
