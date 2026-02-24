@@ -231,7 +231,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             switch ((MethodClassification)(desc.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask))
             {
                 case MethodClassification.IL:
-                case MethodClassification.ComInterop:
                     baseSize = target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("MethodDesc type size must be known");
                     break;
                 case MethodClassification.FCall:
@@ -249,6 +248,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 case MethodClassification.Instantiated:
                     baseSize = target.GetTypeInfo(DataType.InstantiatedMethodDesc).Size ?? throw new InvalidOperationException("InstantiatedMethodDesc type size must be known");
                     break;
+                case MethodClassification.ComInterop:
+                    baseSize = target.GetTypeInfo(DataType.CLRToCOMCallMethodDesc).Size ?? throw new InvalidOperationException("CLRToCOMCallMethodDesc type size must be known");
+                    break;
                 case MethodClassification.Dynamic:
                     baseSize = target.GetTypeInfo(DataType.DynamicMethodDesc).Size ?? throw new InvalidOperationException("DynamicMethodDesc type size must be known");
                     break;
@@ -258,16 +260,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             MethodDescFlags_1.MethodDescFlags flags = (MethodDescFlags_1.MethodDescFlags)desc.Flags;
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
-                baseSize += (uint)target.PointerSize;
+                baseSize += target.GetTypeInfo(DataType.NonVtableSlot).Size ?? throw new InvalidOperationException("NonVtableSlot type size must be known");
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
                 baseSize += target.GetTypeInfo(DataType.MethodImpl).Size ?? throw new InvalidOperationException("MethodImpl type size must be known");
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
-                baseSize += (uint)target.PointerSize;
+                baseSize += target.GetTypeInfo(DataType.NativeCodeSlot).Size ?? throw new InvalidOperationException("NativeCodeSlot type size must be known");
 
             if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
-                baseSize += target.GetTypeInfo(DataType.AsyncMethodData).Size ?? throw new InvalidOperationException("AsyncMethodDescData type size must be known");
+                baseSize += target.GetTypeInfo(DataType.AsyncMethodData).Size ?? throw new InvalidOperationException("AsyncMethodData type size must be known");
 
             return baseSize;
         }
