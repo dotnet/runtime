@@ -82,6 +82,7 @@ export async function mono_run_main (main_assembly_name?: string, args?: string[
             for (const ptr of ptrs) {
                 Module._free(ptr);
             }
+            Module._free(mainAssemblyNamePtr);
 
             if (EXITSTATUS !== 0x0BADF00D) {
                 const reason = new Error("Failed to execute assembly");
