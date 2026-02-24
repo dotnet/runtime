@@ -224,6 +224,35 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
+#if 0
+	if (stack_size)
+		set_stack_size = *stack_size;
+	else
+		set_stack_size = 0;
+
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+	if (set_stack_size == 0) {
+#if HAVE_VALGRIND_MEMCHECK_H
+		if (RUNNING_ON_VALGRIND)
+			set_stack_size = 1 << 20;
+		else
+#endif
+		{
+			set_stack_size = MONO_DEFAULT_STACKSIZE;
+		}
+	}
+
+#ifdef PTHREAD_STACK_MIN
+	if (set_stack_size < PTHREAD_STACK_MIN)
+		set_stack_size = PTHREAD_STACK_MIN;
+#endif
+
+	res = pthread_attr_setstacksize (&attr, set_stack_size);
+	if (res != 0)
+		g_error ("%s: pthread_attr_setstacksize failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif /* HAVE_PTHREAD_ATTR_SETSTACKSIZE */
+#endif
+
 	/* Actually start the thread */
 	res = pthread_create (&thread, &attr, (gpointer (*)(gpointer)) thread_fn, thread_data);
 	if (res) {
