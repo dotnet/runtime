@@ -2971,7 +2971,121 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
+    {
+        if (buffer is null && pNeeded is null)
+            return HResults.E_POINTER;
+
+        int hr = HResults.S_OK;
+        try
+        {
+            string[] regs = _target.Contracts.RuntimeInfo.GetTargetArchitecture() switch
+            {
+                RuntimeInfoArchitecture.X64 => s_amd64Registers,
+                RuntimeInfoArchitecture.Arm => s_armRegisters,
+                RuntimeInfoArchitecture.Arm64 => s_arm64Registers,
+                RuntimeInfoArchitecture.X86 => s_x86Registers,
+                RuntimeInfoArchitecture.LoongArch64 => s_loongArch64Registers,
+                RuntimeInfoArchitecture.RiscV64 => s_riscV64Registers,
+                _ => throw new InvalidOperationException(),
+            };
+
+            // Caller frame registers are encoded as "-(reg+1)".
+            bool callerFrame = regName < 0;
+            if (callerFrame)
+                regName = -regName - 1;
+
+            if ((uint)regName >= (uint)regs.Length)
+                return unchecked((int)0x8000FFFF); // E_UNEXPECTED
+
+            string name = callerFrame ? $"caller.{regs[regName]}" : regs[regName];
+
+            uint needed = (uint)(name.Length + 1);
+            if (pNeeded is not null)
+                *pNeeded = needed;
+
+            if (buffer is not null)
+            {
+                OutputBufferHelpers.CopyStringToBuffer(buffer, count, neededBufferSize: null, name);
+
+                if (count < needed)
+                    hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] bufferLocal = new char[count];
+            uint neededLocal;
+            int hrLocal;
+            fixed (char* ptr = bufferLocal)
+            {
+                hrLocal = _legacyImpl.GetRegisterName(regName, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(pNeeded is null || *pNeeded == neededLocal);
+                Debug.Assert(buffer is null || new ReadOnlySpan<char>(bufferLocal, 0, (int)Math.Min(count, neededLocal)).SequenceEqual(new ReadOnlySpan<char>(buffer, (int)Math.Min(count, neededLocal))));
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    private static readonly string[] s_amd64Registers =
+    [
+        "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi",
+        "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+    ];
+
+    private static readonly string[] s_armRegisters =
+    [
+        "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+        "r8", "r9", "r10", "r11", "r12", "sp", "lr",
+    ];
+
+    private static readonly string[] s_arm64Registers =
+    [
+        "X0", "X1", "X2", "X3", "X4", "X5", "X6", "X7",
+        "X8", "X9", "X10", "X11", "X12", "X13", "X14", "X15", "X16", "X17",
+        "X18", "X19", "X20", "X21", "X22", "X23", "X24", "X25", "X26", "X27",
+        "X28", "Fp", "Lr", "Sp",
+    ];
+
+    private static readonly string[] s_x86Registers =
+    [
+        "eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi",
+    ];
+
+    private static readonly string[] s_loongArch64Registers =
+    [
+        "R0", "RA", "TP", "SP",
+        "A0", "A1", "A2", "A3",
+        "A4", "A5", "A6", "A7",
+        "T0", "T1", "T2", "T3",
+        "T4", "T5", "T6", "T7",
+        "T8", "R21", "FP", "S0",
+        "S1", "S2", "S3", "S4",
+        "S5", "S6", "S7", "S8",
+    ];
+
+    private static readonly string[] s_riscV64Registers =
+    [
+        "R0", "RA", "SP", "GP",
+        "TP", "T0", "T1", "T2",
+        "FP", "S1", "A0", "A1",
+        "A2", "A3", "A4", "A5",
+        "A6", "A7", "S2", "S3",
+        "S4", "S5", "S6", "S7",
+        "S8", "S9", "S10", "S11",
+        "T3", "T4", "T5", "T6",
+    ];
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
