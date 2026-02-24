@@ -379,7 +379,7 @@ new GenericUriParser(
 
 Internally these make use of the existing support for configurable parsing based on the scheme that is also used for well-known schemes.
 
-Another option that is practically never used in practice is to register a custom implementation derived from `UriParser` which can bypasses internal parsing logic. That implementation is then responsible for creating `Uri` instances for that scheme, doing the parsing, and returning results by overriding the `GetComponents` functionality.
+Another option that is practically never used is to register a custom implementation derived from `UriParser` which can bypasses internal parsing logic. That implementation is then responsible for creating `Uri` instances for that scheme, doing the parsing, and returning results by overriding the `GetComponents` functionality.
 ```c#
 class MyParser : UriParser
 {
@@ -395,7 +395,7 @@ If such a parser is used, it is up to its implementation to perform sufficient v
 The custom implementation is also responsible for ensuring its logic in `GetComponents` is safe to call concurrently from multiple threads.
 
 Only one parser can be registered for a given scheme. Registering a parser for one of the built-in schemes is not allowed.  
-The set of schemes that are recognized by the implementation is not documented and may change in the future (but currently includes http, https, ftp, file, ...). The current set includes schemes such as http, https, wss, ftp, file, etc.
+The set of schemes that are recognized by the implementation is not documented and may change in the future. The current set includes schemes such as http, https, wss, ftp, file, etc.
 
 Uri exposes many static fields for scheme names (`Uri.UriSchemeHttp`, `Uri.UriSchemeData`, ...). While all schemes with built-in parser recognition are currently exposed as such public fields, the inverse does not hold - the presence of the public field does not guarantee that an internal parser exists, or that it's not possible to register a custom parser for said scheme.
 
