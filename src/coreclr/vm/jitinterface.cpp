@@ -8983,7 +8983,12 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* pMD = GetMethod(ftn);
-    MethodDesc* pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+    MethodDesc* pAsyncOtherVariant = NULL;
+    if (pMD->HasAsyncMethodData())
+    {
+         pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+    }
+    result = (CORINFO_METHOD_HANDLE)pAsyncOtherVariant;
     *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 
     EE_TO_JIT_TRANSITION();
