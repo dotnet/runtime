@@ -250,10 +250,11 @@ namespace Internal.JitInterface
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
             {
-                lookup.lookupKind.needsRuntimeLookup = true;
-                lookup.runtimeLookup.signature = null;
-
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(callerHandle, helperId, entity);
+
+                lookup.lookupKind.needsRuntimeLookup = true;
+                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
+                lookup.runtimeLookup.signature = null;
 
                 if (genericLookup.UseHelper)
                 {
@@ -268,9 +269,10 @@ namespace Internal.JitInterface
                         return;
                     }
 
+                    ISymbolNode helper = GetGenericLookupHelper(lookup.lookupKind.runtimeLookupKind, genericLookup.HelperId, callerHandle, genericLookup.HelperObject);
                     lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    lookup.lookupKind.runtimeLookupFlags = (ushort)genericLookup.HelperId;
-                    lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(genericLookup.HelperObject);
+                    lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                    lookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
                 else if (genericLookup.UseNull)
                 {
@@ -297,11 +299,7 @@ namespace Internal.JitInterface
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
                     lookup.runtimeLookup.indirectSecondOffset = false;
-                    lookup.lookupKind.runtimeLookupFlags = 0;
-                    lookup.lookupKind.runtimeLookupArgs = null;
                 }
-
-                lookup.lookupKind.runtimeLookupKind = GetLookupKindFromContextSource(genericLookup.ContextSource);
             }
             else
             {
@@ -311,7 +309,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
             {
@@ -336,23 +334,13 @@ namespace Internal.JitInterface
                     {
                         // Token == 0 means "initialize this class". We only expect RyuJIT to call it for this case.
                         Debug.Assert(pResolvedToken.token == 0 && pResolvedToken.tokenScope == null);
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+                        Debug.Assert(MethodBeingCompiled.IsSharedByGenericInstantiations);
 
                         DefType typeToInitialize = (DefType)HandleToObject(callerHandle).OwningType;
                         Debug.Assert(typeToInitialize.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                         DefType helperArg = typeToInitialize.ConvertToSharedRuntimeDeterminedForm();
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
-                        pLookup = CreateConstLookupToSymbol(helper);
-                    }
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
-                    {
-                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
-
-                        ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = HandleToObject(pGenericLookupKind.runtimeLookupArgs);
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, HandleToObject(callerHandle), helperArg);
+                        ISymbolNode helper = GetGenericLookupHelper(GetGenericRuntimeLookupKind(MethodBeingCompiled), ReadyToRunHelperId.GetNonGCStaticBase, HandleToObject(callerHandle), helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -449,8 +437,10 @@ namespace Internal.JitInterface
                 {
                     MethodDesc contextMethod = HandleToObject(callerHandle);
                     pLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
-                    pLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.DelegateCtor;
-                    pLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(delegateInfo);
+                    pLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                    pLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR;
+                    ISymbolNode helper = GetGenericLookupHelper(pLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.DelegateCtor, contextMethod, delegateInfo);
+                    pLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
             }
             else
@@ -1363,7 +1353,7 @@ namespace Internal.JitInterface
             else
             {
                 // We can devirtualize the callvirt if the method is not virtual to begin with
-                bool canDevirt = IsCallEffectivelyDirect(targetMethod);
+                bool canDevirt = targetMethod.IsCallEffectivelyDirect();
 
                 // We might be able to devirt based on whole program view
                 if (!canDevirt
@@ -1457,12 +1447,15 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
+                    MethodDesc caller = HandleToObject(callerHandle);
+
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = 0;
                     pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(HandleToObject(callerHandle));
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
+                    object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                    ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
+                    pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
                 }
                 else
                 {

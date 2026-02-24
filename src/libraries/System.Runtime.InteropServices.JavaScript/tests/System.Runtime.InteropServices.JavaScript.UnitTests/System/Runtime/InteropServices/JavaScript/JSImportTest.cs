@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public unsafe void PrototypeNotEqual()
         {
             using var temp1 = JSHost.GlobalThis.GetPropertyAsJSObject("EventTarget");
@@ -352,6 +352,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
+        [MemberData(nameof(MarshalDoubleArrayCases))]
+        public unsafe void JsImportDoubleArray_NoAttributes(double[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_DoubleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_DoubleArray_NoAttributes(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray_NoAttributes(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray_NoAttributes(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
         [MemberData(nameof(MarshalStringArrayCases))]
         public unsafe void JsImportStringArray(string[]? expected)
         {
@@ -510,6 +549,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public unsafe void JsImportSpanOfSingle()
+        {
+            var expectedFloats = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            Span<float> expected = new Span<float>(expectedFloats, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedFloats);
+            Span<float> actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, false);
+            Assert.Equal(expected.Length, actual.Length);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.GetPinnableReference(), actual.GetPinnableReference());
+            Assert.True(actual.SequenceCompareTo(expected) == 0);
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
         public unsafe void JsImportArraySegmentOfByte()
         {
             var expectedBytes = new byte[] { 88, 1, 2, 42, 0, 127, 255 };
@@ -526,8 +582,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfInt32()
         {
-            var expectedBytes = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
-            ArraySegment<int> expected = new ArraySegment<int>(expectedBytes, 1, 6);
+            var expectedInts = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
+            ArraySegment<int> expected = new ArraySegment<int>(expectedInts, 1, 6);
             ArraySegment<int> actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
@@ -540,13 +596,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfDouble()
         {
-            var expectedBytes = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
-            ArraySegment<double> expected = new ArraySegment<double>(expectedBytes, 1, 10);
+            var expectedDoubles = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            ArraySegment<double> expected = new ArraySegment<double>(expectedDoubles, 1, 10);
             ArraySegment<double> actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
             Assert.Equal(expected.Array, actual.Array);
             actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
+        public unsafe void JsImportArraySegmentOfSingle()
+        {
+            var expectedFloats = new float[] { 88.88F, 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            ArraySegment<float> expected = new ArraySegment<float>(expectedFloats, 1, 10);
+            ArraySegment<float> actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, true);
             Assert.Equal(expected[0], expected[1]);
             Assert.Equal(actual[0], actual[1]);
         }

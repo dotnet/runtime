@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 {
     public class ConsoleLoggerExtensionsTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsole_NullConfigure_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => 
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSimpleConsole_NullConfigure_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => 
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSystemdConsole_NullConfigure_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => 
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddJsonConsole_NullConfigure_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => 
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     }));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsoleFormatter_NullConfigure_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => 
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     }));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void AddConsole_ConsoleLoggerOptionsFromConfigFile_IsReadFromLoggingConfiguration(string formatterName)
         {
@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(formatterName, logger.Options.FormatterName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsoleFormatter_CustomFormatter_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             public string CustomLabel { get; set; }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSimpleConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSimpleConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -214,7 +214,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.UseUtcTimestamp);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSystemdConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -240,7 +240,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddSystemdConsole_OutsideConfig_TakesProperty()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -270,7 +270,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.False(formatter.FormatterOptions.IncludeScopes);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
@@ -301,7 +301,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(newLine, formatter.FormatterOptions.JsonWriterOptions.NewLine);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddJsonConsole_OutsideConfig_TakesProperty()
         {
             var newLine = Environment.NewLine.Length is 2 ? "\n" : "\r\n";
@@ -338,7 +338,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(JavaScriptEncoder.UnsafeRelaxedJsonEscaping, formatter.FormatterOptions.JsonWriterOptions.Encoder);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsole_NullFormatterNameUsingSystemdFormat_AnyDeprecatedPropertiesOverwriteFormatterOptions()
         {
             var configs = new[] {
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal("HH:mm:ss ", formatter.FormatterOptions.TimestampFormat);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         public void AddConsole_MaxQueueLengthSetToNegativeOrZero_Throws(int invalidMaxQueueLength)
@@ -383,7 +383,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => serviceProvider.GetRequiredService<ILoggerProvider>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsole_MaxQueueLengthLargerThanZero_ConfiguredProperly()
         {
             var configs = new[] {
@@ -404,7 +404,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(12345, logger.Options.MaxQueueLength);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsole_NullFormatterName_UsingSystemdFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -436,7 +436,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.False(formatter.FormatterOptions.IncludeScopes);                 // setup using lambda wins over config
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddConsole_NullFormatterName_UsingDefaultFormat_IgnoreFormatterOptionsAndUseDeprecatedInstead()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -475,7 +475,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(LoggerColorBehavior.Disabled, formatter.FormatterOptions.ColorBehavior);                  // setup using lambda
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData("missingFormatter")]
         [InlineData("simple")]
         [InlineData("Simple")]
@@ -518,7 +518,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);                 // ignore deprecated set in lambda, defaulted to false
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData("missingFormatter")]
         [InlineData("systemd")]
         [InlineData("Systemd")]
