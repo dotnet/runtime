@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include "minipal/utils.h"
 
 #include "jitshared.h"
 #include "arenaallocator.h"

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include "minipal/utils.h"
 
 #include "jitshared.h"
 #include "memstats.h"
@@ -66,6 +67,7 @@ private:
     uint8_t* m_nextFreeByte;
     uint8_t* m_lastFreeByte;
 
+    NOINLINE
     void* allocateNewPage(size_t size);
 
 #if MEASURE_MEM_ALLOC
@@ -226,6 +228,7 @@ inline void* ArenaAllocatorT<TMemKindTraits>::allocateMemory(size_t size)
 // Return Value:
 //    A pointer to the first usable byte of the newly allocated page.
 template <typename TMemKindTraits>
+NOINLINE
 void* ArenaAllocatorT<TMemKindTraits>::allocateNewPage(size_t size)
 {
     size_t pageSize = sizeof(PageDescriptor) + size;
