@@ -4211,12 +4211,12 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface12
     int ISOSDacInterface12.GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit)
     {
-        if (allocPtr == null || allocLimit == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (allocPtr == null || allocLimit == null)
+                throw new ArgumentException();
+
             Contracts.IGC gcContract = _target.Contracts.GC;
             gcContract.GetGlobalAllocationContext(out TargetPointer pointer, out TargetPointer limit);
             *allocPtr = pointer.ToClrDataAddress(_target);
