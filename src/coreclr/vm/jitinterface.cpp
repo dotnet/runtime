@@ -14306,7 +14306,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             ReadyToRunInfo * pR2RInfo = currentModule->GetReadyToRunInfo();
 
-            DWORD stubRVA = *((DWORD *)pBlob);
+            DWORD stubRVA = GET_UNALIGNED_VAL32(pBlob);
             PCODE stubEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + stubRVA;
 
             pR2RInfo->RegisterResumptionStub(stubEntryPoint);
