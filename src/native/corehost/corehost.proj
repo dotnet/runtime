@@ -182,7 +182,7 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.dat" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libBrowserHost.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
-      <!-- <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" /> -->
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.wasm" />
     </ItemGroup>
 

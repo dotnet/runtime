@@ -1190,6 +1190,10 @@ struct Param
     LPWSTR *wzArgs;
 } param;
 
+#if defined(TARGET_BROWSER)
+extern "C" void SystemJS_ResolveMainPromise(int exitCode);
+#endif // TARGET_BROWSER
+
 static void RunMainInternal(Param* pParam)
 {
     MethodDescCallSite  threadStart(pParam->pFD);
@@ -1223,6 +1227,9 @@ static void RunMainInternal(Param* pParam)
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
         threadStart.Call(&stackVar);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
 // WASM-TODO: remove this
 // https://github.com/dotnet/runtime/issues/121064
@@ -1257,6 +1264,9 @@ static void RunMainInternal(Param* pParam)
         // Call the main method
         *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
 
     GCPROTECT_END();

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem;
 using ILCompiler.ObjectWriter;
@@ -148,17 +149,8 @@ namespace Internal.JitInterface
                 returnIsVoid = true;
             }
 
-            int parameterCount = signature.Length;
-
-            if (hasReturnBuffer)
-            {
-                parameterCount++; // return buffer
-            }
-
-            if (!method.IsUnmanagedCallersOnly)
-            {
-                parameterCount += 2; // sp and pe
-            }
+            // Reserve space for potential implicit this, stack pointer parameter, portable entrypoint parameter, and return buffer
+            ArrayBuilder<WasmValueType> result = new(signature.Length + 4);
 
             if (!signature.IsStatic)
             {
@@ -168,48 +160,41 @@ namespace Internal.JitInterface
                 {
                     explicitThis = true;
                 }
-                else
-                {
-                    parameterCount += 1; // implicit this
-                }
             }
-
-            Span<WasmValueType> wasmParameters = new WasmValueType[parameterCount];
-
-            int index = 0;
 
             if (method.IsUnmanagedCallersOnly) // reverse P/Invoke
             {
                 if (hasReturnBuffer)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
             }
             else // managed call
             {
-                wasmParameters[0] = pointerType; // Stack pointer parameter
-
-                // Return buffer is first after this.
+                result.Add(pointerType); // Stack pointer parameter
 
                 if (hasThis)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
 
                 if (hasReturnBuffer)
                 {
-                    wasmParameters[index++] = pointerType;
+                    result.Add(pointerType);
                 }
-
-                wasmParameters[wasmParameters.Length - 1] = pointerType; // PE entrypoint parameter
             }
 
             for (int i = explicitThis ? 1 : 0; i < signature.Length; i++)
             {
-                wasmParameters[index++] = LowerType(signature[i]);
+                result.Add(LowerType(signature[i]));
             }
 
-            WasmResultType ps = new(wasmParameters.ToArray());
+            if (!method.IsUnmanagedCallersOnly)
+            {
+                result.Add(pointerType); // PE entrypoint parameter
+            }
+
+            WasmResultType ps = new(result.ToArray());
             WasmResultType ret = returnIsVoid ? new(Array.Empty<WasmValueType>())
                 : new([LowerType(loweredReturnType)]);
 
