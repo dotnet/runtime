@@ -1221,7 +1221,7 @@ void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
             const bool isUnsigned = treeNode->IsUnsigned();
             // Both operands are on the stack as I32. Drop the second, extend the first, then extend the second.
             //
-            // TODO-WASM-CQ: consider tansforming this to a (u)long multiply plus a checked cast, either in morph or
+            // TODO-WASM-CQ: consider transforming this to a (u)long multiply plus a checked cast, either in morph or
             // lower.
             GetEmitter()->emitIns(INS_drop);
             GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
