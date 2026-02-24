@@ -594,14 +594,14 @@ bool CallCountingManager::SetCodeEntryPoint(
             {
                 // Call counting is disabled, complete, or pending completion. The pending completion stage here would be
                 // relatively rare, let it be handled elsewhere.
+                methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
-                    precode->SetTargetInterlocked(codeEntryPoint, FALSE);
-                }
-                else
-                {
-                    methodDesc->SetCodeEntryPoint(codeEntryPoint);
+                    // Reset the precode target to prestub. For backpatchable methods, the precode must always
+                    // point to prestub (not native code) so that new vtable slots flow through DoBackpatch()
+                    // for discovery and recording. SetCodeEntryPoint() above handles recorded slots via
+                    // BackpatchEntryPointSlots() without touching the precode.
+                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
                 }
                 return true;
             }
@@ -640,14 +640,12 @@ bool CallCountingManager::SetCodeEntryPoint(
                         ->GetTieredCompilationManager()
                         ->AsyncPromoteToTier1(activeCodeVersion, createTieringBackgroundWorkerRef);
                 }
+                methodDesc->SetCodeEntryPoint(codeEntryPoint);
                 if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                 {
-                    Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
-                    precode->SetTargetInterlocked(codeEntryPoint, FALSE);
-                }
-                else
-                {
-                    methodDesc->SetCodeEntryPoint(codeEntryPoint);
+                    // Reset the precode target to prestub so that new vtable slots flow through DoBackpatch()
+                    // for discovery and recording. The call counting stub is no longer needed.
+                    Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
                 }
                 callCountingInfo->SetStage(CallCountingInfo::Stage::Complete);
                 return true;
@@ -914,14 +912,13 @@ void CallCountingManager::CompleteCallCounting()
                 {
                     if (activeCodeVersion == codeVersion)
                     {
+                        methodDesc->SetCodeEntryPoint(activeCodeVersion.GetNativeCode());
                         if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                         {
-                            Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
-                            precode->SetTargetInterlocked(activeCodeVersion.GetNativeCode(), FALSE);
-                        }
-                        else
-                        {
-                            methodDesc->SetCodeEntryPoint(activeCodeVersion.GetNativeCode());
+                            // Reset the precode target to prestub so that new vtable slots flow through
+                            // DoBackpatch() for discovery and recording. The call counting stub will be
+                            // deleted by DeleteAllCallCountingStubs().
+                            Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
                         }
                         break;
                     }
@@ -937,26 +934,19 @@ void CallCountingManager::CompleteCallCounting()
                         PCODE activeNativeCode = activeCodeVersion.GetNativeCode();
                         if (activeNativeCode != 0)
                         {
+                            methodDesc->SetCodeEntryPoint(activeNativeCode);
                             if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                             {
-                                Precode *precode = Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint());
-                                precode->SetTargetInterlocked(activeNativeCode, FALSE);
-                            }
-                            else
-                            {
-                                methodDesc->SetCodeEntryPoint(activeNativeCode);
+                                Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
                             }
                             break;
                         }
                     }
 
+                    methodDesc->ResetCodeEntryPoint();
                     if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
                     {
                         Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
-                    }
-                    else
-                    {
-                        methodDesc->ResetCodeEntryPoint();
                     }
                 } while (false);
 
@@ -1096,13 +1086,13 @@ void CallCountingManager::StopAllCallCounting(TieredCompilationManager *tieredCo
             // The intention is that all call counting stubs will be deleted shortly, and only methods that are called again
             // will cause stubs to be recreated, so reset the code entry point
             MethodDesc *methodDesc = codeVersion.GetMethodDesc();
+            methodDesc->ResetCodeEntryPoint();
             if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
             {
+                // ResetCodeEntryPoint() for backpatchable methods resets recorded slots but does not touch the
+                // precode target. Reset the precode target to prestub so that new vtable slots flow through the
+                // prestub for slot discovery and recording.
                 Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
-            }
-            else
-            {
-                methodDesc->ResetCodeEntryPoint();
             }
             callCountingInfo->SetStage(newCallCountingStage);
         }
@@ -1172,6 +1162,16 @@ void CallCountingManager::DeleteAllCallCountingStubs()
             {
                 _ASSERTE(callCountingStage == CallCountingInfo::Stage::StubIsNotActive);
                 continue;
+            }
+
+            // Ensure the precode target is prestub for backpatchable methods whose call counting has completed.
+            // CompleteCallCounting() should have already reset the precode to prestub; this is a safety net to
+            // guarantee the invariant that the precode always points to prestub when call counting is not active,
+            // so that new vtable slots can be discovered and recorded by DoBackpatch().
+            MethodDesc *methodDesc = callCountingInfo->GetCodeVersion().GetMethodDesc();
+            if (methodDesc->MayHaveEntryPointSlotsToBackpatch())
+            {
+                Precode::GetPrecodeFromEntryPoint(methodDesc->GetTemporaryEntryPoint())->ResetTargetInterlocked();
             }
 
             callCountingInfoByCodeVersionHash.Remove(it);
