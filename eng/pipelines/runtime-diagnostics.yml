@@ -11,7 +11,10 @@ parameters:
   default:
     - windows_x64
     - linux_x64
-    # - osx_x64 # Temporarily due to CI capacity constraints. Will re-enable once osx queues are more available.
+    - windows_arm64
+    - linux_arm64
+    - osx_arm64
+    - osx_x64
 
 resources:
   repositories:
@@ -23,6 +26,7 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 schedules:
 - cron: "30 2 * * *"
@@ -143,9 +147,9 @@ extends:
               condition: always()
 
     #
-    # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
+    # cDAC Dump Tests — Build, generate dumps, and run tests on Helix
     #
-    - stage: DumpCreation
+    - stage: CdacDumpTests
       dependsOn: []
       jobs:
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -153,76 +157,50 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms: ${{ parameters.cdacDumpPlatforms }}
+          shouldContinueOnError: true
           jobParameters:
-            buildArgs: -s clr+libs+tools.cdac -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig)
-            nameSuffix: CdacDumpGeneration
-            timeoutInMinutes: 120
+            nameSuffix: CdacDumpTest
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+            timeoutInMinutes: 180
             postBuildSteps:
+            # Build debuggees (uses dotnet build via Exec for implicit NuGet restore)
             - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
                 $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
-                /t:GenerateAllDumps
-                /p:CIDumpVersionsOnly=true
-                /p:SetDisableAuxProviderSignatureCheck=true
+                /t:BuildDebuggeesOnly
+                /p:Configuration=$(_BuildConfig)
                 /p:TargetArchitecture=$(archType)
-                -bl:$(Build.SourcesDirectory)/artifacts/log/DumpGeneration.binlog
-              displayName: 'Generate cDAC Dumps'
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/dumps/cdac
-                includeRootFolder: false
-                archiveType: tar
-                archiveExtension: .tar.gz
-                tarCompression: gz
-                artifactName: CdacDumps_$(osGroup)_$(archType)
-                displayName: cDAC Dump Artifacts
+                -bl:$(Build.SourcesDirectory)/artifacts/log/BuildDebuggees.binlog
+              displayName: 'Build Debuggees'
+            # Stage test binaries + debuggees + metadata into a Helix payload directory
+            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) build
+                $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                /p:PrepareHelixPayload=true
+                /p:Configuration=$(_BuildConfig)
+                /p:HelixPayloadDir=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac
+                /p:SkipDumpVersions=net10.0
+                -bl:$(Build.SourcesDirectory)/artifacts/log/DumpTestPayload.binlog
+              displayName: 'Prepare Helix Payload'
+            - pwsh: |
+                $testhostDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*" | Select-Object -First 1 -ExpandProperty FullName
+                Write-Host "TestHost directory: $testhostDir"
+                Write-Host "##vso[task.setvariable variable=TestHostPayloadDir]$testhostDir"
 
-    #
-    # cDAC Dump Tests — Download dumps from all platforms, run tests cross-platform
-    #
-    - stage: DumpTest
-      dependsOn:
-      - DumpCreation
-      jobs:
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms: ${{ parameters.cdacDumpPlatforms }}
-          jobParameters:
-            buildArgs: -s tools.cdacdumptests /p:SkipDumpVersions=net10.0
-            nameSuffix: CdacDumpTests
-            timeoutInMinutes: 60
-            postBuildSteps:
-            # Download and test against dumps from each platform
-            - ${{ each dumpPlatform in parameters.cdacDumpPlatforms }}:
-              - template: /eng/pipelines/common/download-artifact-step.yml
-                parameters:
-                  artifactName: CdacDumps_${{ dumpPlatform }}
-                  artifactFileName: CdacDumps_${{ dumpPlatform }}.tar.gz
-                  unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
-                  displayName: '${{ dumpPlatform }} Dumps'
-              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
-                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
-                  --no-build
-                  --logger "trx;LogFileName=CdacDumpTests_${{ dumpPlatform }}.trx"
-                  --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}
-                displayName: 'Run cDAC Dump Tests (${{ dumpPlatform }} dumps)'
-                continueOnError: true
-                env:
-                  CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
-              - task: PublishTestResults@2
-                displayName: 'Publish Results ($(osGroup)-$(archType) → ${{ dumpPlatform }})'
-                inputs:
-                  testResultsFormat: VSTest
-                  testResultsFiles: '**/*.trx'
-                  searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}'
-                  testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → ${{ dumpPlatform }}'
-                  failTaskOnFailedTests: true
-                  publishRunAttachments: true
-                  buildConfiguration: $(_BuildConfig)
-                continueOnError: true
-                condition: always()
-            # Fail the job if any test or publish step above reported issues.
-            - script: echo "One or more dump test steps failed." && exit 1
-              displayName: 'Fail if tests failed'
-              condition: eq(variables['Agent.JobStatus'], 'SucceededWithIssues')
+                $queue = switch ("$(osGroup)_$(archType)") {
+                    "windows_x64"  { "$(helix_windows_x64)" }
+                    "windows_arm64" { "$(helix_windows_arm64)" }
+                    "linux_x64"    { "$(helix_linux_x64_oldest)" }
+                    "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
+                    "osx_x64"     { "$(helix_macos_x64)" }
+                    "osx_arm64"   { "$(helix_macos_arm64)" }
+                }
+                Write-Host "Helix queue: $queue"
+                Write-Host "##vso[task.setvariable variable=CdacHelixQueue]$queue"
+              displayName: 'Find TestHost Directory and Helix Queue'
+            - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+              parameters:
+                displayName: 'Send cDAC Dump Tests to Helix'
+                sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues=$(CdacHelixQueue) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+                environment:
+                  _Creator: dotnet-bot
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                  NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages

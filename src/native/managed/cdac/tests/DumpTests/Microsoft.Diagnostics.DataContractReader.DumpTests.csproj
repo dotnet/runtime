@@ -34,5 +34,82 @@
     <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
   </ItemGroup>
+
+  <!--
+    PrepareHelixPayload: Stages test output + debuggee binaries into a directory
+    suitable for sending to Helix as a work item payload.
+
+    The layout is:
+      $(HelixPayloadDir)/
+        tests/                    — test DLLs + xunit.console.dll + deps
+        debuggees/{name}/         — built debuggee binaries
+        debuggee-metadata.props   — auto-generated _Debuggee items with DumpDir/MiniDumpType
+
+    Usage:
+      dotnet build /p:PrepareHelixPayload=true
+                   /p:HelixPayloadDir=$(StagingDir)
+  -->
+  <Target Name="PrepareHelixPayload" AfterTargets="Build" Condition="'$(PrepareHelixPayload)' == 'true'">
+    <PropertyGroup>
+      <_HelixTestsDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'tests'))</_HelixTestsDir>
+      <_HelixDebuggeesDir>$([MSBuild]::NormalizeDirectory('$(HelixPayloadDir)', 'debuggees'))</_HelixDebuggeesDir>
+    </PropertyGroup>
+
+    <!-- Copy test output (DLLs, runtimeconfig, deps) -->
+    <ItemGroup>
+      <_TestOutput Include="$(OutputPath)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_TestOutput)" DestinationFolder="$(_HelixTestsDir)%(RecursiveDir)" />
+
+    <!-- Copy xunit console runner files to tests directory -->
+    <ItemGroup>
+      <_XunitConsoleFiles Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsoleNetCoreAppPath)'))\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
+
+    <!-- Copy each debuggee's build output -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_CopyDebuggeeToHelix"
+             Properties="DebuggeeName=%(DebuggeeCsproj.Filename);_HelixDebuggeesDir=$(_HelixDebuggeesDir)" />
+
+    <!-- Query dump types from each debuggee csproj and generate a metadata props file
+         so cdac-dump-helix.proj can discover debuggees without hardcoding them. -->
+    <MSBuild Projects="@(DebuggeeCsproj)"
+             Targets="GetDumpTypes"
+             Properties="Configuration=$(DebuggeeConfiguration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeWithTypes" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Heap'" DumpDir="heap" MiniDumpType="2" />
+      <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Full'" DumpDir="full" MiniDumpType="4" />
+      <_AllDebuggeeMetadata Include="@(_HeapDebuggee);@(_FullDebuggee)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_MetadataLines Include="&lt;Project&gt;" />
+      <_MetadataLines Include="  &lt;ItemGroup&gt;" />
+      <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; /&gt;')" />
+      <_MetadataLines Include="  &lt;/ItemGroup&gt;" />
+      <_MetadataLines Include="&lt;/Project&gt;" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(HelixPayloadDir)/debuggee-metadata.props" Lines="@(_MetadataLines)" Overwrite="true" />
+
+    <Message Text="Helix payload prepared at $(HelixPayloadDir)" Importance="high" />
+  </Target>
+
+  <Target Name="_CopyDebuggeeToHelix">
+    <PropertyGroup>
+      <_DebuggeeBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'DumpTests', '$(DebuggeeName)', '$(DebuggeeConfiguration)', '$(NetCoreAppCurrent)'))</_DebuggeeBinDir>
+      <_HelixDebuggeeDir>$([MSBuild]::NormalizeDirectory('$(_HelixDebuggeesDir)', '$(DebuggeeName)'))</_HelixDebuggeeDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_DebuggeeOutput Include="$(_DebuggeeBinDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DebuggeeOutput)" DestinationFolder="$(_HelixDebuggeeDir)%(RecursiveDir)" />
+  </Target>
 </Project>
