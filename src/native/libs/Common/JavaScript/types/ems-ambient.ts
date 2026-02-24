@@ -92,4 +92,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     writeI53ToI64(ptr: MemOffset, value: number): void;
     readI53FromI64(ptr: MemOffset): number;
     readI53FromU64(ptr: MemOffset): number;
+
+    wasmMemory: WebAssembly.Memory;
+    wasmTable: WebAssembly.Table;
 }
