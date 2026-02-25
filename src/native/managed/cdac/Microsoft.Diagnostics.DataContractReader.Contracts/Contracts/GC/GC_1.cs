@@ -313,6 +313,13 @@ internal readonly struct GC_1 : IGC
         typesList.Sort();
         List<HandleData> handles = new();
         TargetPointer handleTableMap = _target.ReadGlobalPointer(Constants.Globals.HandleTableMap);
+        GCType gcType = GetGCType();
+        uint tableCount = gcType switch
+        {
+            GCType.Workstation => 1,
+            GCType.Server => _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TotalCpuCount)),
+            _ => 0 // unknown
+        };
         while (handleTableMap != TargetPointer.Null)
         {
             Data.HandleTableMap handleTableData = _target.ProcessedData.GetOrAdd<Data.HandleTableMap>(handleTableMap);
@@ -322,8 +329,7 @@ internal readonly struct GC_1 : IGC
                     continue;
 
                 Data.HandleTableBucket bucket = _target.ProcessedData.GetOrAdd<Data.HandleTableBucket>(bucketPtr);
-                int heapCount = (int)((IGC)this).GetGCHeapCount();
-                for (int j = 0; j < heapCount; j++)
+                for (uint j = 0; j < tableCount; j++)
                 {
                     TargetPointer handleTablePtr = _target.ReadPointer(bucket.Table + (ulong)(j * _target.PointerSize));
                     if (handleTablePtr == TargetPointer.Null)

@@ -228,6 +228,7 @@ Global variables used:
 | `FeatureObjCMarshal` | byte | VM | Non-zero when Objective-C marshal support is enabled |
 | `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
 | `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
+| `TotalCpuCount` | uint | GC | Number of available processors |
 
 Contracts used:
 | Contract Name |
@@ -600,6 +601,12 @@ List<HandleData> IGC.GetHandles(HandleType[] types)
 {
     List<HandleData> handles = new();
     TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
+    string[] gcIdentifiers = GetGCIdentifiers();
+    uint tableCount = 0;
+    if (!gcType.Contains("workstation"))
+        tableCount = 1;
+    else
+        tableCount = _target.Read<uint>(_target.ReadGlobalPointer("TotalCpuCount")),
     // for each handleTableMap in the linked list
     while (handleTableMap != TargetPointer.Null)
     {
@@ -609,8 +616,7 @@ List<HandleData> IGC.GetHandles(HandleType[] types)
             if (bucketPtr == TargetPointer.Null)
                 continue;
 
-            int heapCount = (int)((IGC)this).GetGCHeapCount();
-            for (int j = 0; j < heapCount; j++)
+            for (int j = 0; j < tableCount; j++)
             {
                 // double dereference to iterate handle tables per array element per GC heap - native equivalent = map->pBuckets[i]->pTable[j] 
                 TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);

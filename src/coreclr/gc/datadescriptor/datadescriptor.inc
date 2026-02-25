@@ -188,6 +188,7 @@ CDAC_GLOBAL_POINTER(StructureInvalidCount, &GCScan::m_GcStructuresInvalidCnt)
 #ifdef SERVER_GC
 CDAC_GLOBAL_POINTER(NumHeaps, &GC_NAMESPACE::gc_heap::n_heaps)
 CDAC_GLOBAL_POINTER(Heaps, cdac_data<GC_NAMESPACE::gc_heap>::Heaps)
+CDAC_GLOBAL_POINTER(TotalCpuCount, &g_totalCpuCount)
 #endif // SERVER_GC
 
 #ifdef BACKGROUND_GC

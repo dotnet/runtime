@@ -58,8 +58,6 @@
 #endif // TARGET_AMD64 || TARGET_ARM64
 #include "introsort.h"
 
-extern uint32_t g_totalCpuCount;
-
 #ifdef SERVER_GC
 namespace SVR {
 #else // SERVER_GC

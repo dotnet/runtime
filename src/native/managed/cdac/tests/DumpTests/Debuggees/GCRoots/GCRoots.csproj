@@ -1,5 +1,2 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <DumpTypes>Full</DumpTypes>
-  </PropertyGroup>
 </Project>

@@ -133,6 +133,7 @@ public static class Constants
         public const string HandleMaxInternalTypes = nameof(HandleMaxInternalTypes);
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
+        public const string TotalCpuCount = nameof(TotalCpuCount);
     }
     public static class FieldNames
     {
