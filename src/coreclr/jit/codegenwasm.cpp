@@ -2447,7 +2447,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
 
     noway_assert(source->IsLocal());
-    noway_assert(dstAddr->IsLocal());
 
     // If the destination is on the stack we don't need the write barrier.
     bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);

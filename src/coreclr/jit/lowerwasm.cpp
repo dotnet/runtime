@@ -517,14 +517,58 @@ void Lowering::AfterLowerBlock()
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
 
-                    if (node->IsInvariant())
+                    // Invariant nodes can be safely moved by the stackifier with no side effects.
+                    // For other nodes, the side effects would require us to turn them into a temporary local, but this
+                    //  is not possible for contained nodes like an IND inside a STORE_BLK. However, the few types of
+                    //  contained nodes we have in Wasm should be safe to move freely since the lack of 'dup' or persistent
+                    //  registers in Wasm means that the actual codegen will trigger the side effect(s) and store the result
+                    //  into a Wasm local for any later uses during the containing node's execution, i.e. cpobj where the
+                    //  src and dest get stashed at the start and then used as add operands repeatedly.
+                    // Locals can also be safely moved as long as they aren't address-exposed due to local var nodes being
+                    //  implicitly pseudo-contained.
+                    // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
+                    if (
+                        node->IsInvariant() ||
+                        node->isContained() ||
+                        (node->OperIs(GT_LCL_VAR) && !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed())
+                    )
                     {
-                        JITDUMP("Stackifier moving invariant node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
+                        JITDUMP("Stackifier moving node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
                                 Compiler::dspTreeID(prev));
                         m_lower->BlockRange().Remove(node);
                         m_lower->BlockRange().InsertAfter(prev, node);
                         break;
                     }
+
+                    /*
+                    else
+                    {
+                        // To resolve this scenario we have two options:
+                        // 1. We try moving the whole tree rooted at `node`.
+                        //    To avoid quadratic behavior, we first stackify it and collect all the side effects
+                        //    from it. Then we check for interference of those side effects with nodes between
+                        //    'node' and 'prev'.
+                        // 2. Failing that, we insert a temporary ('ReplaceWithLclVar') for 'node'.
+                        //    To avoid explosion of temporaries, we maintain a busy/free set of them.
+                        // For now, for simplicity we are implementing #2 only.
+
+                        LIR::Use nodeUse;
+                        // FIXME-WASM: TryGetUse is inefficient here, replace it with something more optimal
+                        if (!m_lower->BlockRange().TryGetUse(node, &nodeUse))
+                        {
+                            JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
+                            NYI_WASM("Could not get a LIR::Use for the node to be moved by the stackifier");
+                        }
+
+                        unsigned lclNum = nodeUse.ReplaceWithLclVar(m_lower->m_compiler);
+                        GenTree* newNode = nodeUse.Def();
+                        JITDUMP("Stackifier replaced node [%06u] with lcl var %u\n", Compiler::dspTreeID(node), lclNum);
+                        m_lower->BlockRange().Remove(newNode);
+                        m_lower->BlockRange().InsertAfter(prev, newNode);
+                        JITDUMP("Stackifier moved new node [%06u] after [%06u]\n", Compiler::dspTreeID(newNode), Compiler::dspTreeID(prev));
+                        break;
+                    }
+                    */
 
                     JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
