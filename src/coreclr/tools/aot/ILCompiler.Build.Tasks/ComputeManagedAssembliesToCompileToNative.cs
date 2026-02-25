@@ -75,21 +75,18 @@ namespace Build.Tasks
         }
 
         [Output]
-        public ITaskItem[] ManagedAssemblies
-        {
-            get;
-            set;
-        }
-
-        [Output]
         public ITaskItem[] SatelliteAssemblies
         {
             get;
             set;
         }
 
+        /// <summary>
+        /// CoreCLR runtime pack files (apphost, native assets, managed assemblies replaced by NativeAOT equivalents)
+        /// that should be removed from the publish output and replaced with NativeAOT runtime pack assemblies.
+        /// </summary>
         [Output]
-        public ITaskItem[] AssembliesToSkipPublish
+        public ITaskItem[] RuntimePackFilesToSkipPublish
         {
             get;
             set;
@@ -97,8 +94,7 @@ namespace Build.Tasks
 
         public override bool Execute()
         {
-            var list = new List<ITaskItem>();
-            var assembliesToSkipPublish = new List<ITaskItem>();
+            var runtimePackFilesToSkipPublish = new List<ITaskItem>();
             var satelliteAssemblies = new List<ITaskItem>();
             var nativeAotFrameworkAssembliesToUse = new Dictionary<string, ITaskItem>();
 
@@ -126,7 +122,7 @@ namespace Build.Tasks
                 // Skip the native apphost (whose name ends up colliding with the native output binary) and supporting libraries
                 if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
                 {
-                    assembliesToSkipPublish.Add(taskItem);
+                    runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
@@ -135,7 +131,7 @@ namespace Build.Tasks
                     && !assemblyFileName.EndsWith(".dex", StringComparison.OrdinalIgnoreCase))
                 {
                     // Skip the native components of the runtime pack, we don't need them for NativeAOT.
-                    assembliesToSkipPublish.Add(taskItem);
+                    runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
@@ -148,8 +144,10 @@ namespace Build.Tasks
                     if (!isFromRuntimePack)
                     {
                         // The assembly was overridden by an OOB package through standard .NET SDK conflict resolution.
-                        // Use that version instead of swapping to the NativeAOT one.
-                        list.Add(taskItem);
+                        // Don't swap to the NativeAOT version; the user's version stays in
+                        // ResolvedFileToPublish and will be picked up as an ILC input via
+                        // its PostprocessAssembly=true metadata.
+                        continue;
                     }
                     else if (assemblyFileName == "System.Private.CoreLib.dll" && GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
                     {
@@ -158,7 +156,7 @@ namespace Build.Tasks
                         Log.LogError($"Overriding System.Private.CoreLib.dll with a newer version is not supported. Attempted to use {itemSpec} instead of {frameworkItem.ItemSpec}.");
                     }
 
-                    assembliesToSkipPublish.Add(taskItem);
+                    runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
@@ -170,9 +168,8 @@ namespace Build.Tasks
                     continue;
                 }
 
-                // For all other files, check if they are managed assemblies.
-                // If they're managed, skip publishing them and categorize them correctly as inputs to ILC.
-                // If they're not managed assemblies, then they're native dependencies. Allow them to be published.
+                // Check if this is a satellite assembly by reading its culture metadata.
+                // Non-managed files are silently skipped as a safety measure.
                 try
                 {
                     using (FileStream moduleStream = File.OpenRead(itemSpec))
@@ -185,14 +182,7 @@ namespace Build.Tasks
                             {
                                 string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
 
-                                assembliesToSkipPublish.Add(taskItem);
-
-                                // Split satellite assemblies from normal assemblies
-                                if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    list.Add(taskItem);
-                                }
-                                else
+                                if (culture != "" && !culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
                                 {
                                     satelliteAssemblies.Add(taskItem);
                                 }
@@ -205,8 +195,7 @@ namespace Build.Tasks
                 }
             }
 
-            ManagedAssemblies = list.ToArray();
-            AssembliesToSkipPublish = assembliesToSkipPublish.ToArray();
+            RuntimePackFilesToSkipPublish = runtimePackFilesToSkipPublish.ToArray();
             SatelliteAssemblies = satelliteAssemblies.ToArray();
 
             return true;

@@ -27,7 +27,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <IlcPgoOptimize Condition="'$(IlcPgoOptimize)' == '' and '$(OptimizationPreference)' == 'Speed'">true</IlcPgoOptimize>
-    <RunILLink>false</RunILLink>
+    <RunILLink Condition="'$(RunILLink)' == ''">false</RunILLink>
     <IlcTreatWarningsAsErrors Condition="'$(IlcTreatWarningsAsErrors)' == ''">$(TreatWarningsAsErrors)</IlcTreatWarningsAsErrors>
     <_IsiOSLikePlatform Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos'))">true</_IsiOSLikePlatform>
     <_IsApplePlatform Condition="'$(_targetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
@@ -101,7 +101,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcCompileDependsOn Condition="'$(BuildingFrameworkLibrary)' != 'true'">Compile;ComputeIlcCompileInputs</IlcCompileDependsOn>
     <IlcCompileDependsOn Condition="'$(IlcMultiModule)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(IlcCompileDependsOn);BuildFrameworkLib</IlcCompileDependsOn>
     <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
-    <IlcCompileDependsOn>$(IlcCompileDependsOn);PrepareForILLink</IlcCompileDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
@@ -118,15 +117,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcOutputFile>$(NativeIntermediateOutputPath)\%(Filename)$(IlcOutputFileExt)</IlcOutputFile>
     </ManagedBinary>
   </ItemDefinitionGroup>
-
-  <Target Name="_ComputeManagedAssemblyForILLink"
-          AfterTargets="_ComputeManagedAssemblyToLink"
-          Condition="'$(NativeCompilationDuringPublish)' == 'true'">
-    <ItemGroup>
-      <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
-      <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies);@(_ManagedResolvedAssembliesToPublish);@(IntermediateAssembly)" />
-    </ItemGroup>
-  </Target>
 
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
   <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
@@ -170,7 +160,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
-      <IlcReference Include="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
   </Target>
 
@@ -200,13 +189,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <ItemGroup>
-      <!-- Grab the raw ItemGroup that ILLinker accepts in two form: as file names, and as assembly names -->
       <_IlcRootedAssembliesRaw Include="@(TrimmerRootAssembly)" Condition="%(TrimmerRootAssembly.RootMode) != 'EntryPoint'" />
-      <_IlcRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
-      <_IlcConditionallyRootedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copyused'" />
-      <_IlcTrimmedAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'link'" />
-      <_IlcSingleWarnAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'true'" />
-      <_IlcNoSingleWarnAssembliesRaw Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimmerSingleWarn) == 'false'" />
+      <_IlcRootedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copy'" />
+      <_IlcConditionallyRootedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'copyused'" />
+      <_IlcTrimmedAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimMode) == 'link'" />
+      <_IlcSingleWarnAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'true'" />
+      <_IlcNoSingleWarnAssembliesRaw Include="@(_IlcManagedInputAssemblies)" Condition="%(_IlcManagedInputAssemblies.TrimmerSingleWarn) == 'false'" />
 
       <!-- Now process the raw ItemGroup into the form that ILC accepts: assembly names only -->
       <!-- Use the logic that ILLinker uses: if the file exists, this is a file name. Otherwise it's an assembly name -->
