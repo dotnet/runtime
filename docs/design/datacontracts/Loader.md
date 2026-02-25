@@ -86,6 +86,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer);
 ```
 
 ## Version 1
@@ -140,7 +141,15 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `StaticsHeap` | Statics heap of LoaderAllocator |
+| `LoaderAllocator` | `ExecutableHeap` | Executable heap of LoaderAllocator |
+| `LoaderAllocator` | `FixupPrecodeHeap` | FixupPrecode heap of LoaderAllocator (optional, present when `HAS_FIXUP_PRECODE`) |
+| `LoaderAllocator` | `NewStubPrecodeHeap` | NewStubPrecode heap of LoaderAllocator (optional, present when not `FEATURE_PORTABLE_ENTRYPOINTS`) |
+| `LoaderAllocator` | `DynamicHelpersStubHeap` | DynamicHelpers stub heap of LoaderAllocator (optional, present when `FEATURE_READYTORUN && FEATURE_STUBPRECODE_DYNAMIC_HELPERS`) |
+| `LoaderAllocator` | `VirtualCallStubManager` | Pointer to the VirtualCallStubManager of LoaderAllocator |
 | `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
+| `VirtualCallStubManager` | `IndcellHeap` | Indirection cell heap of VirtualCallStubManager |
+| `VirtualCallStubManager` | `CacheEntryHeap` | Cache entry heap of VirtualCallStubManager (optional, present when `FEATURE_VIRTUAL_STUB_DISPATCH`) |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -648,6 +657,44 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
 {
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
+}
+
+IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer)
+{
+    // Read LoaderAllocator data
+    LoaderAllocator la = // read LoaderAllocator object at loaderAllocatorPointer
+
+    // Always-present heaps
+    Dictionary<string, TargetPointer> heaps = {
+        ["LowFrequencyHeap"] = la.LowFrequencyHeap,
+        ["HighFrequencyHeap"] = la.HighFrequencyHeap,
+        ["StaticsHeap"] = la.StaticsHeap,
+        ["StubHeap"] = la.StubHeap,
+        ["ExecutableHeap"] = la.ExecutableHeap,
+    };
+
+    // Feature-conditional heaps: only included when the data descriptor field exists
+    if (LoaderAllocator type has "FixupPrecodeHeap" field)
+        heaps["FixupPrecodeHeap"] = la.FixupPrecodeHeap;
+
+    if (LoaderAllocator type has "NewStubPrecodeHeap" field)
+        heaps["NewStubPrecodeHeap"] = la.NewStubPrecodeHeap;
+
+    if (LoaderAllocator type has "DynamicHelpersStubHeap" field)
+        heaps["DynamicHelpersStubHeap"] = la.DynamicHelpersStubHeap;
+
+    // VirtualCallStubManager heaps: only included when VirtualCallStubManager is non-null
+    if (la.VirtualCallStubManager != null)
+    {
+        VirtualCallStubManager vcsMgr = // read VirtualCallStubManager object at la.VirtualCallStubManager
+
+        heaps["IndcellHeap"] = vcsMgr.IndcellHeap;
+
+        if (VirtualCallStubManager type has "CacheEntryHeap" field)
+            heaps["CacheEntryHeap"] = vcsMgr.CacheEntryHeap;
+    }
+
+    return heaps;
 }
 
 private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
