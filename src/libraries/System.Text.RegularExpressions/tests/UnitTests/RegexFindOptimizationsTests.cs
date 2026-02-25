@@ -136,8 +136,13 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"a(b)c", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
         // Empty capture unwraps to Empty node, which is skipped; extraction continues with subsequent content
         [InlineData(@"()ab", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
-        // Atomic groups inside a Concatenate are not unwrapped (conservative); extraction stops before them
-        [InlineData(@"ab(?>cd)ef", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Atomic groups inside a Concatenate are unwrapped like Capture (atomicity only affects backtracking, not what's matched)
+        [InlineData(@"ab(?>cd)ef", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcdef")]
+        // Capture wrapping Atomic (and vice versa): while loop peels multiple wrapper layers
+        [InlineData(@"a((?>bc))d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        [InlineData(@"a(?>(bc))d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Capture containing fixed-count repeater: Setloop with M==N is extractable
+        [InlineData(@"(ab{3}c)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abbbc")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);

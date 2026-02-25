@@ -2975,11 +2975,13 @@ namespace System.Text.RegularExpressions
                 RegexNode child = Child(i);
 
                 // When used for prefix analysis (unwrapCaptures is true), unwrap capture
-                // groups so their contents can be examined. This must not be done when used by the
-                // compiler/source generator, as it would cause capture side effects to be skipped.
+                // groups and atomic groups so their contents can be examined. Capture unwrapping
+                // must not be done when used by the compiler/source generator, as it would cause
+                // capture side effects to be skipped. Atomic groups only affect backtracking, not
+                // what text is matched, so they are safe to unwrap for prefix analysis as well.
                 if (unwrapCaptures)
                 {
-                    while (child.Kind is RegexNodeKind.Capture)
+                    while (child.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
                     {
                         child = child.Child(0);
                     }
