@@ -107,11 +107,11 @@ namespace System
         internal static partial int GetProcessorCount();
 
         [UnmanagedCallersOnly]
-        private static unsafe void GetResourceStringLocal(string* pKey, string* pResult, Exception* pException)
+        private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
         {
             try
             {
-                *pResult = SR.GetResourceString(*pKey);
+                *pResult = SR.GetResourceString(new string(pKey));
             }
             catch (Exception ex)
             {

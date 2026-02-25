@@ -277,7 +277,7 @@ DEFINE_CLASS(RUNE,                  Text,                   Rune)
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
-DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal, SM_PtrStr_PtrStr_PtrException_RetVoid)
+DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING, GetResourceString, SM_PtrChar_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_RetArrStr)
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
@@ -304,6 +304,7 @@ DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPrese
 DEFINE_METHOD(EXCEPTION,            CREATE_RUNTIME_WRAPPED_EXCEPTION, CreateRuntimeWrappedException, SM_PtrObj_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_TYPE_INIT_EXCEPTION, CreateTypeInitializationException, SM_PtrChar_PtrException_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_FIRSTCHANCE_EVENTARGS, CreateFirstChanceExceptionEventArgs, SM_PtrException_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(EXCEPTION,            GET_TO_STRING,          GetToString,                SM_PtrObj_PtrStr_PtrException_RetVoid)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
@@ -605,7 +606,6 @@ DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, IM_Int_Ret
 DEFINE_METHOD(OBJECT,               CTOR,                   .ctor,                      IM_RetVoid)
 DEFINE_METHOD(OBJECT,               FINALIZE,               Finalize,                   IM_RetVoid)
 DEFINE_METHOD(OBJECT,               TO_STRING,              ToString,                   IM_RetStr)
-DEFINE_METHOD(OBJECT,               GET_TO_STRING,          GetToString,                SM_PtrObj_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(OBJECT,               GET_TYPE,               GetType,                    IM_RetType)
 DEFINE_METHOD(OBJECT,               GET_HASH_CODE,          GetHashCode,                IM_RetInt)
 DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,                     IM_Obj_RetBool)
@@ -984,8 +984,6 @@ DEFINE_CLASS(TYPE,                  System,                 Type)
 DEFINE_METHOD(TYPE,                 GET_TYPE_FROM_HANDLE,   GetTypeFromHandle,          SM_RuntimeTypeHandle_RetType)
 
 DEFINE_CLASS(TYPE_DELEGATOR,        Reflection,             TypeDelegator)
-
-DEFINE_CLASS(FIRSTCHANCE_EVENTARGS,   ExceptionServices,      FirstChanceExceptionEventArgs)
 
 DEFINE_CLASS(EXCEPTION_DISPATCH_INFO, ExceptionServices,      ExceptionDispatchInfo)
 DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, CAPTURE, Capture, NoSig)

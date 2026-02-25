@@ -272,6 +272,19 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        private static unsafe void GetToString(object* pObj, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = pObj->ToString();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         internal static unsafe void CreateRuntimeWrappedException(object* pThrownObject, object* pResult, Exception* pException)
         {
             try

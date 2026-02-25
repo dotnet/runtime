@@ -1119,7 +1119,9 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
     CONTRACTL_END;
 
     STRINGREF message = NULL;
+    GCPROTECT_BEGIN(message);
     ResMgrGetString(m_resourceName, &message);
+    GCPROTECT_END();
 
     if (message != NULL)
     {

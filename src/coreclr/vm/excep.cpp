@@ -247,7 +247,7 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     GCPROTECT_BEGIN(gc);
 
     // Call Object.ToString(). Note that exceptions do not have to inherit from System.Exception
-    UnmanagedCallersOnlyCaller getToString(METHOD__OBJECT__GET_TO_STRING);
+    UnmanagedCallersOnlyCaller getToString(METHOD__EXCEPTION__GET_TO_STRING);
     getToString.InvokeThrowing(&gc.throwable, &gc.pString);
 
     GCPROTECT_END();
@@ -530,10 +530,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         // If we are already in the midst of creating a TypeInitializationException object,
         // and we get here, it means there was an exception thrown while initializing the
         // TypeInitializationException type itself, or one of the types used by its class
-        // constructor. In this case, we're going to back down and use a SystemException
-        // object in its place. It is *KNOWN* that both these exception types have identical
-        // .ctor sigs "void instance (string, exception)" so both can be used interchangeably
-        // in the code that follows.
+        // constructor. In this case, we fall back to using the inner exception directly.
         if (!isAlreadyCreating.GetValue()) {
             pThread->SetIsCreatingTypeInitException();
         }
@@ -2161,41 +2158,9 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     UNREACHABLE();
 }
 
-// this function finds the managed callback to get a resource
-// string from the then current local domain and calls it
-// this could be a lot of work
-STRINGREF GetResourceStringFromManaged(STRINGREF key)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(key != NULL);
-    }
-    CONTRACTL_END;
-
-    struct
-    {
-        STRINGREF key;
-        STRINGREF ret;
-    } gc;
-    gc.key = key;
-    gc.ret = NULL;
-    GCPROTECT_BEGIN(gc);
-
-    // Call Environment::GetResourceStringLocal(String name).  Returns String value (or maybe null)
-    UnmanagedCallersOnlyCaller getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
-    getResourceStringLocal.InvokeThrowing(&gc.key, &gc.ret);
-
-    GCPROTECT_END();
-
-    return gc.ret;
-}
-
 // This function does poentially a LOT of work (loading possibly 50 classes).
 // The return value is an un-GC-protected string ref, or possibly NULL.
-void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
+void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF* ppMessage)
 {
     CONTRACTL
     {
@@ -2213,17 +2178,10 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
         return;
     }
 
-    // this function never looks at name again after
-    // calling the helper so no need to GCPROTECT it
-    STRINGREF name = StringObject::NewString(wszResourceName);
+    UnmanagedCallersOnlyCaller getResourceString(METHOD__ENVIRONMENT__GET_RESOURCE_STRING);
+    getResourceString.InvokeThrowing(wszResourceName, ppMessage);
 
-    if (wszResourceName != NULL)
-    {
-        STRINGREF value = GetResourceStringFromManaged(name);
-
-        _ASSERTE(value!=NULL || !"Resource string lookup failed - possible misspelling or .resources missing or out of date?");
-        *ppMessage = value;
-    }
+    _ASSERTE(*ppMessage != NULL && "Resource string lookup failed - possible misspelling or .resources missing or out of date?");
 }
 
 #ifdef FEATURE_COMINTEROP
