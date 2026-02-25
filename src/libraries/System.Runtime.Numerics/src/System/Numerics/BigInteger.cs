@@ -3472,33 +3472,45 @@ namespace System.Numerics
             else if (_sign >= 0)
             {
                 // When the value is positive, we simply need to copy all bits as big endian
-                // bits[0] is the least significant word; big endian writes most significant first
+                // bits[0] is the least significant word; in big endian word i goes at offset (bits.Length - 1 - i)
 
-                int offset = 0;
                 for (int i = 0; i < bits.Length; i++)
                 {
-                    BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(offset, sizeof(uint)), bits[i]);
-                    offset += sizeof(uint);
+                    BinaryPrimitives.WriteUInt32BigEndian(destination.Slice((bits.Length - 1 - i) * sizeof(uint)), bits[i]);
                 }
             }
             else
             {
-                // Two's complement representation written inline (MSW first for big endian)
-                int offset = byteCount - sizeof(uint);
-                uint carry = 1;
+                // When the value is negative, we need to copy the two's complement representation
+                // We'll do this "inline" to avoid needing to unnecessarily allocate.
+                // bits[i] (LSW-first) maps to big-endian offset byteCount - (i + 1) * sizeof(uint).
 
-                for (int i = 0; i < bits.Length; i++)
+                int i = 0;
+                uint part;
+
+                do
                 {
-                    uint part = ~bits[i] + carry;
-                    carry = (part == 0) ? carry : 0;
-                    BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(offset, sizeof(uint)), part);
-                    offset -= sizeof(uint);
+                    // first do complement and +1 as long as carry is needed
+                    part = ~bits[i] + 1;
+
+                    BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(byteCount - (i + 1) * sizeof(uint)), part);
+                    i++;
+                }
+                while ((part == 0) && (i < bits.Length));
+
+                while (i < bits.Length)
+                {
+                    // now ones complement is sufficient
+                    part = ~bits[i];
+
+                    BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(byteCount - (i + 1) * sizeof(uint)), part);
+                    i++;
                 }
 
                 if (byteCount > bits.Length * sizeof(uint))
                 {
-                    // Extra word needed to represent the sign
-                    Debug.Assert(offset == 0);
+                    // We need one extra part to represent the sign as the most
+                    // significant bit of the two's complement value was 0.
                     BinaryPrimitives.WriteUInt32BigEndian(destination, uint.MaxValue);
                 }
             }
@@ -3530,31 +3542,49 @@ namespace System.Numerics
                 // When the value is positive, we simply need to copy all bits as little endian
                 // bits[0] is the least significant word; little endian writes least significant first
 
-                int offset = 0;
+                Span<byte> dest = destination;
+
                 for (int i = 0; i < bits.Length; i++)
                 {
-                    BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(offset, sizeof(uint)), bits[i]);
-                    offset += sizeof(uint);
+                    BinaryPrimitives.WriteUInt32LittleEndian(dest, bits[i]);
+                    dest = dest.Slice(sizeof(uint));
                 }
             }
             else
             {
-                // Two's complement representation written inline
-                int offset = 0;
-                uint carry = 1;
+                // When the value is negative, we need to copy the two's complement representation
+                // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                for (int i = 0; i < bits.Length; i++)
+                Span<byte> dest = destination;
+                int i = 0;
+                uint part;
+
+                do
                 {
-                    uint part = ~bits[i] + carry;
-                    carry = (part == 0) ? carry : 0;
-                    BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(offset, sizeof(uint)), part);
-                    offset += sizeof(uint);
+                    // first do complement and +1 as long as carry is needed
+                    part = ~bits[i] + 1;
+
+                    BinaryPrimitives.WriteUInt32LittleEndian(dest, part);
+                    dest = dest.Slice(sizeof(uint));
+                    i++;
+                }
+                while ((part == 0) && (i < bits.Length));
+
+                while (i < bits.Length)
+                {
+                    // now ones complement is sufficient
+                    part = ~bits[i];
+
+                    BinaryPrimitives.WriteUInt32LittleEndian(dest, part);
+                    dest = dest.Slice(sizeof(uint));
+                    i++;
                 }
 
                 if (byteCount > bits.Length * sizeof(uint))
                 {
-                    // Extra word needed to represent the sign
-                    BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(offset, sizeof(uint)), uint.MaxValue);
+                    // We need one extra part to represent the sign as the most
+                    // significant bit of the two's complement value was 0.
+                    BinaryPrimitives.WriteUInt32LittleEndian(dest, uint.MaxValue);
                 }
             }
 
