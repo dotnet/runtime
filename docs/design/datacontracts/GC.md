@@ -160,12 +160,9 @@ Data descriptors used:
 | `OomHistory` | LohP | GC | Large object heap flag indicating if OOM was related to LOH |
 | `GCAllocContext` | Pointer | VM | Current GCAllocContext pointer |
 | `GCAllocContext` | Limit | VM | Pointer to the GCAllocContext limit |
-<<<<<<< copilot/implement-get-thread-alloc-data
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
-=======
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
->>>>>>> main
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
